@@ -1,25 +1,32 @@
 mod children;
 mod element;
+mod text;
 
 use proc_macro::TokenStream;
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, Result};
+use syn::{parse_macro_input, Result, Token};
 
 pub(crate) enum HtmlTree {
     Element(element::HtmlElement),
+    Text(text::Text),
 }
 
 impl Parse for HtmlTree {
     fn parse(input: ParseStream) -> Result<Self> {
-        Ok(Self::Element(input.parse()?))
+        if input.peek(Token![|]) {
+            Ok(Self::Text(input.parse()?))
+        } else {
+            Ok(Self::Element(input.parse()?))
+        }
     }
 }
 
 impl ToTokens for HtmlTree {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
-            HtmlTree::Element(element) => element.to_tokens(tokens),
+            Self::Element(element) => element.to_tokens(tokens),
+            Self::Text(text) => text.to_tokens(tokens),
         }
     }
 }

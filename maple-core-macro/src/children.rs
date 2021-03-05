@@ -1,6 +1,6 @@
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
-use syn::{braced, token, Ident, Result};
+use syn::{braced, token, Ident, Result, Token};
 
 use crate::HtmlTree;
 
@@ -15,7 +15,7 @@ impl Parse for Children {
         let brace_token = braced!(content in input);
         let mut body = Vec::new();
 
-        while content.peek(Ident::peek_any) {
+        while content.peek(Ident::peek_any) || content.peek(Token![|]) {
             body.push(content.parse()?);
         }
 
