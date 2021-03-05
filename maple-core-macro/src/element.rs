@@ -96,7 +96,7 @@ impl ToTokens for HtmlElement {
         if let Some(children) = children {
             for child in &children.body {
                 append_children.push(quote! {
-                    ::maple_core::internal::append(&element, #child);
+                    ::maple_core::internal::append(&element, &&#child);
                 });
             }
         }
