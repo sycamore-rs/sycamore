@@ -1,10 +1,19 @@
-use web_sys::Element;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlElement;
 
-pub fn element(tag: &str) -> Element {
+/// Create a new [`HtmlElement`] with the specified tag.
+pub fn element(tag: &str) -> HtmlElement {
     web_sys::window()
         .unwrap()
         .document()
         .unwrap()
         .create_element(tag)
         .unwrap()
+        .dyn_into()
+        .unwrap()
+}
+
+/// Sets an attribute on an [`HtmlElement`].
+pub fn attr(element: &HtmlElement, name: &str, value: &str) {
+    element.set_attribute(name, value).unwrap();
 }

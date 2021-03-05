@@ -1,17 +1,17 @@
-use web_sys::Element;
+use web_sys::HtmlElement;
 
-pub mod template;
 pub mod internal;
+pub mod template;
 
-pub fn start_app(element: Element) {
+pub fn render(element: HtmlElement) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
     document.body().unwrap().append_child(&element).unwrap();
 }
 
 pub mod prelude {
+    pub use crate::render;
     pub use crate::template::Template;
-    pub use crate::start_app;
 
     pub use maple_core_macro::template;
 }
