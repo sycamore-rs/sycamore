@@ -10,7 +10,7 @@ use crate::children::Children;
 /// Represents a html element with all its attributes and properties (e.g. `p(class="text")`).
 pub(crate) struct HtmlElement {
     tag_name: TagName,
-    _paren_token: token::Paren,
+    _paren_token: Option<token::Paren>,
     attributes: Punctuated<Expr, Token![,]>,
     children: Option<Children>,
 }
@@ -18,9 +18,13 @@ pub(crate) struct HtmlElement {
 impl Parse for HtmlElement {
     fn parse(input: ParseStream) -> Result<Self> {
         let tag_name = input.parse()?;
-        let attributes;
-        let paren_token = parenthesized!(attributes in input);
-        let attributes = attributes.parse_terminated(Expr::parse)?;
+        let (paren_token, attributes) = if input.peek(token::Paren) {
+            let attributes;
+            let paren_token = parenthesized!(attributes in input);
+            (Some(paren_token), attributes.parse_terminated(Expr::parse)?)
+        } else {
+            (None, Punctuated::new())
+        };
 
         let children = if input.peek(token::Brace) {
             Some(input.parse()?)
