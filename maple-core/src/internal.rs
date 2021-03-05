@@ -17,3 +17,7 @@ pub fn element(tag: &str) -> HtmlElement {
 pub fn attr(element: &HtmlElement, name: &str, value: &str) {
     element.set_attribute(name, value).unwrap();
 }
+
+pub fn append(element: &HtmlElement, child: HtmlElement) {
+    element.append_with_node_1(&child).unwrap();
+}
