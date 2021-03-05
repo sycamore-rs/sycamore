@@ -1,15 +1,12 @@
 mod element;
 
 use proc_macro::TokenStream;
+use quote::ToTokens;
 use syn::parse_macro_input;
 
 #[proc_macro]
 pub fn template(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as element::HtmlTag);
+    let input = parse_macro_input!(input as element::HtmlElement);
 
-    let quoted = quote::quote! {
-        #input
-    };
-
-    TokenStream::from(quoted)
+    TokenStream::from(input.to_token_stream())
 }

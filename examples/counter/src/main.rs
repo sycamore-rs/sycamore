@@ -1,7 +1,9 @@
 use maple_core::prelude::*;
 
 fn main() {
-    let root = template!(div);
+    let root = template! {
+        p(class="test", id="my-paragraph")
+    };
 
-    start_app(root);
+    render(root);
 }
