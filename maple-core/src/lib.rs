@@ -1,7 +1,8 @@
-use web_sys::HtmlElement;
-
 pub mod internal;
+pub mod reactive;
 pub mod template;
+
+use web_sys::HtmlElement;
 
 pub fn render(element: impl Fn() -> HtmlElement) {
     let window = web_sys::window().unwrap();
@@ -10,6 +11,7 @@ pub fn render(element: impl Fn() -> HtmlElement) {
 }
 
 pub mod prelude {
+    pub use crate::reactive::{create_effect, create_memo, create_signal};
     pub use crate::render;
     pub use crate::template::Template;
 
