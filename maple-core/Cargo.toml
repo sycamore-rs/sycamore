@@ -9,7 +9,6 @@ version = "0.1.0"
 [dependencies]
 maple-core-macro = {path = "../maple-core-macro"}
 wasm-bindgen = "0.2.71"
-lazy_static = "1.4.0"
 
 [dependencies.web-sys]
 features = [
