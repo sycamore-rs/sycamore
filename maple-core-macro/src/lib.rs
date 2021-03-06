@@ -14,7 +14,7 @@ pub(crate) enum HtmlTree {
 
 impl Parse for HtmlTree {
     fn parse(input: ParseStream) -> Result<Self> {
-        if input.peek(Token![|]) {
+        if input.peek(Token![#]) {
             Ok(Self::Text(input.parse()?))
         } else {
             Ok(Self::Element(input.parse()?))

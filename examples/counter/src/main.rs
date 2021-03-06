@@ -5,15 +5,16 @@ fn main() {
 
     let root = template! {
         div {
-            | "Counter demo"
+            # "Counter demo"
             p(class="value") {
-                | format!("Value: {}", 0)
+                # "Value: "
+                # 0
             }
             button(class="increment") {
-                | "Increment"
+                # "Increment"
             }
             button(class="reset") {
-                | "Reset"
+                # "Reset"
             }
         }
     };

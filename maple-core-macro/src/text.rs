@@ -5,14 +5,14 @@ use syn::spanned::Spanned;
 use syn::{Expr, Result, Token};
 
 pub(crate) struct Text {
-    _pipe_token: Token![|],
+    _hash_token: Token![#],
     expr: Expr,
 }
 
 impl Parse for Text {
     fn parse(input: ParseStream) -> Result<Self> {
         Ok(Self {
-            _pipe_token: input.parse()?,
+            _hash_token: input.parse()?,
             expr: input.parse()?,
         })
     }
@@ -20,7 +20,7 @@ impl Parse for Text {
 
 impl ToTokens for Text {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Text { _pipe_token, expr } = self;
+        let Text { _hash_token, expr } = self;
 
         let expr_span = expr.span();
         let quoted = quote_spanned! {expr_span=>
