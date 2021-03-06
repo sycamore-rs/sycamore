@@ -1,7 +1,8 @@
-use web_sys::HtmlElement;
-
 pub mod internal;
+pub mod reactive;
 pub mod template;
+
+use web_sys::HtmlElement;
 
 pub fn render(element: impl Fn() -> HtmlElement) {
     let window = web_sys::window().unwrap();
