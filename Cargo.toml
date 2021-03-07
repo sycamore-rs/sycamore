@@ -2,5 +2,6 @@
 members = [
   "maple-core",
   "maple-core-macro",
+  "examples/components",
   "examples/counter",
 ]

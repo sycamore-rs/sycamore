@@ -25,4 +25,6 @@ pub mod prelude {
     pub use crate::render;
 
     pub use maple_core_macro::template;
+
+    pub use web_sys::HtmlElement;
 }
