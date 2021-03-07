@@ -18,7 +18,18 @@ impl<T> Signal<T> {
     }
 
     fn observe(&mut self, handler: Rc<Computation>) {
-        self.observers.push(handler);
+        // make sure handler is not already in self.observers
+        if self
+            .observers
+            .iter()
+            .find(|observer| {
+                observer.as_ref() as *const Computation == handler.as_ref() as *const Computation
+                /* do reference equality */
+            })
+            .is_none()
+        {
+            self.observers.push(handler);
+        }
     }
 
     fn update(&mut self, new_value: T) {
@@ -44,14 +55,14 @@ thread_local! {
 
 /// Creates a new signal.
 /// The function will return a pair of getter/setters to modify the signal and update corresponding dependencies.
-/// 
+///
 /// # Example
 /// ```rust
 /// use maple_core::prelude::*;
-/// 
+///
 /// let (state, set_state) = create_signal(0);
 /// assert_eq!(*state(), 0);
-/// 
+///
 /// set_state(1);
 /// assert_eq!(*state(), 1);
 /// ```
@@ -191,6 +202,64 @@ mod tests {
         assert_eq!(*double(), 2);
         set_state(2);
         assert_eq!(*double(), 4);
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot create cyclic dependency")]
+    fn cyclic_effects_fail() {
+        let (state, set_state) = create_signal(0);
+
+        create_effect({
+            let state = state.clone();
+            let set_state = set_state.clone();
+            move || {
+                set_state(*state() + 1);
+            }
+        });
+
+        set_state(1);
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot create cyclic dependency")]
+    fn cyclic_effects_fail_2() {
+        let (state, set_state) = create_signal(0);
+
+        create_effect({
+            let state = state.clone();
+            let set_state = set_state.clone();
+            move || {
+                let value = *state();
+                set_state(value + 1);
+            }
+        });
+
+        set_state(1);
+    }
+
+    #[test]
+    fn effect_should_subscribe_once() {
+        let (state, set_state) = create_signal(0);
+
+        // use a Cell instead of a signal to prevent circular dependencies
+        // TODO: change to create_signal once explicit tracking is implemented
+        let counter = Rc::new(Cell::new(0));
+
+        create_effect({
+            let counter = counter.clone();
+            move || {
+                counter.set(counter.get() + 1);
+
+                // call state() twice but should subscribe once
+                state();
+                state();
+            }
+        });
+
+        assert_eq!(counter.get(), 1);
+
+        set_state(1);
+        assert_eq!(counter.get(), 2);
     }
 
     #[test]
