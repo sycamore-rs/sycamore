@@ -136,8 +136,34 @@ where
     })
 }
 
+/// Prevents tracking dependencies inside the closure. If called outside a reactive context, does nothing.
+///
+/// # Example
+/// ```rust
+/// use maple_core::prelude::*;
+/// 
+/// let (state, set_state) = create_signal(1);
+///
+/// let double = create_memo(move || untracked(|| *state()) * 2);
+///
+/// assert_eq!(*double(), 2);
+///
+/// set_state(2);
+/// assert_eq!(*double(), 2); // double value should still be true because state() was inside untracked
+/// ```
+pub fn untracked<F, Out>(f: F) -> Out
+where
+    F: Fn() -> Out,
+{
+    let tmp = DEPENDENCIES.with(|dependencies| dependencies.take());
+    let out = f();
+    DEPENDENCIES.with(|dependencies| *dependencies.borrow_mut() = tmp);
+
+    out
+}
+
 /// Creates a memoized value from some signals. Also know as "derived stores".
-pub fn create_memo<'out, F, Out: Clone>(derived: F) -> Rc<impl Fn() -> Rc<Out>>
+pub fn create_memo<F, Out: Clone>(derived: F) -> Rc<impl Fn() -> Rc<Out>>
 where
     F: Fn() -> Out + 'static,
     Out: 'static,
@@ -313,5 +339,17 @@ mod tests {
 
         set_state(1);
         assert_eq!(*quadruple(), 4);
+    }
+
+    #[test]
+    fn untracked_memo() {
+        let (state, set_state) = create_signal(1);
+
+        let double = create_memo(move || untracked(|| *state()) * 2);
+
+        assert_eq!(*double(), 2);
+
+        set_state(2);
+        assert_eq!(*double(), 2); // double value should still be true because state() was inside untracked
     }
 }

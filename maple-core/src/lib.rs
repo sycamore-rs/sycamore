@@ -21,7 +21,7 @@ pub fn render(element: HtmlElement) {
 
 /// The maple prelude.
 pub mod prelude {
-    pub use crate::reactive::{create_effect, create_memo, create_signal};
+    pub use crate::reactive::{create_effect, create_memo, create_signal, untracked};
     pub use crate::render;
 
     pub use maple_core_macro::template;
