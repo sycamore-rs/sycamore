@@ -16,8 +16,14 @@ error: expected `=`
 7 |     template! { button(on:click) };
   |                       ^^^^^^^^^^
 
-error: expected `=`
- --> $DIR/element-fail.rs:9:25
+error: unknown directive `unknown`
+ --> $DIR/element-fail.rs:8:24
   |
-9 |     template! { button(a.b.c="123") };
-  |                         ^
+8 |     template! { button(unknown:directive="123") };
+  |                        ^^^^^^^
+
+error: expected `=`
+  --> $DIR/element-fail.rs:10:25
+   |
+10 |     template! { button(a.b.c="123") };
+   |                         ^

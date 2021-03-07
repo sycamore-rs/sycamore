@@ -5,6 +5,7 @@ fn compile_fail() {
 
     template! { button(disabled) };
     template! { button(on:click) };
+    template! { button(unknown:directive="123") };
 
     template! { button(a.b.c="123") };
 }
