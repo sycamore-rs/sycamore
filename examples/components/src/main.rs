@@ -2,7 +2,7 @@
 
 use maple_core::prelude::*;
 
-pub fn MyComponent(num: StateHandle<i32>) -> HtmlElement {
+pub fn MyComponent(num: StateHandle<i32>) -> TemplateResult {
     template! {
         div(class="my-component") {
             # "My component"

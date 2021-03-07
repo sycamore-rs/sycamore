@@ -13,20 +13,40 @@ pub mod reactive;
 use web_sys::HtmlElement;
 
 /// Render an [`HtmlElement`] into the DOM.
-pub fn render(element: HtmlElement) {
+pub fn render(template_result: TemplateResult) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
-    document.body().unwrap().append_child(&element).unwrap();
+    document
+        .body()
+        .unwrap()
+        .append_child(&template_result.element)
+        .unwrap();
+}
+
+/// The result of the `template!` macro. Should not be used directly.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateResult {
+    element: HtmlElement,
+}
+
+impl TemplateResult {
+    /// Create a new `TemplateResult` from an [`HtmlElement`].
+    pub fn new(element: HtmlElement) -> Self {
+        Self { element }
+    }
+
+    pub fn inner_element(&self) -> HtmlElement {
+        self.element.clone()
+    }
 }
 
 /// The maple prelude.
 pub mod prelude {
     pub use crate::reactive::{
-        create_effect, create_memo, create_signal, untracked, SetStateHandle, StateHandle,
+        create_effect, create_memo, create_selector, create_signal, untracked, SetStateHandle,
+        StateHandle,
     };
-    pub use crate::render;
+    pub use crate::{render, TemplateResult};
 
     pub use maple_core_macro::template;
-
-    pub use web_sys::HtmlElement;
 }

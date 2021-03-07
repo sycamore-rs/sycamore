@@ -2,7 +2,7 @@
 
 use maple_core::prelude::*;
 
-pub fn Component() -> HtmlElement {
+pub fn Component() -> TemplateResult {
     template! {
         div
     }
