@@ -7,7 +7,9 @@
 //! ## Supported Targets
 //! - `wasm32-unknown-unknown`
 
+#[doc(hidden)]
 pub mod internal;
+
 pub mod reactive;
 
 use web_sys::HtmlElement;
