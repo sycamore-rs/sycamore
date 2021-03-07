@@ -183,7 +183,7 @@ Here is an example of a simple component:
 
 use maple_core::prelude::*;
 
-fn Component(value: StateHandle<i32>) {
+fn Component(value: StateHandle<i32>) -> TemplateResult {
     template! {
         div(class="my-component") {
             # "Value: "
