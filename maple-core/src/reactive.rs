@@ -217,8 +217,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::cell::Cell;
-
     use super::*;
 
     #[test]
@@ -299,14 +297,11 @@ mod tests {
     fn effect_should_subscribe_once() {
         let (state, set_state) = create_signal(0);
 
-        // use a Cell instead of a signal to prevent circular dependencies
-        // TODO: change to create_signal once explicit tracking is implemented
-        let counter = Rc::new(Cell::new(0));
-
+        let (counter, set_counter) = create_signal(0);
         create_effect({
             let counter = counter.clone();
             move || {
-                counter.set(counter.get() + 1);
+                set_counter(untracked(|| *counter()) + 1);
 
                 // call state() twice but should subscribe once
                 state();
@@ -314,10 +309,10 @@ mod tests {
             }
         });
 
-        assert_eq!(counter.get(), 1);
+        assert_eq!(*counter(), 1);
 
         set_state(1);
-        assert_eq!(counter.get(), 2);
+        assert_eq!(*counter(), 2);
     }
 
     #[test]
@@ -339,24 +334,21 @@ mod tests {
     fn memo_only_run_once() {
         let (state, set_state) = create_signal(0);
 
-        // use a Cell instead of a signal to prevent circular dependencies
-        // TODO: change to create_signal once explicit tracking is implemented
-        let counter = Rc::new(Cell::new(0));
-
+        let (counter, set_counter) = create_signal(0);
         let double = create_memo({
             let counter = counter.clone();
             move || {
-                counter.set(counter.get() + 1);
+                set_counter(untracked(|| *counter()) + 1);
 
                 *state() * 2
             }
         });
-        assert_eq!(counter.get(), 1); // once for calculating initial derived state
+        assert_eq!(*counter(), 1); // once for calculating initial derived state
 
         set_state(2);
-        assert_eq!(counter.get(), 2);
+        assert_eq!(*counter(), 2);
         assert_eq!(*double(), 4);
-        assert_eq!(counter.get(), 2); // should still be 2 after access
+        assert_eq!(*counter(), 2); // should still be 2 after access
     }
 
     #[test]
@@ -394,27 +386,25 @@ mod tests {
             move || *state() * 2
         });
 
-        // use a Cell instead of a signal to prevent circular dependencies
-        // TODO: change to create_signal once explicit tracking is implemented
-        let counter = Rc::new(Cell::new(0));
-
+        let (counter, set_counter) = create_signal(0);
         create_effect({
             let counter = counter.clone();
             let double = double.clone();
             move || {
-                counter.set(counter.get() + 1);
+                set_counter(untracked(|| *counter()) + 1);
+
                 double();
             }
         });
         assert_eq!(*double(), 0);
-        assert_eq!(counter.get(), 1);
+        assert_eq!(*counter(), 1);
 
         set_state(0);
         assert_eq!(*double(), 0);
-        assert_eq!(counter.get(), 1); // calling set_state should not trigger the effect
+        assert_eq!(*counter(), 1); // calling set_state should not trigger the effect
 
         set_state(2);
         assert_eq!(*double(), 4);
-        assert_eq!(counter.get(), 2);
+        assert_eq!(*counter(), 2);
     }
 }
