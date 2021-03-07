@@ -146,7 +146,7 @@ where
 /// # Example
 /// ```rust
 /// use maple_core::prelude::*;
-/// 
+///
 /// let (state, set_state) = create_signal(1);
 ///
 /// let double = create_memo(move || untracked(|| *state()) * 2);
@@ -168,10 +168,10 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
-pub fn create_memo<F, Out: Clone>(derived: F) -> StateHandle<Out>
+pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: Fn() -> Out + 'static,
-    Out: 'static,
+    Out: Clone + 'static,
 {
     let derived = Rc::new(derived);
     let (memo, set_memo) = create_signal(None);
@@ -180,6 +180,33 @@ where
         let derived = derived.clone();
         move || {
             set_memo(Some(derived()));
+        }
+    });
+
+    // return memoized result
+    let memo_result = move || Rc::new(Option::as_ref(&memo()).unwrap().clone());
+    Rc::new(memo_result)
+}
+
+/// Creates a memoized value from some signals. Also know as "derived stores".
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is the same.
+/// That is why the output of the function must implement `PartialEq`.
+pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
+where
+    F: Fn() -> Out + 'static,
+    Out: Clone + PartialEq + std::fmt::Debug + 'static,
+{
+    let derived = Rc::new(derived);
+    let (memo, set_memo) = create_signal(None);
+
+    create_effect({
+        let derived = derived.clone();
+        let memo = memo.clone();
+        move || {
+            let new_value = Some(derived());
+            if *untracked(|| memo()) != new_value {
+                set_memo(new_value);
+            }
         }
     });
 
@@ -356,5 +383,38 @@ mod tests {
 
         set_state(2);
         assert_eq!(*double(), 2); // double value should still be true because state() was inside untracked
+    }
+
+    #[test]
+    fn selector() {
+        let (state, set_state) = create_signal(0);
+
+        let double = create_selector({
+            let state = state.clone();
+            move || *state() * 2
+        });
+
+        // use a Cell instead of a signal to prevent circular dependencies
+        // TODO: change to create_signal once explicit tracking is implemented
+        let counter = Rc::new(Cell::new(0));
+
+        create_effect({
+            let counter = counter.clone();
+            let double = double.clone();
+            move || {
+                counter.set(counter.get() + 1);
+                double();
+            }
+        });
+        assert_eq!(*double(), 0);
+        assert_eq!(counter.get(), 1);
+
+        set_state(0);
+        assert_eq!(*double(), 0);
+        assert_eq!(counter.get(), 1); // calling set_state should not trigger the effect
+
+        set_state(2);
+        assert_eq!(*double(), 4);
+        assert_eq!(counter.get(), 2);
     }
 }
