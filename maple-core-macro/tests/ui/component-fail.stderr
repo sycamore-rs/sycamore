@@ -1,0 +1,5 @@
+error: expected an assignment expression
+  --> $DIR/component-fail.rs:15:27
+   |
+15 |     template! { Component(1) };
+   |                           ^
