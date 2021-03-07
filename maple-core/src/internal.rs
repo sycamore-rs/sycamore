@@ -24,7 +24,7 @@ pub fn text(value: impl Fn() -> String + 'static) -> Text {
         .unwrap()
         .document()
         .unwrap()
-        .create_text_node("");
+        .create_text_node("" /* placeholder */);
 
     create_effect({
         let text_node = text_node.clone();
@@ -37,8 +37,12 @@ pub fn text(value: impl Fn() -> String + 'static) -> Text {
 }
 
 /// Sets an attribute on an [`HtmlElement`].
-pub fn attr(element: &HtmlElement, name: &str, value: &str) {
-    element.set_attribute(name, value).unwrap();
+pub fn attr(element: &HtmlElement, name: &str, value: impl Fn() -> String + 'static) {
+    let element = element.clone();
+    let name = name.to_string();
+    create_effect(move || {
+        element.set_attribute(&name, &value()).unwrap();
+    })
 }
 
 thread_local! {
