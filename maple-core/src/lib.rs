@@ -14,6 +14,12 @@ pub mod reactive;
 
 use web_sys::HtmlElement;
 
+/// The result of the `template!` macro. Should not be used directly.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateResult {
+    element: HtmlElement,
+}
+
 /// Render an [`HtmlElement`] into the DOM.
 pub fn render(template_result: TemplateResult) {
     let window = web_sys::window().unwrap();
@@ -23,12 +29,6 @@ pub fn render(template_result: TemplateResult) {
         .unwrap()
         .append_child(&template_result.element)
         .unwrap();
-}
-
-/// The result of the `template!` macro. Should not be used directly.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TemplateResult {
-    element: HtmlElement,
 }
 
 impl TemplateResult {
