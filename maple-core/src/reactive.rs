@@ -110,24 +110,24 @@ where
     })
 }
 
-pub fn create_memo<'out, F, Out>(derived: F) -> impl Fn() -> Rc<Out>
+pub fn create_memo<'out, F, Out: Clone>(derived: F) -> Rc<impl Fn() -> Rc<Out>>
 where
     F: Fn() -> Out + 'static,
     Out: 'static,
 {
     let derived = Rc::new(derived);
-    let memo = Rc::new(RefCell::new(None));
+    let (memo, set_memo) = create_signal(None);
 
     create_effect({
         let derived = derived.clone();
-        let memo = memo.clone();
         move || {
-            *memo.borrow_mut() = Some(Rc::new(derived()));
+            set_memo(Some(derived()));
         }
     });
 
     // return memoized result
-    move || memo.borrow().as_ref().unwrap().clone()
+    let memo_result = move || Rc::new(Option::as_ref(&memo()).unwrap().clone());
+    Rc::new(memo_result)
 }
 
 #[cfg(test)]
@@ -143,6 +143,18 @@ mod tests {
 
         set_state(1);
         assert_eq!(*state(), 1);
+    }
+
+    #[test]
+    fn signal_composition() {
+        let (state, set_state) = create_signal(0);
+
+        let double = || *state() * 2;
+
+        assert_eq!(double(), 0);
+
+        set_state(1);
+        assert_eq!(double(), 2);
     }
 
     #[test]
@@ -202,5 +214,19 @@ mod tests {
         assert_eq!(counter.get(), 2);
         assert_eq!(*double(), 4);
         assert_eq!(counter.get(), 2); // should still be 2 after access
+    }
+
+    #[test]
+    fn dependency_on_memo() {
+        let (state, set_state) = create_signal(0);
+
+        let double = create_memo(move || *state() * 2);
+
+        let quadruple = create_memo(move || *double() * 2);
+
+        assert_eq!(*quadruple(), 0);
+
+        set_state(1);
+        assert_eq!(*quadruple(), 4);
     }
 }
