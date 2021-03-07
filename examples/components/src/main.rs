@@ -1,10 +1,8 @@
 #![allow(non_snake_case)]
 
-use std::rc::Rc;
-
 use maple_core::prelude::*;
 
-pub fn MyComponent(num: Rc<impl Fn() -> Rc<i32> + 'static>) -> HtmlElement {
+pub fn MyComponent(num: StateHandle<i32>) -> HtmlElement {
     template! {
         div(class="my-component") {
             # "My component"

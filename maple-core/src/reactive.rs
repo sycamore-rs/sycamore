@@ -3,7 +3,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-/// Represents an atom.
+/// Returned by functions that provide a handle to access state.
+pub type StateHandle<T> = Rc<dyn Fn() -> Rc<T>>;
+
+/// Returned by functions that provide a closure to modify state.
+pub type SetStateHandle<T> = Rc<dyn Fn(T)>;
+
 struct Signal<T> {
     inner: Rc<T>,
     observers: Vec<Rc<Computation>>,
@@ -66,7 +71,7 @@ thread_local! {
 /// set_state(1);
 /// assert_eq!(*state(), 1);
 /// ```
-pub fn create_signal<T: 'static>(value: T) -> (Rc<impl Fn() -> Rc<T>>, Rc<impl Fn(T)>) {
+pub fn create_signal<T: 'static>(value: T) -> (StateHandle<T>, SetStateHandle<T>) {
     let signal = Rc::new(RefCell::new(Signal::new(value)));
 
     let getter = {
@@ -163,7 +168,7 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
-pub fn create_memo<F, Out: Clone>(derived: F) -> Rc<impl Fn() -> Rc<Out>>
+pub fn create_memo<F, Out: Clone>(derived: F) -> StateHandle<Out>
 where
     F: Fn() -> Out + 'static,
     Out: 'static,
