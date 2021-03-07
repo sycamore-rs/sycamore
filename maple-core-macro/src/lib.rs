@@ -27,11 +27,13 @@ impl HtmlTree {
 
         if input.peek(Token![#]) {
             Some(HtmlType::Text)
+        } else if input.peek(Token![::]) {
+            Some(HtmlType::Component)
         } else if input.peek(Ident::peek_any) {
             let ident: Ident = input.parse().ok()?;
             let ident = ident.to_string();
 
-            if ident.chars().next().unwrap().is_ascii_uppercase() {
+            if ident.chars().next().unwrap().is_ascii_uppercase() || input.peek(Token![::]) {
                 Some(HtmlType::Component)
             } else {
                 Some(HtmlType::Element)
