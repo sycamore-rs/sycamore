@@ -11,14 +11,14 @@ use syn::{
 use crate::children::Children;
 
 /// Represents a html element with all its attributes and properties (e.g. `p(class="text")`).
-pub(crate) struct HtmlElement {
+pub(crate) struct Element {
     tag_name: TagName,
     _paren_token: Option<token::Paren>,
     attributes: Punctuated<Expr, Token![,]>,
     children: Option<Children>,
 }
 
-impl Parse for HtmlElement {
+impl Parse for Element {
     fn parse(input: ParseStream) -> Result<Self> {
         let tag_name = input.parse()?;
         let (paren_token, attributes) = if input.peek(token::Paren) {
@@ -104,9 +104,9 @@ impl Parse for HtmlElement {
     }
 }
 
-impl ToTokens for HtmlElement {
+impl ToTokens for Element {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let HtmlElement {
+        let Element {
             tag_name,
             _paren_token: _,
             attributes,

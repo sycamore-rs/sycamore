@@ -3,7 +3,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-/// Represents an atom.
+/// Returned by functions that provide a handle to access state.
+pub type StateHandle<T> = Rc<dyn Fn() -> Rc<T>>;
+
+/// Returned by functions that provide a closure to modify state.
+pub type SetStateHandle<T> = Rc<dyn Fn(T)>;
+
 struct Signal<T> {
     inner: Rc<T>,
     observers: Vec<Rc<Computation>>,
@@ -66,7 +71,7 @@ thread_local! {
 /// set_state(1);
 /// assert_eq!(*state(), 1);
 /// ```
-pub fn create_signal<T: 'static>(value: T) -> (Rc<impl Fn() -> Rc<T>>, Rc<impl Fn(T)>) {
+pub fn create_signal<T: 'static>(value: T) -> (StateHandle<T>, SetStateHandle<T>) {
     let signal = Rc::new(RefCell::new(Signal::new(value)));
 
     let getter = {
@@ -141,7 +146,7 @@ where
 /// # Example
 /// ```rust
 /// use maple_core::prelude::*;
-/// 
+///
 /// let (state, set_state) = create_signal(1);
 ///
 /// let double = create_memo(move || untracked(|| *state()) * 2);
@@ -163,10 +168,10 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
-pub fn create_memo<F, Out: Clone>(derived: F) -> Rc<impl Fn() -> Rc<Out>>
+pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: Fn() -> Out + 'static,
-    Out: 'static,
+    Out: Clone + 'static,
 {
     let derived = Rc::new(derived);
     let (memo, set_memo) = create_signal(None);
@@ -183,10 +188,35 @@ where
     Rc::new(memo_result)
 }
 
+/// Creates a memoized value from some signals. Also know as "derived stores".
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is the same.
+/// That is why the output of the function must implement `PartialEq`.
+pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
+where
+    F: Fn() -> Out + 'static,
+    Out: Clone + PartialEq + std::fmt::Debug + 'static,
+{
+    let derived = Rc::new(derived);
+    let (memo, set_memo) = create_signal(None);
+
+    create_effect({
+        let derived = derived.clone();
+        let memo = memo.clone();
+        move || {
+            let new_value = Some(derived());
+            if *untracked(|| memo()) != new_value {
+                set_memo(new_value);
+            }
+        }
+    });
+
+    // return memoized result
+    let memo_result = move || Rc::new(Option::as_ref(&memo()).unwrap().clone());
+    Rc::new(memo_result)
+}
+
 #[cfg(test)]
 mod tests {
-    use std::cell::Cell;
-
     use super::*;
 
     #[test]
@@ -267,14 +297,11 @@ mod tests {
     fn effect_should_subscribe_once() {
         let (state, set_state) = create_signal(0);
 
-        // use a Cell instead of a signal to prevent circular dependencies
-        // TODO: change to create_signal once explicit tracking is implemented
-        let counter = Rc::new(Cell::new(0));
-
+        let (counter, set_counter) = create_signal(0);
         create_effect({
             let counter = counter.clone();
             move || {
-                counter.set(counter.get() + 1);
+                set_counter(untracked(|| *counter()) + 1);
 
                 // call state() twice but should subscribe once
                 state();
@@ -282,10 +309,10 @@ mod tests {
             }
         });
 
-        assert_eq!(counter.get(), 1);
+        assert_eq!(*counter(), 1);
 
         set_state(1);
-        assert_eq!(counter.get(), 2);
+        assert_eq!(*counter(), 2);
     }
 
     #[test]
@@ -307,24 +334,21 @@ mod tests {
     fn memo_only_run_once() {
         let (state, set_state) = create_signal(0);
 
-        // use a Cell instead of a signal to prevent circular dependencies
-        // TODO: change to create_signal once explicit tracking is implemented
-        let counter = Rc::new(Cell::new(0));
-
+        let (counter, set_counter) = create_signal(0);
         let double = create_memo({
             let counter = counter.clone();
             move || {
-                counter.set(counter.get() + 1);
+                set_counter(untracked(|| *counter()) + 1);
 
                 *state() * 2
             }
         });
-        assert_eq!(counter.get(), 1); // once for calculating initial derived state
+        assert_eq!(*counter(), 1); // once for calculating initial derived state
 
         set_state(2);
-        assert_eq!(counter.get(), 2);
+        assert_eq!(*counter(), 2);
         assert_eq!(*double(), 4);
-        assert_eq!(counter.get(), 2); // should still be 2 after access
+        assert_eq!(*counter(), 2); // should still be 2 after access
     }
 
     #[test]
@@ -351,5 +375,36 @@ mod tests {
 
         set_state(2);
         assert_eq!(*double(), 2); // double value should still be true because state() was inside untracked
+    }
+
+    #[test]
+    fn selector() {
+        let (state, set_state) = create_signal(0);
+
+        let double = create_selector({
+            let state = state.clone();
+            move || *state() * 2
+        });
+
+        let (counter, set_counter) = create_signal(0);
+        create_effect({
+            let counter = counter.clone();
+            let double = double.clone();
+            move || {
+                set_counter(untracked(|| *counter()) + 1);
+
+                double();
+            }
+        });
+        assert_eq!(*double(), 0);
+        assert_eq!(*counter(), 1);
+
+        set_state(0);
+        assert_eq!(*double(), 0);
+        assert_eq!(*counter(), 1); // calling set_state should not trigger the effect
+
+        set_state(2);
+        assert_eq!(*double(), 4);
+        assert_eq!(*counter(), 2);
     }
 }
