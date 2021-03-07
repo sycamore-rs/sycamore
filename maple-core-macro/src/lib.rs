@@ -36,7 +36,7 @@ pub fn template(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as element::HtmlElement);
 
     let quoted = quote! {
-        || { #input }
+        { #input }
     };
 
     TokenStream::from(quoted)
