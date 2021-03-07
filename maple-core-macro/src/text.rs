@@ -24,7 +24,7 @@ impl ToTokens for Text {
 
         let expr_span = expr.span();
         let quoted = quote_spanned! {expr_span=>
-            ::maple_core::internal::text(&::std::format!("{}", #expr))
+            ::maple_core::internal::text(move || ::std::format!("{}", #expr))
         };
         tokens.extend(quoted);
     }

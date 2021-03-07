@@ -4,10 +4,10 @@ pub mod template;
 
 use web_sys::HtmlElement;
 
-pub fn render(element: impl Fn() -> HtmlElement) {
+pub fn render(element: HtmlElement) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
-    document.body().unwrap().append_child(&element()).unwrap();
+    document.body().unwrap().append_child(&element).unwrap();
 }
 
 pub mod prelude {
