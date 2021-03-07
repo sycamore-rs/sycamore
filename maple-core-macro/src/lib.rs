@@ -32,7 +32,7 @@ impl ToTokens for HtmlTree {
 }
 
 /// A macro for ergonomically creating complex UI structures.
-/// 
+///
 /// TODO: write some more docs
 #[proc_macro]
 pub fn template(input: TokenStream) -> TokenStream {
