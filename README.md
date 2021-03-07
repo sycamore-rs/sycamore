@@ -205,3 +205,4 @@ set_state(1); // automatically update value in Component
 ## Contributing
 
 Issue reports and PRs are welcome!
+Get familiar with the project structure with [ARCHITECTURE.md](https://github.com/lukechu10/maple/blob/master/ARCHITECTURE.md).
