@@ -167,6 +167,41 @@ let root = {
 
 If we call `set_state` somewhere else in our code, the text content will automatically be updated!
 
+## Components
+
+Components in `maple` are simply functions that return `HtmlElement`.
+They receive their props through function arguments.
+
+For components to automatically react to prop changes, they should accept a prop with type `StateHandle<T>` and call the function in the `template!` to subscribe to the state.
+
+Here is an example of a simple component:
+
+```rust
+// This is temporary and will later be removed.
+// Currently, the template! macro assumes that all components start with an uppercase character.
+#![allow(non_snake_case)]
+
+use maple_core::prelude::*;
+
+fn Component(value: StateHandle<i32>) {
+    template! {
+        div(class="my-component") {
+            # "Value: "
+            # value()
+        }
+    }
+}
+
+// ...
+let (state, set_state) = create_signal(0);
+
+template! {
+    Component(state)
+}
+
+set_state(1); // automatically update value in Component
+```
+
 ## Contributing
 
 Issue reports and PRs are welcome!
