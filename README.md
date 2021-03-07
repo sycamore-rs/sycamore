@@ -143,7 +143,7 @@ let root = template! {
 }
 ```
 
-This we expand to something approximately like:
+This will expand to something approximately like:
 
 ```rust
 use maple_core::prelude::*;
