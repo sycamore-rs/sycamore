@@ -8,7 +8,7 @@ The recommended build tool is [Trunk](https://trunkrs.dev/).
 Start by adding `maple-core` to your `Cargo.toml`:
 
 ```toml
-maple-core = {path = "../../maple-core"}
+maple-core = "0.1.0"
 ```
 
 Add the following to your `src/main.rs` file:
