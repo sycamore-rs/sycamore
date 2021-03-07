@@ -1,9 +1,10 @@
-//! Reactive signals.
+//! Reactive primitives.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub struct Signal<T> {
+/// Represents an atom.
+struct Signal<T> {
     inner: Rc<T>,
     observers: Vec<Rc<Computation>>,
 }
@@ -31,8 +32,8 @@ impl<T> Signal<T> {
     }
 }
 
-/// A derived computation from a signal. Takes the new value as an input.
-pub struct Computation(Box<dyn Fn()>);
+/// A derived computation from a signal.
+struct Computation(Box<dyn Fn()>);
 
 thread_local! {
     static HANDLER: RefCell<Option<Rc<Computation>>> = RefCell::new(None);
@@ -41,6 +42,19 @@ thread_local! {
     static DEPENDENCIES: RefCell<Option<Vec<Box<dyn Fn()>>>> = RefCell::new(None);
 }
 
+/// Creates a new signal.
+/// The function will return a pair of getter/setters to modify the signal and update corresponding dependencies.
+/// 
+/// # Example
+/// ```rust
+/// use maple_core::prelude::*;
+/// 
+/// let (state, set_state) = create_signal(0);
+/// assert_eq!(*state(), 0);
+/// 
+/// set_state(1);
+/// assert_eq!(*state(), 1);
+/// ```
 pub fn create_signal<T: 'static>(value: T) -> (Rc<impl Fn() -> Rc<T>>, Rc<impl Fn(T)>) {
     let signal = Rc::new(RefCell::new(Signal::new(value)));
 
@@ -83,6 +97,7 @@ pub fn create_signal<T: 'static>(value: T) -> (Rc<impl Fn() -> Rc<T>>, Rc<impl F
     (Rc::new(getter), Rc::new(setter))
 }
 
+/// Creates an effect on signals used inside the effect closure.
 pub fn create_effect<F>(effect: F)
 where
     F: Fn() + 'static,
@@ -110,6 +125,7 @@ where
     })
 }
 
+/// Creates a memoized value from some signals. Also know as "derived stores".
 pub fn create_memo<'out, F, Out: Clone>(derived: F) -> Rc<impl Fn() -> Rc<Out>>
 where
     F: Fn() -> Out + 'static,

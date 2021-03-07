@@ -19,6 +19,7 @@ pub fn element(tag: &str) -> HtmlElement {
         .unwrap()
 }
 
+/// Create a new [`Text`] with the specified content.
 pub fn text(value: impl Fn() -> String + 'static) -> Text {
     let text_node = web_sys::window()
         .unwrap()
