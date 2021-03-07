@@ -13,7 +13,18 @@ fn main() {
         }
     });
 
-    let counter2 = counter.clone();
+    let increment = {
+        let counter = counter.clone();
+        let set_counter = set_counter.clone();
+
+        move || set_counter(*counter() + 1)
+    };
+
+    let reset = {
+        let set_counter = set_counter.clone();
+
+        move || set_counter(0)
+    };
 
     let root = template! {
         div {
@@ -22,17 +33,10 @@ fn main() {
                 # "Value: "
                 # counter()
             }
-            button(class="increment", on:click={
-                let counter = counter2.clone();
-                let set_counter = set_counter.clone();
-                move || set_counter(*counter() + 1)
-            }) {
+            button(class="increment", on:click=increment) {
                 # "Increment"
             }
-            button(class="reset", on:click={
-                let set_counter = set_counter.clone();
-                move || set_counter(0)
-            }) {
+            button(class="reset", on:click=reset) {
                 # "Reset"
             }
         }
