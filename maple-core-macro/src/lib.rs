@@ -77,7 +77,7 @@ pub fn template(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as element::Element);
 
     let quoted = quote! {
-        { #input }
+        ::maple_core::TemplateResult::new(#input)
     };
 
     TokenStream::from(quoted)

@@ -154,7 +154,7 @@ where
 /// assert_eq!(*double(), 2);
 ///
 /// set_state(2);
-/// assert_eq!(*double(), 2); // double value should still be true because state() was inside untracked
+/// assert_eq!(*double(), 2); // double value should still be old value because state() was inside untracked
 /// ```
 pub fn untracked<F, Out>(f: F) -> Out
 where

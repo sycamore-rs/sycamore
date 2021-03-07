@@ -20,7 +20,7 @@ impl ToTokens for Component {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Component { expr_call } = self;
 
-        let quoted = quote! { #expr_call };
+        let quoted = quote! { ::maple_core::TemplateResult::inner_element(&#expr_call) };
 
         tokens.extend(quoted);
     }
