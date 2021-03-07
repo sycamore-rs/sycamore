@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::{ToTokens, quote, quote_spanned};
+use quote::{quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
@@ -129,7 +129,7 @@ impl ToTokens for HtmlElement {
                         let left_str = left.to_token_stream().to_string();
 
                         set_attributes.push(quote_spanned! { attribute_span=>
-                            ::maple_core::internal::attr(&element, #left_str, #right);
+                            ::maple_core::internal::attr(&element, #left_str, move || ::std::format!("{}", #right));
                         });
                     }
                     Expr::Type(ExprType {
