@@ -1,20 +1,122 @@
 //! Reactive primitives.
 
+use std::cell::Cell;
 use std::cell::RefCell;
+use std::ops::Deref;
+use std::ptr::NonNull;
 use std::rc::Rc;
 
 /// Returned by functions that provide a handle to access state.
-pub type StateHandle<T> = Rc<dyn Fn() -> Rc<T>>;
+pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 
-/// Returned by functions that provide a closure to modify state.
-pub type SetStateHandle<T> = Rc<dyn Fn(T)>;
+impl<T: 'static> StateHandle<T> {
+    /// Get the current value of the state.
+    pub fn get(&self) -> Rc<T> {
+        // if inside an effect, add this signal to dependency list
+        DEPENDENCIES.with(|dependencies| {
+            if dependencies.borrow().is_some() {
+                let signal = self.0.clone();
+                let handler = HANDLER.with(|handler| handler.borrow().as_ref().unwrap().clone());
 
-struct Signal<T> {
+                dependencies
+                    .borrow_mut()
+                    .as_mut()
+                    .unwrap()
+                    .push(Box::new(move || {
+                        signal.borrow_mut().observe(handler.clone())
+                    }));
+            }
+        });
+
+        self.get_untracked()
+    }
+
+    /// Get the current value of the state, without tracking this as a dependency if inside a
+    /// reactive context.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use maple_core::prelude::*;
+    ///
+    /// let state = Signal::new(1);
+    ///
+    /// let double = create_memo({
+    ///     let state = state.clone();
+    ///     move || *state.get_untracked() * 2
+    /// });
+    ///
+    /// assert_eq!(*double.get(), 2);
+    ///
+    /// state.set(2);
+    /// // double value should still be old value because state was untracked
+    /// assert_eq!(*double.get(), 2);
+    /// ```
+    pub fn get_untracked(&self) -> Rc<T> {
+        self.0.borrow().inner.clone()
+    }
+}
+
+impl<T: 'static> Clone for StateHandle<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+/// State that can be set.
+pub struct Signal<T: 'static>(StateHandle<T>);
+
+impl<T: 'static> Signal<T> {
+    /// Creates a new signal.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use maple_core::prelude::*;
+    ///
+    /// let state = Signal::new(0);
+    /// assert_eq!(*state.get(), 0);
+    ///
+    /// state.set(1);
+    /// assert_eq!(*state.get(), 1);
+    /// ```
+    pub fn new(value: T) -> Self {
+        Self(StateHandle(Rc::new(RefCell::new(SignalInner::new(value)))))
+    }
+
+    /// Set the current value of the state.
+    ///
+    /// This will notify and update any effects and memos that depend on this value.
+    pub fn set(&self, new_value: T) {
+        match self.0 .0.try_borrow_mut() {
+            Ok(mut signal) => signal.update(new_value),
+            // If the signal is already borrowed, that means it is borrowed in the getter, thus creating a cyclic dependency.
+            Err(_err) => panic!("cannot create cyclic dependency"),
+        }
+        self.0 .0.borrow().trigger_observers();
+    }
+}
+
+impl<T: 'static> Deref for Signal<T> {
+    type Target = StateHandle<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: 'static> Clone for Signal<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+struct SignalInner<T> {
     inner: Rc<T>,
     observers: Vec<Rc<Computation>>,
 }
 
-impl<T> Signal<T> {
+impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
@@ -58,61 +160,6 @@ thread_local! {
     static DEPENDENCIES: RefCell<Option<Vec<Box<dyn Fn()>>>> = RefCell::new(None);
 }
 
-/// Creates a new signal.
-/// The function will return a pair of getter/setters to modify the signal and update corresponding dependencies.
-///
-/// # Example
-/// ```rust
-/// use maple_core::prelude::*;
-///
-/// let (state, set_state) = create_signal(0);
-/// assert_eq!(*state(), 0);
-///
-/// set_state(1);
-/// assert_eq!(*state(), 1);
-/// ```
-pub fn create_signal<T: 'static>(value: T) -> (StateHandle<T>, SetStateHandle<T>) {
-    let signal = Rc::new(RefCell::new(Signal::new(value)));
-
-    let getter = {
-        let signal = signal.clone();
-        move || {
-            // if inside an effect, add this signal to dependency list
-            DEPENDENCIES.with(|dependencies| {
-                if dependencies.borrow().is_some() {
-                    let signal = signal.clone();
-                    let handler =
-                        HANDLER.with(|handler| handler.borrow().as_ref().unwrap().clone());
-
-                    dependencies
-                        .borrow_mut()
-                        .as_mut()
-                        .unwrap()
-                        .push(Box::new(move || {
-                            signal.borrow_mut().observe(handler.clone())
-                        }));
-                }
-            });
-
-            signal.borrow().inner.clone()
-        }
-    };
-
-    let setter = {
-        let signal = signal.clone();
-        move |new_value| {
-            match signal.try_borrow_mut() {
-                Ok(mut signal) => signal.update(new_value),
-                // If the signal is already borrowed, that means it is borrowed in the getter, thus creating a cyclic dependency.
-                Err(_err) => panic!("cannot create cyclic dependency"),
-            };
-            signal.borrow().trigger_observers();
-        }
-    };
-
-    (Rc::new(getter), Rc::new(setter))
-}
-
 /// Creates an effect on signals used inside the effect closure.
 pub fn create_effect<F>(effect: F)
 where
@@ -141,78 +188,78 @@ where
     })
 }
 
-/// Prevents tracking dependencies inside the closure. If called outside a reactive context, does nothing.
-///
-/// # Example
-/// ```rust
-/// use maple_core::prelude::*;
-///
-/// let (state, set_state) = create_signal(1);
-///
-/// let double = create_memo(move || untracked(|| *state()) * 2);
-///
-/// assert_eq!(*double(), 2);
-///
-/// set_state(2);
-/// assert_eq!(*double(), 2); // double value should still be old value because state() was inside untracked
-/// ```
-pub fn untracked<F, Out>(f: F) -> Out
-where
-    F: Fn() -> Out,
-{
-    let tmp = DEPENDENCIES.with(|dependencies| dependencies.take());
-    let out = f();
-    DEPENDENCIES.with(|dependencies| *dependencies.borrow_mut() = tmp);
-
-    out
-}
-
 /// Creates a memoized value from some signals. Also know as "derived stores".
 pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: Fn() -> Out + 'static,
-    Out: Clone + 'static,
+    Out: 'static,
 {
-    let derived = Rc::new(derived);
-    let (memo, set_memo) = create_signal(None);
-
-    create_effect({
-        let derived = derived.clone();
-        move || {
-            set_memo(Some(derived()));
-        }
-    });
-
-    // return memoized result
-    let memo_result = move || Rc::new(Option::as_ref(&memo()).unwrap().clone());
-    Rc::new(memo_result)
+    create_selector_with(derived, |_, _| false)
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
 /// Unlike [`create_memo`], this function will not notify dependents of a change if the output is the same.
-/// That is why the output of the function must implement `PartialEq`.
+/// That is why the output of the function must implement [`PartialEq`].
+///
+/// To specify a custom comparison function, use [`create_selector_with`].
 pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: Fn() -> Out + 'static,
-    Out: Clone + PartialEq + std::fmt::Debug + 'static,
+    Out: PartialEq + 'static,
 {
-    let derived = Rc::new(derived);
-    let (memo, set_memo) = create_signal(None);
+    create_selector_with(derived, PartialEq::eq)
+}
 
-    create_effect({
-        let derived = derived.clone();
-        let memo = memo.clone();
-        move || {
-            let new_value = Some(derived());
-            if *untracked(|| memo()) != new_value {
-                set_memo(new_value);
+/// Creates a memoized value from some signals. Also know as "derived stores".
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is the same.
+///
+/// It takes a comparison function to compare the old and new value, which returns `true` if they
+/// are the same and `false` otherwise.
+///
+/// To use the type's [`PartialEq`] implementation instead of a custom function, use
+/// [`create_selector`].
+pub fn create_selector_with<F, Out, C>(derived: F, comparator: C) -> StateHandle<Out>
+where
+    F: Fn() -> Out + 'static,
+    Out: 'static,
+    C: Fn(&Out, &Out) -> bool + 'static,
+{
+    enum EffectState<T: 'static> {
+        Uninitialized(NonNull<Option<StateHandle<T>>>),
+        Initialized(Signal<T>),
+        Temporary,
+    }
+
+    let mut handle = None;
+    let state = Cell::new(EffectState::Uninitialized(NonNull::from(&mut handle)));
+
+    create_effect(move || {
+        let memo = match state.replace(EffectState::Temporary) {
+            // We haven't been called yet, so initialize the signal.
+            EffectState::Uninitialized(mut handle_ptr) => {
+                let memo = Signal::new(derived());
+
+                // SAFETY: This is the first time the function is called, and so this pointer is
+                // still valid.
+                *unsafe { handle_ptr.as_mut() } = Some((*memo).clone());
+
+                memo
             }
-        }
+            // We have been called; update the signal.
+            EffectState::Initialized(memo) => {
+                let new_value = derived();
+                if !comparator(&memo.get_untracked(), &new_value) {
+                    memo.set(new_value);
+                }
+                memo
+            }
+            EffectState::Temporary => unreachable!(),
+        };
+        state.replace(EffectState::Initialized(memo));
     });
 
-    // return memoized result
-    let memo_result = move || Rc::new(Option::as_ref(&memo()).unwrap().clone());
-    Rc::new(memo_result)
+    // By this time, the above closure will have been run once, setting the `handle` value.
+    handle.unwrap()
 }
 
 #[cfg(test)]
@@ -221,190 +268,200 @@ mod tests {
 
     #[test]
     fn signals() {
-        let (state, set_state) = create_signal(0);
-        assert_eq!(*state(), 0);
+        let state = Signal::new(0);
+        assert_eq!(*state.get(), 0);
 
-        set_state(1);
-        assert_eq!(*state(), 1);
+        state.set(1);
+        assert_eq!(*state.get(), 1);
     }
 
     #[test]
     fn signal_composition() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
-        let double = || *state() * 2;
+        let double = || *state.get() * 2;
 
         assert_eq!(double(), 0);
 
-        set_state(1);
+        state.set(1);
         assert_eq!(double(), 2);
     }
 
     #[test]
     fn effects() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
-        let (double, set_double) = create_signal(-1);
+        let double = Signal::new(-1);
 
         create_effect({
-            let set_double = set_double.clone();
+            let state = state.clone();
+            let double = double.clone();
             move || {
-                set_double(*state() * 2);
+                double.set(*state.get() * 2);
             }
         });
-        assert_eq!(*double(), 0); // calling create_effect should call the effect at least once
+        assert_eq!(*double.get(), 0); // calling create_effect should call the effect at least once
 
-        set_state(1);
-        assert_eq!(*double(), 2);
-        set_state(2);
-        assert_eq!(*double(), 4);
+        state.set(1);
+        assert_eq!(*double.get(), 2);
+        state.set(2);
+        assert_eq!(*double.get(), 4);
     }
 
     #[test]
     #[should_panic(expected = "cannot create cyclic dependency")]
     fn cyclic_effects_fail() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
         create_effect({
             let state = state.clone();
-            let set_state = set_state.clone();
             move || {
-                set_state(*state() + 1);
+                state.set(*state.get() + 1);
             }
         });
 
-        set_state(1);
+        state.set(1);
     }
 
     #[test]
     #[should_panic(expected = "cannot create cyclic dependency")]
     fn cyclic_effects_fail_2() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
         create_effect({
             let state = state.clone();
-            let set_state = set_state.clone();
             move || {
-                let value = *state();
-                set_state(value + 1);
+                let value = *state.get();
+                state.set(value + 1);
             }
         });
 
-        set_state(1);
+        state.set(1);
     }
 
     #[test]
     fn effect_should_subscribe_once() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
-        let (counter, set_counter) = create_signal(0);
+        let counter = Signal::new(0);
         create_effect({
+            let state = state.clone();
             let counter = counter.clone();
             move || {
-                set_counter(untracked(|| *counter()) + 1);
+                counter.set(*counter.get_untracked() + 1);
 
-                // call state() twice but should subscribe once
-                state();
-                state();
+                // call state.get() twice but should subscribe once
+                state.get();
+                state.get();
             }
         });
 
-        assert_eq!(*counter(), 1);
+        assert_eq!(*counter.get(), 1);
 
-        set_state(1);
-        assert_eq!(*counter(), 2);
+        state.set(1);
+        assert_eq!(*counter.get(), 2);
     }
 
     #[test]
     fn memo() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
-        let double = create_memo(move || *state() * 2);
-        assert_eq!(*double(), 0);
+        let double = create_memo({
+            let state = state.clone();
+            move || *state.get() * 2
+        });
+        assert_eq!(*double.get(), 0);
 
-        set_state(1);
-        assert_eq!(*double(), 2);
+        state.set(1);
+        assert_eq!(*double.get(), 2);
 
-        set_state(2);
-        assert_eq!(*double(), 4);
+        state.set(2);
+        assert_eq!(*double.get(), 4);
     }
 
     #[test]
     /// Make sure value is memoized rather than executed on demand.
     fn memo_only_run_once() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
-        let (counter, set_counter) = create_signal(0);
+        let counter = Signal::new(0);
         let double = create_memo({
+            let state = state.clone();
             let counter = counter.clone();
             move || {
-                set_counter(untracked(|| *counter()) + 1);
+                counter.set(*counter.get_untracked() + 1);
 
-                *state() * 2
+                *state.get() * 2
             }
         });
-        assert_eq!(*counter(), 1); // once for calculating initial derived state
+        assert_eq!(*counter.get(), 1); // once for calculating initial derived state
 
-        set_state(2);
-        assert_eq!(*counter(), 2);
-        assert_eq!(*double(), 4);
-        assert_eq!(*counter(), 2); // should still be 2 after access
+        state.set(2);
+        assert_eq!(*counter.get(), 2);
+        assert_eq!(*double.get(), 4);
+        assert_eq!(*counter.get(), 2); // should still be 2 after access
     }
 
     #[test]
     fn dependency_on_memo() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
-        let double = create_memo(move || *state() * 2);
+        let double = create_memo({
+            let state = state.clone();
+            move || *state.get() * 2
+        });
 
-        let quadruple = create_memo(move || *double() * 2);
+        let quadruple = create_memo(move || *double.get() * 2);
 
-        assert_eq!(*quadruple(), 0);
+        assert_eq!(*quadruple.get(), 0);
 
-        set_state(1);
-        assert_eq!(*quadruple(), 4);
+        state.set(1);
+        assert_eq!(*quadruple.get(), 4);
     }
 
     #[test]
     fn untracked_memo() {
-        let (state, set_state) = create_signal(1);
+        let state = Signal::new(1);
 
-        let double = create_memo(move || untracked(|| *state()) * 2);
+        let double = create_memo({
+            let state = state.clone();
+            move || *state.get_untracked() * 2
+        });
 
-        assert_eq!(*double(), 2);
+        assert_eq!(*double.get(), 2);
 
-        set_state(2);
-        assert_eq!(*double(), 2); // double value should still be true because state() was inside untracked
+        state.set(2);
+        assert_eq!(*double.get(), 2); // double value should still be true because state.get() was inside untracked
     }
 
     #[test]
     fn selector() {
-        let (state, set_state) = create_signal(0);
+        let state = Signal::new(0);
 
         let double = create_selector({
             let state = state.clone();
-            move || *state() * 2
+            move || *state.get() * 2
         });
 
-        let (counter, set_counter) = create_signal(0);
+        let counter = Signal::new(0);
         create_effect({
             let counter = counter.clone();
             let double = double.clone();
             move || {
-                set_counter(untracked(|| *counter()) + 1);
+                counter.set(*counter.get_untracked() + 1);
 
-                double();
+                double.get();
             }
         });
-        assert_eq!(*double(), 0);
-        assert_eq!(*counter(), 1);
+        assert_eq!(*double.get(), 0);
+        assert_eq!(*counter.get(), 1);
 
-        set_state(0);
-        assert_eq!(*double(), 0);
-        assert_eq!(*counter(), 1); // calling set_state should not trigger the effect
+        state.set(0);
+        assert_eq!(*double.get(), 0);
+        assert_eq!(*counter.get(), 1); // calling set_state should not trigger the effect
 
-        set_state(2);
-        assert_eq!(*double(), 4);
-        assert_eq!(*counter(), 2);
+        state.set(2);
+        assert_eq!(*double.get(), 4);
+        assert_eq!(*counter.get(), 2);
     }
 }

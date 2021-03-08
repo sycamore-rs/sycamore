@@ -8,7 +8,7 @@ pub fn MyComponent(num: StateHandle<i32>) -> TemplateResult {
             # "My component"
             p {
                 # "Value: "
-                # num()
+                # num.get()
             }
         }
     }
@@ -18,13 +18,12 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    let (state, set_state) = create_signal(1);
+    let state = Signal::new(1);
 
     let increment = {
         let state = state.clone();
-        let set_state = set_state.clone();
         move |_| {
-            set_state(*state() + 1);
+            state.set(*state.get() + 1);
         }
     };
 
@@ -34,8 +33,8 @@ fn main() {
                 # "Component demo"
             }
 
-            MyComponent(state.clone())
-            MyComponent(state.clone())
+            MyComponent((*state).clone())
+            MyComponent((*state).clone())
 
             button(on:click=increment) {
                 # "Increment"
