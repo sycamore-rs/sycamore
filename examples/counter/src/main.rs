@@ -4,26 +4,23 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    let (counter, set_counter) = create_signal(0);
+    let counter = Signal::new(0);
 
     create_effect({
         let counter = counter.clone();
         move || {
-            log::info!("Counter value: {}", *counter());
+            log::info!("Counter value: {}", *counter.get());
         }
     });
 
     let increment = {
         let counter = counter.clone();
-        let set_counter = set_counter.clone();
-
-        move |_| set_counter(*counter() + 1)
+        move |_| counter.set(*counter.get() + 1)
     };
 
     let reset = {
-        let set_counter = set_counter.clone();
-
-        move |_| set_counter(0)
+        let counter = counter.clone();
+        move |_| counter.set(0)
     };
 
     let root = template! {
@@ -31,7 +28,7 @@ fn main() {
             # "Counter demo"
             p(class="value") {
                 # "Value: "
-                # counter()
+                # counter.get()
             }
             button(class="increment", on:click=increment) {
                 # "Increment"

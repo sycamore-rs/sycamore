@@ -8,18 +8,21 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    let (name, set_name) = create_signal(String::new());
+    let name = Signal::new(String::new());
 
-    let displayed_name = create_memo(move || {
-        if *name() == "" {
-            "World".to_string()
-        } else {
-            name().as_ref().clone()
+    let displayed_name = create_memo({
+        let name = name.clone();
+        move || {
+            if name.get().is_empty() {
+                "World".to_string()
+            } else {
+                name.get().as_ref().clone()
+            }
         }
     });
 
     let handle_change = move |event: Event| {
-        set_name(
+        name.set(
             event
                 .target()
                 .unwrap()
@@ -33,7 +36,7 @@ fn main() {
         div {
             h1 {
                 # "Hello "
-                # displayed_name()
+                # displayed_name.get()
                 # "!"
             }
 
