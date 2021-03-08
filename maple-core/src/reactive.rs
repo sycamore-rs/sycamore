@@ -1,9 +1,7 @@
 //! Reactive primitives.
 
-use std::cell::Cell;
 use std::cell::RefCell;
 use std::ops::Deref;
-use std::ptr::NonNull;
 use std::rc::Rc;
 
 /// Returned by functions that provide a handle to access state.
@@ -16,13 +14,12 @@ impl<T: 'static> StateHandle<T> {
         DEPENDENCIES.with(|dependencies| {
             if dependencies.borrow().is_some() {
                 let signal = self.0.clone();
-                let handler = HANDLER.with(|handler| handler.borrow().as_ref().unwrap().clone());
 
                 dependencies
                     .borrow_mut()
                     .as_mut()
                     .unwrap()
-                    .push(Box::new(move || {
+                    .push(Box::new(move |handler| {
                         signal.borrow_mut().observe(handler.clone())
                     }));
             }
@@ -102,6 +99,11 @@ impl<T: 'static> Signal<T> {
     pub fn handle(&self) -> StateHandle<T> {
         self.0.clone()
     }
+
+    /// Convert this signal into its underlying handle.
+    pub fn into_handle(self) -> StateHandle<T> {
+        self.0
+    }
 }
 
 impl<T: 'static> Deref for Signal<T> {
@@ -160,11 +162,38 @@ impl<T> SignalInner<T> {
 /// A derived computation from a signal.
 struct Computation(Box<dyn Fn()>);
 
-thread_local! {
-    static HANDLER: RefCell<Option<Rc<Computation>>> = RefCell::new(None);
+type Dependency = Box<dyn Fn(&Rc<Computation>)>;
 
+thread_local! {
     /// To add the dependencies, iterate through functions and execute them.
-    static DEPENDENCIES: RefCell<Option<Vec<Box<dyn Fn()>>>> = RefCell::new(None);
+    static DEPENDENCIES: RefCell<Option<Vec<Dependency>>> = RefCell::new(None);
+}
+
+/// Creates an effect on signals used inside the effect closure.
+///
+/// Unlike [`create_effect`], this will allow the closure to run different code upon first
+/// execution, so it can return a value.
+fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Computation>, R)) -> R {
+    DEPENDENCIES.with(|dependencies| {
+        if dependencies.borrow().is_some() {
+            unimplemented!("nested dependencies are not supported")
+        }
+
+        *dependencies.borrow_mut() = Some(Vec::new());
+
+        // run effect for the first time to attach all the dependencies
+        let (effect, ret) = initial();
+
+        // attach dependencies
+        for dependency in dependencies.borrow().as_ref().unwrap() {
+            dependency(&effect);
+        }
+
+        // Reset dependencies for next effect hook
+        *dependencies.borrow_mut() = None;
+
+        ret
+    })
 }
 
 /// Creates an effect on signals used inside the effect closure.
@@ -172,26 +201,9 @@ pub fn create_effect<F>(effect: F)
 where
     F: Fn() + 'static,
 {
-    DEPENDENCIES.with(|dependencies| {
-        if dependencies.borrow().is_some() {
-            unimplemented!("nested dependencies are not supported")
-        }
-
-        let effect = Rc::new(Computation(Box::new(effect)));
-
-        *dependencies.borrow_mut() = Some(Vec::new());
-        HANDLER.with(|handler| *handler.borrow_mut() = Some(effect.clone()));
-
-        // run effect for the first time to attach all the dependencies
-        effect.0();
-
-        // attach dependencies
-        for dependency in dependencies.borrow().as_ref().unwrap() {
-            dependency();
-        }
-
-        // Reset dependencies for next effect hook
-        *dependencies.borrow_mut() = None;
+    create_effect_initial(move || {
+        effect();
+        (Rc::new(Computation(Box::new(effect))), ())
     })
 }
 
@@ -231,42 +243,21 @@ where
     Out: 'static,
     C: Fn(&Out, &Out) -> bool + 'static,
 {
-    enum EffectState<T: 'static> {
-        Uninitialized(NonNull<Option<StateHandle<T>>>),
-        Initialized(Signal<T>),
-        Temporary,
-    }
+    create_effect_initial(|| {
+        let memo = Signal::new(derived());
 
-    let mut handle = None;
-    let state = Cell::new(EffectState::Uninitialized(NonNull::from(&mut handle)));
-
-    create_effect(move || {
-        let memo = match state.replace(EffectState::Temporary) {
-            // We haven't been called yet, so initialize the signal.
-            EffectState::Uninitialized(mut handle_ptr) => {
-                let memo = Signal::new(derived());
-
-                // SAFETY: This is the first time the function is called, and so this pointer is
-                // still valid.
-                *unsafe { handle_ptr.as_mut() } = Some(memo.handle());
-
-                memo
-            }
-            // We have been called; update the signal.
-            EffectState::Initialized(memo) => {
+        let effect = Rc::new(Computation(Box::new({
+            let memo = memo.clone();
+            move || {
                 let new_value = derived();
                 if !comparator(&memo.get_untracked(), &new_value) {
                     memo.set(new_value);
                 }
-                memo
             }
-            EffectState::Temporary => unreachable!(),
-        };
-        state.replace(EffectState::Initialized(memo));
-    });
+        })));
 
-    // By this time, the above closure will have been run once, setting the `handle` value.
-    handle.unwrap()
+        (effect, memo.into_handle())
+    })
 }
 
 #[cfg(test)]
