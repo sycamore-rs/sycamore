@@ -33,8 +33,8 @@ fn main() {
                 # "Component demo"
             }
 
-            MyComponent((*state).clone())
-            MyComponent((*state).clone())
+            MyComponent(state.handle())
+            MyComponent(state.handle())
 
             button(on:click=increment) {
                 # "Increment"

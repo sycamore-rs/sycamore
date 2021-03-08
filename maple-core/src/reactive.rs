@@ -95,6 +95,13 @@ impl<T: 'static> Signal<T> {
         }
         self.0 .0.borrow().trigger_observers();
     }
+
+    /// Get the [`StateHandle`] associated with this signal.
+    ///
+    /// This is a shortcut for `(*signal).clone()`.
+    pub fn handle(&self) -> StateHandle<T> {
+        self.0.clone()
+    }
 }
 
 impl<T: 'static> Deref for Signal<T> {
@@ -241,7 +248,7 @@ where
 
                 // SAFETY: This is the first time the function is called, and so this pointer is
                 // still valid.
-                *unsafe { handle_ptr.as_mut() } = Some((*memo).clone());
+                *unsafe { handle_ptr.as_mut() } = Some(memo.handle());
 
                 memo
             }
