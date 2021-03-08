@@ -75,7 +75,7 @@ impl ToTokens for HtmlTree {
 /// TODO: write some more docs
 #[proc_macro]
 pub fn template(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as element::Element);
+    let input = parse_macro_input!(input as HtmlTree);
 
     let quoted = quote! {
         ::maple_core::TemplateResult::new(#input)
