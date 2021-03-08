@@ -44,7 +44,9 @@ impl TemplateResult {
 
 /// The maple prelude.
 pub mod prelude {
-    pub use crate::reactive::{create_effect, create_memo, create_selector, Signal, StateHandle};
+    pub use crate::reactive::{
+        create_effect, create_memo, create_selector, create_selector_with, Signal, StateHandle,
+    };
     pub use crate::{render, TemplateResult};
 
     pub use maple_core_macro::template;

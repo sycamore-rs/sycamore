@@ -91,7 +91,7 @@ To update the state, we call the `.set(...)` method on `state`:
 
 ```rust
 state.set(1);
-println!("The state is: {}", state()); // should now print "The state is: 0"
+println!("The state is: {}", state.get()); // should now print "The state is: 0"
 ```
 
 Why would this be useful? It's useful because it provides a way to easily be notified of any state changes.
@@ -116,11 +116,14 @@ How does the `create_effect(...)` function know to execute the closure every tim
 Calling `create_effect` creates a new _"reactivity scope"_ and calling `state.get()` inside this scope adds itself as a _dependency_.
 Now, when `state.set(...)` is called, it automatically calls all its _dependents_, in this case, `state` as it was called inside the closure.
 
-We can easily create a derived state using `create_memo(...)`:
+We can also easily create a derived state using `create_memo(...)` which is really just an ergonomic wrapper around `create_effect`:
 
 ```rust
 let state = Signal::new(0);
-let double = create_memo(move || *state.get() * 2);
+let double = create_memo({
+    let state = state.clone();
+    move || *state.get() * 2
+});
 
 assert_eq!(*double.get(), 0);
 
@@ -178,6 +181,8 @@ Components in `maple` are simply functions that return `HtmlElement`.
 They receive their props through function arguments.
 
 For components to automatically react to prop changes, they should accept a prop with type `StateHandle<T>` and call the function in the `template!` to subscribe to the state.
+
+Getting a `StateHandle<T>` for a `Signal<T>` is easy. Just call the `.handle()` method.
 
 Here is an example of a simple component:
 
