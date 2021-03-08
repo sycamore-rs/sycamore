@@ -10,7 +10,7 @@ fn compile_pass() {
     template! { p(class="my-class") };
     template! { p(class="my-class", id="my-id") };
 
-    template! { button(class="my-btn", on:click=|| {}) };
+    template! { button(class="my-btn", on:click=|_| {}) };
 }
 
 fn main() {}
