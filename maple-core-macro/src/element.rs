@@ -2,31 +2,27 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream, Result};
-use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{
-    parenthesized, token, Expr, ExprAssign, ExprPath, ExprType, Ident, Token, Type, TypePath,
-};
+use syn::{token, Ident, Token};
 
+use crate::attributes::{AttributeList, AttributeType};
 use crate::children::Children;
 
 /// Represents a html element with all its attributes and properties (e.g. `p(class="text")`).
 pub(crate) struct Element {
     tag_name: TagName,
-    _paren_token: Option<token::Paren>,
-    attributes: Punctuated<Expr, Token![,]>,
+    attributes: Option<AttributeList>,
     children: Option<Children>,
 }
 
 impl Parse for Element {
     fn parse(input: ParseStream) -> Result<Self> {
         let tag_name = input.parse()?;
-        let (paren_token, attributes) = if input.peek(token::Paren) {
-            let attributes;
-            let paren_token = parenthesized!(attributes in input);
-            (Some(paren_token), attributes.parse_terminated(Expr::parse)?)
+
+        let attributes = if input.peek(token::Paren) {
+            Some(input.parse()?)
         } else {
-            (None, Punctuated::new())
+            None
         };
 
         let children = if input.peek(token::Brace) {
@@ -35,69 +31,8 @@ impl Parse for Element {
             None
         };
 
-        // check attribute syntax
-        for attribute in &attributes {
-            match attribute {
-                Expr::Assign(ExprAssign {
-                    attrs: _,
-                    left,
-                    eq_token: _,
-                    right: _,
-                }) => {
-                    match left.as_ref() {
-                        // simple attribute (e.g. `disabled`)
-                        Expr::Path(ExprPath { path, .. }) if path.segments.len() == 1 => {}
-                        // `on:click` is parsed as a type ascription expression
-                        Expr::Type(ExprType {
-                            attrs: _,
-                            expr,
-                            colon_token: _,
-                            ty,
-                        }) => match expr.as_ref() {
-                            Expr::Path(ExprPath { path, .. }) if path.segments.len() == 1 => {
-                                match path.segments[0].ident.to_string().as_str() {
-                                    "on" => {}
-                                    _ => {
-                                        return Err(syn::Error::new_spanned(
-                                            &path.segments[0],
-                                            format!(
-                                                "unknown directive `{}`",
-                                                path.segments[0].ident
-                                            ),
-                                        ))
-                                    }
-                                }
-
-                                match ty.as_ref() {
-                                    Type::Path(TypePath { path, .. })
-                                        if path.segments.len() == 1 => {}
-                                    _ => {
-                                        return Err(syn::Error::new_spanned(
-                                            ty,
-                                            "expected an identifier",
-                                        ))
-                                    }
-                                }
-                            }
-                            _ => {
-                                return Err(syn::Error::new_spanned(expr, "expected an identifier"))
-                            }
-                        },
-                        _ => return Err(syn::Error::new_spanned(left, "unexpected token")),
-                    }
-                }
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        attribute,
-                        "expected an assignment expression",
-                    ))
-                }
-            }
-        }
-
         Ok(Self {
             tag_name,
-            _paren_token: paren_token,
             attributes,
             children,
         })
@@ -108,56 +43,29 @@ impl ToTokens for Element {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Element {
             tag_name,
-            _paren_token: _,
             attributes,
             children,
         } = self;
 
         let mut set_attributes = Vec::new();
         let mut set_event_listeners = Vec::new();
-        for attribute in attributes {
-            let attribute_span = attribute.span();
+        if let Some(attributes) = attributes {
+            for attribute in &attributes.attributes {
+                let expr = &attribute.expr;
+                let expr_span = expr.span();
 
-            match attribute {
-                Expr::Assign(ExprAssign {
-                    attrs: _,
-                    left,
-                    eq_token: _,
-                    right,
-                }) => match left.as_ref() {
-                    Expr::Path(_) => {
-                        let left_str = left.to_token_stream().to_string();
-
-                        set_attributes.push(quote_spanned! { attribute_span=>
-                            ::maple_core::internal::attr(&element, #left_str, move || ::std::format!("{}", #right));
+                match &attribute.ty {
+                    AttributeType::DomAttribute { name } => {
+                        set_attributes.push(quote_spanned! { expr_span=>
+                                ::maple_core::internal::attr(&element, #name, move || ::std::format!("{}", #expr));
+                            });
+                    }
+                    AttributeType::Event { name } => {
+                        set_event_listeners.push(quote_spanned! { expr_span=>
+                            ::maple_core::internal::event(&element, #name, ::std::boxed::Box::new(#expr));
                         });
                     }
-                    Expr::Type(ExprType {
-                        attrs: _,
-                        expr,
-                        colon_token: _,
-                        ty,
-                    }) => match expr.as_ref() {
-                        Expr::Path(path) => {
-                            let directive = path.to_token_stream().to_string();
-
-                            match directive.as_str() {
-                                "on" => {
-                                    // attach event handler
-                                    let event_name = ty.to_token_stream().to_string();
-
-                                    set_event_listeners.push(quote_spanned! { attribute_span=>
-                                        ::maple_core::internal::event(&element, #event_name, ::std::boxed::Box::new(#right));
-                                    });
-                                }
-                                _ => unreachable!("attribute syntax checked during parsing"),
-                            }
-                        }
-                        _ => unreachable!("attribute syntax checked during parsing"),
-                    },
-                    _ => unreachable!("attribute syntax checked during parsing"),
-                },
-                _ => unreachable!("attribute syntax checked during parsing"),
+                }
             }
         }
 

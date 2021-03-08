@@ -19,6 +19,7 @@ wasm-bindgen = "0.2.71"
 features = [
   "Document",
   "Element",
+  "Event",
   "HtmlElement",
   "Node",
   "Text",

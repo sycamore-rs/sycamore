@@ -1,3 +1,4 @@
+mod attributes;
 mod children;
 mod component;
 mod element;

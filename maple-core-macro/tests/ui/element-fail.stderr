@@ -4,20 +4,26 @@ error: unexpected token
 4 |     template! { p.my-class#id };
   |                  ^
 
-error: expected an assignment expression
- --> $DIR/element-fail.rs:6:24
+error: expected `=`
+ --> $DIR/element-fail.rs:6:23
   |
 6 |     template! { button(disabled) };
-  |                        ^^^^^^^^
+  |                       ^^^^^^^^^^
 
-error: expected an assignment expression
- --> $DIR/element-fail.rs:7:24
+error: expected `=`
+ --> $DIR/element-fail.rs:7:23
   |
 7 |     template! { button(on:click) };
-  |                        ^^^^^^^^
+  |                       ^^^^^^^^^^
 
-error: unexpected token
- --> $DIR/element-fail.rs:9:24
+error: unknown directive `unknown`
+ --> $DIR/element-fail.rs:8:24
   |
-9 |     template! { button(a.b.c="123") };
-  |                        ^^^^^
+8 |     template! { button(unknown:directive="123") };
+  |                        ^^^^^^^
+
+error: expected `=`
+  --> $DIR/element-fail.rs:10:25
+   |
+10 |     template! { button(a.b.c="123") };
+   |                         ^

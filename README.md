@@ -61,7 +61,7 @@ template! {
 
 // Events are attached using the `on:*` directive.
 template! {
-    button(on:click=|| { /* do something */ }) {
+    button(on:click=|_| { /* do something */ }) {
         # "Click me"
     }
 }

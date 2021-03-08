@@ -1,4 +1,4 @@
-error: expected an assignment expression
+error: expected ident
   --> $DIR/component-fail.rs:15:27
    |
 15 |     template! { Component(1) };
