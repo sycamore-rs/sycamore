@@ -1,5 +1,16 @@
 # Changelog
 
+## ✨ **0.2.0** _(2021-03-07)_
+
+- #### ⚡️ Features
+
+  - Components! In `maple` they are simply plain old functions that take their props via their parameters [[#9](https://github.com/lukechu10/maple/pull/9)]
+  - Event listeners now have access to the `Event` object [[#16](https://github.com/lukechu10/maple/pull/16)]
+
+- #### 🛠 Changes
+
+  - The `template!` macro now returns a `TemplateResult` instead of raw DOM nodes for increased type safety [[#10](https://github.com/lukechu10/maple/pull/10)]
+
 ## ✨ **0.1.1** _(2021-03-07)_
 
 #### Changelog
