@@ -17,13 +17,13 @@ fn main() {
         let counter = counter.clone();
         let set_counter = set_counter.clone();
 
-        move || set_counter(*counter() + 1)
+        move |_| set_counter(*counter() + 1)
     };
 
     let reset = {
         let set_counter = set_counter.clone();
 
-        move || set_counter(0)
+        move |_| set_counter(0)
     };
 
     let root = template! {

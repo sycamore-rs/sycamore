@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{Element, HtmlElement, Node, Text};
+use web_sys::{Element, Event, HtmlElement, Node, Text};
 
 use crate::reactive::*;
 
@@ -49,11 +49,11 @@ pub fn attr(element: &HtmlElement, name: &str, value: impl Fn() -> String + 'sta
 thread_local! {
     /// A global event listener pool to prevent [`Closure`]s from being deallocated.
     /// TODO: remove events when elements are detached.
-    static EVENT_LISTENERS: RefCell<Vec<Closure<dyn Fn()>>> = RefCell::new(Vec::new());
+    static EVENT_LISTENERS: RefCell<Vec<Closure<dyn Fn(Event)>>> = RefCell::new(Vec::new());
 }
 
 /// Sets an event listener on an [`HtmlElement`].
-pub fn event(element: &HtmlElement, name: &str, handler: Box<dyn Fn()>) {
+pub fn event(element: &HtmlElement, name: &str, handler: Box<dyn Fn(Event)>) {
     let closure = Closure::wrap(handler);
     element
         .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())

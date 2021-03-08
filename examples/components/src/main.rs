@@ -23,7 +23,7 @@ fn main() {
     let increment = {
         let state = state.clone();
         let set_state = set_state.clone();
-        move || {
+        move |_| {
             set_state(*state() + 1);
         }
     };
