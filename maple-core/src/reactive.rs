@@ -9,7 +9,7 @@ thread_local! {
     ///
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
-    static RUNNING: RefCell<Option<Vec<Rc<dyn AnySignalInner>>>> = RefCell::new(None);
+    static CONTEXTS: RefCell<Vec<Vec<Rc<dyn AnySignalInner>>>> = RefCell::new(Vec::new());
 }
 
 struct Callback(Box<dyn Fn()>);
@@ -21,10 +21,10 @@ impl<T: 'static> StateHandle<T> {
     /// Get the current value of the state.
     pub fn get(&self) -> Rc<T> {
         // if inside an effect, add this signal to dependency list
-        RUNNING.with(|running| {
-            if running.borrow().is_some() {
+        CONTEXTS.with(|contexts| {
+            if !contexts.borrow().is_empty() {
                 let signal = self.0.clone();
-                running.borrow_mut().as_mut().unwrap().push(signal);
+                contexts.borrow_mut().last_mut().unwrap().push(signal);
             }
         });
 
@@ -206,13 +206,13 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
-    RUNNING.with(|running| {
+    CONTEXTS.with(|contexts| {
         let execute = move || {
-            if running.borrow().is_some() {
+            if !contexts.borrow().is_empty() {
                 unimplemented!("nested dependencies are not supported")
             }
 
-            *running.borrow_mut() = Some(Vec::new());
+            contexts.borrow_mut().push(Vec::new());
 
             // run effect for the first time to attach all the dependencies
             let (effect, ret) = initial();
@@ -222,12 +222,12 @@ fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
             })));
 
             // attach dependencies
-            for dependency in running.borrow().as_ref().unwrap() {
+            for dependency in contexts.borrow().last().unwrap() {
                 dependency.subscribe(subscribe_callback.clone());
             }
 
             // Reset dependencies for next effect hook
-            *running.borrow_mut() = None;
+            contexts.borrow_mut().pop().unwrap();
 
             ret
         };
