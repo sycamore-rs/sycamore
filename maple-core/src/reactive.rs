@@ -5,9 +5,14 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 thread_local! {
-    /// Context of the effect that is currently running.
-    static CONTEXT: RefCell<Option<Vec<Dependency>>> = RefCell::new(None);
+    /// Context of the effect that is currently running. `None` if no effect is running.
+    ///
+    /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
+    /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
+    static CONTEXT: RefCell<Option<Vec<Rc<dyn AnySignalInner>>>> = RefCell::new(None);
 }
+
+struct Callback(Box<dyn Fn()>);
 
 /// Returned by functions that provide a handle to access state.
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
@@ -19,14 +24,7 @@ impl<T: 'static> StateHandle<T> {
         CONTEXT.with(|context| {
             if context.borrow().is_some() {
                 let signal = self.0.clone();
-
-                context
-                    .borrow_mut()
-                    .as_mut()
-                    .unwrap()
-                    .push(Box::new(move |handler| {
-                        signal.borrow_mut().observe(handler.clone())
-                    }));
+                context.borrow_mut().as_mut().unwrap().push(signal);
             }
         });
 
@@ -99,7 +97,7 @@ impl<T: 'static> Signal<T> {
             // If the signal is already borrowed, that means it is borrowed in the getter, thus creating a cyclic dependency.
             Err(_err) => panic!("cannot create cyclic dependency"),
         }
-        self.handle.0.borrow().trigger_observers();
+        self.handle.0.borrow().trigger_subscribers();
     }
 
     /// Get the [`StateHandle`] associated with this signal.
@@ -133,46 +131,75 @@ impl<T: 'static> Clone for Signal<T> {
 
 struct SignalInner<T> {
     inner: Rc<T>,
-    observers: Vec<Rc<Callback>>,
+    subscribers: Vec<Rc<Callback>>,
 }
 
 impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
-            observers: Vec::new(),
+            subscribers: Vec::new(),
         }
     }
 
-    fn observe(&mut self, handler: Rc<Callback>) {
+    /// Adds a handler to the subscriber list. If the handler is already a subscriber, does nothing.
+    fn subscribe(&mut self, handler: Rc<Callback>) {
         // make sure handler is not already in self.observers
         if self
-            .observers
+            .subscribers
             .iter()
-            .find(|observer| {
-                observer.as_ref() as *const Callback == handler.as_ref() as *const Callback
+            .find(|subscriber| {
+                subscriber.as_ref() as *const Callback == handler.as_ref() as *const Callback
                 /* do reference equality */
             })
             .is_none()
         {
-            self.observers.push(handler);
+            self.subscribers.push(handler);
         }
     }
 
+    /// Removes a handler from the subscriber list. If the handler is not a subscriber, does nothing.
+    fn unsubscribe(&mut self, handler: &Rc<Callback>) {
+        self.subscribers = self
+            .subscribers
+            .iter()
+            .filter(|subscriber| {
+                subscriber.as_ref() as *const Callback == handler.as_ref() as *const Callback
+                /* do reference equality */
+            })
+            .cloned()
+            .collect();
+    }
+
+    /// Updates the inner value. This does **NOT** call the subscribers.
+    /// You will have to do so manually with `trigger_subscribers`.
     fn update(&mut self, new_value: T) {
         self.inner = Rc::new(new_value);
     }
 
-    fn trigger_observers(&self) {
-        for observer in &self.observers {
+    /// Calls all the subscribers (in order of insertion).
+    fn trigger_subscribers(&self) {
+        for observer in &self.subscribers {
             observer.0();
         }
     }
 }
 
-struct Callback(Box<dyn Fn()>);
+/// Trait for any [`SignalInner`], regardless of type param `T`.
+trait AnySignalInner {
+    fn subscribe(&self, handler: Rc<Callback>);
+    fn unsubscribe(&self, handler: &Rc<Callback>);
+}
 
-type Dependency = Box<dyn Fn(&Rc<Callback>)>;
+impl<T> AnySignalInner for RefCell<SignalInner<T>> {
+    fn subscribe(&self, handler: Rc<Callback>) {
+        self.borrow_mut().subscribe(handler);
+    }
+
+    fn unsubscribe(&self, handler: &Rc<Callback>) {
+        self.borrow_mut().unsubscribe(handler);
+    }
+}
 
 /// Creates an effect on signals used inside the effect closure.
 ///
@@ -180,24 +207,28 @@ type Dependency = Box<dyn Fn(&Rc<Callback>)>;
 /// execution, so it can return a value.
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
     CONTEXT.with(|context| {
-        if context.borrow().is_some() {
-            unimplemented!("nested dependencies are not supported")
-        }
+        let execute = move || {
+            if context.borrow().is_some() {
+                unimplemented!("nested dependencies are not supported")
+            }
 
-        *context.borrow_mut() = Some(Vec::new());
+            *context.borrow_mut() = Some(Vec::new());
 
-        // run effect for the first time to attach all the dependencies
-        let (effect, ret) = initial();
+            // run effect for the first time to attach all the dependencies
+            let (effect, ret) = initial();
 
-        // attach dependencies
-        for dependency in context.borrow().as_ref().unwrap() {
-            dependency(&effect);
-        }
+            // attach dependencies
+            for dependency in context.borrow().as_ref().unwrap() {
+                dependency.subscribe(effect.clone());
+            }
 
-        // Reset dependencies for next effect hook
-        *context.borrow_mut() = None;
+            // Reset dependencies for next effect hook
+            *context.borrow_mut() = None;
 
-        ret
+            ret
+        };
+
+        execute()
     })
 }
 
