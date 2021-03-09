@@ -1,7 +1,10 @@
 //! Reactive primitives.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
+use std::ptr;
 use std::rc::Rc;
 
 /// Returned by functions that provide a handle to access state.
@@ -122,30 +125,19 @@ impl<T: 'static> Clone for Signal<T> {
 
 struct SignalInner<T> {
     inner: Rc<T>,
-    observers: Vec<Rc<Computation>>,
+    observers: HashSet<Computation>,
 }
 
 impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
-            observers: Vec::new(),
+            observers: HashSet::new(),
         }
     }
 
-    fn observe(&mut self, handler: Rc<Computation>) {
-        // make sure handler is not already in self.observers
-        if self
-            .observers
-            .iter()
-            .find(|observer| {
-                observer.as_ref() as *const Computation == handler.as_ref() as *const Computation
-                /* do reference equality */
-            })
-            .is_none()
-        {
-            self.observers.push(handler);
-        }
+    fn observe(&mut self, handler: Computation) {
+        self.observers.insert(handler);
     }
 
     fn update(&mut self, new_value: T) {
@@ -160,9 +152,23 @@ impl<T> SignalInner<T> {
 }
 
 /// A derived computation from a signal.
-struct Computation(Box<dyn Fn()>);
+#[derive(Clone)]
+struct Computation(Rc<dyn Fn()>);
 
-type Dependency = Box<dyn Fn(&Rc<Computation>)>;
+impl Hash for Computation {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.0).hash(state);
+    }
+}
+
+impl PartialEq for Computation {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq::<()>(Rc::as_ptr(&self.0).cast(), Rc::as_ptr(&other.0).cast())
+    }
+}
+impl Eq for Computation {}
+
+type Dependency = Box<dyn Fn(&Computation)>;
 
 thread_local! {
     /// To add the dependencies, iterate through functions and execute them.
@@ -173,7 +179,7 @@ thread_local! {
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Computation>, R)) -> R {
+fn create_effect_initial<R>(initial: impl FnOnce() -> (Computation, R)) -> R {
     DEPENDENCIES.with(|dependencies| {
         if dependencies.borrow().is_some() {
             unimplemented!("nested dependencies are not supported")
@@ -203,7 +209,7 @@ where
 {
     create_effect_initial(move || {
         effect();
-        (Rc::new(Computation(Box::new(effect))), ())
+        (Computation(Rc::new(effect)), ())
     })
 }
 
@@ -246,7 +252,7 @@ where
     create_effect_initial(|| {
         let memo = Signal::new(derived());
 
-        let effect = Rc::new(Computation(Box::new({
+        let effect = Computation(Rc::new({
             let memo = memo.clone();
             move || {
                 let new_value = derived();
@@ -254,7 +260,7 @@ where
                     memo.set(new_value);
                 }
             }
-        })));
+        }));
 
         (effect, memo.into_handle())
     })
