@@ -4,6 +4,11 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
 
+thread_local! {
+    /// Context of the effect that is currently running.
+    static CONTEXT: RefCell<Option<Vec<Dependency>>> = RefCell::new(None);
+}
+
 /// Returned by functions that provide a handle to access state.
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 
@@ -11,11 +16,11 @@ impl<T: 'static> StateHandle<T> {
     /// Get the current value of the state.
     pub fn get(&self) -> Rc<T> {
         // if inside an effect, add this signal to dependency list
-        DEPENDENCIES.with(|dependencies| {
-            if dependencies.borrow().is_some() {
+        CONTEXT.with(|context| {
+            if context.borrow().is_some() {
                 let signal = self.0.clone();
 
-                dependencies
+                context
                     .borrow_mut()
                     .as_mut()
                     .unwrap()
@@ -169,33 +174,28 @@ struct Callback(Box<dyn Fn()>);
 
 type Dependency = Box<dyn Fn(&Rc<Callback>)>;
 
-thread_local! {
-    /// To add the dependencies, iterate through functions and execute them.
-    static DEPENDENCIES: RefCell<Option<Vec<Dependency>>> = RefCell::new(None);
-}
-
 /// Creates an effect on signals used inside the effect closure.
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
-    DEPENDENCIES.with(|dependencies| {
-        if dependencies.borrow().is_some() {
+    CONTEXT.with(|context| {
+        if context.borrow().is_some() {
             unimplemented!("nested dependencies are not supported")
         }
 
-        *dependencies.borrow_mut() = Some(Vec::new());
+        *context.borrow_mut() = Some(Vec::new());
 
         // run effect for the first time to attach all the dependencies
         let (effect, ret) = initial();
 
         // attach dependencies
-        for dependency in dependencies.borrow().as_ref().unwrap() {
+        for dependency in context.borrow().as_ref().unwrap() {
             dependency(&effect);
         }
 
         // Reset dependencies for next effect hook
-        *dependencies.borrow_mut() = None;
+        *context.borrow_mut() = None;
 
         ret
     })
