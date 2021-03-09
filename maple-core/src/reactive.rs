@@ -217,9 +217,13 @@ fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
             // run effect for the first time to attach all the dependencies
             let (effect, ret) = initial();
 
+            let subscribe_callback = Rc::new(Callback(Box::new(move || {
+                effect.0();
+            })));
+
             // attach dependencies
             for dependency in running.borrow().as_ref().unwrap() {
-                dependency.subscribe(effect.clone());
+                dependency.subscribe(subscribe_callback.clone());
             }
 
             // Reset dependencies for next effect hook
