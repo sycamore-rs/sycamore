@@ -61,7 +61,9 @@ impl<T: 'static> Clone for StateHandle<T> {
 }
 
 /// State that can be set.
-pub struct Signal<T: 'static>(StateHandle<T>);
+pub struct Signal<T: 'static> {
+    handle: StateHandle<T>,
+}
 
 impl<T: 'static> Signal<T> {
     /// Creates a new signal.
@@ -78,31 +80,33 @@ impl<T: 'static> Signal<T> {
     /// assert_eq!(*state.get(), 1);
     /// ```
     pub fn new(value: T) -> Self {
-        Self(StateHandle(Rc::new(RefCell::new(SignalInner::new(value)))))
+        Self {
+            handle: StateHandle(Rc::new(RefCell::new(SignalInner::new(value)))),
+        }
     }
 
     /// Set the current value of the state.
     ///
     /// This will notify and update any effects and memos that depend on this value.
     pub fn set(&self, new_value: T) {
-        match self.0 .0.try_borrow_mut() {
+        match self.handle.0.try_borrow_mut() {
             Ok(mut signal) => signal.update(new_value),
             // If the signal is already borrowed, that means it is borrowed in the getter, thus creating a cyclic dependency.
             Err(_err) => panic!("cannot create cyclic dependency"),
         }
-        self.0 .0.borrow().trigger_observers();
+        self.handle.0.borrow().trigger_observers();
     }
 
     /// Get the [`StateHandle`] associated with this signal.
     ///
     /// This is a shortcut for `(*signal).clone()`.
     pub fn handle(&self) -> StateHandle<T> {
-        self.0.clone()
+        self.handle.clone()
     }
 
     /// Convert this signal into its underlying handle.
     pub fn into_handle(self) -> StateHandle<T> {
-        self.0
+        self.handle
     }
 }
 
@@ -110,13 +114,15 @@ impl<T: 'static> Deref for Signal<T> {
     type Target = StateHandle<T>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.handle
     }
 }
 
 impl<T: 'static> Clone for Signal<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self {
+            handle: self.handle.clone(),
+        }
     }
 }
 
@@ -159,7 +165,6 @@ impl<T> SignalInner<T> {
     }
 }
 
-/// A derived computation from a signal.
 struct Computation(Box<dyn Fn()>);
 
 type Dependency = Box<dyn Fn(&Rc<Computation>)>;
