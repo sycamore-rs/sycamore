@@ -401,6 +401,50 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
+    fn effect_should_recreate_dependencies() {
+        let condition = Signal::new(true);
+
+        let state1 = Signal::new(0);
+        let state2 = Signal::new(1);
+
+        let counter = Signal::new(0);
+        create_effect({
+            let condition = condition.clone();
+            let state1 = state1.clone();
+            let state2 = state2.clone();
+            let counter = counter.clone();
+
+            move || {
+                counter.set(*counter.get_untracked() + 1);
+
+                if *condition.get() {
+                    state1.get();
+                } else {
+                    state2.get();
+                }
+            }
+        });
+
+        assert_eq!(*counter.get(), 1);
+
+        state1.set(1);
+        assert_eq!(*counter.get(), 2);
+
+        state2.set(1);
+        assert_eq!(*counter.get(), 2); // not tracked
+
+        condition.set(false);
+        assert_eq!(*counter.get(), 3);
+
+        state1.set(2);
+        assert_eq!(*counter.get(), 3); // not tracked
+
+        state2.set(2);
+        assert_eq!(*counter.get(), 4); // tracked after condition.set
+    }
+
+    #[test]
     fn memo() {
         let state = Signal::new(0);
 
