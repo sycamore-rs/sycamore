@@ -9,7 +9,7 @@ thread_local! {
     ///
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
-    static CONTEXT: RefCell<Option<Vec<Rc<dyn AnySignalInner>>>> = RefCell::new(None);
+    static RUNNING: RefCell<Option<Vec<Rc<dyn AnySignalInner>>>> = RefCell::new(None);
 }
 
 struct Callback(Box<dyn Fn()>);
@@ -21,10 +21,10 @@ impl<T: 'static> StateHandle<T> {
     /// Get the current value of the state.
     pub fn get(&self) -> Rc<T> {
         // if inside an effect, add this signal to dependency list
-        CONTEXT.with(|context| {
-            if context.borrow().is_some() {
+        RUNNING.with(|running| {
+            if running.borrow().is_some() {
                 let signal = self.0.clone();
-                context.borrow_mut().as_mut().unwrap().push(signal);
+                running.borrow_mut().as_mut().unwrap().push(signal);
             }
         });
 
@@ -206,24 +206,24 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
-    CONTEXT.with(|context| {
+    RUNNING.with(|running| {
         let execute = move || {
-            if context.borrow().is_some() {
+            if running.borrow().is_some() {
                 unimplemented!("nested dependencies are not supported")
             }
 
-            *context.borrow_mut() = Some(Vec::new());
+            *running.borrow_mut() = Some(Vec::new());
 
             // run effect for the first time to attach all the dependencies
             let (effect, ret) = initial();
 
             // attach dependencies
-            for dependency in context.borrow().as_ref().unwrap() {
+            for dependency in running.borrow().as_ref().unwrap() {
                 dependency.subscribe(effect.clone());
             }
 
             // Reset dependencies for next effect hook
-            *context.borrow_mut() = None;
+            *running.borrow_mut() = None;
 
             ret
         };
