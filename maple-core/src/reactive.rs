@@ -128,7 +128,7 @@ impl<T: 'static> Clone for Signal<T> {
 
 struct SignalInner<T> {
     inner: Rc<T>,
-    observers: Vec<Rc<Computation>>,
+    observers: Vec<Rc<Callback>>,
 }
 
 impl<T> SignalInner<T> {
@@ -139,13 +139,13 @@ impl<T> SignalInner<T> {
         }
     }
 
-    fn observe(&mut self, handler: Rc<Computation>) {
+    fn observe(&mut self, handler: Rc<Callback>) {
         // make sure handler is not already in self.observers
         if self
             .observers
             .iter()
             .find(|observer| {
-                observer.as_ref() as *const Computation == handler.as_ref() as *const Computation
+                observer.as_ref() as *const Callback == handler.as_ref() as *const Callback
                 /* do reference equality */
             })
             .is_none()
@@ -165,9 +165,9 @@ impl<T> SignalInner<T> {
     }
 }
 
-struct Computation(Box<dyn Fn()>);
+struct Callback(Box<dyn Fn()>);
 
-type Dependency = Box<dyn Fn(&Rc<Computation>)>;
+type Dependency = Box<dyn Fn(&Rc<Callback>)>;
 
 thread_local! {
     /// To add the dependencies, iterate through functions and execute them.
@@ -178,7 +178,7 @@ thread_local! {
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Computation>, R)) -> R {
+fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
     DEPENDENCIES.with(|dependencies| {
         if dependencies.borrow().is_some() {
             unimplemented!("nested dependencies are not supported")
@@ -208,7 +208,7 @@ where
 {
     create_effect_initial(move || {
         effect();
-        (Rc::new(Computation(Box::new(effect))), ())
+        (Rc::new(Callback(Box::new(effect))), ())
     })
 }
 
@@ -251,7 +251,7 @@ where
     create_effect_initial(|| {
         let memo = Signal::new(derived());
 
-        let effect = Rc::new(Computation(Box::new({
+        let effect = Rc::new(Callback(Box::new({
             let memo = memo.clone();
             move || {
                 let new_value = derived();
