@@ -2,4 +2,4 @@
 Cargo.lock
 
 # Trunk output
-/examples/**/dist
+/**/dist

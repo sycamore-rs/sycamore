@@ -1,0 +1,46 @@
+name: Docs
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install trunk
+      run: >
+        wget -qO- https://github.com/thedodd/trunk/releases/download/v0.9.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- &&
+        sudo mv trunk /usr/bin/
+
+    - name: Install wasm-bindgen
+      run: >
+        wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz &&
+        tar -xf wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz &&
+        sudo mv wasm-bindgen-0.2.71-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
+
+    - name: Build docs
+      run: >
+        cd docs/ &&
+        trunk build --release --public-url /maple/
+
+    - name: Create .nojekyll file
+      run: touch docs/dist/.nojekyll
+
+    - name: Publish to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3.7.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_branch: gh_pages
+        force_orphan: true
+        publish_dir: docs/dist/
+        enable_jekyll: false
