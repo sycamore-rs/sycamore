@@ -5,4 +5,5 @@ members = [
   "examples/components",
   "examples/counter",
   "examples/hello",
+  "docs",
 ]
