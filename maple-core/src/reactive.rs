@@ -4,12 +4,18 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
 
+/// State of the current running effect.
+struct Running {
+    execute: Callback,
+    dependencies: Vec<Rc<dyn AnySignalInner>>,
+}
+
 thread_local! {
     /// Context of the effect that is currently running. `None` if no effect is running.
     ///
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
-    static CONTEXTS: RefCell<Vec<Vec<Rc<dyn AnySignalInner>>>> = RefCell::new(Vec::new());
+    static CONTEXTS: RefCell<Vec<Running>> = RefCell::new(Vec::new());
 }
 
 struct Callback(Box<dyn Fn()>);
@@ -24,7 +30,7 @@ impl<T: 'static> StateHandle<T> {
         CONTEXTS.with(|contexts| {
             if !contexts.borrow().is_empty() {
                 let signal = self.0.clone();
-                contexts.borrow_mut().last_mut().unwrap().push(signal);
+                contexts.borrow_mut().last_mut().unwrap().dependencies.push(signal);
             }
         });
 
@@ -207,7 +213,12 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
 /// execution, so it can return a value.
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
     CONTEXTS.with(|contexts| {
-        contexts.borrow_mut().push(Vec::new());
+        let running = Running {
+            execute: Callback(Box::new(|| {})),
+            dependencies: Vec::new(),
+        };
+
+        contexts.borrow_mut().push(running);
 
         // run effect for the first time to attach all the dependencies
         let (effect, ret) = initial();
@@ -217,7 +228,7 @@ fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
         })));
 
         // attach dependencies
-        for dependency in contexts.borrow().last().unwrap() {
+        for dependency in &contexts.borrow().last().unwrap().dependencies {
             dependency.subscribe(subscribe_callback.clone());
         }
 
