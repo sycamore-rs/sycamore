@@ -26,3 +26,10 @@ features = [
   "Window",
 ]
 version = "0.3.48"
+
+[dev-dependencies]
+criterion = {version = "0.3", features = ["html_reports"]}
+
+[[bench]]
+harness = false
+name = "reactivity"
