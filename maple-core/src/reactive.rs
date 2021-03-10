@@ -1,12 +1,13 @@
 //! Reactive primitives.
 
 use std::cell::RefCell;
+use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::rc::Rc;
 
 /// State of the current running effect.
 struct Running {
-    execute: Callback,
+    execute: Rc<Callback>,
     dependencies: Vec<Rc<dyn AnySignalInner>>,
 }
 
@@ -30,7 +31,12 @@ impl<T: 'static> StateHandle<T> {
         CONTEXTS.with(|contexts| {
             if !contexts.borrow().is_empty() {
                 let signal = self.0.clone();
-                contexts.borrow_mut().last_mut().unwrap().dependencies.push(signal);
+                contexts
+                    .borrow_mut()
+                    .last_mut()
+                    .unwrap()
+                    .dependencies
+                    .push(signal);
             }
         });
 
@@ -207,14 +213,37 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
     }
 }
 
+fn cleanup_running(running: &mut Running) {
+    let execute = running.execute.clone();
+
+    for dependency in &running.dependencies {
+        dependency.unsubscribe(&execute);
+    }
+
+    running.dependencies.clear();
+}
+
 /// Creates an effect on signals used inside the effect closure.
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
+    let running = Rc::new(RefCell::new(None));
+
+    let execute = move || {
+        CONTEXTS.with(|context| {
+            cleanup_running(context.borrow_mut().last_mut().unwrap());
+        });
+    };
+
+    *running.borrow_mut() = Some(Running {
+        execute: Rc::new(Callback(Box::new(execute))),
+        dependencies: Vec::new(),
+    });
+
     CONTEXTS.with(|contexts| {
         let running = Running {
-            execute: Callback(Box::new(|| {})),
+            execute: Rc::new(Callback(Box::new(|| {}))),
             dependencies: Vec::new(),
         };
 
