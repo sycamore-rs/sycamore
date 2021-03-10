@@ -1,7 +1,6 @@
 //! Reactive primitives.
 
 use std::cell::RefCell;
-use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -16,7 +15,7 @@ thread_local! {
     ///
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
-    static CONTEXTS: RefCell<Vec<Running>> = RefCell::new(Vec::new());
+    static CONTEXTS: RefCell<Vec<Rc<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
 }
 
 struct Callback(Box<dyn Fn()>);
@@ -32,8 +31,11 @@ impl<T: 'static> StateHandle<T> {
             if !contexts.borrow().is_empty() {
                 let signal = self.0.clone();
                 contexts
+                    .borrow()
+                    .last()
+                    .unwrap()
                     .borrow_mut()
-                    .last_mut()
+                    .as_mut()
                     .unwrap()
                     .dependencies
                     .push(signal);
@@ -213,14 +215,14 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
     }
 }
 
-fn cleanup_running(running: &mut Running) {
-    let execute = running.execute.clone();
+fn cleanup_running(running: Rc<RefCell<Option<Running>>>) {
+    let execute = running.borrow().as_ref().unwrap().execute.clone();
 
-    for dependency in &running.dependencies {
+    for dependency in &running.borrow().as_ref().unwrap().dependencies {
         dependency.unsubscribe(&execute);
     }
 
-    running.dependencies.clear();
+    running.borrow_mut().as_mut().unwrap().dependencies.clear();
 }
 
 /// Creates an effect on signals used inside the effect closure.
@@ -230,10 +232,14 @@ fn cleanup_running(running: &mut Running) {
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
     let running = Rc::new(RefCell::new(None));
 
-    let execute = move || {
-        CONTEXTS.with(|context| {
-            cleanup_running(context.borrow_mut().last_mut().unwrap());
-        });
+    let execute = {
+        let running = running.clone();
+        move || {
+            CONTEXTS.with(|context| {
+                cleanup_running(context.borrow().last().unwrap().clone());
+                context.borrow_mut().push(running.clone());
+            });
+        }
     };
 
     *running.borrow_mut() = Some(Running {
@@ -247,7 +253,9 @@ fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
             dependencies: Vec::new(),
         };
 
-        contexts.borrow_mut().push(running);
+        contexts
+            .borrow_mut()
+            .push(Rc::new(RefCell::new(Some(running))));
 
         // run effect for the first time to attach all the dependencies
         let (effect, ret) = initial();
@@ -257,7 +265,15 @@ fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
         })));
 
         // attach dependencies
-        for dependency in &contexts.borrow().last().unwrap().dependencies {
+        for dependency in &contexts
+            .borrow()
+            .last()
+            .unwrap()
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .dependencies
+        {
             dependency.subscribe(subscribe_callback.clone());
         }
 
