@@ -207,32 +207,24 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
 /// execution, so it can return a value.
 fn create_effect_initial<R>(initial: impl FnOnce() -> (Rc<Callback>, R)) -> R {
     CONTEXTS.with(|contexts| {
-        let execute = move || {
-            if !contexts.borrow().is_empty() {
-                unimplemented!("nested dependencies are not supported")
-            }
+        contexts.borrow_mut().push(Vec::new());
 
-            contexts.borrow_mut().push(Vec::new());
+        // run effect for the first time to attach all the dependencies
+        let (effect, ret) = initial();
 
-            // run effect for the first time to attach all the dependencies
-            let (effect, ret) = initial();
+        let subscribe_callback = Rc::new(Callback(Box::new(move || {
+            effect.0();
+        })));
 
-            let subscribe_callback = Rc::new(Callback(Box::new(move || {
-                effect.0();
-            })));
+        // attach dependencies
+        for dependency in contexts.borrow().last().unwrap() {
+            dependency.subscribe(subscribe_callback.clone());
+        }
 
-            // attach dependencies
-            for dependency in contexts.borrow().last().unwrap() {
-                dependency.subscribe(subscribe_callback.clone());
-            }
+        // Reset dependencies for next effect hook
+        contexts.borrow_mut().pop().unwrap();
 
-            // Reset dependencies for next effect hook
-            contexts.borrow_mut().pop().unwrap();
-
-            ret
-        };
-
-        execute()
+        ret
     })
 }
 
