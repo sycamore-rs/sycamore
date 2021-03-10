@@ -140,11 +140,7 @@ impl<T: 'static> Signal<T> {
     ///
     /// This will notify and update any effects and memos that depend on this value.
     pub fn set(&self, new_value: T) {
-        match self.handle.0.try_borrow_mut() {
-            Ok(mut signal) => signal.update(new_value),
-            // If the signal is already borrowed, that means it is borrowed in the getter, thus creating a cyclic dependency.
-            Err(_err) => panic!("cannot create cyclic dependency"),
-        }
+        self.handle.0.borrow_mut().update(new_value);
 
         // Clone subscribers to prevent modifying list when calling callbacks.
         let subscribers = self.handle.0.borrow().subscribers.clone();
@@ -244,11 +240,15 @@ fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-fn create_effect_initial<R: 'static + Clone>(initial: impl Fn() -> (Callback, R) + 'static) -> R {
+fn create_effect_initial<R: 'static + Clone>(
+    initial: impl FnOnce() -> (Callback, R) + 'static,
+) -> R {
     let running = Rc::new(RefCell::new(None));
 
     let effect: RefCell<Option<Callback>> = RefCell::new(None);
     let ret: Rc<RefCell<Option<R>>> = Rc::new(RefCell::new(None));
+
+    let initial = RefCell::new(Some(initial));
 
     let execute = Callback(Rc::new({
         let running = running.clone();
@@ -262,12 +262,20 @@ fn create_effect_initial<R: 'static + Clone>(initial: impl Fn() -> (Callback, R)
 
                 contexts.borrow_mut().push(running.clone());
 
-                if effect.borrow().is_some() {
-                    effect.borrow().as_ref().unwrap().0();
-                } else {
+                // if effect.borrow().is_some() {
+                //     effect.borrow().as_ref().unwrap().0();
+                // } else {
+                //     let (effect_tmp, ret_tmp) = initial();
+                //     *effect.borrow_mut() = Some(effect_tmp);
+                //     *ret.borrow_mut() = Some(ret_tmp);
+                // }
+                if initial.borrow().is_some() {
+                    let initial = initial.replace(None).unwrap();
                     let (effect_tmp, ret_tmp) = initial();
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
+                } else {
+                    effect.borrow().as_ref().unwrap().0();
                 }
 
                 // attach dependencies
@@ -304,45 +312,10 @@ pub fn create_effect<F>(effect: F)
 where
     F: Fn() + 'static,
 {
-    let running = Rc::new(RefCell::new(None));
-
-    let execute = Callback(Rc::new({
-        let running = running.clone();
-        move || {
-            CONTEXTS.with(|contexts| {
-                let initial_context_size = contexts.borrow().len();
-
-                cleanup_running(&running);
-                debug_assert!(running.borrow().as_ref().unwrap().dependencies.is_empty());
-
-                contexts.borrow_mut().push(running.clone());
-
-                effect();
-
-                // attach dependencies
-                for dependency in &running.borrow().as_ref().unwrap().dependencies {
-                    dependency
-                        .0
-                        .subscribe(running.borrow().as_ref().unwrap().execute.clone());
-                }
-
-                contexts.borrow_mut().pop();
-
-                debug_assert_eq!(
-                    initial_context_size,
-                    contexts.borrow().len(),
-                    "context size should not change"
-                );
-            });
-        }
-    }));
-
-    *running.borrow_mut() = Some(Running {
-        execute: execute.clone(),
-        dependencies: HashSet::new(),
-    });
-
-    execute.0();
+    create_effect_initial(move || {
+        effect();
+        (Callback(Rc::new(effect)), ())
+    })
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
@@ -449,6 +422,7 @@ mod tests {
         assert_eq!(*double.get(), 4);
     }
 
+    // FIXME: cycle detection is currently broken
     #[test]
     #[ignore]
     #[should_panic(expected = "cannot create cyclic dependency")]
