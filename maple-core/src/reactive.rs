@@ -229,6 +229,7 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
     }
 }
 
+/// Unsubscribes from all the dependencies in [`Running`].
 fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
     let execute = running.borrow().as_ref().unwrap().execute.clone();
 
@@ -302,16 +303,10 @@ where
                 effect();
 
                 // attach dependencies
-                for dependency in &contexts
-                    .borrow()
-                    .last()
-                    .unwrap()
-                    .borrow()
-                    .as_ref()
-                    .unwrap()
-                    .dependencies
-                {
-                    dependency.0.subscribe(running.borrow().as_ref().unwrap().execute.clone());
+                for dependency in &running.borrow().as_ref().unwrap().dependencies {
+                    dependency
+                        .0
+                        .subscribe(running.borrow().as_ref().unwrap().execute.clone());
                 }
 
                 contexts.borrow_mut().pop();
