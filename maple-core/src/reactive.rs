@@ -1,7 +1,10 @@
 //! Reactive primitives.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
+use std::ptr;
 use std::rc::Rc;
 
 /// State of the current running effect.
@@ -20,6 +23,19 @@ thread_local! {
 
 #[derive(Clone)]
 struct Callback(Rc<dyn Fn()>);
+
+impl Hash for Callback {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.0).hash(state);
+    }
+}
+
+impl PartialEq for Callback {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq::<()>(Rc::as_ptr(&self.0).cast(), Rc::as_ptr(&other.0).cast())
+    }
+}
+impl Eq for Callback {}
 
 /// Returned by functions that provide a handle to access state.
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
@@ -169,47 +185,25 @@ impl<T: 'static> Clone for Signal<T> {
 
 struct SignalInner<T> {
     inner: Rc<T>,
-    subscribers: Vec<Callback>,
+    subscribers: HashSet<Callback>,
 }
 
 impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
-            subscribers: Vec::new(),
+            subscribers: HashSet::new(),
         }
     }
 
     /// Adds a handler to the subscriber list. If the handler is already a subscriber, does nothing.
     fn subscribe(&mut self, handler: Callback) {
-        // make sure handler is not already in self.observers
-        if self
-            .subscribers
-            .iter()
-            .find(|subscriber| {
-                subscriber.0.as_ref() as *const _ == handler.0.as_ref() as *const _
-                /* do reference equality */
-            })
-            .is_none()
-        {
-            self.subscribers.push(handler);
-        }
+        self.subscribers.insert(handler);
     }
 
     /// Removes a handler from the subscriber list. If the handler is not a subscriber, does nothing.
     fn unsubscribe(&mut self, handler: &Callback) {
-        self.subscribers = self
-            .subscribers
-            .iter()
-            .filter(|subscriber| {
-                if subscriber.0.as_ref() as *const _ == handler.0.as_ref() as *const _ {
-                    eprintln!("unsubscribed {:?}", subscriber.0.as_ref() as *const _);
-                }
-                subscriber.0.as_ref() as *const _ == handler.0.as_ref() as *const _
-                /* do reference equality */
-            })
-            .cloned()
-            .collect();
+        self.subscribers.remove(handler);
     }
 
     /// Updates the inner value. This does **NOT** call the subscribers.
@@ -253,7 +247,7 @@ fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-fn create_effect_initial<R>(initial: impl Fn() -> (Rc<Callback>, R) + 'static) -> R {
+fn create_effect_initial<R>(initial: impl Fn() -> (Callback, R) + 'static) -> R {
     CONTEXTS.with(|contexts| {
         let running = Running {
             execute: Callback(Rc::new(|| {})),
@@ -386,7 +380,7 @@ where
     create_effect_initial(move || {
         let memo = Signal::new(derived());
 
-        let effect = Rc::new(Callback(Rc::new({
+        let effect = Callback(Rc::new({
             let memo = memo.clone();
             let derived = derived.clone();
             let comparator = comparator.clone();
@@ -396,7 +390,7 @@ where
                     memo.set(new_value);
                 }
             }
-        })));
+        }));
 
         (effect, memo.into_handle())
     })
