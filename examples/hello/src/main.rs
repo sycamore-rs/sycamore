@@ -10,16 +10,13 @@ fn main() {
 
     let name = Signal::new(String::new());
 
-    let displayed_name = create_memo({
-        let name = name.clone();
-        move || {
-            if name.get().is_empty() {
-                "World".to_string()
-            } else {
-                name.get().as_ref().clone()
-            }
+    let displayed_name = create_memo(cloned!((name) => move || {
+        if name.get().is_empty() {
+            "World".to_string()
+        } else {
+            name.get().as_ref().clone()
         }
-    });
+    }));
 
     let handle_change = move |event: Event| {
         name.set(

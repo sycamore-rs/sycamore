@@ -100,12 +100,9 @@ For example, say we wanted to print out every state change. This can easily be a
 ```rust
 let state = Signal::new(0);
 
-create_effect({
-    let state = state.clone();
-    move || {
-        println!("The state changed. New value: {}", state.get());
-    }
-});  // prints "The state changed. New value: 0" (note that the effect is always executed at least 1 regardless of state changes)
+create_effect(cloned!((state) => move || {
+    println!("The state changed. New value: {}", state.get());
+}));  // prints "The state changed. New value: 0" (note that the effect is always executed at least 1 regardless of state changes)
 
 state.set(1); // prints "The state changed. New value: 1"
 state.set(2); // prints "The state changed. New value: 2"
@@ -116,14 +113,26 @@ How does the `create_effect(...)` function know to execute the closure every tim
 Calling `create_effect` creates a new _"reactivity scope"_ and calling `state.get()` inside this scope adds itself as a _dependency_.
 Now, when `state.set(...)` is called, it automatically calls all its _dependents_, in this case, `state` as it was called inside the closure.
 
+> #### What's that `cloned!` macro doing?
+>
+> The `cloned!` macro is an utility macro for cloning the variables into the following expression. The previous `create_effect` function call could very well have been written as:
+>
+> ```rust
+> create_effect({
+>     let state = state.clone();
+>     move || {
+>         println!("The state changed. New value: {}", state.get());
+>     }
+> }));
+> ```
+>
+> This is ultimately just a workaround until something happens in [Rust RFC #2407](https://github.com/rust-lang/rfcs/issues/2407).
+
 We can also easily create a derived state using `create_memo(...)` which is really just an ergonomic wrapper around `create_effect`:
 
 ```rust
 let state = Signal::new(0);
-let double = create_memo({
-    let state = state.clone();
-    move || *state.get() * 2
-});
+let double = create_memo(cloned!((state) => move || *state.get() * 2));
 
 assert_eq!(*double.get(), 0);
 

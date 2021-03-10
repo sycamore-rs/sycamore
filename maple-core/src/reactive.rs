@@ -379,6 +379,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cloned;
 
     #[test]
     fn signals() {
@@ -407,13 +408,9 @@ mod tests {
 
         let double = Signal::new(-1);
 
-        create_effect({
-            let state = state.clone();
-            let double = double.clone();
-            move || {
-                double.set(*state.get() * 2);
-            }
-        });
+        create_effect(cloned!((state, double) => move || {
+            double.set(*state.get() * 2);
+        }));
         assert_eq!(*double.get(), 0); // calling create_effect should call the effect at least once
 
         state.set(1);
@@ -429,12 +426,9 @@ mod tests {
     fn cyclic_effects_fail() {
         let state = Signal::new(0);
 
-        create_effect({
-            let state = state.clone();
-            move || {
-                state.set(*state.get() + 1);
-            }
-        });
+        create_effect(cloned!((state) => move || {
+            state.set(*state.get() + 1);
+        }));
 
         state.set(1);
     }
@@ -445,13 +439,10 @@ mod tests {
     fn cyclic_effects_fail_2() {
         let state = Signal::new(0);
 
-        create_effect({
-            let state = state.clone();
-            move || {
-                let value = *state.get();
-                state.set(value + 1);
-            }
-        });
+        create_effect(cloned!((state) => move || {
+            let value = *state.get();
+            state.set(value + 1);
+        }));
 
         state.set(1);
     }
@@ -461,17 +452,13 @@ mod tests {
         let state = Signal::new(0);
 
         let counter = Signal::new(0);
-        create_effect({
-            let state = state.clone();
-            let counter = counter.clone();
-            move || {
-                counter.set(*counter.get_untracked() + 1);
+        create_effect(cloned!((state, counter) => move || {
+            counter.set(*counter.get_untracked() + 1);
 
-                // call state.get() twice but should subscribe once
-                state.get();
-                state.get();
-            }
-        });
+            // call state.get() twice but should subscribe once
+            state.get();
+            state.get();
+        }));
 
         assert_eq!(*counter.get(), 1);
 
@@ -487,22 +474,15 @@ mod tests {
         let state2 = Signal::new(1);
 
         let counter = Signal::new(0);
-        create_effect({
-            let condition = condition.clone();
-            let state1 = state1.clone();
-            let state2 = state2.clone();
-            let counter = counter.clone();
+        create_effect(cloned!((condition, state1, state2, counter) => move || {
+            counter.set(*counter.get_untracked() + 1);
 
-            move || {
-                counter.set(*counter.get_untracked() + 1);
-
-                if *condition.get() {
-                    state1.get();
-                } else {
-                    state2.get();
-                }
+            if *condition.get() {
+                state1.get();
+            } else {
+                state2.get();
             }
-        });
+        }));
 
         assert_eq!(*counter.get(), 1);
 
@@ -526,10 +506,7 @@ mod tests {
     fn memo() {
         let state = Signal::new(0);
 
-        let double = create_memo({
-            let state = state.clone();
-            move || *state.get() * 2
-        });
+        let double = create_memo(cloned!((state) => move || *state.get() * 2));
         assert_eq!(*double.get(), 0);
 
         state.set(1);
@@ -545,15 +522,11 @@ mod tests {
         let state = Signal::new(0);
 
         let counter = Signal::new(0);
-        let double = create_memo({
-            let state = state.clone();
-            let counter = counter.clone();
-            move || {
-                counter.set(*counter.get_untracked() + 1);
+        let double = create_memo(cloned!((state, counter) => move || {
+            counter.set(*counter.get_untracked() + 1);
 
-                *state.get() * 2
-            }
-        });
+            *state.get() * 2
+        }));
         assert_eq!(*counter.get(), 1); // once for calculating initial derived state
 
         state.set(2);
@@ -566,10 +539,7 @@ mod tests {
     fn dependency_on_memo() {
         let state = Signal::new(0);
 
-        let double = create_memo({
-            let state = state.clone();
-            move || *state.get() * 2
-        });
+        let double = create_memo(cloned!((state) => move || *state.get() * 2));
 
         let quadruple = create_memo(move || *double.get() * 2);
 
@@ -583,10 +553,7 @@ mod tests {
     fn untracked_memo() {
         let state = Signal::new(1);
 
-        let double = create_memo({
-            let state = state.clone();
-            move || *state.get_untracked() * 2
-        });
+        let double = create_memo(cloned!((state) => move || *state.get_untracked() * 2));
 
         assert_eq!(*double.get(), 2);
 
@@ -598,21 +565,14 @@ mod tests {
     fn selector() {
         let state = Signal::new(0);
 
-        let double = create_selector({
-            let state = state.clone();
-            move || *state.get() * 2
-        });
+        let double = create_selector(cloned!((state) => move || *state.get() * 2));
 
         let counter = Signal::new(0);
-        create_effect({
-            let counter = counter.clone();
-            let double = double.clone();
-            move || {
-                counter.set(*counter.get_untracked() + 1);
+        create_effect(cloned!((counter, double) => move || {
+            counter.set(*counter.get_untracked() + 1);
 
-                double.get();
-            }
-        });
+            double.get();
+        }));
         assert_eq!(*double.get(), 0);
         assert_eq!(*counter.get(), 1);
 

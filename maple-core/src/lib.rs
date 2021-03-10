@@ -8,8 +8,9 @@
 //! - `wasm32-unknown-unknown`
 
 #[doc(hidden)]
+pub mod macros;
+#[doc(hidden)]
 pub mod internal;
-
 pub mod reactive;
 
 use web_sys::HtmlElement;
@@ -44,6 +45,7 @@ impl TemplateResult {
 
 /// The maple prelude.
 pub mod prelude {
+    pub use crate::cloned;
     pub use crate::reactive::{
         create_effect, create_memo, create_selector, create_selector_with, Signal, StateHandle,
     };

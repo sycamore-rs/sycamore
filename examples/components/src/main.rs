@@ -20,12 +20,9 @@ fn main() {
 
     let state = Signal::new(1);
 
-    let increment = {
-        let state = state.clone();
-        move |_| {
-            state.set(*state.get() + 1);
-        }
-    };
+    let increment = cloned!((state) => move |_| {
+        state.set(*state.get() + 1);
+    });
 
     let root = template! {
         div {
