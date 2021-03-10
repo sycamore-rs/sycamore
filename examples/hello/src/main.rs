@@ -7,13 +7,13 @@ use web_sys::{Event, HtmlInputElement};
 fn App() -> TemplateResult {
     let name = Signal::new(String::new());
 
-    let displayed_name = create_memo(cloned!((name) => move || {
+    let displayed_name = cloned!((name) => move || {
         if name.get().is_empty() {
             "World".to_string()
         } else {
             name.get().as_ref().clone()
         }
-    }));
+    });
 
     let handle_change = move |event: Event| {
         name.set(
@@ -30,7 +30,7 @@ fn App() -> TemplateResult {
         div {
             h1 {
                 # "Hello "
-                # displayed_name.get()
+                # displayed_name()
                 # "!"
             }
 
