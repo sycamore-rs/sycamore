@@ -7,18 +7,18 @@ use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
 
-/// State of the current running effect.
-struct Running {
-    execute: Callback,
-    dependencies: Vec<Rc<dyn AnySignalInner>>,
-}
-
 thread_local! {
     /// Context of the effect that is currently running. `None` if no effect is running.
     ///
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
     static CONTEXTS: RefCell<Vec<Rc<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
+}
+
+/// State of the current running effect.
+struct Running {
+    execute: Callback,
+    dependencies: HashSet<Dependency>,
 }
 
 #[derive(Clone)]
@@ -37,6 +37,22 @@ impl PartialEq for Callback {
 }
 impl Eq for Callback {}
 
+#[derive(Clone)]
+struct Dependency(Rc<dyn AnySignalInner>);
+
+impl Hash for Dependency {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.0).hash(state);
+    }
+}
+
+impl PartialEq for Dependency {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq::<()>(Rc::as_ptr(&self.0).cast(), Rc::as_ptr(&other.0).cast())
+    }
+}
+impl Eq for Dependency {}
+
 /// Returned by functions that provide a handle to access state.
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 
@@ -48,7 +64,7 @@ impl<T: 'static> StateHandle<T> {
             if !contexts.borrow().is_empty() {
                 let signal = self.0.clone();
 
-                if contexts
+                contexts
                     .borrow()
                     .last()
                     .unwrap()
@@ -56,23 +72,7 @@ impl<T: 'static> StateHandle<T> {
                     .as_mut()
                     .unwrap()
                     .dependencies
-                    .iter()
-                    .find(|dependency| {
-                        dependency.as_ref() as *const _ == signal.as_ref() as *const _
-                        /* do reference equality */
-                    })
-                    .is_none()
-                {
-                    contexts
-                        .borrow()
-                        .last()
-                        .unwrap()
-                        .borrow_mut()
-                        .as_mut()
-                        .unwrap()
-                        .dependencies
-                        .push(signal);
-                }
+                    .insert(Dependency(signal));
             }
         });
 
@@ -233,11 +233,7 @@ fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
     let execute = running.borrow().as_ref().unwrap().execute.clone();
 
     for dependency in &running.borrow().as_ref().unwrap().dependencies {
-        eprintln!(
-            "trying to unsubscribe {:?}",
-            dependency.as_ref() as *const _
-        );
-        dependency.unsubscribe(&execute);
+        dependency.0.unsubscribe(&execute);
     }
 
     running.borrow_mut().as_mut().unwrap().dependencies.clear();
@@ -251,7 +247,7 @@ fn create_effect_initial<R>(initial: impl Fn() -> (Callback, R) + 'static) -> R 
     CONTEXTS.with(|contexts| {
         let running = Running {
             execute: Callback(Rc::new(|| {})),
-            dependencies: Vec::new(),
+            dependencies: HashSet::new(),
         };
 
         contexts
@@ -275,7 +271,7 @@ fn create_effect_initial<R>(initial: impl Fn() -> (Callback, R) + 'static) -> R 
             .unwrap()
             .dependencies
         {
-            dependency.subscribe(subscribe_callback.clone());
+            dependency.0.subscribe(subscribe_callback.clone());
         }
 
         // Reset dependencies for next effect hook
@@ -315,8 +311,7 @@ where
                     .unwrap()
                     .dependencies
                 {
-                    eprintln!("subscribed to {:?}", dependency.as_ref() as *const _);
-                    dependency.subscribe(running.borrow().as_ref().unwrap().execute.clone());
+                    dependency.0.subscribe(running.borrow().as_ref().unwrap().execute.clone());
                 }
 
                 contexts.borrow_mut().pop();
@@ -332,7 +327,7 @@ where
 
     *running.borrow_mut() = Some(Running {
         execute: execute.clone(),
-        dependencies: Vec::new(),
+        dependencies: HashSet::new(),
     });
 
     execute.0()
@@ -511,10 +506,6 @@ mod tests {
             let state1 = state1.clone();
             let state2 = state2.clone();
             let counter = counter.clone();
-
-            eprintln!("condition: {:?}", condition.handle.0.as_ref() as *const _);
-            eprintln!("state1: {:?}", state1.handle.0.as_ref() as *const _);
-            eprintln!("state2: {:?}", state2.handle.0.as_ref() as *const _);
 
             move || {
                 counter.set(*counter.get_untracked() + 1);
