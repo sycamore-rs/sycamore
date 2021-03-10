@@ -1,7 +1,4 @@
-on:
-  pull_request:
-    tags:
-      - 'performance'
+on: [pull_request]
 
 name: Bench
 
