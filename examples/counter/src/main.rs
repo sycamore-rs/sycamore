@@ -6,22 +6,13 @@ fn main() {
 
     let counter = Signal::new(0);
 
-    create_effect({
-        let counter = counter.clone();
-        move || {
-            log::info!("Counter value: {}", *counter.get());
-        }
-    });
+    create_effect(cloned!((counter) => move || {
+        log::info!("Counter value: {}", *counter.get());
+    }));
 
-    let increment = {
-        let counter = counter.clone();
-        move |_| counter.set(*counter.get() + 1)
-    };
+    let increment = cloned!((counter) => move |_| counter.set(*counter.get() + 1));
 
-    let reset = {
-        let counter = counter.clone();
-        move |_| counter.set(0)
-    };
+    let reset = cloned!((counter) => move |_| counter.set(0));
 
     let root = template! {
         div {
