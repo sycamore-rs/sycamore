@@ -30,7 +30,7 @@ jobs:
       - name: Run cargo bench on head
         run: cargo bench
 
-      - name: upload benchmark report
+      - name: Upload benchmark report
         uses: actions/upload-artifact@v2
         with:
           name: Benchmark report
