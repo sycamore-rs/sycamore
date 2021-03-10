@@ -13,7 +13,7 @@ pub mod internal;
 pub mod macros;
 pub mod reactive;
 
-use web_sys::HtmlElement;
+use web_sys::Node;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -21,7 +21,7 @@ use std::rc::Rc;
 /// The result of the `template!` macro. Should not be used directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult {
-    element: HtmlElement,
+    node: Node,
 }
 
 /// Render a [`TemplateResult`] into the DOM.
@@ -33,7 +33,7 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
         document
             .body()
             .unwrap()
-            .append_child(&template_result().element)
+            .append_child(&template_result().node)
             .unwrap();
     });
 
@@ -46,12 +46,12 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
 
 impl TemplateResult {
     /// Create a new `TemplateResult` from an [`HtmlElement`].
-    pub fn new(element: HtmlElement) -> Self {
-        Self { element }
+    pub fn new(node: Node) -> Self {
+        Self { node }
     }
 
-    pub fn inner_element(&self) -> HtmlElement {
-        self.element.clone()
+    pub fn inner_element(&self) -> Node {
+        self.node.clone()
     }
 }
 

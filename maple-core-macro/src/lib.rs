@@ -2,6 +2,7 @@ mod attributes;
 mod children;
 mod component;
 mod element;
+mod ifelse;
 mod text;
 
 use proc_macro::TokenStream;
@@ -14,12 +15,16 @@ pub(crate) enum HtmlType {
     Component,
     Element,
     Text,
+    // Control flow
+    IfElse,
 }
 
 pub(crate) enum HtmlTree {
     Component(component::Component),
     Element(element::Element),
     Text(text::Text),
+    // Control flow
+    IfElse(ifelse::IfElse),
 }
 
 impl HtmlTree {
@@ -28,6 +33,8 @@ impl HtmlTree {
 
         if input.peek(Token![#]) {
             Some(HtmlType::Text)
+        } else if input.peek(Token![@]) {
+            Some(HtmlType::IfElse)
         } else if input.peek(Token![::]) {
             Some(HtmlType::Component)
         } else if input.peek(Ident::peek_any) {
@@ -56,6 +63,7 @@ impl Parse for HtmlTree {
             HtmlType::Component => Self::Component(input.parse()?),
             HtmlType::Element => Self::Element(input.parse()?),
             HtmlType::Text => Self::Text(input.parse()?),
+            HtmlType::IfElse => Self::IfElse(input.parse()?),
         })
     }
 }
@@ -66,6 +74,7 @@ impl ToTokens for HtmlTree {
             Self::Component(component) => component.to_tokens(tokens),
             Self::Element(element) => element.to_tokens(tokens),
             Self::Text(text) => text.to_tokens(tokens),
+            Self::IfElse(ifelse) => ifelse.to_tokens(tokens),
         }
     }
 }
@@ -78,7 +87,7 @@ pub fn template(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as HtmlTree);
 
     let quoted = quote! {
-        ::maple_core::TemplateResult::new(#input)
+        ::maple_core::TemplateResult::new(::std::convert::Into::<_>::into(#input))
     };
 
     TokenStream::from(quoted)
