@@ -244,42 +244,59 @@ fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-fn create_effect_initial<R>(initial: impl Fn() -> (Callback, R) + 'static) -> R {
-    CONTEXTS.with(|contexts| {
-        let running = Running {
-            execute: Callback(Rc::new(|| {})),
-            dependencies: HashSet::new(),
-        };
+fn create_effect_initial<R: 'static + Clone>(initial: impl Fn() -> (Callback, R) + 'static) -> R {
+    let running = Rc::new(RefCell::new(None));
 
-        contexts
-            .borrow_mut()
-            .push(Rc::new(RefCell::new(Some(running))));
+    let effect: RefCell<Option<Callback>> = RefCell::new(None);
+    let ret: Rc<RefCell<Option<R>>> = Rc::new(RefCell::new(None));
 
-        // run effect for the first time to attach all the dependencies
-        let (effect, ret) = initial();
+    let execute = Callback(Rc::new({
+        let running = running.clone();
+        let ret = ret.clone();
+        move || {
+            CONTEXTS.with(|contexts| {
+                let initial_context_size = contexts.borrow().len();
 
-        let subscribe_callback = Callback(Rc::new(move || {
-            effect.0();
-        }));
+                cleanup_running(&running);
+                debug_assert!(running.borrow().as_ref().unwrap().dependencies.is_empty());
 
-        // attach dependencies
-        for dependency in &contexts
-            .borrow()
-            .last()
-            .unwrap()
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .dependencies
-        {
-            dependency.0.subscribe(subscribe_callback.clone());
+                contexts.borrow_mut().push(running.clone());
+
+                if effect.borrow().is_some() {
+                    effect.borrow().as_ref().unwrap().0();
+                } else {
+                    let (effect_tmp, ret_tmp) = initial();
+                    *effect.borrow_mut() = Some(effect_tmp);
+                    *ret.borrow_mut() = Some(ret_tmp);
+                }
+
+                // attach dependencies
+                for dependency in &running.borrow().as_ref().unwrap().dependencies {
+                    dependency
+                        .0
+                        .subscribe(running.borrow().as_ref().unwrap().execute.clone());
+                }
+
+                contexts.borrow_mut().pop();
+
+                debug_assert_eq!(
+                    initial_context_size,
+                    contexts.borrow().len(),
+                    "context size should not change"
+                );
+            });
         }
+    }));
 
-        // Reset dependencies for next effect hook
-        contexts.borrow_mut().pop().unwrap();
+    *running.borrow_mut() = Some(Running {
+        execute: execute.clone(),
+        dependencies: HashSet::new(),
+    });
 
-        ret
-    })
+    execute.0();
+
+    let ret = ret.borrow();
+    ret.as_ref().unwrap().clone()
 }
 
 /// Creates an effect on signals used inside the effect closure.
@@ -325,7 +342,7 @@ where
         dependencies: HashSet::new(),
     });
 
-    execute.0()
+    execute.0();
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
