@@ -7,7 +7,7 @@ thread_local! {
     ///
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
-    pub(super) static CONTEXTS: RefCell<Vec<Rc<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
+    pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
     pub(super) static OWNERS: RefCell<Vec<Owner>> = RefCell::new(Vec::new());
 }
 
@@ -104,7 +104,7 @@ fn create_effect_initial<R: 'static + Clone>(
                 running.borrow_mut().as_mut().unwrap().clear_dependencies();
                 debug_assert!(running.borrow().as_ref().unwrap().dependencies.is_empty());
 
-                contexts.borrow_mut().push(running.clone());
+                contexts.borrow_mut().push(Rc::downgrade(&running));
 
                 if initial.borrow().is_some() {
                     let initial = initial.replace(None).unwrap();
@@ -137,6 +137,12 @@ fn create_effect_initial<R: 'static + Clone>(
         execute: execute.clone(),
         dependencies: HashSet::new(),
     });
+    debug_assert_eq!(
+        Rc::strong_count(&running),
+        2,
+        "Running should be owned by execute closure"
+    );
+    drop(running); // strong count should now be 1
 
     OWNERS.with(|owners| {
         if owners.borrow().last().is_some() {

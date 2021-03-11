@@ -15,6 +15,8 @@ impl<T: 'static> StateHandle<T> {
                     .borrow()
                     .last()
                     .unwrap()
+                    .upgrade()
+                    .expect("Running should be valid while inside reactive scope")
                     .borrow_mut()
                     .as_mut()
                     .unwrap()
