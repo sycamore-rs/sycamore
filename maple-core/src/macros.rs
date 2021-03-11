@@ -1,13 +1,13 @@
 //! Definition of `cloned!` macro. Proc-macros are defined in the separate `maple-core-macro` crate.
 
 /// Utility macro for cloning all the arguments and expanding the expression.
-/// 
+///
 /// Temporary workaround for [Rust RFC #2407](https://github.com/rust-lang/rfcs/issues/2407).
 ///
 /// # Example
 /// ```
 /// use maple_core::prelude::*;
-/// 
+///
 /// let state = Signal::new(0);
 ///
 /// create_effect(cloned!((state) => move || {

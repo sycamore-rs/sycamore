@@ -8,9 +8,9 @@
 //! - `wasm32-unknown-unknown`
 
 #[doc(hidden)]
-pub mod macros;
-#[doc(hidden)]
 pub mod internal;
+#[doc(hidden)]
+pub mod macros;
 pub mod reactive;
 
 use web_sys::HtmlElement;
