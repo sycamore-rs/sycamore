@@ -423,6 +423,29 @@ mod tests {
     }
 
     #[test]
+    fn destroy_effects_on_owner_drop() {
+        let counter = Signal::new(0);
+
+        let trigger = Signal::new(());
+
+        let owner = create_root(cloned!((trigger, counter) => move || {
+            create_effect(move || {
+                trigger.get(); // subscribe to trigger
+                counter.set(*counter.get_untracked() + 1);
+            });
+        }));
+
+        assert_eq!(*counter.get(), 1);
+
+        trigger.set(());
+        assert_eq!(*counter.get(), 2);
+
+        drop(owner);
+        trigger.set(());
+        assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
+    }
+
+    #[test]
     fn memo() {
         let state = Signal::new(0);
 
