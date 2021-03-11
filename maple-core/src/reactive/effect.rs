@@ -1,3 +1,5 @@
+use std::rc::Weak;
+
 use super::*;
 
 thread_local! {
@@ -15,6 +17,7 @@ pub(super) struct Running {
     pub(super) dependencies: HashSet<Dependency>,
 }
 
+/// Owns the effects created in the current reactive scope.
 pub(super) struct Owner {}
 
 #[derive(Clone)]
@@ -33,18 +36,28 @@ impl PartialEq for Callback {
 }
 impl Eq for Callback {}
 
+/// A [`Week`] backlink to a [`Signal`] for any type `T`.
 #[derive(Clone)]
-pub(super) struct Dependency(pub(super) Rc<dyn AnySignalInner>);
+pub(super) struct Dependency(pub(super) Weak<dyn AnySignalInner>);
+
+impl Dependency {
+    fn signal(&self) -> Rc<dyn AnySignalInner> {
+        self.0.upgrade().expect("backlink should always be valid")
+    }
+}
 
 impl Hash for Dependency {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.0).hash(state);
+        Rc::as_ptr(&self.0.upgrade().expect("backlink should always be valid")).hash(state);
     }
 }
 
 impl PartialEq for Dependency {
     fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<()>(Rc::as_ptr(&self.0).cast(), Rc::as_ptr(&other.0).cast())
+        ptr::eq::<_>(
+            Rc::as_ptr(&self.0.upgrade().expect("backlink should always be valid")),
+            Rc::as_ptr(&other.0.upgrade().expect("backlink should always be valid")),
+        )
     }
 }
 impl Eq for Dependency {}
@@ -54,7 +67,7 @@ fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
     let execute = running.borrow().as_ref().unwrap().execute.clone();
 
     for dependency in &running.borrow().as_ref().unwrap().dependencies {
-        dependency.0.unsubscribe(&execute);
+        dependency.signal().unsubscribe(&execute);
     }
 
     running.borrow_mut().as_mut().unwrap().dependencies.clear();
@@ -98,7 +111,7 @@ fn create_effect_initial<R: 'static + Clone>(
                 // attach dependencies
                 for dependency in &running.borrow().as_ref().unwrap().dependencies {
                     dependency
-                        .0
+                        .signal()
                         .subscribe(running.borrow().as_ref().unwrap().execute.clone());
                 }
 

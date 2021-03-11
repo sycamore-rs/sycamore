@@ -9,7 +9,7 @@ impl<T: 'static> StateHandle<T> {
         // if inside an effect, add this signal to dependency list
         CONTEXTS.with(|contexts| {
             if !contexts.borrow().is_empty() {
-                let signal = self.0.clone();
+                let signal = Rc::downgrade(&self.0.clone());
 
                 contexts
                     .borrow()
