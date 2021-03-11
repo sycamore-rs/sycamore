@@ -13,6 +13,7 @@ thread_local! {
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
     static CONTEXTS: RefCell<Vec<Rc<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
+    static OWNERS: RefCell<Vec<Owner>> = RefCell::new(Vec::new());
 }
 
 /// State of the current running effect.
@@ -20,6 +21,8 @@ struct Running {
     execute: Callback,
     dependencies: HashSet<Dependency>,
 }
+
+struct Owner {}
 
 #[derive(Clone)]
 struct Callback(Rc<dyn Fn()>);
@@ -262,13 +265,6 @@ fn create_effect_initial<R: 'static + Clone>(
 
                 contexts.borrow_mut().push(running.clone());
 
-                // if effect.borrow().is_some() {
-                //     effect.borrow().as_ref().unwrap().0();
-                // } else {
-                //     let (effect_tmp, ret_tmp) = initial();
-                //     *effect.borrow_mut() = Some(effect_tmp);
-                //     *ret.borrow_mut() = Some(ret_tmp);
-                // }
                 if initial.borrow().is_some() {
                     let initial = initial.replace(None).unwrap();
                     let (effect_tmp, ret_tmp) = initial();
@@ -299,6 +295,17 @@ fn create_effect_initial<R: 'static + Clone>(
     *running.borrow_mut() = Some(Running {
         execute: execute.clone(),
         dependencies: HashSet::new(),
+    });
+
+    OWNERS.with(|owners| {
+        if owners.borrow().last().is_some() {
+            owners.borrow_mut().last_mut().unwrap()/* .computations.push() */;
+        } else {
+            #[cfg(all(target_arch = "wasm32", debug_assertions))]
+            web_sys::console::warn_1(&"Effects created outside of a reactive root will never get disposed.".into());
+            #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
+            eprintln!("WARNING: Effects created outside of a reactive root will never get disposed.");
+        }
     });
 
     execute.0();

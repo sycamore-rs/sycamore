@@ -17,6 +17,7 @@ wasm-bindgen = "0.2.71"
 
 [dependencies.web-sys]
 features = [
+  "console",
   "Document",
   "Element",
   "Event",
