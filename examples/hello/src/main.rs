@@ -41,5 +41,5 @@ fn main() {
         }
     };
 
-    render(root);
+    render(|| root);
 }

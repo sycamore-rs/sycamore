@@ -22,13 +22,13 @@ pub struct TemplateResult {
 }
 
 /// Render an [`HtmlElement`] into the DOM.
-pub fn render(template_result: TemplateResult) {
+pub fn render(template_result: impl FnOnce() -> TemplateResult) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
     document
         .body()
         .unwrap()
-        .append_child(&template_result.element)
+        .append_child(&template_result().element)
         .unwrap();
 }
 
