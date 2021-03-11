@@ -21,7 +21,7 @@ pub struct TemplateResult {
     element: HtmlElement,
 }
 
-/// Render an [`HtmlElement`] into the DOM.
+/// Render a [`TemplateResult`] into the DOM.
 pub fn render(template_result: impl FnOnce() -> TemplateResult) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();

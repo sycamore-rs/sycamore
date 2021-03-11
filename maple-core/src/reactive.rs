@@ -228,6 +228,15 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
     }
 }
 
+/// Creates a new reactive root. Generally, you won't need this method as it is called automatically in [`render`](crate::render).
+pub fn create_root(callback: Box<dyn Fn()>) {
+    OWNERS.with(|owners| {
+        owners.borrow_mut().push(Owner {});
+        callback();
+        owners.borrow_mut().pop().unwrap(); // destroy all effects created inside scope
+    });
+}
+
 /// Unsubscribes from all the dependencies in [`Running`].
 fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
     let execute = running.borrow().as_ref().unwrap().execute.clone();
@@ -302,9 +311,13 @@ fn create_effect_initial<R: 'static + Clone>(
             owners.borrow_mut().last_mut().unwrap()/* .computations.push() */;
         } else {
             #[cfg(all(target_arch = "wasm32", debug_assertions))]
-            web_sys::console::warn_1(&"Effects created outside of a reactive root will never get disposed.".into());
+            web_sys::console::warn_1(
+                &"Effects created outside of a reactive root will never get disposed.".into(),
+            );
             #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
-            eprintln!("WARNING: Effects created outside of a reactive root will never get disposed.");
+            eprintln!(
+                "WARNING: Effects created outside of a reactive root will never get disposed."
+            );
         }
     });
 
