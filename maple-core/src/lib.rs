@@ -29,13 +29,13 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
-    let owner = reactive::create_root(Box::new(move || {
+    let owner = reactive::create_root(move || {
         document
             .body()
             .unwrap()
             .append_child(&template_result().element)
             .unwrap();
-    }));
+    });
 
     thread_local! {
         static GLOBAL_OWNERS: RefCell<Vec<Rc<RefCell<reactive::Owner>>>> = RefCell::new(Vec::new());

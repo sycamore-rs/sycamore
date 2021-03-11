@@ -16,6 +16,7 @@ thread_local! {
 pub(super) struct Running {
     pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
+    owner: Rc<RefCell<Owner>>,
 }
 
 impl Running {
@@ -50,6 +51,14 @@ impl Owner {
 
     pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
         self.effects.push(effect);
+    }
+}
+
+impl Drop for Owner {
+    fn drop(&mut self) {
+        for effect in &self.effects {
+            effect.borrow_mut().as_mut().unwrap().clear_dependencies();
+        }
     }
 }
 
@@ -137,7 +146,17 @@ fn create_effect_initial<R: 'static + Clone>(
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
-                    effect.borrow().as_ref().unwrap()();
+                    let effect = effect.clone();
+                    let owner = create_root(move || {
+                        effect.borrow().as_ref().unwrap()();
+                    });
+                    running
+                        .upgrade()
+                        .unwrap()
+                        .borrow_mut()
+                        .as_mut()
+                        .unwrap()
+                        .owner = owner;
                 }
 
                 // attach dependencies
@@ -174,6 +193,7 @@ fn create_effect_initial<R: 'static + Clone>(
     *running.borrow_mut() = Some(Running {
         execute: execute.clone(),
         dependencies: HashSet::new(),
+        owner: Rc::new(RefCell::new(Owner::new())),
     });
     debug_assert_eq!(
         Rc::strong_count(&running),
@@ -380,6 +400,26 @@ mod tests {
 
         state2.set(2);
         assert_eq!(*counter.get(), 4); // tracked after condition.set
+    }
+
+    #[test]
+    fn nested_effects_should_recreate_inner() {
+        let counter = Signal::new(0);
+
+        let trigger = Signal::new(());
+
+        create_effect(cloned!((trigger, counter) => move || {
+            trigger.get(); // subscribe to trigger
+
+            create_effect(cloned!((counter) => move || {
+                counter.set(*counter.get_untracked() + 1);
+            }));
+        }));
+
+        assert_eq!(*counter.get(), 1);
+
+        trigger.set(());
+        assert_eq!(*counter.get(), 2); // old inner effect should be destroyed and thus not executed
     }
 
     #[test]
