@@ -12,9 +12,27 @@ thread_local! {
 }
 
 /// State of the current running effect.
+/// When the state is dropped, all dependencies are removed (both links and backlinks).
 pub(super) struct Running {
     pub(super) execute: Callback,
     pub(super) dependencies: HashSet<Dependency>,
+}
+
+impl Running {
+    /// Clears the dependencies (both links and backlinks).
+    /// Should be called when re-executing an effect to recreate all dependencies.
+    fn clear_dependencies(&mut self) {
+        for dependency in &self.dependencies {
+            dependency.signal().unsubscribe(&self.execute);
+        }
+        self.dependencies.clear();
+    }
+}
+
+impl Drop for Running {
+    fn drop(&mut self) {
+        self.clear_dependencies();
+    }
 }
 
 /// Owns the effects created in the current reactive scope.
@@ -62,17 +80,6 @@ impl PartialEq for Dependency {
 }
 impl Eq for Dependency {}
 
-/// Unsubscribes from all the dependencies in [`Running`].
-fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
-    let execute = running.borrow().as_ref().unwrap().execute.clone();
-
-    for dependency in &running.borrow().as_ref().unwrap().dependencies {
-        dependency.signal().unsubscribe(&execute);
-    }
-
-    running.borrow_mut().as_mut().unwrap().dependencies.clear();
-}
-
 /// Creates an effect on signals used inside the effect closure.
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
@@ -80,7 +87,7 @@ fn cleanup_running(running: &Rc<RefCell<Option<Running>>>) {
 fn create_effect_initial<R: 'static + Clone>(
     initial: impl FnOnce() -> (Callback, R) + 'static,
 ) -> R {
-    let running = Rc::new(RefCell::new(None));
+    let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
     let effect: RefCell<Option<Callback>> = RefCell::new(None);
     let ret: Rc<RefCell<Option<R>>> = Rc::new(RefCell::new(None));
@@ -94,7 +101,7 @@ fn create_effect_initial<R: 'static + Clone>(
             CONTEXTS.with(|contexts| {
                 let initial_context_size = contexts.borrow().len();
 
-                cleanup_running(&running);
+                running.borrow_mut().as_mut().unwrap().clear_dependencies();
                 debug_assert!(running.borrow().as_ref().unwrap().dependencies.is_empty());
 
                 contexts.borrow_mut().push(running.clone());
