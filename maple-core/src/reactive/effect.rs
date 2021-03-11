@@ -8,7 +8,7 @@ thread_local! {
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
     pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
-    pub(super) static OWNERS: RefCell<Vec<Owner>> = RefCell::new(Vec::new());
+    pub(super) static OWNER: RefCell<Option<Rc<RefCell<Owner>>>> = RefCell::new(None);
 }
 
 /// State of the current running effect.
@@ -39,16 +39,16 @@ impl Drop for Running {
 
 /// Owns the effects created in the current reactive scope.
 #[derive(Default)]
-pub(super) struct Owner {
+pub struct Owner {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
 }
 
 impl Owner {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self::default()
     }
 
-    pub fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
+    pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
         self.effects.push(effect);
     }
 }
@@ -128,14 +128,6 @@ fn create_effect_initial<R: 'static + Clone>(
                     .as_mut()
                     .unwrap()
                     .clear_dependencies();
-                debug_assert!(running
-                    .upgrade()
-                    .unwrap()
-                    .borrow()
-                    .as_ref()
-                    .unwrap()
-                    .dependencies
-                    .is_empty());
 
                 contexts.borrow_mut().push(running.clone());
 
@@ -149,9 +141,22 @@ fn create_effect_initial<R: 'static + Clone>(
                 }
 
                 // attach dependencies
-                for dependency in &running.upgrade().unwrap().borrow().as_ref().unwrap().dependencies {
+                for dependency in &running
+                    .upgrade()
+                    .unwrap()
+                    .borrow()
+                    .as_ref()
+                    .unwrap()
+                    .dependencies
+                {
                     dependency.signal().subscribe(Callback(Rc::downgrade(
-                        &running.upgrade().unwrap().borrow().as_ref().unwrap().execute,
+                        &running
+                            .upgrade()
+                            .unwrap()
+                            .borrow()
+                            .as_ref()
+                            .unwrap()
+                            .execute,
                     )));
                 }
 
@@ -176,12 +181,13 @@ fn create_effect_initial<R: 'static + Clone>(
         "Running should be owned exclusively by owner"
     );
 
-    OWNERS.with(|owners| {
-        if owners.borrow().last().is_some() {
-            owners
-                .borrow_mut()
-                .last_mut()
+    OWNER.with(|owner| {
+        if owner.borrow().is_some() {
+            owner
+                .borrow()
+                .as_ref()
                 .unwrap()
+                .borrow_mut()
                 .add_effect_state(running);
         } else {
             #[cfg(all(target_arch = "wasm32", debug_assertions))]
@@ -190,7 +196,7 @@ fn create_effect_initial<R: 'static + Clone>(
             );
             #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
             eprintln!(
-                "WARNING: Effects created outside of a reactive root will never get disposed."
+                "WARNING: Effects created outside of a reactive root will never get dropped."
             );
             Rc::into_raw(running); // leak running
         }

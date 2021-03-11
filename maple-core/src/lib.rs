@@ -15,6 +15,9 @@ pub mod reactive;
 
 use web_sys::HtmlElement;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 /// The result of the `template!` macro. Should not be used directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult {
@@ -22,14 +25,23 @@ pub struct TemplateResult {
 }
 
 /// Render a [`TemplateResult`] into the DOM.
-pub fn render(template_result: impl FnOnce() -> TemplateResult) {
+pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
-    document
-        .body()
-        .unwrap()
-        .append_child(&template_result().element)
-        .unwrap();
+
+    let owner = reactive::create_root(Box::new(move || {
+        document
+            .body()
+            .unwrap()
+            .append_child(&template_result().element)
+            .unwrap();
+    }));
+
+    thread_local! {
+        static GLOBAL_OWNERS: RefCell<Vec<Rc<RefCell<reactive::Owner>>>> = RefCell::new(Vec::new());
+    }
+
+    GLOBAL_OWNERS.with(|global_owners| global_owners.borrow_mut().push(owner));
 }
 
 impl TemplateResult {
