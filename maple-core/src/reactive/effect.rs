@@ -14,7 +14,7 @@ thread_local! {
 /// State of the current running effect.
 /// When the state is dropped, all dependencies are removed (both links and backlinks).
 pub(super) struct Running {
-    pub(super) execute: Callback,
+    pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
 }
 
@@ -23,7 +23,9 @@ impl Running {
     /// Should be called when re-executing an effect to recreate all dependencies.
     fn clear_dependencies(&mut self) {
         for dependency in &self.dependencies {
-            dependency.signal().unsubscribe(&self.execute);
+            dependency
+                .signal()
+                .unsubscribe(&Callback(Rc::downgrade(&self.execute)));
         }
         self.dependencies.clear();
     }
@@ -36,20 +38,41 @@ impl Drop for Running {
 }
 
 /// Owns the effects created in the current reactive scope.
-pub(super) struct Owner {}
+#[derive(Default)]
+pub(super) struct Owner {
+    effects: Vec<Rc<RefCell<Option<Running>>>>,
+}
+
+impl Owner {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
+        self.effects.push(effect);
+    }
+}
 
 #[derive(Clone)]
-pub(super) struct Callback(pub(super) Rc<dyn Fn()>);
+pub(super) struct Callback(pub(super) Weak<dyn Fn()>);
+
+impl Callback {
+    #[track_caller]
+    #[must_use = "returned value must be manually called"]
+    pub fn callback(&self) -> Rc<dyn Fn()> {
+        self.0.upgrade().expect("callback should always be valid")
+    }
+}
 
 impl Hash for Callback {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.0).hash(state);
+        Rc::as_ptr(&self.callback()).hash(state);
     }
 }
 
 impl PartialEq for Callback {
     fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<()>(Rc::as_ptr(&self.0).cast(), Rc::as_ptr(&other.0).cast())
+        ptr::eq::<_>(Rc::as_ptr(&self.callback()), Rc::as_ptr(&other.callback()))
     }
 }
 impl Eq for Callback {}
@@ -66,16 +89,13 @@ impl Dependency {
 
 impl Hash for Dependency {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.0.upgrade().expect("backlink should always be valid")).hash(state);
+        Rc::as_ptr(&self.signal()).hash(state);
     }
 }
 
 impl PartialEq for Dependency {
     fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<_>(
-            Rc::as_ptr(&self.0.upgrade().expect("backlink should always be valid")),
-            Rc::as_ptr(&other.0.upgrade().expect("backlink should always be valid")),
-        )
+        ptr::eq::<_>(Rc::as_ptr(&self.signal()), Rc::as_ptr(&other.signal()))
     }
 }
 impl Eq for Dependency {}
@@ -85,26 +105,39 @@ impl Eq for Dependency {}
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 fn create_effect_initial<R: 'static + Clone>(
-    initial: impl FnOnce() -> (Callback, R) + 'static,
+    initial: impl FnOnce() -> (Rc<dyn Fn()>, R) + 'static,
 ) -> R {
     let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
-    let effect: RefCell<Option<Callback>> = RefCell::new(None);
+    let effect: RefCell<Option<Rc<dyn Fn()>>> = RefCell::new(None);
     let ret: Rc<RefCell<Option<R>>> = Rc::new(RefCell::new(None));
 
     let initial = RefCell::new(Some(initial));
 
-    let execute = Callback(Rc::new({
-        let running = running.clone();
+    let execute: Rc<dyn Fn()> = Rc::new({
+        let running = Rc::downgrade(&running);
         let ret = ret.clone();
         move || {
             CONTEXTS.with(|contexts| {
                 let initial_context_size = contexts.borrow().len();
 
-                running.borrow_mut().as_mut().unwrap().clear_dependencies();
-                debug_assert!(running.borrow().as_ref().unwrap().dependencies.is_empty());
+                running
+                    .upgrade()
+                    .unwrap()
+                    .borrow_mut()
+                    .as_mut()
+                    .unwrap()
+                    .clear_dependencies();
+                debug_assert!(running
+                    .upgrade()
+                    .unwrap()
+                    .borrow()
+                    .as_ref()
+                    .unwrap()
+                    .dependencies
+                    .is_empty());
 
-                contexts.borrow_mut().push(Rc::downgrade(&running));
+                contexts.borrow_mut().push(running.clone());
 
                 if initial.borrow().is_some() {
                     let initial = initial.replace(None).unwrap();
@@ -112,14 +145,14 @@ fn create_effect_initial<R: 'static + Clone>(
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
-                    effect.borrow().as_ref().unwrap().0();
+                    effect.borrow().as_ref().unwrap()();
                 }
 
                 // attach dependencies
-                for dependency in &running.borrow().as_ref().unwrap().dependencies {
-                    dependency
-                        .signal()
-                        .subscribe(running.borrow().as_ref().unwrap().execute.clone());
+                for dependency in &running.upgrade().unwrap().borrow().as_ref().unwrap().dependencies {
+                    dependency.signal().subscribe(Callback(Rc::downgrade(
+                        &running.upgrade().unwrap().borrow().as_ref().unwrap().execute,
+                    )));
                 }
 
                 contexts.borrow_mut().pop();
@@ -131,7 +164,7 @@ fn create_effect_initial<R: 'static + Clone>(
                 );
             });
         }
-    }));
+    });
 
     *running.borrow_mut() = Some(Running {
         execute: execute.clone(),
@@ -139,14 +172,17 @@ fn create_effect_initial<R: 'static + Clone>(
     });
     debug_assert_eq!(
         Rc::strong_count(&running),
-        2,
-        "Running should be owned by execute closure"
+        1,
+        "Running should be owned exclusively by owner"
     );
-    drop(running); // strong count should now be 1
 
     OWNERS.with(|owners| {
         if owners.borrow().last().is_some() {
-            owners.borrow_mut().last_mut().unwrap()/* .computations.push() */;
+            owners
+                .borrow_mut()
+                .last_mut()
+                .unwrap()
+                .add_effect_state(running);
         } else {
             #[cfg(all(target_arch = "wasm32", debug_assertions))]
             web_sys::console::warn_1(
@@ -156,10 +192,11 @@ fn create_effect_initial<R: 'static + Clone>(
             eprintln!(
                 "WARNING: Effects created outside of a reactive root will never get disposed."
             );
+            Rc::into_raw(running); // leak running
         }
     });
 
-    execute.0();
+    execute();
 
     let ret = ret.borrow();
     ret.as_ref().unwrap().clone()
@@ -172,7 +209,7 @@ where
 {
     create_effect_initial(move || {
         effect();
-        (Callback(Rc::new(effect)), ())
+        (Rc::new(effect), ())
     })
 }
 
@@ -218,7 +255,7 @@ where
     create_effect_initial(move || {
         let memo = Signal::new(derived());
 
-        let effect = Callback(Rc::new({
+        let effect = Rc::new({
             let memo = memo.clone();
             let derived = derived.clone();
             let comparator = comparator.clone();
@@ -228,7 +265,7 @@ where
                     memo.set(new_value);
                 }
             }
-        }));
+        });
 
         (effect, memo.into_handle())
     })

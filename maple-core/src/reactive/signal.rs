@@ -95,7 +95,7 @@ impl<T: 'static> Signal<T> {
         let subscribers = self.handle.0.borrow().subscribers.clone();
 
         for subscriber in subscribers {
-            subscriber.0();
+            subscriber.callback()();
         }
     }
 
