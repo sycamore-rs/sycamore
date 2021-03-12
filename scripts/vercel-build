@@ -1,16 +1,20 @@
 #!/bin/bash
 
+echo Installing Rust with wasm32-unknown-unknown target
+
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown 
 
-curl -o trunk.tar.gz https://github.com/thedodd/trunk/releases/download/v0.8.1/trunk-x86_64-unknown-linux-gnu.tar.gz
-ls
-tar -xzf trunk.tar.gz
+
+echo Installing trunk
+curl -o trunk.tar.gz https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz
+tar -xzf- trunk.tar.gz
 mv trunk /usr/bin/
 
+echo Installing wasm-bindgen
 curl -O https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
-tar -xzf wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
+tar -xvf wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
 mv wasm-bindgen-0.2.71-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
 cd ./docs
