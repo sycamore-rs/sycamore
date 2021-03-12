@@ -15,7 +15,7 @@ fn App() -> TemplateResult {
         }
     });
 
-    let handle_change = move |event: Event| {
+    let handle_change = cloned!((name) => move |event: Event| {
         name.set(
             event
                 .target()
@@ -24,7 +24,7 @@ fn App() -> TemplateResult {
                 .unwrap()
                 .value(),
         );
-    };
+    });
 
     template! {
         div {
