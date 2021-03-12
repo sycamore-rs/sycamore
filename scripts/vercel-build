@@ -7,7 +7,7 @@ source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown 
 
 yum install wget
-apt-get install build-essential -y
+yum install gcc gcc-c++ kernel-devel make
 
 echo Installing trunk
 wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
