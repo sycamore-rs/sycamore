@@ -1,0 +1,36 @@
+#!/bin/bash
+
+curl https://sh.rustup.rs -sSf | sh -s -- -y
+source $HOME/.cargo/env
+rustup target add wasm32-unknown-unknown 
+
+wget -qO- https://github.com/thedodd/trunk/releases/download/v0.8.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- &&
+sudo mv trunk /usr/bin/
+
+wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz &&
+tar -xf wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz &&
+sudo mv wasm-bindgen-0.2.71-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
+
+cd ./docs
+trunk build --release
+
+cd ..
+
+output="$(pwd)/docs/dist"
+
+mkdir "$output/example"
+
+for path in examples/*; do
+    if [[ ! -d $path ]]; then
+    continue
+    fi
+    example=$(basename "$path")
+
+    echo "building: $example"
+    (
+    cd "$path"
+    dist_dir="$output/example/$example"
+    mkdir "$dist_dir"
+    trunk build --release --dist "$dist_dir" --public-url "/example/$example"
+    )
+done
