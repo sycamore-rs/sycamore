@@ -10,9 +10,8 @@ yum install wget
 yum groupinstall "Development Tools"
 
 echo Installing trunk
-# wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
-# mv trunk /usr/bin/
-cargo install trunk --version ^0.10
+wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+mv trunk /usr/bin/
 
 echo Installing wasm-bindgen
 wget -q https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
