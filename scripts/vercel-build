@@ -4,10 +4,11 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown 
 
-curl https://github.com/thedodd/trunk/releases/download/v0.8.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+curl -O https://github.com/thedodd/trunk/releases/download/v0.8.1/trunk-x86_64-unknown-linux-gnu.tar.gz
+tar -xf trunk.tar.gz
 mv trunk /usr/bin/
 
-curl https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
+curl -O https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
 tar -xf wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
 mv wasm-bindgen-0.2.71-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
