@@ -78,7 +78,7 @@ pub fn template(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as HtmlTree);
 
     let quoted = quote! {
-        ::maple_core::TemplateResult::new(#input)
+        ::maple_core::TemplateResult::new(::std::convert::Into::<_>::into(#input))
     };
 
     TokenStream::from(quoted)
