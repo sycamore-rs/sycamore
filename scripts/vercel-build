@@ -9,11 +9,11 @@ rustup target add wasm32-unknown-unknown
 yum install wget
 
 echo Installing trunk
-wget -qO- https://github.com/thedodd/trunk/releases/download/v0.8.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
 mv trunk /usr/bin/
 
 echo Installing wasm-bindgen
-wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.70/wasm-bindgen-0.2.70-x86_64-unknown-linux-musl.tar.gz
+wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
 tar -xf wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
 mv wasm-bindgen-0.2.71-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
