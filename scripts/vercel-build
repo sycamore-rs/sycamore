@@ -2,8 +2,8 @@
 
 echo Installing Rust with wasm32-unknown-unknown target
 
-curl https://sh.rustup.rs -sSf | sh -s -- -y
-source $HOME/.cargo/env
+amazon-linux-extras install rust1
+
 rustup target add wasm32-unknown-unknown 
 
 yum install wget
