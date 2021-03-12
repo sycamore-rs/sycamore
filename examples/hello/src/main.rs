@@ -29,9 +29,9 @@ fn App() -> TemplateResult {
     template! {
         div {
             h1 {
-                # "Hello "
-                # displayed_name()
-                # "!"
+                "Hello "
+                (displayed_name())
+                "!"
             }
 
             input(on:input=handle_change)

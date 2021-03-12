@@ -8,7 +8,8 @@ use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, Ident, Result, Token};
+use syn::token::Paren;
+use syn::{parse_macro_input, Ident, LitStr, Result, Token};
 
 pub(crate) enum HtmlType {
     Component,
@@ -26,7 +27,7 @@ impl HtmlTree {
     fn peek_type(input: ParseStream) -> Option<HtmlType> {
         let input = input.fork(); // do not affect original ParseStream
 
-        if input.peek(Token![#]) {
+        if input.peek(LitStr) || input.peek(Paren) {
             Some(HtmlType::Text)
         } else if input.peek(Token![::]) {
             Some(HtmlType::Component)
@@ -49,7 +50,7 @@ impl Parse for HtmlTree {
     fn parse(input: ParseStream) -> Result<Self> {
         let html_type = match Self::peek_type(input) {
             Some(html_type) => html_type,
-            None => return Err(input.error("unexpected token")),
+            None => return Err(input.error("expected a valid HTML node")),
         };
 
         Ok(match html_type {

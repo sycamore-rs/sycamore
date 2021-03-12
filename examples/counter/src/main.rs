@@ -15,16 +15,16 @@ fn App() -> TemplateResult {
 
     template! {
         div {
-            # "Counter demo"
+            "Counter demo"
             p(class="value") {
-                # "Value: "
-                # counter.get()
+                "Value: "
+                (counter.get())
             }
             button(class="increment", on:click=increment) {
-                # "Increment"
+                "Increment"
             }
             button(class="reset", on:click=reset) {
-                # "Reset"
+                "Reset"
             }
         }
     }
