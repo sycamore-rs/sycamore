@@ -16,7 +16,7 @@ thread_local! {
 pub(super) struct Running {
     pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
-    owner: Rc<RefCell<Owner>>,
+    _owner: Rc<RefCell<Owner>>,
 }
 
 impl Running {
@@ -156,7 +156,7 @@ fn create_effect_initial<R: 'static + Clone>(
                         .borrow_mut()
                         .as_mut()
                         .unwrap()
-                        .owner = owner;
+                        ._owner = owner;
                 }
 
                 // attach dependencies
@@ -193,7 +193,7 @@ fn create_effect_initial<R: 'static + Clone>(
     *running.borrow_mut() = Some(Running {
         execute: execute.clone(),
         dependencies: HashSet::new(),
-        owner: Rc::new(RefCell::new(Owner::new())),
+        _owner: Rc::new(RefCell::new(Owner::new())),
     });
     debug_assert_eq!(
         Rc::strong_count(&running),
