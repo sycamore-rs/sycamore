@@ -5,6 +5,7 @@ source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown 
 
 curl -o trunk.tar.gz https://github.com/thedodd/trunk/releases/download/v0.8.1/trunk-x86_64-unknown-linux-gnu.tar.gz
+ls
 tar -xzf trunk.tar.gz
 mv trunk /usr/bin/
 
