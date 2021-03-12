@@ -5,7 +5,7 @@ echo Installing Rust with wasm32-unknown-unknown target
 rustup toolchain install stable
 rustup target add wasm32-unknown-unknown 
 
-cargo install trunk --version ^10.0
+cargo install trunk --version ^0.10.0
 
 echo Installing wasm-bindgen
 wget -q https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
