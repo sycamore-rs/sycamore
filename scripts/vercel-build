@@ -7,7 +7,7 @@ source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown 
 
 yum install wget
-yum install glib*
+yum install -y gcc gcc-c++ make openssl openssl-devel
 
 echo Installing trunk
 wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
