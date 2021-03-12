@@ -14,7 +14,7 @@ wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_6
 mv trunk /usr/bin/
 
 echo Installing wasm-bindgen
-wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
+wget -q https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.71/wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
 tar -xf wasm-bindgen-0.2.71-x86_64-unknown-linux-musl.tar.gz
 mv wasm-bindgen-0.2.71-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
