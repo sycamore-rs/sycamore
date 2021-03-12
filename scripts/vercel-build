@@ -2,12 +2,12 @@
 
 echo Installing Rust with wasm32-unknown-unknown target
 
-amazon-linux-extras install rust1
-
+curl https://sh.rustup.rs -sSf | sh -s -- -y
+source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown 
 
 yum install wget
-yum install -y gcc gcc-c++ make openssl openssl-devel
+apt-get install build-essential -y
 
 echo Installing trunk
 wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
