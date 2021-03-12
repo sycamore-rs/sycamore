@@ -4,10 +4,7 @@ use maple_core::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement};
 
-fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
+fn App() -> TemplateResult {
     let name = Signal::new(String::new());
 
     let displayed_name = create_memo(cloned!((name) => move || {
@@ -29,7 +26,7 @@ fn main() {
         );
     };
 
-    let root = template! {
+    template! {
         div {
             h1 {
                 # "Hello "
@@ -39,7 +36,12 @@ fn main() {
 
             input(on:input=handle_change)
         }
-    };
+    }
+}
 
-    render(root);
+fn main() {
+    console_error_panic_hook::set_once();
+    console_log::init_with_level(log::Level::Debug).unwrap();
+
+    render(|| template! { App() });
 }

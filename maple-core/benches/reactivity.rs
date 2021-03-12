@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use maple_core::prelude::*;
 
-pub fn criterion_benchmark(c: &mut Criterion) {
+pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity signals run get/set 1000x", |b| {
         b.iter(|| {
             let state = Signal::new(black_box(0));
@@ -27,5 +27,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_benchmark);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().noise_threshold(0.05 /* noisy CI */);
+    targets = bench
+}
 criterion_main!(benches);
