@@ -81,12 +81,15 @@ impl Hash for Callback {
 
 impl PartialEq for Callback {
     fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<_>(Rc::as_ptr(&self.callback()), Rc::as_ptr(&other.callback()))
+        ptr::eq::<()>(
+            Rc::as_ptr(&self.callback()).cast(),
+            Rc::as_ptr(&other.callback()).cast(),
+        )
     }
 }
 impl Eq for Callback {}
 
-/// A [`Week`] backlink to a [`Signal`] for any type `T`.
+/// A [`Weak`] backlink to a [`Signal`] for any type `T`.
 #[derive(Clone)]
 pub(super) struct Dependency(pub(super) Weak<dyn AnySignalInner>);
 
@@ -104,7 +107,10 @@ impl Hash for Dependency {
 
 impl PartialEq for Dependency {
     fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<_>(Rc::as_ptr(&self.signal()), Rc::as_ptr(&other.signal()))
+        ptr::eq::<()>(
+            Rc::as_ptr(&self.signal()).cast(),
+            Rc::as_ptr(&other.signal()).cast(),
+        )
     }
 }
 impl Eq for Dependency {}
@@ -284,7 +290,6 @@ where
         let effect = Rc::new({
             let memo = memo.clone();
             let derived = derived.clone();
-            let comparator = comparator.clone();
             move || {
                 let new_value = derived();
                 if !comparator(&memo.get_untracked(), &new_value) {

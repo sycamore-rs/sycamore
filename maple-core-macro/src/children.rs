@@ -20,7 +20,7 @@ impl Parse for Children {
         }
 
         Ok(Self {
-            brace_token: brace_token,
+            brace_token,
             body,
         })
     }
