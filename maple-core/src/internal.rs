@@ -56,14 +56,16 @@ pub fn attr(element: &Element, name: &str, value: impl Fn() -> String + 'static)
     })
 }
 
+type EventListener = dyn Fn(Event);
+
 thread_local! {
     /// A global event listener pool to prevent [`Closure`]s from being deallocated.
     /// TODO: remove events when elements are detached.
-    static EVENT_LISTENERS: RefCell<Vec<Closure<dyn Fn(Event)>>> = RefCell::new(Vec::new());
+    static EVENT_LISTENERS: RefCell<Vec<Closure<EventListener>>> = RefCell::new(Vec::new());
 }
 
-/// Sets an event listener on an [`HtmlElement`].
-pub fn event(element: &Element, name: &str, handler: Box<dyn Fn(Event)>) {
+/// Sets an event listener on an [`Element`].
+pub fn event(element: &Element, name: &str, handler: Box<EventListener>) {
     let closure = Closure::wrap(handler);
     element
         .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())

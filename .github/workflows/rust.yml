@@ -3,6 +3,7 @@ name: Rust
 on: push
 
 env:
+  RUSTFLAGS: -Dwarnings
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -16,3 +17,5 @@ jobs:
       run: cargo build
     - name: Run tests
       run: cargo test
+    - name: Run clippy
+      run: cargo clippy
