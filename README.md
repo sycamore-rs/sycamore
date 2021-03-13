@@ -19,7 +19,7 @@ use maple_core::prelude::*;
 fn main() {
     let root = template! {
         p {
-            # "Hello World!"
+            "Hello World!"
         }
     };
 
@@ -38,12 +38,8 @@ That's it! There's your hello world program using `maple`. To run the app, simpl
 template! {
     div {
         p {
-            span {
-                # "Hello "
-            }
-            strong {
-                # "World!"
-            }
+            span { "Hello " }
+            strong { "World!" }
         }
     }
 };
@@ -55,14 +51,14 @@ template! {
 
 template! {
     button(disabled="true") {
-        # "My button"
+        "My button"
     }
 }
 
 // Events are attached using the `on:*` directive.
 template! {
     button(on:click=|_| { /* do something */ }) {
-        # "Click me"
+        "Click me"
     }
 }
 ```
@@ -155,7 +151,7 @@ let state = Signal::new(0);
 
 let root = template! {
     p {
-        # state.get()
+        (state.get())
     }
 }
 ```
@@ -205,8 +201,7 @@ use maple_core::prelude::*;
 fn Component(value: StateHandle<i32>) -> TemplateResult {
     template! {
         div(class="my-component") {
-            # "Value: "
-            # value.get()
+            "Value: " (value.get())
         }
     }
 }

@@ -7,15 +7,7 @@ use web_sys::{Event, HtmlInputElement};
 fn App() -> TemplateResult {
     let name = Signal::new(String::new());
 
-    let displayed_name = cloned!((name) => move || {
-        if name.get().is_empty() {
-            "World".to_string()
-        } else {
-            name.get().as_ref().clone()
-        }
-    });
-
-    let handle_change = move |event: Event| {
+    let handle_change = cloned!((name) => move |event: Event| {
         name.set(
             event
                 .target()
@@ -24,14 +16,20 @@ fn App() -> TemplateResult {
                 .unwrap()
                 .value(),
         );
-    };
+    });
 
     template! {
         div {
             h1 {
-                # "Hello "
-                # displayed_name()
-                # "!"
+                "Hello "
+                ({if !name.get().is_empty() {
+                    cloned!((name) => template! {
+                        span { (name.get()) }
+                    })
+                } else {
+                    template! { span { "World" } }
+                }})
+                "!"
             }
 
             input(on:input=handle_change)

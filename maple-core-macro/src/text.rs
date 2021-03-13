@@ -1,31 +1,37 @@
 use proc_macro2::TokenStream;
-use quote::{quote_spanned, ToTokens};
+use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
-use syn::spanned::Spanned;
-use syn::{Expr, Result, Token};
+use syn::token::Paren;
+use syn::{parenthesized, Expr, LitStr, Result};
 
-pub(crate) struct Text {
-    _hash_token: Token![#],
-    expr: Expr,
+pub(crate) enum Text {
+    Text(LitStr),
+    Splice(Paren, Box<Expr>),
 }
 
 impl Parse for Text {
     fn parse(input: ParseStream) -> Result<Self> {
-        Ok(Self {
-            _hash_token: input.parse()?,
-            expr: input.parse()?,
-        })
+        if input.peek(Paren) {
+            let content;
+            let paren = parenthesized!(content in input);
+            Ok(Self::Splice(paren, content.parse()?))
+        } else {
+            Ok(Self::Text(input.parse()?))
+        }
     }
 }
 
 impl ToTokens for Text {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Text { _hash_token, expr } = self;
-
-        let expr_span = expr.span();
-        let quoted = quote_spanned! {expr_span=>
-            ::maple_core::internal::text(move || ::std::format!("{}", #expr))
-        };
-        tokens.extend(quoted);
+        match self {
+            Text::Text(text) => {
+                let quoted = text.to_token_stream();
+                tokens.extend(quoted);
+            }
+            Text::Splice(_, expr) => {
+                let quoted = expr.to_token_stream();
+                tokens.extend(quoted);
+            }
+        }
     }
 }

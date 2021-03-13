@@ -5,10 +5,10 @@ use maple_core::prelude::*;
 fn MyComponent(num: StateHandle<i32>) -> TemplateResult {
     template! {
         div(class="my-component") {
-            # "My component"
+            "My component"
             p {
-                # "Value: "
-                # num.get()
+                "Value: "
+                (num.get())
             }
         }
     }
@@ -24,14 +24,14 @@ fn App() -> TemplateResult {
     template! {
         div {
             h1 {
-                # "Component demo"
+                "Component demo"
             }
 
             MyComponent(state.handle())
             MyComponent(state.handle())
 
             button(on:click=increment) {
-                # "Increment"
+                "Increment"
             }
         }
     }

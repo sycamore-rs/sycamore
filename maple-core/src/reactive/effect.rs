@@ -16,7 +16,7 @@ thread_local! {
 pub(super) struct Running {
     pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
-    owner: Rc<RefCell<Owner>>,
+    _owner: Rc<RefCell<Owner>>,
 }
 
 impl Running {
@@ -69,7 +69,12 @@ impl Callback {
     #[track_caller]
     #[must_use = "returned value must be manually called"]
     pub fn callback(&self) -> Rc<dyn Fn()> {
-        self.0.upgrade().expect("callback should always be valid")
+        self.try_callback().expect("callback is not valid anymore")
+    }
+
+    #[must_use = "returned value must be manually called"]
+    pub fn try_callback(&self) -> Option<Rc<dyn Fn()>> {
+        self.0.upgrade()
     }
 }
 
@@ -119,7 +124,7 @@ impl Eq for Dependency {}
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-fn create_effect_initial<R: 'static + Clone>(
+pub fn create_effect_initial<R: 'static + Clone>(
     initial: impl FnOnce() -> (Rc<dyn Fn()>, R) + 'static,
 ) -> R {
     let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
@@ -152,6 +157,9 @@ fn create_effect_initial<R: 'static + Clone>(
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
+                    // destroy old effects before new ones run
+                    *running.upgrade().unwrap().borrow_mut().as_mut().unwrap()._owner.borrow_mut() = Owner::new();
+
                     let effect = effect.clone();
                     let owner = create_root(move || {
                         effect.borrow().as_ref().unwrap()();
@@ -162,7 +170,7 @@ fn create_effect_initial<R: 'static + Clone>(
                         .borrow_mut()
                         .as_mut()
                         .unwrap()
-                        .owner = owner;
+                        ._owner = owner;
                 }
 
                 // attach dependencies
@@ -199,7 +207,7 @@ fn create_effect_initial<R: 'static + Clone>(
     *running.borrow_mut() = Some(Running {
         execute: execute.clone(),
         dependencies: HashSet::new(),
-        owner: Rc::new(RefCell::new(Owner::new())),
+        _owner: Rc::new(RefCell::new(Owner::new())),
     });
     debug_assert_eq!(
         Rc::strong_count(&running),

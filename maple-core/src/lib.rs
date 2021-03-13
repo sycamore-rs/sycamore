@@ -12,6 +12,7 @@ pub mod internal;
 #[doc(hidden)]
 pub mod macros;
 pub mod reactive;
+pub mod render;
 
 use web_sys::Node;
 
@@ -59,8 +60,10 @@ impl TemplateResult {
 pub mod prelude {
     pub use crate::cloned;
     pub use crate::reactive::{
-        create_effect, create_memo, create_selector, create_selector_with, Signal, StateHandle,
+        create_effect, create_effect_initial, create_memo, create_selector, create_selector_with,
+        Signal, StateHandle,
     };
+    pub use crate::render::Render;
     pub use crate::{render, TemplateResult};
 
     pub use maple_core_macro::template;

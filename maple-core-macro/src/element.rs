@@ -7,6 +7,7 @@ use syn::{token, Ident, Token};
 
 use crate::attributes::{AttributeList, AttributeType};
 use crate::children::Children;
+use crate::HtmlTree;
 
 /// Represents a html element with all its attributes and properties (e.g. `p(class="text")`).
 pub(crate) struct Element {
@@ -57,12 +58,12 @@ impl ToTokens for Element {
                 match &attribute.ty {
                     AttributeType::DomAttribute { name } => {
                         set_attributes.push(quote_spanned! { expr_span=>
-                                ::maple_core::internal::attr(&element, #name, move || ::std::format!("{}", #expr));
+                                ::maple_core::internal::attr(::std::convert::AsRef::as_ref(&element), #name, move || ::std::format!("{}", #expr));
                             });
                     }
                     AttributeType::Event { name } => {
                         set_event_listeners.push(quote_spanned! { expr_span=>
-                            ::maple_core::internal::event(&element, #name, ::std::boxed::Box::new(#expr));
+                            ::maple_core::internal::event(::std::convert::AsRef::as_ref(&element), #name, ::std::boxed::Box::new(#expr));
                         });
                     }
                 }
@@ -72,9 +73,21 @@ impl ToTokens for Element {
         let mut append_children = Vec::new();
         if let Some(children) = children {
             for child in &children.body {
-                append_children.push(quote! {
-                    ::maple_core::internal::append(&element, &&#child);
-                });
+                let quoted = match child {
+                    HtmlTree::Component(component) => quote! {
+                        ::maple_core::internal::append(&element, &#component);
+                    },
+                    HtmlTree::Element(element) => quote! {
+                        ::maple_core::internal::append(&element, &#element);
+                    },
+                    HtmlTree::Text(text) => quote! {
+                        ::maple_core::internal::append_render(&element, ::std::boxed::Box::new(move || {
+                            ::std::boxed::Box::new(#text)
+                        }));
+                    },
+                };
+
+                append_children.push(quoted);
             }
         }
 
