@@ -4,30 +4,30 @@
 
 - #### ⚡️ Features
 
-  - Nested effects. Inner effects are destroyed and recreated when outer effects re-run [[@lukechu10]: [#29]]
-  - `cloned!` macro for making it easier to clone items into a new scope [[@lukechu10]: [#34]]
-  - Effects are created inside a reactivity root (using `create_root`). When the root `Owner` is dropped, all effects are also destroyed [[@lukechu10]: [37]]
-  - Nested templates. Using this, it is also possible to build simple `if`/`else` control flow although there will be a more polished version [[@lukechu10]: [#41]]
+  - Nested effects. Inner effects are destroyed and recreated when outer effects re-run [[@lukechu10], [#29]]
+  - `cloned!` macro for making it easier to clone items into a new scope [[@lukechu10], [#34]]
+  - Effects are created inside a reactivity root (using `create_root`). When the root `Owner` is dropped, all effects are also destroyed [[@lukechu10], [37]]
+  - Nested templates. Using this, it is also possible to build simple `if`/`else` control flow although there will be a more polished version [[@lukechu10], [#41]]
 
 - #### 🛠 Fixes
 
-  - Parse html root as an `HtmlTree` [[@lukechu10]: [#25]]
-  - Recreate effect dependencies on each re-run [[@lukechu10]: [#29]]
+  - Parse html root as an `HtmlTree` [[@lukechu10], [#25]]
+  - Recreate effect dependencies on each re-run [[@lukechu10], [#29]]
 
 - #### Internal Fixes and Improvements
 
-  - Remove double boxing of `Computation` [[@Kestrer]: [#31]]
-  - Create `CODE_OF_CONDUCT.md` [[@lukechu10]: [#33]]
-  - Add some preliminary benchmarks for signals and effects [[@lukechu10]: [#35]]
-  - Add clippy to CI workflow [[@Kestrer]: [#42]]
+  - Remove double boxing of `Computation` [[@Kestrer], [#31]]
+  - Create `CODE_OF_CONDUCT.md` [[@lukechu10], [#33]]
+  - Add some preliminary benchmarks for signals and effects [[@lukechu10], [#35]]
+  - Add clippy to CI workflow [[@Kestrer], [#42]]
 
 - #### ⚠ **BREAKING CHANGES**
 
-  - Replaced `create_signal` with `Signal::new(...)` and return `Signal` instead of getter/setter functions for increased type safety [[@Kestrer]: [#20]]
+  - Replaced `create_signal` with `Signal::new(...)` and return `Signal` instead of getter/setter functions for increased type safety [[@Kestrer], [#20]]
 
 - #### Announcements
 
-  - New documentation website: https://maple-rs.netlify.app/ [[@lukechu10]: [#26], [#40]]
+  - New documentation website: https://maple-rs.netlify.app/ [[@lukechu10], [#26] and [#40]]
 
 ## ✨ **0.2.0** _(2021-03-07)_
 
