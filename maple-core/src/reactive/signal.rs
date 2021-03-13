@@ -95,7 +95,11 @@ impl<T: 'static> Signal<T> {
         let subscribers = self.handle.0.borrow().subscribers.clone();
 
         for subscriber in subscribers {
-            subscriber.callback()();
+            // subscriber might have already been destroyed in the case of nested effects
+            match subscriber.try_callback() {
+                Some(callback) => callback(),
+                None => {}
+            }
         }
     }
 

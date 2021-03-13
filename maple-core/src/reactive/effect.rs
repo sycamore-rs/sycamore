@@ -69,7 +69,12 @@ impl Callback {
     #[track_caller]
     #[must_use = "returned value must be manually called"]
     pub fn callback(&self) -> Rc<dyn Fn()> {
-        self.0.upgrade().expect("callback should always be valid")
+        self.try_callback().expect("callback is not valid anymore")
+    }
+
+    #[must_use = "returned value must be manually called"]
+    pub fn try_callback(&self) -> Option<Rc<dyn Fn()>> {
+        self.0.upgrade()
     }
 }
 
@@ -146,6 +151,9 @@ pub fn create_effect_initial<R: 'static + Clone>(
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
+                    // destroy old effects before new ones run
+                    *running.upgrade().unwrap().borrow_mut().as_mut().unwrap()._owner.borrow_mut() = Owner::new();
+
                     let effect = effect.clone();
                     let owner = create_root(move || {
                         effect.borrow().as_ref().unwrap()();
