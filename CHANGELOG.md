@@ -16,18 +16,18 @@
   - Parse html root as an `HtmlTree` [[@lukechu10], [#25](https://github.com/lukechu10/maple/pull/25)]
   - Recreate effect dependencies on each re-run [[@lukechu10], [#29](https://github.com/lukechu10/maple/pull/29)]
 
-- #### Internal Fixes and Improvements
+- #### 🛠 Internal Fixes and Improvements
 
   - Remove double boxing of `Computation` [[@Kestrer], [#31](https://github.com/lukechu10/maple/pull/31)]
   - Create `CODE_OF_CONDUCT.md` [[@lukechu10], [#33](https://github.com/lukechu10/maple/pull/33)]
-  - Add some preliminary benchmarks for signals and effects [[@lukechu10], [#35](https://github.com/lukechu10/maple/pull/35]
+  - Add some preliminary benchmarks for signals and effects [[@lukechu10], [#35](https://github.com/lukechu10/maple/pull/35)]
   - Add clippy to CI workflow [[@Kestrer], [#42](https://github.com/lukechu10/maple/pull/42)]
 
 - #### ⚠ **BREAKING CHANGES**
 
   - Replaced `create_signal` with `Signal::new(...)` and return `Signal` instead of getter/setter functions for increased type safety [[@Kestrer], [#20](https://github.com/lukechu10/maple/pull/20)]
 
-- #### Announcements
+- #### 📢 Announcements
 
   - New documentation website: https://maple-rs.netlify.app/ [[@lukechu10], [#26](https://github.com/lukechu10/maple/pull/26) and [#40](https://github.com/lukechu10/maple/pull/40)]
 
@@ -64,3 +64,6 @@
   - Initial release!
   - Added `template!` macro.
   - Added reactivity primitives.
+
+[@Kestrer]: https://github.com/Kestrer
+[@lukechu10]: https://github.com/lukechu10
