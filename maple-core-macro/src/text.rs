@@ -6,7 +6,7 @@ use syn::{parenthesized, Expr, LitStr, Result};
 
 pub(crate) enum Text {
     Text(LitStr),
-    Splice(Paren, Expr),
+    Splice(Paren, Box<Expr>),
 }
 
 impl Parse for Text {

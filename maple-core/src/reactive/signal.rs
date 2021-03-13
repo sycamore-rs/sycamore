@@ -96,9 +96,8 @@ impl<T: 'static> Signal<T> {
 
         for subscriber in subscribers {
             // subscriber might have already been destroyed in the case of nested effects
-            match subscriber.try_callback() {
-                Some(callback) => callback(),
-                None => {}
+            if let Some(callback) = subscriber.try_callback() {
+                callback()
             }
         }
     }
