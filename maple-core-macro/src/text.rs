@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::token::Paren;
 use syn::{parenthesized, Expr, LitStr, Result};
@@ -25,15 +25,11 @@ impl ToTokens for Text {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Text::Text(text) => {
-                let quoted = quote! {
-                    ::maple_core::internal::text(move || ::std::format!("{}", #text))
-                };
+                let quoted = text.to_token_stream();
                 tokens.extend(quoted);
             }
             Text::Splice(_, expr) => {
-                let quoted = quote! {
-                    ::maple_core::internal::text(move || ::std::format!("{}", #expr))
-                };
+                let quoted = expr.to_token_stream();
                 tokens.extend(quoted);
             }
         }

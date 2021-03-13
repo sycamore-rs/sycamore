@@ -2,14 +2,15 @@
 //! Internal APIs can be changed at any time without a major release.
 
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{DocumentFragment, Event, HtmlElement, Node, Text};
+use web_sys::{DocumentFragment, Element, Event, Node};
 
-use crate::reactive::*;
+use crate::prelude::*;
 
 /// Create a new [`HtmlElement`] with the specified tag.
-pub fn element(tag: &str) -> HtmlElement {
+pub fn element(tag: &str) -> Element {
     web_sys::window()
         .unwrap()
         .document()
@@ -29,7 +30,7 @@ pub fn fragment() -> DocumentFragment {
 }
 
 /// Create a new [`Text`] with the specified content.
-pub fn text(value: impl Fn() -> String + 'static) -> Text {
+pub fn text(value: impl Fn() -> String + 'static) -> Node {
     let text_node = web_sys::window()
         .unwrap()
         .document()
@@ -43,11 +44,11 @@ pub fn text(value: impl Fn() -> String + 'static) -> Text {
         }
     });
 
-    text_node
+    text_node.into()
 }
 
-/// Sets an attribute on an [`HtmlElement`].
-pub fn attr(element: &HtmlElement, name: &str, value: impl Fn() -> String + 'static) {
+/// Sets an attribute on an [`Element`].
+pub fn attr(element: &Element, name: &str, value: impl Fn() -> String + 'static) {
     let element = element.clone();
     let name = name.to_string();
     create_effect(move || {
@@ -62,7 +63,7 @@ thread_local! {
 }
 
 /// Sets an event listener on an [`HtmlElement`].
-pub fn event(element: &HtmlElement, name: &str, handler: Box<dyn Fn(Event)>) {
+pub fn event(element: &Element, name: &str, handler: Box<dyn Fn(Event)>) {
     let closure = Closure::wrap(handler);
     element
         .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
@@ -72,6 +73,25 @@ pub fn event(element: &HtmlElement, name: &str, handler: Box<dyn Fn(Event)>) {
 }
 
 /// Appends a child node to an element.
-pub fn append(element: &Node, child: &Node) {
-    element.append_child(&child).unwrap();
+pub fn append(element: &impl AsRef<Node>, child: &impl AsRef<Node>) {
+    element.as_ref().append_child(child.as_ref()).unwrap();
+}
+
+/// Appends a [`dyn Render`](Render) to the `parent` node.
+/// Node is created inside an effect.
+pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
+    let node = create_effect_initial(move || {
+        let node = RefCell::new(child().render());
+
+        let effect = cloned!((node) => move || {
+            let new_node = child().render();
+            node.borrow().parent_element().unwrap().replace_child(&new_node, &node.borrow()).unwrap();
+
+            *node.borrow_mut() = new_node;
+        });
+
+        (Rc::new(effect), node)
+    });
+
+    parent.as_ref().append_child(&node.borrow()).unwrap();
 }

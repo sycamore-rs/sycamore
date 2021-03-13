@@ -113,7 +113,7 @@ impl Eq for Dependency {}
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-fn create_effect_initial<R: 'static + Clone>(
+pub fn create_effect_initial<R: 'static + Clone>(
     initial: impl FnOnce() -> (Rc<dyn Fn()>, R) + 'static,
 ) -> R {
     let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
