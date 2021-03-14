@@ -27,7 +27,7 @@ pub struct TemplateResult {
 }
 
 impl TemplateResult {
-    /// Create a new `TemplateResult` from an [`HtmlElement`].
+    /// Create a new `TemplateResult` from a [`Node`].
     pub fn new(node: Node) -> Self {
         Self { node }
     }
@@ -74,11 +74,11 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
 pub mod prelude {
     pub use crate::cloned;
     pub use crate::reactive::{
-        create_effect, create_effect_initial, create_memo, create_selector, create_selector_with,
-        Signal, StateHandle,
+        create_effect, create_effect_initial, create_memo, create_root, create_selector,
+        create_selector_with, Signal, StateHandle,
     };
     pub use crate::render::Render;
-    pub use crate::{render, TemplateResult, TemplateList};
+    pub use crate::{render, TemplateList, TemplateResult};
 
     pub use maple_core_macro::template;
 }

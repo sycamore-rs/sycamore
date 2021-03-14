@@ -33,11 +33,12 @@ fn App() -> TemplateResult {
                 "todos"
             }
 
-            input(placeholder="What do you want to do?", on:input=handle_input)
+            input(placeholder="What needs to be done?", on:input=handle_input)
             button(on:click=handle_click) { "Add todo" }
 
             ul {
-                ({log::info!("{:#?}", todos.get()); todos.get().iter().map(|todo| template! { TodoItem(todo.clone()) }).collect::<TemplateList>()})
+                h1 { "Test" }
+                (todos.get().iter().map(|todo| template! { TodoItem(todo.clone()) }).collect::<TemplateList>())
             }
         }
     }
