@@ -87,13 +87,14 @@ pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn R
 
         let effect = cloned!((node) => move || {
             let new_node = child().render();
-            node.borrow().parent_element().unwrap().replace_child(&new_node, &node.borrow()).unwrap();
-
-            *node.borrow_mut() = new_node;
+            if let Some(parent_node) = node.borrow().parent_node() {
+                parent_node.replace_child(&new_node, &node.borrow()).unwrap();
+                *node.borrow_mut() = new_node;
+            }
         });
 
         (Rc::new(effect), node)
     });
-
+    
     parent.as_ref().append_child(&node.borrow()).unwrap();
 }

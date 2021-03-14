@@ -74,13 +74,13 @@ impl ToTokens for Element {
         if let Some(children) = children {
             for child in &children.body {
                 let quoted = match child {
-                    HtmlTree::Component(component) => quote! {
+                    HtmlTree::Component(component) => quote_spanned! { component.span()=>
                         ::maple_core::internal::append(&element, &#component);
                     },
-                    HtmlTree::Element(element) => quote! {
+                    HtmlTree::Element(element) => quote_spanned! { element.span()=>
                         ::maple_core::internal::append(&element, &#element);
                     },
-                    HtmlTree::Text(text) => quote! {
+                    HtmlTree::Text(text) => quote_spanned! { text.span()=>
                         ::maple_core::internal::append_render(&element, ::std::boxed::Box::new(move || {
                             ::std::boxed::Box::new(#text)
                         }));

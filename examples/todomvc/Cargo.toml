@@ -1,7 +1,7 @@
 [package]
 authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
 edition = "2018"
-name = "hello"
+name = "todomvc"
 publish = false
 version = "0.1.0"
 

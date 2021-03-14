@@ -17,12 +17,37 @@ pub mod render;
 use web_sys::Node;
 
 use std::cell::RefCell;
+use std::iter::FromIterator;
 use std::rc::Rc;
 
 /// The result of the `template!` macro. Should not be used directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult {
     node: Node,
+}
+
+impl TemplateResult {
+    /// Create a new `TemplateResult` from an [`HtmlElement`].
+    pub fn new(node: Node) -> Self {
+        Self { node }
+    }
+
+    pub fn inner_element(&self) -> Node {
+        self.node.clone()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateList {
+    templates: Vec<TemplateResult>,
+}
+
+impl FromIterator<TemplateResult> for TemplateList {
+    fn from_iter<T: IntoIterator<Item = TemplateResult>>(iter: T) -> Self {
+        Self {
+            templates: FromIterator::from_iter(iter),
+        }
+    }
 }
 
 /// Render a [`TemplateResult`] into the DOM.
@@ -45,17 +70,6 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
     GLOBAL_OWNERS.with(|global_owners| global_owners.borrow_mut().push(owner));
 }
 
-impl TemplateResult {
-    /// Create a new `TemplateResult` from an [`HtmlElement`].
-    pub fn new(node: Node) -> Self {
-        Self { node }
-    }
-
-    pub fn inner_element(&self) -> Node {
-        self.node.clone()
-    }
-}
-
 /// The maple prelude.
 pub mod prelude {
     pub use crate::cloned;
@@ -64,7 +78,7 @@ pub mod prelude {
         Signal, StateHandle,
     };
     pub use crate::render::Render;
-    pub use crate::{render, TemplateResult};
+    pub use crate::{render, TemplateResult, TemplateList};
 
     pub use maple_core_macro::template;
 }
