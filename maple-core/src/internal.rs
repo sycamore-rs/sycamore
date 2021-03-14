@@ -9,7 +9,7 @@ use web_sys::{DocumentFragment, Element, Event, Node};
 
 use crate::prelude::*;
 
-/// Create a new [`HtmlElement`] with the specified tag.
+/// Create a new [`Element`] with the specified tag.
 pub fn element(tag: &str) -> Element {
     web_sys::window()
         .unwrap()
@@ -29,7 +29,7 @@ pub fn fragment() -> DocumentFragment {
         .create_document_fragment()
 }
 
-/// Create a new [`Text`] with the specified content.
+/// Create a new [`Node`] with the specified text content.
 pub fn text(value: impl Fn() -> String + 'static) -> Node {
     let text_node = web_sys::window()
         .unwrap()
@@ -80,20 +80,20 @@ pub fn append(element: &impl AsRef<Node>, child: &impl AsRef<Node>) {
 }
 
 /// Appends a [`dyn Render`](Render) to the `parent` node.
-/// Node is created inside an effect.
+/// Node is created inside an effect with [`Render::update_node`].
 pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
-    let node = create_effect_initial(move || {
+    let parent = parent.as_ref().clone();
+
+    let node = create_effect_initial(cloned!((parent) => move || {
         let node = RefCell::new(child().render());
 
         let effect = cloned!((node) => move || {
-            let new_node = child().render();
-            node.borrow().parent_element().unwrap().replace_child(&new_node, &node.borrow()).unwrap();
-
+            let new_node = child().update_node(&parent, &node.borrow());
             *node.borrow_mut() = new_node;
         });
 
         (Rc::new(effect), node)
-    });
+    }));
 
-    parent.as_ref().append_child(&node.borrow()).unwrap();
+    parent.append_child(&node.borrow()).unwrap();
 }
