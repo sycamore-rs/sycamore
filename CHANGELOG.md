@@ -1,5 +1,18 @@
 # Changelog
 
+## ✨ **0.3.1** _(2021-03-16)_
+
+#### Changelog
+
+- #### ⚡️ Features
+
+  - More types in `template!` macro. `template!` can now be nested [[@lukechu10], [#45](https://github.com/lukechu10/maple/pull/45)]
+  - Component lifecycle using `on_cleanup` [[@lukechu10], [#24](https://github.com/lukechu10/maple/pull/24)]
+
+- #### 🛠 Fixes
+
+  - Add some badges to `README.md` [[@lukechu10], [#44](https://github.com/lukechu10/maple/pull/44) and [#48](https://github.com/lukechu10/maple/pull/48)]
+
 ## ✨ **0.3.0** _(2021-03-13)_
 
 #### Changelog
