@@ -18,7 +18,6 @@ use web_sys::Node;
 
 use std::cell::RefCell;
 use std::iter::FromIterator;
-use std::rc::Rc;
 
 /// The result of the `template!` macro. Should not be used directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,7 +63,7 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
     });
 
     thread_local! {
-        static GLOBAL_OWNERS: RefCell<Vec<Rc<RefCell<reactive::Owner>>>> = RefCell::new(Vec::new());
+        static GLOBAL_OWNERS: RefCell<Vec<reactive::Owner>> = RefCell::new(Vec::new());
     }
 
     GLOBAL_OWNERS.with(|global_owners| global_owners.borrow_mut().push(owner));

@@ -9,7 +9,7 @@ thread_local! {
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
     pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
-    pub(super) static OWNER: RefCell<Option<Rc<RefCell<Owner>>>> = RefCell::new(None);
+    pub(super) static OWNER: RefCell<Option<Owner>> = RefCell::new(None);
 }
 
 /// State of the current running effect.
@@ -17,7 +17,7 @@ thread_local! {
 pub(super) struct Running {
     pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
-    _owner: Rc<RefCell<Owner>>,
+    _owner: Owner,
 }
 
 impl Running {
@@ -68,7 +68,6 @@ impl Drop for Owner {
 
         for cleanup in mem::take(&mut self.cleanup) {
             cleanup();
-            panic!("abc")
         }
     }
 }
@@ -169,14 +168,13 @@ pub fn create_effect_initial<R: 'static + Clone>(
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
                     // destroy old effects before new ones run
-                    *running
+                    running
                         .upgrade()
                         .unwrap()
                         .borrow_mut()
                         .as_mut()
                         .unwrap()
-                        ._owner
-                        .borrow_mut() = Owner::new();
+                        ._owner = Owner::new();
 
                     let effect = effect.clone();
                     let owner = create_root(move || {
@@ -225,7 +223,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
     *running.borrow_mut() = Some(Running {
         execute: execute.clone(),
         dependencies: HashSet::new(),
-        _owner: Rc::new(RefCell::new(Owner::new())),
+        _owner: Owner::new(),
     });
     debug_assert_eq!(
         Rc::strong_count(&running),
@@ -236,10 +234,9 @@ pub fn create_effect_initial<R: 'static + Clone>(
     OWNER.with(|owner| {
         if owner.borrow().is_some() {
             owner
-                .borrow()
-                .as_ref()
-                .unwrap()
                 .borrow_mut()
+                .as_mut()
+                .unwrap()
                 .add_effect_state(running);
         } else {
             #[cfg(all(target_arch = "wasm32", debug_assertions))]
@@ -329,21 +326,21 @@ where
 }
 
 /// Adds a callback function to the current reactive scope's cleanup.
-/// 
+///
 /// # Example
 /// ```
 /// use maple_core::prelude::*;
-/// 
+///
 /// let cleanup_called = Signal::new(false);
-/// 
+///
 /// let owner = create_root(cloned!((cleanup_called) => move || {
 ///     on_cleanup(move || {
 ///         cleanup_called.set(true);
 ///     })
 /// }));
-/// 
+///
 /// assert_eq!(*cleanup_called.get(), false);
-/// 
+///
 /// drop(owner);
 /// assert_eq!(*cleanup_called.get(), true);
 /// ```
@@ -351,10 +348,9 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
     OWNER.with(|owner| {
         if owner.borrow().is_some() {
             owner
-                .borrow()
-                .as_ref()
-                .unwrap()
                 .borrow_mut()
+                .as_mut()
+                .unwrap()
                 .add_cleanup(Box::new(f));
         } else {
             #[cfg(all(target_arch = "wasm32", debug_assertions))]
@@ -598,5 +594,20 @@ mod tests {
         state.set(2);
         assert_eq!(*double.get(), 4);
         assert_eq!(*counter.get(), 2);
+    }
+
+    #[test]
+    fn cleanup() {
+        let cleanup_called = Signal::new(false);
+        let owner = create_root(cloned!((cleanup_called) => move || {
+            on_cleanup(move || {
+                cleanup_called.set(true);
+            })
+        }));
+
+        assert_eq!(*cleanup_called.get(), false);
+
+        drop(owner);
+        assert_eq!(*cleanup_called.get(), true);
     }
 }
