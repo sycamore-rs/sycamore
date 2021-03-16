@@ -75,7 +75,7 @@ pub mod prelude {
     pub use crate::cloned;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
-        create_selector_with, Signal, StateHandle,
+        create_selector_with, on_cleanup, Signal, StateHandle,
     };
     pub use crate::render::Render;
     pub use crate::{render, TemplateList, TemplateResult};

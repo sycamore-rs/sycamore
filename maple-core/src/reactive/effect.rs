@@ -1,3 +1,4 @@
+use std::mem;
 use std::rc::Weak;
 
 use super::*;
@@ -42,6 +43,7 @@ impl Drop for Running {
 #[derive(Default)]
 pub struct Owner {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
+    cleanup: Vec<Box<dyn FnOnce()>>,
 }
 
 impl Owner {
@@ -52,12 +54,21 @@ impl Owner {
     pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
         self.effects.push(effect);
     }
+
+    pub(super) fn add_cleanup(&mut self, cleanup: Box<dyn FnOnce()>) {
+        self.cleanup.push(cleanup);
+    }
 }
 
 impl Drop for Owner {
     fn drop(&mut self) {
         for effect in &self.effects {
             effect.borrow_mut().as_mut().unwrap().clear_dependencies();
+        }
+
+        for cleanup in mem::take(&mut self.cleanup) {
+            cleanup();
+            panic!("abc")
         }
     }
 }
@@ -158,7 +169,14 @@ pub fn create_effect_initial<R: 'static + Clone>(
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
                     // destroy old effects before new ones run
-                    *running.upgrade().unwrap().borrow_mut().as_mut().unwrap()._owner.borrow_mut() = Owner::new();
+                    *running
+                        .upgrade()
+                        .unwrap()
+                        .borrow_mut()
+                        .as_mut()
+                        .unwrap()
+                        ._owner
+                        .borrow_mut() = Owner::new();
 
                     let effect = effect.clone();
                     let owner = create_root(move || {
@@ -308,6 +326,47 @@ where
 
         (effect, memo.into_handle())
     })
+}
+
+/// Adds a callback function to the current reactive scope's cleanup.
+/// 
+/// # Example
+/// ```
+/// use maple_core::prelude::*;
+/// 
+/// let cleanup_called = Signal::new(false);
+/// 
+/// let owner = create_root(cloned!((cleanup_called) => move || {
+///     on_cleanup(move || {
+///         cleanup_called.set(true);
+///     })
+/// }));
+/// 
+/// assert_eq!(*cleanup_called.get(), false);
+/// 
+/// drop(owner);
+/// assert_eq!(*cleanup_called.get(), true);
+/// ```
+pub fn on_cleanup(f: impl FnOnce() + 'static) {
+    OWNER.with(|owner| {
+        if owner.borrow().is_some() {
+            owner
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .add_cleanup(Box::new(f));
+        } else {
+            #[cfg(all(target_arch = "wasm32", debug_assertions))]
+            web_sys::console::warn_1(
+                &"Cleanup callbacks created outside of a reactive root will never run.".into(),
+            );
+            #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
+            eprintln!(
+                "WARNING: Cleanup callbacks created outside of a reactive root will never run."
+            );
+        }
+    });
 }
 
 #[cfg(test)]
