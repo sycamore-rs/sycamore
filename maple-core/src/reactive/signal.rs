@@ -9,7 +9,7 @@ impl<T: 'static> StateHandle<T> {
         // if inside an effect, add this signal to dependency list
         CONTEXTS.with(|contexts| {
             if !contexts.borrow().is_empty() {
-                let signal = Rc::downgrade(&self.0.clone());
+                let signal = Rc::downgrade(&self.0);
 
                 contexts
                     .borrow()
@@ -50,13 +50,13 @@ impl<T: 'static> StateHandle<T> {
     /// assert_eq!(*double.get(), 2);
     /// ```
     pub fn get_untracked(&self) -> Rc<T> {
-        self.0.borrow().inner.clone()
+        Rc::clone(&self.0.borrow().inner)
     }
 }
 
 impl<T: 'static> Clone for StateHandle<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(Rc::clone(&self.0))
     }
 }
 

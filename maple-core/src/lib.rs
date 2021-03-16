@@ -7,6 +7,10 @@
 //! ## Supported Targets
 //! - `wasm32-unknown-unknown`
 
+#![warn(clippy::clone_on_ref_ptr)]
+#![deny(clippy::trait_duplication_in_bounds)]
+#![deny(clippy::type_repetition_in_bounds)]
+
 #[doc(hidden)]
 pub mod internal;
 #[doc(hidden)]

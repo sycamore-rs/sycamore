@@ -146,7 +146,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
 
     let execute: Rc<dyn Fn()> = Rc::new({
         let running = Rc::downgrade(&running);
-        let ret = ret.clone();
+        let ret = Rc::clone(&ret);
         move || {
             CONTEXTS.with(|contexts| {
                 let initial_context_size = contexts.borrow().len();
@@ -159,7 +159,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
                     .unwrap()
                     .clear_dependencies();
 
-                contexts.borrow_mut().push(running.clone());
+                contexts.borrow_mut().push(Weak::clone(&running));
 
                 if initial.borrow().is_some() {
                     let initial = initial.replace(None).unwrap();
@@ -221,7 +221,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
     });
 
     *running.borrow_mut() = Some(Running {
-        execute: execute.clone(),
+        execute: Rc::clone(&execute),
         dependencies: HashSet::new(),
         _owner: Owner::new(),
     });
@@ -312,7 +312,7 @@ where
 
         let effect = Rc::new({
             let memo = memo.clone();
-            let derived = derived.clone();
+            let derived = Rc::clone(&derived);
             move || {
                 let new_value = derived();
                 if !comparator(&memo.get_untracked(), &new_value) {
