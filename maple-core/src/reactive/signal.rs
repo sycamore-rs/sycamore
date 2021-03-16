@@ -1,4 +1,8 @@
 use super::*;
+use std::cell::RefCell;
+use std::collections::HashSet;
+use std::ops::Deref;
+use std::rc::Rc;
 
 /// Returned by functions that provide a handle to access state.
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
@@ -91,15 +95,7 @@ impl<T: 'static> Signal<T> {
     pub fn set(&self, new_value: T) {
         self.handle.0.borrow_mut().update(new_value);
 
-        // Clone subscribers to prevent modifying list when calling callbacks.
-        let subscribers = self.handle.0.borrow().subscribers.clone();
-
-        for subscriber in subscribers {
-            // subscriber might have already been destroyed in the case of nested effects
-            if let Some(callback) = subscriber.try_callback() {
-                callback()
-            }
-        }
+        self.trigger_subscribers();
     }
 
     /// Get the [`StateHandle`] associated with this signal.
@@ -112,6 +108,21 @@ impl<T: 'static> Signal<T> {
     /// Convert this signal into its underlying handle.
     pub fn into_handle(self) -> StateHandle<T> {
         self.handle
+    }
+
+    /// Calls all the subscribers without modifying the state.
+    /// This can be useful when using patterns such as inner mutability where the state updated will not be automatically triggered.
+    /// In the general case, however, it is preferable to use `set` instead.
+    pub fn trigger_subscribers(&self) {
+        // Clone subscribers to prevent modifying list when calling callbacks.
+        let subscribers = self.handle.0.borrow().subscribers.clone();
+
+        for subscriber in subscribers {
+            // subscriber might have already been destroyed in the case of nested effects
+            if let Some(callback) = subscriber.try_callback() {
+                callback()
+            }
+        }
     }
 }
 

@@ -2,16 +2,11 @@
 
 mod effect;
 mod signal;
-
-use std::cell::RefCell;
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::ptr;
-use std::rc::Rc;
+mod signal_vec;
 
 pub use effect::*;
 pub use signal::*;
+pub use signal_vec::*;
 
 /// Creates a new reactive root. Generally, you won't need this method as it is called automatically in [`render`](crate::render()).
 ///
