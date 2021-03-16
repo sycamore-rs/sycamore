@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/maple-core)](https://crates.io/crates/maple-core)
 [![docs.rs](https://img.shields.io/docsrs/maple-core?color=blue&label=docs.rs)](https://docs.rs/maple-core)
 [![GitHub contributors](https://img.shields.io/github/contributors/lukechu10/maple)](https://github.com/lukechu10/maple/graphs/contributors)
-[![Discord](https://img.shields.io/discord/820400041332179004?label=discord)](https://discord.com/invite/se4U6q6B)
+[![Discord](https://img.shields.io/discord/820400041332179004?label=discord)](https://discord.gg/vDwFUmm6mU)
 
 A VDOM-less web library with fine-grained reactivity.
 
