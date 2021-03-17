@@ -102,46 +102,38 @@ impl<T: 'static> SignalVec<T> {
 
     /// Maps a `SignalVec` of one type into another.
     pub fn map<U: Clone>(&self, f: impl Fn(&T) -> U + 'static) -> SignalVec<U> {
-        let data = self.inner_signal().get();
+        let signal = self.inner_signal().clone();
         let changes = Rc::clone(&self.changes());
         let f = Rc::new(f);
 
-        {
-            let data = Rc::clone(&data);
-            let changes = Rc::clone(&changes);
-            let f = Rc::clone(&f);
+        create_effect_initial(move || {
+            let derived =
+                SignalVec::with_values(signal.get().borrow().iter().map(|value| f(value)).collect());
 
-            create_effect_initial(move || {
-                let derived =
-                    SignalVec::with_values(data.borrow().iter().map(|value| f(value)).collect());
-
-                let effect = {
-                    let derived = derived.clone();
-                    move || {
-                        for change in changes.borrow().iter() {
-                            match change {
-                                VecDiff::Replace { values } => {
-                                    derived.replace(values.iter().map(|value| f(value)).collect())
-                                }
-                                VecDiff::Insert { index, value } => {
-                                    derived.insert(*index, f(value))
-                                }
-                                VecDiff::Update { index, value } => {
-                                    derived.update(*index, f(value))
-                                }
-                                VecDiff::Remove { index } => derived.remove(*index),
-                                VecDiff::Swap { index1, index2 } => derived.swap(*index1, *index2),
-                                VecDiff::Push { value } => derived.push(f(value)),
-                                VecDiff::Pop => derived.pop(),
-                                VecDiff::Clear => derived.clear(),
+            let effect = {
+                let derived = derived.clone();
+                let signal = signal.clone();
+                move || {
+                    signal.get(); // subscribe to signal
+                    for change in changes.borrow().iter() {
+                        match change {
+                            VecDiff::Replace { values } => {
+                                derived.replace(values.iter().map(|value| f(value)).collect())
                             }
+                            VecDiff::Insert { index, value } => derived.insert(*index, f(value)),
+                            VecDiff::Update { index, value } => derived.update(*index, f(value)),
+                            VecDiff::Remove { index } => derived.remove(*index),
+                            VecDiff::Swap { index1, index2 } => derived.swap(*index1, *index2),
+                            VecDiff::Push { value } => derived.push(f(value)),
+                            VecDiff::Pop => derived.pop(),
+                            VecDiff::Clear => derived.clear(),
                         }
                     }
-                };
+                }
+            };
 
-                (Rc::new(effect), derived)
-            })
-        }
+            (Rc::new(effect), derived)
+        })
     }
 }
 
