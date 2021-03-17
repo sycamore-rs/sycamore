@@ -42,3 +42,24 @@ pub fn create_root(callback: impl FnOnce()) -> Owner {
         owner.replace(outer_owner).unwrap()
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use super::*;
+
+    #[test]
+    fn drop_owner_inside_effect() {
+        let owner = Rc::new(RefCell::new(None));
+
+        *owner.borrow_mut() = Some(create_root({
+            let owner = Rc::clone(&owner);
+            move || {
+                let owner = owner.take();
+                drop(owner)
+            }
+        }));
+    }
+}
