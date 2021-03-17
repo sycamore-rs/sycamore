@@ -1,3 +1,5 @@
+//! Trait for describing how something should be rendered into DOM nodes.
+
 use std::fmt;
 
 use wasm_bindgen::JsCast;
@@ -49,7 +51,14 @@ impl Render for TemplateList {
     fn render(&self) -> Node {
         let fragment = fragment();
 
-        for item in self.templates.clone().into_iter() {
+        for item in self
+            .templates
+            .inner_signal()
+            .get()
+            .borrow()
+            .clone()
+            .into_iter()
+        {
             append_render(
                 &fragment,
                 Box::new(move || {
@@ -63,11 +72,13 @@ impl Render for TemplateList {
     }
 
     fn update_node(&self, parent: &Node, node: &Node) -> Node {
+        let templates = self.templates.inner_signal().get(); // subscribe to templates
+
         while let Some(child) = parent.last_child() {
             child.dyn_into::<Element>().unwrap().remove();
         }
 
-        for item in self.templates.clone().into_iter() {
+        for item in templates.borrow().iter() {
             parent.append_child(&item.render()).unwrap();
         }
 

@@ -1,6 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::{TemplateList, TemplateResult};
+
 use super::*;
 
 /// A reactive [`Vec`].
@@ -100,15 +102,32 @@ impl<T: 'static> SignalVec<T> {
         }
     }
 
-    /// Maps a `SignalVec` of one type into another.
+    /// Creates a derived `SignalVec`.
+    ///
+    /// # Example
+    /// ```
+    /// use maple_core::prelude::*;
+    ///
+    /// let my_vec = SignalVec::with_values(vec![1, 2, 3]);
+    /// let squared = my_vec.map(|x| *x * *x);
+    ///
+    /// assert_eq!(*squared.inner_signal().get().borrow(), vec![1, 4, 9]);
+    ///
+    /// my_vec.push(4);
+    /// assert_eq!(*squared.inner_signal().get().borrow(), vec![1, 4, 9, 16]);
+    ///
+    /// my_vec.swap(0, 1);
+    /// assert_eq!(*squared.inner_signal().get().borrow(), vec![4, 1, 9, 16]);
+    /// ```
     pub fn map<U: Clone>(&self, f: impl Fn(&T) -> U + 'static) -> SignalVec<U> {
         let signal = self.inner_signal().clone();
         let changes = Rc::clone(&self.changes());
         let f = Rc::new(f);
 
         create_effect_initial(move || {
-            let derived =
-                SignalVec::with_values(signal.get().borrow().iter().map(|value| f(value)).collect());
+            let derived = SignalVec::with_values(
+                signal.get().borrow().iter().map(|value| f(value)).collect(),
+            );
 
             let effect = {
                 let derived = derived.clone();
@@ -137,6 +156,13 @@ impl<T: 'static> SignalVec<T> {
     }
 }
 
+impl SignalVec<TemplateResult> {
+    /// Create a [`TemplateList`] from the `SignalVec`.
+    pub fn template_list(&self) -> TemplateList {
+        TemplateList::from(self.clone())
+    }
+}
+
 impl<T: 'static> Default for SignalVec<T> {
     fn default() -> Self {
         Self::new()
@@ -152,6 +178,7 @@ impl<T: 'static> Clone for SignalVec<T> {
     }
 }
 
+/// An enum describing the changes applied on a [`SignalVec`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VecDiff<T> {
     Replace { values: Vec<T> },

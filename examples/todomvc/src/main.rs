@@ -11,7 +11,7 @@ fn TodoItem(item: String) -> TemplateResult {
 }
 
 fn App() -> TemplateResult {
-    let todos: Signal<Vec<String>> = Signal::new(Vec::new());
+    let todos = SignalVec::new();
 
     let value = Signal::new(String::new());
 
@@ -21,10 +21,7 @@ fn App() -> TemplateResult {
     });
 
     let handle_click = cloned!((todos) => move |_| {
-        let mut tmp = todos.get().as_ref().clone();
-        tmp.push(value.get().as_ref().clone());
-
-        todos.set(tmp);
+        todos.push(value.get().as_ref().clone());
     });
 
     template! {
@@ -38,7 +35,7 @@ fn App() -> TemplateResult {
 
             ul {
                 h1 { "Test" }
-                (todos.get().iter().map(|todo| template! { TodoItem(todo.clone()) }).collect::<TemplateList>())
+                (todos.map(|todo| template! { TodoItem(todo.clone()) }).template_list())
             }
         }
     }

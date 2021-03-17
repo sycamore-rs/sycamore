@@ -19,12 +19,14 @@ pub mod macros;
 pub mod reactive;
 pub mod render;
 
+use prelude::SignalVec;
 use web_sys::Node;
 
 use std::cell::RefCell;
-use std::iter::FromIterator;
 
-/// The result of the `template!` macro. Should not be used directly.
+pub use maple_core_macro::template;
+
+/// The result of the [`template!`](template) macro. Should not be used directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult {
     node: Node,
@@ -41,15 +43,16 @@ impl TemplateResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// A [`SignalVec`](reactive::SignalVec) of [`TemplateResult`]s. Should not be used directly.
+#[derive(Clone)]
 pub struct TemplateList {
-    templates: Vec<TemplateResult>,
+    templates: reactive::SignalVec<TemplateResult>,
 }
 
-impl FromIterator<TemplateResult> for TemplateList {
-    fn from_iter<T: IntoIterator<Item = TemplateResult>>(iter: T) -> Self {
+impl From<SignalVec<TemplateResult>> for TemplateList {
+    fn from(templates: SignalVec<TemplateResult>) -> Self {
         Self {
-            templates: FromIterator::from_iter(iter),
+            templates,
         }
     }
 }
@@ -79,7 +82,7 @@ pub mod prelude {
     pub use crate::cloned;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
-        create_selector_with, on_cleanup, Signal, StateHandle,
+        create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,
     };
     pub use crate::render::Render;
     pub use crate::{render, TemplateList, TemplateResult};

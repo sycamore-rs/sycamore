@@ -72,7 +72,7 @@ pub struct Signal<T: 'static> {
 impl<T: 'static> Signal<T> {
     /// Creates a new signal.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use maple_core::prelude::*;
