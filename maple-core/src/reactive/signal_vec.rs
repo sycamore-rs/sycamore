@@ -3,6 +3,9 @@ use std::rc::Rc;
 
 use super::*;
 
+/// A reactive [`Vec`].
+/// This is more effective than using a [`Signal<Vec>`](Signal) because it allows fine grained
+/// reactivity within the `Vec`.
 pub struct SignalVec<T: 'static> {
     signal: Signal<RefCell<Vec<T>>>,
     /// A list of past changes that is accessed by subscribers.
@@ -11,6 +14,7 @@ pub struct SignalVec<T: 'static> {
 }
 
 impl<T: 'static> SignalVec<T> {
+    /// Create a new empty `SignalVec`.
     pub fn new() -> Self {
         Self {
             signal: Signal::new(RefCell::new(Vec::new())),
@@ -18,6 +22,7 @@ impl<T: 'static> SignalVec<T> {
         }
     }
 
+    /// Create a new `SignalVec` with existing values from a [`Vec`].
     pub fn with_values(values: Vec<T>) -> Self {
         Self {
             signal: Signal::new(RefCell::new(values)),
@@ -25,10 +30,14 @@ impl<T: 'static> SignalVec<T> {
         }
     }
 
+    /// Get the current pending changes that will be applied to the `SignalVec`.
     pub fn changes(&self) -> &Rc<RefCell<Vec<VecDiff<T>>>> {
         &self.changes
     }
 
+    /// Returns the inner backing [`Signal`] used to store the data. This method should used with
+    /// care as unintentionally modifying the [`Vec`] will not trigger any updates and cause
+    /// potential future problems.
     pub fn inner_signal(&self) -> &Signal<RefCell<Vec<T>>> {
         &self.signal
     }
@@ -91,12 +100,13 @@ impl<T: 'static> SignalVec<T> {
         }
     }
 
-    pub fn map<U: Clone>(&self, f: impl Fn(&T) -> U + 'static) -> impl Fn() -> SignalVec<U> {
+    /// Maps a `SignalVec` of one type into another.
+    pub fn map<U: Clone>(&self, f: impl Fn(&T) -> U + 'static) -> SignalVec<U> {
         let data = self.inner_signal().get();
         let changes = Rc::clone(&self.changes());
         let f = Rc::new(f);
 
-        move || {
+        {
             let data = Rc::clone(&data);
             let changes = Rc::clone(&changes);
             let f = Rc::clone(&f);
@@ -205,12 +215,12 @@ mod tests {
         let my_vec = SignalVec::with_values(vec![1, 2, 3]);
         let squared = my_vec.map(|x| *x * *x);
 
-        assert_eq!(*squared().inner_signal().get().borrow(), vec![1, 4, 9]);
+        assert_eq!(*squared.inner_signal().get().borrow(), vec![1, 4, 9]);
 
         my_vec.push(4);
-        assert_eq!(*squared().inner_signal().get().borrow(), vec![1, 4, 9, 16]);
+        assert_eq!(*squared.inner_signal().get().borrow(), vec![1, 4, 9, 16]);
 
         my_vec.pop();
-        assert_eq!(*squared().inner_signal().get().borrow(), vec![1, 4, 9]);
+        assert_eq!(*squared.inner_signal().get().borrow(), vec![1, 4, 9]);
     }
 }
