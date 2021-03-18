@@ -158,15 +158,12 @@ pub fn create_effect_initial<R: 'static + Clone>(
                 #[cfg(debug_assertions)]
                 let initial_context_size = contexts.borrow().len();
 
-                running
-                    .upgrade()
-                    .unwrap()
-                    .borrow_mut()
-                    .as_mut()
-                    .unwrap()
-                    .clear_dependencies();
+                let running = running.upgrade().unwrap();
 
-                contexts.borrow_mut().push(Weak::clone(&running));
+                // Recreate effect dependencies each time effect is called.
+                running.borrow_mut().as_mut().unwrap().clear_dependencies();
+
+                contexts.borrow_mut().push(Rc::downgrade(&running));
 
                 if initial.borrow().is_some() {
                     let initial = initial.replace(None).unwrap();
@@ -174,45 +171,20 @@ pub fn create_effect_initial<R: 'static + Clone>(
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
-                    // destroy old effects before new ones run
-                    running
-                        .upgrade()
-                        .unwrap()
-                        .borrow_mut()
-                        .as_mut()
-                        .unwrap()
-                        .owner = Owner::new();
+                    // Destroy old effects before new ones run.
+                    running.borrow_mut().as_mut().unwrap().owner = Owner::new();
 
                     let effect = effect.clone();
                     let owner = create_root(move || {
                         effect.borrow().as_ref().unwrap()();
                     });
-                    running
-                        .upgrade()
-                        .unwrap()
-                        .borrow_mut()
-                        .as_mut()
-                        .unwrap()
-                        .owner = owner;
+                    running.borrow_mut().as_mut().unwrap().owner = owner;
                 }
 
-                // attach dependencies
-                for dependency in &running
-                    .upgrade()
-                    .unwrap()
-                    .borrow()
-                    .as_ref()
-                    .unwrap()
-                    .dependencies
-                {
+                // Attach new dependencies.
+                for dependency in &running.borrow().as_ref().unwrap().dependencies {
                     dependency.signal().subscribe(Callback(Rc::downgrade(
-                        &running
-                            .upgrade()
-                            .unwrap()
-                            .borrow()
-                            .as_ref()
-                            .unwrap()
-                            .execute,
+                        &running.borrow().as_ref().unwrap().execute,
                     )));
                 }
 
