@@ -7,7 +7,7 @@ rustup target add wasm32-unknown-unknown
 
 cargo install trunk --version ^0.10.0
 
-cargo install wasm-bindgen --version ^0.2.72
+cargo install wasm-bindgen-cli --version ^0.2.72
 
 
 cd ./docs
