@@ -12,13 +12,10 @@ impl<T: 'static> StateHandle<T> {
     pub fn get(&self) -> Rc<T> {
         // if inside an effect, add this signal to dependency list
         CONTEXTS.with(|contexts| {
-            if !contexts.borrow().is_empty() {
+            if let Some(last_context) = contexts.borrow().last() {
                 let signal = Rc::downgrade(&self.0);
 
-                contexts
-                    .borrow()
-                    .last()
-                    .unwrap()
+                last_context
                     .upgrade()
                     .expect("Running should be valid while inside reactive scope")
                     .borrow_mut()

@@ -22,7 +22,8 @@ thread_local! {
 pub(super) struct Running {
     pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
-    _owner: Owner,
+    /// The reactive context owns all effects created within it.
+    owner: Owner,
 }
 
 impl Running {
@@ -154,6 +155,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
         let ret = Rc::clone(&ret);
         move || {
             CONTEXTS.with(|contexts| {
+                #[cfg(debug_assertions)]
                 let initial_context_size = contexts.borrow().len();
 
                 running
@@ -179,7 +181,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
                         .borrow_mut()
                         .as_mut()
                         .unwrap()
-                        ._owner = Owner::new();
+                        .owner = Owner::new();
 
                     let effect = effect.clone();
                     let owner = create_root(move || {
@@ -191,7 +193,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
                         .borrow_mut()
                         .as_mut()
                         .unwrap()
-                        ._owner = owner;
+                        .owner = owner;
                 }
 
                 // attach dependencies
@@ -228,7 +230,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
     *running.borrow_mut() = Some(Running {
         execute: Rc::clone(&execute),
         dependencies: HashSet::new(),
-        _owner: Owner::new(),
+        owner: Owner::new(),
     });
     debug_assert_eq!(
         Rc::strong_count(&running),
