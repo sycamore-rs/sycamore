@@ -165,14 +165,17 @@ pub fn create_effect_initial<R: 'static + Clone>(
 
                 contexts.borrow_mut().push(Rc::downgrade(&running));
 
-                if initial.borrow().is_some() {
-                    let initial = initial.replace(None).unwrap();
-                    let (effect_tmp, ret_tmp) = initial();
+                if let Some(initial) = initial.take() {
+                    let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
                     // Destroy old effects before new ones run.
-                    running.borrow_mut().as_mut().unwrap().owner = Owner::new();
+                    let old_owner = mem::replace(
+                        &mut running.borrow_mut().as_mut().unwrap().owner,
+                        Owner::new(), /* placeholder until an actual Owner is created */
+                    );
+                    drop(old_owner);
 
                     let effect = effect.clone();
                     let owner = create_root(move || {
@@ -188,12 +191,13 @@ pub fn create_effect_initial<R: 'static + Clone>(
                     )));
                 }
 
+                // Remove reactive context.
                 contexts.borrow_mut().pop();
 
                 debug_assert_eq!(
                     initial_context_size,
                     contexts.borrow().len(),
-                    "context size should not change"
+                    "context size should not change before and after create_effect_initial"
                 );
             });
         }
