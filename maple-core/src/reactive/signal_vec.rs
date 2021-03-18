@@ -252,9 +252,50 @@ mod tests {
         assert_eq!(*quadrupled.inner_signal().get().borrow(), vec![4, 8, 12]);
 
         my_vec.push(4);
-        assert_eq!(*quadrupled.inner_signal().get().borrow(), vec![4, 8, 12, 16]);
+        assert_eq!(
+            *quadrupled.inner_signal().get().borrow(),
+            vec![4, 8, 12, 16]
+        );
 
         my_vec.pop();
         assert_eq!(*quadrupled.inner_signal().get().borrow(), vec![4, 8, 12]);
+    }
+
+    #[test]
+    fn map_chain_temporary() {
+        let my_vec = SignalVec::with_values(vec![1, 2, 3]);
+        let quadrupled = my_vec.map(|x| *x * 2).map(|x| *x * 2);
+
+        assert_eq!(*quadrupled.inner_signal().get().borrow(), vec![4, 8, 12]);
+
+        my_vec.push(4);
+        assert_eq!(
+            *quadrupled.inner_signal().get().borrow(),
+            vec![4, 8, 12, 16]
+        );
+
+        my_vec.pop();
+        assert_eq!(*quadrupled.inner_signal().get().borrow(), vec![4, 8, 12]);
+    }
+
+    #[test]
+    fn map_inner_scope() {
+        let my_vec = SignalVec::with_values(vec![1, 2, 3]);
+        let quadrupled;
+
+        let doubled = my_vec.map(|x| *x * 2);
+        assert_eq!(*doubled.inner_signal().get().borrow(), vec![2, 4, 6]);
+
+        quadrupled = doubled.map(|x| *x * 2);
+        assert_eq!(*quadrupled.inner_signal().get().borrow(), vec![4, 8, 12]);
+
+        drop(doubled);
+        assert_eq!(*quadrupled.inner_signal().get().borrow(), vec![4, 8, 12]);
+
+        my_vec.push(4);
+        assert_eq!(
+            *quadrupled.inner_signal().get().borrow(),
+            vec![4, 8, 12, 16]
+        );
     }
 }
