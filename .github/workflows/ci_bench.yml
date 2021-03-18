@@ -1,0 +1,32 @@
+name: Continuous Bench
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  bench:
+    name: Bench
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run cargo bench
+        run: cargo bench --bench reactivity -- --output-format bencher | tee output.txt
+
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          name: Benchmark
+          tool: 'cargo'
+          output-file-path: output.txt
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          # Show alert with commit comment on detecting possible performance regression
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@lukechu10'

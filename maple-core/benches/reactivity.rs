@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use maple_core::prelude::*;
 
 pub fn bench(c: &mut Criterion) {
-    c.bench_function("reactivity signals run get/set 1000x", |b| {
+    c.bench_function("reactivity_signals", |b| {
         b.iter(|| {
             let state = Signal::new(black_box(0));
 
@@ -13,7 +13,7 @@ pub fn bench(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("reactivity run effects 1000x", |b| {
+    c.bench_function("reactivity_effects", |b| {
         b.iter(|| {
             let state = Signal::new(black_box(0));
             create_effect(cloned!((state) => move || {

@@ -7,15 +7,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  test:
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build
+
     - name: Run tests
       run: cargo test
+      
     - name: Run clippy
       run: cargo clippy

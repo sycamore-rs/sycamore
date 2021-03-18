@@ -1,11 +1,12 @@
-on: [pull_request]
-
 name: Bench
+
+on: [pull_request]
 
 jobs:
   bench:
     name: Bench
     runs-on: ubuntu-latest
+    
     steps:
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
