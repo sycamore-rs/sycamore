@@ -12,7 +12,7 @@ console_error_panic_hook = "0.1.6"
 console_log = "0.2.0"
 log = "0.4.14"
 maple-core = {path = "../../maple-core"}
-wasm-bindgen = "0.2.71"
+wasm-bindgen = "0.2"
 
 [dependencies.web-sys]
 features = ["HtmlInputElement", "InputEvent"]

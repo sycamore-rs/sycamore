@@ -15,7 +15,7 @@ version = "0.3.1"
 
 [dependencies]
 maple-core-macro = {path = "../maple-core-macro", version = "0.3.1"}
-wasm-bindgen = "0.2.71"
+wasm-bindgen = "0.2.72"
 
 [dependencies.web-sys]
 features = [
