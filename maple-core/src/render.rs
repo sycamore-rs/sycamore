@@ -94,7 +94,12 @@ impl Render for TemplateList {
                     parent
                         .insert_before(
                             &value.node,
-                            templates.borrow()[*index].node.next_sibling().as_ref(),
+                            templates
+                                .borrow()
+                                .get(*index)
+                                .map(|template| template.node.next_sibling())
+                                .flatten()
+                                .as_ref(),
                         )
                         .unwrap();
                 }

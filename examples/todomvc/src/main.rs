@@ -22,7 +22,7 @@ fn App() -> TemplateResult {
     });
 
     let handle_click = cloned!((todos) => move |_| {
-        todos.push(value.get().as_ref().clone());
+        todos.insert(0, value.get().as_ref().clone());
     });
 
     template! {
