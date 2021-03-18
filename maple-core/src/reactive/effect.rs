@@ -155,7 +155,6 @@ pub fn create_effect_initial<R: 'static + Clone>(
         let ret = Rc::clone(&ret);
         move || {
             CONTEXTS.with(|contexts| {
-                #[cfg(debug_assertions)]
                 let initial_context_size = contexts.borrow().len();
 
                 let running = running.upgrade().unwrap();
