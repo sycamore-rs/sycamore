@@ -12,6 +12,7 @@ fn TodoItem(item: String) -> TemplateResult {
 
 fn App() -> TemplateResult {
     let todos = SignalVec::new();
+    let todos_template = todos.map(|todo: &String| template! { TodoItem(todo.clone()) });
 
     let value = Signal::new(String::new());
 
@@ -34,8 +35,7 @@ fn App() -> TemplateResult {
             button(on:click=handle_click) { "Add todo" }
 
             ul {
-                h1 { "Test" }
-                (todos.map(|todo| template! { TodoItem(todo.clone()) }).template_list())
+                (todos_template.template_list())
             }
         }
     }

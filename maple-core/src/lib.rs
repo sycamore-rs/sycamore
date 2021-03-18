@@ -43,7 +43,7 @@ impl TemplateResult {
     }
 }
 
-/// A [`SignalVec`](reactive::SignalVec) of [`TemplateResult`]s. Should not be used directly.
+/// A [`SignalVec`](reactive::SignalVec) of [`TemplateResult`]s.
 #[derive(Clone)]
 pub struct TemplateList {
     templates: reactive::SignalVec<TemplateResult>,
@@ -51,9 +51,7 @@ pub struct TemplateList {
 
 impl From<SignalVec<TemplateResult>> for TemplateList {
     fn from(templates: SignalVec<TemplateResult>) -> Self {
-        Self {
-            templates,
-        }
+        Self { templates }
     }
 }
 
