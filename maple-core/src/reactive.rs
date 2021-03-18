@@ -2,16 +2,11 @@
 
 mod effect;
 mod signal;
-
-use std::cell::RefCell;
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::ptr;
-use std::rc::Rc;
+mod signal_vec;
 
 pub use effect::*;
 pub use signal::*;
+pub use signal_vec::*;
 
 /// Creates a new reactive root. Generally, you won't need this method as it is called automatically in [`render`](crate::render()).
 ///
@@ -46,4 +41,25 @@ pub fn create_root(callback: impl FnOnce()) -> Owner {
 
         owner.replace(outer_owner).unwrap()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use super::*;
+
+    #[test]
+    fn drop_owner_inside_effect() {
+        let owner = Rc::new(RefCell::new(None));
+
+        *owner.borrow_mut() = Some(create_root({
+            let owner = Rc::clone(&owner);
+            move || {
+                let owner = owner.take();
+                drop(owner)
+            }
+        }));
+    }
 }

@@ -2,6 +2,11 @@ use std::mem;
 use std::rc::Weak;
 
 use super::*;
+use std::cell::RefCell;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+use std::ptr;
+use std::rc::Rc;
 
 thread_local! {
     /// Context of the effect that is currently running. `None` if no effect is running.
@@ -17,7 +22,8 @@ thread_local! {
 pub(super) struct Running {
     pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
-    _owner: Owner,
+    /// The reactive context owns all effects created within it.
+    owner: Owner,
 }
 
 impl Running {
@@ -146,84 +152,60 @@ pub fn create_effect_initial<R: 'static + Clone>(
 
     let execute: Rc<dyn Fn()> = Rc::new({
         let running = Rc::downgrade(&running);
-        let ret = ret.clone();
+        let ret = Rc::clone(&ret);
         move || {
             CONTEXTS.with(|contexts| {
                 let initial_context_size = contexts.borrow().len();
 
-                running
-                    .upgrade()
-                    .unwrap()
-                    .borrow_mut()
-                    .as_mut()
-                    .unwrap()
-                    .clear_dependencies();
+                let running = running.upgrade().unwrap();
 
-                contexts.borrow_mut().push(running.clone());
+                // Recreate effect dependencies each time effect is called.
+                running.borrow_mut().as_mut().unwrap().clear_dependencies();
 
-                if initial.borrow().is_some() {
-                    let initial = initial.replace(None).unwrap();
-                    let (effect_tmp, ret_tmp) = initial();
+                contexts.borrow_mut().push(Rc::downgrade(&running));
+
+                if let Some(initial) = initial.take() {
+                    let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
                     *effect.borrow_mut() = Some(effect_tmp);
                     *ret.borrow_mut() = Some(ret_tmp);
                 } else {
-                    // destroy old effects before new ones run
-                    running
-                        .upgrade()
-                        .unwrap()
-                        .borrow_mut()
-                        .as_mut()
-                        .unwrap()
-                        ._owner = Owner::new();
+                    // Destroy old effects before new ones run.
+                    let old_owner = mem::replace(
+                        &mut running.borrow_mut().as_mut().unwrap().owner,
+                        Owner::new(), /* placeholder until an actual Owner is created */
+                    );
+                    drop(old_owner);
 
                     let effect = effect.clone();
                     let owner = create_root(move || {
                         effect.borrow().as_ref().unwrap()();
                     });
-                    running
-                        .upgrade()
-                        .unwrap()
-                        .borrow_mut()
-                        .as_mut()
-                        .unwrap()
-                        ._owner = owner;
+                    running.borrow_mut().as_mut().unwrap().owner = owner;
                 }
 
-                // attach dependencies
-                for dependency in &running
-                    .upgrade()
-                    .unwrap()
-                    .borrow()
-                    .as_ref()
-                    .unwrap()
-                    .dependencies
-                {
+                // Attach new dependencies.
+                for dependency in &running.borrow().as_ref().unwrap().dependencies {
                     dependency.signal().subscribe(Callback(Rc::downgrade(
-                        &running
-                            .upgrade()
-                            .unwrap()
-                            .borrow()
-                            .as_ref()
-                            .unwrap()
-                            .execute,
+                        &running.borrow().as_ref().unwrap().execute,
                     )));
                 }
 
+                // Remove reactive context.
                 contexts.borrow_mut().pop();
 
                 debug_assert_eq!(
                     initial_context_size,
                     contexts.borrow().len(),
-                    "context size should not change"
+                    "context size should not change before and after create_effect_initial"
                 );
             });
         }
     });
 
     *running.borrow_mut() = Some(Running {
-        execute: execute.clone(),
+        execute: Rc::clone(&execute),
         dependencies: HashSet::new(),
-        _owner: Owner::new(),
+        owner: Owner::new(),
     });
     debug_assert_eq!(
         Rc::strong_count(&running),
@@ -312,7 +294,7 @@ where
 
         let effect = Rc::new({
             let memo = memo.clone();
-            let derived = derived.clone();
+            let derived = Rc::clone(&derived);
             move || {
                 let new_value = derived();
                 if !comparator(&memo.get_untracked(), &new_value) {

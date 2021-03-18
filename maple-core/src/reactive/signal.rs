@@ -1,4 +1,8 @@
 use super::*;
+use std::cell::RefCell;
+use std::collections::HashSet;
+use std::ops::Deref;
+use std::rc::Rc;
 
 /// Returned by functions that provide a handle to access state.
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
@@ -8,13 +12,10 @@ impl<T: 'static> StateHandle<T> {
     pub fn get(&self) -> Rc<T> {
         // if inside an effect, add this signal to dependency list
         CONTEXTS.with(|contexts| {
-            if !contexts.borrow().is_empty() {
-                let signal = Rc::downgrade(&self.0.clone());
+            if let Some(last_context) = contexts.borrow().last() {
+                let signal = Rc::downgrade(&self.0);
 
-                contexts
-                    .borrow()
-                    .last()
-                    .unwrap()
+                last_context
                     .upgrade()
                     .expect("Running should be valid while inside reactive scope")
                     .borrow_mut()
@@ -50,13 +51,13 @@ impl<T: 'static> StateHandle<T> {
     /// assert_eq!(*double.get(), 2);
     /// ```
     pub fn get_untracked(&self) -> Rc<T> {
-        self.0.borrow().inner.clone()
+        Rc::clone(&self.0.borrow().inner)
     }
 }
 
 impl<T: 'static> Clone for StateHandle<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(Rc::clone(&self.0))
     }
 }
 
@@ -68,7 +69,7 @@ pub struct Signal<T: 'static> {
 impl<T: 'static> Signal<T> {
     /// Creates a new signal.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use maple_core::prelude::*;
@@ -91,15 +92,7 @@ impl<T: 'static> Signal<T> {
     pub fn set(&self, new_value: T) {
         self.handle.0.borrow_mut().update(new_value);
 
-        // Clone subscribers to prevent modifying list when calling callbacks.
-        let subscribers = self.handle.0.borrow().subscribers.clone();
-
-        for subscriber in subscribers {
-            // subscriber might have already been destroyed in the case of nested effects
-            if let Some(callback) = subscriber.try_callback() {
-                callback()
-            }
-        }
+        self.trigger_subscribers();
     }
 
     /// Get the [`StateHandle`] associated with this signal.
@@ -112,6 +105,21 @@ impl<T: 'static> Signal<T> {
     /// Convert this signal into its underlying handle.
     pub fn into_handle(self) -> StateHandle<T> {
         self.handle
+    }
+
+    /// Calls all the subscribers without modifying the state.
+    /// This can be useful when using patterns such as inner mutability where the state updated will not be automatically triggered.
+    /// In the general case, however, it is preferable to use `set` instead.
+    pub fn trigger_subscribers(&self) {
+        // Clone subscribers to prevent modifying list when calling callbacks.
+        let subscribers = self.handle.0.borrow().subscribers.clone();
+
+        for subscriber in subscribers {
+            // subscriber might have already been destroyed in the case of nested effects
+            if let Some(callback) = subscriber.try_callback() {
+                callback()
+            }
+        }
     }
 }
 

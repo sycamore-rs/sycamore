@@ -1,8 +1,12 @@
+//! Trait for describing how something should be rendered into DOM nodes.
+
 use std::fmt;
+use std::rc::Rc;
 
 use wasm_bindgen::JsCast;
-use web_sys::{Element, Node, Text};
+use web_sys::{Node, Text};
 
+use crate::reactive::VecDiff;
 use crate::TemplateResult;
 use crate::{internal::*, TemplateList};
 
@@ -49,7 +53,14 @@ impl Render for TemplateList {
     fn render(&self) -> Node {
         let fragment = fragment();
 
-        for item in self.templates.clone().into_iter() {
+        for item in self
+            .templates
+            .inner_signal()
+            .get()
+            .borrow()
+            .clone()
+            .into_iter()
+        {
             append_render(
                 &fragment,
                 Box::new(move || {
@@ -63,12 +74,75 @@ impl Render for TemplateList {
     }
 
     fn update_node(&self, parent: &Node, node: &Node) -> Node {
-        while let Some(child) = parent.last_child() {
-            child.dyn_into::<Element>().unwrap().remove();
-        }
+        let templates = self.templates.inner_signal().get(); // subscribe to templates
+        let changes = Rc::clone(&self.templates.changes());
 
-        for item in self.templates.clone().into_iter() {
-            parent.append_child(&item.render()).unwrap();
+        for change in changes.borrow().iter() {
+            match change {
+                VecDiff::Replace { values } => {
+                    let first = templates.borrow().first().map(|x| x.node.clone());
+
+                    for value in values {
+                        parent.insert_before(&value.node, first.as_ref()).unwrap();
+                    }
+
+                    for template in templates.borrow().iter() {
+                        parent.remove_child(&template.node).unwrap();
+                    }
+                }
+                VecDiff::Insert { index, value } => {
+                    parent
+                        .insert_before(
+                            &value.node,
+                            templates
+                                .borrow()
+                                .get(*index)
+                                .map(|template| template.node.next_sibling())
+                                .flatten()
+                                .as_ref(),
+                        )
+                        .unwrap();
+                }
+                VecDiff::Update { index, value } => {
+                    parent
+                        .replace_child(&templates.borrow()[*index].node, &value.node)
+                        .unwrap();
+                }
+                VecDiff::Remove { index } => {
+                    parent
+                        .remove_child(&templates.borrow()[*index].node)
+                        .unwrap();
+                }
+                VecDiff::Swap { index1, index2 } => {
+                    let child1 = &templates.borrow()[*index1].node;
+                    let child2 = &templates.borrow()[*index2].node;
+                    parent.replace_child(child1, child2).unwrap();
+                    parent.replace_child(child2, child1).unwrap();
+                }
+                VecDiff::Push { value } => {
+                    parent
+                        .insert_before(
+                            &value.node,
+                            templates
+                                .borrow()
+                                .last()
+                                .map(|last| last.node.next_sibling())
+                                .flatten()
+                                .as_ref(),
+                        )
+                        .unwrap();
+                }
+                VecDiff::Pop => {
+                    if let Some(last) = templates.borrow().last() {
+                        parent.remove_child(&last.node).unwrap();
+                    }
+                }
+                VecDiff::Clear => {
+                    for template in templates.borrow().iter() {
+                        parent.remove_child(&template.node).unwrap();
+                    }
+                }
+            }
         }
 
         node.clone()
