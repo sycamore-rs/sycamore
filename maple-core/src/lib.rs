@@ -14,6 +14,7 @@
 
 #[doc(hidden)]
 pub mod internal;
+pub mod keyed;
 #[doc(hidden)]
 pub mod macros;
 pub mod reactive;
@@ -78,6 +79,7 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
 /// The maple prelude.
 pub mod prelude {
     pub use crate::cloned;
+    pub use crate::keyed::{Keyed, KeyedWith};
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,
