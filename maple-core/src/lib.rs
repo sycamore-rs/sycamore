@@ -7,14 +7,15 @@
 //! ## Supported Targets
 //! - `wasm32-unknown-unknown`
 
+#![allow(non_snake_case)]
 #![warn(clippy::clone_on_ref_ptr)]
 #![warn(clippy::rc_buffer)]
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]
 
+pub mod flow;
 #[doc(hidden)]
 pub mod internal;
-pub mod keyed;
 #[doc(hidden)]
 pub mod macros;
 pub mod reactive;
@@ -79,7 +80,7 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
 /// The maple prelude.
 pub mod prelude {
     pub use crate::cloned;
-    pub use crate::keyed::{Keyed, KeyedWith};
+    pub use crate::flow::{Keyed, KeyedProps};
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,
