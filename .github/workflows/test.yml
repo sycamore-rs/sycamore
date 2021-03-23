@@ -13,17 +13,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build
-
+    
     - name: Install wasm-pack
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+    - name: Build
+      run: cargo build
 
     - name: Run tests
       run: cargo test
 
     - name: Run headless browser tests
-      run: wasm-pack test --firefox --chrome --headless
+      run: wasm-pack test maple-core --firefox --chrome --headless
       
     - name: Run clippy
       run: cargo clippy
