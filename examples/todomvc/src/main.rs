@@ -21,8 +21,12 @@ fn App() -> TemplateResult {
         value.set(target.value());
     });
 
-    let handle_click = cloned!((todos) => move |_| {
+    let handle_add = cloned!((todos) => move |_| {
         todos.insert(0, value.get().as_ref().clone());
+    });
+
+    let handle_remove = cloned!((todos) => move |_| {
+        todos.pop();
     });
 
     template! {
@@ -32,7 +36,8 @@ fn App() -> TemplateResult {
             }
 
             input(placeholder="What needs to be done?", on:input=handle_input)
-            button(on:click=handle_click) { "Add todo" }
+            button(on:click=handle_add) { "Add todo" }
+            button(on:click=handle_remove) { "Remove last todo" }
 
             ul {
                 (todos_template.template_list())
