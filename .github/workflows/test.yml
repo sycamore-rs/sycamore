@@ -1,4 +1,4 @@
-name: Rust
+name: Test
 
 on: push
 
@@ -16,8 +16,14 @@ jobs:
     - name: Build
       run: cargo build
 
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
     - name: Run tests
       run: cargo test
+
+    - name: Run headless browser tests
+      run: wasm-pack test --firefox --chrome --headless
       
     - name: Run clippy
       run: cargo clippy
