@@ -69,7 +69,7 @@ where
             let previous_values = (*templates.borrow()).clone();
 
             // Find values that changed by comparing to previous_values.
-            for (i, item) in iterable.get().iter().enumerate() {
+            for item in iterable.get().iter() {
                 let key = key_fn(item);
 
                 let previous_value = previous_values.get(&key);
