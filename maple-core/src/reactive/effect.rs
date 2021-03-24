@@ -46,6 +46,7 @@ impl Drop for Running {
 }
 
 /// Owns the effects created in the current reactive scope.
+/// The effects are dropped and the cleanup callbacks are called when the [`Owner`] is dropped.
 #[derive(Default)]
 pub struct Owner {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
@@ -53,14 +54,19 @@ pub struct Owner {
 }
 
 impl Owner {
+    /// Create a new empty [`Owner`].
+    ///
+    /// This should be rarely used and only serve as a placeholder.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Add an effect that is owned by this [`Owner`].
     pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
         self.effects.push(effect);
     }
 
+    /// Add a cleanup callback that will be called when the [`Owner`] is dropped.
     pub(super) fn add_cleanup(&mut self, cleanup: Box<dyn FnOnce()>) {
         self.cleanup.push(cleanup);
     }
@@ -247,6 +253,19 @@ pub fn create_effect_initial<R: 'static + Clone>(
 }
 
 /// Creates an effect on signals used inside the effect closure.
+///
+/// # Example
+/// ```
+/// use maple_core::prelude::*;
+///
+/// let state = Signal::new(0);
+///
+/// create_effect(cloned!((state) => move || {
+///     println!("State changed. New state value = {}", state.get());
+/// })); // Prints "State changed. New state value = 0"
+///
+/// state.set(1); // Prints "State changed. New state value = 1"
+/// ```
 pub fn create_effect<F>(effect: F)
 where
     F: Fn() + 'static,
@@ -258,6 +277,19 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
+///
+/// # Example
+/// ```
+/// use maple_core::prelude::*;
+///
+/// let state = Signal::new(0);
+///
+/// let double = create_memo(cloned!((state) => move || *state.get() * 2));
+/// assert_eq!(*double.get(), 0);
+/// 
+/// state.set(1);
+/// assert_eq!(*double.get(), 2);
+/// ```
 pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: Fn() -> Out + 'static,
