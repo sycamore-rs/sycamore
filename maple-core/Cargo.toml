@@ -20,6 +20,7 @@ wasm-bindgen = "0.2.72"
 [dependencies.web-sys]
 features = [
   "console",
+  "Comment",
   "Document",
   "DocumentFragment",
   "Element",
@@ -33,6 +34,7 @@ version = "0.3.48"
 
 [dev-dependencies]
 criterion = {version = "0.3", features = ["html_reports"]}
+wasm-bindgen-test = "0.3"
 
 [[bench]]
 harness = false

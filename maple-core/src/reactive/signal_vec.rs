@@ -233,7 +233,7 @@ mod tests {
     #[test]
     fn signal_vec() {
         let my_vec = SignalVec::new();
-        assert_eq!(*my_vec.inner_signal().get().borrow(), vec![]);
+        assert_eq!(*my_vec.inner_signal().get().borrow(), Vec::<i32>::new());
 
         my_vec.push(3);
         assert_eq!(*my_vec.inner_signal().get().borrow(), vec![3]);
