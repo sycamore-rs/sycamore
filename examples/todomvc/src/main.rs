@@ -12,6 +12,10 @@ fn TodoItem(item: String) -> TemplateResult {
         counter.set(*counter.get() + 1);
     });
 
+    on_cleanup(|| {
+        log::info!("TodoItem destroyed");
+    });
+
     template! {
         li{
             button(on:click=handle_click) {
@@ -64,14 +68,14 @@ fn App() -> TemplateResult {
             button(on:click=handle_remove_first) { "Remove first todo" }
 
             ul {
-                Keyed(KeyedProps {
+                Indexed(IndexedProps {
                     iterable: todos,
                     template: |item| {
                         template! {
                             TodoItem(item)
                         }
                     },
-                    key: |item| item.clone()
+                    // key: |item| item.clone()
                 })
             }
         }
