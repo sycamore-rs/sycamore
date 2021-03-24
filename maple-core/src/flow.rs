@@ -1,4 +1,7 @@
-//! Keyed iteration in [`template`](crate::template).
+//! Iteration utility components for [`template`](crate::template).
+//!
+//! Iteration can be either _"keyed"_ or _"non keyed"_.
+//! Use the [`Keyed`] and [`Indexed`] utility components respectively.
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -11,7 +14,9 @@ use web_sys::Element;
 
 use crate::internal::append;
 use crate::prelude::*;
+use crate::reactive::Owner;
 
+/// Props for [`Keyed`].
 pub struct KeyedProps<T: 'static, F, K, Key>
 where
     F: Fn(T) -> TemplateResult,
@@ -23,6 +28,27 @@ where
     pub key: K,
 }
 
+/// Keyed iteration. Use this instead of directly rendering an array of [`TemplateResult`]s.
+/// Using this will minimize re-renders instead of re-rendering every single node on every state change.
+///
+/// For non keyed iteration, see [`Indexed`].
+///
+/// # Example
+/// ```no_run
+/// use maple_core::prelude::*;
+///
+/// let count = Signal::new(vec![1, 2]);
+///
+/// let node = template! {
+///     Keyed(KeyedProps {
+///         iterable: count,
+///         template: |item| template! {
+///             li { (item) }
+///         },
+///         key: |item| *item,
+///     })
+/// };
+/// ```
 pub fn Keyed<T, F: 'static, K: 'static, Key: 'static>(
     props: KeyedProps<T, F, K, Key>,
 ) -> TemplateResult
@@ -40,7 +66,7 @@ where
     let iterable = Rc::new(iterable);
     let key_fn = Rc::new(key_fn);
 
-    type TemplateValue<T> = (T, Option<TemplateResult>);
+    type TemplateValue<T> = (Owner, T, TemplateResult);
 
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
     let templates: Rc<RefCell<HashMap<Key, TemplateValue<T>>>> =
@@ -66,44 +92,56 @@ where
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
-            let previous_values = (*templates.borrow()).clone();
+            let previous_values: HashMap<_, _> = {
+                let templates = templates.borrow();
+                templates
+                    .iter()
+                    .map(|x| ((*x.0).clone(), x.1 .1.clone()))
+                    .collect()
+            };
 
             // Find values that changed by comparing to previous_values.
-            for (i, item) in iterable.get().iter().enumerate() {
+            for item in iterable.get().iter() {
                 let key = key_fn(item);
 
                 let previous_value = previous_values.get(&key);
 
-                if previous_value.is_none() || &previous_value.unwrap().0 != item {
+                if previous_value.is_none() || previous_value.unwrap() != item {
                     // value changed, re-render item
 
+                    templates
+                        .borrow_mut()
+                        .get_mut(&key)
+                        .and_then(|(owner, _, _)| {
+                            // destroy old owner
+                            let old_owner =
+                                mem::replace(owner, Owner::new() /* placeholder */);
+                            drop(old_owner);
+                            None::<()>
+                        });
+
+                    let mut new_template = None;
+                    let owner = create_root(|| new_template = Some(template(item.clone())));
+
                     if templates.borrow().get(&key).is_some() {
-                        let new_node = template(item.clone());
-                        let (_, old_node) = mem::replace(
+                        let (_, _, old_node) = mem::replace(
                             templates.borrow_mut().get_mut(&key).unwrap(),
-                            (item.clone(), Some(new_node.clone())),
+                            (owner, item.clone(), new_template.clone().unwrap()),
                         );
 
-                        let parent = old_node.as_ref().unwrap().node.parent_node().unwrap();
+                        let parent = old_node.node.parent_node().unwrap();
                         parent
-                            .replace_child(&new_node.node, &old_node.unwrap().node)
+                            .replace_child(&new_template.unwrap().node, &old_node.node)
                             .unwrap();
                     } else {
-                        templates
-                            .borrow_mut()
-                            .insert(key.clone(), (item.clone(), Some(template(item.clone()))));
+                        templates.borrow_mut().insert(
+                            key.clone(),
+                            (owner, item.clone(), new_template.clone().unwrap()),
+                        );
 
                         marker
                             .before_with_node_1(
-                                &templates
-                                    .borrow()
-                                    .get(&key)
-                                    .as_ref()
-                                    .unwrap()
-                                    .1
-                                    .as_ref()
-                                    .unwrap()
-                                    .node,
+                                &templates.borrow().get(&key).as_ref().unwrap().2.node,
                             )
                             .unwrap();
                     }
@@ -118,7 +156,7 @@ where
                 let excess_nodes = templates
                     .iter()
                     .filter(|item| new_keys.get(item.0).is_none())
-                    .map(|x| (x.0.clone(), x.1.clone()))
+                    .map(|x| (x.0.clone(), x.1 .2.clone()))
                     .collect::<Vec<_>>();
 
                 for node in &excess_nodes {
@@ -126,35 +164,23 @@ where
                 }
 
                 for node in excess_nodes {
-                    node.1
-                         .1
-                        .as_ref()
-                        .unwrap()
-                        .clone()
-                        .node
-                        .unchecked_into::<Element>()
-                        .remove();
+                    node.1.node.unchecked_into::<Element>().remove();
                 }
             }
-
-            debug_assert!(
-                templates.borrow().values().all(|item| item.1.is_some()),
-                "templates should all be Some"
-            );
         }
     });
 
     for item in iterable.get().iter() {
         let key = key_fn(item);
-        let template = templates.borrow().get(&key).unwrap().clone();
+        let template = templates.borrow().get(&key).unwrap().2.clone();
 
-        let template = template.1.as_ref().unwrap().clone();
         marker.before_with_node_1(&template.node).unwrap();
     }
 
     TemplateResult::new(fragment.into())
 }
 
+/// Props for [`Indexed`].
 pub struct IndexedProps<T: 'static, F>
 where
     F: Fn(T) -> TemplateResult,
@@ -163,12 +189,32 @@ where
     pub template: F,
 }
 
+/// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of [`TemplateResult`]s.
+/// Using this will minimize re-renders instead of re-rendering every single node on every state change.
+///
+/// For keyed iteration, see [`Keyed`].
+///
+/// # Example
+/// ```no_run
+/// use maple_core::prelude::*;
+///
+/// let count = Signal::new(vec![1, 2]);
+///
+/// let node = template! {
+///     Indexed(IndexedProps {
+///         iterable: count,
+///         template: |item| template! {
+///             li { (item) }
+///         },
+///     })
+/// };
+/// ```
 pub fn Indexed<T, F: 'static>(props: IndexedProps<T, F>) -> TemplateResult
 where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult,
 {
-    let templates: Rc<RefCell<Vec<Option<TemplateResult>>>> = Rc::new(RefCell::new(Vec::new()));
+    let templates: Rc<RefCell<Vec<(Owner, TemplateResult)>>> = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
@@ -199,25 +245,35 @@ where
                 if previous_value.is_none() || previous_value.unwrap() != item {
                     // value changed, re-render item
 
-                    if templates.borrow().get(i).is_some() {
-                        let new_node = (props.template)(item.clone());
-                        let old_node =
-                            mem::replace(&mut templates.borrow_mut()[i], Some(new_node.clone()))
-                                .unwrap();
+                    templates.borrow_mut().get_mut(i).and_then(|(owner, _)| {
+                        // destroy old owner
+                        let old_owner = mem::replace(owner, Owner::new() /* placeholder */);
+                        drop(old_owner);
+                        None::<()>
+                    });
 
-                        let parent = old_node.node.parent_node().unwrap();
+                    let mut new_template = None;
+                    let owner = create_root(|| new_template = Some((props.template)(item.clone())));
+
+                    if templates.borrow().get(i).is_some() {
+                        let old_node = mem::replace(
+                            &mut templates.borrow_mut()[i],
+                            (owner, new_template.as_ref().unwrap().clone()),
+                        );
+
+                        let parent = old_node.1.node.parent_node().unwrap();
                         parent
-                            .replace_child(&new_node.node, &old_node.node)
+                            .replace_child(&new_template.unwrap().node, &old_node.1.node)
                             .unwrap();
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
                         templates
                             .borrow_mut()
-                            .push(Some((props.template)(item.clone())));
+                            .push((owner, new_template.as_ref().unwrap().clone()));
 
                         marker
-                            .before_with_node_1(&templates.borrow()[i].as_ref().unwrap().node)
+                            .before_with_node_1(&new_template.unwrap().node)
                             .unwrap();
                     }
                 }
@@ -228,22 +284,16 @@ where
                 let excess_nodes = templates.drain(props.iterable.get().len()..);
 
                 for node in excess_nodes {
-                    node.unwrap().node.unchecked_into::<Element>().remove();
+                    node.1.node.unchecked_into::<Element>().remove();
                 }
             }
 
             *previous_values.borrow_mut() = (*props.iterable.get()).clone();
-
-            debug_assert!(
-                templates.borrow().iter().all(|item| item.is_some()),
-                "templates should all be Some"
-            );
         }
     });
 
     for template in templates.borrow().iter() {
-        let template = template.as_ref().unwrap().clone();
-        marker.before_with_node_1(&template.node).unwrap();
+        marker.before_with_node_1(&template.1.node).unwrap();
     }
 
     TemplateResult::new(fragment.into())

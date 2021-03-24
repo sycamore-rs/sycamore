@@ -4,7 +4,10 @@ use std::collections::HashSet;
 use std::ops::Deref;
 use std::rc::Rc;
 
+/// A readonly [`Signal`].
+///
 /// Returned by functions that provide a handle to access state.
+/// Use [`Signal::handle`] or [`Signal::into_handle`] to retrieve a handle from a [`Signal`].
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 
 impl<T: 'static> StateHandle<T> {
@@ -62,23 +65,29 @@ impl<T: 'static> Clone for StateHandle<T> {
 }
 
 /// State that can be set.
+///
+/// # Example
+/// ```
+/// use maple_core::prelude::*;
+///
+/// let state = Signal::new(0);
+/// assert_eq!(*state.get(), 0);
+///
+/// state.set(1);
+/// assert_eq!(*state.get(), 1);
+/// ```
 pub struct Signal<T: 'static> {
     handle: StateHandle<T>,
 }
 
 impl<T: 'static> Signal<T> {
-    /// Creates a new signal.
+    /// Creates a new signal with the given value.
     ///
     /// # Example
-    ///
     /// ```
-    /// use maple_core::prelude::*;
-    ///
+    /// # use maple_core::prelude::*;
     /// let state = Signal::new(0);
-    /// assert_eq!(*state.get(), 0);
-    ///
-    /// state.set(1);
-    /// assert_eq!(*state.get(), 1);
+    /// # assert_eq!(*state.get(), 0);
     /// ```
     pub fn new(value: T) -> Self {
         Self {
@@ -89,6 +98,17 @@ impl<T: 'static> Signal<T> {
     /// Set the current value of the state.
     ///
     /// This will notify and update any effects and memos that depend on this value.
+    ///
+    /// # Example
+    /// ```
+    /// # use maple_core::prelude::*;
+    ///
+    /// let state = Signal::new(0);
+    /// assert_eq!(*state.get(), 0);
+    ///
+    /// state.set(1);
+    /// assert_eq!(*state.get(), 1);
+    /// ```
     pub fn set(&self, new_value: T) {
         self.handle.0.borrow_mut().update(new_value);
 
@@ -102,14 +122,14 @@ impl<T: 'static> Signal<T> {
         self.handle.clone()
     }
 
-    /// Convert this signal into its underlying handle.
+    /// Consumes this signal and returns its underlying [`StateHandle`].
     pub fn into_handle(self) -> StateHandle<T> {
         self.handle
     }
 
     /// Calls all the subscribers without modifying the state.
     /// This can be useful when using patterns such as inner mutability where the state updated will not be automatically triggered.
-    /// In the general case, however, it is preferable to use `set` instead.
+    /// In the general case, however, it is preferable to use [`Signal::set`] instead.
     pub fn trigger_subscribers(&self) {
         // Clone subscribers to prevent modifying list when calling callbacks.
         let subscribers = self.handle.0.borrow().subscribers.clone();
@@ -171,7 +191,9 @@ impl<T> SignalInner<T> {
 
 /// Trait for any [`SignalInner`], regardless of type param `T`.
 pub(super) trait AnySignalInner {
+    /// Wrapper around [`SignalInner::subscribe`].
     fn subscribe(&self, handler: Callback);
+    /// Wrapper around [`SignalInner::unsubscribe`].
     fn unsubscribe(&self, handler: &Callback);
 }
 
@@ -208,5 +230,16 @@ mod tests {
 
         state.set(1);
         assert_eq!(double(), 2);
+    }
+
+    #[test]
+    fn state_handle() {
+        let state = Signal::new(0);
+        let readonly = state.handle();
+
+        assert_eq!(*readonly.get(), 0);
+
+        state.set(1);
+        assert_eq!(*readonly.get(), 1);
     }
 }

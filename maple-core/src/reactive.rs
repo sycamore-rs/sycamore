@@ -39,7 +39,9 @@ pub fn create_root(callback: impl FnOnce()) -> Owner {
         let outer_owner = owner.replace(Some(Owner::new()));
         callback();
 
-        owner.replace(outer_owner).unwrap()
+        owner
+            .replace(outer_owner)
+            .expect("Owner should be valid inside the reactive root")
     })
 }
 

@@ -46,6 +46,7 @@ impl Drop for Running {
 }
 
 /// Owns the effects created in the current reactive scope.
+/// The effects are dropped and the cleanup callbacks are called when the [`Owner`] is dropped.
 #[derive(Default)]
 pub struct Owner {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
@@ -53,14 +54,19 @@ pub struct Owner {
 }
 
 impl Owner {
-    pub(super) fn new() -> Self {
+    /// Create a new empty [`Owner`].
+    ///
+    /// This should be rarely used and only serve as a placeholder.
+    pub fn new() -> Self {
         Self::default()
     }
 
+    /// Add an effect that is owned by this [`Owner`].
     pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
         self.effects.push(effect);
     }
 
+    /// Add a cleanup callback that will be called when the [`Owner`] is dropped.
     pub(super) fn add_cleanup(&mut self, cleanup: Box<dyn FnOnce()>) {
         self.cleanup.push(cleanup);
     }
@@ -145,7 +151,8 @@ pub fn create_effect_initial<R: 'static + Clone>(
 ) -> R {
     let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
-    let effect: RefCell<Option<Rc<dyn Fn()>>> = RefCell::new(None);
+    type MutEffect = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+    let effect: MutEffect = Rc::new(RefCell::new(None));
     let ret: Rc<RefCell<Option<R>>> = Rc::new(RefCell::new(None));
 
     let initial = RefCell::new(Some(initial));
@@ -157,6 +164,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
             CONTEXTS.with(|contexts| {
                 let initial_context_size = contexts.borrow().len();
 
+                // Upgrade running now to make sure running is valid for the whole duration of the effect.
                 let running = running.upgrade().unwrap();
 
                 // Recreate effect dependencies each time effect is called.
@@ -165,9 +173,14 @@ pub fn create_effect_initial<R: 'static + Clone>(
                 contexts.borrow_mut().push(Rc::downgrade(&running));
 
                 if let Some(initial) = initial.take() {
-                    let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
-                    *effect.borrow_mut() = Some(effect_tmp);
-                    *ret.borrow_mut() = Some(ret_tmp);
+                    let effect = Rc::clone(&effect);
+                    let ret = Rc::clone(&ret);
+                    let owner = create_root(move || {
+                        let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
+                        *effect.borrow_mut() = Some(effect_tmp);
+                        *ret.borrow_mut() = Some(ret_tmp);
+                    });
+                    running.borrow_mut().as_mut().unwrap().owner = owner;
                 } else {
                     // Destroy old effects before new ones run.
                     let old_owner = mem::replace(
@@ -176,7 +189,7 @@ pub fn create_effect_initial<R: 'static + Clone>(
                     );
                     drop(old_owner);
 
-                    let effect = effect.clone();
+                    let effect = Rc::clone(&effect);
                     let owner = create_root(move || {
                         effect.borrow().as_ref().unwrap()();
                     });
@@ -240,6 +253,19 @@ pub fn create_effect_initial<R: 'static + Clone>(
 }
 
 /// Creates an effect on signals used inside the effect closure.
+///
+/// # Example
+/// ```
+/// use maple_core::prelude::*;
+///
+/// let state = Signal::new(0);
+///
+/// create_effect(cloned!((state) => move || {
+///     println!("State changed. New state value = {}", state.get());
+/// })); // Prints "State changed. New state value = 0"
+///
+/// state.set(1); // Prints "State changed. New state value = 1"
+/// ```
 pub fn create_effect<F>(effect: F)
 where
     F: Fn() + 'static,
@@ -251,6 +277,19 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
+///
+/// # Example
+/// ```
+/// use maple_core::prelude::*;
+///
+/// let state = Signal::new(0);
+///
+/// let double = create_memo(cloned!((state) => move || *state.get() * 2));
+/// assert_eq!(*double.get(), 0);
+/// 
+/// state.set(1);
+/// assert_eq!(*double.get(), 2);
+/// ```
 pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: Fn() -> Out + 'static,
@@ -591,5 +630,28 @@ mod tests {
 
         drop(owner);
         assert_eq!(*cleanup_called.get(), true);
+    }
+
+    #[test]
+    fn cleanup_in_effect() {
+        let trigger = Signal::new(());
+
+        let counter = Signal::new(0);
+
+        create_effect(cloned!((trigger, counter) => move || {
+            trigger.get(); // subscribe to trigger
+
+            on_cleanup(cloned!((counter) => move || {
+                counter.set(*counter.get() + 1);
+            }));
+        }));
+
+        assert_eq!(*counter.get(), 0);
+
+        trigger.set(());
+        assert_eq!(*counter.get(), 1);
+
+        trigger.set(());
+        assert_eq!(*counter.get(), 2);
     }
 }

@@ -103,7 +103,40 @@ fn non_keyed() {
                 iterable: count,
                 template: |item| template! {
                     li { (item) }
-                }
+                },
+            })
+        }
+    });
+
+    render_to(|| node, &test_div());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+
+    assert_eq!(p.text_content().unwrap(), "12");
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.push(3);
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "123");
+
+    count.set(count.get()[1..].into());
+    assert_eq!(p.text_content().unwrap(), "23");
+}
+
+#[wasm_bindgen_test]
+fn keyed() {
+    let count = Signal::new(vec![1, 2]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Keyed(KeyedProps {
+                iterable: count,
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |item| *item,
             })
         }
     });
