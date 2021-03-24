@@ -40,8 +40,10 @@ where
     let iterable = Rc::new(iterable);
     let key_fn = Rc::new(key_fn);
 
+    type TemplateValue<T> = (T, Option<TemplateResult>);
+
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
-    let templates: Rc<RefCell<HashMap<Key, (T, Option<TemplateResult>)>>> =
+    let templates: Rc<RefCell<HashMap<Key, TemplateValue<T>>>> =
         Rc::new(RefCell::new(HashMap::new()));
 
     let fragment = web_sys::window()
