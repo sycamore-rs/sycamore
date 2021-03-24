@@ -40,7 +40,7 @@ where
     let iterable = Rc::new(iterable);
     let key_fn = Rc::new(key_fn);
 
-    type TemplateValue<T> = (T, Option<TemplateResult>);
+    type TemplateValue<T> = (T, TemplateResult);
 
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
     let templates: Rc<RefCell<HashMap<Key, TemplateValue<T>>>> =
@@ -81,29 +81,21 @@ where
                         let new_node = template(item.clone());
                         let (_, old_node) = mem::replace(
                             templates.borrow_mut().get_mut(&key).unwrap(),
-                            (item.clone(), Some(new_node.clone())),
+                            (item.clone(), new_node.clone()),
                         );
 
-                        let parent = old_node.as_ref().unwrap().node.parent_node().unwrap();
+                        let parent = old_node.node.parent_node().unwrap();
                         parent
-                            .replace_child(&new_node.node, &old_node.unwrap().node)
+                            .replace_child(&new_node.node, &old_node.node)
                             .unwrap();
                     } else {
                         templates
                             .borrow_mut()
-                            .insert(key.clone(), (item.clone(), Some(template(item.clone()))));
+                            .insert(key.clone(), (item.clone(), template(item.clone())));
 
                         marker
                             .before_with_node_1(
-                                &templates
-                                    .borrow()
-                                    .get(&key)
-                                    .as_ref()
-                                    .unwrap()
-                                    .1
-                                    .as_ref()
-                                    .unwrap()
-                                    .node,
+                                &templates.borrow().get(&key).as_ref().unwrap().1.node,
                             )
                             .unwrap();
                     }
@@ -126,21 +118,9 @@ where
                 }
 
                 for node in excess_nodes {
-                    node.1
-                         .1
-                        .as_ref()
-                        .unwrap()
-                        .clone()
-                        .node
-                        .unchecked_into::<Element>()
-                        .remove();
+                    node.1 .1.clone().node.unchecked_into::<Element>().remove();
                 }
             }
-
-            debug_assert!(
-                templates.borrow().values().all(|item| item.1.is_some()),
-                "templates should all be Some"
-            );
         }
     });
 
@@ -148,7 +128,7 @@ where
         let key = key_fn(item);
         let template = templates.borrow().get(&key).unwrap().clone();
 
-        let template = template.1.as_ref().unwrap().clone();
+        let template = template.1.clone();
         marker.before_with_node_1(&template.node).unwrap();
     }
 
@@ -168,7 +148,7 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult,
 {
-    let templates: Rc<RefCell<Vec<Option<TemplateResult>>>> = Rc::new(RefCell::new(Vec::new()));
+    let templates: Rc<RefCell<Vec<TemplateResult>>> = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
@@ -202,8 +182,7 @@ where
                     if templates.borrow().get(i).is_some() {
                         let new_node = (props.template)(item.clone());
                         let old_node =
-                            mem::replace(&mut templates.borrow_mut()[i], Some(new_node.clone()))
-                                .unwrap();
+                            mem::replace(&mut templates.borrow_mut()[i], new_node.clone());
 
                         let parent = old_node.node.parent_node().unwrap();
                         parent
@@ -212,12 +191,10 @@ where
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
-                        templates
-                            .borrow_mut()
-                            .push(Some((props.template)(item.clone())));
+                        templates.borrow_mut().push((props.template)(item.clone()));
 
                         marker
-                            .before_with_node_1(&templates.borrow()[i].as_ref().unwrap().node)
+                            .before_with_node_1(&templates.borrow()[i].node)
                             .unwrap();
                     }
                 }
@@ -228,21 +205,15 @@ where
                 let excess_nodes = templates.drain(props.iterable.get().len()..);
 
                 for node in excess_nodes {
-                    node.unwrap().node.unchecked_into::<Element>().remove();
+                    node.node.unchecked_into::<Element>().remove();
                 }
             }
 
             *previous_values.borrow_mut() = (*props.iterable.get()).clone();
-
-            debug_assert!(
-                templates.borrow().iter().all(|item| item.is_some()),
-                "templates should all be Some"
-            );
         }
     });
 
     for template in templates.borrow().iter() {
-        let template = template.as_ref().unwrap().clone();
         marker.before_with_node_1(&template.node).unwrap();
     }
 
