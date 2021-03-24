@@ -122,7 +122,7 @@ where
                 }
             }
 
-            if templates.borrow().len() < props.iterable.get().len() {
+            if templates.borrow().len() > props.iterable.get().len() {
                 let mut templates = templates.borrow_mut();
                 let excess_nodes = templates.drain(props.iterable.get().len()..);
 
