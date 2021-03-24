@@ -58,16 +58,19 @@ impl From<SignalVec<TemplateResult>> for TemplateList {
 }
 
 /// Render a [`TemplateResult`] into the DOM.
+///
+/// Alias for [`render_to`] with `parent` being the `<body>` tag.
 pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
+    render_to(template_result, &document.body().unwrap());
+}
+
+/// Render a [`TemplateResult`] under a `parent` node. For rendering under the `<body>` tag, use [`render()`] instead.
+pub fn render_to(template_result: impl FnOnce() -> TemplateResult + 'static, parent: &Node) {
     let owner = reactive::create_root(move || {
-        document
-            .body()
-            .unwrap()
-            .append_child(&template_result().node)
-            .unwrap();
+        parent.append_child(&template_result().node).unwrap();
     });
 
     thread_local! {
@@ -86,7 +89,7 @@ pub mod prelude {
         create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,
     };
     pub use crate::render::Render;
-    pub use crate::{render, TemplateList, TemplateResult};
+    pub use crate::{render, render_to, TemplateList, TemplateResult};
 
     pub use maple_core_macro::template;
 }
