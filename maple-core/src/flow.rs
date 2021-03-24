@@ -32,6 +32,14 @@ where
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
 {
+    let KeyedProps {
+        iterable,
+        template,
+        key: key_fn,
+    } = props;
+    let iterable = Rc::new(iterable);
+    let key_fn = Rc::new(key_fn);
+
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
     let templates: Rc<RefCell<HashMap<Key, (T, Option<TemplateResult>)>>> =
         Rc::new(RefCell::new(HashMap::new()));
@@ -51,14 +59,16 @@ where
     append(&fragment, &marker);
 
     create_effect({
+        let iterable = Rc::clone(&iterable);
+        let key_fn = Rc::clone(&key_fn);
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
             let previous_values = (*templates.borrow()).clone();
 
             // Find values that changed by comparing to previous_values.
-            for (i, item) in props.iterable.get().iter().enumerate() {
-                let key = (props.key)(item);
+            for (i, item) in iterable.get().iter().enumerate() {
+                let key = key_fn(item);
 
                 let previous_value = previous_values.get(&key);
 
@@ -66,7 +76,7 @@ where
                     // value changed, re-render item
 
                     if templates.borrow().get(&key).is_some() {
-                        let new_node = (props.template)(item.clone());
+                        let new_node = template(item.clone());
                         let (_, old_node) = mem::replace(
                             templates.borrow_mut().get_mut(&key).unwrap(),
                             (item.clone(), Some(new_node.clone())),
@@ -79,10 +89,9 @@ where
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
-                        templates.borrow_mut().insert(
-                            key.clone(),
-                            (item.clone(), Some((props.template)(item.clone()))),
-                        );
+                        templates
+                            .borrow_mut()
+                            .insert(key.clone(), (item.clone(), Some(template(item.clone()))));
 
                         marker
                             .before_with_node_1(
@@ -101,14 +110,10 @@ where
                 }
             }
 
-            if templates.borrow().len() > props.iterable.get().len() {
+            if templates.borrow().len() > iterable.get().len() {
                 let mut templates = templates.borrow_mut();
-                let new_keys: HashSet<Key> = props
-                    .iterable
-                    .get()
-                    .iter()
-                    .map(|item| (props.key)(item))
-                    .collect();
+                let new_keys: HashSet<Key> =
+                    iterable.get().iter().map(|item| key_fn(item)).collect();
 
                 let excess_nodes = templates
                     .iter()
@@ -139,7 +144,10 @@ where
         }
     });
 
-    for template in templates.borrow().values() {
+    for item in iterable.get().iter() {
+        let key = key_fn(item);
+        let template = templates.borrow().get(&key).unwrap().clone();
+
         let template = template.1.as_ref().unwrap().clone();
         marker.before_with_node_1(&template.node).unwrap();
     }
