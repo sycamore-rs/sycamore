@@ -7,9 +7,16 @@ use web_sys::{Event, HtmlInputElement};
 fn TodoItem(item: String) -> TemplateResult {
     let counter = Signal::new(0);
 
+    let handle_click = cloned!((counter) => move |_| {
+        log::info!("Clicked! New value = {}", *counter.get() + 1);
+        counter.set(*counter.get() + 1);
+    });
+
     template! {
-        li(on:click=cloned!((counter) => move |_| counter.set(*counter.get() + 1))) {
-            (counter.get()) " " (item.clone())
+        li{
+            button(on:click=handle_click) {
+                (counter.get()) " " (item.clone())
+            }
         }
     }
 }
