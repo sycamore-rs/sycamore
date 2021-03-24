@@ -68,14 +68,13 @@ fn App() -> TemplateResult {
             button(on:click=handle_remove_first) { "Remove first todo" }
 
             ul {
-                Keyed(KeyedProps {
+                Indexed(IndexedProps {
                     iterable: todos,
                     template: |item| {
                         template! {
                             TodoItem(item)
                         }
                     },
-                    key: |item| item.clone()
                 })
             }
         }

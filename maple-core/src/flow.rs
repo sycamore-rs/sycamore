@@ -1,4 +1,7 @@
-//! Keyed iteration in [`template`](crate::template).
+//! Iteration utility components for [`template`](crate::template).
+//!
+//! Iteration can be either _"keyed"_ or _"non keyed"_.
+//! Use the [`Keyed`] and [`Indexed`] utility components respectively.
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -13,6 +16,7 @@ use crate::internal::append;
 use crate::prelude::*;
 use crate::reactive::Owner;
 
+/// Props for [`Keyed`].
 pub struct KeyedProps<T: 'static, F, K, Key>
 where
     F: Fn(T) -> TemplateResult,
@@ -24,6 +28,27 @@ where
     pub key: K,
 }
 
+/// Keyed iteration. Use this instead of directly rendering an array of [`TemplateResult`]s.
+/// Using this will minimize re-renders instead of re-rendering every single node on every state change.
+///
+/// For non keyed iteration, see [`Indexed`].
+///
+/// # Example
+/// ```no_run
+/// use maple_core::prelude::*;
+///
+/// let count = Signal::new(vec![1, 2]);
+///
+/// let node = template! {
+///     Keyed(KeyedProps {
+///         iterable: count,
+///         template: |item| template! {
+///             li { (item) }
+///         },
+///         key: |item| *item,
+///     })
+/// };
+/// ```
 pub fn Keyed<T, F: 'static, K: 'static, Key: 'static>(
     props: KeyedProps<T, F, K, Key>,
 ) -> TemplateResult
@@ -155,6 +180,7 @@ where
     TemplateResult::new(fragment.into())
 }
 
+/// Props for [`Indexed`].
 pub struct IndexedProps<T: 'static, F>
 where
     F: Fn(T) -> TemplateResult,
@@ -163,6 +189,26 @@ where
     pub template: F,
 }
 
+/// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of [`TemplateResult`]s.
+/// Using this will minimize re-renders instead of re-rendering every single node on every state change.
+///
+/// For keyed iteration, see [`Keyed`].
+///
+/// # Example
+/// ```no_run
+/// use maple_core::prelude::*;
+///
+/// let count = Signal::new(vec![1, 2]);
+///
+/// let node = template! {
+///     Indexed(IndexedProps {
+///         iterable: count,
+///         template: |item| template! {
+///             li { (item) }
+///         },
+///     })
+/// };
+/// ```
 pub fn Indexed<T, F: 'static>(props: IndexedProps<T, F>) -> TemplateResult
 where
     T: Clone + PartialEq,
