@@ -89,8 +89,6 @@ where
                             .replace_child(&new_node.node, &old_node.unwrap().node)
                             .unwrap();
                     } else {
-                        debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
-
                         templates
                             .borrow_mut()
                             .insert(key.clone(), (item.clone(), Some(template(item.clone()))));
