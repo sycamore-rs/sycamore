@@ -35,6 +35,12 @@ fn App() -> TemplateResult {
         todos.set(tmp);
     });
 
+    let handle_remove_first = cloned!((todos) => move |_| {
+        if !todos.get().is_empty() {
+            todos.set(todos.get()[1..].into());
+        }
+    });
+
     template! {
         main {
             h1 {
@@ -44,10 +50,8 @@ fn App() -> TemplateResult {
             input(placeholder="What needs to be done?", on:input=handle_input)
             button(on:click=handle_add) { "Add todo" }
             button(on:click=handle_remove) { "Remove last todo" }
+            button(on:click=handle_remove_first) { "Remove first todo" }
 
-            // ul {
-            //     (todos_template.template_list())
-            // }
             ul {
                 Indexed(IndexedProps {
                     iterable: todos,

@@ -3,6 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::mem;
 use std::rc::Rc;
 
 use wasm_bindgen::*;
@@ -65,7 +66,7 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult,
 {
-    let templates = Rc::new(RefCell::new(Vec::new()));
+    let templates: Rc<RefCell<Vec<Option<TemplateResult>>>> = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
@@ -105,7 +106,15 @@ where
                     // value changed, re-render item
 
                     if templates.borrow().get(i).is_some() {
-                        templates.borrow_mut()[i] = Some((props.template)(item.clone()));
+                        let new_node = (props.template)(item.clone());
+                        let old_node =
+                            mem::replace(&mut templates.borrow_mut()[i], Some(new_node.clone()))
+                                .unwrap();
+
+                        let parent = old_node.node.parent_node().unwrap();
+                        parent
+                            .replace_child(&new_node.node, &old_node.node)
+                            .unwrap();
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
@@ -114,9 +123,7 @@ where
                             .push(Some((props.template)(item.clone())));
 
                         marker
-                            .before_with_node_1(
-                                &templates.borrow().last().unwrap().as_ref().unwrap().node,
-                            )
+                            .before_with_node_1(&templates.borrow()[i].as_ref().unwrap().node)
                             .unwrap();
                     }
                 }
