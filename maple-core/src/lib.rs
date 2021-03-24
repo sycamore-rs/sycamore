@@ -80,7 +80,7 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
 /// The maple prelude.
 pub mod prelude {
     pub use crate::cloned;
-    pub use crate::flow::{Keyed, KeyedProps};
+    pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,

@@ -1,10 +1,14 @@
 //! Keyed iteration in [`template`](crate::template).
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
+use wasm_bindgen::*;
+use web_sys::Element;
+
+use crate::internal::append;
 use crate::prelude::*;
 
 pub struct KeyedProps<T: 'static, F, K, Key>
@@ -50,7 +54,7 @@ where
 
 pub struct IndexedProps<T: 'static, F>
 where
-    F: Fn(&T) -> TemplateResult,
+    F: Fn(T) -> TemplateResult,
 {
     pub iterable: Signal<Vec<T>>,
     pub template: F,
@@ -58,52 +62,91 @@ where
 
 pub fn Indexed<T, F: 'static>(props: IndexedProps<T, F>) -> TemplateResult
 where
-    F: Fn(&T) -> TemplateResult,
     T: Clone + PartialEq,
+    F: Fn(T) -> TemplateResult,
 {
-    let templates = RefCell::new(Vec::new());
+    let templates = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
-    let previous_values = RefCell::new((*props.iterable.get()).clone());
+    let previous_values = RefCell::new(Vec::new());
+    let previous_len = Rc::new(Cell::new(0));
     // A list of indexes that need to be re-rendered.
     let changed = Rc::new(RefCell::new(Vec::new()));
 
-    create_effect(move || {
-        *changed.borrow_mut() = Vec::new(); // reset changed
+    let fragment = web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .create_document_fragment();
 
-        let mut changed_tmp = Vec::new();
+    let marker = web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .create_comment("");
 
-        // Find values that changed by comparing to previous_values.
-        for (i, item) in props.iterable.get().iter().enumerate() {
-            let previous_values = previous_values.borrow();
-            let previous_value = previous_values.get(i);
+    append(&fragment, &marker);
 
-            if previous_value.is_none() || previous_value.unwrap() != item {
-                changed_tmp.push(i);
-                // value changed, re-render item
+    create_effect({
+        let templates = Rc::clone(&templates);
+        let marker = marker.clone();
+        move || {
+            *changed.borrow_mut() = Vec::new(); // reset changed
 
-                if let Some(template) = templates.borrow_mut().get_mut(i) {
-                    *template = Some((props.template)(item));
-                } else {
-                    debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
+            let mut changed_tmp = Vec::new();
 
-                    templates.borrow_mut().push(Some((props.template)(item)));
+            // Find values that changed by comparing to previous_values.
+            for (i, item) in props.iterable.get().iter().enumerate() {
+                let previous_values = previous_values.borrow();
+                let previous_value = previous_values.get(i);
+
+                if previous_value.is_none() || previous_value.unwrap() != item {
+                    changed_tmp.push(i);
+                    // value changed, re-render item
+
+                    if templates.borrow().get(i).is_some() {
+                        templates.borrow_mut()[i] = Some((props.template)(item.clone()));
+                    } else {
+                        debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
+
+                        templates
+                            .borrow_mut()
+                            .push(Some((props.template)(item.clone())));
+
+                        marker
+                            .before_with_node_1(
+                                &templates.borrow().last().unwrap().as_ref().unwrap().node,
+                            )
+                            .unwrap();
+                    }
                 }
             }
+
+            if templates.borrow().len() < props.iterable.get().len() {
+                let mut templates = templates.borrow_mut();
+                let excess_nodes = templates.drain(props.iterable.get().len()..);
+
+                for node in excess_nodes {
+                    node.unwrap().node.unchecked_into::<Element>().remove();
+                }
+            }
+
+            *previous_values.borrow_mut() = (*props.iterable.get()).clone();
+            previous_len.set(previous_values.borrow().len());
+
+            *changed.borrow_mut() = changed_tmp;
+
+            debug_assert!(
+                templates.borrow_mut().iter().all(|item| item.is_some()),
+                "templates should all be Some"
+            );
         }
-
-        if templates.borrow().len() > props.iterable.get().len() {
-            templates.borrow_mut().truncate(props.iterable.get().len());
-        }
-
-        *previous_values.borrow_mut() = (*props.iterable.get()).clone();
-        *changed.borrow_mut() = changed_tmp;
-
-        debug_assert!(
-            templates.borrow_mut().iter().all(|item| item.is_some()),
-            "templates should all be Some"
-        );
     });
 
-    todo!();
+    for template in templates.borrow().iter() {
+        let template = template.as_ref().unwrap().clone();
+        marker.before_with_node_1(&template.node).unwrap();
+    }
+
+    TemplateResult::new(fragment.into())
 }

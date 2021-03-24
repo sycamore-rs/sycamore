@@ -11,10 +11,12 @@ fn TodoItem(item: String) -> TemplateResult {
 }
 
 fn App() -> TemplateResult {
-    let todos = SignalVec::new();
-    let todos_template = todos.map(|todo: &String| template! { TodoItem(todo.clone()) });
-
+    let todos = Signal::new(vec!["Hello".to_string(), "Hello again".to_string()]);
     let value = Signal::new(String::new());
+
+    create_effect(cloned!((todos) => move || {
+        log::info!("Todos changed: {:?}", todos.get());
+    }));
 
     let handle_input = cloned!((value) => move |event: Event| {
         let target: HtmlInputElement = event.target().unwrap().dyn_into().unwrap();
@@ -22,11 +24,15 @@ fn App() -> TemplateResult {
     });
 
     let handle_add = cloned!((todos) => move |_| {
-        todos.insert(0, value.get().as_ref().clone());
+        let mut tmp = (*todos.get()).clone();
+        tmp.push(value.get().as_ref().clone());
+        todos.set(tmp);
     });
 
     let handle_remove = cloned!((todos) => move |_| {
-        todos.pop();
+        let mut tmp = (*todos.get()).clone();
+        tmp.pop();
+        todos.set(tmp);
     });
 
     template! {
@@ -39,8 +45,18 @@ fn App() -> TemplateResult {
             button(on:click=handle_add) { "Add todo" }
             button(on:click=handle_remove) { "Remove last todo" }
 
+            // ul {
+            //     (todos_template.template_list())
+            // }
             ul {
-                (todos_template.template_list())
+                Indexed(IndexedProps {
+                    iterable: todos,
+                    template: |item| {
+                        template! {
+                            TodoItem(item)
+                        }
+                    }
+                })
             }
         }
     }
