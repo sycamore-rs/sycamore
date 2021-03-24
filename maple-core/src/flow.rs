@@ -11,6 +11,7 @@ use web_sys::Element;
 
 use crate::internal::append;
 use crate::prelude::*;
+use crate::reactive::Owner;
 
 pub struct KeyedProps<T: 'static, F, K, Key>
 where
@@ -40,7 +41,7 @@ where
     let iterable = Rc::new(iterable);
     let key_fn = Rc::new(key_fn);
 
-    type TemplateValue<T> = (T, TemplateResult);
+    type TemplateValue<T> = (Owner, T, TemplateResult);
 
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
     let templates: Rc<RefCell<HashMap<Key, TemplateValue<T>>>> =
@@ -66,7 +67,13 @@ where
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
-            let previous_values = (*templates.borrow()).clone();
+            let previous_values: HashMap<_, _> = {
+                let templates = templates.borrow();
+                templates
+                    .iter()
+                    .map(|x| ((*x.0).clone(), x.1 .1.clone()))
+                    .collect()
+            };
 
             // Find values that changed by comparing to previous_values.
             for item in iterable.get().iter() {
@@ -74,28 +81,42 @@ where
 
                 let previous_value = previous_values.get(&key);
 
-                if previous_value.is_none() || &previous_value.unwrap().0 != item {
+                if previous_value.is_none() || previous_value.unwrap() != item {
                     // value changed, re-render item
 
+                    templates
+                        .borrow_mut()
+                        .get_mut(&key)
+                        .and_then(|(owner, _, _)| {
+                            // destroy old owner
+                            let old_owner =
+                                mem::replace(owner, Owner::new() /* placeholder */);
+                            drop(old_owner);
+                            None::<()>
+                        });
+
+                    let mut new_template = None;
+                    let owner = create_root(|| new_template = Some(template(item.clone())));
+
                     if templates.borrow().get(&key).is_some() {
-                        let new_node = template(item.clone());
-                        let (_, old_node) = mem::replace(
+                        let (_, _, old_node) = mem::replace(
                             templates.borrow_mut().get_mut(&key).unwrap(),
-                            (item.clone(), new_node.clone()),
+                            (owner, item.clone(), new_template.clone().unwrap()),
                         );
 
                         let parent = old_node.node.parent_node().unwrap();
                         parent
-                            .replace_child(&new_node.node, &old_node.node)
+                            .replace_child(&new_template.unwrap().node, &old_node.node)
                             .unwrap();
                     } else {
-                        templates
-                            .borrow_mut()
-                            .insert(key.clone(), (item.clone(), template(item.clone())));
+                        templates.borrow_mut().insert(
+                            key.clone(),
+                            (owner, item.clone(), new_template.clone().unwrap()),
+                        );
 
                         marker
                             .before_with_node_1(
-                                &templates.borrow().get(&key).as_ref().unwrap().1.node,
+                                &templates.borrow().get(&key).as_ref().unwrap().2.node,
                             )
                             .unwrap();
                     }
@@ -110,7 +131,7 @@ where
                 let excess_nodes = templates
                     .iter()
                     .filter(|item| new_keys.get(item.0).is_none())
-                    .map(|x| (x.0.clone(), x.1.clone()))
+                    .map(|x| (x.0.clone(), x.1 .2.clone()))
                     .collect::<Vec<_>>();
 
                 for node in &excess_nodes {
@@ -118,7 +139,7 @@ where
                 }
 
                 for node in excess_nodes {
-                    node.1 .1.clone().node.unchecked_into::<Element>().remove();
+                    node.1.node.unchecked_into::<Element>().remove();
                 }
             }
         }
@@ -126,9 +147,8 @@ where
 
     for item in iterable.get().iter() {
         let key = key_fn(item);
-        let template = templates.borrow().get(&key).unwrap().clone();
+        let template = templates.borrow().get(&key).unwrap().2.clone();
 
-        let template = template.1.clone();
         marker.before_with_node_1(&template.node).unwrap();
     }
 
@@ -148,7 +168,7 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult,
 {
-    let templates: Rc<RefCell<Vec<TemplateResult>>> = Rc::new(RefCell::new(Vec::new()));
+    let templates: Rc<RefCell<Vec<(Owner, TemplateResult)>>> = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
@@ -179,22 +199,35 @@ where
                 if previous_value.is_none() || previous_value.unwrap() != item {
                     // value changed, re-render item
 
-                    if templates.borrow().get(i).is_some() {
-                        let new_node = (props.template)(item.clone());
-                        let old_node =
-                            mem::replace(&mut templates.borrow_mut()[i], new_node.clone());
+                    templates.borrow_mut().get_mut(i).and_then(|(owner, _)| {
+                        // destroy old owner
+                        let old_owner = mem::replace(owner, Owner::new() /* placeholder */);
+                        drop(old_owner);
+                        None::<()>
+                    });
 
-                        let parent = old_node.node.parent_node().unwrap();
+                    let mut new_template = None;
+                    let owner = create_root(|| new_template = Some((props.template)(item.clone())));
+
+                    if templates.borrow().get(i).is_some() {
+                        let old_node = mem::replace(
+                            &mut templates.borrow_mut()[i],
+                            (owner, new_template.as_ref().unwrap().clone()),
+                        );
+
+                        let parent = old_node.1.node.parent_node().unwrap();
                         parent
-                            .replace_child(&new_node.node, &old_node.node)
+                            .replace_child(&new_template.unwrap().node, &old_node.1.node)
                             .unwrap();
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
-                        templates.borrow_mut().push((props.template)(item.clone()));
+                        templates
+                            .borrow_mut()
+                            .push((owner, new_template.as_ref().unwrap().clone()));
 
                         marker
-                            .before_with_node_1(&templates.borrow()[i].node)
+                            .before_with_node_1(&new_template.unwrap().node)
                             .unwrap();
                     }
                 }
@@ -205,7 +238,7 @@ where
                 let excess_nodes = templates.drain(props.iterable.get().len()..);
 
                 for node in excess_nodes {
-                    node.node.unchecked_into::<Element>().remove();
+                    node.1.node.unchecked_into::<Element>().remove();
                 }
             }
 
@@ -214,7 +247,7 @@ where
     });
 
     for template in templates.borrow().iter() {
-        marker.before_with_node_1(&template.node).unwrap();
+        marker.before_with_node_1(&template.1.node).unwrap();
     }
 
     TemplateResult::new(fragment.into())
