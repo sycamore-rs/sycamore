@@ -97,3 +97,8 @@ pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn R
 
     parent.append_child(&node.borrow()).unwrap();
 }
+
+/// Sets the value of a [`NodeRef`].
+pub fn set_noderef(node: &impl AsRef<Node>, noderef: NodeRef) {
+    noderef.set(node.as_ref().clone());
+}
