@@ -50,6 +50,7 @@ impl ToTokens for Element {
 
         let mut set_attributes = Vec::new();
         let mut set_event_listeners = Vec::new();
+        let mut set_noderefs = Vec::new();
         if let Some(attributes) = attributes {
             for attribute in &attributes.attributes {
                 let expr = &attribute.expr;
@@ -64,6 +65,11 @@ impl ToTokens for Element {
                     AttributeType::Event { name } => {
                         set_event_listeners.push(quote_spanned! { expr_span=>
                             ::maple_core::internal::event(::std::convert::AsRef::as_ref(&element), #name, ::std::boxed::Box::new(#expr));
+                        });
+                    }
+                    AttributeType::Ref => {
+                        set_noderefs.push(quote_spanned! { expr_span=>
+                            ::maple_core::internal::set_noderef(&element, #expr);
                         });
                     }
                 }
@@ -95,6 +101,7 @@ impl ToTokens for Element {
             let element = #tag_name;
             #(#set_attributes)*
             #(#set_event_listeners)*
+            #(#set_noderefs)*
             #(#append_children)*
             element
         }};

@@ -157,3 +157,20 @@ fn keyed() {
     count.set(count.get()[1..].into());
     assert_eq!(p.text_content().unwrap(), "23");
 }
+
+#[wasm_bindgen_test]
+fn noderefs() {
+    let noderef = NodeRef::new();
+
+    let node = template! {
+        div {
+            input(ref=noderef.clone())
+        }
+    };
+
+    render_to(|| node, &test_div());
+
+    let input_ref = document().query_selector("input").unwrap().unwrap();
+
+    assert_eq!(Node::from(input_ref), noderef.get());
+}

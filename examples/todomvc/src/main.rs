@@ -29,7 +29,9 @@ fn App() -> TemplateResult {
     let todos = Signal::new(vec!["Hello".to_string(), "Hello again".to_string()]);
     let value = Signal::new(String::new());
 
-    create_effect(cloned!((todos) => move || {
+    let input_ref = NodeRef::new();
+
+    create_effect(cloned!((todos, input_ref) => move || {
         log::info!("Todos changed: {:?}", todos.get());
     }));
 
@@ -38,10 +40,14 @@ fn App() -> TemplateResult {
         value.set(target.value());
     });
 
-    let handle_add = cloned!((todos) => move |_| {
+    let handle_add = cloned!((todos, input_ref) => move |_| {
         let mut tmp = (*todos.get()).clone();
         tmp.push(value.get().as_ref().clone());
         todos.set(tmp);
+
+        let input = input_ref.get().unchecked_into::<HtmlInputElement>();
+        input.set_value("");
+        input.focus().unwrap();
     });
 
     let handle_remove = cloned!((todos) => move |_| {
@@ -62,7 +68,7 @@ fn App() -> TemplateResult {
                 "todos"
             }
 
-            input(placeholder="What needs to be done?", on:input=handle_input)
+            input(ref=input_ref, placeholder="What needs to be done?", on:input=handle_input)
             button(on:click=handle_add) { "Add todo" }
             button(on:click=handle_remove) { "Remove last todo" }
             button(on:click=handle_remove_first) { "Remove first todo" }

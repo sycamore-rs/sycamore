@@ -9,6 +9,8 @@ pub enum AttributeType {
     DomAttribute { name: String },
     /// Syntax: `on:name`.
     Event { name: String },
+    /// Syntax: `ref`.
+    Ref,
 }
 
 impl Parse for AttributeType {
@@ -16,7 +18,9 @@ impl Parse for AttributeType {
         let ident = input.call(Ident::parse_any)?;
         let ident_str = ident.to_string();
 
-        if input.peek(Token![:]) {
+        if ident_str == "ref" {
+            Ok(Self::Ref)
+        } else if input.peek(Token![:]) {
             let _colon: Token![:] = input.parse()?;
             match ident_str.as_str() {
                 "on" => {
