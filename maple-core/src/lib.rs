@@ -18,6 +18,7 @@ pub mod flow;
 pub mod internal;
 #[doc(hidden)]
 pub mod macros;
+pub mod noderef;
 pub mod reactive;
 pub mod render;
 
@@ -84,6 +85,7 @@ pub fn render_to(template_result: impl FnOnce() -> TemplateResult + 'static, par
 pub mod prelude {
     pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
+    pub use crate::noderef::NodeRef;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,
