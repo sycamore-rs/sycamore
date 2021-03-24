@@ -1,6 +1,6 @@
 //! Keyed iteration in [`template`](crate::template).
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem;
@@ -14,7 +14,7 @@ use crate::prelude::*;
 
 pub struct KeyedProps<T: 'static, F, K, Key>
 where
-    F: Fn(&T) -> TemplateResult,
+    F: Fn(T) -> TemplateResult,
     K: Fn(&T) -> Key,
     Key: Hash + Eq,
 {
@@ -27,9 +27,10 @@ pub fn Keyed<T, F: 'static, K: 'static, Key: 'static>(
     props: KeyedProps<T, F, K, Key>,
 ) -> TemplateResult
 where
-    F: Fn(&T) -> TemplateResult,
+    F: Fn(T) -> TemplateResult,
     K: Fn(&T) -> Key,
     Key: Hash + Eq,
+    T: Clone,
 {
     let map = RefCell::new(HashMap::new());
 
@@ -45,7 +46,7 @@ where
             let key = (props.key)(item);
 
             if !map.borrow().contains_key(&key) {
-                map.borrow_mut().insert(key, (props.template)(item));
+                map.borrow_mut().insert(key, (props.template)(item.clone()));
             }
         }
     });
@@ -70,7 +71,6 @@ where
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
-    let previous_len = Rc::new(Cell::new(0));
     // A list of indexes that need to be re-rendered.
     let changed = Rc::new(RefCell::new(Vec::new()));
 
@@ -139,7 +139,6 @@ where
             }
 
             *previous_values.borrow_mut() = (*props.iterable.get()).clone();
-            previous_len.set(previous_values.borrow().len());
 
             *changed.borrow_mut() = changed_tmp;
 

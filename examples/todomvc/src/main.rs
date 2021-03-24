@@ -5,8 +5,12 @@ use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement};
 
 fn TodoItem(item: String) -> TemplateResult {
+    let counter = Signal::new(0);
+
     template! {
-        li { (item.clone()) }
+        li(on:click=cloned!((counter) => move |_| counter.set(*counter.get() + 1))) {
+            (counter.get()) " " (item.clone())
+        }
     }
 }
 
