@@ -1,3 +1,5 @@
+#![allow(clippy::eval_order_dependence)] // Needed when using `syn::parenthesized!`.
+
 mod attributes;
 mod children;
 mod component;
