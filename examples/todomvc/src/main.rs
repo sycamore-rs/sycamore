@@ -85,6 +85,41 @@ impl AppState {
                 .collect(),
         );
     }
+
+    fn todos_left(&self) -> u32 {
+        self.todos
+            .get()
+            .iter()
+            .fold(0, |acc, todo| if todo.completed { acc } else { acc + 1 })
+    }
+
+    fn toggle_complete_all(&self) {
+        if self.todos_left() == 0 {
+            // make all todos active
+            self.todos.set(
+                self.todos
+                    .get()
+                    .iter()
+                    .map(|todo| Todo {
+                        completed: false,
+                        ..todo.clone()
+                    })
+                    .collect(),
+            );
+        } else {
+            // make all todos completed
+            self.todos.set(
+                self.todos
+                    .get()
+                    .iter()
+                    .map(|todo| Todo {
+                        completed: true,
+                        ..todo.clone()
+                    })
+                    .collect(),
+            );
+        }
+    }
 }
 
 fn App() -> TemplateResult {
@@ -93,14 +128,19 @@ fn App() -> TemplateResult {
     };
 
     let todos_is_empty =
-        create_selector(cloned!((app_state) => move || app_state.todos.get().len() > 0));
+        create_selector(cloned!((app_state) => move || app_state.todos.get().len() == 0));
+
+    create_effect(cloned!((todos_is_empty) => move || {
+        log::info!("todos_is_empty = {}", todos_is_empty.get());
+    }));
 
     template! {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 header::Header(app_state.clone())
 
-                (if *todos_is_empty.get() {
+                (if !*todos_is_empty.get() {
+                    log::info!("rendered");
                     template! {
                         list::List(app_state.clone())
                     }
