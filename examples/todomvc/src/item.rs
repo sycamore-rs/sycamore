@@ -4,9 +4,9 @@ use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 
 use crate::{AppState, Todo};
 
-pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
-    let task = todo.task.clone();
-    let id = todo.id;
+pub fn Item(todo: Signal<Todo>, app_state: AppState) -> TemplateResult {
+    let task = cloned!((todo) => move || todo.get().task.clone());
+    let id = todo.get().id;
 
     let editing = Signal::new(false);
     let input_ref = NodeRef::new();
@@ -17,8 +17,11 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
         value.set(target.value());
     });
 
-    let toggle_completed = cloned!((app_state) => move |_| {
-        app_state.toggle_completed(id);
+    let toggle_completed = cloned!((todo) => move |_| {
+        todo.set(Todo {
+            completed: !todo.get().completed,
+            ..todo.get().as_ref().clone()
+        });
     });
 
     let handle_dblclick = cloned!((editing, input_ref) => move |_| {
@@ -26,7 +29,7 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
         input_ref.get().unchecked_into::<HtmlInputElement>().focus().unwrap();
     });
 
-    let handle_blur = cloned!((app_state, editing, value) => move || {
+    let handle_blur = cloned!((todo, app_state, editing, value) => move || {
         editing.set(false);
 
         let mut value = value.get().as_ref().clone();
@@ -35,7 +38,10 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
         if value.is_empty() {
             app_state.remove_todo(id);
         } else {
-            app_state.edit_todo_task(id, value);
+            todo.set(Todo {
+                task: value,
+                ..todo.get().as_ref().clone()
+            })
         }
     });
 
@@ -44,7 +50,7 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
         match event.key().as_str() {
             "Enter" => handle_blur(),
             "Escape" => {
-                input_ref.get().unchecked_into::<HtmlInputElement>().set_value(&task);
+                input_ref.get().unchecked_into::<HtmlInputElement>().set_value(&task());
                 editing.set(false);
             },
             _ => {}
@@ -55,11 +61,19 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
         app_state.remove_todo(id);
     });
 
-    let completed = todo.completed;
+    let toggle_ref = NodeRef::new();
 
-    let class = cloned!((editing) => move || {
+    // FIXME: bind to boolean attribute
+    create_effect(cloned!((todo, toggle_ref) => move || {
+        let completed = todo.get().completed;
+        if let Some(toggle_ref) = toggle_ref.try_get() {
+            toggle_ref.unchecked_into::<HtmlInputElement>().set_checked(completed);
+        }
+    }));
+
+    let class = cloned!((todo, editing) => move || {
         format!("{} {}",
-            if completed { "completed" } else { "" },
+            if todo.get().completed { "completed" } else { "" },
             if *editing.get() { "editing" } else { "" }
         )
     });
@@ -67,9 +81,9 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
     template! {
         li(class=class()) {
             div(class="view") {
-                input(class="toggle", type="checkbox", checked=completed, on:input=toggle_completed)
+                input(ref=toggle_ref, class="toggle", type="checkbox", on:input=toggle_completed)
                 label(on:dblclick=handle_dblclick) {
-                    (task.clone())
+                    (task())
                 }
                 button(class="destroy", on:click=handle_destroy)
             }
@@ -78,7 +92,7 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
                 cloned!((todo, input_ref, handle_blur, handle_submit, handle_input) => template! {
                     input(ref=input_ref,
                         class="edit",
-                        value=todo.task.clone(),
+                        value=todo.get().task.clone(),
                         on:blur=move |_| handle_blur(),
                         on:keyup=handle_submit,
                         on:input=handle_input,

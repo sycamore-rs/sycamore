@@ -14,7 +14,7 @@ pub fn Header(app_state: AppState) -> TemplateResult {
         value.set(target.value());
     });
 
-    let handle_submit = cloned!((value, input_ref) => move |event: Event| {
+    let handle_submit = cloned!((app_state, value, input_ref) => move |event: Event| {
         let event: KeyboardEvent = event.unchecked_into();
 
         if event.key() == "Enter" {

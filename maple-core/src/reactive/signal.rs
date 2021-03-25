@@ -168,6 +168,12 @@ impl<T: 'static> Clone for Signal<T> {
     }
 }
 
+impl<T: PartialEq> PartialEq for Signal<T> {
+    fn eq(&self, other: &Signal<T>) -> bool {
+        self.get_untracked().eq(&other.get_untracked())
+    }
+}
+
 impl<T: fmt::Debug> fmt::Debug for Signal<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Signal")

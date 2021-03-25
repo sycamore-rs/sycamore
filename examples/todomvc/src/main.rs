@@ -17,7 +17,7 @@ pub struct Todo {
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    pub todos: Signal<Vec<Todo>>,
+    pub todos: Signal<Vec<Signal<Todo>>>,
 }
 
 impl AppState {
@@ -28,11 +28,11 @@ impl AppState {
                 .as_ref()
                 .clone()
                 .into_iter()
-                .chain(Some(Todo {
+                .chain(Some(Signal::new(Todo {
                     task,
                     completed: false,
                     id: Uuid::new_v4(),
-                }))
+                })))
                 .collect(),
         )
     }
@@ -42,82 +42,64 @@ impl AppState {
             self.todos
                 .get()
                 .iter()
-                .filter(|todo| todo.id != id)
+                .filter(|todo| todo.get().id != id)
                 .cloned()
                 .collect(),
         );
     }
 
     fn toggle_completed(&self, id: Uuid) {
-        self.todos.set(
-            self.todos
-                .get()
-                .iter()
-                .map(|todo| {
-                    if todo.id == id {
-                        Todo {
-                            completed: !todo.completed,
-                            ..todo.clone()
-                        }
-                    } else {
-                        todo.clone()
-                    }
-                })
-                .collect(),
-        );
+        for todo in self.todos.get().iter() {
+            if todo.get().id == id {
+                todo.set(Todo {
+                    completed: !todo.get().completed,
+                    ..todo.get().as_ref().clone()
+                });
+                break;
+            }
+        }
     }
 
     fn edit_todo_task(&self, id: Uuid, new_task: String) {
-        self.todos.set(
-            self.todos
-                .get()
-                .iter()
-                .map(|todo| {
-                    if todo.id == id {
-                        Todo {
-                            task: new_task.clone(),
-                            ..todo.clone()
-                        }
-                    } else {
-                        todo.clone()
-                    }
-                })
-                .collect(),
-        );
+        for todo in self.todos.get().iter() {
+            if todo.get().id == id {
+                todo.set(Todo {
+                    task: new_task,
+                    ..todo.get().as_ref().clone()
+                });
+                break;
+            }
+        }
     }
 
     fn todos_left(&self) -> u32 {
-        self.todos
-            .get()
-            .iter()
-            .fold(0, |acc, todo| if todo.completed { acc } else { acc + 1 })
+        self.todos.get().iter().fold(
+            0,
+            |acc, todo| if todo.get().completed { acc } else { acc + 1 },
+        )
     }
 
     fn toggle_complete_all(&self) {
         if self.todos_left() == 0 {
             // make all todos active
-            self.todos.set(
-                self.todos
-                    .get()
-                    .iter()
-                    .map(|todo| Todo {
+            for todo in self.todos.get().iter() {
+                if todo.get().completed {
+                    todo.set(Todo {
                         completed: false,
-                        ..todo.clone()
+                        ..todo.get().as_ref().clone()
                     })
-                    .collect(),
-            );
+                }
+            }
         } else {
             // make all todos completed
-            self.todos.set(
-                self.todos
-                    .get()
-                    .iter()
-                    .map(|todo| Todo {
+            for todo in self.todos.get().iter() {
+                if !todo.get().completed {
+                    todo.set(Todo {
                         completed: true,
-                        ..todo.clone()
+                        ..todo.get().as_ref().clone()
                     })
-                    .collect(),
-            );
+                }
+            }
         }
     }
 }
@@ -129,10 +111,6 @@ fn App() -> TemplateResult {
 
     let todos_is_empty =
         create_selector(cloned!((app_state) => move || app_state.todos.get().len() == 0));
-
-    create_effect(cloned!((todos_is_empty) => move || {
-        log::info!("todos_is_empty = {}", todos_is_empty.get());
-    }));
 
     template! {
         div(class="todomvc-wrapper") {
