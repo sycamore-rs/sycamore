@@ -1,6 +1,7 @@
 use super::*;
 use std::cell::RefCell;
 use std::collections::HashSet;
+use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -61,6 +62,14 @@ impl<T: 'static> StateHandle<T> {
 impl<T: 'static> Clone for StateHandle<T> {
     fn clone(&self) -> Self {
         Self(Rc::clone(&self.0))
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for StateHandle<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StateHandle")
+            .field(&self.get_untracked())
+            .finish()
     }
 }
 
@@ -156,6 +165,14 @@ impl<T: 'static> Clone for Signal<T> {
         Self {
             handle: self.handle.clone(),
         }
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for Signal<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Signal")
+            .field(&self.get_untracked())
+            .finish()
     }
 }
 
