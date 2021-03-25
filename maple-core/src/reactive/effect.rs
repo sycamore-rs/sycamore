@@ -286,7 +286,7 @@ where
 ///
 /// let double = create_memo(cloned!((state) => move || *state.get() * 2));
 /// assert_eq!(*double.get(), 0);
-/// 
+///
 /// state.set(1);
 /// assert_eq!(*double.get(), 2);
 /// ```
@@ -343,6 +343,40 @@ where
         });
 
         (effect, memo.into_handle())
+    })
+}
+
+/// Run the passed closure inside an untracked scope.
+/// 
+/// See also [`StateHandle::get_untracked()`].
+///
+/// # Example
+///
+/// ```
+/// use maple_core::prelude::*;
+///
+/// let state = Signal::new(1);
+///
+/// let double = create_memo({
+///     let state = state.clone();
+///     move || untrack(|| *state.get() * 2)
+/// });
+///
+/// assert_eq!(*double.get(), 2);
+///
+/// state.set(2);
+/// // double value should still be old value because state was untracked
+/// assert_eq!(*double.get(), 2);
+/// ```
+pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
+    CONTEXTS.with(|contexts| {
+        let tmp = contexts.take();
+
+        let ret = f();
+
+        *contexts.borrow_mut() = tmp;
+
+        ret
     })
 }
 

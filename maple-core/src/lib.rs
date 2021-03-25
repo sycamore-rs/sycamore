@@ -100,7 +100,7 @@ pub mod prelude {
     pub use crate::noderef::NodeRef;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
-        create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,
+        create_selector_with, on_cleanup, untrack, Signal, SignalVec, StateHandle,
     };
     pub use crate::render::Render;
     pub use crate::{render, render_to, TemplateList, TemplateResult};
