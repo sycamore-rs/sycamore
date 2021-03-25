@@ -36,9 +36,21 @@ pub struct TemplateResult {
 }
 
 impl TemplateResult {
-    /// Create a new `TemplateResult` from a [`Node`].
+    /// Create a new [`TemplateResult`] from a [`Node`].
     pub fn new(node: Node) -> Self {
         Self { node }
+    }
+
+    /// Create a new [`TemplateResult`] with a blank comment node
+    pub fn empty() -> Self {
+        Self::new(
+            web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .create_comment("")
+                .into(),
+        )
     }
 
     pub fn inner_element(&self) -> Node {

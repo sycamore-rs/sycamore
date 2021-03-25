@@ -2,13 +2,16 @@
 
 mod copyright;
 mod header;
+mod item;
+mod list;
 
 use maple_core::prelude::*;
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Todo {
     task: String,
+    completed: bool,
     id: Uuid,
 }
 
@@ -27,10 +30,41 @@ impl AppState {
                 .into_iter()
                 .chain(Some(Todo {
                     task,
+                    completed: false,
                     id: Uuid::new_v4(),
                 }))
                 .collect(),
         )
+    }
+
+    fn remove_todo(&self, id: Uuid) {
+        self.todos.set(
+            self.todos
+                .get()
+                .iter()
+                .filter(|todo| todo.id != id)
+                .cloned()
+                .collect(),
+        );
+    }
+
+    fn toggle_completed(&self, id: Uuid) {
+        self.todos.set(
+            self.todos
+                .get()
+                .iter()
+                .map(|todo| {
+                    if todo.id == id {
+                        Todo {
+                            completed: !todo.completed,
+                            ..todo.clone()
+                        }
+                    } else {
+                        todo.clone()
+                    }
+                })
+                .collect(),
+        );
     }
 }
 
@@ -39,14 +73,18 @@ fn App() -> TemplateResult {
         todos: Signal::new(Vec::new()),
     };
 
-    create_effect(cloned!((app_state) => move || {
-        log::info!("Todos changed: {:#?}", app_state.todos.get());
-    }));
-
     template! {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
-                header::Header(app_state)
+                header::Header(app_state.clone())
+
+                (if *create_selector(cloned!((app_state) => move || app_state.todos.get().len() > 0)).get() {
+                    template! {
+                        list::List(app_state.clone())
+                    }
+                } else {
+                    TemplateResult::empty()
+                })
             }
 
             copyright::Copyright()

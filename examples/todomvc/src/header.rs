@@ -1,8 +1,8 @@
-use crate::AppState;
-
 use maple_core::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement, KeyboardEvent};
+
+use crate::AppState;
 
 pub fn Header(app_state: AppState) -> TemplateResult {
     let value = Signal::new(String::new());
