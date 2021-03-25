@@ -1,88 +1,55 @@
 #![allow(non_snake_case)]
 
+mod copyright;
+mod header;
+
 use maple_core::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{Event, HtmlInputElement};
+use uuid::Uuid;
 
-fn TodoItem(item: String) -> TemplateResult {
-    let counter = Signal::new(0);
+#[derive(Debug, Clone)]
+pub struct Todo {
+    task: String,
+    id: Uuid,
+}
 
-    let handle_click = cloned!((counter) => move |_| {
-        log::info!("Clicked! New value = {}", *counter.get() + 1);
-        counter.set(*counter.get() + 1);
-    });
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub todos: Signal<Vec<Todo>>,
+}
 
-    on_cleanup(|| {
-        log::info!("TodoItem destroyed");
-    });
-
-    template! {
-        li{
-            button(on:click=handle_click) {
-                (counter.get()) " " (item.clone())
-            }
-        }
+impl AppState {
+    fn add_todo(&self, task: String) {
+        self.todos.set(
+            self.todos
+                .get()
+                .as_ref()
+                .clone()
+                .into_iter()
+                .chain(Some(Todo {
+                    task,
+                    id: Uuid::new_v4(),
+                }))
+                .collect(),
+        )
     }
 }
 
 fn App() -> TemplateResult {
-    let todos = Signal::new(vec!["Hello".to_string(), "Hello again".to_string()]);
-    let value = Signal::new(String::new());
+    let app_state = AppState {
+        todos: Signal::new(Vec::new()),
+    };
 
-    let input_ref = NodeRef::new();
-
-    create_effect(cloned!((todos, input_ref) => move || {
-        log::info!("Todos changed: {:?}", todos.get());
+    create_effect(cloned!((app_state) => move || {
+        log::info!("Todos changed: {:#?}", app_state.todos.get());
     }));
 
-    let handle_input = cloned!((value) => move |event: Event| {
-        let target: HtmlInputElement = event.target().unwrap().dyn_into().unwrap();
-        value.set(target.value());
-    });
-
-    let handle_add = cloned!((todos, input_ref) => move |_| {
-        let mut tmp = (*todos.get()).clone();
-        tmp.push(value.get().as_ref().clone());
-        todos.set(tmp);
-
-        let input = input_ref.get().unchecked_into::<HtmlInputElement>();
-        input.set_value("");
-        input.focus().unwrap();
-    });
-
-    let handle_remove = cloned!((todos) => move |_| {
-        let mut tmp = (*todos.get()).clone();
-        tmp.pop();
-        todos.set(tmp);
-    });
-
-    let handle_remove_first = cloned!((todos) => move |_| {
-        if !todos.get().is_empty() {
-            todos.set(todos.get()[1..].into());
-        }
-    });
-
     template! {
-        main {
-            h1 {
-                "todos"
+        div(class="todomvc-wrapper") {
+            section(class="todoapp") {
+                header::Header(app_state)
             }
 
-            input(ref=input_ref, placeholder="What needs to be done?", on:input=handle_input)
-            button(on:click=handle_add) { "Add todo" }
-            button(on:click=handle_remove) { "Remove last todo" }
-            button(on:click=handle_remove_first) { "Remove first todo" }
-
-            ul {
-                Indexed(IndexedProps {
-                    iterable: todos,
-                    template: |item| {
-                        template! {
-                            TodoItem(item)
-                        }
-                    },
-                })
-            }
+            copyright::Copyright()
         }
     }
 }
