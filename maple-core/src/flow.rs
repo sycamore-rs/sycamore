@@ -23,7 +23,7 @@ where
     K: Fn(&T) -> Key,
     Key: Hash + Eq,
 {
-    pub iterable: Signal<Vec<T>>,
+    pub iterable: StateHandle<Vec<T>>,
     pub template: F,
     pub key: K,
 }
@@ -41,7 +41,7 @@ where
 ///
 /// let node = template! {
 ///     Keyed(KeyedProps {
-///         iterable: count,
+///         iterable: count.handle(),
 ///         template: |item| template! {
 ///             li { (item) }
 ///         },
@@ -185,7 +185,7 @@ pub struct IndexedProps<T: 'static, F>
 where
     F: Fn(T) -> TemplateResult,
 {
-    pub iterable: Signal<Vec<T>>,
+    pub iterable: StateHandle<Vec<T>>,
     pub template: F,
 }
 
@@ -202,7 +202,7 @@ where
 ///
 /// let node = template! {
 ///     Indexed(IndexedProps {
-///         iterable: count,
+///         iterable: count.handle(),
 ///         template: |item| template! {
 ///             li { (item) }
 ///         },

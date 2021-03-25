@@ -2,7 +2,7 @@ use maple_core::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 
-use crate::AppState;
+use crate::{AppState, Filter};
 
 pub fn List(app_state: AppState) -> TemplateResult {
     let todos_left = create_selector(cloned!((app_state) => move || {
@@ -20,6 +20,14 @@ pub fn List(app_state: AppState) -> TemplateResult {
         }
     }));
 
+    let filtered_todos = create_memo(cloned!((app_state) => move || {
+        app_state.todos.get().iter().filter(|todo| match *app_state.filter.get() {
+            Filter::All => true,
+            Filter::Active => !todo.get().completed,
+            Filter::Completed => todo.get().completed,
+        }).cloned().collect::<Vec<_>>()
+    }));
+
     template! {
         section(class="main") {
             input(
@@ -27,7 +35,6 @@ pub fn List(app_state: AppState) -> TemplateResult {
                 id="toggle-all",
                 class="toggle-all",
                 type="checkbox",
-                // checked=*todos_left.get() == 0,
                 readonly=true,
                 on:input=cloned!((app_state) => move |_| app_state.toggle_complete_all())
             )
@@ -35,7 +42,7 @@ pub fn List(app_state: AppState) -> TemplateResult {
 
             ul(class="todo-list") {
                 Keyed(KeyedProps {
-                    iterable: app_state.todos.clone(),
+                    iterable: filtered_todos,
                     template: move |todo| template! {
                         crate::item::Item(todo, app_state.clone())
                     },
