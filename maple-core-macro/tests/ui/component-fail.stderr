@@ -1,8 +1,10 @@
-error: expected function call expression
-  --> $DIR/component-fail.rs:14:17
+error: unexpected end of input, expected parentheses
+  --> $DIR/component-fail.rs:14:5
    |
 14 |     template! { Component };
-   |                 ^^^^^^^^^
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
   --> $DIR/component-fail.rs:12:17
