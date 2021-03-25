@@ -66,6 +66,25 @@ impl AppState {
                 .collect(),
         );
     }
+
+    fn edit_todo_task(&self, id: Uuid, new_task: String) {
+        self.todos.set(
+            self.todos
+                .get()
+                .iter()
+                .map(|todo| {
+                    if todo.id == id {
+                        Todo {
+                            task: new_task.clone(),
+                            ..todo.clone()
+                        }
+                    } else {
+                        todo.clone()
+                    }
+                })
+                .collect(),
+        );
+    }
 }
 
 fn App() -> TemplateResult {
@@ -73,12 +92,15 @@ fn App() -> TemplateResult {
         todos: Signal::new(Vec::new()),
     };
 
+    let todos_is_empty =
+        create_selector(cloned!((app_state) => move || app_state.todos.get().len() > 0));
+
     template! {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 header::Header(app_state.clone())
 
-                (if *create_selector(cloned!((app_state) => move || app_state.todos.get().len() > 0)).get() {
+                (if *todos_is_empty.get() {
                     template! {
                         list::List(app_state.clone())
                     }

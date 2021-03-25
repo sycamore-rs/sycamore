@@ -10,6 +10,12 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
 
     let editing = Signal::new(false);
     let input_ref = NodeRef::new();
+    let value = Signal::new("".to_string());
+
+    let handle_input = cloned!((value) => move |event: Event| {
+        let target: HtmlInputElement = event.target().unwrap().unchecked_into();
+        value.set(target.value());
+    });
 
     let toggle_completed = cloned!((app_state) => move |_| {
         app_state.toggle_completed(id);
@@ -20,8 +26,17 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
         input_ref.get().unchecked_into::<HtmlInputElement>().focus().unwrap();
     });
 
-    let handle_blur = cloned!((editing) => move || {
+    let handle_blur = cloned!((app_state, editing, value) => move || {
         editing.set(false);
+
+        let mut value = value.get().as_ref().clone();
+        value = value.trim().to_string();
+
+        if value.is_empty() {
+            app_state.remove_todo(id);
+        } else {
+            app_state.edit_todo_task(id, value);
+        }
     });
 
     let handle_submit = cloned!((editing, input_ref, handle_blur, task) => move |event: Event| {
@@ -60,12 +75,13 @@ pub fn Item(todo: Todo, app_state: AppState) -> TemplateResult {
             }
 
             (if *editing.get() {
-                cloned!((todo, input_ref, handle_blur, handle_submit) => template! {
+                cloned!((todo, input_ref, handle_blur, handle_submit, handle_input) => template! {
                     input(ref=input_ref,
                         class="edit",
                         value=todo.task.clone(),
                         on:blur=move |_| handle_blur(),
                         on:keyup=handle_submit,
+                        on:input=handle_input,
                     )
                 })
             } else {
