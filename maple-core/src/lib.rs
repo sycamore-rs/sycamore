@@ -6,6 +6,9 @@
 //!
 //! ## Supported Targets
 //! - `wasm32-unknown-unknown`
+//!
+//! ## Features
+//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using `serde`.
 
 #![allow(non_snake_case)]
 #![warn(clippy::clone_on_ref_ptr)]
