@@ -113,9 +113,9 @@ pub enum Filter {
 impl Filter {
     fn url(self) -> &'static str {
         match self {
-            Filter::All => "./#",
-            Filter::Active => "./#/active",
-            Filter::Completed => "./#/completed",
+            Filter::All => "#",
+            Filter::Active => "#/active",
+            Filter::Completed => "#/completed",
         }
     }
 
