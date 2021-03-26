@@ -34,15 +34,20 @@ pub use signal_vec::*;
 /// assert_eq!(*counter.get(), 2); // should not be updated because owner was dropped
 /// ```
 #[must_use = "create_root returns the owner of the effects created inside this scope"]
-pub fn create_root(callback: impl FnOnce()) -> Owner {
-    OWNER.with(|owner| {
-        let outer_owner = owner.replace(Some(Owner::new()));
-        callback();
+pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> Owner {
+    /// Internal implementation: use dynamic dispatch to reduce code bloat.
+    fn internal<'a>(callback: Box<dyn FnOnce() + 'a>) -> Owner {
+        OWNER.with(|owner| {
+            let outer_owner = owner.replace(Some(Owner::new()));
+            callback();
 
-        owner
-            .replace(outer_owner)
-            .expect("Owner should be valid inside the reactive root")
-    })
+            owner
+                .replace(outer_owner)
+                .expect("Owner should be valid inside the reactive root")
+        })
+    }
+
+    internal(Box::new(callback))
 }
 
 #[cfg(test)]
