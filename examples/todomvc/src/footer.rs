@@ -10,7 +10,12 @@ pub fn Footer(app_state: AppState) -> TemplateResult {
         }
     });
 
+    let has_completed_todos = create_selector(cloned!((app_state) => move || {
+        app_state.todos_left() < app_state.todos.get().len()
+    }));
+
     let app_state2 = app_state.clone();
+    let app_state3 = app_state.clone();
 
     template! {
         footer(class="footer") {
@@ -41,6 +46,16 @@ pub fn Footer(app_state: AppState) -> TemplateResult {
                     })
                 })
             }
+
+            (if *has_completed_todos.get() {
+                template! {
+                    button(class="clear-completed", on:click=cloned!((app_state3) => move |_| app_state3.clear_completed())) {
+                        "Clear completed"
+                    }
+                }
+            } else {
+                TemplateResult::empty()
+            })
         }
     }
 }

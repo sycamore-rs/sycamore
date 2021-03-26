@@ -51,7 +51,7 @@ impl AppState {
         );
     }
 
-    fn todos_left(&self) -> u32 {
+    fn todos_left(&self) -> usize {
         self.todos.get().iter().fold(
             0,
             |acc, todo| if todo.get().completed { acc } else { acc + 1 },
@@ -80,6 +80,17 @@ impl AppState {
                 }
             }
         }
+    }
+
+    fn clear_completed(&self) {
+        self.todos.set(
+            self.todos
+                .get()
+                .iter()
+                .filter(|todo| !todo.get().completed)
+                .cloned()
+                .collect(),
+        );
     }
 }
 
