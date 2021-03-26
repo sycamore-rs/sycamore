@@ -124,7 +124,7 @@ impl<T: 'static> SignalVec<T> {
         let changes = Rc::clone(&self.changes());
         let f = Rc::new(f);
 
-        create_effect_initial(Box::new(move || {
+        create_effect_initial(move || {
             let derived = SignalVec::with_values(
                 signal.get().borrow().iter().map(|value| f(value)).collect(),
             );
@@ -152,7 +152,7 @@ impl<T: 'static> SignalVec<T> {
             };
 
             (Rc::new(effect), derived)
-        }))
+        })
     }
 }
 

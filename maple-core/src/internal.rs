@@ -84,7 +84,7 @@ pub fn append(element: &impl AsRef<Node>, child: &impl AsRef<Node>) {
 pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
     let parent = parent.as_ref().clone();
 
-    let node = create_effect_initial(cloned!((parent) => Box::new(move || {
+    let node = create_effect_initial(cloned!((parent) => move || {
         let node = RefCell::new(child().render());
 
         let effect = cloned!((node) => move || {
@@ -93,7 +93,7 @@ pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn R
         });
 
         (Rc::new(effect), node)
-    })));
+    }));
 
     parent.append_child(&node.borrow()).unwrap();
 }
