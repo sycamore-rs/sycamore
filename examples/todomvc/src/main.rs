@@ -99,6 +99,26 @@ pub enum Filter {
     Completed,
 }
 
+impl Filter {
+    fn url(self) -> &'static str {
+        match self {
+            Filter::All => "./#",
+            Filter::Active => "./#/active",
+            Filter::Completed => "./#/completed",
+        }
+    }
+
+    fn get_filter_from_hash() -> Self {
+        let hash = web_sys::window().unwrap().location().hash().unwrap();
+
+        match hash.as_str() {
+            "#/active" => Filter::Active,
+            "#/completed" => Filter::Completed,
+            _ => Filter::All,
+        }
+    }
+}
+
 const KEY: &str = "todos-maple";
 
 fn App() -> TemplateResult {
@@ -116,7 +136,7 @@ fn App() -> TemplateResult {
 
     let app_state = AppState {
         todos,
-        filter: Signal::new(Filter::All),
+        filter: Signal::new(Filter::get_filter_from_hash()),
     };
 
     create_effect(cloned!((local_storage, app_state) => move || {

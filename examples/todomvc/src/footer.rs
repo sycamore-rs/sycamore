@@ -29,7 +29,11 @@ pub fn Footer(app_state: AppState) -> TemplateResult {
 
                         template! {
                             li {
-                                a(class=if selected() { "selected" } else { "" }, on:click=move |_| set_filter(filter)) {
+                                a(
+                                    class=if selected() { "selected" } else { "" },
+                                    href=filter.url(),
+                                    on:click=move |_| set_filter(filter),
+                                ) {
                                     (format!("{:?}", filter))
                                 }
                             }
