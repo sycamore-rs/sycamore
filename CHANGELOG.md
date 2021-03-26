@@ -1,5 +1,27 @@
 # Changelog
 
+## ✨ **0.4.0** _(2021-03-25)_
+
+#### Changelog
+
+- #### ⚡️ Features
+
+  - Iteration using `SignalVec`. This is more of an experiment and there are some bugs. This will most likely be removed in a future version [[@lukechu10], [#49](https://github.com/lukechu10/maple/pull/49)]
+  - Keyed iteration using `Keyed` and non-keyed iteration using `Indexed` which can iterate over a `Signal<Vec>`. This is the recommended way to iterate over a list of values [[@lukechu10], [#51](https://github.com/lukechu10/maple/pull/51), [#53](https://github.com/lukechu10/maple/pull/53) and [#54](https://github.com/lukechu10/maple/pull/54)]
+  - Node references. Use the `ref` attribute to bind an HTML element to a `NodeRef` [[@lukechu10], [#57](https://github.com/lukechu10/maple/pull/57)]
+
+- #### 🛠 Fixes
+
+  - Fix debug assertions in `Keyed` [[@lukechu10], [#53](https://github.com/lukechu10/maple/pull/53)]
+
+- #### 🛠 Internal Fixes and Improvements
+
+  - Setup integration tests [[@lukechu10], [#51](https://github.com/lukechu10/maple/pull/51)]
+
+- #### 🎁 Examples
+
+  - Complete spec conforming TodoMVC implementation [[@lukechu10], [#60](https://github.com/lukechu10/maple/pull/60)]
+
 ## ✨ **0.3.1** _(2021-03-16)_
 
 #### Changelog
