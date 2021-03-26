@@ -7,6 +7,7 @@ use syn::{token, Ident, Token};
 
 use crate::attributes::{AttributeList, AttributeType};
 use crate::children::Children;
+use crate::text::Text;
 use crate::HtmlTree;
 
 /// Represents a html element with all its attributes and properties (e.g. `p(class="text")`).
@@ -86,10 +87,19 @@ impl ToTokens for Element {
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
                         ::maple_core::internal::append(&element, &#element);
                     },
-                    HtmlTree::Text(text) => quote_spanned! { text.span()=>
-                        ::maple_core::internal::append_render(&element, ::std::boxed::Box::new(move || {
-                            ::std::boxed::Box::new(#text)
-                        }));
+                    HtmlTree::Text(text) => match text {
+                        Text::Text(_) => {
+                            quote_spanned! { text.span()=>
+                                ::maple_core::internal::append_static_text(&element, &#text);
+                            }
+                        }
+                        Text::Splice(_, _) => {
+                            quote_spanned! { text.span()=>
+                                ::maple_core::internal::append_render(&element, ::std::boxed::Box::new(move || {
+                                    ::std::boxed::Box::new(#text)
+                                }));
+                            }
+                        }
                     },
                 };
 

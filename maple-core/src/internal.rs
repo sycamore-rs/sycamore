@@ -2,6 +2,7 @@
 //! Internal APIs can be changed at any time without a major release.
 
 use std::cell::RefCell;
+use std::fmt;
 use std::rc::Rc;
 
 use wasm_bindgen::{prelude::*, JsCast};
@@ -96,6 +97,17 @@ pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn R
     }));
 
     parent.append_child(&node.borrow()).unwrap();
+}
+
+/// Appends a static text node to the `parent` node.
+pub fn append_static_text(parent: &dyn AsRef<Node>, text: &dyn fmt::Display) {
+    let text_node = web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .create_text_node(&format!("{}", text));
+
+    parent.as_ref().append_child(&text_node).unwrap();
 }
 
 /// Sets the value of a [`NodeRef`].
