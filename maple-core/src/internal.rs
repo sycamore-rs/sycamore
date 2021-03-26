@@ -76,13 +76,13 @@ pub fn event(element: &Element, name: &str, handler: Box<EventListener>) {
 }
 
 /// Appends a child node to an element.
-pub fn append(element: &impl AsRef<Node>, child: &impl AsRef<Node>) {
+pub fn append(element: &dyn AsRef<Node>, child: &dyn AsRef<Node>) {
     element.as_ref().append_child(child.as_ref()).unwrap();
 }
 
 /// Appends a [`dyn Render`](Render) to the `parent` node.
 /// Node is created inside an effect with [`Render::update_node`].
-pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
+pub fn append_render(parent: &dyn AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
     let parent = parent.as_ref().clone();
 
     let node = create_effect_initial(cloned!((parent) => move || {
@@ -111,6 +111,6 @@ pub fn append_static_text(parent: &dyn AsRef<Node>, text: &dyn fmt::Display) {
 }
 
 /// Sets the value of a [`NodeRef`].
-pub fn set_noderef(node: &impl AsRef<Node>, noderef: NodeRef) {
+pub fn set_noderef(node: &dyn AsRef<Node>, noderef: NodeRef) {
     noderef.set(node.as_ref().clone());
 }
