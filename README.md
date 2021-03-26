@@ -92,7 +92,7 @@ To update the state, we call the `.set(...)` method on `state`:
 
 ```rust
 state.set(1);
-println!("The state is: {}", state.get()); // should now print "The state is: 0"
+println!("The state is: {}", state.get()); // should now print "The state is: 1"
 ```
 
 Why would this be useful? It's useful because it provides a way to easily be notified of any state changes.
