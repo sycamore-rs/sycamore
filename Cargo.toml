@@ -8,3 +8,7 @@ members = [
   "examples/todomvc",
   "docs",
 ]
+
+[profile.release]
+lto = true
+opt-level = "z"

@@ -2,6 +2,7 @@
 //! Internal APIs can be changed at any time without a major release.
 
 use std::cell::RefCell;
+use std::fmt;
 use std::rc::Rc;
 
 use wasm_bindgen::{prelude::*, JsCast};
@@ -29,26 +30,8 @@ pub fn fragment() -> DocumentFragment {
         .create_document_fragment()
 }
 
-/// Create a new [`Node`] with the specified text content.
-pub fn text(value: impl Fn() -> String + 'static) -> Node {
-    let text_node = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_text_node("" /* placeholder */);
-
-    create_effect({
-        let text_node = text_node.clone();
-        move || {
-            text_node.set_text_content(Some(&value()));
-        }
-    });
-
-    text_node.into()
-}
-
 /// Sets an attribute on an [`Element`].
-pub fn attr(element: &Element, name: &str, value: impl Fn() -> String + 'static) {
+pub fn attr(element: &Element, name: &str, value: Box<dyn Fn() -> String>) {
     let element = element.clone();
     let name = name.to_string();
     create_effect(move || {
@@ -75,13 +58,13 @@ pub fn event(element: &Element, name: &str, handler: Box<EventListener>) {
 }
 
 /// Appends a child node to an element.
-pub fn append(element: &impl AsRef<Node>, child: &impl AsRef<Node>) {
+pub fn append(element: &dyn AsRef<Node>, child: &dyn AsRef<Node>) {
     element.as_ref().append_child(child.as_ref()).unwrap();
 }
 
 /// Appends a [`dyn Render`](Render) to the `parent` node.
 /// Node is created inside an effect with [`Render::update_node`].
-pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
+pub fn append_render(parent: &dyn AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
     let parent = parent.as_ref().clone();
 
     let node = create_effect_initial(cloned!((parent) => move || {
@@ -98,7 +81,18 @@ pub fn append_render(parent: &impl AsRef<Node>, child: Box<dyn Fn() -> Box<dyn R
     parent.append_child(&node.borrow()).unwrap();
 }
 
+/// Appends a static text node to the `parent` node.
+pub fn append_static_text(parent: &dyn AsRef<Node>, text: &dyn fmt::Display) {
+    let text_node = web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .create_text_node(&format!("{}", text));
+
+    parent.as_ref().append_child(&text_node).unwrap();
+}
+
 /// Sets the value of a [`NodeRef`].
-pub fn set_noderef(node: &impl AsRef<Node>, noderef: NodeRef) {
+pub fn set_noderef(node: &dyn AsRef<Node>, noderef: NodeRef) {
     noderef.set(node.as_ref().clone());
 }

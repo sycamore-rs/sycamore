@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::mem;
 use std::rc::Weak;
 
@@ -146,110 +147,122 @@ impl Eq for Dependency {}
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
-pub fn create_effect_initial<R: 'static + Clone>(
+pub fn create_effect_initial<R: 'static>(
     initial: impl FnOnce() -> (Rc<dyn Fn()>, R) + 'static,
 ) -> R {
-    let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
+    type InitialFn = dyn FnOnce() -> (Rc<dyn Fn()>, Box<dyn Any>);
 
-    type MutEffect = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
-    let effect: MutEffect = Rc::new(RefCell::new(None));
-    let ret: Rc<RefCell<Option<R>>> = Rc::new(RefCell::new(None));
+    /// Internal implementation: use dynamic dispatch to reduce code bloat.
+    fn internal(initial: Box<InitialFn>) -> Box<dyn Any> {
+        let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
-    let initial = RefCell::new(Some(initial));
+        type MutEffect = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+        let effect: MutEffect = Rc::new(RefCell::new(None));
+        let ret: Rc<RefCell<Option<Box<dyn Any>>>> = Rc::new(RefCell::new(None));
 
-    let execute: Rc<dyn Fn()> = Rc::new({
-        let running = Rc::downgrade(&running);
-        let ret = Rc::clone(&ret);
-        move || {
-            CONTEXTS.with(|contexts| {
-                let initial_context_size = contexts.borrow().len();
+        let initial = RefCell::new(Some(initial));
 
-                // Upgrade running now to make sure running is valid for the whole duration of the effect.
-                let running = running.upgrade().unwrap();
+        let execute: Rc<dyn Fn()> = Rc::new({
+            let running = Rc::downgrade(&running);
+            let ret = Rc::downgrade(&ret);
+            move || {
+                CONTEXTS.with(|contexts| {
+                    let initial_context_size = contexts.borrow().len();
 
-                // Recreate effect dependencies each time effect is called.
-                running.borrow_mut().as_mut().unwrap().clear_dependencies();
+                    // Upgrade running now to make sure running is valid for the whole duration of the effect.
+                    let running = running.upgrade().unwrap();
 
-                contexts.borrow_mut().push(Rc::downgrade(&running));
+                    // Recreate effect dependencies each time effect is called.
+                    running.borrow_mut().as_mut().unwrap().clear_dependencies();
 
-                if let Some(initial) = initial.take() {
-                    let effect = Rc::clone(&effect);
-                    let ret = Rc::clone(&ret);
-                    let owner = create_root(move || {
-                        let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
-                        *effect.borrow_mut() = Some(effect_tmp);
-                        *ret.borrow_mut() = Some(ret_tmp);
-                    });
-                    running.borrow_mut().as_mut().unwrap().owner = owner;
-                } else {
-                    // Destroy old effects before new ones run.
-                    let old_owner = mem::replace(
-                        &mut running.borrow_mut().as_mut().unwrap().owner,
-                        Owner::new(), /* placeholder until an actual Owner is created */
+                    contexts.borrow_mut().push(Rc::downgrade(&running));
+
+                    if let Some(initial) = initial.take() {
+                        let effect = Rc::clone(&effect);
+                        let ret = Weak::upgrade(&ret).unwrap();
+                        let owner = create_root(move || {
+                            let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
+                            *effect.borrow_mut() = Some(effect_tmp);
+                            *ret.borrow_mut() = Some(ret_tmp);
+                        });
+                        running.borrow_mut().as_mut().unwrap().owner = owner;
+                    } else {
+                        // Destroy old effects before new ones run.
+                        let old_owner = mem::replace(
+                            &mut running.borrow_mut().as_mut().unwrap().owner,
+                            Owner::new(), /* placeholder until an actual Owner is created */
+                        );
+                        drop(old_owner);
+
+                        let effect = Rc::clone(&effect);
+                        let owner = create_root(move || {
+                            effect.borrow().as_ref().unwrap()();
+                        });
+                        running.borrow_mut().as_mut().unwrap().owner = owner;
+                    }
+
+                    // Attach new dependencies.
+                    for dependency in &running.borrow().as_ref().unwrap().dependencies {
+                        dependency.signal().subscribe(Callback(Rc::downgrade(
+                            &running.borrow().as_ref().unwrap().execute,
+                        )));
+                    }
+
+                    // Remove reactive context.
+                    contexts.borrow_mut().pop();
+
+                    debug_assert_eq!(
+                        initial_context_size,
+                        contexts.borrow().len(),
+                        "context size should not change before and after create_effect_initial"
                     );
-                    drop(old_owner);
+                });
+            }
+        });
 
-                    let effect = Rc::clone(&effect);
-                    let owner = create_root(move || {
-                        effect.borrow().as_ref().unwrap()();
-                    });
-                    running.borrow_mut().as_mut().unwrap().owner = owner;
-                }
+        *running.borrow_mut() = Some(Running {
+            execute: Rc::clone(&execute),
+            dependencies: HashSet::new(),
+            owner: Owner::new(),
+        });
+        debug_assert_eq!(
+            Rc::strong_count(&running),
+            1,
+            "Running should be owned exclusively by owner"
+        );
 
-                // Attach new dependencies.
-                for dependency in &running.borrow().as_ref().unwrap().dependencies {
-                    dependency.signal().subscribe(Callback(Rc::downgrade(
-                        &running.borrow().as_ref().unwrap().execute,
-                    )));
-                }
-
-                // Remove reactive context.
-                contexts.borrow_mut().pop();
-
-                debug_assert_eq!(
-                    initial_context_size,
-                    contexts.borrow().len(),
-                    "context size should not change before and after create_effect_initial"
+        OWNER.with(|owner| {
+            if owner.borrow().is_some() {
+                owner
+                    .borrow_mut()
+                    .as_mut()
+                    .unwrap()
+                    .add_effect_state(running);
+            } else {
+                #[cfg(all(target_arch = "wasm32", debug_assertions))]
+                web_sys::console::warn_1(
+                    &"Effects created outside of a reactive root will never get disposed.".into(),
                 );
-            });
-        }
-    });
+                #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
+                eprintln!(
+                    "WARNING: Effects created outside of a reactive root will never get dropped."
+                );
+                Rc::into_raw(running); // leak running
+            }
+        });
 
-    *running.borrow_mut() = Some(Running {
-        execute: Rc::clone(&execute),
-        dependencies: HashSet::new(),
-        owner: Owner::new(),
-    });
-    debug_assert_eq!(
-        Rc::strong_count(&running),
-        1,
-        "Running should be owned exclusively by owner"
-    );
+        execute();
 
-    OWNER.with(|owner| {
-        if owner.borrow().is_some() {
-            owner
-                .borrow_mut()
-                .as_mut()
-                .unwrap()
-                .add_effect_state(running);
-        } else {
-            #[cfg(all(target_arch = "wasm32", debug_assertions))]
-            web_sys::console::warn_1(
-                &"Effects created outside of a reactive root will never get disposed.".into(),
-            );
-            #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
-            eprintln!(
-                "WARNING: Effects created outside of a reactive root will never get dropped."
-            );
-            Rc::into_raw(running); // leak running
-        }
-    });
+        let ret = Rc::try_unwrap(ret).expect("ret should only have 1 strong reference");
+        ret.into_inner().unwrap()
+    }
 
-    execute();
+    let ret = internal(Box::new(|| {
+        let (effect, ret) = initial();
+        (effect, Box::new(ret))
+    }));
 
-    let ret = ret.borrow();
-    ret.as_ref().unwrap().clone()
+    *ret.downcast::<R>().unwrap()
 }
 
 /// Creates an effect on signals used inside the effect closure.
@@ -270,10 +283,15 @@ pub fn create_effect<F>(effect: F)
 where
     F: Fn() + 'static,
 {
-    create_effect_initial(move || {
-        effect();
-        (Rc::new(effect), ())
-    })
+    /// Internal implementation: use dynamic dispatch to reduce code bloat.
+    fn internal(effect: Rc<dyn Fn()>) {
+        create_effect_initial(move || {
+            effect();
+            (effect, ())
+        })
+    }
+
+    internal(Rc::new(effect));
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
@@ -347,7 +365,7 @@ where
 }
 
 /// Run the passed closure inside an untracked scope.
-/// 
+///
 /// See also [`StateHandle::get_untracked()`].
 ///
 /// # Example

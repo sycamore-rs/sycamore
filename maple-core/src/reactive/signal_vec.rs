@@ -166,11 +166,11 @@ impl SignalVec<TemplateResult> {
 impl<T: 'static + Clone> SignalVec<T> {
     /// Create a [`Vec`] from a [`SignalVec`]. The returned [`Vec`] is cloned from the data which
     /// requires `T` to be `Clone`.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use maple_core::prelude::*;
-    /// 
+    ///
     /// let signal = SignalVec::with_values(vec![1, 2, 3]);
     /// assert_eq!(signal.to_vec(), vec![1, 2, 3]);
     /// ```
