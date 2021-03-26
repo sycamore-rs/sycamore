@@ -100,5 +100,5 @@
   - Added `template!` macro.
   - Added reactivity primitives.
 
-[@kestrer]: https://github.com/Kestrer
+[@Kestrer]: https://github.com/Kestrer
 [@lukechu10]: https://github.com/lukechu10
