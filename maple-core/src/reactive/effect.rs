@@ -270,9 +270,14 @@ pub fn create_effect<F>(effect: F)
 where
     F: Fn() + 'static,
 {
+    create_effect_internal(Rc::new(effect));
+}
+
+/// Internal implementation: use dynamic dispatch to reduce code bloat.
+fn create_effect_internal(effect: Rc<dyn Fn()>) {
     create_effect_initial(move || {
         effect();
-        (Rc::new(effect), ())
+        (effect, ())
     })
 }
 
@@ -347,7 +352,7 @@ where
 }
 
 /// Run the passed closure inside an untracked scope.
-/// 
+///
 /// See also [`StateHandle::get_untracked()`].
 ///
 /// # Example
