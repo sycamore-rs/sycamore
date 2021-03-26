@@ -30,26 +30,8 @@ pub fn fragment() -> DocumentFragment {
         .create_document_fragment()
 }
 
-/// Create a new [`Node`] with the specified text content.
-pub fn text(value: impl Fn() -> String + 'static) -> Node {
-    let text_node = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_text_node("" /* placeholder */);
-
-    create_effect({
-        let text_node = text_node.clone();
-        move || {
-            text_node.set_text_content(Some(&value()));
-        }
-    });
-
-    text_node.into()
-}
-
 /// Sets an attribute on an [`Element`].
-pub fn attr(element: &Element, name: &str, value: impl Fn() -> String + 'static) {
+pub fn attr(element: &Element, name: &str, value: Box<dyn Fn() -> String>) {
     let element = element.clone();
     let name = name.to_string();
     create_effect(move || {

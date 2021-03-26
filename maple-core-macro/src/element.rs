@@ -60,7 +60,7 @@ impl ToTokens for Element {
                 match &attribute.ty {
                     AttributeType::DomAttribute { name } => {
                         set_attributes.push(quote_spanned! { expr_span=>
-                                ::maple_core::internal::attr(::std::convert::AsRef::as_ref(&element), #name, move || ::std::format!("{}", #expr));
+                                ::maple_core::internal::attr(::std::convert::AsRef::as_ref(&element), #name, ::std::boxed::Box::new(move || ::std::format!("{}", #expr)));
                             });
                     }
                     AttributeType::Event { name } => {
