@@ -5,7 +5,7 @@ use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 use crate::{AppState, Todo};
 
 pub fn Item(todo: Signal<Todo>, app_state: AppState) -> TemplateResult {
-    let task = cloned!((todo) => move || todo.get().title.clone());
+    let title = cloned!((todo) => move || todo.get().title.clone());
     let completed = create_selector(cloned!((todo) => move || todo.get().completed));
     let id = todo.get().id;
 
@@ -25,9 +25,10 @@ pub fn Item(todo: Signal<Todo>, app_state: AppState) -> TemplateResult {
         });
     });
 
-    let handle_dblclick = cloned!((editing, input_ref) => move |_| {
+    let handle_dblclick = cloned!((title, editing, input_ref, value) => move |_| {
         editing.set(true);
         input_ref.get().unchecked_into::<HtmlInputElement>().focus().unwrap();
+        value.set(title());
     });
 
     let handle_blur = cloned!((todo, app_state, editing, value) => move || {
@@ -46,12 +47,12 @@ pub fn Item(todo: Signal<Todo>, app_state: AppState) -> TemplateResult {
         }
     });
 
-    let handle_submit = cloned!((editing, input_ref, handle_blur, task) => move |event: Event| {
+    let handle_submit = cloned!((editing, input_ref, handle_blur, title) => move |event: Event| {
         let event: KeyboardEvent = event.unchecked_into();
         match event.key().as_str() {
             "Enter" => handle_blur(),
             "Escape" => {
-                input_ref.get().unchecked_into::<HtmlInputElement>().set_value(&task());
+                input_ref.get().unchecked_into::<HtmlInputElement>().set_value(&title());
                 editing.set(false);
             },
             _ => {}
@@ -92,7 +93,7 @@ pub fn Item(todo: Signal<Todo>, app_state: AppState) -> TemplateResult {
                     })
                 })
                 label(on:dblclick=handle_dblclick) {
-                    (task())
+                    (title())
                 }
                 button(class="destroy", on:click=handle_destroy)
             }
