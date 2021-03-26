@@ -6,6 +6,9 @@
 //!
 //! ## Supported Targets
 //! - `wasm32-unknown-unknown`
+//!
+//! ## Features
+//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using `serde`.
 
 #![allow(non_snake_case)]
 #![warn(clippy::clone_on_ref_ptr)]
@@ -36,9 +39,21 @@ pub struct TemplateResult {
 }
 
 impl TemplateResult {
-    /// Create a new `TemplateResult` from a [`Node`].
+    /// Create a new [`TemplateResult`] from a [`Node`].
     pub fn new(node: Node) -> Self {
         Self { node }
+    }
+
+    /// Create a new [`TemplateResult`] with a blank comment node
+    pub fn empty() -> Self {
+        Self::new(
+            web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .create_comment("")
+                .into(),
+        )
     }
 
     pub fn inner_element(&self) -> Node {
@@ -88,7 +103,7 @@ pub mod prelude {
     pub use crate::noderef::NodeRef;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
-        create_selector_with, on_cleanup, Signal, SignalVec, StateHandle,
+        create_selector_with, on_cleanup, untrack, Signal, SignalVec, StateHandle,
     };
     pub use crate::render::Render;
     pub use crate::{render, render_to, TemplateList, TemplateResult};

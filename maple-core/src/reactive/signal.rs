@@ -1,6 +1,7 @@
 use super::*;
 use std::cell::RefCell;
 use std::collections::HashSet;
+use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -61,6 +62,34 @@ impl<T: 'static> StateHandle<T> {
 impl<T: 'static> Clone for StateHandle<T> {
     fn clone(&self) -> Self {
         Self(Rc::clone(&self.0))
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for StateHandle<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StateHandle")
+            .field(&self.get_untracked())
+            .finish()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> serde::Serialize for StateHandle<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.get_untracked().as_ref().serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for StateHandle<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Signal::new(T::deserialize(deserializer)?).handle())
     }
 }
 
@@ -156,6 +185,40 @@ impl<T: 'static> Clone for Signal<T> {
         Self {
             handle: self.handle.clone(),
         }
+    }
+}
+
+impl<T: PartialEq> PartialEq for Signal<T> {
+    fn eq(&self, other: &Signal<T>) -> bool {
+        self.get_untracked().eq(&other.get_untracked())
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for Signal<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Signal")
+            .field(&self.get_untracked())
+            .finish()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> serde::Serialize for Signal<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.get_untracked().as_ref().serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Signal<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Signal::new(T::deserialize(deserializer)?))
     }
 }
 

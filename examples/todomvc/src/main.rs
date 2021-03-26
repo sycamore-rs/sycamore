@@ -1,88 +1,193 @@
 #![allow(non_snake_case)]
 
+mod copyright;
+mod footer;
+mod header;
+mod item;
+mod list;
+
 use maple_core::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{Event, HtmlInputElement};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-fn TodoItem(item: String) -> TemplateResult {
-    let counter = Signal::new(0);
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Todo {
+    title: String,
+    completed: bool,
+    id: Uuid,
+}
 
-    let handle_click = cloned!((counter) => move |_| {
-        log::info!("Clicked! New value = {}", *counter.get() + 1);
-        counter.set(*counter.get() + 1);
-    });
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub todos: Signal<Vec<Signal<Todo>>>,
+    pub filter: Signal<Filter>,
+}
 
-    on_cleanup(|| {
-        log::info!("TodoItem destroyed");
-    });
+impl AppState {
+    fn add_todo(&self, title: String) {
+        self.todos.set(
+            self.todos
+                .get()
+                .as_ref()
+                .clone()
+                .into_iter()
+                .chain(Some(Signal::new(Todo {
+                    title,
+                    completed: false,
+                    id: Uuid::new_v4(),
+                })))
+                .collect(),
+        )
+    }
 
-    template! {
-        li{
-            button(on:click=handle_click) {
-                (counter.get()) " " (item.clone())
+    fn remove_todo(&self, id: Uuid) {
+        self.todos.set(
+            self.todos
+                .get()
+                .iter()
+                .filter(|todo| todo.get().id != id)
+                .cloned()
+                .collect(),
+        );
+    }
+
+    fn todos_left(&self) -> usize {
+        self.todos.get().iter().fold(
+            0,
+            |acc, todo| if todo.get().completed { acc } else { acc + 1 },
+        )
+    }
+
+    fn toggle_complete_all(&self) {
+        if self.todos_left() == 0 {
+            // make all todos active
+            for todo in self.todos.get().iter() {
+                if todo.get().completed {
+                    todo.set(Todo {
+                        completed: false,
+                        ..todo.get().as_ref().clone()
+                    })
+                }
             }
+        } else {
+            // make all todos completed
+            for todo in self.todos.get().iter() {
+                if !todo.get().completed {
+                    todo.set(Todo {
+                        completed: true,
+                        ..todo.get().as_ref().clone()
+                    })
+                }
+            }
+        }
+    }
+
+    fn clear_completed(&self) {
+        self.todos.set(
+            self.todos
+                .get()
+                .iter()
+                .filter(|todo| !todo.get().completed)
+                .cloned()
+                .collect(),
+        );
+    }
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            todos: Signal::new(Vec::new()),
+            filter: Signal::new(Filter::All),
         }
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Filter {
+    All,
+    Active,
+    Completed,
+}
+
+impl Filter {
+    fn url(self) -> &'static str {
+        match self {
+            Filter::All => "./#",
+            Filter::Active => "./#/active",
+            Filter::Completed => "./#/completed",
+        }
+    }
+
+    fn get_filter_from_hash() -> Self {
+        let hash = web_sys::window().unwrap().location().hash().unwrap();
+
+        match hash.as_str() {
+            "#/active" => Filter::Active,
+            "#/completed" => Filter::Completed,
+            _ => Filter::All,
+        }
+    }
+}
+
+const KEY: &str = "todos-maple";
+
 fn App() -> TemplateResult {
-    let todos = Signal::new(vec!["Hello".to_string(), "Hello again".to_string()]);
-    let value = Signal::new(String::new());
+    let local_storage = web_sys::window()
+        .unwrap()
+        .local_storage()
+        .unwrap()
+        .expect("user has not enabled localStorage");
 
-    let input_ref = NodeRef::new();
+    let todos = if let Ok(Some(app_state)) = local_storage.get_item(KEY) {
+        serde_json::from_str(&app_state).unwrap_or_else(|_| Signal::new(Vec::new()))
+    } else {
+        Signal::new(Vec::new())
+    };
 
-    create_effect(cloned!((todos, input_ref) => move || {
-        log::info!("Todos changed: {:?}", todos.get());
+    let app_state = AppState {
+        todos,
+        filter: Signal::new(Filter::get_filter_from_hash()),
+    };
+
+    create_effect(cloned!((local_storage, app_state) => move || {
+        for todo in app_state.todos.get().iter() {
+            todo.get(); // subscribe to changes in all todos
+        }
+
+        local_storage.set_item(KEY, &serde_json::to_string(app_state.todos.get().as_ref()).unwrap()).unwrap();
     }));
 
-    let handle_input = cloned!((value) => move |event: Event| {
-        let target: HtmlInputElement = event.target().unwrap().dyn_into().unwrap();
-        value.set(target.value());
-    });
+    let todos_is_empty =
+        create_selector(cloned!((app_state) => move || app_state.todos.get().len() == 0));
 
-    let handle_add = cloned!((todos, input_ref) => move |_| {
-        let mut tmp = (*todos.get()).clone();
-        tmp.push(value.get().as_ref().clone());
-        todos.set(tmp);
-
-        let input = input_ref.get().unchecked_into::<HtmlInputElement>();
-        input.set_value("");
-        input.focus().unwrap();
-    });
-
-    let handle_remove = cloned!((todos) => move |_| {
-        let mut tmp = (*todos.get()).clone();
-        tmp.pop();
-        todos.set(tmp);
-    });
-
-    let handle_remove_first = cloned!((todos) => move |_| {
-        if !todos.get().is_empty() {
-            todos.set(todos.get()[1..].into());
-        }
-    });
+    let todos_is_empty2 = todos_is_empty.clone();
+    let app_state2 = app_state.clone();
 
     template! {
-        main {
-            h1 {
-                "todos"
-            }
+        div(class="todomvc-wrapper") {
+            section(class="todoapp") {
+                header::Header(app_state.clone())
 
-            input(ref=input_ref, placeholder="What needs to be done?", on:input=handle_input)
-            button(on:click=handle_add) { "Add todo" }
-            button(on:click=handle_remove) { "Remove last todo" }
-            button(on:click=handle_remove_first) { "Remove first todo" }
+                (if !*todos_is_empty.get() {
+                    template! {
+                        list::List(app_state.clone())
+                    }
+                } else {
+                    TemplateResult::empty()
+                })
 
-            ul {
-                Indexed(IndexedProps {
-                    iterable: todos,
-                    template: |item| {
-                        template! {
-                            TodoItem(item)
-                        }
-                    },
+                // FIXME: merge two if/else statements
+                (if !*todos_is_empty2.get() {
+                    template! {
+                        footer::Footer(app_state2.clone())
+                    }
+                } else {
+                    TemplateResult::empty()
                 })
             }
+
+            copyright::Copyright()
         }
     }
 }

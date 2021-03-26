@@ -1,26 +1,33 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
-use syn::{ExprCall, Result};
+use syn::punctuated::Punctuated;
+use syn::token::{Comma, Paren};
+use syn::{parenthesized, Expr, Path, Result};
 
 /// Components are identical to function calls.
 pub(crate) struct Component {
-    expr_call: ExprCall,
+    path: Path,
+    _paren: Paren,
+    args: Punctuated<Expr, Comma>,
 }
 
 impl Parse for Component {
     fn parse(input: ParseStream) -> Result<Self> {
+        let content;
         Ok(Self {
-            expr_call: input.parse()?,
+            path: input.parse()?,
+            _paren: parenthesized!(content in input),
+            args: content.parse_terminated(Expr::parse)?,
         })
     }
 }
 
 impl ToTokens for Component {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Component { expr_call } = self;
+        let Component { path, _paren: _, args } = self;
 
-        let quoted = quote! { ::maple_core::TemplateResult::inner_element(&#expr_call) };
+        let quoted = quote! { ::maple_core::reactive::untrack(|| ::maple_core::TemplateResult::inner_element(&#path(#args))) };
 
         tokens.extend(quoted);
     }

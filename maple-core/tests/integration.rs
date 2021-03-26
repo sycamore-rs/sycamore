@@ -100,7 +100,7 @@ fn non_keyed() {
     let node = cloned!((count) => template! {
         ul {
             Indexed(IndexedProps {
-                iterable: count,
+                iterable: count.handle(),
                 template: |item| template! {
                     li { (item) }
                 },
@@ -132,7 +132,7 @@ fn keyed() {
     let node = cloned!((count) => template! {
         ul {
             Keyed(KeyedProps {
-                iterable: count,
+                iterable: count.handle(),
                 template: |item| template! {
                     li { (item) }
                 },

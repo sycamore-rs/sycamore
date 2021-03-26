@@ -11,9 +11,12 @@ version = "0.1.0"
 console_error_panic_hook = "0.1.6"
 console_log = "0.2.0"
 log = "0.4.14"
-maple-core = {path = "../../maple-core"}
+maple-core = {path = "../../maple-core", features = ["serde"]}
+serde = {version = "1.0.125", features = ["derive"]}
+serde_json = "1.0.64"
+uuid = {version = "0.8", features = ["v4", "wasm-bindgen", "serde"]}
 wasm-bindgen = "0.2"
 
 [dependencies.web-sys]
-features = ["HtmlInputElement", "InputEvent"]
+features = ["HtmlInputElement", "InputEvent", "KeyboardEvent", "Location", "Storage"]
 version = "0.3"
