@@ -147,7 +147,7 @@ impl Eq for Dependency {}
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 pub fn create_effect_initial<R: 'static + Clone>(
-    initial: impl FnOnce() -> (Rc<dyn Fn()>, R) + 'static,
+    initial: Box<dyn FnOnce() -> (Rc<dyn Fn()>, R)>,
 ) -> R {
     let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
@@ -275,10 +275,10 @@ where
 
 /// Internal implementation: use dynamic dispatch to reduce code bloat.
 fn create_effect_internal(effect: Rc<dyn Fn()>) {
-    create_effect_initial(move || {
+    create_effect_initial(Box::new(move || {
         effect();
         (effect, ())
-    })
+    }))
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
@@ -333,7 +333,7 @@ where
     let derived = Rc::new(derived);
     let comparator = Rc::new(comparator);
 
-    create_effect_initial(move || {
+    create_effect_initial(Box::new(move || {
         let memo = Signal::new(derived());
 
         let effect = Rc::new({
@@ -348,7 +348,7 @@ where
         });
 
         (effect, memo.into_handle())
-    })
+    }))
 }
 
 /// Run the passed closure inside an untracked scope.

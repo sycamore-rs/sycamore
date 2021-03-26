@@ -124,7 +124,7 @@ impl<T: 'static> SignalVec<T> {
         let changes = Rc::clone(&self.changes());
         let f = Rc::new(f);
 
-        create_effect_initial(move || {
+        create_effect_initial(Box::new(move || {
             let derived = SignalVec::with_values(
                 signal.get().borrow().iter().map(|value| f(value)).collect(),
             );
@@ -152,7 +152,7 @@ impl<T: 'static> SignalVec<T> {
             };
 
             (Rc::new(effect), derived)
-        })
+        }))
     }
 }
 
@@ -166,11 +166,11 @@ impl SignalVec<TemplateResult> {
 impl<T: 'static + Clone> SignalVec<T> {
     /// Create a [`Vec`] from a [`SignalVec`]. The returned [`Vec`] is cloned from the data which
     /// requires `T` to be `Clone`.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use maple_core::prelude::*;
-    /// 
+    ///
     /// let signal = SignalVec::with_values(vec![1, 2, 3]);
     /// assert_eq!(signal.to_vec(), vec![1, 2, 3]);
     /// ```
