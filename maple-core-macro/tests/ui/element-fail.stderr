@@ -1,29 +1,29 @@
 error: unexpected token
- --> $DIR/element-fail.rs:4:18
+ --> $DIR/element-fail.rs:4:45
   |
-4 |     template! { p.my-class#id };
-  |                  ^
+4 |     let _: TemplateResult<G> = template! { p.my-class#id };
+  |                                             ^
 
 error: expected `=`
- --> $DIR/element-fail.rs:6:23
+ --> $DIR/element-fail.rs:6:59
   |
-6 |     template! { button(disabled) };
-  |                       ^^^^^^^^^^
+6 |     let _: TemplateResult<G> = template! { button(disabled) };
+  |                                                           ^
 
 error: expected `=`
- --> $DIR/element-fail.rs:7:23
+ --> $DIR/element-fail.rs:7:59
   |
-7 |     template! { button(on:click) };
-  |                       ^^^^^^^^^^
+7 |     let _: TemplateResult<G> = template! { button(on:click) };
+  |                                                           ^
 
 error: unknown directive `unknown`
- --> $DIR/element-fail.rs:8:24
+ --> $DIR/element-fail.rs:8:51
   |
-8 |     template! { button(unknown:directive="123") };
-  |                        ^^^^^^^
+8 |     let _: TemplateResult<G> = template! { button(unknown:directive="123") };
+  |                                                   ^^^^^^^
 
 error: expected `=`
-  --> $DIR/element-fail.rs:10:25
+  --> $DIR/element-fail.rs:10:52
    |
-10 |     template! { button(a.b.c="123") };
-   |                         ^
+10 |     let _: TemplateResult<G> = template! { button(a.b.c="123") };
+   |                                                    ^
