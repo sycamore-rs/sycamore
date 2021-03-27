@@ -16,8 +16,18 @@
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]
 
+use std::cell::RefCell;
+
+use web_sys::Node;
+
+pub use maple_core_macro::template;
+use prelude::SignalVec;
+
+use crate::generic_node::{DomNode, GenericNode};
+
 pub mod flow;
-#[doc(hidden)]
+// #[doc(hidden)]
+pub mod generic_node;
 pub mod internal;
 #[doc(hidden)]
 pub mod macros;
@@ -25,50 +35,38 @@ pub mod noderef;
 pub mod reactive;
 pub mod render;
 
-use prelude::SignalVec;
-use web_sys::Node;
-
-use std::cell::RefCell;
-
-pub use maple_core_macro::template;
-
 /// The result of the [`template!`](template) macro. Should not be used directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TemplateResult {
-    node: Node,
+pub struct TemplateResult<G: GenericNode> {
+    node: G,
 }
 
-impl TemplateResult {
+impl<G: GenericNode> TemplateResult<G> {
     /// Create a new [`TemplateResult`] from a [`Node`].
-    pub fn new(node: Node) -> Self {
+    pub fn new(node: G) -> Self {
         Self { node }
     }
 
     /// Create a new [`TemplateResult`] with a blank comment node
     pub fn empty() -> Self {
         Self::new(
-            web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_comment("")
-                .into(),
+            G::marker()
         )
     }
 
-    pub fn inner_element(&self) -> Node {
+    pub fn inner_element(&self) -> G {
         self.node.clone()
     }
 }
 
 /// A [`SignalVec`](reactive::SignalVec) of [`TemplateResult`]s.
 #[derive(Clone)]
-pub struct TemplateList {
-    templates: reactive::SignalVec<TemplateResult>,
+pub struct TemplateList<T: GenericNode> {
+    templates: reactive::SignalVec<TemplateResult<T>>,
 }
 
-impl From<SignalVec<TemplateResult>> for TemplateList {
-    fn from(templates: SignalVec<TemplateResult>) -> Self {
+impl<T: GenericNode> From<SignalVec<TemplateResult<T>>> for TemplateList<T> {
+    fn from(templates: SignalVec<TemplateResult<T>>) -> Self {
         Self { templates }
     }
 }
@@ -76,7 +74,7 @@ impl From<SignalVec<TemplateResult>> for TemplateList {
 /// Render a [`TemplateResult`] into the DOM.
 ///
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
-pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
+pub fn render(template_result: impl FnOnce() -> TemplateResult<DomNode> + 'static) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
@@ -84,9 +82,14 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult + 'static) {
 }
 
 /// Render a [`TemplateResult`] under a `parent` node. For rendering under the `<body>` tag, use [`render()`] instead.
-pub fn render_to(template_result: impl FnOnce() -> TemplateResult + 'static, parent: &Node) {
+pub fn render_to(
+    template_result: impl FnOnce() -> TemplateResult<DomNode> + 'static,
+    parent: &Node,
+) {
     let owner = reactive::create_root(move || {
-        parent.append_child(&template_result().node).unwrap();
+        parent
+            .append_child(&template_result().node.inner_element())
+            .unwrap();
     });
 
     thread_local! {
@@ -98,6 +101,8 @@ pub fn render_to(template_result: impl FnOnce() -> TemplateResult + 'static, par
 
 /// The maple prelude.
 pub mod prelude {
+    pub use maple_core_macro::template;
+
     pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
     pub use crate::noderef::NodeRef;
@@ -107,6 +112,4 @@ pub mod prelude {
     };
     pub use crate::render::Render;
     pub use crate::{render, render_to, TemplateList, TemplateResult};
-
-    pub use maple_core_macro::template;
 }

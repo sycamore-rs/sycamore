@@ -12,14 +12,15 @@ use std::rc::Rc;
 use wasm_bindgen::*;
 use web_sys::{Element, HtmlElement};
 
+use crate::generic_node::GenericNode;
 use crate::internal::append;
 use crate::prelude::*;
 use crate::reactive::Owner;
 
 /// Props for [`Keyed`].
-pub struct KeyedProps<T: 'static, F, K, Key>
+pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>
 where
-    F: Fn(T) -> TemplateResult,
+    F: Fn(T) -> TemplateResult<G>,
     K: Fn(&T) -> Key,
     Key: Hash + Eq,
 {
@@ -49,11 +50,11 @@ where
 ///     })
 /// };
 /// ```
-pub fn Keyed<T, F: 'static, K: 'static, Key: 'static>(
-    props: KeyedProps<T, F, K, Key>,
-) -> TemplateResult
+pub fn Keyed<T, F: 'static, G: GenericNode, K: 'static, Key: 'static>(
+    props: KeyedProps<T, F, G, K, Key>,
+) -> TemplateResult<G>
 where
-    F: Fn(T) -> TemplateResult,
+    F: Fn(T) -> TemplateResult<G>,
     K: Fn(&T) -> Key,
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
@@ -66,25 +67,17 @@ where
     let iterable = Rc::new(iterable);
     let key_fn = Rc::new(key_fn);
 
-    type TemplateValue<T> = (Owner, T, TemplateResult, usize /* index */);
+    type TemplateValue<T, G> = (Owner, T, TemplateResult<G>, usize /* index */);
 
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
-    let templates: Rc<RefCell<HashMap<Key, TemplateValue<T>>>> =
+    let templates: Rc<RefCell<HashMap<Key, TemplateValue<T, G>>>> =
         Rc::new(RefCell::new(HashMap::new()));
 
-    let fragment = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_document_fragment();
+    let fragment = G::fragment();
 
-    let marker = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_comment("");
+    let marker = G::marker();
 
-    append(&fragment, &marker);
+    fragment.append_child(&marker);
 
     create_effect({
         let iterable = Rc::clone(&iterable);
@@ -96,7 +89,7 @@ where
             if iterable.get().is_empty() {
                 for (_, (owner, _value, template, _i)) in templates.borrow_mut().drain() {
                     drop(owner); // destroy owner
-                    template.node.unchecked_into::<HtmlElement>().remove();
+                    template.node.remove_self();
                 }
                 return;
             }
@@ -126,7 +119,7 @@ where
                 }
 
                 for node in excess_nodes {
-                    node.1 .0.node.unchecked_into::<Element>().remove();
+                    node.1 .0.node.remove_self();
                 }
             }
 
@@ -174,18 +167,12 @@ where
                             next_node
                                 .2
                                 .node
-                                .unchecked_ref::<HtmlElement>()
-                                .before_with_node_1(&new_template.unwrap().node)
-                                .unwrap();
+                                .insert_before_self(&new_template.unwrap().node);
                         } else {
-                            marker
-                                .before_with_node_1(&new_template.unwrap().node)
-                                .unwrap();
+                            marker.insert_before_self(&new_template.unwrap().node);
                         }
                     } else {
-                        marker
-                            .before_with_node_1(&new_template.unwrap().node)
-                            .unwrap();
+                        marker.insert_before_self(&new_template.unwrap().node);
                     }
                 } else if match previous_value {
                     Some(prev) => prev.index,
@@ -200,14 +187,9 @@ where
                     if let Some(next_item) = iterable.get().get(i + 1) {
                         let templates = templates.borrow();
                         let next_node = templates.get(&key_fn(next_item)).unwrap();
-                        next_node
-                            .2
-                            .node
-                            .unchecked_ref::<HtmlElement>()
-                            .before_with_node_1(&node)
-                            .unwrap(); // Move to before next node
+                        next_node.2.node.insert_before_self(&node); // Move to before next node
                     } else {
-                        marker.before_with_node_1(&node).unwrap(); // Move to end.
+                        marker.insert_before_self(&node); // Move to end.
                     }
 
                     templates.borrow_mut().get_mut(&key).unwrap().3 = i;
@@ -254,9 +236,9 @@ where
 }
 
 /// Props for [`Indexed`].
-pub struct IndexedProps<T: 'static, F>
+pub struct IndexedProps<T: 'static, F, G: GenericNode>
 where
-    F: Fn(T) -> TemplateResult,
+    F: Fn(T) -> TemplateResult<G>,
 {
     pub iterable: StateHandle<Vec<T>>,
     pub template: F,
@@ -282,12 +264,12 @@ where
 ///     })
 /// };
 /// ```
-pub fn Indexed<T, F: 'static>(props: IndexedProps<T, F>) -> TemplateResult
+pub fn Indexed<T, F: 'static, G: GenericNode>(props: IndexedProps<T, F, G>) -> TemplateResult<G>
 where
     T: Clone + PartialEq,
-    F: Fn(T) -> TemplateResult,
+    F: Fn(T) -> TemplateResult<G>,
 {
-    let templates: Rc<RefCell<Vec<(Owner, TemplateResult)>>> = Rc::new(RefCell::new(Vec::new()));
+    let templates: Rc<RefCell<Vec<(Owner, TemplateResult<G>)>>> = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());

@@ -9,17 +9,11 @@ use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{DocumentFragment, Element, Event, Node};
 
 use crate::prelude::*;
+use crate::generic_node::GenericNode;
 
 /// Create a new [`Element`] with the specified tag.
-pub fn element(tag: &str) -> Element {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_element(tag)
-        .unwrap()
-        .dyn_into()
-        .unwrap()
+pub fn element<G: GenericNode>(tag: &str) -> G {
+    G::element(tag)
 }
 
 pub fn fragment() -> DocumentFragment {
@@ -64,21 +58,8 @@ pub fn append(element: &dyn AsRef<Node>, child: &dyn AsRef<Node>) {
 
 /// Appends a [`dyn Render`](Render) to the `parent` node.
 /// Node is created inside an effect with [`Render::update_node`].
-pub fn append_render(parent: &dyn AsRef<Node>, child: Box<dyn Fn() -> Box<dyn Render>>) {
-    let parent = parent.as_ref().clone();
-
-    let node = create_effect_initial(cloned!((parent) => move || {
-        let node = RefCell::new(child().render());
-
-        let effect = cloned!((node) => move || {
-            let new_node = child().update_node(&parent, &node.borrow());
-            *node.borrow_mut() = new_node;
-        });
-
-        (Rc::new(effect), node)
-    }));
-
-    parent.append_child(&node.borrow()).unwrap();
+pub fn append_render<G: GenericNode>(parent: &G, child: Box<dyn Fn() -> Box<dyn Render<G>>>) {
+    parent.append_render(child)
 }
 
 /// Appends a static text node to the `parent` node.
