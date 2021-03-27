@@ -132,7 +132,7 @@ impl Filter {
 
 const KEY: &str = "todos-maple";
 
-fn App() -> TemplateResult {
+fn App<G: GenericNode>() -> TemplateResult<G> {
     let local_storage = web_sys::window()
         .unwrap()
         .local_storage()

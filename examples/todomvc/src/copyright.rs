@@ -1,6 +1,6 @@
 use maple_core::prelude::*;
 
-pub fn Copyright() -> TemplateResult {
+pub fn Copyright<G: GenericNode>() -> TemplateResult<G> {
     template! {
         footer(class="info") {
             p { "Double click to edit a todo" }
