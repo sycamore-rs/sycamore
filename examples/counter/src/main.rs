@@ -2,7 +2,7 @@
 
 use maple_core::prelude::*;
 
-fn App() -> TemplateResult {
+fn App<G: GenericNode>() -> TemplateResult<G> {
     let counter = Signal::new(0);
 
     create_effect(cloned!((counter) => move || {

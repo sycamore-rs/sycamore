@@ -7,6 +7,7 @@ use web_sys::{HtmlElement, Node};
 
 use crate::prelude::*;
 
+type EventListener = dyn Fn(Event);
 pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     fn element(tag: &str) -> Self;
     fn text_node(text: &str) -> Self;
@@ -21,6 +22,12 @@ pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     fn remove_child(&self, child: &Self);
     fn remove_self(&self);
     fn replace_child(&self, old: &Self, new: &Self);
+    fn insert_sibling_before(&self, child: &Self);
+    fn parent_node(&self) -> Option<Self>;
+    fn next_sibling(&self) -> Option<Self>;
+    fn remove_self(&self);
+    fn event(&self, name: &str, handler: Box<EventListener>);
+    fn update_text(&self, text: &str);
     fn append_render(&self, child: Box<dyn Fn() -> Box<dyn Render<Self>>>) {
         let parent = self.clone();
 
@@ -108,7 +115,7 @@ impl GenericNode for DomNode {
     }
 
     fn remove_child(&self, child: &Self) {
-        unimplemented!()
+        self.node.remove_child(&child.node);
     }
 
     fn remove_self(&self) {
@@ -116,6 +123,35 @@ impl GenericNode for DomNode {
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
-        unimplemented!()
+        self.node.replace_child(&old.node, &new.node);
+    }
+
+    fn insert_sibling_before(&self, child: &Self) {
+        self.node
+            .unchecked_ref::<Element>()
+            .before_with_node_1(&child.node);
+    }
+
+    fn parent_node(&self) -> Option<Self> {
+        self.node.parent_node().map(|node| Self { node })
+    }
+
+    fn next_sibling(&self) -> Option<Self> {
+        self.node.next_sibling().map(|node| Self { node })
+    }
+
+    fn remove_self(&self) {
+        self.node.unchecked_ref::<Element>().remove();
+    }
+
+    fn event(&self, name: &str, handler: Box<EventListener>) {
+        crate::internal::event_internal(self.node.unchecked_ref(), name, handler)
+    }
+
+    fn update_text(&self, text: &str) {
+        self.node
+            .dyn_ref::<Text>()
+            .unwrap()
+            .set_text_content(Some(text));
     }
 }

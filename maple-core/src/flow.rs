@@ -10,10 +10,9 @@ use std::mem;
 use std::rc::Rc;
 
 use wasm_bindgen::*;
-use web_sys::{Element, HtmlElement};
+use web_sys::HtmlElement;
 
 use crate::generic_node::GenericNode;
-use crate::internal::append;
 use crate::prelude::*;
 use crate::reactive::Owner;
 
@@ -229,7 +228,7 @@ where
         let key = key_fn(item);
         let template = templates.borrow().get(&key).unwrap().2.clone();
 
-        marker.before_with_node_1(&template.node).unwrap();
+        marker.insert_sibling_before(&template.node);
     }
 
     TemplateResult::new(fragment.into())
@@ -274,19 +273,11 @@ where
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
 
-    let fragment = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_document_fragment();
+    let fragment = G::fragment();
 
-    let marker = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_comment("");
+    let marker = G::empty();
 
-    append(&fragment, &marker);
+    fragment.append_child(&marker);
 
     create_effect({
         let templates = Rc::clone(&templates);
@@ -326,9 +317,7 @@ where
                         );
 
                         let parent = old_node.1.node.parent_node().unwrap();
-                        parent
-                            .replace_child(&new_template.unwrap().node, &old_node.1.node)
-                            .unwrap();
+                        parent.replace_child(&new_template.unwrap().node, &old_node.1.node);
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
@@ -336,9 +325,7 @@ where
                             .borrow_mut()
                             .push((owner, new_template.as_ref().unwrap().clone()));
 
-                        marker
-                            .before_with_node_1(&new_template.unwrap().node)
-                            .unwrap();
+                        marker.insert_sibling_before(&new_template.unwrap().node);
                     }
                 }
             }
@@ -348,7 +335,7 @@ where
                 let excess_nodes = templates.drain(props.iterable.get().len()..);
 
                 for node in excess_nodes {
-                    node.1.node.unchecked_into::<Element>().remove();
+                    node.1.node.remove_self();
                 }
             }
 
@@ -357,7 +344,7 @@ where
     });
 
     for template in templates.borrow().iter() {
-        marker.before_with_node_1(&template.1.node).unwrap();
+        marker.insert_sibling_before(&template.1.node);
     }
 
     TemplateResult::new(fragment.into())

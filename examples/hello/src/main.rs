@@ -4,7 +4,7 @@ use maple_core::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement};
 
-fn App() -> TemplateResult {
+fn App<G: GenericNode>() -> TemplateResult<G> {
     let name = Signal::new(String::new());
 
     let handle_change = cloned!((name) => move |event: Event| {

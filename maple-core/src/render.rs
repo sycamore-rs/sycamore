@@ -3,13 +3,10 @@
 use std::fmt;
 use std::rc::Rc;
 
-use wasm_bindgen::JsCast;
-use web_sys::{Node, Text};
-
+use crate::generic_node::GenericNode;
 use crate::reactive::VecDiff;
 use crate::TemplateResult;
 use crate::{internal::*, TemplateList};
-use crate::generic_node::GenericNode;
 
 /// Trait for describing how something should be rendered into DOM nodes.
 pub trait Render<G: GenericNode> {
@@ -36,10 +33,8 @@ impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
 
     fn update_node(&self, _parent: &G, node: &G) -> G {
         // replace `textContent` of `node` instead of recreating
-        node.clone()
-            .dyn_into::<Text>()
-            .unwrap()
-            .set_text_content(Some(&format!("{}", self)));
+
+        node.update_text(&format!("{}", self));
 
         node.clone()
     }
@@ -87,24 +82,21 @@ impl<G: GenericNode> Render<G> for TemplateList<G> {
                     }
                 }
                 VecDiff::Insert { index, value } => {
-                    parent
-                        .insert_node_before(
-                            &value.node,
-                            templates
-                                .borrow()
-                                .get(*index)
-                                .map(|template| template.node.next_sibling())
-                                .flatten()
-                                .as_ref(),
-                        );
+                    parent.insert_node_before(
+                        &value.node,
+                        templates
+                            .borrow()
+                            .get(*index)
+                            .map(|template| template.node.next_sibling())
+                            .flatten()
+                            .as_ref(),
+                    );
                 }
                 VecDiff::Update { index, value } => {
-                    parent
-                        .replace_child(&templates.borrow()[*index].node, &value.node);
+                    parent.replace_child(&templates.borrow()[*index].node, &value.node);
                 }
                 VecDiff::Remove { index } => {
-                    parent
-                        .remove_child(&templates.borrow()[*index].node);
+                    parent.remove_child(&templates.borrow()[*index].node);
                 }
                 VecDiff::Swap { index1, index2 } => {
                     let child1 = &templates.borrow()[*index1].node;
@@ -113,17 +105,15 @@ impl<G: GenericNode> Render<G> for TemplateList<G> {
                     parent.replace_child(child2, child1);
                 }
                 VecDiff::Push { value } => {
-                    parent
-                        .insert_node_before(
-                            &value.node,
-                            templates
-                                .borrow()
-                                .last()
-                                .map(|last| last.node.next_sibling())
-                                .flatten()
-                                .as_ref(),
-                        )
-                        ;
+                    parent.insert_node_before(
+                        &value.node,
+                        templates
+                            .borrow()
+                            .last()
+                            .map(|last| last.node.next_sibling())
+                            .flatten()
+                            .as_ref(),
+                    );
                 }
                 VecDiff::Pop => {
                     if let Some(last) = templates.borrow().last() {

@@ -26,8 +26,8 @@ use prelude::SignalVec;
 use crate::generic_node::{DomNode, GenericNode};
 
 pub mod flow;
-// #[doc(hidden)]
 pub mod generic_node;
+#[doc(hidden)]
 pub mod internal;
 #[doc(hidden)]
 pub mod macros;
@@ -49,9 +49,7 @@ impl<G: GenericNode> TemplateResult<G> {
 
     /// Create a new [`TemplateResult`] with a blank comment node
     pub fn empty() -> Self {
-        Self::new(
-            G::marker()
-        )
+        Self::new(G::marker())
     }
 
     pub fn inner_element(&self) -> G {
@@ -105,6 +103,7 @@ pub mod prelude {
 
     pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
+    pub use crate::generic_node::GenericNode;
     pub use crate::noderef::NodeRef;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,

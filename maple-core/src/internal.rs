@@ -8,8 +8,8 @@ use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{DocumentFragment, Element, Event, Node};
 
-use crate::prelude::*;
 use crate::generic_node::GenericNode;
+use crate::prelude::*;
 
 /// Create a new [`Element`] with the specified tag.
 pub fn element<G: GenericNode>(tag: &str) -> G {
@@ -42,7 +42,7 @@ thread_local! {
 }
 
 /// Sets an event listener on an [`Element`].
-pub fn event(element: &Element, name: &str, handler: Box<EventListener>) {
+pub(crate) fn event_internal(element: &Element, name: &str, handler: Box<EventListener>) {
     let closure = Closure::wrap(handler);
     element
         .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
@@ -51,9 +51,14 @@ pub fn event(element: &Element, name: &str, handler: Box<EventListener>) {
     EVENT_LISTENERS.with(|event_listeners| event_listeners.borrow_mut().push(closure));
 }
 
+/// Sets an event listener on an [`Element`].
+pub fn event<G: GenericNode>(element: &G, name: &str, handler: Box<EventListener>) {
+    element.event(name, handler)
+}
+
 /// Appends a child node to an element.
-pub fn append(element: &dyn AsRef<Node>, child: &dyn AsRef<Node>) {
-    element.as_ref().append_child(child.as_ref()).unwrap();
+pub fn append<G: GenericNode>(element: &G, child: &G) {
+    element.append_child(child);
 }
 
 /// Appends a [`dyn Render`](Render) to the `parent` node.
@@ -63,14 +68,10 @@ pub fn append_render<G: GenericNode>(parent: &G, child: Box<dyn Fn() -> Box<dyn 
 }
 
 /// Appends a static text node to the `parent` node.
-pub fn append_static_text(parent: &dyn AsRef<Node>, text: &dyn fmt::Display) {
-    let text_node = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .create_text_node(&format!("{}", text));
+pub fn append_static_text<G: GenericNode>(parent: &G, text: &dyn fmt::Display) {
+    let text_node = G::text_node(&format!("{}", text));
 
-    parent.as_ref().append_child(&text_node).unwrap();
+    parent.append_child(&text_node);
 }
 
 /// Sets the value of a [`NodeRef`].

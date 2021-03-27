@@ -70,7 +70,7 @@ impl ToTokens for Element {
                     }
                     AttributeType::Event { name } => {
                         set_event_listeners.push(quote_spanned! { expr_span=>
-                            ::maple_core::internal::event(::std::convert::AsRef::as_ref(&element), #name, ::std::boxed::Box::new(#expr));
+                            ::maple_core::internal::event(&element, #name, ::std::boxed::Box::new(#expr));
                         });
                     }
                     AttributeType::Ref => {
