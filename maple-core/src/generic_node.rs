@@ -54,50 +54,32 @@ impl DomNode {
     }
 }
 
+fn document() -> web_sys::Document {
+    web_sys::window().unwrap().document().unwrap()
+}
+
 impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
         DomNode {
-            node: web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_element(tag)
-                .unwrap()
-                .dyn_into()
-                .unwrap(),
+            node: document().create_element(tag).unwrap().dyn_into().unwrap(),
         }
     }
 
     fn text_node(text: &str) -> Self {
         DomNode {
-            node: web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_text_node(text)
-                .into(),
+            node: document().create_text_node(text).into(),
         }
     }
 
     fn fragment() -> Self {
         DomNode {
-            node: web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_document_fragment()
-                .into(),
+            node: document().create_document_fragment().into(),
         }
     }
 
     fn marker() -> Self {
         DomNode {
-            node: web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_comment("")
-                .into(),
+            node: document().create_comment("").into(),
         }
     }
 
