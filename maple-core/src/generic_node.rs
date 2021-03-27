@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::rc::Rc;
 
 use wasm_bindgen::JsCast;
-use web_sys::{HtmlElement, Node};
+use web_sys::{Element, Event, HtmlElement, Node};
 
 use crate::prelude::*;
 
@@ -13,7 +13,7 @@ pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     fn text_node(text: &str) -> Self;
     fn fragment() -> Self;
     fn marker() -> Self;
-    
+    fn set_attribute(&self, name: &str, value: &str);
     fn append_child(&self, child: &Self);
     fn insert_before_self(&self, new_node: &Self);
 
@@ -25,7 +25,6 @@ pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     fn insert_sibling_before(&self, child: &Self);
     fn parent_node(&self) -> Option<Self>;
     fn next_sibling(&self) -> Option<Self>;
-    fn remove_self(&self);
     fn event(&self, name: &str, handler: Box<EventListener>);
     fn update_text(&self, text: &str);
     fn append_render(&self, child: Box<dyn Fn() -> Box<dyn Render<Self>>>) {
@@ -104,6 +103,12 @@ impl GenericNode for DomNode {
         }
     }
 
+    fn set_attribute(&self, name: &str, value: &str) {
+        self.node
+            .unchecked_ref::<Element>()
+            .set_attribute(name, value);
+    }
+
     fn append_child(&self, child: &Self) {
         self.node.append_child(&child.node).unwrap();
     }
@@ -140,17 +145,13 @@ impl GenericNode for DomNode {
         self.node.next_sibling().map(|node| Self { node })
     }
 
-    fn remove_self(&self) {
-        self.node.unchecked_ref::<Element>().remove();
-    }
-
     fn event(&self, name: &str, handler: Box<EventListener>) {
         crate::internal::event_internal(self.node.unchecked_ref(), name, handler)
     }
 
     fn update_text(&self, text: &str) {
         self.node
-            .dyn_ref::<Text>()
+            .dyn_ref::<HtmlElement>()
             .unwrap()
             .set_text_content(Some(text));
     }

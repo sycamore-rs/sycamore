@@ -3,7 +3,6 @@
 
 use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
 
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{DocumentFragment, Element, Event, Node};
@@ -25,11 +24,11 @@ pub fn fragment() -> DocumentFragment {
 }
 
 /// Sets an attribute on an [`Element`].
-pub fn attr(element: &Element, name: &str, value: Box<dyn Fn() -> String>) {
+pub fn attr<G: GenericNode>(element: &G, name: &str, value: Box<dyn Fn() -> String>) {
     let element = element.clone();
     let name = name.to_string();
     create_effect(move || {
-        element.set_attribute(&name, &value()).unwrap();
+        element.set_attribute(&name, &value());
     })
 }
 
