@@ -2,7 +2,7 @@
 
 use maple_core::prelude::*;
 
-fn MyComponent(num: StateHandle<i32>) -> TemplateResult {
+fn MyComponent<G: GenericNode>(num: StateHandle<i32>) -> TemplateResult<G> {
     template! {
         div(class="my-component") {
             "My component"
@@ -14,7 +14,7 @@ fn MyComponent(num: StateHandle<i32>) -> TemplateResult {
     }
 }
 
-fn App() -> TemplateResult {
+fn App<G: GenericNode>() -> TemplateResult<G> {
     let state = Signal::new(1);
 
     let increment = cloned!((state) => move |_| {

@@ -16,9 +16,7 @@ pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     fn set_attribute(&self, name: &str, value: &str);
     fn append_child(&self, child: &Self);
     fn insert_before_self(&self, new_node: &Self);
-
-    #[deprecated]
-    fn insert_node_before(&self, newNode: &Self, referenceNode: Option<&Self>);
+    fn insert_child_before(&self, newNode: &Self, referenceNode: Option<&Self>);
     fn remove_child(&self, child: &Self);
     fn remove_self(&self);
     fn replace_child(&self, old: &Self, new: &Self);
@@ -106,7 +104,8 @@ impl GenericNode for DomNode {
     fn set_attribute(&self, name: &str, value: &str) {
         self.node
             .unchecked_ref::<Element>()
-            .set_attribute(name, value);
+            .set_attribute(name, value)
+            .unwrap();
     }
 
     fn append_child(&self, child: &Self) {
@@ -115,12 +114,14 @@ impl GenericNode for DomNode {
 
     fn insert_before_self(&self, new_node: &Self) {}
 
-    fn insert_node_before(&self, newNode: &Self, referenceNode: Option<&Self>) {
-        todo!()
+    fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
+        self.node
+            .insert_before(&new_node.node, reference_node.map(|n| &n.node))
+            .unwrap();
     }
 
     fn remove_child(&self, child: &Self) {
-        self.node.remove_child(&child.node);
+        self.node.remove_child(&child.node).unwrap();
     }
 
     fn remove_self(&self) {
@@ -128,13 +129,14 @@ impl GenericNode for DomNode {
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
-        self.node.replace_child(&old.node, &new.node);
+        self.node.replace_child(&old.node, &new.node).unwrap();
     }
 
     fn insert_sibling_before(&self, child: &Self) {
         self.node
             .unchecked_ref::<Element>()
-            .before_with_node_1(&child.node);
+            .before_with_node_1(&child.node)
+            .unwrap();
     }
 
     fn parent_node(&self) -> Option<Self> {
