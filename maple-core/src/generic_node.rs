@@ -8,7 +8,7 @@ use web_sys::{Element, Event, HtmlElement, Node};
 
 use crate::prelude::*;
 
-mod vdom;
+pub mod vdom;
 
 type EventListener = dyn Fn(Event);
 pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {

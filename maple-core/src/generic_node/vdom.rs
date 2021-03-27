@@ -83,11 +83,27 @@ impl GenericNode for Node {
     }
 
     fn remove_child(&self, child: &Self) {
-        unimplemented!()
+        let mut ele = self.unwrap_element().borrow_mut();
+        let index = ele.children
+            .0
+            .iter()
+            .enumerate()
+            .find_map(|(i, c)| (c == child).then(|| i))
+            .expect("Couldn't find child");
+        ele.children.0.remove(
+            index,
+        );
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
-        unimplemented!()
+        let mut ele = self.unwrap_element().borrow_mut();
+        let children = &mut ele.children.0;
+        let index = children
+            .iter()
+            .enumerate()
+            .find_map(|(i, c)| (c == old).then(|| i))
+            .expect("Couldn't find child");
+        children[index] = new.clone();
     }
 
     fn insert_sibling_before(&self, child: &Self) {
@@ -106,8 +122,8 @@ impl GenericNode for Node {
         unimplemented!()
     }
 
-    fn event(&self, name: &str, handler: Box<EventListener>) {
-        unimplemented!()
+    fn event(&self, _name: &str, _handler: Box<EventListener>) {
+        // Don't do anything
     }
 
     fn update_text(&self, text: &str) {
