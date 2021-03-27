@@ -1,6 +1,6 @@
 use maple_core::prelude::*;
 
-pub fn Header() -> TemplateResult {
+pub fn Header<G: GenericNode>() -> TemplateResult<G> {
     template! {
         header {
             nav(class="navbar navbar-expand-sm navbar-dark bg-dark") {
