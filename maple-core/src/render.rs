@@ -61,7 +61,7 @@ impl<G: GenericNode> Render<G> for TemplateList<G> {
             );
         }
 
-        fragment.into()
+        fragment
     }
 
     fn update_node(&self, parent: &G, node: &G) -> G {
