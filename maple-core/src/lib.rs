@@ -103,7 +103,7 @@ pub mod prelude {
 
     pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
-    pub use crate::generic_node::GenericNode;
+    pub use crate::generic_node::{GenericNode, DomNode};
     pub use crate::noderef::NodeRef;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,

@@ -48,6 +48,7 @@ where
 ///         key: |item| *item,
 ///     })
 /// };
+/// # let _ : TemplateResult<DomNode> = node;
 /// ```
 pub fn Keyed<T, F: 'static, G: GenericNode, K: 'static, Key: 'static>(
     props: KeyedProps<T, F, G, K, Key>,
@@ -262,6 +263,7 @@ where
 ///         },
 ///     })
 /// };
+/// # let _ : TemplateResult<DomNode> = node;
 /// ```
 pub fn Indexed<T, F: 'static, G: GenericNode>(props: IndexedProps<T, F, G>) -> TemplateResult<G>
 where

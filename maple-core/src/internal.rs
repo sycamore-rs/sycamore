@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::fmt;
 
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{DocumentFragment, Element, Event, Node};
+use web_sys::{DocumentFragment, Element, Event};
 
 use crate::generic_node::GenericNode;
 use crate::prelude::*;
@@ -74,6 +74,6 @@ pub fn append_static_text<G: GenericNode>(parent: &G, text: &dyn fmt::Display) {
 }
 
 /// Sets the value of a [`NodeRef`].
-pub fn set_noderef(node: &dyn AsRef<Node>, noderef: NodeRef) {
-    noderef.set(node.as_ref().clone());
+pub fn set_noderef<G: GenericNode>(node: &G, noderef: NodeRef<G>) {
+    noderef.set(node.clone());
 }

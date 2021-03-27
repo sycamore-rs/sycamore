@@ -10,7 +10,7 @@ pub fn Item<G: GenericNode>(todo: Signal<Todo>, app_state: AppState) -> Template
     let id = todo.get().id;
 
     let editing = Signal::new(false);
-    let input_ref = NodeRef::new();
+    let input_ref = NodeRef::<G>::new();
     let value = Signal::new("".to_string());
 
     let handle_input = cloned!((value) => move |event: Event| {
@@ -27,7 +27,7 @@ pub fn Item<G: GenericNode>(todo: Signal<Todo>, app_state: AppState) -> Template
 
     let handle_dblclick = cloned!((title, editing, input_ref, value) => move |_| {
         editing.set(true);
-        input_ref.get().unchecked_into::<HtmlInputElement>().focus().unwrap();
+        input_ref.get::<DomNode>().unchecked_into::<HtmlInputElement>().focus().unwrap();
         value.set(title());
     });
 
@@ -52,7 +52,7 @@ pub fn Item<G: GenericNode>(todo: Signal<Todo>, app_state: AppState) -> Template
         match event.key().as_str() {
             "Enter" => handle_blur(),
             "Escape" => {
-                input_ref.get().unchecked_into::<HtmlInputElement>().set_value(&title());
+                input_ref.get::<DomNode>().unchecked_into::<HtmlInputElement>().set_value(&title());
                 editing.set(false);
             },
             _ => {}
@@ -68,7 +68,7 @@ pub fn Item<G: GenericNode>(todo: Signal<Todo>, app_state: AppState) -> Template
     // FIXME: bind to boolean attribute
     create_effect(cloned!((completed, toggle_ref) => move || {
         let completed = *completed.get();
-        if let Some(toggle_ref) = toggle_ref.try_get() {
+        if let Some(toggle_ref) = toggle_ref.try_get::<DomNode>() {
             toggle_ref.unchecked_into::<HtmlInputElement>().set_checked(completed);
         }
     }));

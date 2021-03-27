@@ -2,7 +2,8 @@ use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use wasm_bindgen::JsCast;
+use ref_cast::RefCast;
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{Element, Event, HtmlElement, Node};
 
 use crate::prelude::*;
@@ -43,7 +44,8 @@ pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, RefCast)]
+#[repr(transparent)]
 pub struct DomNode {
     node: Node,
 }
@@ -51,6 +53,37 @@ pub struct DomNode {
 impl DomNode {
     pub fn inner_element(&self) -> Node {
         self.node.clone()
+    }
+    pub fn unchecked_into<T: JsCast>(self) -> T {
+        self.node.unchecked_into()
+    }
+}
+
+impl AsRef<JsValue> for DomNode {
+    fn as_ref(&self) -> &JsValue {
+        self.node.as_ref()
+    }
+}
+
+impl From<DomNode> for JsValue {
+    fn from(node: DomNode) -> Self {
+        node.node.into()
+    }
+}
+
+impl JsCast for DomNode {
+    fn instanceof(val: &JsValue) -> bool {
+        Node::instanceof(val)
+    }
+
+    fn unchecked_from_js(val: JsValue) -> Self {
+        DomNode {
+            node: Node::unchecked_from_js(val),
+        }
+    }
+
+    fn unchecked_from_js_ref(val: &JsValue) -> &Self {
+        DomNode::ref_cast(Node::unchecked_from_js_ref(val))
     }
 }
 

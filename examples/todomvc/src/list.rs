@@ -1,5 +1,4 @@
 use maple_core::prelude::*;
-use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 
 use crate::{AppState, Filter};
@@ -9,13 +8,13 @@ pub fn List<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
         app_state.todos_left()
     }));
 
-    let input_ref = NodeRef::new();
+    let input_ref = NodeRef::<G>::new();
 
     // FIXME: bind to boolean attribute
     create_effect(cloned!((todos_left, input_ref) => move || {
         let checked = *todos_left.get() == 0;
 
-        if let Some(input_ref) = input_ref.try_get() {
+        if let Some(input_ref) = input_ref.try_get::<DomNode>() {
             input_ref.unchecked_into::<HtmlInputElement>().set_checked(checked);
         }
     }));
