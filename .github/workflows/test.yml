@@ -12,19 +12,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Install wasm-pack
-      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - uses: actions/checkout@v2
 
-    - name: Build
-      run: cargo build
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-    - name: Run tests
-      run: cargo test
+      - name: Build
+        run: cargo build
+        if: always()
 
-    - name: Run headless browser tests
-      run: wasm-pack test maple-core --firefox --chrome --headless
-      
-    - name: Run clippy
-      run: cargo clippy
+      - name: Run tests
+        run: cargo test
+        if: always()
+
+      - name: Run headless browser tests
+        run: wasm-pack test maple-core --firefox --chrome --headless
+        if: always()
+
+      - name: Run clippy
+        run: cargo clippy
+        if: always()
