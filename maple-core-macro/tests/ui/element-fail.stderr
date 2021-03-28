@@ -5,16 +5,16 @@ error: unexpected token
   |                                             ^
 
 error: expected `=`
- --> $DIR/element-fail.rs:6:59
+ --> $DIR/element-fail.rs:6:50
   |
 6 |     let _: TemplateResult<G> = template! { button(disabled) };
-  |                                                           ^
+  |                                                  ^^^^^^^^^^
 
 error: expected `=`
- --> $DIR/element-fail.rs:7:59
+ --> $DIR/element-fail.rs:7:50
   |
 7 |     let _: TemplateResult<G> = template! { button(on:click) };
-  |                                                           ^
+  |                                                  ^^^^^^^^^^
 
 error: unknown directive `unknown`
  --> $DIR/element-fail.rs:8:51

@@ -106,7 +106,7 @@ impl GenericNode for Node {
         children[index] = new.clone();
     }
 
-    fn insert_sibling_before(&self, child: &Self) {
+    fn insert_sibling_before(&self, _child: &Self) {
         unimplemented!()
     }
 
