@@ -10,7 +10,7 @@ use crate::{internal::*, TemplateList};
 
 /// Trait for describing how something should be rendered into DOM nodes.
 pub trait Render<G: GenericNode> {
-    /// Called during the initial render when creating the DOM nodes. Should return a [`Node`].
+    /// Called during the initial render when creating the DOM nodes. Should return a [`GenericNode`].
     fn render(&self) -> G;
 
     /// Called when the node should be updated with new state.

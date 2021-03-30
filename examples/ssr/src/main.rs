@@ -1,8 +1,6 @@
 #![allow(non_snake_case)]
 
-// use wasm_bindgen::JsCast;
-// use web_sys::{Event, HtmlInputElement};
-use maple_core::generic_node::vdom;
+use maple_core::generic_node::SsrNode;
 use maple_core::prelude::*;
 
 fn App<G: GenericNode>() -> TemplateResult<G> {
@@ -30,9 +28,8 @@ fn App<G: GenericNode>() -> TemplateResult<G> {
 }
 
 fn main() {
-    let mut app: Option<TemplateResult<vdom::Node>> = None;
-    let _owner = create_root(||{
-        app = Some(template! { App() });
+    let _owner = create_root(|| {
+        let app: Option<TemplateResult<SsrNode>> = Some(template! { App() });
+        println!("{}", render_to_string(|| app.unwrap()));
     });
-    println!("{}", app.unwrap().inner_element());
 }

@@ -232,7 +232,7 @@ where
         marker.insert_sibling_before(&template.node);
     }
 
-    TemplateResult::new(fragment.into())
+    TemplateResult::new(fragment)
 }
 
 /// Props for [`Indexed`].
@@ -270,7 +270,7 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult<G>,
 {
-    let templates: Rc<RefCell<Vec<(Owner, TemplateResult<G>)>>> = Rc::new(RefCell::new(Vec::new()));
+    let templates = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
@@ -349,5 +349,5 @@ where
         marker.insert_sibling_before(&template.1.node);
     }
 
-    TemplateResult::new(fragment.into())
+    TemplateResult::new(fragment)
 }

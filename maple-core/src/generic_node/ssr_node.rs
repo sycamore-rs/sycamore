@@ -6,31 +6,31 @@ use std::rc::Rc;
 use crate::generic_node::{EventListener, GenericNode};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Node {
+pub enum SsrNode {
     Element(Rc<RefCell<Element>>),
     Comment(Rc<RefCell<Comment>>),
     Text(Rc<RefCell<Text>>),
     Fragment(Rc<RefCell<Fragment>>),
 }
 
-impl Node {
+impl SsrNode {
     fn unwrap_element(&self) -> &Rc<RefCell<Element>> {
         match self {
-            Node::Element(e) => e,
+            SsrNode::Element(e) => e,
             _ => panic!("The node is not an element"),
         }
     }
     fn unwrap_text(&self) -> &Rc<RefCell<Text>> {
         match self {
-            Node::Text(e) => e,
+            SsrNode::Text(e) => e,
             _ => panic!("The node is not a text node"),
         }
     }
 }
 
-impl GenericNode for Node {
+impl GenericNode for SsrNode {
     fn element(tag: &str) -> Self {
-        Node::Element(Rc::new(RefCell::new(Element {
+        SsrNode::Element(Rc::new(RefCell::new(Element {
             name: tag.to_string(),
             attributes: Default::default(),
             children: Default::default(),
@@ -38,15 +38,15 @@ impl GenericNode for Node {
     }
 
     fn text_node(text: &str) -> Self {
-        Node::Text(Rc::new(RefCell::new(Text(text.to_string()))))
+        SsrNode::Text(Rc::new(RefCell::new(Text(text.to_string()))))
     }
 
     fn fragment() -> Self {
-        Node::Fragment(Default::default())
+        SsrNode::Fragment(Default::default())
     }
 
     fn empty() -> Self {
-        Node::Comment(Default::default())
+        SsrNode::Comment(Default::default())
     }
 
     fn set_attribute(&self, name: &str, value: &str) {
@@ -131,13 +131,13 @@ impl GenericNode for Node {
     }
 }
 
-impl fmt::Display for Node {
+impl fmt::Display for SsrNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Node::Element(x) => write!(f, "{}", x.borrow()),
-            Node::Comment(x) => write!(f, "{}", x.borrow()),
-            Node::Text(x) => write!(f, "{}", x.borrow()),
-            Node::Fragment(x) => write!(f, "{}", x.borrow()),
+            SsrNode::Element(x) => write!(f, "{}", x.borrow()),
+            SsrNode::Comment(x) => write!(f, "{}", x.borrow()),
+            SsrNode::Text(x) => write!(f, "{}", x.borrow()),
+            SsrNode::Fragment(x) => write!(f, "{}", x.borrow()),
         }
     }
 }
@@ -184,7 +184,7 @@ impl fmt::Display for Text {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Fragment(Vec<Node>);
+pub struct Fragment(Vec<SsrNode>);
 
 impl fmt::Display for Fragment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -1,67 +1,10 @@
-#[cfg(feature = "dom")]
-pub mod dom_node;
-#[cfg(feature = "ssr")]
-pub mod ssr_node;
-
-#[cfg(feature = "dom")]
-pub use dom_node::*;
-#[cfg(feature = "ssr")]
-pub use ssr_node::*;
-
 use std::cell::RefCell;
-use std::fmt::Debug;
-use std::rc::Rc;
 
 use ref_cast::RefCast;
-use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{Element, Event, HtmlElement, Node};
+use wasm_bindgen::{prelude::*, JsCast};
+use web_sys::{Element, Event, Node, Text};
 
-use crate::prelude::*;
-
-pub type EventListener = dyn Fn(Event);
-
-/// Abstraction over a rendering backend (e.g. [`DomNode`] or [`SsrNode`]).
-pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
-    fn element(tag: &str) -> Self;
-    fn text_node(text: &str) -> Self;
-    fn fragment() -> Self;
-    fn marker() -> Self;
-    fn set_attribute(&self, name: &str, value: &str);
-    fn append_child(&self, child: &Self);
-    fn insert_before_self(&self, new_node: &Self);
-    fn insert_child_before(&self, newNode: &Self, referenceNode: Option<&Self>);
-    fn remove_child(&self, child: &Self);
-    fn remove_self(&self);
-    fn replace_child(&self, old: &Self, new: &Self);
-    fn insert_sibling_before(&self, child: &Self);
-    fn parent_node(&self) -> Option<Self>;
-    fn next_sibling(&self) -> Option<Self>;
-
-    /// TODO: remove node on Drop.
-    fn remove_self(&self);
-
-    /// Add a [`EventListener`] to the event name.
-    fn event(&self, name: &str, handler: Box<EventListener>);
-    fn update_text(&self, text: &str);
-
-    /// Append an item that implements [`Render`] and automatically updates the DOM inside an effect.
-    fn append_render(&self, child: Box<dyn Fn() -> Box<dyn Render<Self>>>) {
-        let parent = self.clone();
-
-        let node = create_effect_initial(cloned!((parent) => move || {
-            let node = RefCell::new(child().render());
-
-            let effect = cloned!((node) => move || {
-                let new_node = child().update_node(&parent, &node.borrow());
-                *node.borrow_mut() = new_node;
-            });
-
-            (Rc::new(effect), node)
-        }));
-
-        parent.append_child(&node.borrow());
-    }
-}
+use crate::generic_node::{EventListener, GenericNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, RefCast)]
 #[repr(transparent)]
@@ -129,7 +72,7 @@ impl GenericNode for DomNode {
         }
     }
 
-    fn marker() -> Self {
+    fn empty() -> Self {
         DomNode {
             node: document().create_comment("").into(),
         }
@@ -146,9 +89,7 @@ impl GenericNode for DomNode {
         self.node.append_child(&child.node).unwrap();
     }
 
-    fn insert_before_self(&self, new_node: &Self) {}
-
-    fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
+    fn insert_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
             .insert_before(&new_node.node, reference_node.map(|n| &n.node))
             .unwrap();
@@ -156,10 +97,6 @@ impl GenericNode for DomNode {
 
     fn remove_child(&self, child: &Self) {
         self.node.remove_child(&child.node).unwrap();
-    }
-
-    fn remove_self(&self) {
-        self.node.unchecked_ref::<HtmlElement>().remove();
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
@@ -181,13 +118,30 @@ impl GenericNode for DomNode {
         self.node.next_sibling().map(|node| Self { node })
     }
 
+    fn remove_self(&self) {
+        self.node.unchecked_ref::<Element>().remove();
+    }
+
     fn event(&self, name: &str, handler: Box<EventListener>) {
-        crate::internal::event_internal(self.node.unchecked_ref(), name, handler)
+        type EventListener = dyn Fn(Event);
+
+        thread_local! {
+            /// A global event listener pool to prevent [`Closure`]s from being deallocated.
+            /// TODO: remove events when elements are detached.
+            static EVENT_LISTENERS: RefCell<Vec<Closure<EventListener>>> = RefCell::new(Vec::new());
+        }
+
+        let closure = Closure::wrap(handler);
+        self.node
+            .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
+            .unwrap();
+
+        EVENT_LISTENERS.with(|event_listeners| event_listeners.borrow_mut().push(closure));
     }
 
     fn update_text(&self, text: &str) {
         self.node
-            .dyn_ref::<HtmlElement>()
+            .dyn_ref::<Text>()
             .unwrap()
             .set_text_content(Some(text));
     }

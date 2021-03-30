@@ -52,7 +52,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
         self.0.borrow().clone()
     }
 
-    /// Sets the [`NodeRef`] with the specified [`Node`].
+    /// Sets the [`NodeRef`] with the specified [`GenericNode`].
     pub fn set(&self, node: G) {
         *self.0.borrow_mut() = Some(node);
     }

@@ -39,6 +39,15 @@ version = "0.3"
 criterion = {version = "0.3", features = ["html_reports"]}
 wasm-bindgen-test = "0.3"
 
+[features]
+default = ["dom"]
+dom = []
+ssr = ["html-escape"]
+
 [[bench]]
 harness = false
 name = "reactivity"
+
+[package.metadata.docs.rs]
+all-features = true
+default-target = "wasm32-unknown-unknown"
