@@ -108,7 +108,10 @@ impl ToTokens for Element {
                     HtmlTree::Text(text) => match text {
                         Text::Text(_) => {
                             quote_spanned! { text.span()=>
-                                ::maple_core::generic_node::GenericNode::update_text(&element, &#text);
+                                ::maple_core::generic_node::GenericNode::append_child(
+                                    &element, 
+                                    &::maple_core::generic_node::GenericNode::text_node(#text),
+                                );
                             }
                         }
                         Text::Splice(_, _) => {
