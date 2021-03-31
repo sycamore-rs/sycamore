@@ -1,5 +1,22 @@
 # Changelog
 
+## ✨ **0.4.1** _(2021-03-31)_
+
+#### Changelog
+
+- #### 🛠 Fixes
+
+  - Fix `Keyed` iteration (swapping and inserting not at the end) [[@lukechu10], [#73](https://github.com/lukechu10/maple/pull/73)]
+
+- #### 📃 Documentation Fixes
+
+  - Fix typo in `README.md` [[@iwburns], [#64](https://github.com/lukechu10/maple/pull/64)]]
+  - Add discord server link to issue template [[@lukechu10], [#68](https://github.com/lukechu10/maple/pull/68)]
+
+- #### 🎁 Example Fixes
+
+  - Fix filter links in TodoMVC example [[@lukechu10], [#65](https://github.com/lukechu10/maple/pull/65)]
+
 ## ✨ **0.4.0** _(2021-03-25)_
 
 #### Changelog
@@ -100,5 +117,6 @@
   - Added `template!` macro.
   - Added reactivity primitives.
 
-[@Kestrer]: https://github.com/Kestrer
+[@iwburns]: https://github.com/iwburns
+[@kestrer]: https://github.com/Kestrer
 [@lukechu10]: https://github.com/lukechu10
