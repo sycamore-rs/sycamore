@@ -79,7 +79,7 @@ fn interpolation() {
 }
 
 #[wasm_bindgen_test]
-fn reactive() {
+fn reactive_text() {
     let count = Signal::new(0);
 
     let node = cloned!((count) => template! {
@@ -94,6 +94,24 @@ fn reactive() {
 
     count.set(1);
     assert_eq!(p.text_content().unwrap(), "1");
+}
+
+#[wasm_bindgen_test]
+fn reactive_attribute() {
+    let count = Signal::new(0);
+
+    let node = cloned!((count) => template! {
+        span(attribute=count.get())
+    });
+
+    render_to(|| node, &test_div());
+
+    let span = document().query_selector("span").unwrap().unwrap();
+
+    assert_eq!(span.get_attribute("attribute").unwrap(), "0");
+
+    count.set(1);
+    assert_eq!(span.get_attribute("attribute").unwrap(), "1");
 }
 
 #[wasm_bindgen_test]

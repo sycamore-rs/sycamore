@@ -5,8 +5,7 @@ use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
 use crate::reactive::VecDiff;
-use crate::TemplateResult;
-use crate::{internal::*, TemplateList};
+use crate::{TemplateList, TemplateResult};
 
 /// Trait for describing how something should be rendered into DOM nodes.
 pub trait Render<G: GenericNode> {
@@ -52,13 +51,10 @@ impl<G: GenericNode> Render<G> for TemplateList<G> {
             .clone()
             .into_iter()
         {
-            append_render(
-                &fragment,
-                Box::new(move || {
-                    let item = item.clone();
-                    Box::new(item)
-                }),
-            );
+            fragment.append_render(Box::new(move || {
+                let item = item.clone();
+                Box::new(item)
+            }));
         }
 
         fragment

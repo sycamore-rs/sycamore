@@ -61,21 +61,34 @@ impl ToTokens for Element {
                     AttributeType::DomAttribute { name } => {
                         let attribute_name = name.to_string();
                         set_attributes.push(quote_spanned! { expr_span=>
-                            ::maple_core::internal::attr(
-                                ::std::convert::AsRef::as_ref(&element),
-                                #attribute_name,
-                                ::std::boxed::Box::new(move || ::std::format!("{}", #expr)),
-                            );
+                            ::maple_core::reactive::create_effect({
+                                let element = ::std::clone::Clone::clone(&element);
+                                move || {
+                                    ::maple_core::generic_node::GenericNode::set_attribute(
+                                        &element,
+                                        #attribute_name,
+                                        &::std::format!("{}", #expr),
+                                    );
+                                }
+                            });
                         });
                     }
                     AttributeType::Event { name } => {
+                        // TODO: Should events be reactive?
                         set_event_listeners.push(quote_spanned! { expr_span=>
-                            ::maple_core::internal::event(&element, #name, ::std::boxed::Box::new(#expr));
+                            ::maple_core::generic_node::GenericNode::event(
+                                &element,
+                                #name,
+                                ::std::boxed::Box::new(#expr),
+                            );
                         });
                     }
                     AttributeType::Ref => {
                         set_noderefs.push(quote_spanned! { expr_span=>
-                            ::maple_core::internal::set_noderef(&element, #expr);
+                            ::maple_core::noderef::NodeRef::set(
+                                &#expr,
+                                ::std::clone::Clone::clone(&element),
+                            );
                         });
                     }
                 }
@@ -87,22 +100,25 @@ impl ToTokens for Element {
             for child in &children.body {
                 let quoted = match child {
                     HtmlTree::Component(component) => quote_spanned! { component.span()=>
-                        ::maple_core::internal::append(&element, &#component);
+                        ::maple_core::generic_node::GenericNode::append_child(&element, &#component);
                     },
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
-                        ::maple_core::internal::append(&element, &#element);
+                        ::maple_core::generic_node::GenericNode::append_child(&element, &#element);
                     },
                     HtmlTree::Text(text) => match text {
                         Text::Text(_) => {
                             quote_spanned! { text.span()=>
-                                ::maple_core::internal::append_static_text(&element, &#text);
+                                ::maple_core::generic_node::GenericNode::update_text(&element, &#text);
                             }
                         }
                         Text::Splice(_, _) => {
                             quote_spanned! { text.span()=>
-                                ::maple_core::internal::append_render(&element, ::std::boxed::Box::new(move || {
-                                    ::std::boxed::Box::new(#text)
-                                }));
+                                ::maple_core::generic_node::GenericNode::append_render(
+                                    &element,
+                                    ::std::boxed::Box::new(move || {
+                                        ::std::boxed::Box::new(#text)
+                                    }),
+                                );
                             }
                         }
                     },
@@ -152,7 +168,7 @@ impl ToTokens for TagName {
         }
 
         let quoted = quote! {
-            ::maple_core::internal::element(#tag_str)
+            ::maple_core::generic_node::GenericNode::element(#tag_str)
         };
 
         tokens.extend(quoted);

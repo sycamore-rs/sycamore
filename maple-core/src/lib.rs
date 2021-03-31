@@ -22,8 +22,6 @@ use prelude::SignalVec;
 pub mod flow;
 pub mod generic_node;
 #[doc(hidden)]
-pub mod internal;
-#[doc(hidden)]
 pub mod macros;
 pub mod noderef;
 pub mod reactive;
