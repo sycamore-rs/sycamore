@@ -68,7 +68,10 @@ fn hello_world_noderef() {
     render_to(|| node, &test_div());
 
     assert_eq!(
-        &p_ref.get().unchecked_into::<HtmlElement>().outer_html(),
+        &p_ref
+            .get::<DomNode>()
+            .unchecked_into::<HtmlElement>()
+            .outer_html(),
         "<p>Hello World!</p>"
     );
 }
@@ -143,5 +146,8 @@ fn noderefs() {
 
     let input_ref = document().query_selector("input").unwrap().unwrap();
 
-    assert_eq!(Node::from(input_ref), noderef.get().unchecked_into());
+    assert_eq!(
+        Node::from(input_ref),
+        noderef.get::<DomNode>().unchecked_into()
+    );
 }
