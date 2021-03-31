@@ -3,7 +3,7 @@ pub mod non_keyed;
 
 use maple_core::prelude::*;
 use wasm_bindgen_test::*;
-use web_sys::{Document, Node, Window};
+use web_sys::{Document, HtmlElement, Node, Window};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -48,13 +48,28 @@ fn hello_world() {
     render_to(|| node, &test_div());
 
     assert_eq!(
-        document()
+        &document()
             .query_selector("p")
             .unwrap()
             .unwrap()
-            .text_content()
-            .unwrap(),
-        "Hello World!"
+            .outer_html(),
+        "<p>Hello World!</p>"
+    );
+}
+
+#[wasm_bindgen_test]
+fn hello_world_noderef() {
+    let p_ref = NodeRef::new();
+
+    let node = template! {
+        p(ref=p_ref) { "Hello World!" }
+    };
+
+    render_to(|| node, &test_div());
+
+    assert_eq!(
+        &p_ref.get().unchecked_into::<HtmlElement>().outer_html(),
+        "<p>Hello World!</p>"
     );
 }
 
@@ -120,7 +135,7 @@ fn noderefs() {
 
     let node = template! {
         div {
-            input(ref=noderef.clone())
+            input(ref=noderef)
         }
     };
 
@@ -128,5 +143,5 @@ fn noderefs() {
 
     let input_ref = document().query_selector("input").unwrap().unwrap();
 
-    assert_eq!(Node::from(input_ref), noderef.get::<DomNode>().unchecked_into());
+    assert_eq!(Node::from(input_ref), noderef.get().unchecked_into());
 }
