@@ -10,7 +10,7 @@ use std::mem;
 use std::rc::Rc;
 
 use wasm_bindgen::*;
-use web_sys::Element;
+use web_sys::{Element, HtmlElement};
 
 use crate::internal::append;
 use crate::prelude::*;
@@ -55,8 +55,8 @@ pub fn Keyed<T, F: 'static, K: 'static, Key: 'static>(
 where
     F: Fn(T) -> TemplateResult,
     K: Fn(&T) -> Key,
-    Key: Clone + Hash + Eq,
-    T: Clone + PartialEq,
+    Key: Clone + Hash + Eq + std::fmt::Debug,
+    T: Clone + PartialEq + std::fmt::Debug,
 {
     let KeyedProps {
         iterable,
@@ -66,7 +66,7 @@ where
     let iterable = Rc::new(iterable);
     let key_fn = Rc::new(key_fn);
 
-    type TemplateValue<T> = (Owner, T, TemplateResult);
+    type TemplateValue<T> = (Owner, T, TemplateResult, usize /* index */);
 
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
     let templates: Rc<RefCell<HashMap<Key, TemplateValue<T>>>> =
@@ -96,23 +96,26 @@ where
                 let templates = templates.borrow();
                 templates
                     .iter()
-                    .map(|x| ((*x.0).clone(), x.1 .1.clone()))
+                    .map(|x| ((*x.0).clone(), (x.1 .1.clone(), x.1 .3)))
                     .collect()
             };
 
             // Find values that changed by comparing to previous_values.
-            for item in iterable.get().iter() {
+            for (i, item) in iterable.get().iter().enumerate() {
                 let key = key_fn(item);
 
                 let previous_value = previous_values.get(&key);
 
-                if previous_value.is_none() || previous_value.unwrap() != item {
+                if previous_value.is_none()
+                    || previous_value.unwrap().1 != i
+                    || &previous_value.unwrap().0 != item
+                {
                     // value changed, re-render item
 
                     templates
                         .borrow_mut()
                         .get_mut(&key)
-                        .and_then(|(owner, _, _)| {
+                        .and_then(|(owner, _, _, _)| {
                             // destroy old owner
                             let old_owner =
                                 mem::replace(owner, Owner::new() /* placeholder */);
@@ -123,20 +126,42 @@ where
                     let mut new_template = None;
                     let owner = create_root(|| new_template = Some(template(item.clone())));
 
-                    if templates.borrow().get(&key).is_some() {
-                        let (_, _, old_node) = mem::replace(
+                    if templates.borrow().get(&key).is_some() && &previous_value.unwrap().0 != item
+                    {
+                        // Value changed. Re-render node (with same previous key).
+                        let (_, _, old_node, _) = mem::replace(
                             templates.borrow_mut().get_mut(&key).unwrap(),
-                            (owner, item.clone(), new_template.clone().unwrap()),
+                            (owner, item.clone(), new_template.clone().unwrap(), i),
                         );
 
                         let parent = old_node.node.parent_node().unwrap();
                         parent
                             .replace_child(&new_template.unwrap().node, &old_node.node)
                             .unwrap();
+                    } else if templates.borrow().get(&key).is_some()
+                        && templates.borrow().get(&key).unwrap().3 != i
+                    {
+                        // Node was moved in the DOM. Move node to new index.
+                        let node = templates.borrow().get(&key).unwrap().2.node.clone();
+
+                        if let Some(next_item) = iterable.get().get(i + 1) {
+                            let templates = templates.borrow();
+                            let next_node = templates.get(&key_fn(next_item)).unwrap();
+                            next_node
+                                .2
+                                .node
+                                .unchecked_ref::<HtmlElement>()
+                                .before_with_node_1(&node)
+                                .unwrap();
+                        } else {
+                            marker.before_with_node_1(&node).unwrap(); // Move to end.
+                        }
                     } else {
+                        // Create new DOM node.
+                        // FIXME: not all new DOM nodes are at the end.
                         templates.borrow_mut().insert(
                             key.clone(),
-                            (owner, item.clone(), new_template.clone().unwrap()),
+                            (owner, item.clone(), new_template.clone().unwrap(), i),
                         );
 
                         marker
