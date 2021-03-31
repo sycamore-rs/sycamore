@@ -158,17 +158,30 @@ where
                         }
                     } else {
                         // Create new DOM node.
-                        // FIXME: not all new DOM nodes are at the end.
                         templates.borrow_mut().insert(
                             key.clone(),
                             (owner, item.clone(), new_template.clone().unwrap(), i),
                         );
 
-                        marker
-                            .before_with_node_1(
-                                &templates.borrow().get(&key).as_ref().unwrap().2.node,
-                            )
-                            .unwrap();
+                        if let Some(next_item) = iterable.get().get(i + 1) {
+                            let templates = templates.borrow();
+                            if let Some(next_node) = templates.get(&key_fn(next_item)) {
+                                next_node
+                                    .2
+                                    .node
+                                    .unchecked_ref::<HtmlElement>()
+                                    .before_with_node_1(&new_template.unwrap().node)
+                                    .unwrap();
+                            } else {
+                                marker
+                                    .before_with_node_1(&new_template.unwrap().node)
+                                    .unwrap();
+                            }
+                        } else {
+                            marker
+                                .before_with_node_1(&new_template.unwrap().node)
+                                .unwrap();
+                        }
                     }
                 }
             }

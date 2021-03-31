@@ -61,3 +61,32 @@ fn swap_rows() {
     });
     assert_eq!(p.text_content().unwrap(), "321");
 }
+
+#[wasm_bindgen_test]
+fn insert_front() {
+    let count = Signal::new(vec![1, 2, 3]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Keyed(KeyedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |item| *item,
+            })
+        }
+    });
+
+    render_to(|| node, &test_div());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "123");
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.insert(0, 4);
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "4123");
+}
