@@ -1,5 +1,23 @@
 # Changelog
 
+## ✨ **0.4.4** _(2021-04-01)_
+
+#### Changelog
+
+- #### ⚡️ Features
+
+  - Support `'-'` in attribute names. This makes the following syntax valid:
+    ```rust
+    template! {
+        button(aria-hidden="true")
+    }
+    ```
+    [[@lukechu10], [#79](https://github.com/lukechu10/maple/pull/79)]
+
+- #### 🛠 Fixes
+
+  - Delete removed nodes in `Keyed` first before adding new nodes and moving existing nodes [[@lukechu10], [#77](https://github.com/lukechu10/maple/pull/77)]
+
 ## ✨ **0.4.2** _(2021-03-31)_
 
 #### Changelog
