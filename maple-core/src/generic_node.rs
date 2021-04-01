@@ -1,3 +1,5 @@
+//! Abstraction over a rendering backend.
+
 #[cfg(feature = "dom")]
 pub mod dom_node;
 #[cfg(feature = "ssr")]
@@ -18,7 +20,7 @@ use crate::prelude::*;
 
 pub type EventListener = dyn Fn(Event);
 
-/// Abstraction over a rendering backend (e.g. [`DomNode`] or [`SsrNode`]).
+/// Abstraction over a rendering backend.
 ///
 /// You would probably use this trait as a trait bound when you want to accept any rendering backend.
 /// For example, components are often generic over [`GenericNode`] to be able to render to different backends.

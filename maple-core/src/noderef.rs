@@ -1,3 +1,5 @@
+//! References to nodes in templates.
+
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
