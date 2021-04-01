@@ -58,6 +58,13 @@ fn swap_rows() {
         tmp
     });
     assert_eq!(p.text_content().unwrap(), "321");
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.swap(0, 2);
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "123");
 }
 
 #[wasm_bindgen_test]

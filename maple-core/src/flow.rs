@@ -92,13 +92,30 @@ where
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
-            let previous_values: HashMap<_, _> = {
+            #[derive(Debug)]
+            struct PreviousData<T> {
+                value: T,
+                index: usize,
+            }
+
+            let previous_values: HashMap<_, PreviousData<T>> = {
                 let templates = templates.borrow();
                 templates
                     .iter()
-                    .map(|x| ((*x.0).clone(), (x.1 .1.clone(), x.1 .3)))
+                    .map(|x| {
+                        (
+                            (*x.0).clone(),
+                            PreviousData {
+                                value: x.1 .1.clone(),
+                                index: x.1 .3,
+                            },
+                        )
+                    })
                     .collect()
             };
+
+            web_sys::console::log_1(&format!("iterable changed: {:?}", iterable).into());
+            web_sys::console::log_1(&format!("previous_values: {:?}", previous_values).into());
 
             // Find values that changed by comparing to previous_values.
             for (i, item) in iterable.get().iter().enumerate() {
@@ -106,87 +123,93 @@ where
 
                 let previous_value = previous_values.get(&key);
 
-                if previous_value.is_none()
-                    || previous_value.unwrap().1 != i
-                    || &previous_value.unwrap().0 != item
-                {
-                    // value changed, re-render item
-
-                    templates
-                        .borrow_mut()
-                        .get_mut(&key)
-                        .and_then(|(owner, _, _, _)| {
-                            // destroy old owner
-                            let old_owner =
-                                mem::replace(owner, Owner::new() /* placeholder */);
-                            drop(old_owner);
-                            None::<()>
-                        });
+                if previous_value.is_none() {
+                    // Create new DOM node.
 
                     let mut new_template = None;
                     let owner = create_root(|| new_template = Some(template(item.clone())));
 
-                    if templates.borrow().get(&key).is_some() && &previous_value.unwrap().0 != item
-                    {
-                        // Value changed. Re-render node (with same previous key).
-                        let (_, _, old_node, _) = mem::replace(
-                            templates.borrow_mut().get_mut(&key).unwrap(),
-                            (owner, item.clone(), new_template.clone().unwrap(), i),
-                        );
+                    templates.borrow_mut().insert(
+                        key.clone(),
+                        (owner, item.clone(), new_template.clone().unwrap(), i),
+                    );
 
-                        let parent = old_node.node.parent_node().unwrap();
-                        parent
-                            .replace_child(&new_template.unwrap().node, &old_node.node)
-                            .unwrap();
-                    } else if templates.borrow().get(&key).is_some()
-                        && templates.borrow().get(&key).unwrap().3 != i
-                    {
-                        // Node was moved in the DOM. Move node to new index.
-                        let node = templates.borrow().get(&key).unwrap().2.node.clone();
-
-                        if let Some(next_item) = iterable.get().get(i + 1) {
-                            let templates = templates.borrow();
-                            let next_node = templates.get(&key_fn(next_item)).unwrap();
+                    if let Some(next_item) = iterable.get().get(i + 1) {
+                        let templates = templates.borrow();
+                        if let Some(next_node) = templates.get(&key_fn(next_item)) {
                             next_node
                                 .2
                                 .node
                                 .unchecked_ref::<HtmlElement>()
-                                .before_with_node_1(&node)
+                                .before_with_node_1(&new_template.unwrap().node)
                                 .unwrap();
-                        } else {
-                            marker.before_with_node_1(&node).unwrap(); // Move to end.
-                        }
-                    } else {
-                        // Create new DOM node.
-                        templates.borrow_mut().insert(
-                            key.clone(),
-                            (owner, item.clone(), new_template.clone().unwrap(), i),
-                        );
-
-                        if let Some(next_item) = iterable.get().get(i + 1) {
-                            let templates = templates.borrow();
-                            if let Some(next_node) = templates.get(&key_fn(next_item)) {
-                                next_node
-                                    .2
-                                    .node
-                                    .unchecked_ref::<HtmlElement>()
-                                    .before_with_node_1(&new_template.unwrap().node)
-                                    .unwrap();
-                            } else {
-                                marker
-                                    .before_with_node_1(&new_template.unwrap().node)
-                                    .unwrap();
-                            }
                         } else {
                             marker
                                 .before_with_node_1(&new_template.unwrap().node)
                                 .unwrap();
                         }
+                    } else {
+                        marker
+                            .before_with_node_1(&new_template.unwrap().node)
+                            .unwrap();
                     }
+                } else if match previous_value {
+                    Some(prev) => prev.index,
+                    _ => unreachable!(),
+                } != i
+                {
+                    // Location changed, move from old location to new location
+                    // Node was moved in the DOM. Move node to new index.
+
+                    let node = templates.borrow().get(&key).unwrap().2.node.clone();
+
+                    if let Some(next_item) = iterable.get().get(i + 1) {
+                        let templates = templates.borrow();
+                        let next_node = templates.get(&key_fn(next_item)).unwrap();
+                        next_node
+                            .2
+                            .node
+                            .unchecked_ref::<HtmlElement>()
+                            .before_with_node_1(&node)
+                            .unwrap(); // Move to before next node
+                    } else {
+                        marker.before_with_node_1(&node).unwrap(); // Move to end.
+                    }
+
+                    templates.borrow_mut().get_mut(&key).unwrap().3 = i;
+                } else if match previous_value {
+                    Some(prev) => &prev.value,
+                    _ => unreachable!(),
+                } != item
+                {
+                    // Value changed. Re-render node (with same previous key and index).
+
+                    // Destroy old template owner.
+                    let mut templates = templates.borrow_mut();
+                    let (old_owner, _, _, _) = templates
+                        .get_mut(&key)
+                        .expect("previous value is different but must be valid");
+                    let old_owner = mem::replace(old_owner, Owner::new() /* placeholder */);
+                    drop(old_owner);
+
+                    let mut new_template = None;
+                    let owner = create_root(|| new_template = Some(template(item.clone())));
+
+                    let (_, _, old_node, _) = mem::replace(
+                        templates.get_mut(&key).unwrap(),
+                        (owner, item.clone(), new_template.clone().unwrap(), i),
+                    );
+
+                    let parent = old_node.node.parent_node().unwrap();
+                    parent
+                        .replace_child(&new_template.unwrap().node, &old_node.node)
+                        .unwrap();
                 }
             }
 
             if templates.borrow().len() > iterable.get().len() {
+                // remove extra templates
+
                 let mut templates = templates.borrow_mut();
                 let new_keys: HashSet<Key> =
                     iterable.get().iter().map(|item| key_fn(item)).collect();
