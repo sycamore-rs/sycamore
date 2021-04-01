@@ -265,7 +265,7 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult<G>,
 {
-    let templates: Rc<RefCell<Vec<(Owner, TemplateResult<G>)>>> = Rc::new(RefCell::new(Vec::new()));
+    let templates: Rc<RefCell<Vec<(Owner, TemplateResult<G>)>>> = Default::default();
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
