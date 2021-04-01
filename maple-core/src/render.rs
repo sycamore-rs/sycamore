@@ -70,7 +70,7 @@ impl<G: GenericNode> Render<G> for TemplateList<G> {
                     let first = templates.borrow().first().map(|x| x.node.clone());
 
                     for value in values {
-                        parent.insert_node_before(&value.node, first.as_ref());
+                        parent.insert_child_before(&value.node, first.as_ref());
                     }
 
                     for template in templates.borrow().iter() {
@@ -78,7 +78,7 @@ impl<G: GenericNode> Render<G> for TemplateList<G> {
                     }
                 }
                 VecDiff::Insert { index, value } => {
-                    parent.insert_node_before(
+                    parent.insert_child_before(
                         &value.node,
                         templates
                             .borrow()
@@ -101,7 +101,7 @@ impl<G: GenericNode> Render<G> for TemplateList<G> {
                     parent.replace_child(child2, child1);
                 }
                 VecDiff::Push { value } => {
-                    parent.insert_node_before(
+                    parent.insert_child_before(
                         &value.node,
                         templates
                             .borrow()

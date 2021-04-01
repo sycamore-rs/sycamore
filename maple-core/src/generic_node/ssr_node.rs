@@ -45,7 +45,7 @@ impl GenericNode for SsrNode {
         SsrNode::Fragment(Default::default())
     }
 
-    fn empty() -> Self {
+    fn marker() -> Self {
         SsrNode::Comment(Default::default())
     }
 
@@ -64,7 +64,11 @@ impl GenericNode for SsrNode {
             .push(child.clone());
     }
 
-    fn insert_before(&self, new_node: &Self, reference_node: Option<&Self>) {
+    fn insert_before_self(&self, _new_node: &Self) {
+        todo!();
+    }
+
+    fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         let mut ele = self.unwrap_element().borrow_mut();
         let children = &mut ele.children.0;
         match reference_node {
@@ -75,7 +79,7 @@ impl GenericNode for SsrNode {
                         .iter()
                         .enumerate()
                         .find_map(|(i, child)| (child == reference).then(|| i))
-                        .expect("Couldn't find reference node"),
+                        .expect("couldn't find reference node"),
                     reference.clone(),
                 );
             }
@@ -84,15 +88,14 @@ impl GenericNode for SsrNode {
 
     fn remove_child(&self, child: &Self) {
         let mut ele = self.unwrap_element().borrow_mut();
-        let index = ele.children
+        let index = ele
+            .children
             .0
             .iter()
             .enumerate()
             .find_map(|(i, c)| (c == child).then(|| i))
             .expect("Couldn't find child");
-        ele.children.0.remove(
-            index,
-        );
+        ele.children.0.remove(index);
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
@@ -123,7 +126,7 @@ impl GenericNode for SsrNode {
     }
 
     fn event(&self, _name: &str, _handler: Box<EventListener>) {
-        // Don't do anything
+        // Don't do anything. Events are attached on client side.
     }
 
     fn update_text(&self, text: &str) {

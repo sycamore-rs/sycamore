@@ -9,9 +9,6 @@ use std::hash::Hash;
 use std::mem;
 use std::rc::Rc;
 
-use wasm_bindgen::*;
-use web_sys::HtmlElement;
-
 use crate::generic_node::GenericNode;
 use crate::prelude::*;
 use crate::reactive::Owner;
@@ -217,9 +214,7 @@ where
                     );
 
                     let parent = old_node.node.parent_node().unwrap();
-                    parent
-                        .replace_child(&new_template.unwrap().node, &old_node.node)
-                        .unwrap();
+                    parent.replace_child(&new_template.unwrap().node, &old_node.node);
                 }
             }
         }
@@ -270,14 +265,14 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult<G>,
 {
-    let templates = Rc::new(RefCell::new(Vec::new()));
+    let templates: Rc<RefCell<Vec<(Owner, TemplateResult<G>)>>> = Rc::new(RefCell::new(Vec::new()));
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
 
     let fragment = G::fragment();
 
-    let marker = G::empty();
+    let marker = G::marker();
 
     fragment.append_child(&marker);
 
@@ -289,7 +284,7 @@ where
             if props.iterable.get().is_empty() {
                 for (owner, template) in templates.borrow_mut().drain(..) {
                     drop(owner); // destroy owner
-                    template.node.unchecked_into::<HtmlElement>().remove();
+                    template.node.remove_self();
                 }
                 return;
             }

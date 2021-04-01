@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use ref_cast::RefCast;
 use wasm_bindgen::{prelude::*, JsCast};
-use web_sys::{Element, Event, Node, Text};
+use web_sys::{Element, Event, HtmlElement, Node, Text};
 
 use crate::generic_node::{EventListener, GenericNode};
 
@@ -72,7 +72,7 @@ impl GenericNode for DomNode {
         }
     }
 
-    fn empty() -> Self {
+    fn marker() -> Self {
         DomNode {
             node: document().create_comment("").into(),
         }
@@ -89,7 +89,14 @@ impl GenericNode for DomNode {
         self.node.append_child(&child.node).unwrap();
     }
 
-    fn insert_before(&self, new_node: &Self, reference_node: Option<&Self>) {
+    fn insert_before_self(&self, new_node: &Self) {
+        self.node
+            .unchecked_ref::<HtmlElement>()
+            .before_with_node_1(&new_node.node)
+            .unwrap();
+    }
+
+    fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
             .insert_before(&new_node.node, reference_node.map(|n| &n.node))
             .unwrap();

@@ -13,6 +13,7 @@ use std::fmt::Debug;
 use std::rc::Rc;
 
 use ref_cast::RefCast;
+use wasm_bindgen::prelude::*;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{Element, Event, HtmlElement, Node};
 
@@ -31,7 +32,6 @@ pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     fn insert_before_self(&self, new_node: &Self);
     fn insert_child_before(&self, newNode: &Self, referenceNode: Option<&Self>);
     fn remove_child(&self, child: &Self);
-    fn remove_self(&self);
     fn replace_child(&self, old: &Self, new: &Self);
     fn insert_sibling_before(&self, child: &Self);
     fn parent_node(&self) -> Option<Self>;
@@ -146,7 +146,7 @@ impl GenericNode for DomNode {
         self.node.append_child(&child.node).unwrap();
     }
 
-    fn insert_before_self(&self, new_node: &Self) {}
+    fn insert_before_self(&self, _new_node: &Self) {}
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
@@ -182,7 +182,18 @@ impl GenericNode for DomNode {
     }
 
     fn event(&self, name: &str, handler: Box<EventListener>) {
-        crate::internal::event_internal(self.node.unchecked_ref(), name, handler)
+        thread_local! {
+            /// A global event listener pool to prevent [`Closure`]s from being deallocated.
+            /// TODO: remove events when elements are detached.
+            static EVENT_LISTENERS: RefCell<Vec<Closure<EventListener>>> = RefCell::new(Vec::new());
+        }
+
+        let closure = Closure::wrap(handler);
+        self.node
+            .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
+            .unwrap();
+
+        EVENT_LISTENERS.with(|event_listeners| event_listeners.borrow_mut().push(closure));
     }
 
     fn update_text(&self, text: &str) {

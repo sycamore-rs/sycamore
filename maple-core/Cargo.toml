@@ -14,7 +14,7 @@ version = "0.4.3"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-html-escape = "0.2.7"
+html-escape = {version = "0.2.7", optional = true}
 maple-core-macro = {path = "../maple-core-macro", version = "0.4.3"}
 ref-cast = "1.0"
 serde = {version = "1.0", optional = true}
@@ -35,7 +35,6 @@ features = [
 ]
 optional = true
 version = "0.3"
-version = "0.3.48"
 
 [dev-dependencies]
 criterion = {version = "0.3", features = ["html_reports"]}
