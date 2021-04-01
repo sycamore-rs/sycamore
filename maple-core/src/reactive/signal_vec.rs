@@ -4,6 +4,7 @@ use std::rc::Rc;
 use crate::{TemplateList, TemplateResult};
 
 use super::*;
+use crate::generic_node::GenericNode;
 
 /// A reactive [`Vec`].
 /// This is more effective than using a [`Signal<Vec>`](Signal) because it allows fine grained
@@ -156,9 +157,9 @@ impl<T: 'static> SignalVec<T> {
     }
 }
 
-impl SignalVec<TemplateResult> {
+impl<G: GenericNode> SignalVec<TemplateResult<G>> {
     /// Create a [`TemplateList`] from the `SignalVec`.
-    pub fn template_list(&self) -> TemplateList {
+    pub fn template_list(&self) -> TemplateList<G> {
         TemplateList::from(self.clone())
     }
 }

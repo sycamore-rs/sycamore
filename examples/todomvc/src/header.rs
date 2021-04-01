@@ -4,10 +4,10 @@ use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 
 use crate::AppState;
 
-pub fn Header(app_state: AppState) -> TemplateResult {
+pub fn Header<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
     let value = Signal::new(String::new());
 
-    let input_ref = NodeRef::new();
+    let input_ref = NodeRef::<G>::new();
 
     let handle_input = cloned!((value) => move |event: Event| {
         let target: HtmlInputElement = event.target().unwrap().unchecked_into();
@@ -24,7 +24,7 @@ pub fn Header(app_state: AppState) -> TemplateResult {
             if !task.is_empty() {
                 app_state.add_todo(task);
                 value.set("".to_string());
-                input_ref.get().unchecked_into::<HtmlInputElement>().set_value(""); // FIXME: bind to value property instead of attribute
+                input_ref.get::<DomNode>().unchecked_into::<HtmlInputElement>().set_value(""); // FIXME: bind to value property instead of attribute
             }
         }
     });

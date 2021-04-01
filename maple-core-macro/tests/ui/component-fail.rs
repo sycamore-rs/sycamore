@@ -2,17 +2,17 @@
 
 use maple_core::prelude::*;
 
-fn Component() -> TemplateResult {
+fn Component<G: GenericNode>() -> TemplateResult<G> {
     template! {
         div
     }
 }
 
-fn compile_fail() {
-    template! { UnknownComponent() };
+fn compile_fail<G: GenericNode>() {
+    let _: TemplateResult<G> = template! { UnknownComponent() };
 
-    template! { Component };
-    template! { Component(1) };
+    let _: TemplateResult<G> = template! { Component };
+    let _: TemplateResult<G> = template! { Component(1) };
 }
 
 fn main() {}

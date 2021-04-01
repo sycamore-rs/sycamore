@@ -2,7 +2,7 @@ use maple_core::prelude::*;
 
 use crate::{AppState, Filter};
 
-pub fn Footer(app_state: AppState) -> TemplateResult {
+pub fn Footer<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
     let items_text = cloned!((app_state) => move || {
         match app_state.todos_left() {
             1 => "item",

@@ -1,13 +1,13 @@
 use maple_core::prelude::*;
 
-fn compile_fail() {
-    template! { p.my-class#id };
+fn compile_fail<G: GenericNode>() {
+    let _: TemplateResult<G> = template! { p.my-class#id };
 
-    template! { button(disabled) };
-    template! { button(on:click) };
-    template! { button(unknown:directive="123") };
+    let _: TemplateResult<G> = template! { button(disabled) };
+    let _: TemplateResult<G> = template! { button(on:click) };
+    let _: TemplateResult<G> = template! { button(unknown:directive="123") };
 
-    template! { button(a.b.c="123") };
+    let _: TemplateResult<G> = template! { button(a.b.c="123") };
 }
 
 fn main() {}
