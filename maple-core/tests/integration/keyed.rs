@@ -60,6 +60,13 @@ fn swap_rows() {
         tmp
     });
     assert_eq!(p.text_content().unwrap(), "321");
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.swap(0, 2);
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "123");
 }
 
 #[wasm_bindgen_test]
@@ -89,4 +96,36 @@ fn insert_front() {
         tmp
     });
     assert_eq!(p.text_content().unwrap(), "4123");
+}
+
+#[wasm_bindgen_test]
+fn nested_reactivity() {
+    let count = Signal::new(vec![1, 2, 3].into_iter().map(Signal::new).collect());
+
+    let node = cloned!((count) => template! {
+        ul {
+            Keyed(KeyedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item.get()) }
+                },
+                key: |item| *item.get(),
+            })
+        }
+    });
+
+    render_to(|| node, &test_div());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "123");
+
+    count.get()[0].set(4);
+    assert_eq!(p.text_content().unwrap(), "423");
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.push(Signal::new(5));
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "4235");
 }
