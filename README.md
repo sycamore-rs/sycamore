@@ -28,7 +28,7 @@ fn main() {
         }
     };
 
-    render(root);
+    render(|| root);
 }
 ```
 
@@ -51,7 +51,7 @@ template! {
 
 // Attributes (including classes and ids) can also be specified.
 template! {
-    p(class="my-class", id="my-paragraph")
+    p(class="my-class", id="my-paragraph", aria-label="My paragraph")
 };
 
 template! {

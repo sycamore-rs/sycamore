@@ -1,3 +1,5 @@
+use std::fmt;
+
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -6,7 +8,7 @@ use syn::{parenthesized, Expr, Ident, Result, Token};
 
 pub enum AttributeType {
     /// Syntax: `name`.
-    DomAttribute { name: String },
+    DomAttribute { name: AttributeName },
     /// Syntax: `on:name`.
     Event { name: String },
     /// Syntax: `ref`.
@@ -15,7 +17,7 @@ pub enum AttributeType {
 
 impl Parse for AttributeType {
     fn parse(input: ParseStream) -> Result<Self> {
-        let ident = input.call(Ident::parse_any)?;
+        let ident: AttributeName = input.parse()?;
         let ident_str = ident.to_string();
 
         if ident_str == "ref" {
@@ -30,12 +32,12 @@ impl Parse for AttributeType {
                     })
                 }
                 _ => Err(syn::Error::new_spanned(
-                    ident,
+                    ident.tag,
                     format!("unknown directive `{}`", ident_str),
                 )),
             }
         } else {
-            Ok(Self::DomAttribute { name: ident_str })
+            Ok(Self::DomAttribute { name: ident })
         }
     }
 }
@@ -72,5 +74,36 @@ impl Parse for AttributeList {
             paren_token,
             attributes,
         })
+    }
+}
+
+/// Represents a html element tag (e.g. `div`, `custom-element` etc...).
+pub struct AttributeName {
+    tag: Ident,
+    extended: Vec<(Token![-], Ident)>,
+}
+
+impl Parse for AttributeName {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let tag = input.call(Ident::parse_any)?;
+        let mut extended = Vec::new();
+        while input.peek(Token![-]) {
+            extended.push((input.parse()?, input.parse()?));
+        }
+
+        Ok(Self { tag, extended })
+    }
+}
+
+impl fmt::Display for AttributeName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let AttributeName { tag, extended } = self;
+
+        write!(f, "{}", tag.to_string())?;
+        for (_, ident) in extended {
+            write!(f, "-{}", ident)?;
+        }
+
+        Ok(())
     }
 }

@@ -11,6 +11,7 @@ fn compile_pass() {
     template! { p(class="my-class", id="my-id") };
 
     template! { button(class="my-btn", on:click=|_| {}) };
+    template! { button(class="my-btn", aria-hidden="true") };
 }
 
 fn main() {}
