@@ -81,7 +81,7 @@ pub fn render_to(
     template_result: impl FnOnce() -> TemplateResult<generic_node::DomNode> + 'static,
     parent: &web_sys::Node,
 ) {
-    let owner = reactive::create_root(move || {
+    let owner = reactive::create_root(|| {
         parent
             .append_child(&template_result().node.inner_element())
             .unwrap();
@@ -101,7 +101,11 @@ pub fn render_to(
 pub fn render_to_string(
     template_result: impl FnOnce() -> TemplateResult<generic_node::SsrNode> + 'static,
 ) -> String {
-    format!("{}", template_result().inner_element())
+    let mut ret = None;
+    let _owner =
+        reactive::create_root(|| ret = Some(format!("{}", template_result().inner_element())));
+
+    ret.unwrap()
 }
 
 /// The maple prelude.
