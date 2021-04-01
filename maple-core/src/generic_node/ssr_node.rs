@@ -64,10 +64,6 @@ impl GenericNode for SsrNode {
             .push(child.clone());
     }
 
-    fn insert_before_self(&self, _new_node: &Self) {
-        todo!();
-    }
-
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         let mut ele = self.unwrap_element().borrow_mut();
         let children = &mut ele.children.0;
@@ -129,7 +125,7 @@ impl GenericNode for SsrNode {
         // Don't do anything. Events are attached on client side.
     }
 
-    fn update_text(&self, text: &str) {
+    fn update_inner_text(&self, text: &str) {
         self.unwrap_text().borrow_mut().0 = text.to_string();
     }
 }

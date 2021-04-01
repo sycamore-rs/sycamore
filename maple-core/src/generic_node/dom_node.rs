@@ -89,13 +89,6 @@ impl GenericNode for DomNode {
         self.node.append_child(&child.node).unwrap();
     }
 
-    fn insert_before_self(&self, new_node: &Self) {
-        self.node
-            .unchecked_ref::<HtmlElement>()
-            .before_with_node_1(&new_node.node)
-            .unwrap();
-    }
-
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
             .insert_before(&new_node.node, reference_node.map(|n| &n.node))
@@ -146,7 +139,7 @@ impl GenericNode for DomNode {
         EVENT_LISTENERS.with(|event_listeners| event_listeners.borrow_mut().push(closure));
     }
 
-    fn update_text(&self, text: &str) {
+    fn update_inner_text(&self, text: &str) {
         self.node
             .dyn_ref::<Text>()
             .unwrap()

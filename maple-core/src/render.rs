@@ -33,7 +33,7 @@ impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
     fn update_node(&self, _parent: &G, node: &G) -> G {
         // replace `textContent` of `node` instead of recreating
 
-        node.update_text(&format!("{}", self));
+        node.update_inner_text(&format!("{}", self));
 
         node.clone()
     }

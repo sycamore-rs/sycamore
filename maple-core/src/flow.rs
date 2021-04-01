@@ -163,12 +163,12 @@ where
                             next_node
                                 .2
                                 .node
-                                .insert_before_self(&new_template.unwrap().node);
+                                .insert_sibling_before(&new_template.unwrap().node);
                         } else {
-                            marker.insert_before_self(&new_template.unwrap().node);
+                            marker.insert_sibling_before(&new_template.unwrap().node);
                         }
                     } else {
-                        marker.insert_before_self(&new_template.unwrap().node);
+                        marker.insert_sibling_before(&new_template.unwrap().node);
                     }
                 } else if match previous_value {
                     Some(prev) => prev.index,
@@ -183,9 +183,9 @@ where
                     if let Some(next_item) = iterable.get().get(i + 1) {
                         let templates = templates.borrow();
                         let next_node = templates.get(&key_fn(next_item)).unwrap();
-                        next_node.2.node.insert_before_self(&node); // Move to before next node
+                        next_node.2.node.insert_sibling_before(&node); // Move to before next node
                     } else {
-                        marker.insert_before_self(&node); // Move to end.
+                        marker.insert_sibling_before(&node); // Move to end.
                     }
 
                     templates.borrow_mut().get_mut(&key).unwrap().3 = i;
