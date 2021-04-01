@@ -1,5 +1,13 @@
 # Changelog
 
+## ✨ **0.4.2** _(2021-03-31)_
+
+#### Changelog
+
+- #### 🛠 Fixes
+
+  - Fix `Keyed` iteration (hopefully for the last time) when moving nodes already inserted [[@lukechu10], [#75](https://github.com/lukechu10/maple/pull/75)]
+
 ## ✨ **0.4.1** _(2021-03-31)_
 
 #### Changelog
@@ -118,5 +126,5 @@
   - Added reactivity primitives.
 
 [@iwburns]: https://github.com/iwburns
-[@kestrer]: https://github.com/Kestrer
+[@Kestrer]: https://github.com/Kestrer
 [@lukechu10]: https://github.com/lukechu10
