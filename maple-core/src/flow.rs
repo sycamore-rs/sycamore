@@ -92,6 +92,44 @@ where
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
+            // Fast path for empty array. Remove all nodes from DOM in templates.
+            if iterable.get().is_empty() {
+                for (_, (owner, _value, template, _i)) in templates.borrow_mut().drain() {
+                    drop(owner); // destroy owner
+                    template.node.unchecked_into::<HtmlElement>().remove();
+                }
+                return;
+            }
+
+            // Remove old nodes not in iterable.
+            {
+                let mut templates = templates.borrow_mut();
+                let new_keys: HashSet<Key> =
+                    iterable.get().iter().map(|item| key_fn(item)).collect();
+
+                let excess_nodes = templates
+                    .iter()
+                    .filter(|item| new_keys.get(item.0).is_none())
+                    .map(|x| (x.0.clone(), (x.1 .2.clone(), x.1 .3)))
+                    .collect::<Vec<_>>();
+
+                for node in &excess_nodes {
+                    let removed_index = node.1 .1;
+                    templates.remove(&node.0);
+
+                    // Offset indexes of other templates by 1.
+                    for (_, _, _, i) in templates.values_mut() {
+                        if *i > removed_index {
+                            *i -= 1;
+                        }
+                    }
+                }
+
+                for node in excess_nodes {
+                    node.1 .0.node.unchecked_into::<Element>().remove();
+                }
+            }
+
             struct PreviousData<T> {
                 value: T,
                 index: usize,
@@ -202,28 +240,6 @@ where
                         .unwrap();
                 }
             }
-
-            if templates.borrow().len() > iterable.get().len() {
-                // remove extra templates
-
-                let mut templates = templates.borrow_mut();
-                let new_keys: HashSet<Key> =
-                    iterable.get().iter().map(|item| key_fn(item)).collect();
-
-                let excess_nodes = templates
-                    .iter()
-                    .filter(|item| new_keys.get(item.0).is_none())
-                    .map(|x| (x.0.clone(), x.1 .2.clone()))
-                    .collect::<Vec<_>>();
-
-                for node in &excess_nodes {
-                    templates.remove(&node.0);
-                }
-
-                for node in excess_nodes {
-                    node.1.node.unchecked_into::<Element>().remove();
-                }
-            }
         }
     });
 
@@ -294,13 +310,22 @@ where
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
+            // Fast path for empty array. Remove all nodes from DOM in templates.
+            if props.iterable.get().is_empty() {
+                for (owner, template) in templates.borrow_mut().drain(..) {
+                    drop(owner); // destroy owner
+                    template.node.unchecked_into::<HtmlElement>().remove();
+                }
+                return;
+            }
+
             // Find values that changed by comparing to previous_values.
             for (i, item) in props.iterable.get().iter().enumerate() {
                 let previous_values = previous_values.borrow();
                 let previous_value = previous_values.get(i);
 
                 if previous_value.is_none() || previous_value.unwrap() != item {
-                    // value changed, re-render item
+                    // Value changed, re-render item.
 
                     templates.borrow_mut().get_mut(i).and_then(|(owner, _)| {
                         // destroy old owner

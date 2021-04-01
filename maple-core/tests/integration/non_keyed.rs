@@ -68,6 +68,58 @@ fn swap_rows() {
 }
 
 #[wasm_bindgen_test]
+fn delete_row() {
+    let count = Signal::new(vec![1, 2, 3]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Indexed(IndexedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+            })
+        }
+    });
+
+    render_to(|| node, &test_div());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "123");
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.remove(1);
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "13");
+}
+
+#[wasm_bindgen_test]
+fn clear() {
+    let count = Signal::new(vec![1, 2, 3]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Indexed(IndexedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+            })
+        }
+    });
+
+    render_to(|| node, &test_div());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "123");
+
+    count.set(Vec::new());
+    assert_eq!(p.text_content().unwrap(), "");
+}
+
+#[wasm_bindgen_test]
 fn insert_front() {
     let count = Signal::new(vec![1, 2, 3]);
 
