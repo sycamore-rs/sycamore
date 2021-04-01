@@ -49,6 +49,10 @@ ssr = ["html-escape", "web-sys/Event"]
 harness = false
 name = "reactivity"
 
+[[bench]]
+harness = false
+name = "ssr"
+
 [package.metadata.docs.rs]
 all-features = true
 default-target = "wasm32-unknown-unknown"

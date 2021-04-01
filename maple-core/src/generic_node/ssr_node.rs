@@ -17,16 +17,19 @@ pub enum SsrNode {
 }
 
 impl SsrNode {
+    #[track_caller]
     fn unwrap_element(&self) -> &Rc<RefCell<Element>> {
         match self {
             SsrNode::Element(e) => e,
-            _ => panic!("The node is not an element"),
+            _ => panic!("node is not an element"),
         }
     }
+
+    #[track_caller]
     fn unwrap_text(&self) -> &Rc<RefCell<Text>> {
         match self {
             SsrNode::Text(e) => e,
-            _ => panic!("The node is not a text node"),
+            _ => panic!("node is not a text node"),
         }
     }
 }
@@ -60,16 +63,16 @@ impl GenericNode for SsrNode {
     }
 
     fn append_child(&self, child: &Self) {
-        self.unwrap_element()
-            .borrow_mut()
-            .children
-            .0
-            .push(child.clone());
+        match self {
+            SsrNode::Element(element) => element.borrow_mut().children.0.push(child.clone()),
+            SsrNode::Fragment(fragment) => fragment.borrow_mut().0.push(child.clone()),
+            _ => panic!("node type cannot have children"),
+        }
     }
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
-        let mut ele = self.unwrap_element().borrow_mut();
-        let children = &mut ele.children.0;
+        let mut elem = self.unwrap_element().borrow_mut();
+        let children = &mut elem.children.0;
         match reference_node {
             None => self.append_child(new_node),
             Some(reference) => {
