@@ -55,8 +55,8 @@ pub fn Keyed<T, F: 'static, K: 'static, Key: 'static>(
 where
     F: Fn(T) -> TemplateResult,
     K: Fn(&T) -> Key,
-    Key: Clone + Hash + Eq + std::fmt::Debug,
-    T: Clone + PartialEq + std::fmt::Debug,
+    Key: Clone + Hash + Eq,
+    T: Clone + PartialEq,
 {
     let KeyedProps {
         iterable,
@@ -92,7 +92,6 @@ where
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
-            #[derive(Debug)]
             struct PreviousData<T> {
                 value: T,
                 index: usize,
@@ -113,9 +112,6 @@ where
                     })
                     .collect()
             };
-
-            web_sys::console::log_1(&format!("iterable changed: {:?}", iterable).into());
-            web_sys::console::log_1(&format!("previous_values: {:?}", previous_values).into());
 
             // Find values that changed by comparing to previous_values.
             for (i, item) in iterable.get().iter().enumerate() {

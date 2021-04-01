@@ -100,16 +100,16 @@ fn insert_front() {
 
 #[wasm_bindgen_test]
 fn nested_reactivity() {
-    let count = Signal::new(vec![1, 2, 3].into_iter().map(|x| Signal::new(x)).collect());
+    let count = Signal::new(vec![1, 2, 3].into_iter().map(Signal::new).collect());
 
     let node = cloned!((count) => template! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
                 template: |item| template! {
-                    li { (item) }
+                    li { (item.get()) }
                 },
-                key: |item| *item,
+                key: |item| *item.get(),
             })
         }
     });
@@ -119,10 +119,13 @@ fn nested_reactivity() {
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
 
+    count.get()[0].set(4);
+    assert_eq!(p.text_content().unwrap(), "423");
+
     count.set({
         let mut tmp = (*count.get()).clone();
-        tmp.insert(0, 4);
+        tmp.push(Signal::new(5));
         tmp
     });
-    assert_eq!(p.text_content().unwrap(), "4123");
+    assert_eq!(p.text_content().unwrap(), "4235");
 }
