@@ -113,6 +113,15 @@ where
                     .collect()
             };
 
+            // Fast path for empty array. Remove all nodes from DOM in templates.
+            if iterable.get().is_empty() {
+                for (_, (owner, _value, template, _i)) in templates.borrow_mut().drain() {
+                    drop(owner); // destroy owner
+                    template.node.unchecked_into::<HtmlElement>().remove();
+                }
+                return;
+            }
+
             // Find values that changed by comparing to previous_values.
             for (i, item) in iterable.get().iter().enumerate() {
                 let key = key_fn(item);
@@ -204,7 +213,7 @@ where
             }
 
             if templates.borrow().len() > iterable.get().len() {
-                // remove extra templates
+                // Remove extra templates.
 
                 let mut templates = templates.borrow_mut();
                 let new_keys: HashSet<Key> =
@@ -294,13 +303,22 @@ where
         let templates = Rc::clone(&templates);
         let marker = marker.clone();
         move || {
+            // Fast path for empty array. Remove all nodes from DOM in templates.
+            if props.iterable.get().is_empty() {
+                for (owner, template) in templates.borrow_mut().drain(..) {
+                    drop(owner); // destroy owner
+                    template.node.unchecked_into::<HtmlElement>().remove();
+                }
+                return;
+            }
+
             // Find values that changed by comparing to previous_values.
             for (i, item) in props.iterable.get().iter().enumerate() {
                 let previous_values = previous_values.borrow();
                 let previous_value = previous_values.get(i);
 
                 if previous_value.is_none() || previous_value.unwrap() != item {
-                    // value changed, re-render item
+                    // Value changed, re-render item.
 
                     templates.borrow_mut().get_mut(i).and_then(|(owner, _)| {
                         // destroy old owner
