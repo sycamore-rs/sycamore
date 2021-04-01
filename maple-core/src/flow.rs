@@ -67,8 +67,7 @@ where
     type TemplateValue<T, G> = (Owner, T, TemplateResult<G>, usize /* index */);
 
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
-    let templates: Rc<RefCell<HashMap<Key, TemplateValue<T, G>>>> =
-        Rc::new(RefCell::new(HashMap::new()));
+    let templates: Rc<RefCell<HashMap<Key, TemplateValue<T, G>>>> = Default::default();
 
     let fragment = G::fragment();
 
@@ -265,7 +264,8 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult<G>,
 {
-    let templates: Rc<RefCell<Vec<(Owner, TemplateResult<G>)>>> = Rc::new(RefCell::new(Vec::new()));
+    type TemplateData<G> = (Owner, TemplateResult<G>);
+    let templates: Rc<RefCell<Vec<TemplateData<G>>>> = Default::default();
 
     // Previous values for diffing purposes.
     let previous_values = RefCell::new(Vec::new());
