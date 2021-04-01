@@ -109,7 +109,7 @@ impl ToTokens for Element {
                         Text::Text(_) => {
                             quote_spanned! { text.span()=>
                                 ::maple_core::generic_node::GenericNode::append_child(
-                                    &element, 
+                                    &element,
                                     &::maple_core::generic_node::GenericNode::text_node(#text),
                                 );
                             }

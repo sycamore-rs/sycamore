@@ -7,7 +7,7 @@ use web_sys::{Element, Event, Node, Text};
 use crate::generic_node::{EventListener, GenericNode};
 
 /// Rendering backend for the DOM.
-/// 
+///
 /// _This API requires the following crate features to be activated: `dom`_
 #[derive(Debug, Clone, PartialEq, Eq, RefCast)]
 #[repr(transparent)]

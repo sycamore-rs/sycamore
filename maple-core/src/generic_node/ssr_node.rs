@@ -6,7 +6,7 @@ use std::rc::Rc;
 use crate::generic_node::{EventListener, GenericNode};
 
 /// Rendering backend for Server Side Rendering, aka. SSR.
-/// 
+///
 /// _This API requires the following crate features to be activated: `ssr`_
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum SsrNode {

@@ -75,7 +75,7 @@ pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
     fn next_sibling(&self) -> Option<Self>;
 
     /// Remove this node from the tree.
-    /// 
+    ///
     /// TODO: Remove this node on Drop.
     fn remove_self(&self);
 
