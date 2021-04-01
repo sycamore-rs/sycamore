@@ -25,7 +25,11 @@ impl Parse for Component {
 
 impl ToTokens for Component {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Component { path, _paren: _, args } = self;
+        let Component {
+            path,
+            _paren: _,
+            args,
+        } = self;
 
         let quoted = quote! { ::maple_core::reactive::untrack(|| ::maple_core::TemplateResult::inner_element(&#path(#args))) };
 
