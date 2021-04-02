@@ -11,7 +11,7 @@ pub use dom_node::*;
 pub use ssr_node::*;
 
 use std::cell::RefCell;
-use std::fmt::Debug;
+use std::fmt;
 use std::rc::Rc;
 
 use web_sys::Event;
@@ -34,7 +34,7 @@ pub type EventListener = dyn Fn(Event);
 /// * [`SsrNode`] - Render to a static string (often on the server side for Server Side Rendering, aka. SSR).
 ///
 /// To implement your own rendering backend, you will need to create a new struct which implements [`GenericNode`].
-pub trait GenericNode: Debug + Clone + PartialEq + Eq + 'static {
+pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
     /// Create a new element node.
     fn element(tag: &str) -> Self;
 

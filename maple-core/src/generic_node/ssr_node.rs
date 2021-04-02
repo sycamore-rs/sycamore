@@ -1,34 +1,60 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use crate::generic_node::{EventListener, GenericNode};
 
 /// Rendering backend for Server Side Rendering, aka. SSR.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum SsrNode {
-    Element(Rc<RefCell<Element>>),
-    Comment(Rc<RefCell<Comment>>),
-    Text(Rc<RefCell<Text>>),
-    Fragment(Rc<RefCell<Fragment>>),
+#[derive(Debug)]
+pub enum SsrNodeType {
+    Element(RefCell<Element>),
+    Comment(RefCell<Comment>),
+    Text(RefCell<Text>),
+    Fragment(RefCell<Fragment>),
 }
 
+#[derive(Debug, Clone)]
+pub struct SsrNode {
+    ty: Rc<SsrNodeType>,
+    /// No parent if `Weak::upgrade` returns `None`.
+    parent: Weak<SsrNode>,
+}
+
+impl PartialEq for SsrNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::as_ptr(&self.ty) == Rc::as_ptr(&other.ty)
+    }
+}
+
+impl Eq for SsrNode {}
+
 impl SsrNode {
+    fn new(ty: SsrNodeType) -> Self {
+        Self {
+            ty: Rc::new(ty),
+            parent: Weak::new(), // no parent
+        }
+    }
+
+    fn set_parent(&mut self, parent: Weak<SsrNode>) {
+        self.parent = parent;
+    }
+
     #[track_caller]
-    fn unwrap_element(&self) -> &Rc<RefCell<Element>> {
-        match self {
-            SsrNode::Element(e) => e,
+    fn unwrap_element(&self) -> &RefCell<Element> {
+        match self.ty.as_ref() {
+            SsrNodeType::Element(e) => e,
             _ => panic!("node is not an element"),
         }
     }
 
     #[track_caller]
-    fn unwrap_text(&self) -> &Rc<RefCell<Text>> {
-        match self {
-            SsrNode::Text(e) => e,
+    fn unwrap_text(&self) -> &RefCell<Text> {
+        match &self.ty.as_ref() {
+            SsrNodeType::Text(e) => e,
             _ => panic!("node is not a text node"),
         }
     }
@@ -36,23 +62,23 @@ impl SsrNode {
 
 impl GenericNode for SsrNode {
     fn element(tag: &str) -> Self {
-        SsrNode::Element(Rc::new(RefCell::new(Element {
+        SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
-            attributes: Default::default(),
+            attributes: HashMap::new(),
             children: Default::default(),
         })))
     }
 
     fn text_node(text: &str) -> Self {
-        SsrNode::Text(Rc::new(RefCell::new(Text(text.to_string()))))
+        SsrNode::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
     }
 
     fn fragment() -> Self {
-        SsrNode::Fragment(Default::default())
+        SsrNode::new(SsrNodeType::Fragment(Default::default()))
     }
 
     fn marker() -> Self {
-        SsrNode::Comment(Default::default())
+        SsrNode::new(SsrNodeType::Comment(Default::default()))
     }
 
     fn set_attribute(&self, name: &str, value: &str) {
@@ -63,9 +89,9 @@ impl GenericNode for SsrNode {
     }
 
     fn append_child(&self, child: &Self) {
-        match self {
-            SsrNode::Element(element) => element.borrow_mut().children.0.push(child.clone()),
-            SsrNode::Fragment(fragment) => fragment.borrow_mut().0.push(child.clone()),
+        match self.ty.as_ref() {
+            SsrNodeType::Element(element) => element.borrow_mut().children.0.push(child.clone()),
+            SsrNodeType::Fragment(fragment) => fragment.borrow_mut().0.push(child.clone()),
             _ => panic!("node type cannot have children"),
         }
     }
@@ -138,11 +164,11 @@ impl GenericNode for SsrNode {
 
 impl fmt::Display for SsrNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SsrNode::Element(x) => write!(f, "{}", x.borrow()),
-            SsrNode::Comment(x) => write!(f, "{}", x.borrow()),
-            SsrNode::Text(x) => write!(f, "{}", x.borrow()),
-            SsrNode::Fragment(x) => write!(f, "{}", x.borrow()),
+        match self.ty.as_ref() {
+            SsrNodeType::Element(x) => write!(f, "{}", x.borrow()),
+            SsrNodeType::Comment(x) => write!(f, "{}", x.borrow()),
+            SsrNodeType::Text(x) => write!(f, "{}", x.borrow()),
+            SsrNodeType::Fragment(x) => write!(f, "{}", x.borrow()),
         }
     }
 }
