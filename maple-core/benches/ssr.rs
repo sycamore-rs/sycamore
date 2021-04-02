@@ -7,22 +7,14 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
             fn App<G: GenericNode>() -> TemplateResult<G> {
-                let values = Signal::new((0i32..=10).collect::<Vec<_>>());
-
                 template! {
                     div(class="my-container") {
-                        Indexed(IndexedProps {
-                            iterable: values.handle(),
-                            template: |x| template! {
-                                p { (x) }
-                            }
-                        })
+                        p { "Hello World!" }
                     }
                 }
             }
 
             let _ssr = render_to_string(|| template! { App() });
-            dbg!(_ssr);
         })
     });
 
