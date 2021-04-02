@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fmt;
 use std::rc::{Rc, Weak};
+use std::{fmt, mem};
 
 use crate::generic_node::{EventListener, GenericNode};
 
@@ -9,7 +9,7 @@ use crate::generic_node::{EventListener, GenericNode};
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
 #[derive(Debug)]
-pub enum SsrNodeType {
+enum SsrNodeType {
     Element(RefCell<Element>),
     Comment(RefCell<Comment>),
     Text(RefCell<Text>),
@@ -17,15 +17,18 @@ pub enum SsrNodeType {
 }
 
 #[derive(Debug, Clone)]
-pub struct SsrNode {
+struct SsrNodeInner {
     ty: Rc<SsrNodeType>,
     /// No parent if `Weak::upgrade` returns `None`.
-    parent: Weak<SsrNode>,
+    parent: RefCell<Weak<SsrNodeInner>>,
 }
+
+#[derive(Debug, Clone)]
+pub struct SsrNode(Rc<SsrNodeInner>);
 
 impl PartialEq for SsrNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::as_ptr(&self.ty) == Rc::as_ptr(&other.ty)
+        Rc::ptr_eq(&self.0.ty, &other.0.ty)
     }
 }
 
@@ -33,19 +36,19 @@ impl Eq for SsrNode {}
 
 impl SsrNode {
     fn new(ty: SsrNodeType) -> Self {
-        Self {
+        Self(Rc::new(SsrNodeInner {
             ty: Rc::new(ty),
-            parent: Weak::new(), // no parent
-        }
+            parent: RefCell::new(Weak::new()), // no parent
+        }))
     }
 
-    fn set_parent(&mut self, parent: Weak<SsrNode>) {
-        self.parent = parent;
+    fn set_parent(&self, parent: Weak<SsrNodeInner>) {
+        *self.0.parent.borrow_mut() = parent;
     }
 
     #[track_caller]
     fn unwrap_element(&self) -> &RefCell<Element> {
-        match self.ty.as_ref() {
+        match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => e,
             _ => panic!("node is not an element"),
         }
@@ -53,7 +56,7 @@ impl SsrNode {
 
     #[track_caller]
     fn unwrap_text(&self) -> &RefCell<Text> {
-        match &self.ty.as_ref() {
+        match &self.0.ty.as_ref() {
             SsrNodeType::Text(e) => e,
             _ => panic!("node is not a text node"),
         }
@@ -89,7 +92,9 @@ impl GenericNode for SsrNode {
     }
 
     fn append_child(&self, child: &Self) {
-        match self.ty.as_ref() {
+        child.set_parent(Rc::downgrade(&self.0));
+
+        match self.0.ty.as_ref() {
             SsrNodeType::Element(element) => element.borrow_mut().children.0.push(child.clone()),
             SsrNodeType::Fragment(fragment) => fragment.borrow_mut().0.push(child.clone()),
             _ => panic!("node type cannot have children"),
@@ -97,8 +102,13 @@ impl GenericNode for SsrNode {
     }
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
-        let mut elem = self.unwrap_element().borrow_mut();
-        let children = &mut elem.children.0;
+        new_node.set_parent(Rc::downgrade(&self.0));
+
+        let mut children = match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children.0),
+            SsrNodeType::Fragment(f) => mem::take(&mut f.borrow_mut().0),
+            _ => panic!("node type cannot have children"),
+        };
         match reference_node {
             None => self.append_child(new_node),
             Some(reference) => {
@@ -112,6 +122,12 @@ impl GenericNode for SsrNode {
                 );
             }
         }
+
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => e.borrow_mut().children.0 = children,
+            SsrNodeType::Fragment(f) => f.borrow_mut().0 = children,
+            _ => panic!("node type cannot have children"),
+        };
     }
 
     fn remove_child(&self, child: &Self) {
@@ -137,12 +153,14 @@ impl GenericNode for SsrNode {
         children[index] = new.clone();
     }
 
-    fn insert_sibling_before(&self, _child: &Self) {
-        unimplemented!()
+    fn insert_sibling_before(&self, child: &Self) {
+        self.parent_node()
+            .expect("no parent for this node")
+            .insert_child_before(child, Some(self));
     }
 
     fn parent_node(&self) -> Option<Self> {
-        unimplemented!()
+        self.0.parent.borrow().upgrade().map(SsrNode)
     }
 
     fn next_sibling(&self) -> Option<Self> {
@@ -164,7 +182,7 @@ impl GenericNode for SsrNode {
 
 impl fmt::Display for SsrNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.ty.as_ref() {
+        match self.0.ty.as_ref() {
             SsrNodeType::Element(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Comment(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Text(x) => write!(f, "{}", x.borrow()),

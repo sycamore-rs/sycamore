@@ -48,7 +48,6 @@ pub fn bench(c: &mut Criterion) {
             }
 
             let _ssr = render_to_string(|| template! { App() });
-            dbg!(_ssr);
         })
     });
 }

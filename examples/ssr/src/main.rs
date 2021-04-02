@@ -2,26 +2,29 @@
 
 use maple_core::prelude::*;
 
-fn App<G: GenericNode>() -> TemplateResult<G> {
-    let name = Signal::new(String::new());
+fn ListItem<G: GenericNode>(value: i32) -> TemplateResult<G> {
+    template! {
+        p {
+            span(class="placeholder")
+            i { (value) }
+            button(class="delete") {
+                i(class="delete-icon")
+            }
+        }
+    }
+}
 
-    let handle_change = cloned!((name) => move |_| unreachable!());
+fn App<G: GenericNode>() -> TemplateResult<G> {
+    let values = Signal::new((0i32..=10).collect::<Vec<_>>());
 
     template! {
-        div {
-            h1 {
-                "Hello "
-                ({if !name.get().is_empty() {
-                    cloned!((name) => template! {
-                        span { (name.get()) }
-                    })
-                } else {
-                    template! { span { "World" } }
-                }})
-                "!"
-            }
-
-            input(placeholder="What is your name?", on:input=handle_change)
+        div(class="my-container") {
+            Indexed(IndexedProps {
+                iterable: values.handle(),
+                template: |x| template! {
+                    ListItem(x)
+                }
+            })
         }
     }
 }
