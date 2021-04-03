@@ -102,6 +102,14 @@ impl GenericNode for SsrNode {
     }
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
+        if let Some(reference_node) = reference_node {
+            debug_assert_eq!(
+                reference_node.parent_node().as_ref(),
+                Some(self),
+                "reference node is not a child of this node"
+            );
+        }
+
         new_node.set_parent(Rc::downgrade(&self.0));
 
         let mut children = match self.0.ty.as_ref() {
@@ -109,6 +117,7 @@ impl GenericNode for SsrNode {
             SsrNodeType::Fragment(f) => mem::take(&mut f.borrow_mut().0),
             _ => panic!("node type cannot have children"),
         };
+
         match reference_node {
             None => self.append_child(new_node),
             Some(reference) => {
@@ -118,7 +127,7 @@ impl GenericNode for SsrNode {
                         .enumerate()
                         .find_map(|(i, child)| (child == reference).then(|| i))
                         .expect("couldn't find reference node"),
-                    reference.clone(),
+                    new_node.clone(),
                 );
             }
         }
@@ -143,6 +152,8 @@ impl GenericNode for SsrNode {
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
+        new.set_parent(Rc::downgrade(&self.0));
+
         let mut ele = self.unwrap_element().borrow_mut();
         let children = &mut ele.children.0;
         let index = children
@@ -154,8 +165,12 @@ impl GenericNode for SsrNode {
     }
 
     fn insert_sibling_before(&self, child: &Self) {
+        child.set_parent(Rc::downgrade(
+            &self.parent_node().expect("no parent for this node").0,
+        ));
+
         self.parent_node()
-            .expect("no parent for this node")
+            .unwrap()
             .insert_child_before(child, Some(self));
     }
 

@@ -22,7 +22,8 @@ fn App<G: GenericNode>() -> TemplateResult<G> {
             Indexed(IndexedProps {
                 iterable: values.handle(),
                 template: |x| template! {
-                    ListItem(x)
+                    // ListItem(x)
+                    p { (x) }
                 }
             })
         }
