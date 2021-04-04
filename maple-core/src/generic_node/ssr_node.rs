@@ -66,6 +66,7 @@ impl SsrNode {
         }
     }
 
+    // FIXME: recursively visit Fragments and call try_remove_child
     fn try_remove_child(&self, child: &Self) {
         let mut children = match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children.0),
