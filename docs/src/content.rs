@@ -47,6 +47,9 @@ pub fn Content<G: GenericNode>() -> TemplateResult<G> {
     }));
 
     template! {
-        div(ref=docs_container_ref, id="docs-container") { "Loading..." }
+        div(class="d-flex") {
+            crate::sidebar::Sidebar()
+            div(ref=docs_container_ref, class="container") { "Loading..." }
+        }
     }
 }

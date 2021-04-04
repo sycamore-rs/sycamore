@@ -3,6 +3,7 @@
 mod content;
 mod header;
 mod index;
+mod sidebar;
 
 use maple_core::prelude::*;
 
@@ -19,17 +20,17 @@ fn App<G: GenericNode>() -> TemplateResult<G> {
         main {
             header::Header()
 
-            div(class="container") {
-                (if pathname != "/" {
-                    template! {
-                        content::Content()
-                    }
-                } else {
-                    template! {
+            (if pathname != "/" {
+                template! {
+                    content::Content()
+                }
+            } else {
+                template! {
+                    div(class="container") {
                         index::Index()
                     }
-                })
-            }
+                }
+            })
         }
     }
 }

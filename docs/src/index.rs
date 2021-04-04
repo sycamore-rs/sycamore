@@ -6,6 +6,10 @@ pub fn Index<G: GenericNode>() -> TemplateResult<G> {
             h1 {
                 "Maple"
             }
+
+            a(class="btn btn-primary", href="/getting_started/installation") {
+                "Getting started"
+            }
         }
     }
 }
