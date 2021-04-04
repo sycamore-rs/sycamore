@@ -94,19 +94,18 @@ This will expand to something approximately like:
 
 ```rust
 use maple_core::prelude::*;
-use maple_core::internal;
 
 let state = Signal::new(0);
 
 let root = {
-    let element = internal::element(p);
-    let text = internal::text(String::new() /* placeholder */);
+    let element = GenericNode::element(p);
+    let text = GenericNode::text(String::new() /* placeholder */);
     create_effect(move || {
         // update text when state changes
-        text.set_text_content(Some(&state.get()));
+        text.update_text(Some(&state.get()));
     });
 
-    internal::append(&element, &text);
+    element.append(&text);
 
     element
 };

@@ -1,6 +1,12 @@
 use maple_core::prelude::*;
 use pulldown_cmark::{html, Options, Parser};
+use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
+
+#[wasm_bindgen(inline_js = "export function highlight_all() { hljs.highlightAll(); }")]
+extern "C" {
+    fn highlight_all();
+}
 
 pub fn Content<G: GenericNode>() -> TemplateResult<G> {
     let location = web_sys::window()
@@ -29,6 +35,7 @@ pub fn Content<G: GenericNode>() -> TemplateResult<G> {
     create_effect(cloned!((docs_container_ref) => move || {
         if !html.get().is_empty() {
             docs_container_ref.get::<DomNode>().unchecked_into::<HtmlElement>().set_inner_html(html.get().as_ref());
+            highlight_all();
         }
     }));
 
