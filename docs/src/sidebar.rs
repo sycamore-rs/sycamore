@@ -14,7 +14,7 @@ pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
                         }
 
                         a(class="btn btn-sm btn-light", href="/getting_started/hello_world") {
-                            "Hello World"
+                            "Hello, World!"
                         }
                     }
                 }

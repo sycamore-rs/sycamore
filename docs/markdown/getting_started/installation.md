@@ -1,21 +1,45 @@
 # Getting Started
 
-## Installing Rust
+This documentation assumes the developer is already familiar with Rust programming. To learn more about Rust, check out the [Rust Book](https://doc.rust-lang.org/stable/book/).
+
+## Install Rust
 
 First, you'll need to install Rust. Follow the [official instructions](https://www.rust-lang.org/tools/install) to get started.
 
 You will also need the `wasm32-unknown-unknown` target installed:
+
 ```
 rustup target add wasm32-unknown-unknown
 ```
 
-## Installing Trunk
+## Install Trunk
 
 [Trunk](https://trunkrs.dev) is the recommended build tool for Maple.
+If you are from JS land, Trunk is like [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but specifically tailored to Rust + WASM apps.
+
 You can use `cargo` to install Trunk:
+
 ```
 cargo install trunk wasm-bindgen-cli
 ```
+
 For more information, head over to the [Trunk website](https://trunkrs.dev)
+
+## Create a new Maple project
+
+Create a new Rust project using `cargo`:
+
+```
+cargo new my-project --bin
+cd my-project
+```
+
+You now need to add Maple to your new project's dependencies. Add the following to your `Cargo.toml` file in your project folder:
+
+```
+maple-core = "0.4.3"
+```
+
+Be careful, the crate name is **`maple-core`**, not `maple`.
 
 You should now be all set for your Maple adventure!
