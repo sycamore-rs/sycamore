@@ -219,13 +219,6 @@ where
         }
     });
 
-    for item in iterable.get().iter() {
-        let key = key_fn(item);
-        let template = templates.borrow().get(&key).unwrap().2.clone();
-
-        marker.insert_sibling_before(&template.node);
-    }
-
     TemplateResult::new(fragment)
 }
 
@@ -339,10 +332,6 @@ where
             *previous_values.borrow_mut() = (*props.iterable.get()).clone();
         }
     });
-
-    for template in templates.borrow().iter() {
-        marker.insert_sibling_before(&template.1.node);
-    }
 
     TemplateResult::new(fragment)
 }
