@@ -5,7 +5,7 @@ pub fn Header<G: GenericNode>() -> TemplateResult<G> {
         header {
             nav(class="navbar navbar-expand-sm navbar-dark bg-dark") {
                 div(class="container-fluid") {
-                    a(class="navbar-brand", href="#") { "Maple" }
+                    a(class="navbar-brand", href="/#") { "Maple" }
 
                     ul(class="navbar-nav") {
                         li(class="nav-item") {
