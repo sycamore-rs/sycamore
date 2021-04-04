@@ -9,7 +9,10 @@ pub fn Header<G: GenericNode>() -> TemplateResult<G> {
 
                     ul(class="navbar-nav") {
                         li(class="nav-item") {
-                            a(class="nav-link", href="https://docs.rs/maple-core") { "docs.rs" }
+                            a(class="nav-link", href="/getting_started/installation") { "Docs" }
+                        }
+                        li(class="nav-item") {
+                            a(class="nav-link", href="https://docs.rs/maple-core") { "API" }
                         }
                         li(class="nav-item") {
                             a(class="nav-link", href="https://github.com/lukechu10/maple") { "Repository" }

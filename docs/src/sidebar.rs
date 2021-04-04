@@ -13,8 +13,21 @@ pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
                             "Installation"
                         }
 
-                        a(class="btn btn-sm btn-light", href="/getting_started/hello_world") {
+                        a(class="btn btn-sm btn-light btn-block", href="/getting_started/hello_world") {
                             "Hello, World!"
+                        }
+                    }
+                }
+                li(class="mb-1") {
+                    h5 {
+                        "Concepts"
+                    }
+                    div(class="d-grid gap-1") {
+                        a(class="btn btn-sm btn-light btn-block", href="/concepts/template") {
+                            "template!"
+                        }
+                        a(class="btn btn-sm btn-light btn-block", href="/concepts/reactivity") {
+                            "Reactivity"
                         }
                     }
                 }
