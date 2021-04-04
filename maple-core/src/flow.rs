@@ -79,7 +79,6 @@ where
         let iterable = Rc::clone(&iterable);
         let key_fn = Rc::clone(&key_fn);
         let templates = Rc::clone(&templates);
-        let marker = marker.clone();
         move || {
             // Fast path for empty array. Remove all nodes from DOM in templates.
             if iterable.get().is_empty() {
@@ -271,7 +270,6 @@ where
 
     create_effect({
         let templates = Rc::clone(&templates);
-        let marker = marker.clone();
         move || {
             // Fast path for empty array. Remove all nodes from DOM in templates.
             if props.iterable.get().is_empty() {

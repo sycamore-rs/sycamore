@@ -43,6 +43,10 @@ impl SsrNode {
     }
 
     fn set_parent(&self, parent: Weak<SsrNodeInner>) {
+        if let Some(old_parent) = self.parent_node() {
+            old_parent.try_remove_child(self);
+        }
+
         *self.0.parent.borrow_mut() = parent;
     }
 
@@ -60,6 +64,37 @@ impl SsrNode {
             SsrNodeType::Text(e) => e,
             _ => panic!("node is not a text node"),
         }
+    }
+
+    fn try_remove_child(&self, child: &Self) {
+        let mut children = match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children.0),
+            SsrNodeType::Fragment(f) => mem::take(&mut f.borrow_mut().0),
+            _ => panic!("node type cannot have children"),
+        };
+
+        if let Some(index) = children
+            .iter()
+            .enumerate()
+            .find_map(|(i, c)| (c == child).then(|| i))
+        {
+            children.remove(index);
+        } else {
+            // try remove from child Fragments
+            for c in &children {
+                if let SsrNodeType::Fragment(fragment) = c.0.ty.as_ref() {
+                    for c in &fragment.borrow().0 {
+                        c.try_remove_child(&child);
+                    }
+                }
+            }
+        }
+
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => e.borrow_mut().children.0 = children,
+            SsrNodeType::Fragment(f) => f.borrow_mut().0 = children,
+            _ => panic!("node type cannot have children"),
+        };
     }
 }
 
@@ -140,15 +175,24 @@ impl GenericNode for SsrNode {
     }
 
     fn remove_child(&self, child: &Self) {
-        let mut ele = self.unwrap_element().borrow_mut();
-        let index = ele
-            .children
-            .0
+        let mut children = match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children.0),
+            SsrNodeType::Fragment(f) => mem::take(&mut f.borrow_mut().0),
+            _ => panic!("node type cannot have children"),
+        };
+
+        let index = children
             .iter()
             .enumerate()
             .find_map(|(i, c)| (c == child).then(|| i))
-            .expect("Couldn't find child");
-        ele.children.0.remove(index);
+            .expect("couldn't find child");
+        children.remove(index);
+
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => e.borrow_mut().children.0 = children,
+            SsrNodeType::Fragment(f) => f.borrow_mut().0 = children,
+            _ => panic!("node type cannot have children"),
+        };
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
