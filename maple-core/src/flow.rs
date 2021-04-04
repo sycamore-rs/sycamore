@@ -79,7 +79,6 @@ where
         let iterable = Rc::clone(&iterable);
         let key_fn = Rc::clone(&key_fn);
         let templates = Rc::clone(&templates);
-        let marker = marker.clone();
         move || {
             // Fast path for empty array. Remove all nodes from DOM in templates.
             if iterable.get().is_empty() {
@@ -219,13 +218,6 @@ where
         }
     });
 
-    for item in iterable.get().iter() {
-        let key = key_fn(item);
-        let template = templates.borrow().get(&key).unwrap().2.clone();
-
-        marker.insert_sibling_before(&template.node);
-    }
-
     TemplateResult::new(fragment)
 }
 
@@ -278,7 +270,6 @@ where
 
     create_effect({
         let templates = Rc::clone(&templates);
-        let marker = marker.clone();
         move || {
             // Fast path for empty array. Remove all nodes from DOM in templates.
             if props.iterable.get().is_empty() {
@@ -339,10 +330,6 @@ where
             *previous_values.borrow_mut() = (*props.iterable.get()).clone();
         }
     });
-
-    for template in templates.borrow().iter() {
-        marker.insert_sibling_before(&template.1.node);
-    }
 
     TemplateResult::new(fragment)
 }

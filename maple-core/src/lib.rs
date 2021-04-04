@@ -65,7 +65,7 @@ impl<T: GenericNode> From<SignalVec<TemplateResult<T>>> for TemplateList<T> {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[cfg(feature = "dom")]
-pub fn render(template_result: impl FnOnce() -> TemplateResult<generic_node::DomNode> + 'static) {
+pub fn render(template_result: impl FnOnce() -> TemplateResult<generic_node::DomNode>) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
@@ -78,7 +78,7 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult<generic_node::Dom
 /// _This API requires the following crate features to be activated: `dom`_
 #[cfg(feature = "dom")]
 pub fn render_to(
-    template_result: impl FnOnce() -> TemplateResult<generic_node::DomNode> + 'static,
+    template_result: impl FnOnce() -> TemplateResult<generic_node::DomNode>,
     parent: &web_sys::Node,
 ) {
     let owner = reactive::create_root(|| {
@@ -99,7 +99,7 @@ pub fn render_to(
 /// _This API requires the following crate features to be activated: `ssr`_
 #[cfg(feature = "ssr")]
 pub fn render_to_string(
-    template_result: impl FnOnce() -> TemplateResult<generic_node::SsrNode> + 'static,
+    template_result: impl FnOnce() -> TemplateResult<generic_node::SsrNode>,
 ) -> String {
     let mut ret = None;
     let _owner =
