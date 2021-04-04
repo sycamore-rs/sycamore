@@ -1,0 +1,13 @@
+blockquote {
+    background-color: #e9e9e9;
+    padding: 7px;
+    border-radius: 4px;
+}
+
+pre {
+    border-radius: 2px;
+
+    & code {
+        background-color: #f9f9f9 !important;
+    }
+}
