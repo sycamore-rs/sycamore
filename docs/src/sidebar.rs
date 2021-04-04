@@ -29,6 +29,28 @@ pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
                         a(class="btn btn-sm btn-light btn-block", href="/concepts/reactivity") {
                             "Reactivity"
                         }
+                        a(class="btn btn-sm btn-light btn-block", href="/concepts/components") {
+                            "Components"
+                        }
+                        a(class="btn btn-sm btn-light btn-block", href="/concepts/control_flow") {
+                            "Control Flow"
+                        }
+                        a(class="btn btn-sm btn-light btn-block", href="/concepts/iteration") {
+                            "Iteration"
+                        }
+                    }
+                }
+                li(class="mb-1") {
+                    h5 {
+                        "Contribute"
+                    }
+                    div(class="d-grid gap-1") {
+                        a(class="btn btn-sm btn-light btn-block", href="/contribute/architecture") {
+                            "Architecture"
+                        }
+                        a(class="btn btn-sm btn-light btn-block", href="/contribute/development") {
+                            "Development"
+                        }
                     }
                 }
             }
