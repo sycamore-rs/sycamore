@@ -6,8 +6,6 @@ use std::hash::{Hash, Hasher};
 use std::ptr;
 use std::rc::Rc;
 
-use wasm_bindgen::{prelude::*, JsCast};
-
 thread_local! {
     static TASKS: RefCell<HashSet<Task>> = RefCell::new(HashSet::new());
 }
@@ -47,7 +45,11 @@ impl PartialEq for Task {
 }
 impl Eq for Task {}
 
+#[cfg(feature = "dom")]
 pub fn run_tasks() {
+    use wasm_bindgen::prelude::*;
+    use wasm_bindgen::JsCast;
+
     let f = Rc::new(RefCell::new(None::<Closure<dyn Fn()>>));
     let g = Rc::clone(&f);
 
@@ -76,6 +78,11 @@ pub fn run_tasks() {
         .unwrap()
         .request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())
         .expect("could not register requestAnimationFrame");
+}
+
+#[cfg(not(feature = "dom"))]
+pub fn run_tasks() {
+    // noop on non web targets
 }
 
 /// Runs a callback in a `requestAnimationFrame` loop until the `callback` returns `false`.
