@@ -1,0 +1,64 @@
+name: Build Website Production
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+
+      - name: Install trunk
+        run: >
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.10.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- &&
+          sudo mv trunk /usr/bin/
+
+      - name: Install wasm-bindgen
+        run: >
+          wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.73/wasm-bindgen-0.2.73-x86_64-unknown-linux-musl.tar.gz &&
+          tar -xf wasm-bindgen-0.2.73-x86_64-unknown-linux-musl.tar.gz &&
+          sudo mv wasm-bindgen-0.2.73-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
+
+      - name: Build docs
+        run: >
+          cd docs/ &&
+          trunk build --release
+
+      - name: Build examples
+        run: |
+          output="$(pwd)/docs/dist"
+          mkdir "$output/example"
+          for path in examples/*; do
+            if [[ ! -d $path ]]; then
+              continue
+            fi
+            example=$(basename "$path")
+            echo "building: $example"
+            (
+              cd "$path"
+              dist_dir="$output/example/$example"
+              mkdir "$dist_dir"
+              trunk build --release --dist "$dist_dir"
+            )
+          done
+
+      - name: Create .nojekyll file
+        run: touch docs/dist/.nojekyll
+
+      - name: Deploy to netlify
+        uses: netlify/actions/cli@master
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.DEV_NETLIFY_SITE_ID }}
+        with:
+          args: deploy --prod
