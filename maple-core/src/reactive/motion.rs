@@ -56,9 +56,13 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
             let scalar = since_start.num_milliseconds() as f32
                 / transition_duration.num_milliseconds() as f32;
 
-            signal.set(start.lerp(&new_value, easing_fn(scalar)));
-
-            now < start_time + transition_duration
+            if now < start_time + transition_duration {
+                signal.set(start.lerp(&new_value, easing_fn(scalar)));
+                true
+            } else {
+                signal.set(new_value.clone());
+                false
+            }
         });
 
         if let Some(previous_task) = self.0.borrow_mut().current_task.as_mut() {
