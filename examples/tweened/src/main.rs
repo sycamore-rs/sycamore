@@ -6,7 +6,8 @@ use maple_core::reactive::Tweened;
 use maple_core::{easing, prelude::*};
 
 fn App<G: GenericNode>() -> TemplateResult<G> {
-    let progress = Tweened::new(0.0, Duration::from_millis(250), easing::cubic_out);
+    let progress = Tweened::new([0.0, 1.0], Duration::from_millis(250), easing::cubic_out);
+    let progress0 = progress.clone();
     let progress1 = progress.clone();
     let progress2 = progress.clone();
     let progress3 = progress.clone();
@@ -22,12 +23,13 @@ fn App<G: GenericNode>() -> TemplateResult<G> {
                 }
                 "#
             }
-            progress(value=progress.get())
+            progress(value=progress.get()[0])
+            progress(value=progress0.get()[1])
 
-            button(on:click=move |_| progress1.set(0.0)) { "0%" }
-            button(on:click=move |_| progress2.set(0.25)) { "25%" }
-            button(on:click=move |_| progress3.set(0.5)) { "50%" }
-            button(on:click=move |_| progress4.set(1.0)) { "100%" }
+            button(on:click=move |_| progress1.set([0.0, 1.0])) { "0%" }
+            button(on:click=move |_| progress2.set([0.25, 0.75])) { "25%" }
+            button(on:click=move |_| progress3.set([0.5, 0.5])) { "50%" }
+            button(on:click=move |_| progress4.set([1.0, 0.0])) { "100%" }
         }
     }
 }
