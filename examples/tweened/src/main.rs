@@ -2,11 +2,11 @@
 
 use std::time::Duration;
 
-use maple_core::prelude::*;
 use maple_core::reactive::Tweened;
+use maple_core::{easing, prelude::*};
 
 fn App<G: GenericNode>() -> TemplateResult<G> {
-    let progress = Tweened::new(0.0, Duration::from_millis(250));
+    let progress = Tweened::new(0.0, Duration::from_millis(250), easing::cubic_out);
     let progress1 = progress.clone();
     let progress2 = progress.clone();
     let progress3 = progress.clone();

@@ -23,20 +23,27 @@ struct TweenedInner<T: Lerp + Clone + 'static> {
     signal: Signal<T>,
     current_task: Option<Task>,
     transition_duration: Duration,
+    easing_fn: Rc<dyn Fn(f32) -> f32>,
 }
 
 impl<T: Lerp + Clone + 'static> Tweened<T> {
-    pub fn new(initial: T, transition_duration: std::time::Duration) -> Self {
+    pub fn new(
+        initial: T,
+        transition_duration: std::time::Duration,
+        easing_fn: impl Fn(f32) -> f32 + 'static,
+    ) -> Self {
         Self(RefCell::new(TweenedInner {
             signal: Signal::new(initial),
             current_task: None,
             transition_duration: Duration::from_std(transition_duration)
                 .expect("transition_duration is greater than the maximum value"),
+            easing_fn: Rc::new(easing_fn),
         }))
     }
 
     pub fn set(&self, new_value: T) {
         let start = self.signal().get_untracked().as_ref().clone();
+        let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
 
         let start_time = Utc::now();
         let signal = self.0.borrow().signal.clone();
@@ -49,7 +56,7 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
             let scalar = since_start.num_milliseconds() as f32
                 / transition_duration.num_milliseconds() as f32;
 
-            signal.set(start.lerp(&new_value, scalar));
+            signal.set(start.lerp(&new_value, easing_fn(scalar)));
 
             now < start_time + transition_duration
         });
@@ -88,6 +95,7 @@ impl<T: Lerp + Clone + 'static> Clone for TweenedInner<T> {
             signal: self.signal.clone(),
             current_task: self.current_task.clone(),
             transition_duration: self.transition_duration,
+            easing_fn: Rc::clone(&self.easing_fn),
         }
     }
 }

@@ -19,6 +19,7 @@ use generic_node::GenericNode;
 pub use maple_core_macro::template;
 use prelude::SignalVec;
 
+pub mod easing;
 pub mod flow;
 pub mod generic_node;
 pub mod macros;
