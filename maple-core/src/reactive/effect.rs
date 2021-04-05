@@ -1,13 +1,13 @@
 use std::any::Any;
-use std::mem;
-use std::rc::Weak;
-
-use super::*;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+use std::mem;
 use std::ptr;
 use std::rc::Rc;
+use std::rc::Weak;
+
+use super::*;
 
 thread_local! {
     /// Context of the effect that is currently running. `None` if no effect is running.

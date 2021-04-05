@@ -19,13 +19,14 @@ use generic_node::GenericNode;
 pub use maple_core_macro::template;
 use prelude::SignalVec;
 
+pub mod easing;
 pub mod flow;
 pub mod generic_node;
-#[doc(hidden)]
 pub mod macros;
 pub mod noderef;
 pub mod reactive;
 pub mod render;
+pub mod utils;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult<G: GenericNode> {

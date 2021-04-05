@@ -118,9 +118,9 @@ impl<T: 'static> Signal<T> {
     /// let state = Signal::new(0);
     /// # assert_eq!(*state.get(), 0);
     /// ```
-    pub fn new(value: T) -> Self {
+    pub fn new(initial: T) -> Self {
         Self {
-            handle: StateHandle(Rc::new(RefCell::new(SignalInner::new(value)))),
+            handle: StateHandle(Rc::new(RefCell::new(SignalInner::new(initial)))),
         }
     }
 

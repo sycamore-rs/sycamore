@@ -41,9 +41,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
       - name: Cargo cache
         uses: actions/cache@v2
         with:
