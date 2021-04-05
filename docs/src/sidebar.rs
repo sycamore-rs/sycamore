@@ -60,6 +60,9 @@ pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
                         a(class="btn btn-sm btn-light btn-block", href="/advanced/testing") {
                             "Testing"
                         }
+                        a(class="btn btn-sm btn-light btn-block", href="/advanced/routing") {
+                            "Routing"
+                        }
                         a(class="btn btn-sm btn-light btn-block", href="/advanced/ssr") {
                             "SSR"
                         }
@@ -68,6 +71,19 @@ pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
                         }
                         a(class="btn btn-sm btn-light btn-block", href="/advanced/higher_order_components") {
                             "Higher-Order Components"
+                        }
+                    }
+                }
+                li(class="mb-1") {
+                    h5 {
+                        "Optimizations"
+                    }
+                    div(class="d-grid gap-1") {
+                        a(class="btn btn-sm btn-light btn-block", href="/optimizations/code_size") {
+                            "Code Size"
+                        }
+                        a(class="btn btn-sm btn-light btn-block", href="/optimizations/speed") {
+                            "Speed"
                         }
                     }
                 }
