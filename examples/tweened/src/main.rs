@@ -12,6 +12,7 @@ fn App<G: GenericNode>() -> TemplateResult<G> {
     let progress2 = progress.clone();
     let progress3 = progress.clone();
     let progress4 = progress.clone();
+    let progress5 = progress.clone();
 
     template! {
         div {
@@ -29,7 +30,8 @@ fn App<G: GenericNode>() -> TemplateResult<G> {
             button(on:click=move |_| progress1.set([0.0, 1.0])) { "0%" }
             button(on:click=move |_| progress2.set([0.25, 0.75])) { "25%" }
             button(on:click=move |_| progress3.set([0.5, 0.5])) { "50%" }
-            button(on:click=move |_| progress4.set([1.0, 0.0])) { "100%" }
+            button(on:click=move |_| progress4.set([0.75, 0.25])) { "75%" }
+            button(on:click=move |_| progress5.set([1.0, 0.0])) { "100%" }
         }
     }
 }
