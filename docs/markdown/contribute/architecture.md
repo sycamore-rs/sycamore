@@ -8,12 +8,11 @@ Proc-macro related code is in `/maple-core-macro`.
 - #### Reactivity
 
   - All the reactivity primitives are defined in `/maple-core/src/reactive.rs`.
-  - `create_effect` is called by the internal DOM utilities in `/maple-core/src/internal.rs`.
 
 - #### `template!`
 
   - The template macro is defined in `/maple-core-macro/src/lib.rs`.
-  - Different DOM nodes are defined in separate files under the same directory.
+  - Different DOM node types are defined in separate files under the same directory.
   - [`trybuild`](https://github.com/dtolnay/trybuild) is used for testing proc-macros.
 
 - #### Components
