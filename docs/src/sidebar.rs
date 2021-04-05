@@ -20,22 +20,22 @@ pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
                 }
                 li(class="mb-1") {
                     h5 {
-                        "Concepts"
+                        "Basics"
                     }
                     div(class="d-grid gap-1") {
-                        a(class="btn btn-sm btn-light btn-block", href="/concepts/template") {
+                        a(class="btn btn-sm btn-light btn-block", href="/basics/template") {
                             "template!"
                         }
-                        a(class="btn btn-sm btn-light btn-block", href="/concepts/reactivity") {
+                        a(class="btn btn-sm btn-light btn-block", href="/basics/reactivity") {
                             "Reactivity"
                         }
-                        a(class="btn btn-sm btn-light btn-block", href="/concepts/components") {
+                        a(class="btn btn-sm btn-light btn-block", href="/basics/components") {
                             "Components"
                         }
-                        a(class="btn btn-sm btn-light btn-block", href="/concepts/control_flow") {
+                        a(class="btn btn-sm btn-light btn-block", href="/basics/control_flow") {
                             "Control Flow"
                         }
-                        a(class="btn btn-sm btn-light btn-block", href="/concepts/iteration") {
+                        a(class="btn btn-sm btn-light btn-block", href="/basics/iteration") {
                             "Iteration"
                         }
                     }

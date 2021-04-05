@@ -33,7 +33,7 @@ Events are attached using the `on:*` directive.
 
 ```rust
 template! {
-    button(on:click=|\_| { /_ do something _/ }) {
+    button(on:click=|_| { /* do something */ }) {
         "Click me"
     }
 }
