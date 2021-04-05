@@ -21,11 +21,11 @@ use prelude::SignalVec;
 
 pub mod flow;
 pub mod generic_node;
-#[doc(hidden)]
 pub mod macros;
 pub mod noderef;
 pub mod reactive;
 pub mod render;
+pub mod utils;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult<G: GenericNode> {
