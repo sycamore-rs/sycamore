@@ -3,3 +3,6 @@ Cargo.lock
 
 # Trunk output
 /**/dist
+
+# Local Netlify folder
+.netlify
