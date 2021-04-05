@@ -1,3 +1,5 @@
+//! Easing functions.
+
 // Linear
 
 pub fn linear(t: f32) -> f32 {

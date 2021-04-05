@@ -1,4 +1,4 @@
-# template!
+# `template!`
 
 Maple uses the `template!` macro as an ergonomic way to create complex user interfaces. You might have already seen it in the _"Hello, World!"_ example.
 
