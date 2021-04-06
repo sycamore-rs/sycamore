@@ -87,10 +87,13 @@ pub fn template(input: TokenStream) -> TokenStream {
         HtmlTree::Element(element) => quote! {
             ::maple_core::template_result::TemplateResult::new_node(#element)
         },
-        HtmlTree::Text(text) => quote! {
-            ::maple_core::template_result::TemplateResult::new_node(
-                ::maple_core::generic_node::GenericNode::text(#text),
-            )
+        HtmlTree::Text(text) => match text {
+            text::Text::Text(_) => quote! {
+                ::maple_core::template_result::TemplateResult::new_node(
+                    ::maple_core::generic_node::GenericNode::text_node(#text),
+                )
+            },
+            text::Text::Splice(_, _) => unimplemented!("splice at top level is not supported"),
         },
     };
 
