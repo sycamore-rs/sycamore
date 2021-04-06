@@ -2,6 +2,8 @@
 
 use core::f32;
 
+const EXP_BASE: f32 = 2.;
+
 // Linear
 
 pub fn linear(t: f32) -> f32 {
@@ -102,6 +104,25 @@ pub fn circ_inout(t: f32) -> f32 {
     } else {
         (1. - (-2.*t + 2.).powi(2)).sqrt() / 2.
     }
+}
+
+// Exponential
+
+pub fn expo_in(t: f32) -> f32 {
+    if t.abs() <= 0.0002 {0.}
+    else {EXP_BASE.powf(10.*t - 10.)}
+}
+
+pub fn expo_out(t: f32) -> f32 {
+    if (t - 1.).abs() <= 0.0002 {0.}
+    else {1. - EXP_BASE.powf(-10.*t)}
+}
+
+pub fn expo_inout(t: f32) -> f32 {
+    if t.abs() <= 0.0002 {0.}
+    else if (t - 1.).abs() <= 0.0002 {1.}
+    else if t <= 0.5 {EXP_BASE.powf(20.*t - 10.) / 2.}
+    else {2. - EXP_BASE.powf(-20.*t + 10.) / 2.}
 }
 
 // TODO: add more easing functions
