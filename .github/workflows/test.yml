@@ -52,3 +52,30 @@ jobs:
 
       - name: Run clippy
         run: cargo clippy
+
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Miri
+        run: |
+          MIRI_NIGHTLY=nightly-$(curl -s https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/miri)
+          echo "Installing latest nightly with Miri: $MIRI_NIGHTLY"
+          rustup set profile minimal
+          rustup default "$MIRI_NIGHTLY"
+          rustup component add miri
+
+      - name: Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo +nightly miri test
