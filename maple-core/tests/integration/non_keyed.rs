@@ -15,7 +15,7 @@ fn append() {
         }
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
 
@@ -47,7 +47,7 @@ fn swap_rows() {
         }
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -82,7 +82,7 @@ fn delete_row() {
         }
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -110,7 +110,7 @@ fn clear() {
         }
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -134,7 +134,7 @@ fn insert_front() {
         }
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -162,7 +162,7 @@ fn nested_reactivity() {
         }
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -179,6 +179,58 @@ fn nested_reactivity() {
 }
 
 #[wasm_bindgen_test]
+fn fragment_template() {
+    let count = Signal::new(vec![1, 2]);
+
+    let node = cloned!((count) => template! {
+        div {
+            Indexed(IndexedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    span { "The value is: " }
+                    strong { (item) }
+                },
+            })
+        }
+    });
+
+    render_to(|| node, &test_container());
+
+    let p = document().query_selector("div").unwrap().unwrap();
+
+    assert_eq!(
+        p.inner_html(),
+        "\
+<span>The value is: </span><strong>1</strong>\
+<span>The value is: </span><strong>2</strong>\
+<!---->"
+    );
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.push(3);
+        tmp
+    });
+    assert_eq!(
+        p.inner_html(),
+        "\
+<span>The value is: </span><strong>1</strong>\
+<span>The value is: </span><strong>2</strong>\
+<span>The value is: </span><strong>3</strong>\
+<!---->"
+    );
+
+    count.set(count.get()[1..].into());
+    assert_eq!(
+        p.inner_html(),
+        "\
+<span>The value is: </span><strong>2</strong>\
+<span>The value is: </span><strong>3</strong>\
+<!---->"
+    );
+}
+
+#[wasm_bindgen_test]
 fn template_top_level() {
     let count = Signal::new(vec![1, 2]);
 
@@ -191,7 +243,7 @@ fn template_top_level() {
         })
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document()
         .query_selector("#test-container")

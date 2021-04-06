@@ -16,21 +16,21 @@ fn document() -> Document {
 }
 
 /// Returns a [`Node`] referencing the test container with the contents cleared.
-fn test_div() -> Node {
+fn test_container() -> Node {
     if document()
-        .query_selector("div#test-container")
+        .query_selector("test-container#test-container")
         .unwrap()
         .is_none()
     {
         document()
             .body()
             .unwrap()
-            .insert_adjacent_html("beforeend", r#"<div id="test-container"></div>"#)
+            .insert_adjacent_html("beforeend", r#"<test-container id="test-container"></test-container>"#)
             .unwrap();
     }
 
     let container = document()
-        .query_selector("div#test-container")
+        .query_selector("test-container#test-container")
         .unwrap()
         .unwrap();
 
@@ -45,7 +45,7 @@ fn hello_world() {
         p { "Hello World!" }
     };
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     assert_eq!(
         &document()
@@ -65,7 +65,7 @@ fn hello_world_noderef() {
         p(ref=p_ref) { "Hello World!" }
     };
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     assert_eq!(
         &p_ref
@@ -83,7 +83,7 @@ fn interpolation() {
         p { (text) }
     };
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     assert_eq!(
         document()
@@ -104,7 +104,7 @@ fn reactive_text() {
         p { (count.get()) }
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let p = document().query_selector("p").unwrap().unwrap();
 
@@ -122,7 +122,7 @@ fn reactive_attribute() {
         span(attribute=count.get())
     });
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let span = document().query_selector("span").unwrap().unwrap();
 
@@ -142,7 +142,7 @@ fn noderefs() {
         }
     };
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let input_ref = document().query_selector("input").unwrap().unwrap();
 
@@ -160,7 +160,7 @@ fn fragments() {
         p { "3" }
     };
 
-    render_to(|| node, &test_div());
+    render_to(|| node, &test_container());
 
     let test_container = document().query_selector("#test-container").unwrap().unwrap();
 
