@@ -8,8 +8,8 @@ use crate::template_result::TemplateResult;
 /// Trait for describing how something should be rendered into DOM nodes.
 pub trait Render<G: GenericNode> {
     /// Called during the initial render when creating the DOM nodes. Should return a
-    /// [`GenericNode`].
-    fn render(&self) -> G;
+    /// `Vec` of [`GenericNode`]s.
+    fn render(&self) -> Vec<G>;
 
     /// Called when the node should be updated with new state.
     /// The default implementation of this will replace the child node completely with the result of
@@ -19,29 +19,35 @@ pub trait Render<G: GenericNode> {
     ///
     /// Returns the new node. If the node is reused instead of replaced, the returned node is simply
     /// the node passed in.
-    fn update_node(&self, parent: &G, node: &G) -> G {
-        let new_node = self.render();
-        parent.replace_child(&new_node, &node);
-        new_node
+    fn update_node(&self, parent: &G, node: &Vec<G>) -> Vec<G> {
+        let new_nodes = self.render();
+
+        for new_node in &new_nodes {
+            parent.replace_child(new_node, node.first().unwrap());
+        }
+
+        new_nodes
     }
 }
 
 impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
-    fn render(&self) -> G {
-        G::text_node(&format!("{}", self))
+    fn render(&self) -> Vec<G> {
+        vec![G::text_node(&format!("{}", self))]
     }
 
-    fn update_node(&self, _parent: &G, node: &G) -> G {
+    fn update_node(&self, _parent: &G, node: &Vec<G>) -> Vec<G> {
         // replace `textContent` of `node` instead of recreating
 
-        node.update_inner_text(&format!("{}", self));
+        node.first()
+            .unwrap()
+            .update_inner_text(&format!("{}", self));
 
         node.clone()
     }
 }
 
 impl<G: GenericNode> Render<G> for TemplateResult<G> {
-    fn render(&self) -> G {
-        self.inner_node().clone()
+    fn render(&self) -> Vec<G> {
+        self.into_iter().cloned().collect()
     }
 }
