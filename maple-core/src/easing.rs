@@ -112,7 +112,7 @@ pub fn circ_inout(t: f32) -> f32 {
 // Exponential
 
 pub fn expo_in(t: f32) -> f32 {
-    if t.abs() <= 0.0002 {
+    if t.abs() <= f32::EPSILON {
         0.
     } else {
         EXP_BASE.powf(10. * t - 10.)
@@ -120,7 +120,7 @@ pub fn expo_in(t: f32) -> f32 {
 }
 
 pub fn expo_out(t: f32) -> f32 {
-    if (t - 1.0).abs() <= 0.0002 {
+    if (t - 1.0).abs() <= f32::EPSILON {
         0.
     } else {
         1.0 - EXP_BASE.powf(-10. * t)
@@ -128,9 +128,9 @@ pub fn expo_out(t: f32) -> f32 {
 }
 
 pub fn expo_inout(t: f32) -> f32 {
-    if t.abs() <= 0.0002 {
+    if t.abs() <= f32::EPSILON {
         0.
-    } else if (t - 1.0).abs() <= 0.0002 {
+    } else if (t - 1.0).abs() <= f32::EPSILON {
         1.
     } else if t <= 0.5 {
         EXP_BASE.powf(20. * t - 10.) / 2.0
