@@ -1,6 +1,7 @@
 //! Easing functions.
 
 use core::f32;
+use std::f32::consts::PI;
 
 const EXP_BASE: f32 = 2.;
 
@@ -124,5 +125,20 @@ pub fn expo_inout(t: f32) -> f32 {
     else if t <= 0.5 {EXP_BASE.powf(20.*t - 10.) / 2.}
     else {2. - EXP_BASE.powf(-20.*t + 10.) / 2.}
 }
+
+// Sine
+
+pub fn sine_in(t: f32) -> f32 {
+    1. - (t*PI/2.).cos()
+}
+
+pub fn sine_out(t: f32) -> f32 {
+    (t*PI/2.).sin()
+}
+
+pub fn sine_inout(t: f32) -> f32 {
+    -((PI*t).cos() - 1.) / 2.
+}
+
 
 // TODO: add more easing functions
