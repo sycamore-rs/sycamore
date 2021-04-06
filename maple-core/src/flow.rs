@@ -86,7 +86,9 @@ where
             if iterable.get().is_empty() {
                 for (_, (owner, _value, template, _i)) in templates.borrow_mut().drain() {
                     drop(owner); // destroy owner
-                    template.inner_node().remove_self();
+                    for node in &template {
+                        node.remove_self()
+                    }
                 }
                 return;
             }
@@ -103,9 +105,9 @@ where
                     .map(|x| (x.0.clone(), (x.1 .2.clone(), x.1 .3)))
                     .collect::<Vec<_>>();
 
-                for node in &excess_nodes {
-                    let removed_index = node.1 .1;
-                    templates.remove(&node.0);
+                for template in &excess_nodes {
+                    let removed_index = template.1 .1;
+                    templates.remove(&template.0);
 
                     // Offset indexes of other templates by 1.
                     for (_, _, _, i) in templates.values_mut() {
@@ -115,8 +117,10 @@ where
                     }
                 }
 
-                for node in excess_nodes {
-                    node.1 .0.inner_node().remove_self();
+                for template in excess_nodes {
+                    for node in template.1 .0 {
+                        node.remove_self();
+                    }
                 }
             }
 
@@ -160,16 +164,19 @@ where
 
                     if let Some(next_item) = iterable.get().get(i + 1) {
                         let templates = templates.borrow();
-                        if let Some(next_node) = templates.get(&key_fn(next_item)) {
-                            next_node
-                                .2
-                                .inner_node()
-                                .insert_sibling_before(new_template.unwrap().inner_node());
+                        if let Some(next_template) = templates.get(&key_fn(next_item)) {
+                            for node in &new_template.unwrap() {
+                                next_template.2.first_node().insert_sibling_before(node);
+                            }
                         } else {
-                            marker.insert_sibling_before(new_template.unwrap().inner_node());
+                            for node in &new_template.unwrap() {
+                                marker.insert_sibling_before(node);
+                            }
                         }
                     } else {
-                        marker.insert_sibling_before(new_template.unwrap().inner_node());
+                        for node in &new_template.unwrap() {
+                            marker.insert_sibling_before(node);
+                        }
                     }
                 } else if match previous_value {
                     Some(prev) => prev.index,
@@ -179,15 +186,21 @@ where
                     // Location changed, move from old location to new location
                     // Node was moved in the DOM. Move node to new index.
 
-                    let node = templates.borrow().get(&key).unwrap().2.inner_node().clone();
-
-                    if let Some(next_item) = iterable.get().get(i + 1) {
+                    {
                         let templates = templates.borrow();
-                        let next_node = templates.get(&key_fn(next_item)).unwrap();
-                        next_node.2.inner_node().insert_sibling_before(&node); // Move to before
-                                                                               // next node
-                    } else {
-                        marker.insert_sibling_before(&node); // Move to end.
+                        let template = &templates.get(&key).unwrap().2;
+
+                        if let Some(next_item) = iterable.get().get(i + 1) {
+                            let next_node = templates.get(&key_fn(next_item)).unwrap();
+                            for node in template {
+                                // Move to before next node.
+                                next_node.2.first_node().insert_sibling_before(node);
+                            }
+                        } else {
+                            for node in template {
+                                marker.insert_sibling_before(node); // Move to end.
+                            }
+                        }
                     }
 
                     templates.borrow_mut().get_mut(&key).unwrap().3 = i;
@@ -209,13 +222,19 @@ where
                     let mut new_template = None;
                     let owner = create_root(|| new_template = Some(template(item.clone())));
 
-                    let (_, _, old_node, _) = mem::replace(
+                    let (_, _, old_template, _) = mem::replace(
                         templates.get_mut(&key).unwrap(),
                         (owner, item.clone(), new_template.clone().unwrap(), i),
                     );
 
-                    let parent = old_node.inner_node().parent_node().unwrap();
-                    parent.replace_child(new_template.unwrap().inner_node(), old_node.inner_node());
+                    let parent = old_template.first_node().parent_node().unwrap();
+
+                    for new_node in &new_template.unwrap() {
+                        parent.insert_child_before(new_node, Some(old_template.first_node()));
+                    }
+                    for old_node in &old_template {
+                        parent.remove_child(old_node);
+                    }
                 }
             }
         }
@@ -279,7 +298,9 @@ where
             if props.iterable.get().is_empty() {
                 for (owner, template) in templates.borrow_mut().drain(..) {
                     drop(owner); // destroy owner
-                    template.inner_node().remove_self();
+                    for node in template {
+                        node.remove_self();
+                    }
                 }
                 return;
             }
@@ -303,16 +324,18 @@ where
                     let owner = create_root(|| new_template = Some((props.template)(item.clone())));
 
                     if templates.borrow().get(i).is_some() {
-                        let old_node = mem::replace(
+                        let old_template = mem::replace(
                             &mut templates.borrow_mut()[i],
                             (owner, new_template.as_ref().unwrap().clone()),
                         );
 
-                        let parent = old_node.1.inner_node().parent_node().unwrap();
-                        parent.replace_child(
-                            new_template.unwrap().inner_node(),
-                            old_node.1.inner_node(),
-                        );
+                        let parent = old_template.1.first_node().parent_node().unwrap();
+                        for node in &new_template.unwrap() {
+                            parent.insert_child_before(node, Some(old_template.1.first_node()));
+                        }
+                        for old_node in &old_template.1 {
+                            parent.remove_child(old_node);
+                        }
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
@@ -320,7 +343,9 @@ where
                             .borrow_mut()
                             .push((owner, new_template.as_ref().unwrap().clone()));
 
-                        marker.insert_sibling_before(&new_template.unwrap().inner_node());
+                        for node in &new_template.unwrap() {
+                            marker.insert_sibling_before(node);
+                        }
                     }
                 }
             }
@@ -329,8 +354,10 @@ where
                 let mut templates = templates.borrow_mut();
                 let excess_nodes = templates.drain(props.iterable.get().len()..);
 
-                for node in excess_nodes {
-                    node.1.inner_node().remove_self();
+                for template in excess_nodes {
+                    for node in &template.1 {
+                        node.remove_self();
+                    }
                 }
             }
 

@@ -41,17 +41,31 @@ impl<G: GenericNode> TemplateResult<G> {
         }
     }
 
+    /// Gets the first node in the [`TemplateResult`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the fragment has no child nodes.
     pub fn first_node(&self) -> &G {
         match &self.inner {
             TemplateResultInner::Node(node) => node,
-            TemplateResultInner::Fragment(fragment) => fragment.first().unwrap(),
+            TemplateResultInner::Fragment(fragment) => {
+                fragment.first().expect("fragment has no child nodes")
+            }
         }
     }
 
+    /// Gets the last node in the [`TemplateResult`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the fragment has no child nodes.
     pub fn last_node(&self) -> &G {
         match &self.inner {
             TemplateResultInner::Node(node) => node,
-            TemplateResultInner::Fragment(fragment) => fragment.last().unwrap(),
+            TemplateResultInner::Fragment(fragment) => {
+                fragment.last().expect("fragment has no child nodes")
+            }
         }
     }
 
@@ -90,5 +104,15 @@ impl<'a, G: GenericNode> Iterator for Iter<'a, G> {
             Iter::Node(node) => node.next(),
             Iter::Fragment(fragment) => fragment.next(),
         }
+    }
+}
+
+impl<'a, G: GenericNode> IntoIterator for &'a TemplateResult<G> {
+    type Item = &'a G;
+
+    type IntoIter = Iter<'a, G>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
