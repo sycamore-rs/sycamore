@@ -103,43 +103,54 @@ pub fn circ_out(t: f32) -> f32 {
 
 pub fn circ_inout(t: f32) -> f32 {
     if t < 0.5 {
-        circ_in(2.*t) / 2.
+        circ_in(2. * t) / 2.
     } else {
-        (1. - (-2.*t + 2.).powi(2)).sqrt() / 2.
+        (1. - (-2. * t + 2.).powi(2)).sqrt() / 2.
     }
 }
 
 // Exponential
 
 pub fn expo_in(t: f32) -> f32 {
-    if t.abs() <= 0.0002 {0.}
-    else {EXP_BASE.powf(10.*t - 10.)}
+    if t.abs() <= 0.0002 {
+        0.
+    } else {
+        EXP_BASE.powf(10. * t - 10.)
+    }
 }
 
 pub fn expo_out(t: f32) -> f32 {
-    if (t - 1.).abs() <= 0.0002 {0.}
-    else {1. - EXP_BASE.powf(-10.*t)}
+    if (t - 1.).abs() <= 0.0002 {
+        0.
+    } else {
+        1. - EXP_BASE.powf(-10. * t)
+    }
 }
 
 pub fn expo_inout(t: f32) -> f32 {
-    if t.abs() <= 0.0002 {0.}
-    else if (t - 1.).abs() <= 0.0002 {1.}
-    else if t <= 0.5 {EXP_BASE.powf(20.*t - 10.) / 2.}
-    else {2. - EXP_BASE.powf(-20.*t + 10.) / 2.}
+    if t.abs() <= 0.0002 {
+        0.
+    } else if (t - 1.).abs() <= 0.0002 {
+        1.
+    } else if t <= 0.5 {
+        EXP_BASE.powf(20. * t - 10.) / 2.
+    } else {
+        2. - EXP_BASE.powf(-20. * t + 10.) / 2.
+    }
 }
 
 // Sine
 
 pub fn sine_in(t: f32) -> f32 {
-    1. - (t*PI/2.).cos()
+    1. - (t * PI / 2.).cos()
 }
 
 pub fn sine_out(t: f32) -> f32 {
-    (t*PI/2.).sin()
+    (t * PI / 2.).sin()
 }
 
 pub fn sine_inout(t: f32) -> f32 {
-    -((PI*t).cos() - 1.) / 2.
+    -((PI * t).cos() - 1.) / 2.
 }
 
 // Bounce
@@ -152,27 +163,26 @@ pub fn bounce_out(t: f32) -> f32 {
     // TODO: Refactor? Code seems like a repetition.
     // Further, it is unclear why the numbers here are
     // picked.
-    if t < 1./BOUNCE_GRAVITY {
+    if t < 1. / BOUNCE_GRAVITY {
         BOUNCE_AMPLITUDE * t * t
-    } else if t < 2./BOUNCE_GRAVITY {
-        let t = 1.5/BOUNCE_GRAVITY;
+    } else if t < 2. / BOUNCE_GRAVITY {
+        let t = 1.5 / BOUNCE_GRAVITY;
         BOUNCE_AMPLITUDE * t * t + 0.75
     } else if t < 2.5 / BOUNCE_GRAVITY {
-        let t = 2.25/BOUNCE_GRAVITY;
-        return BOUNCE_AMPLITUDE * t * t + 0.9375
+        let t = 2.25 / BOUNCE_GRAVITY;
+        BOUNCE_AMPLITUDE * t * t + 0.9375
     } else {
-        let t = 2.625/BOUNCE_GRAVITY;
-        return BOUNCE_AMPLITUDE * t * t + 0.984375
+        let t = 2.625 / BOUNCE_GRAVITY;
+        BOUNCE_AMPLITUDE * t * t + 0.984375
     }
 }
 
 pub fn bounce_inout(t: f32) -> f32 {
     if t < 0.5 {
-        (1. - bounce_out(1. - 2.*t)) / 2.
+        (1. - bounce_out(1. - 2. * t)) / 2.
     } else {
-        (1. + bounce_out(-1. + 2.*t)) / 2.
+        (1. + bounce_out(-1. + 2. * t)) / 2.
     }
 }
-
 
 // TODO: add more easing functions
