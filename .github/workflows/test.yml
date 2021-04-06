@@ -78,4 +78,4 @@ jobs:
           key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('Cargo.lock') }}
 
       - name: Run tests
-        run: cargo +nightly miri test
+        run: cargo miri test
