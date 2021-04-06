@@ -25,7 +25,10 @@ fn test_container() -> Node {
         document()
             .body()
             .unwrap()
-            .insert_adjacent_html("beforeend", r#"<test-container id="test-container"></test-container>"#)
+            .insert_adjacent_html(
+                "beforeend",
+                r#"<test-container id="test-container"></test-container>"#,
+            )
             .unwrap();
     }
 
@@ -37,6 +40,22 @@ fn test_container() -> Node {
     container.set_inner_html(""); // erase contents from previous test runs
 
     container.into()
+}
+
+#[wasm_bindgen_test]
+fn empty_template() {
+    let node = template! {};
+
+    render_to(|| node, &test_container());
+
+    assert_eq!(
+        document()
+            .query_selector("#test-container")
+            .unwrap()
+            .unwrap()
+            .inner_html(),
+        "<!---->"
+    );
 }
 
 #[wasm_bindgen_test]
@@ -162,10 +181,10 @@ fn fragments() {
 
     render_to(|| node, &test_container());
 
-    let test_container = document().query_selector("#test-container").unwrap().unwrap();
+    let test_container = document()
+        .query_selector("#test-container")
+        .unwrap()
+        .unwrap();
 
-    assert_eq!(
-        test_container.text_content().unwrap(),
-        "123"
-    );
+    assert_eq!(test_container.text_content().unwrap(), "123");
 }
