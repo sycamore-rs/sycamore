@@ -80,8 +80,18 @@ impl ToTokens for HtmlTree {
 pub fn template(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as HtmlTree);
 
-    let quoted = quote! {
-        ::maple_core::template_result::TemplateResult::new_node(#input)
+    let quoted = match input {
+        HtmlTree::Component(component) => quote! {
+            #component
+        },
+        HtmlTree::Element(element) => quote! {
+            ::maple_core::template_result::TemplateResult::new_node(#element)
+        },
+        HtmlTree::Text(text) => quote! {
+            ::maple_core::template_result::TemplateResult::new_node(
+                ::maple_core::generic_node::GenericNode::text(#text),
+            )
+        },
     };
 
     TokenStream::from(quoted)

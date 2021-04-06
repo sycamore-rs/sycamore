@@ -33,7 +33,7 @@ impl ToTokens for Component {
 
         let quoted = quote! {
             ::maple_core::reactive::untrack(||
-                ::std::clone::Clone::clone(::maple_core::template_result::TemplateResult::inner_node(&#path(#args)))
+                #path(#args)
             )
         };
 

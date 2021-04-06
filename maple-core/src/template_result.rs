@@ -38,14 +38,6 @@ impl<G: GenericNode> TemplateResult<G> {
         Self::new_node(G::marker())
     }
 
-    #[deprecated]
-    pub fn inner_node(&self) -> &G {
-        match &self.inner {
-            TemplateResultInner::Node(node) => node,
-            TemplateResultInner::Fragment(fragment) => fragment.last().unwrap(),
-        }
-    }
-
     /// Gets the first node in the [`TemplateResult`].
     ///
     /// # Panics
