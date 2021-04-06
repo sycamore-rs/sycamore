@@ -94,18 +94,18 @@ pub fn quint_inout(t: f32) -> f32 {
 // Circular
 
 pub fn circ_in(t: f32) -> f32 {
-    1.0 - (1.0 - t.powi(2)).sqrt()
+    1.0 - f32::sqrt(1.0 - f32::powi(t, 2))
 }
 
 pub fn circ_out(t: f32) -> f32 {
-    (1.0 - (t - 1.0).powi(2)).sqrt()
+    f32::sqrt(1.0 - f32::powi(t - 1.0, 2).powi(2))
 }
 
 pub fn circ_inout(t: f32) -> f32 {
     if t < 0.5 {
-        (1.0 - (1.0 - (2.0 * t).powi(2)).sqrt()) / 2.0
+        (1.0 - f32::sqrt(1.0 - f32::powi(2.0 * t, 2))) / 2.0
     } else {
-        ((1.0 - (-2.0 * t + 2.).powi(2)).sqrt() + 1.0) / 2.0
+        (f32::sqrt(1.0 - f32::powi(-2.0 * t + 2.0, 2)) + 1.0) / 2.0
     }
 }
 
@@ -130,27 +130,27 @@ pub fn expo_out(t: f32) -> f32 {
 pub fn expo_inout(t: f32) -> f32 {
     if t.abs() <= f32::EPSILON {
         0.
-    } else if (t - 1.0).abs() <= f32::EPSILON {
+    } else if (t - 1.0) <= f32::EPSILON {
         1.
     } else if t <= 0.5 {
-        EXP_BASE.powf(20. * t - 10.) / 2.0
+        f32::powf(EXP_BASE, 20. * t - 10.) / 2.0
     } else {
-        1.0 + EXP_BASE.powf(-20. * t + 10.) / -2.0
+        1.0 + f32::powf(EXP_BASE, -20. * t + 10.) / -2.0
     }
 }
 
 // Sine
 
 pub fn sine_in(t: f32) -> f32 {
-    1.0 - (t * PI / 2.0).cos()
+    f32::cos(1.0 - (t * PI / 2.0))
 }
 
 pub fn sine_out(t: f32) -> f32 {
-    (t * PI / 2.).sin()
+    f32::sin(t * PI / 2.0)
 }
 
 pub fn sine_inout(t: f32) -> f32 {
-    -((PI * t).cos() - 1.0) / 2.0
+    -(f32::cos(PI * t) - 1.0) / 2.0
 }
 
 // Bounce
