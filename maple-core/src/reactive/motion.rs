@@ -63,7 +63,7 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
 }
 
 /// A state that is interpolated when it is set.
-pub struct Tweened<T: Lerp + Clone + 'static>(RefCell<TweenedInner<T>>);
+pub struct Tweened<T: Lerp + Clone + 'static>(Rc<RefCell<TweenedInner<T>>>);
 
 struct TweenedInner<T: Lerp + Clone + 'static> {
     signal: Signal<T>,
@@ -79,21 +79,21 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,
     ) -> Self {
-        Self(RefCell::new(TweenedInner {
+        Self(Rc::new(RefCell::new(TweenedInner {
             signal: Signal::new(initial),
             current_task: None,
             transition_duration: Duration::from_std(transition_duration)
                 .expect("transition_duration is greater than the maximum value"),
             easing_fn: Rc::new(easing_fn),
-        }))
+        })))
     }
 
     /// Set the target value for the `Tweened`. The existing value will be interpolated to the
     /// target value with the specified `transition_duration` and `easing_fn`.
-    /// 
+    ///
     /// If the value is being interpolated already due to a previous call to `set()`, the previous
     /// task will be canceled.
-    /// 
+    ///
     /// To immediately set the value without interpolating the value, use `signal().set(...)` instead.
     pub fn set(&self, new_value: T) {
         let start = self.signal().get_untracked().as_ref().clone();
@@ -143,7 +143,7 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
 
 impl<T: Lerp + Clone + 'static> Clone for Tweened<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(Rc::clone(&self.0))
     }
 }
 
