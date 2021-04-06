@@ -14,8 +14,9 @@ pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 impl<T: 'static> StateHandle<T> {
     /// Get the current value of the state.
     pub fn get(&self) -> Rc<T> {
-        // if inside an effect, add this signal to dependency list
-        CONTEXTS.with(|contexts| {
+        // If inside an effect, add this signal to dependency list.
+        // If running inside a destructor, do nothing.
+        let _ = CONTEXTS.try_with(|contexts| {
             if let Some(last_context) = contexts.borrow().last() {
                 let signal = Rc::downgrade(&self.0);
 

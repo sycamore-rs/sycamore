@@ -392,15 +392,23 @@ where
 /// assert_eq!(*double.get(), 2);
 /// ```
 pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
-    CONTEXTS.with(|contexts| {
+    let f = Rc::new(RefCell::new(Some(f)));
+    let g = Rc::clone(&f);
+
+    // Do not panic if running inside destructor.
+    if let Ok(ret) = CONTEXTS.try_with(|contexts| {
         let tmp = contexts.take();
 
-        let ret = f();
+        let ret = f.take().unwrap()();
 
         *contexts.borrow_mut() = tmp;
 
         ret
-    })
+    }) {
+        ret
+    } else {
+        g.take().unwrap()()
+    }
 }
 
 /// Adds a callback function to the current reactive scope's cleanup.
