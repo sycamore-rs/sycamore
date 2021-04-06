@@ -80,7 +80,7 @@ impl Drop for Owner {
         }
 
         for cleanup in mem::take(&mut self.cleanup) {
-            cleanup();
+            untrack(cleanup);
         }
     }
 }
@@ -710,5 +710,25 @@ mod tests {
 
         trigger.set(());
         assert_eq!(*counter.get(), 2);
+    }
+
+    #[test]
+    fn cleanup_is_untracked() {
+        let trigger = Signal::new(());
+
+        let counter = Signal::new(0);
+
+        create_effect(cloned!((trigger, counter) => move || {
+            counter.set(*counter.get_untracked() + 1);
+
+            on_cleanup(cloned!((trigger) => move || {
+                trigger.get(); // do not subscribe to trigger
+            }));
+        }));
+
+        assert_eq!(*counter.get(), 1);
+
+        trigger.set(());
+        assert_eq!(*counter.get(), 1);
     }
 }
