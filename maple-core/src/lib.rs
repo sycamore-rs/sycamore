@@ -5,9 +5,12 @@
 //! This is the API docs for maple. If you are looking for the usage docs, checkout the [README](https://github.com/lukechu10/maple).
 //!
 //! ## Features
-//! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on `wasm32-unknown-unknown` target.
-//! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering / Pre-rendering).
-//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using `serde`.
+//! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on
+//!   `wasm32-unknown-unknown` target.
+//! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering /
+//!   Pre-rendering).
+//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
+//!   `serde`.
 
 #![allow(non_snake_case)]
 #![warn(clippy::clone_on_ref_ptr)]
@@ -63,7 +66,8 @@ pub fn render_to(
     GLOBAL_OWNERS.with(|global_owners| global_owners.borrow_mut().push(owner));
 }
 
-/// Render a [`TemplateResult`] into a static [`String`]. Useful for rendering to a string on the server side.
+/// Render a [`TemplateResult`] into a static [`String`]. Useful for rendering to a string on the
+/// server side.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
 #[cfg(feature = "ssr")]

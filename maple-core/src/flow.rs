@@ -26,7 +26,8 @@ where
 }
 
 /// Keyed iteration. Use this instead of directly rendering an array of [`TemplateResult`]s.
-/// Using this will minimize re-renders instead of re-rendering every single node on every state change.
+/// Using this will minimize re-renders instead of re-rendering every single node on every state
+/// change.
 ///
 /// For non keyed iteration, see [`Indexed`].
 ///
@@ -66,7 +67,8 @@ where
 
     type TemplateValue<T, G> = (Owner, T, TemplateResult<G>, usize /* index */);
 
-    // A tuple with a value of type `T` and the `TemplateResult` produces by calling `props.template` with the first value.
+    // A tuple with a value of type `T` and the `TemplateResult` produces by calling
+    // `props.template` with the first value.
     let templates: Rc<RefCell<HashMap<Key, TemplateValue<T, G>>>> = Default::default();
 
     let fragment = G::fragment();
@@ -182,7 +184,8 @@ where
                     if let Some(next_item) = iterable.get().get(i + 1) {
                         let templates = templates.borrow();
                         let next_node = templates.get(&key_fn(next_item)).unwrap();
-                        next_node.2.inner_node().insert_sibling_before(&node); // Move to before next node
+                        next_node.2.inner_node().insert_sibling_before(&node); // Move to before
+                                                                               // next node
                     } else {
                         marker.insert_sibling_before(&node); // Move to end.
                     }
@@ -230,8 +233,9 @@ where
     pub template: F,
 }
 
-/// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of [`TemplateResult`]s.
-/// Using this will minimize re-renders instead of re-rendering every single node on every state change.
+/// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of
+/// [`TemplateResult`]s. Using this will minimize re-renders instead of re-rendering every single
+/// node on every state change.
 ///
 /// For keyed iteration, see [`Keyed`].
 ///

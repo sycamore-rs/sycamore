@@ -1,6 +1,13 @@
 use crate::generic_node::GenericNode;
 
-/// Result of the [`template`] macro.
+/// Internal type for [`TemplateResult`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TemplateResultType<G: GenericNode> {
+    Node(G),
+    Fragment(Vec<G>),
+}
+
+/// Result of the [`template`] macro. Should not be constructed manually.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult<G: GenericNode> {
     node: G,

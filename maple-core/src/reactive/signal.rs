@@ -158,8 +158,9 @@ impl<T: 'static> Signal<T> {
     }
 
     /// Calls all the subscribers without modifying the state.
-    /// This can be useful when using patterns such as inner mutability where the state updated will not be automatically triggered.
-    /// In the general case, however, it is preferable to use [`Signal::set`] instead.
+    /// This can be useful when using patterns such as inner mutability where the state updated will
+    /// not be automatically triggered. In the general case, however, it is preferable to use
+    /// [`Signal::set`] instead.
     pub fn trigger_subscribers(&self) {
         // Clone subscribers to prevent modifying list when calling callbacks.
         let subscribers = self.handle.0.borrow().subscribers.clone();
@@ -241,7 +242,8 @@ impl<T> SignalInner<T> {
         self.subscribers.insert(handler);
     }
 
-    /// Removes a handler from the subscriber list. If the handler is not a subscriber, does nothing.
+    /// Removes a handler from the subscriber list. If the handler is not a subscriber, does
+    /// nothing.
     fn unsubscribe(&mut self, handler: &Callback) {
         self.subscribers.remove(handler);
     }
