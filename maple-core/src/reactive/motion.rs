@@ -128,14 +128,17 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         loop_raf(task);
     }
 
+    /// Alias for `signal().get()`.
     pub fn get(&self) -> Rc<T> {
         self.signal().get()
     }
 
+    /// Alias for `signal().get_untracked()`.
     pub fn get_untracked(&self) -> Rc<T> {
         self.signal().get_untracked()
     }
 
+    /// Get the inner signal backing the state.
     pub fn signal(&self) -> Signal<T> {
         self.0.borrow().signal.clone()
     }
