@@ -169,7 +169,8 @@ pub fn create_effect_initial<R: 'static>(
                 CONTEXTS.with(|contexts| {
                     let initial_context_size = contexts.borrow().len();
 
-                    // Upgrade running now to make sure running is valid for the whole duration of the effect.
+                    // Upgrade running now to make sure running is valid for the whole duration of
+                    // the effect.
                     let running = running.upgrade().unwrap();
 
                     // Recreate effect dependencies each time effect is called.
@@ -322,8 +323,8 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
-/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is the same.
-/// That is why the output of the function must implement [`PartialEq`].
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is
+/// the same. That is why the output of the function must implement [`PartialEq`].
 ///
 /// To specify a custom comparison function, use [`create_selector_with`].
 pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
@@ -335,7 +336,8 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
-/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is the same.
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is
+/// the same.
 ///
 /// It takes a comparison function to compare the old and new value, which returns `true` if they
 /// are the same and `false` otherwise.
@@ -655,7 +657,8 @@ mod tests {
         assert_eq!(*double.get(), 2);
 
         state.set(2);
-        assert_eq!(*double.get(), 2); // double value should still be true because state.get() was inside untracked
+        assert_eq!(*double.get(), 2); // double value should still be true because state.get() was
+                                      // inside untracked
     }
 
     #[test]

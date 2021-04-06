@@ -1,4 +1,4 @@
-error: unexpected token
+error: expected a valid HTML node
  --> $DIR/element-fail.rs:4:45
   |
 4 |     let _: TemplateResult<G> = template! { p.my-class#id };

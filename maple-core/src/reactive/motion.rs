@@ -94,7 +94,8 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
     /// If the value is being interpolated already due to a previous call to `set()`, the previous
     /// task will be canceled.
     ///
-    /// To immediately set the value without interpolating the value, use `signal().set(...)` instead.
+    /// To immediately set the value without interpolating the value, use `signal().set(...)`
+    /// instead.
     pub fn set(&self, new_value: T) {
         let start = self.signal().get_untracked().as_ref().clone();
         let easing_fn = Rc::clone(&self.0.borrow().easing_fn);

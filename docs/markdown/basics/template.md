@@ -38,3 +38,18 @@ template! {
     }
 }
 ```
+
+Templates can also be fragments.
+
+```rust
+template! {
+    p { "First child" }
+    p { "Second child" }
+}
+```
+
+Or be empty.
+
+```rust
+template! {}
+```
