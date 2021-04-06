@@ -9,6 +9,9 @@ use super::*;
 
 /// Describes a trait that can be linearly interpolate between two points.
 pub trait Lerp {
+    /// Get a value between `self` and `other` at a `scalar`.
+    ///
+    /// `0.0 <= scalar <= 1`
     fn lerp(&self, other: &Self, scalar: f32) -> Self;
 }
 
@@ -59,6 +62,7 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
     }
 }
 
+/// A state that is interpolated when it is set.
 pub struct Tweened<T: Lerp + Clone + 'static>(RefCell<TweenedInner<T>>);
 
 struct TweenedInner<T: Lerp + Clone + 'static> {
@@ -69,6 +73,7 @@ struct TweenedInner<T: Lerp + Clone + 'static> {
 }
 
 impl<T: Lerp + Clone + 'static> Tweened<T> {
+    /// Create a new tweened state with the given value.
     pub fn new(
         initial: T,
         transition_duration: std::time::Duration,
@@ -83,6 +88,13 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         }))
     }
 
+    /// Set the target value for the `Tweened`. The existing value will be interpolated to the
+    /// target value with the specified `transition_duration` and `easing_fn`.
+    /// 
+    /// If the value is being interpolated already due to a previous call to `set()`, the previous
+    /// task will be canceled.
+    /// 
+    /// To immediately set the value without interpolating the value, use `signal().set(...)` instead.
     pub fn set(&self, new_value: T) {
         let start = self.signal().get_untracked().as_ref().clone();
         let easing_fn = Rc::clone(&self.0.borrow().easing_fn);

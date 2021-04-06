@@ -34,7 +34,7 @@ pub struct TemplateResult<G: GenericNode> {
 }
 
 impl<G: GenericNode> TemplateResult<G> {
-    /// Create a new [`TemplateResult`] from a [`Node`].
+    /// Create a new [`TemplateResult`] from a [`GenericNode`].
     pub fn new(node: G) -> Self {
         Self { node }
     }
