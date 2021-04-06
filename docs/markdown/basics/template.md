@@ -1,4 +1,4 @@
-# template!
+# `template!`
 
 Maple uses the `template!` macro as an ergonomic way to create complex user interfaces. You might have already seen it in the _"Hello, World!"_ example.
 
@@ -33,7 +33,7 @@ Events are attached using the `on:*` directive.
 
 ```rust
 template! {
-    button(on:click=|\_| { /_ do something _/ }) {
+    button(on:click=|_| { /* do something */ }) {
         "Click me"
     }
 }

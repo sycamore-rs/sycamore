@@ -9,6 +9,9 @@ use super::*;
 
 /// Describes a trait that can be linearly interpolate between two points.
 pub trait Lerp {
+    /// Get a value between `self` and `other` at a `scalar`.
+    ///
+    /// `0.0 <= scalar <= 1`
     fn lerp(&self, other: &Self, scalar: f32) -> Self;
 }
 
@@ -59,7 +62,8 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
     }
 }
 
-pub struct Tweened<T: Lerp + Clone + 'static>(RefCell<TweenedInner<T>>);
+/// A state that is interpolated when it is set.
+pub struct Tweened<T: Lerp + Clone + 'static>(Rc<RefCell<TweenedInner<T>>>);
 
 struct TweenedInner<T: Lerp + Clone + 'static> {
     signal: Signal<T>,
@@ -69,20 +73,28 @@ struct TweenedInner<T: Lerp + Clone + 'static> {
 }
 
 impl<T: Lerp + Clone + 'static> Tweened<T> {
+    /// Create a new tweened state with the given value.
     pub fn new(
         initial: T,
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,
     ) -> Self {
-        Self(RefCell::new(TweenedInner {
+        Self(Rc::new(RefCell::new(TweenedInner {
             signal: Signal::new(initial),
             current_task: None,
             transition_duration: Duration::from_std(transition_duration)
                 .expect("transition_duration is greater than the maximum value"),
             easing_fn: Rc::new(easing_fn),
-        }))
+        })))
     }
 
+    /// Set the target value for the `Tweened`. The existing value will be interpolated to the
+    /// target value with the specified `transition_duration` and `easing_fn`.
+    ///
+    /// If the value is being interpolated already due to a previous call to `set()`, the previous
+    /// task will be canceled.
+    ///
+    /// To immediately set the value without interpolating the value, use `signal().set(...)` instead.
     pub fn set(&self, new_value: T) {
         let start = self.signal().get_untracked().as_ref().clone();
         let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
@@ -116,14 +128,17 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         loop_raf(task);
     }
 
+    /// Alias for `signal().get()`.
     pub fn get(&self) -> Rc<T> {
         self.signal().get()
     }
 
+    /// Alias for `signal().get_untracked()`.
     pub fn get_untracked(&self) -> Rc<T> {
         self.signal().get_untracked()
     }
 
+    /// Get the inner signal backing the state.
     pub fn signal(&self) -> Signal<T> {
         self.0.borrow().signal.clone()
     }
@@ -131,7 +146,7 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
 
 impl<T: Lerp + Clone + 'static> Clone for Tweened<T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(Rc::clone(&self.0))
     }
 }
 
