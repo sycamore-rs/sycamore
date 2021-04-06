@@ -4,6 +4,8 @@ use core::f32;
 use std::f32::consts::PI;
 
 const EXP_BASE: f32 = 2.;
+const BOUNCE_GRAVITY: f32 = 2.75;
+const BOUNCE_AMPLITUDE: f32 = 7.5625;
 
 // Linear
 
@@ -138,6 +140,38 @@ pub fn sine_out(t: f32) -> f32 {
 
 pub fn sine_inout(t: f32) -> f32 {
     -((PI*t).cos() - 1.) / 2.
+}
+
+// Bounce
+
+pub fn bounce_in(t: f32) -> f32 {
+    1. - bounce_out(1. - t)
+}
+
+pub fn bounce_out(t: f32) -> f32 {
+    // TODO: Refactor? Code seems like a repetition.
+    // Further, it is unclear why the numbers here are
+    // picked.
+    if t < 1./BOUNCE_GRAVITY {
+        BOUNCE_AMPLITUDE * t * t
+    } else if t < 2./BOUNCE_GRAVITY {
+        let t = 1.5/BOUNCE_GRAVITY;
+        BOUNCE_AMPLITUDE * t * t + 0.75
+    } else if t < 2.5 / BOUNCE_GRAVITY {
+        let t = 2.25/BOUNCE_GRAVITY;
+        return BOUNCE_AMPLITUDE * t * t + 0.9375
+    } else {
+        let t = 2.625/BOUNCE_GRAVITY;
+        return BOUNCE_AMPLITUDE * t * t + 0.984375
+    }
+}
+
+pub fn bounce_inout(t: f32) -> f32 {
+    if t < 0.5 {
+        (1. - bounce_out(1. - 2.*t)) / 2.
+    } else {
+        (1. + bounce_out(-1. + 2.*t)) / 2.
+    }
 }
 
 
