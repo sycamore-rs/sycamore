@@ -19,7 +19,7 @@ pub trait Render<G: GenericNode> {
     ///
     /// Returns the new node. If the node is reused instead of replaced, the returned node is simply
     /// the node passed in.
-    fn update_node(&self, parent: &G, node: &Vec<G>) -> Vec<G> {
+    fn update_node<'a>(&self, parent: &G, node: &'a [G]) -> Vec<G> {
         let new_nodes = self.render();
 
         for new_node in &new_nodes {
@@ -35,14 +35,14 @@ impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
         vec![G::text_node(&format!("{}", self))]
     }
 
-    fn update_node(&self, _parent: &G, node: &Vec<G>) -> Vec<G> {
+    fn update_node<'a>(&self, _parent: &G, node: &'a [G]) -> Vec<G> {
         // replace `textContent` of `node` instead of recreating
 
         node.first()
             .unwrap()
             .update_inner_text(&format!("{}", self));
 
-        node.clone()
+        node.to_vec()
     }
 }
 
