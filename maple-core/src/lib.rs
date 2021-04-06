@@ -17,7 +17,6 @@
 
 use generic_node::GenericNode;
 pub use maple_core_macro::template;
-use prelude::SignalVec;
 
 pub mod easing;
 pub mod flow;
@@ -28,6 +27,7 @@ pub mod reactive;
 pub mod render;
 pub mod utils;
 
+/// Result of the [`template`] macro.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult<G: GenericNode> {
     node: G,
@@ -46,18 +46,6 @@ impl<G: GenericNode> TemplateResult<G> {
 
     pub fn inner_element(&self) -> G {
         self.node.clone()
-    }
-}
-
-/// A [`SignalVec`](reactive::SignalVec) of [`TemplateResult`]s.
-#[derive(Clone)]
-pub struct TemplateList<T: GenericNode> {
-    templates: reactive::SignalVec<TemplateResult<T>>,
-}
-
-impl<T: GenericNode> From<SignalVec<TemplateResult<T>>> for TemplateList<T> {
-    fn from(templates: SignalVec<TemplateResult<T>>) -> Self {
-        Self { templates }
     }
 }
 
@@ -123,12 +111,12 @@ pub mod prelude {
     pub use crate::noderef::NodeRef;
     pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
-        create_selector_with, on_cleanup, untrack, Signal, SignalVec, StateHandle,
+        create_selector_with, on_cleanup, untrack, Signal, StateHandle,
     };
     pub use crate::render::Render;
     #[cfg(feature = "ssr")]
     pub use crate::render_to_string;
+    pub use crate::TemplateResult;
     #[cfg(feature = "dom")]
     pub use crate::{render, render_to};
-    pub use crate::{TemplateList, TemplateResult};
 }
