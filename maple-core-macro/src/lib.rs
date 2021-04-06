@@ -65,11 +65,62 @@ impl Parse for HtmlTree {
 
 impl ToTokens for HtmlTree {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        match self {
-            Self::Component(component) => component.to_tokens(tokens),
-            Self::Element(element) => element.to_tokens(tokens),
-            Self::Text(text) => text.to_tokens(tokens),
+        let quoted = match self {
+            Self::Component(component) => quote! {
+                #component
+            },
+            Self::Element(element) => quote! {
+                ::maple_core::template_result::TemplateResult::new_node(#element)
+            },
+            Self::Text(text) => match text {
+                text::Text::Text(_) => quote! {
+                    ::maple_core::template_result::TemplateResult::new_node(
+                        ::maple_core::generic_node::GenericNode::text_node(#text),
+                    )
+                },
+                text::Text::Splice(_, _) => unimplemented!("splice at top level is not supported"),
+            },
+        };
+
+        tokens.extend(quoted);
+    }
+}
+
+pub(crate) struct HtmlRoot {
+    children: Vec<HtmlTree>,
+}
+
+impl Parse for HtmlRoot {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let mut children = Vec::new();
+
+        while !input.is_empty() {
+            children.push(input.parse()?);
         }
+
+        Ok(Self { children })
+    }
+}
+
+impl ToTokens for HtmlRoot {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let quoted = match self.children.as_slice() {
+            [] => quote! {
+                ::maple_core::template_result::TemplateResult::empty()
+            },
+            [node] => node.to_token_stream(),
+            nodes => quote! {
+                ::maple_core::template_result::TemplateResult::new_fragment({
+                    let mut children = ::std::vec::Vec::new();
+                    #( for node in #nodes {
+                        children.push(node);
+                    } )*
+                    children
+                })
+            },
+        };
+
+        tokens.extend(quoted);
     }
 }
 
@@ -78,24 +129,7 @@ impl ToTokens for HtmlTree {
 /// TODO: write some more docs
 #[proc_macro]
 pub fn template(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as HtmlTree);
+    let input = parse_macro_input!(input as HtmlRoot);
 
-    let quoted = match input {
-        HtmlTree::Component(component) => quote! {
-            #component
-        },
-        HtmlTree::Element(element) => quote! {
-            ::maple_core::template_result::TemplateResult::new_node(#element)
-        },
-        HtmlTree::Text(text) => match text {
-            text::Text::Text(_) => quote! {
-                ::maple_core::template_result::TemplateResult::new_node(
-                    ::maple_core::generic_node::GenericNode::text_node(#text),
-                )
-            },
-            text::Text::Splice(_, _) => unimplemented!("splice at top level is not supported"),
-        },
-    };
-
-    TokenStream::from(quoted)
+    TokenStream::from(input.to_token_stream())
 }
