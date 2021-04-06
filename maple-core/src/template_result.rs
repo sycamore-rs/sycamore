@@ -54,4 +54,41 @@ impl<G: GenericNode> TemplateResult<G> {
             TemplateResultInner::Fragment(fragment) => fragment.last().unwrap(),
         }
     }
+
+    pub fn iter(&self) -> Iter<G> {
+        match &self.inner {
+            TemplateResultInner::Node(node) => Iter::Node(Some(node).into_iter()),
+            TemplateResultInner::Fragment(fragment) => Iter::Fragment(fragment.iter()),
+        }
+    }
+}
+
+impl<G: GenericNode> IntoIterator for TemplateResult<G> {
+    type Item = G;
+
+    type IntoIter = std::vec::IntoIter<G>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self.inner {
+            TemplateResultInner::Node(node) => vec![node].into_iter(),
+            TemplateResultInner::Fragment(fragment) => fragment.into_iter(),
+        }
+    }
+}
+
+/// An iterator over references of the nodes in [`TemplateResult`]. Created using [`TemplateResult::iter`].
+pub enum Iter<'a, G: GenericNode> {
+    Node(std::option::IntoIter<&'a G>),
+    Fragment(std::slice::Iter<'a, G>),
+}
+
+impl<'a, G: GenericNode> Iterator for Iter<'a, G> {
+    type Item = &'a G;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Iter::Node(node) => node.next(),
+            Iter::Fragment(fragment) => fragment.next(),
+        }
+    }
 }
