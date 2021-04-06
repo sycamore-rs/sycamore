@@ -23,6 +23,11 @@ impl<G: GenericNode> TemplateResult<G> {
 
     /// Create a new [`TemplateResult`] from a `Vec` of [`GenericNode`]s.
     pub fn new_fragment(fragment: Vec<G>) -> Self {
+        debug_assert!(
+            !fragment.is_empty(),
+            "fragment must have at least 1 child node, use empty() instead"
+        );
+
         Self {
             inner: TemplateResultInner::Fragment(fragment),
         }

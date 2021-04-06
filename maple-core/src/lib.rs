@@ -54,9 +54,9 @@ pub fn render_to(
     parent: &web_sys::Node,
 ) {
     let owner = reactive::create_root(|| {
-        parent
-            .append_child(&template_result().inner_node().inner_element())
-            .unwrap();
+        for node in template_result() {
+            parent.append_child(&node.inner_element()).unwrap();
+        }
     });
 
     thread_local! {
@@ -74,11 +74,14 @@ pub fn render_to(
 pub fn render_to_string(
     template_result: impl FnOnce() -> template_result::TemplateResult<generic_node::SsrNode>,
 ) -> String {
-    let mut ret = None;
-    let _owner =
-        reactive::create_root(|| ret = Some(format!("{}", template_result().inner_node())));
+    let mut ret = String::new();
+    let _owner = reactive::create_root(|| {
+        for node in template_result() {
+            ret.push_str(&format!("{}", node));
+        }
+    });
 
-    ret.unwrap()
+    ret
 }
 
 /// The maple prelude.
