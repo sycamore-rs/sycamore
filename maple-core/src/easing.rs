@@ -1,5 +1,7 @@
 //! Easing functions.
 
+use core::f32;
+
 // Linear
 
 pub fn linear(t: f32) -> f32 {
@@ -81,6 +83,24 @@ pub fn quint_inout(t: f32) -> f32 {
     } else {
         let f = (2.0 * t) - 2.0;
         0.5 * f * f * f * f * f + 1.0
+    }
+}
+
+// Circular
+
+pub fn circ_in(t: f32) -> f32 {
+    1. - (1. - t.powi(2)).sqrt()
+}
+
+pub fn circ_out(t: f32) -> f32 {
+    (1. - (t - 1.).powi(2)).sqrt()
+}
+
+pub fn circ_inout(t: f32) -> f32 {
+    if t < 0.5 {
+        circ_in(2.*t) / 2.
+    } else {
+        (1. - (-2.*t + 2.).powi(2)).sqrt() / 2.
     }
 }
 
