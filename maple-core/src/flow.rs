@@ -221,7 +221,7 @@ where
         }
     });
 
-    TemplateResult::new(fragment)
+    TemplateResult::new_node(fragment)
 }
 
 /// Props for [`Indexed`].
@@ -338,5 +338,5 @@ where
         }
     });
 
-    TemplateResult::new(fragment)
+    TemplateResult::new_node(fragment)
 }
