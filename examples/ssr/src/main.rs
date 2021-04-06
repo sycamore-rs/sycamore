@@ -5,7 +5,7 @@ use maple_core::prelude::*;
 fn App<G: GenericNode>() -> TemplateResult<G> {
     let name = Signal::new(String::new());
 
-    let handle_change = cloned!((name) => move |_| unreachable!());
+    let handle_change = move |_| unreachable!();
 
     template! {
         div {
