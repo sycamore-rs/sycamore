@@ -15,7 +15,6 @@
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]
 
-use generic_node::GenericNode;
 pub use maple_core_macro::template;
 
 pub mod easing;
@@ -25,36 +24,17 @@ pub mod macros;
 pub mod noderef;
 pub mod reactive;
 pub mod render;
+pub mod template_result;
 pub mod utils;
-
-/// Result of the [`template`] macro.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TemplateResult<G: GenericNode> {
-    node: G,
-}
-
-impl<G: GenericNode> TemplateResult<G> {
-    /// Create a new [`TemplateResult`] from a [`GenericNode`].
-    pub fn new(node: G) -> Self {
-        Self { node }
-    }
-
-    /// Create a new [`TemplateResult`] with a blank comment node
-    pub fn empty() -> Self {
-        Self::new(G::marker())
-    }
-
-    pub fn inner_element(&self) -> G {
-        self.node.clone()
-    }
-}
 
 /// Render a [`TemplateResult`] into the DOM.
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[cfg(feature = "dom")]
-pub fn render(template_result: impl FnOnce() -> TemplateResult<generic_node::DomNode>) {
+pub fn render(
+    template_result: impl FnOnce() -> template_result::TemplateResult<generic_node::DomNode>,
+) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
@@ -67,12 +47,12 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult<generic_node::Dom
 /// _This API requires the following crate features to be activated: `dom`_
 #[cfg(feature = "dom")]
 pub fn render_to(
-    template_result: impl FnOnce() -> TemplateResult<generic_node::DomNode>,
+    template_result: impl FnOnce() -> template_result::TemplateResult<generic_node::DomNode>,
     parent: &web_sys::Node,
 ) {
     let owner = reactive::create_root(|| {
         parent
-            .append_child(&template_result().node.inner_element())
+            .append_child(&template_result().inner_node().inner_element())
             .unwrap();
     });
 
@@ -88,11 +68,11 @@ pub fn render_to(
 /// _This API requires the following crate features to be activated: `ssr`_
 #[cfg(feature = "ssr")]
 pub fn render_to_string(
-    template_result: impl FnOnce() -> TemplateResult<generic_node::SsrNode>,
+    template_result: impl FnOnce() -> template_result::TemplateResult<generic_node::SsrNode>,
 ) -> String {
     let mut ret = None;
     let _owner =
-        reactive::create_root(|| ret = Some(format!("{}", template_result().inner_element())));
+        reactive::create_root(|| ret = Some(format!("{}", template_result().inner_node())));
 
     ret.unwrap()
 }
@@ -116,7 +96,7 @@ pub mod prelude {
     pub use crate::render::Render;
     #[cfg(feature = "ssr")]
     pub use crate::render_to_string;
-    pub use crate::TemplateResult;
+    pub use crate::template_result::TemplateResult;
     #[cfg(feature = "dom")]
     pub use crate::{render, render_to};
 }

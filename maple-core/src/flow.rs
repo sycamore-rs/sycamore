@@ -84,7 +84,7 @@ where
             if iterable.get().is_empty() {
                 for (_, (owner, _value, template, _i)) in templates.borrow_mut().drain() {
                     drop(owner); // destroy owner
-                    template.node.remove_self();
+                    template.inner_node().remove_self();
                 }
                 return;
             }
@@ -114,7 +114,7 @@ where
                 }
 
                 for node in excess_nodes {
-                    node.1 .0.node.remove_self();
+                    node.1 .0.inner_node().remove_self();
                 }
             }
 
@@ -161,13 +161,13 @@ where
                         if let Some(next_node) = templates.get(&key_fn(next_item)) {
                             next_node
                                 .2
-                                .node
-                                .insert_sibling_before(&new_template.unwrap().node);
+                                .inner_node()
+                                .insert_sibling_before(new_template.unwrap().inner_node());
                         } else {
-                            marker.insert_sibling_before(&new_template.unwrap().node);
+                            marker.insert_sibling_before(new_template.unwrap().inner_node());
                         }
                     } else {
-                        marker.insert_sibling_before(&new_template.unwrap().node);
+                        marker.insert_sibling_before(new_template.unwrap().inner_node());
                     }
                 } else if match previous_value {
                     Some(prev) => prev.index,
@@ -177,12 +177,12 @@ where
                     // Location changed, move from old location to new location
                     // Node was moved in the DOM. Move node to new index.
 
-                    let node = templates.borrow().get(&key).unwrap().2.node.clone();
+                    let node = templates.borrow().get(&key).unwrap().2.inner_node().clone();
 
                     if let Some(next_item) = iterable.get().get(i + 1) {
                         let templates = templates.borrow();
                         let next_node = templates.get(&key_fn(next_item)).unwrap();
-                        next_node.2.node.insert_sibling_before(&node); // Move to before next node
+                        next_node.2.inner_node().insert_sibling_before(&node); // Move to before next node
                     } else {
                         marker.insert_sibling_before(&node); // Move to end.
                     }
@@ -211,8 +211,8 @@ where
                         (owner, item.clone(), new_template.clone().unwrap(), i),
                     );
 
-                    let parent = old_node.node.parent_node().unwrap();
-                    parent.replace_child(&new_template.unwrap().node, &old_node.node);
+                    let parent = old_node.inner_node().parent_node().unwrap();
+                    parent.replace_child(new_template.unwrap().inner_node(), old_node.inner_node());
                 }
             }
         }
@@ -275,7 +275,7 @@ where
             if props.iterable.get().is_empty() {
                 for (owner, template) in templates.borrow_mut().drain(..) {
                     drop(owner); // destroy owner
-                    template.node.remove_self();
+                    template.inner_node().remove_self();
                 }
                 return;
             }
@@ -304,8 +304,11 @@ where
                             (owner, new_template.as_ref().unwrap().clone()),
                         );
 
-                        let parent = old_node.1.node.parent_node().unwrap();
-                        parent.replace_child(&new_template.unwrap().node, &old_node.1.node);
+                        let parent = old_node.1.inner_node().parent_node().unwrap();
+                        parent.replace_child(
+                            new_template.unwrap().inner_node(),
+                            old_node.1.inner_node(),
+                        );
                     } else {
                         debug_assert!(templates.borrow().len() == i, "pushing new value scenario");
 
@@ -313,7 +316,7 @@ where
                             .borrow_mut()
                             .push((owner, new_template.as_ref().unwrap().clone()));
 
-                        marker.insert_sibling_before(&new_template.unwrap().node);
+                        marker.insert_sibling_before(&new_template.unwrap().inner_node());
                     }
                 }
             }
@@ -323,7 +326,7 @@ where
                 let excess_nodes = templates.drain(props.iterable.get().len()..);
 
                 for node in excess_nodes {
-                    node.1.node.remove_self();
+                    node.1.inner_node().remove_self();
                 }
             }
 

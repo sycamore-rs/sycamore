@@ -3,7 +3,7 @@
 use std::fmt;
 
 use crate::generic_node::GenericNode;
-use crate::TemplateResult;
+use crate::template_result::TemplateResult;
 
 /// Trait for describing how something should be rendered into DOM nodes.
 pub trait Render<G: GenericNode> {
@@ -39,6 +39,6 @@ impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
 
 impl<G: GenericNode> Render<G> for TemplateResult<G> {
     fn render(&self) -> G {
-        self.node.clone()
+        self.inner_node().clone()
     }
 }
