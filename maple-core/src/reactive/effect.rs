@@ -247,7 +247,12 @@ pub fn create_effect_initial<R: 'static>(
                 eprintln!(
                     "WARNING: Effects created outside of a reactive root will never get dropped."
                 );
-                Rc::into_raw(running); // leak running
+
+                thread_local! {
+                    static GLOBAL_OWNER: RefCell<Owner> = RefCell::new(Owner::new());
+                }
+                GLOBAL_OWNER
+                    .with(|global_owner| global_owner.borrow_mut().add_effect_state(running));
             }
         });
 
