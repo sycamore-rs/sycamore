@@ -177,3 +177,36 @@ fn nested_reactivity() {
     });
     assert_eq!(p.text_content().unwrap(), "4235");
 }
+
+#[wasm_bindgen_test]
+fn template_top_level() {
+    let count = Signal::new(vec![1, 2]);
+
+    let node = cloned!((count) => template! {
+        Indexed(IndexedProps {
+            iterable: count.handle(),
+            template: |item| template! {
+                li { (item) }
+            },
+        })
+    });
+
+    render_to(|| node, &test_div());
+
+    let p = document()
+        .query_selector("#test-container")
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(p.text_content().unwrap(), "12");
+
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.push(3);
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "123");
+
+    count.set(count.get()[1..].into());
+    assert_eq!(p.text_content().unwrap(), "23");
+}

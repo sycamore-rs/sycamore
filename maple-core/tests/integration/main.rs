@@ -151,3 +151,21 @@ fn noderefs() {
         noderef.get::<DomNode>().unchecked_into()
     );
 }
+
+#[wasm_bindgen_test]
+fn fragments() {
+    let node = template! {
+        p { "1" }
+        p { "2" }
+        p { "3" }
+    };
+
+    render_to(|| node, &test_div());
+
+    let test_container = document().query_selector("#test-container").unwrap().unwrap();
+
+    assert_eq!(
+        test_container.text_content().unwrap(),
+        "123"
+    );
+}
