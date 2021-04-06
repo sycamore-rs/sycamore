@@ -103,9 +103,9 @@ pub fn circ_out(t: f32) -> f32 {
 
 pub fn circ_inout(t: f32) -> f32 {
     if t < 0.5 {
-        circ_in(2. * t) / 2.
+        (1. - (1. - (2. * t).powi(2)).sqrt()) / 2.
     } else {
-        (1. - (-2. * t + 2.).powi(2)).sqrt() / 2.
+        ((1. - (-2. * t + 2.).powi(2)).sqrt() + 1.) / 2.
     }
 }
 
@@ -135,7 +135,7 @@ pub fn expo_inout(t: f32) -> f32 {
     } else if t <= 0.5 {
         EXP_BASE.powf(20. * t - 10.) / 2.
     } else {
-        2. - EXP_BASE.powf(-20. * t + 10.) / 2.
+        1. + EXP_BASE.powf(-20. * t + 10.) / -2.
     }
 }
 
@@ -166,13 +166,13 @@ pub fn bounce_out(t: f32) -> f32 {
     if t < 1. / BOUNCE_GRAVITY {
         BOUNCE_AMPLITUDE * t * t
     } else if t < 2. / BOUNCE_GRAVITY {
-        let t = 1.5 / BOUNCE_GRAVITY;
+        let t = t - 1.5 / BOUNCE_GRAVITY;
         BOUNCE_AMPLITUDE * t * t + 0.75
     } else if t < 2.5 / BOUNCE_GRAVITY {
-        let t = 2.25 / BOUNCE_GRAVITY;
+        let t = t - 2.25 / BOUNCE_GRAVITY;
         BOUNCE_AMPLITUDE * t * t + 0.9375
     } else {
-        let t = 2.625 / BOUNCE_GRAVITY;
+        let t = t - 2.625 / BOUNCE_GRAVITY;
         BOUNCE_AMPLITUDE * t * t + 0.984375
     }
 }
