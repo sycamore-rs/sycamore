@@ -78,4 +78,6 @@ jobs:
           key: ${{ runner.os }}-cargo-miri-${{ hashFiles('Cargo.lock') }}
 
       - name: Run tests
-        run: cargo miri test
+        run: |
+          cd maple-core
+          cargo miri test
