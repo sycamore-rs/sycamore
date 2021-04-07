@@ -70,16 +70,17 @@ impl ToTokens for Element {
                             });
                         });
                     }
-                    AttributeType::Event { name } => {
+                    AttributeType::Event { event } => {
                         // TODO: Should events be reactive?
                         set_event_listeners.push(quote_spanned! { expr_span=>
                             ::maple_core::generic_node::GenericNode::event(
                                 &element,
-                                #name,
+                                #event,
                                 ::std::boxed::Box::new(#expr),
                             );
                         });
                     }
+                    AttributeType::Bind { prop: _ } => todo!(),
                     AttributeType::Ref => {
                         set_noderefs.push(quote_spanned! { expr_span=>
                             ::maple_core::noderef::NodeRef::set(
