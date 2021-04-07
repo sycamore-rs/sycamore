@@ -4,7 +4,8 @@ use maple_core::prelude::*;
 pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
-            fn App<G: GenericNode>() -> TemplateResult<G> {
+            #[component(App<G>)]
+            fn app() -> TemplateResult<G> {
                 template! {
                     div(class="my-container") {
                         p { "Hello World!" }
@@ -18,7 +19,8 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
-            fn ListItem<G: GenericNode>(value: i32) -> TemplateResult<G> {
+            #[component(ListItem<G>)]
+            fn list_item(value: i32) -> TemplateResult<G> {
                 template! {
                     p {
                         span(class="placeholder")
@@ -30,12 +32,13 @@ pub fn bench(c: &mut Criterion) {
                 }
             }
 
-            fn App<G: GenericNode>() -> TemplateResult<G> {
+            #[component(App<G>)]
+            fn app() -> TemplateResult<G> {
                 let values = Signal::new((0i32..=10).collect::<Vec<_>>());
 
                 template! {
                     div(class="my-container") {
-                        Indexed(IndexedProps {
+                        Indexed<_, _>(IndexedProps {
                             iterable: values.handle(),
                             template: |x| template! {
                                 ListItem(x)
