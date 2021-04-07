@@ -1,27 +1,19 @@
 error: unexpected end of input, expected parentheses
-  --> $DIR/component-fail.rs:14:32
+  --> $DIR/component-fail.rs:13:32
    |
-14 |     let _: TemplateResult<G> = template! { Component };
-   |                                ^^^^^^^^^^^^^^^^^^^^^^^
+13 |     let _: TemplateResult<G> = template! { C };
+   |                                ^^^^^^^^^^^^^^^
    |
    = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
-  --> $DIR/component-fail.rs:12:44
+error[E0412]: cannot find type `UnknownComponent` in this scope
+  --> $DIR/component-fail.rs:11:44
    |
-12 |     let _: TemplateResult<G> = template! { UnknownComponent() };
+11 |     let _: TemplateResult<G> = template! { UnknownComponent() };
    |                                            ^^^^^^^^^^^^^^^^ not found in this scope
 
-error[E0061]: this function takes 0 arguments but 1 argument was supplied
-  --> $DIR/component-fail.rs:15:44
+error[E0308]: mismatched types
+  --> $DIR/component-fail.rs:14:46
    |
-15 |     let _: TemplateResult<G> = template! { Component(1) };
-   |                                            ^^^^^^^^^ - supplied 1 argument
-   |                                            |
-   |                                            expected 0 arguments
-   |
-note: function defined here
-  --> $DIR/component-fail.rs:5:4
-   |
-5  | fn Component<G: GenericNode>() -> TemplateResult<G> {
-   |    ^^^^^^^^^
+14 |     let _: TemplateResult<G> = template! { C(1) };
+   |                                              ^ expected `()`, found integer

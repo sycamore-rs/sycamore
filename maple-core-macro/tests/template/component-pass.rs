@@ -2,7 +2,8 @@
 
 use maple_core::prelude::*;
 
-pub fn Component<G: GenericNode>() -> TemplateResult<G> {
+#[component(Component<G>)]
+pub fn component() -> TemplateResult<G> {
     template! {
         div
     }
