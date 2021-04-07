@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use criterion::{criterion_group, criterion_main, Criterion};
 use maple_core::prelude::*;
 

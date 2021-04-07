@@ -1,8 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::parse::Parse;
-use syn::parse::ParseStream;
-
+use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::{
     Attribute, Block, FnArg, Generics, Ident, Item, ItemFn, Result, ReturnType, Token, Type,
@@ -173,12 +171,16 @@ pub fn component_impl(
         block,
         props_type,
         arg,
-        generics,
+        mut generics,
         vis,
         attrs,
         name,
         return_type,
     } = component;
+
+    generics.params.push(syn::parse_quote! {
+        #generic_node_ty: ::maple_core::generic_node::GenericNode
+    });
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
@@ -201,7 +203,10 @@ pub fn component_impl(
             _marker: ::std::marker::PhantomData<(#phantom_generics)>,
         }
 
-        impl#impl_generics ::maple_core::component::Component<#generic_node_ty> for #component_name#ty_generics #where_clause {
+        impl#impl_generics ::maple_core::component::Component<#generic_node_ty>
+            for #component_name#ty_generics
+            #where_clause
+        {
             type Props = #props_type;
 
             fn create(#arg) -> #return_type {
@@ -209,10 +214,10 @@ pub fn component_impl(
             }
         }
 
-        #[doc(hidden)]
-        #vis fn #name#generics(#arg) -> #return_type {
-            #block
-        }
+        // #[doc(hidden)]
+        // #vis fn #name#generics(#arg) -> #return_type {
+        //     #block
+        // }
     };
 
     Ok(quoted)

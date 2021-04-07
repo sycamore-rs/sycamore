@@ -3,7 +3,8 @@ use web_sys::HtmlInputElement;
 
 use crate::{AppState, Filter};
 
-pub fn List<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
+#[component(List<G>)]
+pub fn list(app_state: AppState) -> TemplateResult<G> {
     let todos_left = create_selector(cloned!((app_state) => move || {
         app_state.todos_left()
     }));
@@ -40,10 +41,10 @@ pub fn List<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
             label(for="toggle-all")
 
             ul(class="todo-list") {
-                Keyed(KeyedProps {
+                Keyed<_, _, _, _>(KeyedProps {
                     iterable: filtered_todos,
                     template: move |todo| template! {
-                        crate::item::Item(todo, app_state.clone())
+                        crate::item::Item(crate::item::ItemProps { todo, app_state: app_state.clone() })
                     },
                     key: |todo| todo.get().id,
                 })

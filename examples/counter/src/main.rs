@@ -1,8 +1,7 @@
-#![allow(non_snake_case)]
-
 use maple_core::prelude::*;
 
-fn App<G: GenericNode>() -> TemplateResult<G> {
+#[component(App<G>)]
+fn app() -> TemplateResult<G> {
     let counter = Signal::new(0);
 
     create_effect(cloned!((counter) => move || {

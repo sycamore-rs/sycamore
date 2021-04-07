@@ -1,4 +1,4 @@
-#![allow(non_snake_case)]
+
 
 use maple_core::prelude::*;
 

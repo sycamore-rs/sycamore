@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 mod content;
 mod header;
 mod index;
@@ -7,7 +5,8 @@ mod sidebar;
 
 use maple_core::prelude::*;
 
-fn App<G: GenericNode>() -> TemplateResult<G> {
+#[component(App<G>)]
+fn app() -> TemplateResult<G> {
     let location = web_sys::window()
         .unwrap()
         .document()

@@ -14,7 +14,7 @@ Here is an example of a simple component that displays the value of its prop:
 // This is temporary and will later be removed.
 // Currently, the template! macro assumes that all
 // components start with an uppercase character.
-#![allow(non_snake_case)]
+
 
 use maple_core::prelude::*;
 

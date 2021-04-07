@@ -12,7 +12,6 @@
 //! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
 //!   `serde`.
 
-#![allow(non_snake_case)]
 #![warn(clippy::clone_on_ref_ptr)]
 #![warn(clippy::rc_buffer)]
 #![deny(clippy::trait_duplication_in_bounds)]

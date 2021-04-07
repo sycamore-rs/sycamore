@@ -18,7 +18,8 @@ pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>
 where
     F: Fn(T) -> TemplateResult<G>,
     K: Fn(&T) -> Key,
-    Key: Hash + Eq,
+    Key: Clone + Hash + Eq,
+    T: Clone + PartialEq,
 {
     pub iterable: StateHandle<Vec<T>>,
     pub template: F,
@@ -38,7 +39,7 @@ where
 /// let count = Signal::new(vec![1, 2]);
 ///
 /// let node = template! {
-///     Keyed(KeyedProps {
+///     Keyed<_, _, _, _>(KeyedProps {
 ///         iterable: count.handle(),
 ///         template: |item| template! {
 ///             li { (item) }
@@ -48,7 +49,8 @@ where
 /// };
 /// # let _ : TemplateResult<DomNode> = node;
 /// ```
-pub fn Keyed<T, F: 'static, G: GenericNode, K: 'static, Key: 'static>(
+#[component(Keyed<G>)]
+pub fn keyed<T: 'static, F: 'static, K: 'static, Key: 'static>(
     props: KeyedProps<T, F, G, K, Key>,
 ) -> TemplateResult<G>
 where
@@ -274,7 +276,8 @@ where
 /// };
 /// # let _ : TemplateResult<DomNode> = node;
 /// ```
-pub fn Indexed<T, F: 'static, G: GenericNode>(props: IndexedProps<T, F, G>) -> TemplateResult<G>
+#[component(Indexed<G>)]
+pub fn indexed<T: 'static, F: 'static>(props: IndexedProps<T, F, G>) -> TemplateResult<G>
 where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult<G>,

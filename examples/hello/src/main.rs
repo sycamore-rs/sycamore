@@ -1,10 +1,9 @@
-#![allow(non_snake_case)]
-
 use maple_core::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement};
 
-fn App<G: GenericNode>() -> TemplateResult<G> {
+#[component(App<G>)]
+fn app() -> TemplateResult<G> {
     let name = Signal::new(String::new());
 
     let handle_change = cloned!((name) => move |event: Event| {

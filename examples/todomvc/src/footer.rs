@@ -2,7 +2,8 @@ use maple_core::prelude::*;
 
 use crate::{AppState, Filter};
 
-pub fn Footer<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
+#[component(Footer<G>)]
+pub fn footer(app_state: AppState) -> TemplateResult<G> {
     let items_text = cloned!((app_state) => move || {
         match app_state.todos_left() {
             1 => "item",
@@ -24,7 +25,7 @@ pub fn Footer<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
                 span { " " (items_text()) " left" }
             }
             ul(class="filters") {
-                Indexed(IndexedProps {
+                Indexed<_, _>(IndexedProps {
                     iterable: Signal::new(vec![Filter::All, Filter::Active, Filter::Completed]).handle(),
                     template: cloned!((app_state2) => move |filter| {
                         let selected = cloned!((app_state2) => move || filter == *app_state2.filter.get());
