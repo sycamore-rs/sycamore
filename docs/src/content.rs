@@ -8,7 +8,8 @@ extern "C" {
     fn highlight_all();
 }
 
-pub fn Content<G: GenericNode>() -> TemplateResult<G> {
+#[component(Content<G>)]
+pub fn content() -> TemplateResult<G> {
     let location = web_sys::window()
         .unwrap()
         .document()

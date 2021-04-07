@@ -1,6 +1,7 @@
 use maple_core::prelude::*;
 
-pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
+#[component(Sidebar<G>)]
+pub fn sidebar() -> TemplateResult<G> {
     template! {
         div(class="p-3 bg-white", style="min-width: 180px") {
             ul(class="list-unstyled ps-0") {
@@ -68,9 +69,6 @@ pub fn Sidebar<G: GenericNode>() -> TemplateResult<G> {
                         }
                         a(class="btn btn-sm btn-light btn-block", href="/advanced/js_interop") {
                             "JS Interop"
-                        }
-                        a(class="btn btn-sm btn-light btn-block", href="/advanced/higher_order_components") {
-                            "Higher-Order Components"
                         }
                     }
                 }

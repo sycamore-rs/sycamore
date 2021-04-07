@@ -1,7 +1,9 @@
 # Components
 
-Components in `maple` are simply functions that return `TemplateResult<G>`.
-They receive their props through function arguments.
+Components in `maple` are structs that implement `Component`. A component can automatically be
+created with the `#[component(ComponentName<G>)]` attribute on a function.
+
+Components receive their props through function arguments.
 
 For components to automatically react to prop changes, they should accept a prop with type `StateHandle<T>` and call the function in the `template!` to subscribe to the state.
 A `StateHandle<T>` is just a readonly `Signal<T>`.
@@ -11,14 +13,10 @@ Getting a `StateHandle<T>` from a `Signal<T>` is easy. Just call the `.handle()`
 Here is an example of a simple component that displays the value of its prop:
 
 ```rust
-// This is temporary and will later be removed.
-// Currently, the template! macro assumes that all
-// components start with an uppercase character.
-#![allow(non_snake_case)]
-
 use maple_core::prelude::*;
 
-fn MyComponent<G: GenericNode>(value: StateHandle<i32>) -> TemplateResult<G> {
+#[component(MyComponent<G>)]
+fn my_component(value: StateHandle<i32>) -> TemplateResult<G> {
     template! {
         div(class="my-component") {
             "Value: " (value.get())

@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 mod copyright;
 mod footer;
 mod header;
@@ -132,7 +130,8 @@ impl Filter {
 
 const KEY: &str = "todos-maple";
 
-fn App<G: GenericNode>() -> TemplateResult<G> {
+#[component(App<G>)]
+fn app() -> TemplateResult<G> {
     let local_storage = web_sys::window()
         .unwrap()
         .local_storage()

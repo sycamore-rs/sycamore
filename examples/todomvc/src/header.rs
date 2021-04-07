@@ -4,7 +4,8 @@ use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 
 use crate::AppState;
 
-pub fn Header<G: GenericNode>(app_state: AppState) -> TemplateResult<G> {
+#[component(Header<G>)]
+pub fn header(app_state: AppState) -> TemplateResult<G> {
     let value = Signal::new(String::new());
 
     let input_ref = NodeRef::<G>::new();

@@ -1,6 +1,7 @@
 use maple_core::prelude::*;
 
-pub fn Index<G: GenericNode>() -> TemplateResult<G> {
+#[component(Index<G>)]
+pub fn index() -> TemplateResult<G> {
     template! {
         div {
             h1 {

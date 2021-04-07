@@ -4,7 +4,15 @@ use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 
 use crate::{AppState, Todo};
 
-pub fn Item<G: GenericNode>(todo: Signal<Todo>, app_state: AppState) -> TemplateResult<G> {
+pub struct ItemProps {
+    pub todo: Signal<Todo>,
+    pub app_state: AppState,
+}
+
+#[component(Item<G>)]
+pub fn item(props: ItemProps) -> TemplateResult<G> {
+    let ItemProps { todo, app_state } = props;
+
     let title = cloned!((todo) => move || todo.get().title.clone());
     let completed = create_selector(cloned!((todo) => move || todo.get().completed));
     let id = todo.get().id;

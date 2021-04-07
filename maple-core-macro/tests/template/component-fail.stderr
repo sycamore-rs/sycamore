@@ -1,0 +1,19 @@
+error: unexpected end of input, expected parentheses
+  --> $DIR/component-fail.rs:13:32
+   |
+13 |     let _: TemplateResult<G> = template! { C };
+   |                                ^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0412]: cannot find type `UnknownComponent` in this scope
+  --> $DIR/component-fail.rs:11:44
+   |
+11 |     let _: TemplateResult<G> = template! { UnknownComponent() };
+   |                                            ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0308]: mismatched types
+  --> $DIR/component-fail.rs:14:46
+   |
+14 |     let _: TemplateResult<G> = template! { C(1) };
+   |                                              ^ expected `()`, found integer

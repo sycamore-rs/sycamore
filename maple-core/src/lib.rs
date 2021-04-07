@@ -12,14 +12,14 @@
 //! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
 //!   `serde`.
 
-#![allow(non_snake_case)]
 #![warn(clippy::clone_on_ref_ptr)]
 #![warn(clippy::rc_buffer)]
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]
 
-pub use maple_core_macro::template;
+pub use maple_core_macro::{component, template};
 
+pub mod component;
 pub mod easing;
 pub mod flow;
 pub mod generic_node;
@@ -30,7 +30,10 @@ pub mod render;
 pub mod template_result;
 pub mod utils;
 
-/// Render a [`TemplateResult`] into the DOM.
+/// Alias self to maple_core for proc-macros.
+extern crate self as maple_core;
+
+/// Render a [`TemplateResult`](template_result::TemplateResult) into the DOM.
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
@@ -44,7 +47,7 @@ pub fn render(
     render_to(template_result, &document.body().unwrap());
 }
 
-/// Render a [`TemplateResult`] under a `parent` node.
+/// Render a [`TemplateResult`](template_result::TemplateResult) under a `parent` node.
 /// For rendering under the `<body>` tag, use [`render()`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
@@ -66,8 +69,8 @@ pub fn render_to(
     GLOBAL_OWNERS.with(|global_owners| global_owners.borrow_mut().push(owner));
 }
 
-/// Render a [`TemplateResult`] into a static [`String`]. Useful for rendering to a string on the
-/// server side.
+/// Render a [`TemplateResult`](template_result::TemplateResult) into a static [`String`]. Useful
+/// for rendering to a string on the server side.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
 #[cfg(feature = "ssr")]
@@ -86,7 +89,7 @@ pub fn render_to_string(
 
 /// The maple prelude.
 pub mod prelude {
-    pub use maple_core_macro::template;
+    pub use maple_core_macro::{component, template};
 
     pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
