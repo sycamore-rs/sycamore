@@ -1,3 +1,5 @@
+//! Result of the [`template`](crate::template) macro.
+
 use crate::generic_node::GenericNode;
 
 /// Internal type for [`TemplateResult`].
@@ -7,7 +9,7 @@ pub enum TemplateResultInner<G: GenericNode> {
     Fragment(Vec<G>),
 }
 
-/// Result of the [`template`] macro. Should not be constructed manually.
+/// Result of the [`template`](crate::template) macro. Should not be constructed manually.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TemplateResult<G: GenericNode> {
     inner: TemplateResultInner<G>,
@@ -87,7 +89,8 @@ impl<G: GenericNode> IntoIterator for TemplateResult<G> {
     }
 }
 
-/// An iterator over references of the nodes in [`TemplateResult`]. Created using [`TemplateResult::iter`].
+/// An iterator over references of the nodes in [`TemplateResult`]. Created using
+/// [`TemplateResult::iter`].
 pub enum Iter<'a, G: GenericNode> {
     Node(std::option::IntoIter<&'a G>),
     Fragment(std::slice::Iter<'a, G>),

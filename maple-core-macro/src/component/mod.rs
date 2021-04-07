@@ -38,7 +38,10 @@ impl ToTokens for ComponentFunction {
     }
 }
 
-pub fn impl_component(attr: ComponentFunctionName, component: ComponentFunction) -> proc_macro::TokenStream {
+pub fn impl_component(
+    attr: ComponentFunctionName,
+    component: ComponentFunction,
+) -> proc_macro::TokenStream {
     let _ = attr;
     component.to_token_stream().into()
 }
