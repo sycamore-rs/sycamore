@@ -70,9 +70,6 @@ pub fn sidebar() -> TemplateResult<G> {
                         a(class="btn btn-sm btn-light btn-block", href="/advanced/js_interop") {
                             "JS Interop"
                         }
-                        a(class="btn btn-sm btn-light btn-block", href="/advanced/higher_order_components") {
-                            "Higher-Order Components"
-                        }
                     }
                 }
                 li(class="mb-1") {
