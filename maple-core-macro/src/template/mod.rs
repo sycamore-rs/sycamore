@@ -12,6 +12,7 @@ use component::*;
 use element::*;
 use text::*;
 
+use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
@@ -129,6 +130,6 @@ impl ToTokens for HtmlRoot {
     }
 }
 
-pub fn template_impl(component: HtmlRoot) -> proc_macro::TokenStream {
-    component.to_token_stream().into()
+pub fn template_impl(component: HtmlRoot) -> TokenStream {
+    component.to_token_stream()
 }

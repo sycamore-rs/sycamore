@@ -11,7 +11,7 @@ mod template;
 pub fn template(component: TokenStream) -> TokenStream {
     let component = parse_macro_input!(component as template::HtmlRoot);
 
-    template::template_impl(component)
+    template::template_impl(component).into()
 }
 
 /// A macro for creating components from functions.
@@ -20,5 +20,7 @@ pub fn component(attr: TokenStream, component: TokenStream) -> TokenStream {
     let attr = parse_macro_input!(attr as component::ComponentFunctionName);
     let component = parse_macro_input!(component as component::ComponentFunction);
 
-    component::impl_component(attr, component)
+    component::component_impl(attr, component)
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
 }

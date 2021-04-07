@@ -20,6 +20,7 @@
 
 pub use maple_core_macro::{component, template};
 
+pub mod component;
 pub mod easing;
 pub mod flow;
 pub mod generic_node;
@@ -29,6 +30,9 @@ pub mod reactive;
 pub mod render;
 pub mod template_result;
 pub mod utils;
+
+/// Alias self to maple_core for proc-macros.
+extern crate self as maple_core;
 
 /// Render a [`TemplateResult`](template_result::TemplateResult) into the DOM.
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
