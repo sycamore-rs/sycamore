@@ -86,7 +86,7 @@ pub fn render_to_string(
 
 /// The maple prelude.
 pub mod prelude {
-    pub use maple_core_macro::template;
+    pub use maple_core_macro::{component, template};
 
     pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
