@@ -91,8 +91,8 @@ impl ToTokens for HtmlTree {
     }
 }
 
-pub(crate) struct HtmlRoot {
-    children: Vec<HtmlTree>,
+pub struct HtmlRoot {
+    pub children: Vec<HtmlTree>,
 }
 
 impl Parse for HtmlRoot {
@@ -127,4 +127,8 @@ impl ToTokens for HtmlRoot {
 
         tokens.extend(quoted);
     }
+}
+
+pub fn template_impl(component: HtmlRoot) -> proc_macro::TokenStream {
+    component.to_token_stream().into()
 }
