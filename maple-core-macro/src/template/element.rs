@@ -5,16 +5,13 @@ use syn::parse::{Parse, ParseStream, Result};
 use syn::spanned::Spanned;
 use syn::{token, Ident, Token};
 
-use crate::attributes::{AttributeList, AttributeType};
-use crate::children::Children;
-use crate::text::Text;
-use crate::HtmlTree;
+use super::*;
 
 /// Represents a html element with all its attributes and properties (e.g. `p(class="text")`).
-pub(crate) struct Element {
-    tag_name: TagName,
-    attributes: Option<AttributeList>,
-    children: Option<Children>,
+pub struct Element {
+    pub tag_name: TagName,
+    pub attributes: Option<AttributeList>,
+    pub children: Option<Children>,
 }
 
 impl Parse for Element {

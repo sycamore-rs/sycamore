@@ -4,7 +4,7 @@ use syn::parse::{Parse, ParseStream};
 use syn::token::Paren;
 use syn::{parenthesized, Expr, LitStr, Result};
 
-pub(crate) enum Text {
+pub enum Text {
     Text(LitStr),
     Splice(Paren, Box<Expr>),
 }

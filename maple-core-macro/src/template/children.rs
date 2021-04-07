@@ -1,9 +1,9 @@
 use syn::parse::{Parse, ParseStream};
 use syn::{braced, token, Result};
 
-use crate::HtmlTree;
+use super::*;
 
-pub(crate) struct Children {
+pub struct Children {
     pub brace_token: token::Brace,
     pub body: Vec<HtmlTree>,
 }

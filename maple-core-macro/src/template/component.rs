@@ -6,10 +6,10 @@ use syn::token::{Comma, Paren};
 use syn::{parenthesized, Expr, Path, Result};
 
 /// Components are identical to function calls.
-pub(crate) struct Component {
-    path: Path,
-    _paren: Paren,
-    args: Punctuated<Expr, Comma>,
+pub struct Component {
+    pub path: Path,
+    pub paren: Paren,
+    pub args: Punctuated<Expr, Comma>,
 }
 
 impl Parse for Component {
@@ -17,7 +17,7 @@ impl Parse for Component {
         let content;
         Ok(Self {
             path: input.parse()?,
-            _paren: parenthesized!(content in input),
+            paren: parenthesized!(content in input),
             args: content.parse_terminated(Expr::parse)?,
         })
     }
@@ -27,7 +27,7 @@ impl ToTokens for Component {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Component {
             path,
-            _paren: _,
+            paren: _,
             args,
         } = self;
 
