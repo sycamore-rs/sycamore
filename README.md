@@ -2,6 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/maple-core)](https://crates.io/crates/maple-core)
 [![docs.rs](https://img.shields.io/docsrs/maple-core?color=blue&label=docs.rs)](https://docs.rs/maple-core)
+[![dependency status](https://deps.rs/repo/github/lukechu10/maple/status.svg)](https://deps.rs/repo/github/lukechu10/maple)
 [![GitHub contributors](https://img.shields.io/github/contributors/lukechu10/maple)](https://github.com/lukechu10/maple/graphs/contributors)
 [![Discord](https://img.shields.io/discord/820400041332179004?label=discord)](https://discord.gg/vDwFUmm6mU)
 
