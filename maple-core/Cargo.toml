@@ -14,6 +14,7 @@ version = "0.4.3"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bumpalo = {version = "3.6", features = ["boxed"]}
 chrono = {version = "0.4", features = ["wasmbind"]}
 html-escape = {version = "0.2.7", optional = true}
 js-sys = {version = "0.3", optional = true}

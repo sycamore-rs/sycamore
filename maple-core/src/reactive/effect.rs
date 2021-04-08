@@ -15,7 +15,7 @@ thread_local! {
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
     pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
-    pub(super) static OWNER: RefCell<Option<Owner>> = RefCell::new(None);
+    pub(super) static SCOPE: RefCell<Option<ReactiveScope>> = RefCell::new(None);
 }
 
 /// State of the current running effect.
@@ -23,8 +23,8 @@ thread_local! {
 pub(super) struct Running {
     pub(super) execute: Rc<dyn Fn()>,
     pub(super) dependencies: HashSet<Dependency>,
-    /// The reactive context owns all effects created within it.
-    owner: Owner,
+    /// The reactive scope owns all effects created within it.
+    scope: ReactiveScope,
 }
 
 impl Running {
@@ -47,33 +47,33 @@ impl Drop for Running {
 }
 
 /// Owns the effects created in the current reactive scope.
-/// The effects are dropped and the cleanup callbacks are called when the [`Owner`] is dropped.
+/// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is dropped.
 #[derive(Default)]
-pub struct Owner {
+pub struct ReactiveScope {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
     cleanup: Vec<Box<dyn FnOnce()>>,
 }
 
-impl Owner {
-    /// Create a new empty [`Owner`].
+impl ReactiveScope {
+    /// Create a new empty [`ReactiveScope`].
     ///
     /// This should be rarely used and only serve as a placeholder.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Add an effect that is owned by this [`Owner`].
+    /// Add an effect that is owned by this [`ReactiveScope`].
     pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
         self.effects.push(effect);
     }
 
-    /// Add a cleanup callback that will be called when the [`Owner`] is dropped.
+    /// Add a cleanup callback that will be called when the [`ReactiveScope`] is dropped.
     pub(super) fn add_cleanup(&mut self, cleanup: Box<dyn FnOnce()>) {
         self.cleanup.push(cleanup);
     }
 }
 
-impl Drop for Owner {
+impl Drop for ReactiveScope {
     fn drop(&mut self) {
         for effect in &self.effects {
             effect.borrow_mut().as_mut().unwrap().clear_dependencies();
@@ -181,25 +181,25 @@ pub fn create_effect_initial<R: 'static>(
                     if let Some(initial) = initial.take() {
                         let effect = Rc::clone(&effect);
                         let ret = Weak::upgrade(&ret).unwrap();
-                        let owner = create_root(move || {
+                        let scope = create_root(move || {
                             let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
                             *effect.borrow_mut() = Some(effect_tmp);
                             *ret.borrow_mut() = Some(ret_tmp);
                         });
-                        running.borrow_mut().as_mut().unwrap().owner = owner;
+                        running.borrow_mut().as_mut().unwrap().scope = scope;
                     } else {
                         // Destroy old effects before new ones run.
-                        let old_owner = mem::replace(
-                            &mut running.borrow_mut().as_mut().unwrap().owner,
-                            Owner::new(), /* placeholder until an actual Owner is created */
+                        let old_scope = mem::replace(
+                            &mut running.borrow_mut().as_mut().unwrap().scope,
+                            ReactiveScope::new(), /* placeholder until an actual ReactiveScope is created */
                         );
-                        drop(old_owner);
+                        drop(old_scope);
 
                         let effect = Rc::clone(&effect);
-                        let owner = create_root(move || {
+                        let scope = create_root(move || {
                             effect.borrow().as_ref().unwrap()();
                         });
-                        running.borrow_mut().as_mut().unwrap().owner = owner;
+                        running.borrow_mut().as_mut().unwrap().scope = scope;
                     }
 
                     // Attach new dependencies.
@@ -224,27 +224,27 @@ pub fn create_effect_initial<R: 'static>(
         *running.borrow_mut() = Some(Running {
             execute: Rc::clone(&execute),
             dependencies: HashSet::new(),
-            owner: Owner::new(),
+            scope: ReactiveScope::new(),
         });
         debug_assert_eq!(
             Rc::strong_count(&running),
             1,
-            "Running should be owned exclusively by owner"
+            "Running should be owned exclusively by ReactiveScope"
         );
 
-        OWNER.with(|owner| {
-            if owner.borrow().is_some() {
-                owner
+        SCOPE.with(|scope| {
+            if scope.borrow().is_some() {
+                scope
                     .borrow_mut()
                     .as_mut()
                     .unwrap()
                     .add_effect_state(running);
             } else {
                 thread_local! {
-                    static GLOBAL_OWNER: RefCell<Owner> = RefCell::new(Owner::new());
+                    static GLOBAL_SCOPE: RefCell<ReactiveScope> = RefCell::new(ReactiveScope::new());
                 }
-                GLOBAL_OWNER
-                    .with(|global_owner| global_owner.borrow_mut().add_effect_state(running));
+                GLOBAL_SCOPE
+                    .with(|global_scope| global_scope.borrow_mut().add_effect_state(running));
             }
         });
 
@@ -412,7 +412,7 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
 ///
 /// let cleanup_called = Signal::new(false);
 ///
-/// let owner = create_root(cloned!((cleanup_called) => move || {
+/// let scope = create_root(cloned!((cleanup_called) => move || {
 ///     on_cleanup(move || {
 ///         cleanup_called.set(true);
 ///     })
@@ -420,13 +420,13 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
 ///
 /// assert_eq!(*cleanup_called.get(), false);
 ///
-/// drop(owner);
+/// drop(scope);
 /// assert_eq!(*cleanup_called.get(), true);
 /// ```
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
-    OWNER.with(|owner| {
-        if owner.borrow().is_some() {
-            owner
+    SCOPE.with(|scope| {
+        if scope.borrow().is_some() {
+            scope
                 .borrow_mut()
                 .as_mut()
                 .unwrap()
@@ -570,12 +570,12 @@ mod tests {
     }
 
     #[test]
-    fn destroy_effects_on_owner_drop() {
+    fn destroy_effects_on_scope_drop() {
         let counter = Signal::new(0);
 
         let trigger = Signal::new(());
 
-        let owner = create_root(cloned!((trigger, counter) => move || {
+        let scope = create_root(cloned!((trigger, counter) => move || {
             create_effect(move || {
                 trigger.get(); // subscribe to trigger
                 counter.set(*counter.get_untracked() + 1);
@@ -587,7 +587,7 @@ mod tests {
         trigger.set(());
         assert_eq!(*counter.get(), 2);
 
-        drop(owner);
+        drop(scope);
         trigger.set(());
         assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
     }
@@ -679,7 +679,7 @@ mod tests {
     #[test]
     fn cleanup() {
         let cleanup_called = Signal::new(false);
-        let owner = create_root(cloned!((cleanup_called) => move || {
+        let scope = create_root(cloned!((cleanup_called) => move || {
             on_cleanup(move || {
                 cleanup_called.set(true);
             })
@@ -687,7 +687,7 @@ mod tests {
 
         assert_eq!(*cleanup_called.get(), false);
 
-        drop(owner);
+        drop(scope);
         assert_eq!(*cleanup_called.get(), true);
     }
 
