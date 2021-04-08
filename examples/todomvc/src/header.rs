@@ -1,6 +1,6 @@
 use maple_core::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Event, HtmlInputElement, KeyboardEvent};
+use web_sys::{Event, KeyboardEvent};
 
 use crate::AppState;
 
@@ -9,11 +9,6 @@ pub fn header(app_state: AppState) -> TemplateResult<G> {
     let value = Signal::new(String::new());
 
     let input_ref = NodeRef::<G>::new();
-
-    let handle_input = cloned!((value) => move |event: Event| {
-        let target: HtmlInputElement = event.target().unwrap().unchecked_into();
-        value.set(target.value());
-    });
 
     let handle_submit = cloned!((app_state, value, input_ref) => move |event: Event| {
         let event: KeyboardEvent = event.unchecked_into();
@@ -25,7 +20,6 @@ pub fn header(app_state: AppState) -> TemplateResult<G> {
             if !task.is_empty() {
                 app_state.add_todo(task);
                 value.set("".to_string());
-                input_ref.get::<DomNode>().unchecked_into::<HtmlInputElement>().set_value(""); // FIXME: bind to value property instead of attribute
             }
         }
     });
@@ -36,8 +30,7 @@ pub fn header(app_state: AppState) -> TemplateResult<G> {
             input(ref=input_ref,
                 class="new-todo",
                 placeholder="What needs to be done?",
-                value=value.get(),
-                on:input=handle_input,
+                bind:value=value,
                 on:keyup=handle_submit,
             )
         }
