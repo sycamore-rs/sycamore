@@ -56,17 +56,17 @@ pub fn render_to(
     template_result: impl FnOnce() -> template_result::TemplateResult<generic_node::DomNode>,
     parent: &web_sys::Node,
 ) {
-    let owner = reactive::create_root(|| {
+    let scope = reactive::create_root(|| {
         for node in template_result() {
             parent.append_child(&node.inner_element()).unwrap();
         }
     });
 
     thread_local! {
-        static GLOBAL_OWNERS: std::cell::RefCell<Vec<reactive::Owner>> = std::cell::RefCell::new(Vec::new());
+        static GLOBAL_SCOPES: std::cell::RefCell<Vec<reactive::ReactiveScope>> = std::cell::RefCell::new(Vec::new());
     }
 
-    GLOBAL_OWNERS.with(|global_owners| global_owners.borrow_mut().push(owner));
+    GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
 }
 
 /// Render a [`TemplateResult`](template_result::TemplateResult) into a static [`String`]. Useful
@@ -78,7 +78,7 @@ pub fn render_to_string(
     template_result: impl FnOnce() -> template_result::TemplateResult<generic_node::SsrNode>,
 ) -> String {
     let mut ret = String::new();
-    let _owner = reactive::create_root(|| {
+    let _scope = reactive::create_root(|| {
         for node in template_result() {
             ret.push_str(&format!("{}", node));
         }
