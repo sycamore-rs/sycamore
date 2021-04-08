@@ -31,6 +31,7 @@ features = [
   "Element",
   "Event",
   "HtmlElement",
+  "HtmlInputElement",
   "Node",
   "Text",
   "Window",
@@ -45,7 +46,7 @@ wasm-bindgen-test = "0.3"
 [features]
 default = ["dom", "wasm-bindgen", "web-sys", "js-sys"]
 dom = []
-ssr = ["html-escape", "web-sys/Event"]
+ssr = ["html-escape"]
 
 [[bench]]
 harness = false

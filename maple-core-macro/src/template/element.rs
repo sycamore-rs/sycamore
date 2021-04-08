@@ -106,14 +106,13 @@ impl ToTokens for Element {
                             ::maple_core::generic_node::GenericNode::event(
                                 &element,
                                 #event_name,
-                                ::std::boxed::Box::new(move |event| {
-                                    // FIXME: Do not rely on web_sys being available.
-                                    signal.set(event
-                                        .target()
-                                        .unwrap()
-                                        .dyn_into::<::web_sys::HtmlInputElement>()
-                                        .unwrap()
-                                        .value());
+                                ::std::boxed::Box::new(move |event: ::maple_core::rt::Event| {
+                                    signal.set(
+                                        ::maple_core::rt::JsCast::unchecked_into::<::maple_core::rt::HtmlInputElement>(
+                                            event
+                                            .target()
+                                            .unwrap(),
+                                        ).value());
                                 }),
                             )
                         }});

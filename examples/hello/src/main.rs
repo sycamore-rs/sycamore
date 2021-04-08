@@ -1,5 +1,4 @@
 use maple_core::prelude::*;
-use wasm_bindgen::JsCast;
 
 #[component(App<G>)]
 fn app() -> TemplateResult<G> {
