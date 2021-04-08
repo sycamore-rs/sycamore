@@ -4,6 +4,8 @@ use maple_core::prelude::*;
 fn app() -> TemplateResult<G> {
     let name = Signal::new(String::new());
     let name2 = name.clone();
+    let checked = Signal::new(false);
+    let checked2 = checked.clone();
 
     template! {
         div {
@@ -20,6 +22,8 @@ fn app() -> TemplateResult<G> {
             }
 
             input(bind:value=name2)
+            input(type="checkbox", bind:checked=checked)
+            (checked2.get())
         }
     }
 }

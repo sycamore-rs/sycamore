@@ -114,6 +114,7 @@ pub mod prelude {
 /// Re-exports for use by `maple-core-macro`. Not intended for use by end-users.
 #[doc(hidden)]
 pub mod rt {
-    pub use wasm_bindgen::JsCast;
-    pub use web_sys::{Event, HtmlInputElement};
+    pub use js_sys::Reflect;
+    pub use wasm_bindgen::{JsCast, JsValue};
+    pub use web_sys::Event;
 }

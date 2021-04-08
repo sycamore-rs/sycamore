@@ -83,13 +83,50 @@ impl ToTokens for Element {
                         });
                     }
                     AttributeType::Bind { prop } => {
-                        let event_name = match prop.as_str() {
-                            "value" => "input",
+                        #[derive(Clone, Copy)]
+                        enum JsPropertyType {
+                            Bool,
+                            String,
+                        }
+
+                        let (event_name, property_ty) = match prop.as_str() {
+                            "value" => ("input", JsPropertyType::String),
+                            "checked" => ("change", JsPropertyType::Bool),
                             _ => unimplemented!("property not supported with bind:"),
                         };
 
+                        let value_ty = match property_ty {
+                            JsPropertyType::Bool => quote! { ::std::primitive::bool },
+                            JsPropertyType::String => quote! { ::std::string::String },
+                        };
+
+                        let convert_into_jsvalue_fn = match property_ty {
+                            JsPropertyType::Bool => {
+                                quote! { ::maple_core::rt::JsValue::from_bool(*signal.get()) }
+                            }
+                            JsPropertyType::String => {
+                                quote! { ::maple_core::rt::JsValue::from_str(&::std::format!("{}", signal.get())) }
+                            }
+                        };
+
+                        let event_target_prop = quote! {
+                            ::maple_core::rt::Reflect::get(
+                                &event.target().unwrap(),
+                                &::std::convert::Into::<::maple_core::rt::JsValue>::into(#prop)
+                            ).unwrap()
+                        };
+
+                        let convert_from_jsvalue_fn = match property_ty {
+                            JsPropertyType::Bool => quote! {
+                                ::maple_core::rt::JsValue::as_bool(&#event_target_prop).unwrap()
+                            },
+                            JsPropertyType::String => quote! {
+                                ::maple_core::rt::JsValue::as_string(&#event_target_prop).unwrap()
+                            },
+                        };
+
                         set_attributes.push(quote_spanned! { expr_span=> {
-                            let signal: ::maple_core::reactive::Signal<String> = #expr;
+                            let signal: ::maple_core::reactive::Signal<#value_ty> = #expr;
 
                             ::maple_core::reactive::create_effect({
                                 let signal = ::std::clone::Clone::clone(&signal);
@@ -98,7 +135,7 @@ impl ToTokens for Element {
                                     ::maple_core::generic_node::GenericNode::set_property(
                                         &element,
                                         #prop,
-                                        &::std::format!("{}", signal.get()),
+                                        &#convert_into_jsvalue_fn,
                                     );
                                 }
                             });
@@ -107,12 +144,7 @@ impl ToTokens for Element {
                                 &element,
                                 #event_name,
                                 ::std::boxed::Box::new(move |event: ::maple_core::rt::Event| {
-                                    signal.set(
-                                        ::maple_core::rt::JsCast::unchecked_into::<::maple_core::rt::HtmlInputElement>(
-                                            event
-                                            .target()
-                                            .unwrap(),
-                                        ).value());
+                                    signal.set(#convert_from_jsvalue_fn);
                                 }),
                             )
                         }});

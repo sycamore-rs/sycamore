@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::{fmt, mem};
 
+use wasm_bindgen::prelude::*;
+
 use crate::generic_node::{EventListener, GenericNode};
 
 /// Rendering backend for Server Side Rendering, aka. SSR.
@@ -127,7 +129,7 @@ impl GenericNode for SsrNode {
             .insert(name.to_string(), value.to_string());
     }
 
-    fn set_property(&self, _name: &str, _value: &str) {
+    fn set_property(&self, _name: &str, _value: &JsValue) {
         // Noop.
     }
 
