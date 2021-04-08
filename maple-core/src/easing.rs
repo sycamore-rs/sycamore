@@ -3,7 +3,7 @@
 use core::f32;
 use std::f32::consts::PI;
 
-const EXP_BASE: f32 = 2.;
+const EXP_BASE: f32 = 2.0;
 const BOUNCE_GRAVITY: f32 = 2.75;
 const BOUNCE_AMPLITUDE: f32 = 7.5625;
 
@@ -113,29 +113,29 @@ pub fn circ_inout(t: f32) -> f32 {
 
 pub fn expo_in(t: f32) -> f32 {
     if t.abs() <= f32::EPSILON {
-        0.
+        0.0
     } else {
-        EXP_BASE.powf(10. * t - 10.)
+        EXP_BASE.powf(10. * t - 10.0)
     }
 }
 
 pub fn expo_out(t: f32) -> f32 {
     if (t - 1.0).abs() <= f32::EPSILON {
-        0.
+        0.0
     } else {
-        1.0 - EXP_BASE.powf(-10. * t)
+        1.0 - EXP_BASE.powf(-10.0 * t)
     }
 }
 
 pub fn expo_inout(t: f32) -> f32 {
     if t.abs() <= f32::EPSILON {
-        0.
+        0.0
     } else if (t - 1.0) <= f32::EPSILON {
-        1.
+        1.0
     } else if t <= 0.5 {
-        f32::powf(EXP_BASE, 20. * t - 10.) / 2.0
+        f32::powf(EXP_BASE, 20.0 * t - 10.0) / 2.0
     } else {
-        1.0 + f32::powf(EXP_BASE, -20. * t + 10.) / -2.0
+        1.0 + f32::powf(EXP_BASE, -20.0 * t + 10.0) / -2.0
     }
 }
 
