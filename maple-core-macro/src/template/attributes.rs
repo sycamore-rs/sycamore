@@ -9,8 +9,10 @@ use syn::{parenthesized, Expr, Ident, Result, Token};
 pub enum AttributeType {
     /// Syntax: `name`.
     DomAttribute { name: AttributeName },
-    /// Syntax: `on:name`.
-    Event { name: String },
+    /// Syntax: `on:event`.
+    Event { event: String },
+    /// Syntax: `bind:value`.
+    Bind { prop: String },
     /// Syntax: `ref`.
     Ref,
 }
@@ -26,9 +28,15 @@ impl Parse for AttributeType {
             let _colon: Token![:] = input.parse()?;
             match ident_str.as_str() {
                 "on" => {
-                    let event_name = input.call(Ident::parse_any)?;
+                    let event = input.call(Ident::parse_any)?;
                     Ok(Self::Event {
-                        name: event_name.to_string(),
+                        event: event.to_string(),
+                    })
+                }
+                "bind" => {
+                    let prop = input.call(Ident::parse_any)?;
+                    Ok(Self::Bind {
+                        prop: prop.to_string(),
                     })
                 }
                 _ => Err(syn::Error::new_spanned(

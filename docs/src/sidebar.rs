@@ -39,6 +39,9 @@ pub fn sidebar() -> TemplateResult<G> {
                         a(class="btn btn-sm btn-light btn-block", href="/basics/iteration") {
                             "Iteration"
                         }
+                        a(class="btn btn-sm btn-light btn-block", href="/basics/data_binding") {
+                            "Data binding"
+                        }
                     }
                 }
                 li(class="mb-1") {

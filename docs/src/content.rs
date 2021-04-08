@@ -3,9 +3,12 @@ use pulldown_cmark::{html, Options, Parser};
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
-#[wasm_bindgen(inline_js = "export function highlight_all() { hljs.highlightAll(); }")]
+#[wasm_bindgen(inline_js = "\
+export function highlight_all() { hljs.highlightAll(); }\
+export async function fetch_md(url) { return await (await fetch(url)).text(); }")]
 extern "C" {
     fn highlight_all();
+    async fn fetch_md(url: &str) -> JsValue;
 }
 
 #[component(Content<G>)]
@@ -24,7 +27,8 @@ pub fn content() -> TemplateResult<G> {
     let html = create_memo(cloned!((markdown) => move || {
         let markdown = markdown.get();
 
-        let options = Options::empty();
+        let mut options = Options::empty();
+        options.insert(Options::ENABLE_TABLES);
         let parser = Parser::new_ext(markdown.as_ref(), options);
 
         let mut output = String::new();
@@ -44,14 +48,8 @@ pub fn content() -> TemplateResult<G> {
         log::info!("Getting documentation at {}", pathname);
 
         let url = format!("{}/markdown{}.md", location.origin().unwrap(), pathname);
-        match reqwest::get(url).await {
-            Ok(res) => {
-                markdown.set(res.text().await.unwrap());
-            }
-            Err(err) => {
-                log::error!("Unknown error: {}", err);
-            }
-        }
+        let text = fetch_md(&url).await.as_string().unwrap();
+        markdown.set(text);
     }));
 
     template! {

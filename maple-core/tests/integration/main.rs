@@ -2,8 +2,9 @@ pub mod keyed;
 pub mod non_keyed;
 
 use maple_core::prelude::*;
+use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
-use web_sys::{Document, HtmlElement, Node, Window};
+use web_sys::{Document, Event, HtmlElement, HtmlInputElement, Node, Window};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -149,6 +150,35 @@ fn reactive_attribute() {
 
     count.set(1);
     assert_eq!(span.get_attribute("attribute").unwrap(), "1");
+}
+
+#[wasm_bindgen_test]
+fn two_way_bind_to_props() {
+    let value = Signal::new(String::new());
+    let value2 = value.clone();
+
+    let node = cloned!((value) => template! {
+        input(bind:value=value)
+        p { (value2.get()) }
+    });
+
+    render_to(|| node, &test_container());
+
+    let input = document()
+        .query_selector("input")
+        .unwrap()
+        .unwrap()
+        .unchecked_into::<HtmlInputElement>();
+
+    value.set("abc".to_string());
+    assert_eq!(
+        js_sys::Reflect::get(&input, &"value".into()).unwrap(),
+        "abc"
+    );
+
+    js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
+    input.dispatch_event(&Event::new("input").unwrap()).unwrap();
+    assert_eq!(value.get().as_str(), "def");
 }
 
 #[wasm_bindgen_test]

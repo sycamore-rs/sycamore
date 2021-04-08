@@ -1,3 +1,5 @@
+use std::fmt;
+
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
@@ -56,29 +58,105 @@ impl ToTokens for Element {
 
                 match &attribute.ty {
                     AttributeType::DomAttribute { name } => {
-                        let attribute_name = name.to_string();
+                        let name = name.to_string();
                         set_attributes.push(quote_spanned! { expr_span=>
                             ::maple_core::reactive::create_effect({
                                 let element = ::std::clone::Clone::clone(&element);
                                 move || {
                                     ::maple_core::generic_node::GenericNode::set_attribute(
                                         &element,
-                                        #attribute_name,
+                                        #name,
                                         &::std::format!("{}", #expr),
                                     );
                                 }
                             });
                         });
                     }
-                    AttributeType::Event { name } => {
+                    AttributeType::Event { event } => {
                         // TODO: Should events be reactive?
                         set_event_listeners.push(quote_spanned! { expr_span=>
                             ::maple_core::generic_node::GenericNode::event(
                                 &element,
-                                #name,
+                                #event,
                                 ::std::boxed::Box::new(#expr),
                             );
                         });
+                    }
+                    AttributeType::Bind { prop } => {
+                        #[derive(Clone, Copy)]
+                        enum JsPropertyType {
+                            Bool,
+                            String,
+                        }
+
+                        let (event_name, property_ty) = match prop.as_str() {
+                            "value" => ("input", JsPropertyType::String),
+                            "checked" => ("change", JsPropertyType::Bool),
+                            _ => {
+                                tokens.extend(
+                                    syn::Error::new(
+                                        prop.span(),
+                                        &format!("property `{}` is not supported with bind:", prop),
+                                    )
+                                    .to_compile_error(),
+                                );
+                                return;
+                            }
+                        };
+
+                        let value_ty = match property_ty {
+                            JsPropertyType::Bool => quote! { ::std::primitive::bool },
+                            JsPropertyType::String => quote! { ::std::string::String },
+                        };
+
+                        let convert_into_jsvalue_fn = match property_ty {
+                            JsPropertyType::Bool => {
+                                quote! { ::maple_core::rt::JsValue::from_bool(*signal.get()) }
+                            }
+                            JsPropertyType::String => {
+                                quote! { ::maple_core::rt::JsValue::from_str(&::std::format!("{}", signal.get())) }
+                            }
+                        };
+
+                        let event_target_prop = quote! {
+                            ::maple_core::rt::Reflect::get(
+                                &event.target().unwrap(),
+                                &::std::convert::Into::<::maple_core::rt::JsValue>::into(#prop)
+                            ).unwrap()
+                        };
+
+                        let convert_from_jsvalue_fn = match property_ty {
+                            JsPropertyType::Bool => quote! {
+                                ::maple_core::rt::JsValue::as_bool(&#event_target_prop).unwrap()
+                            },
+                            JsPropertyType::String => quote! {
+                                ::maple_core::rt::JsValue::as_string(&#event_target_prop).unwrap()
+                            },
+                        };
+
+                        set_attributes.push(quote_spanned! { expr_span=> {
+                            let signal: ::maple_core::reactive::Signal<#value_ty> = #expr;
+
+                            ::maple_core::reactive::create_effect({
+                                let signal = ::std::clone::Clone::clone(&signal);
+                                let element = ::std::clone::Clone::clone(&element);
+                                move || {
+                                    ::maple_core::generic_node::GenericNode::set_property(
+                                        &element,
+                                        #prop,
+                                        &#convert_into_jsvalue_fn,
+                                    );
+                                }
+                            });
+
+                            ::maple_core::generic_node::GenericNode::event(
+                                &element,
+                                #event_name,
+                                ::std::boxed::Box::new(move |event: ::maple_core::rt::Event| {
+                                    signal.set(#convert_from_jsvalue_fn);
+                                }),
+                            )
+                        }});
                     }
                     AttributeType::Ref => {
                         set_noderefs.push(quote_spanned! { expr_span=>
@@ -162,17 +240,25 @@ impl Parse for TagName {
 
 impl ToTokens for TagName {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let TagName { tag, extended } = self;
-
-        let mut tag_str = tag.to_string();
-        for (_, ident) in extended {
-            tag_str.push_str(&format!("-{}", ident));
-        }
+        let tag_str = self.to_string();
 
         let quoted = quote! {
             ::maple_core::generic_node::GenericNode::element(#tag_str)
         };
 
         tokens.extend(quoted);
+    }
+}
+
+impl fmt::Display for TagName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let TagName { tag, extended } = self;
+
+        write!(f, "{}", tag)?;
+        for (_, ident) in extended {
+            write!(f, "-{}", ident)?;
+        }
+
+        Ok(())
     }
 }

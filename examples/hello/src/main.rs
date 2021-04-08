@@ -1,27 +1,15 @@
 use maple_core::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{Event, HtmlInputElement};
 
 #[component(App<G>)]
 fn app() -> TemplateResult<G> {
     let name = Signal::new(String::new());
-
-    let handle_change = cloned!((name) => move |event: Event| {
-        name.set(
-            event
-                .target()
-                .unwrap()
-                .dyn_into::<HtmlInputElement>()
-                .unwrap()
-                .value(),
-        );
-    });
+    let name2 = name.clone();
 
     template! {
         div {
             h1 {
                 "Hello "
-                ({if !name.get().is_empty() {
+                ({if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
                     cloned!((name) => template! {
                         span { (name.get()) }
                     })
@@ -31,7 +19,7 @@ fn app() -> TemplateResult<G> {
                 "!"
             }
 
-            input(on:input=handle_change)
+            input(bind:value=name2)
         }
     }
 }

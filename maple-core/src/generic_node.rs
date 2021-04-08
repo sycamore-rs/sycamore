@@ -5,18 +5,18 @@ pub mod dom_node;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
 
-#[cfg(feature = "dom")]
-pub use dom_node::*;
-#[cfg(feature = "ssr")]
-pub use ssr_node::*;
-
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
+use wasm_bindgen::prelude::*;
 use web_sys::Event;
 
 use crate::prelude::*;
+#[cfg(feature = "dom")]
+pub use dom_node::*;
+#[cfg(feature = "ssr")]
+pub use ssr_node::*;
 
 pub type EventListener = dyn Fn(Event);
 
@@ -56,6 +56,9 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
 
     /// Sets an attribute on a node.
     fn set_attribute(&self, name: &str, value: &str);
+
+    /// Sets a property on a node.
+    fn set_property(&self, name: &str, value: &JsValue);
 
     /// Appends a child to the node's children.
     fn append_child(&self, child: &Self);

@@ -110,3 +110,11 @@ pub mod prelude {
     #[cfg(feature = "dom")]
     pub use crate::{render, render_to};
 }
+
+/// Re-exports for use by `maple-core-macro`. Not intended for use by end-users.
+#[doc(hidden)]
+pub mod rt {
+    pub use js_sys::Reflect;
+    pub use wasm_bindgen::{JsCast, JsValue};
+    pub use web_sys::Event;
+}
