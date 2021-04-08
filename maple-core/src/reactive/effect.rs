@@ -7,6 +7,9 @@ use std::ptr;
 use std::rc::Rc;
 use std::rc::Weak;
 
+use bumpalo::boxed::Box as BumpaloBox;
+use bumpalo::Bump;
+
 use super::*;
 
 thread_local! {
@@ -15,6 +18,7 @@ thread_local! {
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
     pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
+    /// The current [`ReactiveScope`] that the code is executing under or `None` if global scope.
     pub(super) static SCOPE: RefCell<Option<ReactiveScope>> = RefCell::new(None);
 }
 
@@ -52,6 +56,8 @@ impl Drop for Running {
 pub struct ReactiveScope {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
     cleanup: Vec<Box<dyn FnOnce()>>,
+    /// Bump arena. All [`Signal`]s are created in here and destroyed when the arena is dropped.
+    bump: Bump,
 }
 
 impl ReactiveScope {
@@ -70,6 +76,11 @@ impl ReactiveScope {
     /// Add a cleanup callback that will be called when the [`ReactiveScope`] is dropped.
     pub(super) fn add_cleanup(&mut self, cleanup: Box<dyn FnOnce()>) {
         self.cleanup.push(cleanup);
+    }
+
+    /// Creates a new [`Signal`] inside the bump arena.
+    pub fn create_signal<T>(&self, signal: Signal<T>) -> BumpaloBox<Signal<T>> {
+        BumpaloBox::new_in(signal, &self.bump)
     }
 }
 
