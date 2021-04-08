@@ -57,6 +57,11 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
     /// Sets an attribute on a node.
     fn set_attribute(&self, name: &str, value: &str);
 
+    /// Sets a property on a node.
+    ///
+    /// TODO: use `JsValue` instead of `&str`.
+    fn set_property(&self, name: &str, value: &str);
+
     /// Appends a child to the node's children.
     fn append_child(&self, child: &Self);
 

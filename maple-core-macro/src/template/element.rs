@@ -1,3 +1,5 @@
+use std::fmt;
+
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
@@ -56,14 +58,14 @@ impl ToTokens for Element {
 
                 match &attribute.ty {
                     AttributeType::DomAttribute { name } => {
-                        let attribute_name = name.to_string();
+                        let name = name.to_string();
                         set_attributes.push(quote_spanned! { expr_span=>
                             ::maple_core::reactive::create_effect({
                                 let element = ::std::clone::Clone::clone(&element);
                                 move || {
                                     ::maple_core::generic_node::GenericNode::set_attribute(
                                         &element,
-                                        #attribute_name,
+                                        #name,
                                         &::std::format!("{}", #expr),
                                     );
                                 }
@@ -80,7 +82,42 @@ impl ToTokens for Element {
                             );
                         });
                     }
-                    AttributeType::Bind { prop: _ } => todo!(),
+                    AttributeType::Bind { prop } => {
+                        let event_name = match prop.as_str() {
+                            "value" => "input",
+                            _ => unimplemented!("property not supported with bind:"),
+                        };
+
+                        set_attributes.push(quote_spanned! { expr_span=> {
+                            let signal: ::maple_core::reactive::Signal<String> = #expr;
+
+                            ::maple_core::reactive::create_effect({
+                                let signal = ::std::clone::Clone::clone(&signal);
+                                let element = ::std::clone::Clone::clone(&element);
+                                move || {
+                                    ::maple_core::generic_node::GenericNode::set_property(
+                                        &element,
+                                        #prop,
+                                        &::std::format!("{}", signal.get()),
+                                    );
+                                }
+                            });
+
+                            ::maple_core::generic_node::GenericNode::event(
+                                &element,
+                                #event_name,
+                                ::std::boxed::Box::new(move |event| {
+                                    // FIXME: Do not rely on web_sys being available.
+                                    signal.set(event
+                                        .target()
+                                        .unwrap()
+                                        .dyn_into::<::web_sys::HtmlInputElement>()
+                                        .unwrap()
+                                        .value());
+                                }),
+                            )
+                        }});
+                    }
                     AttributeType::Ref => {
                         set_noderefs.push(quote_spanned! { expr_span=>
                             ::maple_core::noderef::NodeRef::set(
@@ -163,17 +200,25 @@ impl Parse for TagName {
 
 impl ToTokens for TagName {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let TagName { tag, extended } = self;
-
-        let mut tag_str = tag.to_string();
-        for (_, ident) in extended {
-            tag_str.push_str(&format!("-{}", ident));
-        }
+        let tag_str = self.to_string();
 
         let quoted = quote! {
             ::maple_core::generic_node::GenericNode::element(#tag_str)
         };
 
         tokens.extend(quoted);
+    }
+}
+
+impl fmt::Display for TagName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let TagName { tag, extended } = self;
+
+        write!(f, "{}", tag)?;
+        for (_, ident) in extended {
+            write!(f, "-{}", ident)?;
+        }
+
+        Ok(())
     }
 }

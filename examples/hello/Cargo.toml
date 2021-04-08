@@ -15,5 +15,5 @@ maple-core = {path = "../../maple-core"}
 wasm-bindgen = "0.2"
 
 [dependencies.web-sys]
-features = ["HtmlInputElement", "InputEvent"]
+features = ["HtmlInputElement"]
 version = "0.3"

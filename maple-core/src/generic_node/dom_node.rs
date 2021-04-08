@@ -88,6 +88,10 @@ impl GenericNode for DomNode {
             .unwrap();
     }
 
+    fn set_property(&self, name: &str, value: &str) {
+        assert!(js_sys::Reflect::set(&self.node, &name.into(), &value.into()).unwrap());
+    }
+
     fn append_child(&self, child: &Self) {
         self.node.append_child(&child.node).unwrap();
     }
