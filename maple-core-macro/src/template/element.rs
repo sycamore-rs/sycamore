@@ -92,7 +92,16 @@ impl ToTokens for Element {
                         let (event_name, property_ty) = match prop.as_str() {
                             "value" => ("input", JsPropertyType::String),
                             "checked" => ("change", JsPropertyType::Bool),
-                            _ => unimplemented!("property not supported with bind:"),
+                            _ => {
+                                tokens.extend(
+                                    syn::Error::new(
+                                        prop.span(),
+                                        &format!("property `{}` is not supported with bind:", prop),
+                                    )
+                                    .to_compile_error(),
+                                );
+                                return;
+                            }
                         };
 
                         let value_ty = match property_ty {
