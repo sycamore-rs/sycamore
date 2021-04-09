@@ -240,15 +240,6 @@ pub fn create_effect_initial<R: 'static>(
                     .unwrap()
                     .add_effect_state(running);
             } else {
-                #[cfg(all(target_arch = "wasm32", debug_assertions))]
-                web_sys::console::warn_1(
-                    &"Effects created outside of a reactive root will never get disposed.".into(),
-                );
-                #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
-                eprintln!(
-                    "WARNING: Effects created outside of a reactive root will never get dropped."
-                );
-
                 thread_local! {
                     static GLOBAL_OWNER: RefCell<Owner> = RefCell::new(Owner::new());
                 }
