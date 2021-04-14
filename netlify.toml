@@ -4,16 +4,16 @@ status = 200
 to = "/index.html"
 
 [[headers]]
-for = "/*.css"
+for = "*.css"
 [headers.values]
 cache-control = "public, s-max-age=604800"
 
 [[headers]]
-for = "/*.js"
+for = "*.js"
 [headers.values]
 cache-control = "public, s-max-age=604800"
 
 [[headers]]
-for = "/*.wasm"
+for = "*.wasm"
 [headers.values]
 cache-control = "public, s-max-age=604800"
