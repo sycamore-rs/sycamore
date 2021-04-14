@@ -2,3 +2,13 @@
 from = "/*"
 status = 200
 to = "/index.html"
+
+[[headers]]
+for = "/*.js"
+[headers.values]
+Cache-Control = "public, s-max-age=604800"
+
+[[headers]]
+for = "/*.wasm"
+[headers.values]
+Cache-Control = "public, s-max-age=604800"
