@@ -1,0 +1,16 @@
+image:
+  file: .gitpod.Dockerfile
+
+ports:
+  - port: 8080
+    onOpen: open-preview
+
+tasks:
+  - prebuild: cargo test --no-run && cd docs/dist && trunk build # Prebuild tests and docs website
+
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: true
