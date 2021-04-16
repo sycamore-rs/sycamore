@@ -1,9 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
-use syn::punctuated::Punctuated;
 use syn::{
-    Attribute, Block, FnArg, Generics, Ident, Item, ItemFn, Result, ReturnType, Token, Type,
+    Attribute, Block, FnArg, Generics, Ident, Item, ItemFn, Result, ReturnType, Type, TypeParam,
     Visibility,
 };
 
@@ -162,32 +161,27 @@ pub fn component_impl(
 ) -> Result<TokenStream> {
     let ComponentFunctionName {
         component_name,
-        generics,
+        generics: generic_node_ty,
     } = attr;
 
-    let generic_node_ty = generics.type_params().next().unwrap();
+    let component_name_str = component_name.to_string();
+    let generic_node_ty = generic_node_ty.type_params().next().unwrap();
+    let generic_node: TypeParam = syn::parse_quote! {
+        #generic_node_ty: ::maple_core::generic_node::GenericNode
+    };
 
     let ComponentFunction {
         block,
-        props_type,
+        props_type: _,
         arg,
-        mut generics,
+        generics,
         vis,
         attrs,
         name,
         return_type,
     } = component;
 
-    generics.params.push(syn::parse_quote! {
-        #generic_node_ty: ::maple_core::generic_node::GenericNode
-    });
-
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-    let phantom_generics = generics
-        .type_params()
-        .map(|ty_param| ty_param.ident.clone()) // create a new Punctuated sequence without any type bounds
-        .collect::<Punctuated<_, Token![,]>>();
+    let (impl_generics, _ty_generics, where_clause) = generics.split_for_impl();
 
     if name == component_name {
         return Err(syn::Error::new_spanned(
@@ -197,27 +191,27 @@ pub fn component_impl(
     }
 
     let quoted = quote! {
-        #[allow(unused_parens)]
         #(#attrs)*
-        #vis struct #component_name#impl_generics {
-            _marker: ::std::marker::PhantomData<(#phantom_generics)>,
+        #vis struct #component_name<#generic_node> {
+            #[doc(hidden)]
+            _marker: ::std::marker::PhantomData<#generic_node_ty>,
         }
 
-        impl#impl_generics ::maple_core::component::Component<#generic_node_ty>
-            for #component_name#ty_generics
-            #where_clause
+        impl<#generic_node> ::maple_core::component::Component<#generic_node_ty>
+            for #component_name<#generic_node_ty>
         {
-            type Props = #props_type;
+            #[cfg(debug_assertions)]
+            const NAME: &'static ::std::primitive::str = #component_name_str;
+        }
 
-            fn create(#arg) -> #return_type {
+        impl<#generic_node> #component_name<#generic_node_ty> {
+            #[doc(hidden)]
+            pub fn __create_component#impl_generics(#arg) -> #return_type
+                #where_clause
+            {
                 #block
             }
         }
-
-        // #[doc(hidden)]
-        // #vis fn #name#generics(#arg) -> #return_type {
-        //     #block
-        // }
     };
 
     Ok(quoted)

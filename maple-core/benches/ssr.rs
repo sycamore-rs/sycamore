@@ -38,7 +38,7 @@ pub fn bench(c: &mut Criterion) {
 
                 template! {
                     div(class="my-container") {
-                        Indexed<_, _>(IndexedProps {
+                        Indexed(IndexedProps {
                             iterable: values.handle(),
                             template: |x| template! {
                                 ListItem(x)

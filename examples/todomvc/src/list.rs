@@ -41,7 +41,7 @@ pub fn list(app_state: AppState) -> TemplateResult<G> {
             label(for="toggle-all")
 
             ul(class="todo-list") {
-                Keyed<_, _, _, _>(KeyedProps {
+                Keyed(KeyedProps {
                     iterable: filtered_todos,
                     template: move |todo| template! {
                         crate::item::Item(crate::item::ItemProps { todo, app_state: app_state.clone() })
