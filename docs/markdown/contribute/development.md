@@ -8,8 +8,6 @@ The Maple repository is configured for [gitpod.io](https://www.gitpod.io). This 
 
 ## Using your local dev machine
 
-Issues and Pull Requests are welcome!
-
 To install and work on Maple locally:
 
 ```bash
@@ -33,7 +31,7 @@ wasm-pack test maple-core --firefox # or --chrome
 
 If you want to run the tests in a headless browser, pass the `--headless` flag as well.
 
-#### PR Requirements
+## PR Requirements
 
 Before your PR can be merged, we ask that your code is properly formatted using `cargo fmt` and passes `cargo clippy`.
 
