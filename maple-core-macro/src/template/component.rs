@@ -1,3 +1,5 @@
+use std::mem;
+
 use proc_macro2::TokenStream;
 use quote::{quote_spanned, ToTokens};
 use syn::parse::{Parse, ParseStream};
@@ -27,17 +29,20 @@ impl Parse for Component {
 impl ToTokens for Component {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Component { path, paren, args } = self;
+        let mut path = path.clone();
+
+        let generics = mem::take(&mut path.segments.last_mut().unwrap().arguments);
 
         let quoted = if args.empty_or_trailing() {
             quote_spanned! { paren.span=>
                 ::maple_core::reactive::untrack(||
-                    #path::<_>::__create_component(())
+                    #path::<_>::__create_component#generics(())
                 )
             }
         } else {
             quote_spanned! { path.span()=>
                 ::maple_core::reactive::untrack(||
-                    #path::<_>::__create_component(#args)
+                    #path::<_>::__create_component#generics(#args)
                 )
             }
         };
