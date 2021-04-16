@@ -164,6 +164,7 @@ pub fn component_impl(
         generics: generic_node_ty,
     } = attr;
 
+    let component_name_str = component_name.to_string();
     let generic_node_ty = generic_node_ty.type_params().next().unwrap();
     let generic_node: TypeParam = syn::parse_quote! {
         #generic_node_ty: ::maple_core::generic_node::GenericNode
@@ -192,12 +193,15 @@ pub fn component_impl(
     let quoted = quote! {
         #(#attrs)*
         #vis struct #component_name<#generic_node> {
+            #[doc(hidden)]
             _marker: ::std::marker::PhantomData<#generic_node_ty>,
         }
 
         impl<#generic_node> ::maple_core::component::Component<#generic_node_ty>
             for #component_name<#generic_node_ty>
         {
+            #[cfg(debug_assertions)]
+            const NAME: &'static ::std::primitive::str = #component_name_str;
         }
 
         impl<#generic_node> #component_name<#generic_node_ty> {
