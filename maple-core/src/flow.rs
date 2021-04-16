@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
 use crate::prelude::*;
-use crate::reactive::Owner;
+use crate::reactive::ReactiveScope;
 
 /// Props for [`Keyed`].
 pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>
@@ -67,7 +67,7 @@ where
     let iterable = Rc::new(iterable);
     let key_fn = Rc::new(key_fn);
 
-    type TemplateValue<T, G> = (Owner, T, TemplateResult<G>, usize /* index */);
+    type TemplateValue<T, G> = (ReactiveScope, T, TemplateResult<G>, usize /* index */);
 
     // A tuple with a value of type `T` and the `TemplateResult` produces by calling
     // `props.template` with the first value.
@@ -86,8 +86,8 @@ where
         move || {
             // Fast path for empty array. Remove all nodes from DOM in templates.
             if iterable.get().is_empty() {
-                for (_, (owner, _value, template, _i)) in templates.borrow_mut().drain() {
-                    drop(owner); // destroy owner
+                for (_, (scope, _value, template, _i)) in templates.borrow_mut().drain() {
+                    drop(scope); // destroy old scope
                     for node in &template {
                         node.remove_self()
                     }
@@ -157,11 +157,11 @@ where
                     // Create new DOM node.
 
                     let mut new_template = None;
-                    let owner = create_root(|| new_template = Some(template(item.clone())));
+                    let scope = create_root(|| new_template = Some(template(item.clone())));
 
                     templates.borrow_mut().insert(
                         key.clone(),
-                        (owner, item.clone(), new_template.clone().unwrap(), i),
+                        (scope, item.clone(), new_template.clone().unwrap(), i),
                     );
 
                     if let Some(next_item) = iterable.get().get(i + 1) {
@@ -213,20 +213,20 @@ where
                 {
                     // Value changed. Re-render node (with same previous key and index).
 
-                    // Destroy old template owner.
+                    // Destroy old reactive scope.
                     let mut templates = templates.borrow_mut();
-                    let (old_owner, _, _, _) = templates
+                    let (old_scope, _, _, _) = templates
                         .get_mut(&key)
                         .expect("previous value is different but must be valid");
-                    let old_owner = mem::replace(old_owner, Owner::new() /* placeholder */);
-                    drop(old_owner);
+                    let old_scope = mem::replace(old_scope, ReactiveScope::new() /* placeholder */);
+                    drop(old_scope);
 
                     let mut new_template = None;
-                    let owner = create_root(|| new_template = Some(template(item.clone())));
+                    let scope = create_root(|| new_template = Some(template(item.clone())));
 
                     let (_, _, old_template, _) = mem::replace(
                         templates.get_mut(&key).unwrap(),
-                        (owner, item.clone(), new_template.clone().unwrap(), i),
+                        (scope, item.clone(), new_template.clone().unwrap(), i),
                     );
 
                     let parent = old_template.first_node().parent_node().unwrap();
@@ -282,7 +282,7 @@ where
     T: Clone + PartialEq,
     F: Fn(T) -> TemplateResult<G>,
 {
-    type TemplateData<G> = (Owner, TemplateResult<G>);
+    type TemplateData<G> = (ReactiveScope, TemplateResult<G>);
     let templates: Rc<RefCell<Vec<TemplateData<G>>>> = Default::default();
 
     // Previous values for diffing purposes.
@@ -299,8 +299,8 @@ where
         move || {
             // Fast path for empty array. Remove all nodes from DOM in templates.
             if props.iterable.get().is_empty() {
-                for (owner, template) in templates.borrow_mut().drain(..) {
-                    drop(owner); // destroy owner
+                for (scope, template) in templates.borrow_mut().drain(..) {
+                    drop(scope); // destroy old scope
                     for node in template {
                         node.remove_self();
                     }
@@ -316,20 +316,20 @@ where
                 if previous_value.is_none() || previous_value.unwrap() != item {
                     // Value changed, re-render item.
 
-                    templates.borrow_mut().get_mut(i).and_then(|(owner, _)| {
-                        // destroy old owner
-                        let old_owner = mem::replace(owner, Owner::new() /* placeholder */);
-                        drop(old_owner);
+                    templates.borrow_mut().get_mut(i).and_then(|(scope, _)| {
+                        // destroy old scope
+                        let old_scope = mem::replace(scope, ReactiveScope::new() /* placeholder */);
+                        drop(old_scope);
                         None::<()>
                     });
 
                     let mut new_template = None;
-                    let owner = create_root(|| new_template = Some((props.template)(item.clone())));
+                    let scope = create_root(|| new_template = Some((props.template)(item.clone())));
 
                     if templates.borrow().get(i).is_some() {
                         let old_template = mem::replace(
                             &mut templates.borrow_mut()[i],
-                            (owner, new_template.as_ref().unwrap().clone()),
+                            (scope, new_template.as_ref().unwrap().clone()),
                         );
 
                         let parent = old_template.1.first_node().parent_node().unwrap();
@@ -344,7 +344,7 @@ where
 
                         templates
                             .borrow_mut()
-                            .push((owner, new_template.as_ref().unwrap().clone()));
+                            .push((scope, new_template.as_ref().unwrap().clone()));
 
                         for node in &new_template.unwrap() {
                             marker.insert_sibling_before(node);
