@@ -25,7 +25,7 @@ pub fn footer(app_state: AppState) -> TemplateResult<G> {
                 span { " " (items_text()) " left" }
             }
             ul(class="filters") {
-                Indexed<_, _>(IndexedProps {
+                Indexed(IndexedProps {
                     iterable: Signal::new(vec![Filter::All, Filter::Active, Filter::Completed]).handle(),
                     template: cloned!((app_state2) => move |filter| {
                         let selected = cloned!((app_state2) => move || filter == *app_state2.filter.get());

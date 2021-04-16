@@ -39,7 +39,7 @@ where
 /// let count = Signal::new(vec![1, 2]);
 ///
 /// let node = template! {
-///     Keyed<_, _, _, _>(KeyedProps {
+///     Keyed(KeyedProps {
 ///         iterable: count.handle(),
 ///         template: |item| template! {
 ///             li { (item) }
@@ -267,7 +267,7 @@ where
 /// let count = Signal::new(vec![1, 2]);
 ///
 /// let node = template! {
-///     Indexed<_, _>(IndexedProps {
+///     Indexed(IndexedProps {
 ///         iterable: count.handle(),
 ///         template: |item| template! {
 ///             li { (item) }

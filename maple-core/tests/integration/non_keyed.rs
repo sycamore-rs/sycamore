@@ -6,7 +6,7 @@ fn append() {
 
     let node = cloned!((count) => template! {
         ul {
-            Indexed<_, _>(IndexedProps {
+            Indexed(IndexedProps {
                 iterable: count.handle(),
                 template: |item| template! {
                     li { (item) }
@@ -38,7 +38,7 @@ fn swap_rows() {
 
     let node = cloned!((count) => template! {
         ul {
-            Indexed<_, _>(IndexedProps {
+            Indexed(IndexedProps {
                 iterable: count.handle(),
                 template: |item| template! {
                     li { (item) }
@@ -73,7 +73,7 @@ fn delete_row() {
 
     let node = cloned!((count) => template! {
         ul {
-            Indexed<_, _>(IndexedProps {
+            Indexed(IndexedProps {
                 iterable: count.handle(),
                 template: |item| template! {
                     li { (item) }
@@ -101,7 +101,7 @@ fn clear() {
 
     let node = cloned!((count) => template! {
         ul {
-            Indexed<_, _>(IndexedProps {
+            Indexed(IndexedProps {
                 iterable: count.handle(),
                 template: |item| template! {
                     li { (item) }
@@ -125,7 +125,7 @@ fn insert_front() {
 
     let node = cloned!((count) => template! {
         ul {
-            Indexed<_, _>(IndexedProps {
+            Indexed(IndexedProps {
                 iterable: count.handle(),
                 template: |item| template! {
                     li { (item) }
@@ -153,7 +153,7 @@ fn nested_reactivity() {
 
     let node = cloned!((count) => template! {
         ul {
-            Indexed<_, _>(IndexedProps {
+            Indexed(IndexedProps {
                 iterable: count.handle(),
                 template: |item| template! {
                     li { (item.get()) }
@@ -184,7 +184,7 @@ fn fragment_template() {
 
     let node = cloned!((count) => template! {
         div {
-            Indexed<_, _>(IndexedProps {
+            Indexed(IndexedProps {
                 iterable: count.handle(),
                 template: |item| template! {
                     span { "The value is: " }
@@ -235,7 +235,7 @@ fn template_top_level() {
     let count = Signal::new(vec![1, 2]);
 
     let node = cloned!((count) => template! {
-        Indexed<_, _>(IndexedProps {
+        Indexed(IndexedProps {
             iterable: count.handle(),
             template: |item| template! {
                 li { (item) }
