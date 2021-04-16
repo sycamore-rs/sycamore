@@ -1,5 +1,13 @@
 # Development
 
+## Using [gitpod.io](https://www.gitpod.io)
+
+The Maple repository is configured for [gitpod.io](https://www.gitpod.io). This is the easiest way to contribute. Just click on the button below and a full-fledged development workspace will be spun up with all dependencies pre-installed and VSCode ready to go.
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/lukechu10/maple)
+
+## Using your local dev machine
+
 Issues and Pull Requests are welcome!
 
 To install and work on Maple locally:

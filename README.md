@@ -14,4 +14,4 @@ Learn more at the [Maple website](https://maple-rs.netlify.app), or stop by the 
 ## Contributing
 
 Issue reports and Pull Requests are always welcome!
-Check out the [section on contributing](https://maple-rs.netlify.app/contributing/architecture) in the docs.
+Check out the [section on contributing](https://maple-rs.netlify.app/contribute/architecture) in the docs.
