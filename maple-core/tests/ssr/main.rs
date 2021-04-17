@@ -22,3 +22,18 @@ fn reactive_text() {
     count.set(1);
     assert_eq!(render_to_string(|| node), "<p>1</p>");
 }
+
+#[test]
+fn self_closing_tag() {
+    let node = template! {
+        div {
+            input
+            input(value="a")
+        }
+    };
+
+    assert_eq!(
+        render_to_string(|| node),
+        "<div><input /><input value=\"a\" /></div>"
+    )
+}

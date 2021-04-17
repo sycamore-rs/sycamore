@@ -1,3 +1,5 @@
+//! Rendering backend for Server Side Rendering, aka. SSR.
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -6,6 +8,11 @@ use std::{fmt, mem};
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventListener, GenericNode};
+
+static VOID_ELEMENTS: &[&str] = &[
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+    "track", "wbr", "command", "keygen", "menuitem",
+];
 
 /// Rendering backend for Server Side Rendering, aka. SSR.
 ///
@@ -275,7 +282,13 @@ impl fmt::Display for Element {
                 html_escape::encode_double_quoted_attribute(value)
             )?;
         }
-        write!(f, ">{}</{}>", self.children, self.name)?;
+
+        // Check if self-closing tag (void-element).
+        if self.children.0.is_empty() && VOID_ELEMENTS.iter().any(|tag| tag == &self.name) {
+            write!(f, " />")?;
+        } else {
+            write!(f, ">{}</{}>", self.children, self.name)?;
+        }
         Ok(())
     }
 }

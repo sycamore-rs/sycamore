@@ -1,3 +1,5 @@
+//! Rendering backend for the DOM.
+
 use std::cell::RefCell;
 
 use ref_cast::RefCast;
