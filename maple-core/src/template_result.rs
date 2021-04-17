@@ -68,7 +68,7 @@ impl<G: GenericNode> TemplateResult<G> {
         }
     }
 
-    pub fn iter(&self) -> Iter<G> {
+    pub fn iter(&self) -> Iter<'_, G> {
         match &self.inner {
             TemplateResultInner::Node(node) => Iter::Node(Some(node).into_iter()),
             TemplateResultInner::Fragment(fragment) => Iter::Fragment(fragment.iter()),
