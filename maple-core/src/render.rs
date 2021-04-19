@@ -9,7 +9,7 @@ use crate::template_result::TemplateResult;
 pub trait Render<G: GenericNode> {
     /// Called during the initial render when creating the DOM nodes. Should return a
     /// `Vec` of [`GenericNode`]s.
-    fn render(&self) -> Vec<G>;
+    fn create(&self) -> Vec<G>;
 
     /// Called when the node should be updated with new state.
     /// The default implementation of this will replace the child node completely with the result of
@@ -20,7 +20,7 @@ pub trait Render<G: GenericNode> {
     /// Returns the new node. If the node is reused instead of replaced, the returned node is simply
     /// the node passed in.
     fn update_node<'a>(&self, parent: &G, node: &'a [G]) -> Vec<G> {
-        let new_nodes = self.render();
+        let new_nodes = self.create();
 
         for new_node in &new_nodes {
             parent.replace_child(new_node, node.first().unwrap());
@@ -31,7 +31,7 @@ pub trait Render<G: GenericNode> {
 }
 
 impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
-    fn render(&self) -> Vec<G> {
+    fn create(&self) -> Vec<G> {
         vec![G::text_node(&format!("{}", self))]
     }
 
@@ -47,7 +47,7 @@ impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
 }
 
 impl<G: GenericNode> Render<G> for TemplateResult<G> {
-    fn render(&self) -> Vec<G> {
+    fn create(&self) -> Vec<G> {
         self.into_iter().cloned().collect()
     }
 }

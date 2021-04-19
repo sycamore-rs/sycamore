@@ -21,6 +21,7 @@ impl DomNode {
     pub fn inner_element(&self) -> Node {
         self.node.clone()
     }
+    
     pub fn unchecked_into<T: JsCast>(self) -> T {
         self.node.unchecked_into()
     }
