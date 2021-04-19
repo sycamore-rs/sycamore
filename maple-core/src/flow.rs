@@ -69,7 +69,7 @@ where
 
     type TemplateValue<T, G> = (ReactiveScope, T, TemplateResult<G>, usize /* index */);
 
-    // A tuple with a value of type `T` and the `TemplateResult` produces by calling
+    // A tuple with a value of type `T` and the `TemplateResult` produced by calling
     // `props.template` with the first value.
     let templates: Rc<RefCell<HashMap<Key, TemplateValue<T, G>>>> = Default::default();
 
@@ -218,7 +218,8 @@ where
                     let (old_scope, _, _, _) = templates
                         .get_mut(&key)
                         .expect("previous value is different but must be valid");
-                    let old_scope = mem::replace(old_scope, ReactiveScope::new() /* placeholder */);
+                    let old_scope =
+                        mem::replace(old_scope, ReactiveScope::new() /* placeholder */);
                     drop(old_scope);
 
                     let mut new_template = None;
@@ -318,7 +319,8 @@ where
 
                     templates.borrow_mut().get_mut(i).and_then(|(scope, _)| {
                         // destroy old scope
-                        let old_scope = mem::replace(scope, ReactiveScope::new() /* placeholder */);
+                        let old_scope =
+                            mem::replace(scope, ReactiveScope::new() /* placeholder */);
                         drop(old_scope);
                         None::<()>
                     });
