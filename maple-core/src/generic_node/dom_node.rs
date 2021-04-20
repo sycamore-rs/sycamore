@@ -7,6 +7,8 @@ use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::{Element, Event, Node, Text};
 
 use crate::generic_node::{EventListener, GenericNode};
+use crate::reactive::{create_root, ReactiveScope};
+use crate::template_result::TemplateResult;
 
 /// Rendering backend for the DOM.
 ///
@@ -21,7 +23,7 @@ impl DomNode {
     pub fn inner_element(&self) -> Node {
         self.node.clone()
     }
-    
+
     pub fn unchecked_into<T: JsCast>(self) -> T {
         self.node.unchecked_into()
     }
@@ -155,4 +157,36 @@ impl GenericNode for DomNode {
             .unwrap()
             .set_text_content(Some(text));
     }
+}
+
+/// Render a [`TemplateResult`] into the DOM.
+/// Alias for [`render_to`] with `parent` being the `<body>` tag.
+///
+/// _This API requires the following crate features to be activated: `dom`_
+pub fn render(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    render_to(template_result, &document.body().unwrap());
+}
+
+/// Render a [`TemplateResult`] under a `parent` node.
+/// For rendering under the `<body>` tag, use [`render()`] instead.
+///
+/// _This API requires the following crate features to be activated: `dom`_
+pub fn render_to(
+    template_result: impl FnOnce() -> TemplateResult<DomNode>,
+    parent: &web_sys::Node,
+) {
+    let scope = create_root(|| {
+        for node in template_result() {
+            parent.append_child(&node.inner_element()).unwrap();
+        }
+    });
+
+    thread_local! {
+        static GLOBAL_SCOPES: std::cell::RefCell<Vec<ReactiveScope>> = std::cell::RefCell::new(Vec::new());
+    }
+
+    GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
 }
