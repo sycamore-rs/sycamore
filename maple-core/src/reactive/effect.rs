@@ -47,7 +47,8 @@ impl Drop for Running {
 }
 
 /// Owns the effects created in the current reactive scope.
-/// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is dropped.
+/// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is
+/// dropped.
 #[derive(Default)]
 pub struct ReactiveScope {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
@@ -191,7 +192,8 @@ pub fn create_effect_initial<R: 'static>(
                         // Destroy old effects before new ones run.
                         let old_scope = mem::replace(
                             &mut running.borrow_mut().as_mut().unwrap().scope,
-                            ReactiveScope::new(), /* placeholder until an actual ReactiveScope is created */
+                            ReactiveScope::new(), /* placeholder until an actual ReactiveScope
+                                                   * is created */
                         );
                         drop(old_scope);
 

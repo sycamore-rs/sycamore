@@ -8,8 +8,8 @@ pub use effect::*;
 pub use motion::*;
 pub use signal::*;
 
-/// Creates a new reactive root / scope. Generally, you won't need this method as it is called automatically
-/// in [`render`](crate::generic_node::render).
+/// Creates a new reactive root / scope. Generally, you won't need this method as it is called
+/// automatically in [`render`](crate::generic_node::render).
 ///
 /// # Example
 /// ```

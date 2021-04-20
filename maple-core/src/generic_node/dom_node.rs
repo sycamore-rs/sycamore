@@ -3,7 +3,8 @@
 use std::cell::RefCell;
 
 use ref_cast::RefCast;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 use web_sys::{Element, Event, Node, Text};
 
 use crate::generic_node::{EventListener, GenericNode};
@@ -174,10 +175,7 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(
-    template_result: impl FnOnce() -> TemplateResult<DomNode>,
-    parent: &web_sys::Node,
-) {
+pub fn render_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, parent: &Node) {
     let scope = create_root(|| {
         for node in template_result() {
             parent.append_child(&node.inner_element()).unwrap();
@@ -191,8 +189,8 @@ pub fn render_to(
     GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
 }
 
-/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side hydration).
-/// Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
+/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side
+/// hydration). Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
@@ -204,18 +202,31 @@ pub fn hydrate(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
     hydrate_to(template_result, &document.body().unwrap());
 }
 
-/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side hydration).
-/// For rendering under the `<body>` tag, use [`hydrate_to`] instead.
+/// Gets the children of an [`Element`] by collecting them into a [`Vec`]. Note that the returned
+/// value is **NOT** live.
+fn get_children(parent: &Element) -> Vec<Element> {
+    let children = parent.children();
+    let children_count = children.length();
+
+    let mut vec = Vec::new();
+    vec.reserve(children_count as usize);
+
+    for i in 0..children.length() {
+        vec.push(children.get_with_index(i).unwrap())
+    }
+
+    vec
+}
+
+/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side
+/// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn hydrate_to(
-    template_result: impl FnOnce() -> TemplateResult<DomNode>,
-    parent: &web_sys::Node,
-) {
-    while let Some(child) = parent.first_child() {
-        child.unchecked_into::<Element>().remove();
+pub fn hydrate_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, parent: &Node) {
+    for child in get_children(parent.unchecked_ref()) {
+        child.remove();
     }
 
     let scope = create_root(|| {
