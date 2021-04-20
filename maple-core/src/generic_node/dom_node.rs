@@ -171,13 +171,53 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
 }
 
 /// Render a [`TemplateResult`] under a `parent` node.
-/// For rendering under the `<body>` tag, use [`render()`] instead.
+/// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn render_to(
     template_result: impl FnOnce() -> TemplateResult<DomNode>,
     parent: &web_sys::Node,
 ) {
+    let scope = create_root(|| {
+        for node in template_result() {
+            parent.append_child(&node.inner_element()).unwrap();
+        }
+    });
+
+    thread_local! {
+        static GLOBAL_SCOPES: std::cell::RefCell<Vec<ReactiveScope>> = std::cell::RefCell::new(Vec::new());
+    }
+
+    GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
+}
+
+/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side hydration).
+/// Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
+///
+/// For rendering without hydration, use [`render`] instead.
+///
+/// _This API requires the following crate features to be activated: `dom`_
+pub fn hydrate(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    hydrate_to(template_result, &document.body().unwrap());
+}
+
+/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side hydration).
+/// For rendering under the `<body>` tag, use [`hydrate_to`] instead.
+///
+/// For rendering without hydration, use [`render`] instead.
+///
+/// _This API requires the following crate features to be activated: `dom`_
+pub fn hydrate_to(
+    template_result: impl FnOnce() -> TemplateResult<DomNode>,
+    parent: &web_sys::Node,
+) {
+    while let Some(child) = parent.first_child() {
+        child.unchecked_into::<Element>().remove();
+    }
+
     let scope = create_root(|| {
         for node in template_result() {
             parent.append_child(&node.inner_element()).unwrap();

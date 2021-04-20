@@ -42,7 +42,7 @@ pub mod prelude {
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
     pub use crate::generic_node::GenericNode;
     #[cfg(feature = "dom")]
-    pub use crate::generic_node::{render, render_to, DomNode};
+    pub use crate::generic_node::{hydrate, hydrate_to, render, render_to, DomNode};
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::{render_to_string, SsrNode};
     pub use crate::noderef::NodeRef;
