@@ -1,10 +1,12 @@
 //! Reactive primitives.
 
 mod effect;
+mod iter;
 mod motion;
 mod signal;
 
 pub use effect::*;
+pub use iter::*;
 pub use motion::*;
 pub use signal::*;
 
