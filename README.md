@@ -15,3 +15,11 @@ Learn more at the [Maple website](https://maple-rs.netlify.app), or stop by the 
 
 Issue reports and Pull Requests are always welcome!
 Check out the [section on contributing](https://maple-rs.netlify.app/contribute/architecture) in the docs.
+
+## Contributors
+
+Maple would not have been possible without the wonderful work of all the people who contributed. Thank you!
+
+<a href="https://github.com/lukechu10/maple/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=lukechu10/maple" />
+</a>
