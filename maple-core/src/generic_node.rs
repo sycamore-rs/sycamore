@@ -108,7 +108,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
                 *node.borrow_mut() = new_node;
             });
 
-            (Rc::new(effect), node)
+            (Rc::new(RefCell::new(effect)), node)
         }));
 
         for node in nodes.borrow().iter() {

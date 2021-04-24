@@ -2,10 +2,6 @@ name: Test
 
 on: [push, pull_request]
 
-env:
-  RUSTFLAGS: -Dwarnings
-  CARGO_TERM_COLOR: always
-
 jobs:
   test:
     name: Test
@@ -37,6 +33,10 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+
+    env:
+      RUSTFLAGS: -Dwarnings
+      CARGO_TERM_COLOR: always
 
     steps:
       - uses: actions/checkout@v2
