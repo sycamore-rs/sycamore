@@ -119,7 +119,7 @@ impl ToTokens for HtmlRoot {
                 ::maple_core::template_result::TemplateResult::new_fragment({
                     let mut children = ::std::vec::Vec::new();
                     #( for node in #nodes {
-                        children.push(node);
+                        children.push(::maple_core::template_result::TemplateResult::new_node(node));
                     } )*
                     children
                 })

@@ -48,6 +48,6 @@ impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
 
 impl<G: GenericNode> Render<G> for TemplateResult<G> {
     fn create(&self) -> Vec<G> {
-        self.into_iter().cloned().collect()
+        self.clone().into_iter().collect()
     }
 }

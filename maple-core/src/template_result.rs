@@ -6,7 +6,7 @@ use crate::generic_node::GenericNode;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TemplateResultInner<G: GenericNode> {
     Node(G),
-    Fragment(Vec<G>),
+    Fragment(Vec<TemplateResult<G>>),
 }
 
 /// Result of the [`template`](crate::template) macro. Should not be constructed manually.
@@ -24,7 +24,7 @@ impl<G: GenericNode> TemplateResult<G> {
     }
 
     /// Create a new [`TemplateResult`] from a `Vec` of [`GenericNode`]s.
-    pub fn new_fragment(fragment: Vec<G>) -> Self {
+    pub fn new_fragment(fragment: Vec<TemplateResult<G>>) -> Self {
         debug_assert!(
             !fragment.is_empty(),
             "fragment must have at least 1 child node, use empty() instead"
@@ -40,38 +40,27 @@ impl<G: GenericNode> TemplateResult<G> {
         Self::new_node(G::marker())
     }
 
-    /// Gets the first node in the [`TemplateResult`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if the fragment has no child nodes.
-    pub fn first_node(&self) -> &G {
+    /// Flattens the [`TemplateResult`] into a flat `Vec` of nodes.
+    pub fn flatten(&self) -> Vec<G> {
         match &self.inner {
-            TemplateResultInner::Node(node) => node,
+            TemplateResultInner::Node(node) => vec![node.clone()],
             TemplateResultInner::Fragment(fragment) => {
-                fragment.first().expect("fragment has no child nodes")
+                fragment.iter().map(|t| t.flatten()).flatten().collect()
             }
         }
     }
 
-    /// Gets the last node in the [`TemplateResult`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if the fragment has no child nodes.
-    pub fn last_node(&self) -> &G {
-        match &self.inner {
-            TemplateResultInner::Node(node) => node,
-            TemplateResultInner::Fragment(fragment) => {
-                fragment.last().expect("fragment has no child nodes")
+    pub fn append_template(&mut self, template: TemplateResult<G>) {
+        match &mut self.inner {
+            TemplateResultInner::Node(node) => {
+                self.inner = TemplateResultInner::Fragment(vec![
+                    TemplateResult::new_node(node.clone()),
+                    template,
+                ])
             }
-        }
-    }
-
-    pub fn iter(&self) -> Iter<'_, G> {
-        match &self.inner {
-            TemplateResultInner::Node(node) => Iter::Node(Some(node).into_iter()),
-            TemplateResultInner::Fragment(fragment) => Iter::Fragment(fragment.iter()),
+            TemplateResultInner::Fragment(fragment) => {
+                fragment.push(template);
+            }
         }
     }
 }
@@ -82,37 +71,6 @@ impl<G: GenericNode> IntoIterator for TemplateResult<G> {
     type IntoIter = std::vec::IntoIter<G>;
 
     fn into_iter(self) -> Self::IntoIter {
-        match self.inner {
-            TemplateResultInner::Node(node) => vec![node].into_iter(),
-            TemplateResultInner::Fragment(fragment) => fragment.into_iter(),
-        }
-    }
-}
-
-/// An iterator over references of the nodes in [`TemplateResult`]. Created using
-/// [`TemplateResult::iter`].
-pub enum Iter<'a, G: GenericNode> {
-    Node(std::option::IntoIter<&'a G>),
-    Fragment(std::slice::Iter<'a, G>),
-}
-
-impl<'a, G: GenericNode> Iterator for Iter<'a, G> {
-    type Item = &'a G;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Iter::Node(node) => node.next(),
-            Iter::Fragment(fragment) => fragment.next(),
-        }
-    }
-}
-
-impl<'a, G: GenericNode> IntoIterator for &'a TemplateResult<G> {
-    type Item = &'a G;
-
-    type IntoIter = Iter<'a, G>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
+        self.flatten().into_iter()
     }
 }
