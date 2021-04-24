@@ -149,15 +149,15 @@ impl Eq for Dependency {}
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 pub fn create_effect_initial<R: 'static>(
-    initial: impl FnOnce() -> (Rc<dyn Fn()>, R) + 'static,
+    initial: impl FnOnce() -> (Rc<RefCell<dyn FnMut()>>, R) + 'static,
 ) -> R {
-    type InitialFn = dyn FnOnce() -> (Rc<dyn Fn()>, Box<dyn Any>);
+    type InitialFn = dyn FnOnce() -> (Rc<RefCell<dyn FnMut()>>, Box<dyn Any>);
 
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
     fn internal(initial: Box<InitialFn>) -> Box<dyn Any> {
         let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
-        type MutEffect = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+        type MutEffect = Rc<RefCell<Option<Rc<RefCell<dyn FnMut()>>>>>;
         let effect: MutEffect = Rc::new(RefCell::new(None));
         let ret: Rc<RefCell<Option<Box<dyn Any>>>> = Rc::new(RefCell::new(None));
 
@@ -199,7 +199,7 @@ pub fn create_effect_initial<R: 'static>(
 
                         let effect = Rc::clone(&effect);
                         let scope = create_root(move || {
-                            effect.borrow().as_ref().unwrap()();
+                            effect.borrow().as_ref().unwrap().borrow_mut()();
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
                     }
@@ -280,17 +280,17 @@ pub fn create_effect_initial<R: 'static>(
 /// ```
 pub fn create_effect<F>(effect: F)
 where
-    F: Fn() + 'static,
+    F: FnMut() + 'static,
 {
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
-    fn internal(effect: Rc<dyn Fn()>) {
+    fn internal(effect: Rc<RefCell<dyn FnMut()>>) {
         create_effect_initial(move || {
-            effect();
+            effect.borrow_mut()();
             (effect, ())
         })
     }
 
-    internal(Rc::new(effect));
+    internal(Rc::new(RefCell::new(effect)));
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
@@ -349,7 +349,7 @@ where
     create_effect_initial(move || {
         let memo = Signal::new(derived());
 
-        let effect = Rc::new({
+        let effect = Rc::new(RefCell::new({
             let memo = memo.clone();
             let derived = Rc::clone(&derived);
             move || {
@@ -358,7 +358,7 @@ where
                     memo.set(new_value);
                 }
             }
-        });
+        }));
 
         (effect, memo.into_handle())
     })
@@ -466,34 +466,6 @@ mod tests {
         assert_eq!(*double.get(), 2);
         state.set(2);
         assert_eq!(*double.get(), 4);
-    }
-
-    // FIXME: cycle detection is currently broken
-    #[test]
-    #[ignore]
-    #[should_panic(expected = "cannot create cyclic dependency")]
-    fn cyclic_effects_fail() {
-        let state = Signal::new(0);
-
-        create_effect(cloned!((state) => move || {
-            state.set(*state.get() + 1);
-        }));
-
-        state.set(1);
-    }
-
-    #[test]
-    #[ignore]
-    #[should_panic(expected = "cannot create cyclic dependency")]
-    fn cyclic_effects_fail_2() {
-        let state = Signal::new(0);
-
-        create_effect(cloned!((state) => move || {
-            let value = *state.get();
-            state.set(value + 1);
-        }));
-
-        state.set(1);
     }
 
     #[test]
