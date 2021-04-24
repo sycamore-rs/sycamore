@@ -25,6 +25,29 @@ where
         move || {
             let new_items = list.get();
             untrack(|| {
+                if new_items.is_empty() && !items.is_empty() {
+                    // Fast path for removing all items.
+                    drop(mem::take(&mut scopes));
+                    items = Vec::new();
+                    *mapped.borrow_mut() = Vec::new();
+                    return;
+                }
+
+                if !new_items.is_empty() && items.is_empty() {
+                    // Fast path for new create.
+                    for new_item in new_items.iter() {
+                        let mut new_mapped = None;
+                        let new_scope = create_root(|| {
+                            new_mapped = Some(map_fn(new_item));
+                        });
+                        mapped.borrow_mut().push(new_mapped.unwrap());
+                        scopes.push(Some(Rc::new(new_scope)));
+                    }
+
+                    items = (*new_items).clone();
+                    return;
+                }
+
                 // Skip common prefix.
                 let mut start = 0;
                 let end = usize::min(items.len(), new_items.len());
@@ -34,12 +57,12 @@ where
 
                 // Skip common suffix.
                 let mut end = items.len() as isize - 1;
-                let mut new_end = new_items.len() - 1;
+                let mut new_end = new_items.len() as isize - 1;
                 #[allow(clippy::suspicious_operation_groupings)]
                 // FIXME: make code clearer so that clippy won't complain
                 while (start as isize) < end
-                    && start < new_end
-                    && items[end as usize] == new_items[new_end]
+                    && (start as isize) < new_end
+                    && items[end as usize] == new_items[new_end as usize]
                 {
                     end -= 1;
                     new_end -= 1;
@@ -47,9 +70,11 @@ where
 
                 // Prepare a map of indices in newItems. Scan backwards so we encounter them in natural order.
                 let mut new_indices = HashMap::new();
-                for i in (start..=new_end).rev() {
-                    let item = &new_items[i];
-                    new_indices.insert(item, i);
+                if (start as isize) < new_end {
+                    for i in (start..=new_end as usize).rev() {
+                        let item = &new_items[i];
+                        new_indices.insert(item, i);
+                    }
                 }
 
                 // Step through old items and see if they can be found in new set; if so, mark them as moved.
@@ -118,10 +143,11 @@ where
             let new_items = list.get();
             untrack(|| {
                 if new_items.is_empty() && !items.is_empty() {
-                    // Fast path for removing elements.
+                    // Fast path for removing all items.
                     drop(mem::take(&mut scopes));
                     items = Vec::new();
                     *mapped.borrow_mut() = Vec::new();
+                    return;
                 }
 
                 for (i, new_item) in new_items.iter().enumerate() {
@@ -178,6 +204,16 @@ mod tests {
         debug_assert_eq!(*mapped.borrow(), vec![4, 4, 6, 8]);
     }
 
+    /// Test fast path for clearing Vec.
+    #[test]
+    fn keyed_clear() {
+        let a = Signal::new(vec![1, 2, 3]);
+        let mapped = map_keyed(a.handle(), |x| *x * 2);
+
+        a.set(Vec::new());
+        debug_assert_eq!(*mapped.borrow(), Vec::new());
+    }
+
     #[test]
     fn indexed() {
         let a = Signal::new(vec![1, 2, 3]);
@@ -189,5 +225,15 @@ mod tests {
 
         a.set(vec![2, 2, 3, 4]);
         debug_assert_eq!(*mapped.borrow(), vec![4, 4, 6, 8]);
+    }
+
+    /// Test fast path for clearing Vec.
+    #[test]
+    fn indexed_clear() {
+        let a = Signal::new(vec![1, 2, 3]);
+        let mapped = map_indexed(a.handle(), |x| *x * 2);
+
+        a.set(Vec::new());
+        debug_assert_eq!(*mapped.borrow(), Vec::new());
     }
 }
