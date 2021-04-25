@@ -5,19 +5,19 @@ use crate::template_result::{TemplateResult, TemplateResultInner};
 pub fn insert<G: GenericNode>(
     parent: G,
     accessor: TemplateResult<G>,
+    initial: Option<TemplateResult<G>>,
     marker: Option<G>,
-    initial: Option<G>,
 ) {
     match accessor.inner {
         TemplateResultInner::Lazy(f) => {
             let mut current = initial;
             create_effect(move || {
-                current = Some(insert_expression(
+                current = insert_expression(
                     parent.clone(),
                     f.as_ref().unwrap().borrow_mut()(),
                     current.clone(),
                     marker.clone(),
-                ));
+                );
             });
         }
         _ => {
@@ -29,12 +29,25 @@ pub fn insert<G: GenericNode>(
 pub fn insert_expression<G: GenericNode>(
     parent: G,
     value: TemplateResult<G>,
-    current: Option<G>,
+    mut current: Option<TemplateResult<G>>,
     marker: Option<G>,
-) -> G {
-    if matches!(value.inner, TemplateResultInner::Node(node) if Some(&node) == current.as_ref()) {
-        return current.unwrap();
-    }
+) -> Option<TemplateResult<G>> {
+    match value.inner {
+        TemplateResultInner::Node(node) => {
+            parent.append_child(&node);
 
+            return Some(TemplateResult::new_node(node));
+        }
+        TemplateResultInner::Lazy(f) => {
+            let mut v = f.unwrap().as_ref().borrow_mut()();
+            while let TemplateResultInner::Lazy(f) = v.inner {
+                v = f.unwrap().as_ref().borrow_mut()();
+            }
+
+            current = insert_expression(parent, v, current, marker);
+            return Some(TemplateResult::new_lazy(move || current.clone().unwrap()));
+        }
+        TemplateResultInner::Fragment(_) => {}
+    }
     todo!();
 }

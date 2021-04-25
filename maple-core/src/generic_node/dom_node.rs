@@ -7,6 +7,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event, Node, Text};
 
+use crate::generic_node::render::insert;
 use crate::generic_node::{EventListener, GenericNode};
 use crate::reactive::{create_root, ReactiveScope};
 use crate::template_result::TemplateResult;
@@ -177,10 +178,14 @@ pub fn render(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn render_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, parent: &Node) {
     let scope = create_root(|| {
-        // for node in template_result() {
-        //     parent.append_child(&node.inner_element()).unwrap();
-        // }
-        // TODO
+        insert(
+            DomNode {
+                node: parent.clone(),
+            },
+            template_result(),
+            None,
+            None,
+        );
     });
 
     thread_local! {
@@ -231,10 +236,14 @@ pub fn hydrate_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, par
     }
 
     let scope = create_root(|| {
-        // for node in template_result() {
-        //     parent.append_child(&node.inner_element()).unwrap();
-        // }
-        // TODO
+        insert(
+            DomNode {
+                node: parent.clone(),
+            },
+            template_result(),
+            None,
+            None, // TODO
+        );
     });
 
     thread_local! {
