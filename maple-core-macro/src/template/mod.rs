@@ -118,9 +118,9 @@ impl ToTokens for HtmlRoot {
             nodes => quote! {
                 ::maple_core::template_result::TemplateResult::new_fragment({
                     let mut children = ::std::vec::Vec::new();
-                    #( for node in #nodes {
-                        children.push(::maple_core::template_result::TemplateResult::new_node(node));
-                    } )*
+                    #(
+                        children.push(#nodes);
+                    )*
                     children
                 })
             },

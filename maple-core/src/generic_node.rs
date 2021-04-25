@@ -2,6 +2,7 @@
 
 #[cfg(feature = "dom")]
 pub mod dom_node;
+pub mod render;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
 
@@ -97,6 +98,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
 
     /// Append an item that implements [`Render`] and automatically updates the DOM inside an
     /// effect.
+    #[deprecated]
     fn append_render(&self, child: Box<dyn Fn() -> Box<dyn Render<Self>>>) {
         let parent = self.clone();
 

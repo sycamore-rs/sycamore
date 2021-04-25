@@ -70,7 +70,7 @@ where
         })();
         TemplateResult::new_fragment((*mapped).clone())
     });
-    (*template_result.get()).clone()
+    TemplateResult::new_lazy(move || (*template_result.get()).clone())
 }
 
 /// Props for [`Indexed`].
@@ -120,5 +120,5 @@ where
         })();
         TemplateResult::new_fragment((*mapped).clone())
     });
-    (*template_result.get()).clone()
+    TemplateResult::new_lazy(move || (*template_result.get()).clone())
 }
