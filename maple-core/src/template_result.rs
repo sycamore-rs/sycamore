@@ -1,5 +1,6 @@
 //! Result of the [`template`](crate::template) macro.
 
+use std::cell::RefCell;
 use std::mem;
 use std::rc::Rc;
 
@@ -7,11 +8,11 @@ use crate::generic_node::GenericNode;
 
 /// Internal type for [`TemplateResult`].
 #[derive(Clone)]
-pub enum TemplateResultInner<G: GenericNode> {
+pub(crate) enum TemplateResultInner<G: GenericNode> {
     /// A DOM node.
     Node(G),
     /// A lazy-computed [`TemplateResult`].
-    Lazy(Option<Rc<dyn FnOnce() -> TemplateResult<G>>>),
+    Lazy(Option<Rc<RefCell<dyn FnMut() -> TemplateResult<G>>>>),
     /// A fragment of [`TemplateResult`]s.
     Fragment(Vec<TemplateResult<G>>),
 }
@@ -19,7 +20,7 @@ pub enum TemplateResultInner<G: GenericNode> {
 /// Result of the [`template`](crate::template) macro. Should not be constructed manually.
 #[derive(Clone)]
 pub struct TemplateResult<G: GenericNode> {
-    inner: TemplateResultInner<G>,
+    pub(crate) inner: TemplateResultInner<G>,
 }
 
 impl<G: GenericNode> TemplateResult<G> {
@@ -31,9 +32,9 @@ impl<G: GenericNode> TemplateResult<G> {
     }
 
     /// Create a new [`TemplateResult`] from a [`FnOnce`].
-    pub fn new_lazy(f: impl FnOnce() -> TemplateResult<G> + 'static) -> Self {
+    pub fn new_lazy(f: impl FnMut() -> TemplateResult<G> + 'static) -> Self {
         Self {
-            inner: TemplateResultInner::Lazy(Some(Rc::new(f))),
+            inner: TemplateResultInner::Lazy(Some(Rc::new(RefCell::new(f)))),
         }
     }
 
@@ -54,8 +55,6 @@ impl<G: GenericNode> TemplateResult<G> {
         Self::new_node(G::marker())
     }
 
-    /// # Panics
-    /// This method panics if variant is a `Lazy` and already executed.
     pub fn append_template(&mut self, template: TemplateResult<G>) {
         match &mut self.inner {
             TemplateResultInner::Node(node) => {

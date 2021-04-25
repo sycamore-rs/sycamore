@@ -175,7 +175,11 @@ impl ToTokens for Element {
             for child in &children.body {
                 let quoted = match child {
                     HtmlTree::Component(component) => quote_spanned! { component.span()=>
-                        ::maple_core::generic_node::render::insert(&element, #component, None, None);
+                        ::maple_core::generic_node::render::insert(
+                            ::std::clone::Clone::clone(&element),
+                            #component,
+                            None, None,
+                        );
                     },
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
                         ::maple_core::generic_node::GenericNode::append_child(&element, &#element);
