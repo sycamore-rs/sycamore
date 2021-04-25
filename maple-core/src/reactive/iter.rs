@@ -10,7 +10,7 @@ use super::*;
 pub fn map_keyed<T, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
-) -> Rc<RefCell<Vec<U>>>
+) -> impl FnMut() -> Rc<Vec<U>>
 where
     T: Eq + Clone + Hash,
     U: Clone + 'static,
@@ -20,34 +20,24 @@ where
     let mapped = Rc::new(RefCell::new(Vec::<U>::new()));
     let mut scopes: Vec<Option<Rc<ReactiveScope>>> = Vec::new();
 
-    create_effect({
-        let mapped = Rc::clone(&mapped);
-        move || {
-            let new_items = list.get();
-            untrack(|| {
-                if new_items.is_empty() && !items.is_empty() {
-                    // Fast path for removing all items.
-                    drop(mem::take(&mut scopes));
-                    items = Vec::new();
-                    *mapped.borrow_mut() = Vec::new();
-                    return;
+    move || {
+        let new_items = list.get(); // Subscribe to list.
+        untrack(|| {
+            if new_items.is_empty() && !items.is_empty() {
+                // Fast path for removing all items.
+                drop(mem::take(&mut scopes));
+                *mapped.borrow_mut() = Vec::new();
+            } else if !new_items.is_empty() && items.is_empty() {
+                // Fast path for new create.
+                for new_item in new_items.iter() {
+                    let mut new_mapped = None;
+                    let new_scope = create_root(|| {
+                        new_mapped = Some(map_fn(new_item));
+                    });
+                    mapped.borrow_mut().push(new_mapped.unwrap());
+                    scopes.push(Some(Rc::new(new_scope)));
                 }
-
-                if !new_items.is_empty() && items.is_empty() {
-                    // Fast path for new create.
-                    for new_item in new_items.iter() {
-                        let mut new_mapped = None;
-                        let new_scope = create_root(|| {
-                            new_mapped = Some(map_fn(new_item));
-                        });
-                        mapped.borrow_mut().push(new_mapped.unwrap());
-                        scopes.push(Some(Rc::new(new_scope)));
-                    }
-
-                    items = (*new_items).clone();
-                    return;
-                }
-
+            } else {
                 // Skip common prefix.
                 let mut start = 0;
                 let end = usize::min(items.len(), new_items.len());
@@ -112,44 +102,40 @@ where
                         }
                     }
                 }
+            }
 
-                items = (*new_items).clone();
-                debug_assert!([items.len(), mapped.borrow().len(), scopes.len()]
-                    .iter()
-                    .all(|l| *l == new_items.len()));
-            })
-        }
-    });
+            items = (*new_items).clone();
+            debug_assert!([items.len(), mapped.borrow().len(), scopes.len()]
+                .iter()
+                .all(|l| *l == new_items.len()));
 
-    mapped
+            Rc::new((*mapped).clone().into_inner())
+        })
+    }
 }
 
 pub fn map_indexed<T, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
-) -> Rc<RefCell<Vec<U>>>
+) -> impl FnMut() -> Rc<Vec<U>>
 where
     T: PartialEq + Clone,
-    U: 'static,
+    U: Clone + 'static,
 {
     // Previous state used for diffing.
     let mut items = Vec::new();
     let mapped = Rc::new(RefCell::new(Vec::new()));
     let mut scopes = Vec::new();
 
-    create_effect({
-        let mapped = Rc::clone(&mapped);
-        move || {
-            let new_items = list.get();
-            untrack(|| {
-                if new_items.is_empty() && !items.is_empty() {
-                    // Fast path for removing all items.
-                    drop(mem::take(&mut scopes));
-                    items = Vec::new();
-                    *mapped.borrow_mut() = Vec::new();
-                    return;
-                }
-
+    move || {
+        let new_items = list.get(); // Subscribe to list.
+        untrack(|| {
+            if new_items.is_empty() && !items.is_empty() {
+                // Fast path for removing all items.
+                drop(mem::take(&mut scopes));
+                items = Vec::new();
+                *mapped.borrow_mut() = Vec::new();
+            } else {
                 for (i, new_item) in new_items.iter().enumerate() {
                     let item = items.get(i);
 
@@ -180,11 +166,11 @@ where
                 debug_assert!([items.len(), mapped.borrow().len(), scopes.len()]
                     .iter()
                     .all(|l| *l == new_items.len()));
-            })
-        }
-    });
+            }
 
-    mapped
+            Rc::new((*mapped).clone().into_inner())
+        })
+    }
 }
 
 #[cfg(test)]
@@ -194,46 +180,66 @@ mod tests {
     #[test]
     fn keyed() {
         let a = Signal::new(vec![1, 2, 3]);
-        let mapped = map_keyed(a.handle(), |x| *x * 2);
-        debug_assert_eq!(*mapped.borrow(), vec![2, 4, 6]);
+        let mut mapped = map_keyed(a.handle(), |x| *x * 2);
+        assert_eq!(*mapped(), vec![2, 4, 6]);
 
         a.set(vec![1, 2, 3, 4]);
-        debug_assert_eq!(*mapped.borrow(), vec![2, 4, 6, 8]);
+        assert_eq!(*mapped(), vec![2, 4, 6, 8]);
 
         a.set(vec![2, 2, 3, 4]);
-        debug_assert_eq!(*mapped.borrow(), vec![4, 4, 6, 8]);
+        assert_eq!(*mapped(), vec![4, 4, 6, 8]);
     }
 
     /// Test fast path for clearing Vec.
     #[test]
     fn keyed_clear() {
         let a = Signal::new(vec![1, 2, 3]);
-        let mapped = map_keyed(a.handle(), |x| *x * 2);
+        let mut mapped = map_keyed(a.handle(), |x| *x * 2);
 
         a.set(Vec::new());
-        debug_assert_eq!(*mapped.borrow(), Vec::new());
+        assert_eq!(*mapped(), Vec::new());
     }
 
     #[test]
     fn indexed() {
         let a = Signal::new(vec![1, 2, 3]);
-        let mapped = map_indexed(a.handle(), |x| *x * 2);
-        debug_assert_eq!(*mapped.borrow(), vec![2, 4, 6]);
+        let mut mapped = map_indexed(a.handle(), |x| *x * 2);
+        assert_eq!(*mapped(), vec![2, 4, 6]);
 
         a.set(vec![1, 2, 3, 4]);
-        debug_assert_eq!(*mapped.borrow(), vec![2, 4, 6, 8]);
+        assert_eq!(*mapped(), vec![2, 4, 6, 8]);
 
         a.set(vec![2, 2, 3, 4]);
-        debug_assert_eq!(*mapped.borrow(), vec![4, 4, 6, 8]);
+        assert_eq!(*mapped(), vec![4, 4, 6, 8]);
     }
 
     /// Test fast path for clearing Vec.
     #[test]
     fn indexed_clear() {
         let a = Signal::new(vec![1, 2, 3]);
-        let mapped = map_indexed(a.handle(), |x| *x * 2);
+        let mut mapped = map_indexed(a.handle(), |x| *x * 2);
 
         a.set(Vec::new());
-        debug_assert_eq!(*mapped.borrow(), Vec::new());
+        assert_eq!(*mapped(), Vec::new());
+    }
+
+    /// Test that result of mapped function can be listened to.
+    #[test]
+    fn indexed_react() {
+        let a = Signal::new(vec![1, 2, 3]);
+        let mut mapped = map_indexed(a.handle(), |x| *x * 2);
+
+        let counter = Signal::new(0);
+        create_effect({
+            let counter = counter.clone();
+            move || {
+                counter.set(*counter.get_untracked() + 1);
+                mapped(); // Subscribe to mapped.
+            }
+        });
+
+        assert_eq!(*counter.get(), 1);
+        a.set(vec![1, 2, 3, 4]);
+        assert_eq!(*counter.get(), 2);
     }
 }

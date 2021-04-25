@@ -1,9 +1,11 @@
-use super::*;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
+
+use super::*;
 
 /// A readonly [`Signal`].
 ///
@@ -193,6 +195,14 @@ impl<T: 'static> Clone for Signal<T> {
 impl<T: PartialEq> PartialEq for Signal<T> {
     fn eq(&self, other: &Signal<T>) -> bool {
         self.get_untracked().eq(&other.get_untracked())
+    }
+}
+
+impl<T: Eq> Eq for Signal<T> {}
+
+impl<T: Hash> Hash for Signal<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.get_untracked().hash(state)
     }
 }
 
