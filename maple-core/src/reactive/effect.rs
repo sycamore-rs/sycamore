@@ -309,7 +309,7 @@ where
 /// ```
 pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
-    F: Fn() -> Out + 'static,
+    F: FnMut() -> Out + 'static,
     Out: 'static,
 {
     create_selector_with(derived, |_, _| false)
@@ -322,7 +322,7 @@ where
 /// To specify a custom comparison function, use [`create_selector_with`].
 pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
 where
-    F: Fn() -> Out + 'static,
+    F: FnMut() -> Out + 'static,
     Out: PartialEq + 'static,
 {
     create_selector_with(derived, PartialEq::eq)
@@ -339,21 +339,21 @@ where
 /// [`create_selector`].
 pub fn create_selector_with<F, Out, C>(derived: F, comparator: C) -> StateHandle<Out>
 where
-    F: Fn() -> Out + 'static,
+    F: FnMut() -> Out + 'static,
     Out: 'static,
     C: Fn(&Out, &Out) -> bool + 'static,
 {
-    let derived = Rc::new(derived);
+    let derived = Rc::new(RefCell::new(derived));
     let comparator = Rc::new(comparator);
 
     create_effect_initial(move || {
-        let memo = Signal::new(derived());
+        let memo = Signal::new(derived.borrow_mut()());
 
         let effect = Rc::new(RefCell::new({
             let memo = memo.clone();
             let derived = Rc::clone(&derived);
             move || {
-                let new_value = derived();
+                let new_value = derived.borrow_mut()();
                 if !comparator(&memo.get_untracked(), &new_value) {
                     memo.set(new_value);
                 }
