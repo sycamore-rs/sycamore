@@ -40,16 +40,6 @@ impl<G: GenericNode> TemplateResult<G> {
         Self::new_node(G::marker())
     }
 
-    /// Flattens the [`TemplateResult`] into a flat `Vec` of nodes.
-    pub fn flatten(&self) -> Vec<G> {
-        match &self.inner {
-            TemplateResultInner::Node(node) => vec![node.clone()],
-            TemplateResultInner::Fragment(fragment) => {
-                fragment.iter().map(|t| t.flatten()).flatten().collect()
-            }
-        }
-    }
-
     pub fn append_template(&mut self, template: TemplateResult<G>) {
         match &mut self.inner {
             TemplateResultInner::Node(node) => {
@@ -65,12 +55,3 @@ impl<G: GenericNode> TemplateResult<G> {
     }
 }
 
-impl<G: GenericNode> IntoIterator for TemplateResult<G> {
-    type Item = G;
-
-    type IntoIter = std::vec::IntoIter<G>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.flatten().into_iter()
-    }
-}
