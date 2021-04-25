@@ -58,7 +58,8 @@ where
                     new_end -= 1;
                 }
 
-                // Prepare a map of indices in newItems. Scan backwards so we encounter them in natural order.
+                // Prepare a map of indices in newItems. Scan backwards so we encounter them in
+                // natural order.
                 let mut new_indices = HashMap::new();
                 if (start as isize) < new_end {
                     for i in (start..=new_end as usize).rev() {
@@ -67,7 +68,8 @@ where
                     }
                 }
 
-                // Step through old items and see if they can be found in new set; if so, mark them as moved.
+                // Step through old items and see if they can be found in new set; if so, mark them
+                // as moved.
                 let mut temp = HashMap::new();
                 let mut temp_scopes = HashMap::new();
                 if (start as isize) < end {
@@ -82,7 +84,8 @@ where
                     }
                 }
 
-                // Set all the new values, pulling from the temp array if copied, otherwise entering the new value.
+                // Set all the new values, pulling from the temp array if copied, otherwise entering
+                // the new value.
                 for i in start..new_items.len() {
                     if temp.get(&i).is_some() {
                         mapped.borrow_mut()[i] = temp.remove(&i).unwrap();

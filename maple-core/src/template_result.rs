@@ -1,16 +1,23 @@
 //! Result of the [`template`](crate::template) macro.
 
+use std::mem;
+use std::rc::Rc;
+
 use crate::generic_node::GenericNode;
 
 /// Internal type for [`TemplateResult`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub enum TemplateResultInner<G: GenericNode> {
+    /// A DOM node.
     Node(G),
+    /// A lazy-computed [`TemplateResult`].
+    Lazy(Option<Rc<dyn FnOnce() -> TemplateResult<G>>>),
+    /// A fragment of [`TemplateResult`]s.
     Fragment(Vec<TemplateResult<G>>),
 }
 
 /// Result of the [`template`](crate::template) macro. Should not be constructed manually.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct TemplateResult<G: GenericNode> {
     inner: TemplateResultInner<G>,
 }
@@ -20,6 +27,13 @@ impl<G: GenericNode> TemplateResult<G> {
     pub fn new_node(node: G) -> Self {
         Self {
             inner: TemplateResultInner::Node(node),
+        }
+    }
+
+    /// Create a new [`TemplateResult`] from a [`FnOnce`].
+    pub fn new_lazy(f: impl FnOnce() -> TemplateResult<G> + 'static) -> Self {
+        Self {
+            inner: TemplateResultInner::Lazy(Some(Rc::new(f))),
         }
     }
 
@@ -40,11 +54,21 @@ impl<G: GenericNode> TemplateResult<G> {
         Self::new_node(G::marker())
     }
 
+    /// # Panics
+    /// This method panics if variant is a `Lazy` and already executed.
     pub fn append_template(&mut self, template: TemplateResult<G>) {
         match &mut self.inner {
             TemplateResultInner::Node(node) => {
                 self.inner = TemplateResultInner::Fragment(vec![
                     TemplateResult::new_node(node.clone()),
+                    template,
+                ])
+            }
+            TemplateResultInner::Lazy(lazy) => {
+                self.inner = TemplateResultInner::Fragment(vec![
+                    TemplateResult {
+                        inner: TemplateResultInner::Lazy(mem::take(lazy)),
+                    },
                     template,
                 ])
             }
@@ -54,4 +78,3 @@ impl<G: GenericNode> TemplateResult<G> {
         }
     }
 }
-
