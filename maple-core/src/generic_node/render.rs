@@ -36,7 +36,7 @@ pub fn insert_expression<G: GenericNode>(
         TemplateResultInner::Node(node) => {
             parent.append_child(&node);
 
-            return Some(TemplateResult::new_node(node));
+            Some(TemplateResult::new_node(node))
         }
         TemplateResultInner::Lazy(f) => {
             let mut v = f.unwrap().as_ref().borrow_mut()();
@@ -45,9 +45,36 @@ pub fn insert_expression<G: GenericNode>(
             }
 
             current = insert_expression(parent, v, current, marker);
-            return Some(TemplateResult::new_lazy(move || current.clone().unwrap()));
+            Some(TemplateResult::new_lazy(move || current.clone().unwrap()))
         }
-        TemplateResultInner::Fragment(_) => {}
+        TemplateResultInner::Fragment(fragment) => {
+            clear_children(parent.clone(), vec![], None, None);
+
+            for template in fragment {
+                insert_expression(parent.clone(), template, None, None);
+            }
+
+            Some(TemplateResult::new_lazy(move || current.clone().unwrap()))
+        }
     }
-    todo!();
+}
+
+pub fn clear_children<G: GenericNode>(
+    parent: G,
+    current: Vec<G>,
+    marker: Option<G>,
+    replacement: Option<G>,
+) {
+    if marker == None {
+        parent.update_inner_text("");
+        return;
+    }
+
+    let replacement = replacement.unwrap_or_else(|| G::text_node(""));
+
+    for node in current {
+        if node.parent_node().as_ref() == Some(&parent) {
+            parent.replace_child(&node, &replacement);
+        }
+    }
 }

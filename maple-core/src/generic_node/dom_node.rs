@@ -154,10 +154,7 @@ impl GenericNode for DomNode {
     }
 
     fn update_inner_text(&self, text: &str) {
-        self.node
-            .dyn_ref::<Text>()
-            .unwrap()
-            .set_text_content(Some(text));
+        self.node.set_text_content(Some(text));
     }
 }
 
