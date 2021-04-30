@@ -1,8 +1,8 @@
 //! Result of the [`template`](crate::template) macro.
 
 use std::cell::RefCell;
-use std::mem;
 use std::rc::Rc;
+use std::{fmt, mem};
 
 use crate::generic_node::GenericNode;
 
@@ -40,11 +40,6 @@ impl<G: GenericNode> TemplateResult<G> {
 
     /// Create a new [`TemplateResult`] from a `Vec` of [`GenericNode`]s.
     pub fn new_fragment(fragment: Vec<TemplateResult<G>>) -> Self {
-        debug_assert!(
-            !fragment.is_empty(),
-            "fragment must have at least 1 child node, use empty() instead"
-        );
-
         Self {
             inner: TemplateResultInner::Fragment(fragment),
         }
@@ -74,6 +69,29 @@ impl<G: GenericNode> TemplateResult<G> {
             TemplateResultInner::Fragment(fragment) => {
                 fragment.push(template);
             }
+        }
+    }
+
+    /// Returns a `Vec` of nodes. Lazy nodes are evaluated.
+    pub fn flatten(self) -> Vec<G> {
+        match self.inner {
+            TemplateResultInner::Node(node) => vec![node],
+            TemplateResultInner::Lazy(lazy) => lazy.unwrap().borrow_mut()().flatten(),
+            TemplateResultInner::Fragment(fragment) => fragment
+                .into_iter()
+                .map(|x| x.flatten())
+                .flatten()
+                .collect(),
+        }
+    }
+}
+
+impl<G: GenericNode> fmt::Debug for TemplateResult<G> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.inner {
+            TemplateResultInner::Node(node) => node.fmt(f),
+            TemplateResultInner::Lazy(lazy) => lazy.as_ref().unwrap().borrow_mut()().fmt(f),
+            TemplateResultInner::Fragment(fragment) => fragment.fmt(f),
         }
     }
 }

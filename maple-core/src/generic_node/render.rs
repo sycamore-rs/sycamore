@@ -5,38 +5,29 @@ use crate::template_result::{TemplateResult, TemplateResultInner};
 pub fn insert<G: GenericNode>(
     parent: G,
     accessor: TemplateResult<G>,
-    initial: Option<TemplateResult<G>>,
+    _initial: Option<TemplateResult<G>>,
     marker: Option<G>,
 ) {
     match accessor.inner {
         TemplateResultInner::Lazy(f) => {
-            let mut current = initial;
             create_effect(move || {
-                current = insert_expression(
+                insert_expression(
                     parent.clone(),
                     f.as_ref().unwrap().borrow_mut()(),
-                    current.clone(),
                     marker.clone(),
                 );
             });
         }
         _ => {
-            insert_expression(parent, accessor, initial, marker);
+            insert_expression(parent, accessor, marker);
         }
     }
 }
 
-pub fn insert_expression<G: GenericNode>(
-    parent: G,
-    value: TemplateResult<G>,
-    mut current: Option<TemplateResult<G>>,
-    marker: Option<G>,
-) -> Option<TemplateResult<G>> {
+pub fn insert_expression<G: GenericNode>(parent: G, value: TemplateResult<G>, marker: Option<G>) {
     match value.inner {
         TemplateResultInner::Node(node) => {
             parent.append_child(&node);
-
-            Some(TemplateResult::new_node(node))
         }
         TemplateResultInner::Lazy(f) => {
             let mut v = f.unwrap().as_ref().borrow_mut()();
@@ -44,17 +35,14 @@ pub fn insert_expression<G: GenericNode>(
                 v = f.unwrap().as_ref().borrow_mut()();
             }
 
-            current = insert_expression(parent, v, current, marker);
-            Some(TemplateResult::new_lazy(move || current.clone().unwrap()))
+            insert_expression(parent, v, marker);
         }
         TemplateResultInner::Fragment(fragment) => {
             clear_children(parent.clone(), vec![], None, None);
 
             for template in fragment {
-                insert_expression(parent.clone(), template, None, None);
+                insert_expression(parent.clone(), template, None);
             }
-
-            Some(TemplateResult::new_lazy(move || current.clone().unwrap()))
         }
     }
 }

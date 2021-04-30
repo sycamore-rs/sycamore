@@ -195,11 +195,12 @@ impl ToTokens for Element {
                         }
                         Text::Splice(_, _) => {
                             quote_spanned! { text.span()=>
-                                ::maple_core::generic_node::GenericNode::append_render(
-                                    &element,
-                                    ::std::boxed::Box::new(move || {
-                                        ::std::boxed::Box::new(#text)
-                                    }),
+                                ::maple_core::generic_node::render::insert(
+                                    ::std::clone::Clone::clone(&element),
+                                    ::maple_core::template_result::TemplateResult::new_lazy(move ||
+                                        TemplateResult::new_node(::maple_core::generic_node::GenericNode::text_node(&format!("{}", #text)))
+                                    ),
+                                    None, None,
                                 );
                             }
                         }

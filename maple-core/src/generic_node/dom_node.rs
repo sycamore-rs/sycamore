@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use ref_cast::RefCast;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, Event, Node, Text};
+use web_sys::{Element, Event, Node};
 
 use crate::generic_node::render::insert;
 use crate::generic_node::{EventListener, GenericNode};

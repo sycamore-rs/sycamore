@@ -95,26 +95,4 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
     fn update_inner_text(&self, text: &str);
-
-    /// Append an item that implements [`Render`] and automatically updates the DOM inside an
-    /// effect.
-    #[deprecated]
-    fn append_render(&self, child: Box<dyn Fn() -> Box<dyn Render<Self>>>) {
-        let parent = self.clone();
-
-        let nodes = create_effect_initial(cloned!((parent) => move || {
-            let node = RefCell::new(child().create());
-
-            let effect = cloned!((node) => move || {
-                let new_node = child().update_node(&parent, &node.borrow());
-                *node.borrow_mut() = new_node;
-            });
-
-            (Rc::new(RefCell::new(effect)), node)
-        }));
-
-        for node in nodes.borrow().iter() {
-            parent.append_child(node);
-        }
-    }
 }

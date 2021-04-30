@@ -332,10 +332,9 @@ impl fmt::Display for Fragment {
 pub fn render_to_string(template_result: impl FnOnce() -> TemplateResult<SsrNode>) -> String {
     let mut ret = String::new();
     let _scope = create_root(|| {
-        // for node in template_result() {
-        //     ret.push_str(&format!("{}", node));
-        // }
-        // TODO
+        for node in template_result().flatten() {
+            ret.push_str(&format!("{}", node));
+        }
     });
 
     ret
