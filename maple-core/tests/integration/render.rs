@@ -2,10 +2,23 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn lazy() {
-    let node =
-        TemplateResult::new_lazy(|| TemplateResult::new_node(DomNode::text_node("Hello World!")));
+    let node: TemplateResult<DomNode> = TemplateResult::new_lazy(|| {
+        template! {
+            div {
+                "Test"
+            }
+        }
+    });
 
     render_to(|| node, &test_container());
 
-    assert_eq!(test_container().text_content().unwrap(), "23");
+    assert_eq!(
+        document()
+            .query_selector("div")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Test"
+    );
 }

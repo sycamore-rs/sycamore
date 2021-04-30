@@ -5,43 +5,66 @@ use crate::template_result::{TemplateResult, TemplateResultInner};
 pub fn insert<G: GenericNode>(
     parent: G,
     accessor: TemplateResult<G>,
-    _initial: Option<TemplateResult<G>>,
+    initial: Option<TemplateResult<G>>,
     marker: Option<G>,
 ) {
+    let mut current = initial;
+
     match accessor.inner {
         TemplateResultInner::Lazy(f) => {
             create_effect(move || {
+                let value = f.as_ref().unwrap().borrow_mut()();
                 insert_expression(
                     parent.clone(),
-                    f.as_ref().unwrap().borrow_mut()(),
+                    value.clone(),
+                    current.clone(),
                     marker.clone(),
                 );
+                current = Some(value);
             });
         }
         _ => {
-            insert_expression(parent, accessor, marker);
+            insert_expression(parent, accessor, current, marker);
         }
     }
 }
 
-pub fn insert_expression<G: GenericNode>(parent: G, value: TemplateResult<G>, marker: Option<G>) {
+pub fn insert_expression<G: GenericNode>(
+    parent: G,
+    value: TemplateResult<G>,
+    mut current: Option<TemplateResult<G>>,
+    marker: Option<G>,
+) {
     match value.inner {
         TemplateResultInner::Node(node) => {
-            parent.append_child(&node);
+            if let Some(current) = current {
+                clear_children(parent, current.flatten(), None, Some(node));
+            } else {
+                parent.append_child(&node);
+            }
         }
         TemplateResultInner::Lazy(f) => {
-            let mut v = f.unwrap().as_ref().borrow_mut()();
-            while let TemplateResultInner::Lazy(f) = v.inner {
-                v = f.unwrap().as_ref().borrow_mut()();
-            }
-
-            insert_expression(parent, v, marker);
+            create_effect(move || {
+                let value = f.as_ref().unwrap().borrow_mut()();
+                insert_expression(
+                    parent.clone(),
+                    value.clone(),
+                    current.clone(),
+                    marker.clone(),
+                );
+                current = Some(value);
+            });
         }
         TemplateResultInner::Fragment(fragment) => {
             clear_children(parent.clone(), vec![], None, None);
 
             for template in fragment {
-                insert_expression(parent.clone(), template, None);
+                insert_expression(
+                    parent.clone(),
+                    template,
+                    current.clone(), /* TODO */
+                    None,
+                );
             }
         }
     }
