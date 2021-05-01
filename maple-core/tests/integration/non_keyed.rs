@@ -199,11 +199,10 @@ fn fragment_template() {
     let p = document().query_selector("div").unwrap().unwrap();
 
     assert_eq!(
-        p.inner_html(),
+        p.text_content().unwrap(),
         "\
-<span>The value is: </span><strong>1</strong>\
-<span>The value is: </span><strong>2</strong>\
-<!---->"
+The value is: 1\
+The value is: 2"
     );
 
     count.set({
@@ -212,21 +211,19 @@ fn fragment_template() {
         tmp
     });
     assert_eq!(
-        p.inner_html(),
+        p.text_content().unwrap(),
         "\
-<span>The value is: </span><strong>1</strong>\
-<span>The value is: </span><strong>2</strong>\
-<span>The value is: </span><strong>3</strong>\
-<!---->"
+The value is: 1\
+The value is: 2\
+The value is: 3"
     );
 
     count.set(count.get()[1..].into());
     assert_eq!(
-        p.inner_html(),
+        p.text_content().unwrap(),
         "\
-<span>The value is: </span><strong>2</strong>\
-<span>The value is: </span><strong>3</strong>\
-<!---->"
+The value is: 2\
+The value is: 3"
     );
 }
 

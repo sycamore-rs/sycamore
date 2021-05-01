@@ -59,7 +59,12 @@ pub fn insert_expression<G: GenericNode>(
             });
         }
         TemplateResultInner::Fragment(fragment) => {
-            clear_children(parent.clone(), vec![] /* TODO */, None, None);
+            if let Some(current) = current {
+                clear_children(parent.clone(), current.flatten(), None, None);
+            } else {
+                let marker = G::marker();
+                parent.append_child(&marker);
+            }
 
             for template in fragment {
                 insert_expression(parent.clone(), template, None /* TODO */, None);
