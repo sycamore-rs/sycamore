@@ -251,7 +251,12 @@ impl GenericNode for SsrNode {
     }
 
     fn update_inner_text(&self, text: &str) {
-        self.unwrap_text().borrow_mut().0 = text.to_string();
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(el) => el.borrow_mut().children.0 = vec![SsrNode::text_node(text)],
+            SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
+            SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
+            SsrNodeType::Fragment(f) => f.borrow_mut().0 = vec![SsrNode::text_node(text)],
+        }
     }
 }
 
