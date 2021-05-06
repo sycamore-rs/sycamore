@@ -2,6 +2,7 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 use std::{fmt, mem};
 
@@ -44,6 +45,12 @@ impl PartialEq for SsrNode {
 }
 
 impl Eq for SsrNode {}
+
+impl Hash for SsrNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.0).hash(state);
+    }
+}
 
 impl SsrNode {
     fn new(ty: SsrNodeType) -> Self {

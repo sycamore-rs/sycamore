@@ -6,14 +6,12 @@ pub mod render;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
 
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
+use std::hash::Hash;
 
 use wasm_bindgen::prelude::*;
 use web_sys::Event;
 
-use crate::prelude::*;
 #[cfg(feature = "dom")]
 pub use dom_node::*;
 #[cfg(feature = "ssr")]
@@ -38,7 +36,7 @@ pub type EventListener = dyn Fn(Event);
 ///
 /// To implement your own rendering backend, you will need to create a new struct which implements
 /// [`GenericNode`].
-pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
+pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a new element node.
     fn element(tag: &str) -> Self;
 

@@ -1,8 +1,9 @@
 //! Rendering backend for the DOM.
 
 use std::cell::RefCell;
+use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 
-use ref_cast::RefCast;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event, Node};
@@ -15,19 +16,32 @@ use crate::template_result::TemplateResult;
 /// Rendering backend for the DOM.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-#[derive(Debug, Clone, PartialEq, Eq, RefCast)]
-#[repr(transparent)]
+#[derive(Debug, Clone)]
 pub struct DomNode {
-    node: Node,
+    node: Rc<Node>,
 }
 
 impl DomNode {
     pub fn inner_element(&self) -> Node {
-        self.node.clone()
+        (*self.node).clone()
     }
 
     pub fn unchecked_into<T: JsCast>(self) -> T {
-        self.node.unchecked_into()
+        (*self.node).clone().unchecked_into()
+    }
+}
+
+impl PartialEq for DomNode {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.node, &other.node)
+    }
+}
+
+impl Eq for DomNode {}
+
+impl Hash for DomNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.node).hash(state);
     }
 }
 
@@ -39,23 +53,7 @@ impl AsRef<JsValue> for DomNode {
 
 impl From<DomNode> for JsValue {
     fn from(node: DomNode) -> Self {
-        node.node.into()
-    }
-}
-
-impl JsCast for DomNode {
-    fn instanceof(val: &JsValue) -> bool {
-        Node::instanceof(val)
-    }
-
-    fn unchecked_from_js(val: JsValue) -> Self {
-        DomNode {
-            node: Node::unchecked_from_js(val),
-        }
-    }
-
-    fn unchecked_from_js_ref(val: &JsValue) -> &Self {
-        DomNode::ref_cast(Node::unchecked_from_js_ref(val))
+        (*node.node).clone().into()
     }
 }
 
@@ -66,25 +64,25 @@ fn document() -> web_sys::Document {
 impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
         DomNode {
-            node: document().create_element(tag).unwrap().dyn_into().unwrap(),
+            node: Rc::new(document().create_element(tag).unwrap().dyn_into().unwrap()),
         }
     }
 
     fn text_node(text: &str) -> Self {
         DomNode {
-            node: document().create_text_node(text).into(),
+            node: Rc::new(document().create_text_node(text).into()),
         }
     }
 
     fn fragment() -> Self {
         DomNode {
-            node: document().create_document_fragment().into(),
+            node: Rc::new(document().create_document_fragment().into()),
         }
     }
 
     fn marker() -> Self {
         DomNode {
-            node: document().create_comment("").into(),
+            node: Rc::new(document().create_comment("").into()),
         }
     }
 
@@ -105,7 +103,7 @@ impl GenericNode for DomNode {
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
-            .insert_before(&new_node.node, reference_node.map(|n| &n.node))
+            .insert_before(&new_node.node, reference_node.map(|n| n.node.as_ref()))
             .unwrap();
     }
 
@@ -125,11 +123,15 @@ impl GenericNode for DomNode {
     }
 
     fn parent_node(&self) -> Option<Self> {
-        self.node.parent_node().map(|node| Self { node })
+        self.node.parent_node().map(|node| Self {
+            node: Rc::new(node),
+        })
     }
 
     fn next_sibling(&self) -> Option<Self> {
-        self.node.next_sibling().map(|node| Self { node })
+        self.node.next_sibling().map(|node| Self {
+            node: Rc::new(node),
+        })
     }
 
     fn remove_self(&self) {
@@ -177,7 +179,7 @@ pub fn render_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, pare
     let scope = create_root(|| {
         insert(
             DomNode {
-                node: parent.clone(),
+                node: Rc::new(parent.clone()),
             },
             template_result(),
             None,
@@ -235,7 +237,7 @@ pub fn hydrate_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, par
     let scope = create_root(|| {
         insert(
             DomNode {
-                node: parent.clone(),
+                node: Rc::new(parent.clone()),
             },
             template_result(),
             None,
