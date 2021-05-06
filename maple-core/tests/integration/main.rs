@@ -118,6 +118,28 @@ fn interpolation() {
 }
 
 #[wasm_bindgen_test]
+fn template_interpolation() {
+    let text = template! { "Hello Maple!" };
+    let node = template! {
+        p {
+            (text)
+        }
+    };
+
+    render_to(|| node, &test_container());
+
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Maple!"
+    );
+}
+
+#[wasm_bindgen_test]
 fn reactive_text() {
     let count = Signal::new(0);
 

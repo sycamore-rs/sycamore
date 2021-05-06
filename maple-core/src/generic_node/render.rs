@@ -61,16 +61,6 @@ pub fn insert_expression<G: GenericNode>(
             });
         }
         TemplateResultInner::Fragment(fragment) => {
-            // if let Some(current) = current {
-            //     clear_children(parent.clone(), current.flatten(), None, None);
-            // } else {
-            //     let marker = G::marker();
-            //     parent.append_child(&marker);
-            // }
-
-            // for template in fragment {
-            //     insert_expression(parent.clone(), template, None /* TODO */, None);
-            // }
             let new_fragment = normalize_incoming_fragment(fragment);
             reconcile_fragments(
                 parent,
@@ -225,12 +215,4 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
             }
         }
     }
-    // for node in a {
-    //     if parent.parent_node().as_ref() == Some(&parent) {
-    //         parent.remove_child(&node);
-    //     }
-    // }
-    // for node in b {
-    //     parent.append_child(&node);
-    // }
 }

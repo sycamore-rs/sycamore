@@ -197,9 +197,17 @@ impl ToTokens for Element {
                             quote_spanned! { text.span()=>
                                 ::maple_core::generic_node::render::insert(
                                     ::std::clone::Clone::clone(&element),
-                                    ::maple_core::template_result::TemplateResult::new_lazy(move ||
-                                        TemplateResult::new_node(::maple_core::generic_node::GenericNode::text_node(&format!("{}", #text)))
-                                    ),
+                                    ::maple_core::template_result::TemplateResult::new_lazy(move || {
+                                        let mut nodes = ::maple_core::render::Render::create(&#text);
+                                        if ::std::vec::Vec::len(&nodes) == 1 {
+                                            ::maple_core::template_result::TemplateResult::new_node(
+                                                ::std::vec::Vec::remove(&mut nodes, 0)
+                                            )
+                                        } else {
+                                            let nodes = nodes.into_iter().map(::maple_core::template_result::TemplateResult::new_node).collect();
+                                            ::maple_core::template_result::TemplateResult::new_fragment(nodes)
+                                        }
+                                    }),
                                     None, None,
                                 );
                             }

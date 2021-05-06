@@ -6,7 +6,6 @@ use crate::generic_node::GenericNode;
 use crate::template_result::TemplateResult;
 
 /// Trait for describing how something should be rendered into DOM nodes.
-#[deprecated]
 pub trait Render<G: GenericNode> {
     /// Called during the initial render when creating the DOM nodes. Should return a
     /// `Vec` of [`GenericNode`]s.
@@ -31,6 +30,12 @@ pub trait Render<G: GenericNode> {
     }
 }
 
+impl<G: GenericNode> Render<G> for TemplateResult<G> {
+    fn create(&self) -> Vec<G> {
+        self.clone().flatten()
+    }
+}
+
 impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
     fn create(&self) -> Vec<G> {
         vec![G::text_node(&format!("{}", self))]
@@ -44,12 +49,5 @@ impl<T: fmt::Display + ?Sized, G: GenericNode> Render<G> for T {
             .update_inner_text(&format!("{}", self));
 
         node.to_vec()
-    }
-}
-
-impl<G: GenericNode> Render<G> for TemplateResult<G> {
-    fn create(&self) -> Vec<G> {
-        // self.clone().into_iter().collect()
-        todo!()
     }
 }

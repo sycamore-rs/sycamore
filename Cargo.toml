@@ -2,13 +2,13 @@
 members = [
   "maple-core",
   "maple-core-macro",
-  # "examples/components",
-  # "examples/counter",
-  # "examples/hello",
-  # "examples/ssr",
-  # "examples/todomvc",
-  # "examples/tweened",
-  # "docs",
+  "examples/components",
+  "examples/counter",
+  "examples/hello",
+  "examples/ssr",
+  "examples/todomvc",
+  "examples/tweened",
+  "docs",
 ]
 
 [profile.release]
