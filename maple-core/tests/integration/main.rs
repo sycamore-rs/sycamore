@@ -140,6 +140,54 @@ fn template_interpolation() {
 }
 
 #[wasm_bindgen_test]
+fn template_interpolation_if_else() {
+    let show = Signal::new(true);
+    let node = cloned!((show) => template! {
+        p {
+            (if *show.get() {
+                template! { "Hello Maple!" }
+            } else {
+                template! {}
+            })
+        }
+    });
+
+    render_to(|| node, &test_container());
+
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Maple!"
+    );
+
+    show.set(false);
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        ""
+    );
+
+    show.set(true);
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Maple!"
+    );
+}
+
+#[wasm_bindgen_test]
 fn reactive_text() {
     let count = Signal::new(0);
 

@@ -159,12 +159,12 @@ impl ToTokens for Element {
                         }});
                     }
                     AttributeType::Ref => {
-                        set_noderefs.push(quote_spanned! { expr_span=>
+                        set_noderefs.push(quote_spanned! { expr_span=>{
                             ::maple_core::noderef::NodeRef::set(
                                 &#expr,
                                 ::std::clone::Clone::clone(&element),
                             );
-                        });
+                        }});
                     }
                 }
             }

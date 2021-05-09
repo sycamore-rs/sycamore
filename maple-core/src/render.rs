@@ -19,6 +19,7 @@ pub trait Render<G: GenericNode> {
     ///
     /// Returns the new node. If the node is reused instead of replaced, the returned node is simply
     /// the node passed in.
+    #[deprecated]
     fn update_node<'a>(&self, parent: &G, node: &'a [G]) -> Vec<G> {
         let new_nodes = self.create();
 

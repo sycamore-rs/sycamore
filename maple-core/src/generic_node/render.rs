@@ -21,12 +21,13 @@ pub fn insert<G: GenericNode>(
                     value.clone(),
                     current.clone(),
                     marker.clone(),
+                    false,
                 );
                 current = Some(value);
             });
         }
         _ => {
-            insert_expression(parent, accessor, current, marker);
+            insert_expression(parent, accessor, current, marker, false);
         }
     }
 }
@@ -36,6 +37,7 @@ pub fn insert_expression<G: GenericNode>(
     value: TemplateResult<G>,
     mut current: Option<TemplateResult<G>>,
     marker: Option<G>,
+    unwrap_fragment: bool,
 ) {
     match value.inner {
         TemplateResultInner::Node(node) => {
@@ -56,23 +58,39 @@ pub fn insert_expression<G: GenericNode>(
                     value.clone(),
                     current.clone(),
                     marker.clone(),
+                    false,
                 );
                 current = Some(value);
             });
         }
         TemplateResultInner::Fragment(fragment) => {
-            let new_fragment = normalize_incoming_fragment(fragment);
-            reconcile_fragments(
-                parent,
-                current.map(|x| x.flatten()).unwrap_or_default(),
-                new_fragment.clone(),
-            );
-            current = Some(TemplateResult::new_fragment(
-                new_fragment
-                    .into_iter()
-                    .map(TemplateResult::new_node)
-                    .collect(),
-            ));
+            let mut v = Vec::new();
+            if normalize_incoming_fragment(&mut v, fragment, unwrap_fragment) {
+                create_effect(move || {
+                    let parent = parent.clone();
+                    let current = current.clone();
+                    let marker = marker.clone();
+                    let v = v.clone();
+                    insert_expression(
+                        parent,
+                        TemplateResult::new_fragment(
+                            v.into_iter().map(TemplateResult::new_node).collect(),
+                        ),
+                        current,
+                        marker,
+                        true,
+                    );
+                });
+            } else {
+                reconcile_fragments(parent, current.map(|x| x.flatten()).unwrap_or_default(), v);
+            }
+
+            // current = Some(TemplateResult::new_fragment(
+            //     new_fragment
+            //         .into_iter()
+            //         .map(TemplateResult::new_node)
+            //         .collect(),
+            // ));
         }
     }
 }
@@ -98,12 +116,54 @@ pub fn clear_children<G: GenericNode>(
     }
 }
 
-pub fn normalize_incoming_fragment<G: GenericNode>(fragment: Vec<TemplateResult<G>>) -> Vec<G> {
-    fragment
-        .into_iter()
-        .map(|x| x.flatten())
-        .flatten()
-        .collect()
+/// Normalizes a `Vec<TemplateResult<G>>` into a `Vec<G>`.
+///
+/// Returns whether the normalized `Vec<G>` is dynamic (and should be rendered in an effect).
+///
+/// # Params
+/// * `v` - The [`Vec`] to write the output to.
+/// * `fragment` - The `Vec<TemplateResult<G>>` to normalize.
+/// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
+///   this should be `false.
+pub fn normalize_incoming_fragment<G: GenericNode>(
+    v: &mut Vec<G>,
+    fragment: Vec<TemplateResult<G>>,
+    unwrap: bool,
+) -> bool {
+    let mut dynamic = false;
+
+    web_sys::console::log_1(&format!("{:#?}", fragment).into());
+    
+    for template in fragment {
+        match template.inner {
+            TemplateResultInner::Node(node) => v.push(node),
+            TemplateResultInner::Lazy(f) => {
+                web_sys::console::log_1(&"lazy in fragment".into());
+                if unwrap {
+                    let mut value = f.as_ref().unwrap().borrow_mut()();
+                    while let TemplateResultInner::Lazy(f) = value.inner {
+                        value = f.as_ref().unwrap().borrow_mut()();
+                    }
+                    dynamic = normalize_incoming_fragment(
+                        v,
+                        match value.inner {
+                            TemplateResultInner::Node(_) => vec![value],
+                            TemplateResultInner::Fragment(fragment) => fragment,
+                            _ => unreachable!(),
+                        },
+                        false,
+                    ) || dynamic;
+                } else {
+                    dynamic = true;
+                }
+            }
+            TemplateResultInner::Fragment(fragment) => {
+                dynamic = normalize_incoming_fragment(v, fragment, false) || dynamic;
+            }
+        }
+    }
+
+    dynamic
 }
 
 pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) {
