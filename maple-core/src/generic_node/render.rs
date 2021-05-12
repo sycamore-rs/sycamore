@@ -73,17 +73,23 @@ pub fn insert_expression<G: GenericNode>(
                     let v = v.clone();
                     insert_expression(
                         parent,
-                        TemplateResult::new_fragment(
-                            v.into_iter().map(TemplateResult::new_node).collect(),
-                        ),
+                        TemplateResult::new_fragment(v),
                         current,
                         marker,
                         true,
                     );
                 });
             } else {
-                // TODO: reconcile with `fragment`.
-                reconcile_fragments(parent, current.map(|x| x.flatten()).unwrap_or_default(), v);
+                reconcile_fragments(
+                    parent,
+                    current.map(|x| x.flatten()).unwrap_or_default(),
+                    v.into_iter()
+                        .map(|x| match x.inner {
+                            TemplateResultInner::Node(node) => node,
+                            _ => unreachable!(),
+                        })
+                        .collect(),
+                );
             }
         }
     }
@@ -120,35 +126,34 @@ pub fn clear_children<G: GenericNode>(
 /// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
 ///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
-    v: &mut Vec<G>,
+    v: &mut Vec<TemplateResult<G>>,
     fragment: Vec<TemplateResult<G>>,
     unwrap: bool,
 ) -> bool {
     let mut dynamic = false;
-    
+
     for template in fragment {
         match template.inner {
-            TemplateResultInner::Node(node) => v.push(node),
-            TemplateResultInner::Lazy(f) => {
-                web_sys::console::log_1(&"lazy in fragment".into());
-                if unwrap {
-                    let mut value = f.as_ref().unwrap().borrow_mut()();
-                    while let TemplateResultInner::Lazy(f) = value.inner {
-                        value = f.as_ref().unwrap().borrow_mut()();
-                    }
-                    dynamic = normalize_incoming_fragment(
-                        v,
-                        match value.inner {
-                            TemplateResultInner::Node(_) => vec![value],
-                            TemplateResultInner::Fragment(fragment) => fragment,
-                            _ => unreachable!(),
-                        },
-                        false,
-                    ) || dynamic;
-                } else {
-                    // TODO: push Lazy to v
-                    dynamic = true;
+            TemplateResultInner::Node(_) => v.push(template),
+            TemplateResultInner::Lazy(f) if unwrap => {
+                let mut value = f.as_ref().unwrap().borrow_mut()();
+                while let TemplateResultInner::Lazy(f) = value.inner {
+                    value = f.as_ref().unwrap().borrow_mut()();
                 }
+                dynamic = normalize_incoming_fragment(
+                    v,
+                    match value.inner {
+                        TemplateResultInner::Node(_) => vec![value],
+                        TemplateResultInner::Fragment(fragment) => fragment,
+                        _ => unreachable!(),
+                    },
+                    false,
+                ) || dynamic;
+            }
+            TemplateResultInner::Lazy(_) => {
+                // Not unwrap
+                v.push(template);
+                dynamic = true;
             }
             TemplateResultInner::Fragment(fragment) => {
                 dynamic = normalize_incoming_fragment(v, fragment, false) || dynamic;
