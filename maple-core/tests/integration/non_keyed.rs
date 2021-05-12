@@ -155,9 +155,12 @@ fn nested_reactivity() {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
-                    li { (item.get()) }
-                },
+                // template: |item| template! {
+                //     li { (item.get()) }
+                // },
+                template: |_item| TemplateResult::new_lazy(move || {
+                    template! { "test" }
+                })
             })
         }
     });

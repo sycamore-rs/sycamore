@@ -82,15 +82,9 @@ pub fn insert_expression<G: GenericNode>(
                     );
                 });
             } else {
+                // TODO: reconcile with `fragment`.
                 reconcile_fragments(parent, current.map(|x| x.flatten()).unwrap_or_default(), v);
             }
-
-            // current = Some(TemplateResult::new_fragment(
-            //     new_fragment
-            //         .into_iter()
-            //         .map(TemplateResult::new_node)
-            //         .collect(),
-            // ));
         }
     }
 }
@@ -124,15 +118,13 @@ pub fn clear_children<G: GenericNode>(
 /// * `v` - The [`Vec`] to write the output to.
 /// * `fragment` - The `Vec<TemplateResult<G>>` to normalize.
 /// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
-///   this should be `false.
+///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
     v: &mut Vec<G>,
     fragment: Vec<TemplateResult<G>>,
     unwrap: bool,
 ) -> bool {
     let mut dynamic = false;
-
-    web_sys::console::log_1(&format!("{:#?}", fragment).into());
     
     for template in fragment {
         match template.inner {
@@ -154,6 +146,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
                         false,
                     ) || dynamic;
                 } else {
+                    // TODO: push Lazy to v
                     dynamic = true;
                 }
             }
