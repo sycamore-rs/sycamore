@@ -44,7 +44,7 @@ pub fn insert_expression<G: GenericNode>(
             if let Some(current) = current {
                 clear_children(parent, current.flatten(), None, Some(node));
             } else {
-                parent.append_child(&node);
+                parent.append_child(&node); // TODO: marker
             }
         }
         TemplateResultInner::Lazy(f) => {
@@ -65,19 +65,18 @@ pub fn insert_expression<G: GenericNode>(
         }
         TemplateResultInner::Fragment(fragment) => {
             let mut v = Vec::new();
-            if normalize_incoming_fragment(&mut v, fragment, unwrap_fragment) {
+            let dynamic = normalize_incoming_fragment(&mut v, fragment, unwrap_fragment);
+            if dynamic {
                 create_effect(move || {
-                    let parent = parent.clone();
-                    let current = current.clone();
-                    let marker = marker.clone();
-                    let v = v.clone();
+                    let value = TemplateResult::new_fragment(v.clone());
                     insert_expression(
-                        parent,
-                        TemplateResult::new_fragment(v),
-                        current,
-                        marker,
+                        parent.clone(),
+                        value.clone(),
+                        current.clone(),
+                        marker.clone(),
                         true,
                     );
+                    current = Some(value);
                 });
             } else {
                 reconcile_fragments(
@@ -164,7 +163,24 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
     dynamic
 }
 
+/// Reconciles an array of nodes.
+///
+/// # Params
+/// * `parent` - The parent node under which all other nodes are (direct) children.
+/// * `a` - The current/existing nodes that are to be diffed.
+/// * `b` - The new nodes that are to be inserted. After the reconciliation, all the nodes in `b`
+///   should be inserted under `parent`.
 pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) {
+    // Sanity check: make sure all nodes in a are children of parent.
+    // #[cfg(debug_assertions)]
+    // {
+    //     for node in &a {
+    //         if node.parent_node().as_ref() != Some(&parent) {
+    //             panic!("node in existing nodes Vec is not a child of parent");
+    //         }
+    //     }
+    // }
+
     let b_len = b.len();
     let mut a_end = a.len();
     let mut b_end = b_len;
@@ -237,6 +253,8 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
                     i += 1;
                 }
             }
+
+            debug_assert!(map.is_some());
 
             let index = map.as_ref().unwrap().get(&a[a_start]);
             if let Some(index) = index {

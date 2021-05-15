@@ -158,8 +158,8 @@ fn nested_reactivity() {
                 // template: |item| template! {
                 //     li { (item.get()) }
                 // },
-                template: |_item| TemplateResult::new_lazy(move || {
-                    template! { "test" }
+                template: |item| TemplateResult::new_lazy(move || {
+                    TemplateResult::new_node(DomNode::text_node(&format!("{}", item.get())))
                 })
             })
         }
