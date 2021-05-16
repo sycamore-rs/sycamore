@@ -97,6 +97,22 @@ fn reconcile_swap_nodes() {
 }
 
 #[wasm_bindgen_test]
+fn reconcile_do_not_clone_node() {
+    let nodes = [
+        DomNode::text_node("1"),
+        DomNode::text_node("2"),
+        DomNode::text_node("3"),
+    ];
+    let parent = DomNode::element("div");
+
+    reconcile_fragments(parent.clone(), Vec::new(), nodes.to_vec());
+    assert_eq!(parent.inner_element().text_content().unwrap(), "123");
+
+    nodes[0].inner_element().set_text_content(Some("4"));
+    assert_eq!(parent.inner_element().text_content().unwrap(), "423");
+}
+
+#[wasm_bindgen_test]
 fn reconcile_clear_nodes() {
     let nodes = [
         DomNode::text_node("1"),

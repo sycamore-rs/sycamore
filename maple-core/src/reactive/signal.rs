@@ -14,7 +14,8 @@ use super::*;
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 
 impl<T: 'static> StateHandle<T> {
-    /// Get the current value of the state.
+    /// Get the current value of the state. When called inside a reactive scope, calling this will
+    /// add itself to the scope's dependencies.
     pub fn get(&self) -> Rc<T> {
         // If inside an effect, add this signal to dependency list.
         // If running inside a destructor, do nothing.

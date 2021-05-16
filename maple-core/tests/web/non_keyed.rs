@@ -151,31 +151,40 @@ fn insert_front() {
 fn nested_reactivity() {
     let count = Signal::new(vec![1, 2, 3].into_iter().map(Signal::new).collect());
 
+    let node_ref = NodeRef::new();
+
     let node = cloned!((count) => template! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
-                    li { (item.get()) }
-                }
+                template: cloned!((node_ref) => move |item| template! {
+                    li(ref=node_ref) { (item.get()) }
+                })
             })
         }
     });
+
+    web_sys::console::log_1(&node_ref.get::<DomNode>().inner_element());
 
     render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
 
-    count.get()[0].set(4);
-    assert_eq!(p.text_content().unwrap(), "423");
+    count.get()[2].set(4);
+    web_sys::console::log_1(&node_ref.get::<DomNode>().inner_element());
 
-    count.set({
-        let mut tmp = (*count.get()).clone();
-        tmp.push(Signal::new(5));
-        tmp
-    });
-    assert_eq!(p.text_content().unwrap(), "4235");
+    assert_eq!(p.text_content().unwrap(), "124");
+
+    // count.get()[0].set(4);
+    // assert_eq!(p.text_content().unwrap(), "423");
+
+    // count.set({
+    //     let mut tmp = (*count.get()).clone();
+    //     tmp.push(Signal::new(5));
+    //     tmp
+    // });
+    // assert_eq!(p.text_content().unwrap(), "4235");
 }
 
 #[wasm_bindgen_test]
