@@ -1,6 +1,7 @@
 pub mod keyed;
 pub mod non_keyed;
 pub mod render;
+pub mod reconcile;
 
 use maple_core::prelude::*;
 use wasm_bindgen::JsCast;

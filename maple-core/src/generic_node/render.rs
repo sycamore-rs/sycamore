@@ -79,7 +79,6 @@ pub fn insert_expression<G: GenericNode>(
                     current = Some(value);
                 });
             } else {
-                web_sys::console::log_1(&format!("{:#?}", current).into()); // FIXME
                 reconcile_fragments(
                     parent,
                     current.map(|x| x.flatten()).unwrap_or_default(),

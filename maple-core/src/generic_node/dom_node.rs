@@ -96,7 +96,7 @@ impl fmt::Debug for DomNode {
     /// Prints outerHtml of [`Element`].
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("DomNode")
-            .field(&self.node.unchecked_ref::<Element>().outer_html())
+            // .field(&self.node.unchecked_ref::<Element>().outer_html())
             .finish()
     }
 }

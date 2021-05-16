@@ -155,12 +155,9 @@ fn nested_reactivity() {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                // template: |item| template! {
-                //     li { (item.get()) }
-                // },
-                template: |item| TemplateResult::new_lazy(move || {
-                    TemplateResult::new_node(DomNode::text_node(&format!("{}", item.get())))
-                })
+                template: |item| template! {
+                    li { (item.get()) }
+                }
             })
         }
     });
