@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use super::*;
 
-// Credits: Ported from TypeScript implementation in https://github.com/ryansolid/solid
+// Credits: Ported from TypeScript implementation in https://github.com/solidui/solid
 pub fn map_keyed<T, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,

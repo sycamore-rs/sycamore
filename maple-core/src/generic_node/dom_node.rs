@@ -1,6 +1,7 @@
 //! Rendering backend for the DOM.
 
 use std::cell::RefCell;
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
@@ -16,7 +17,7 @@ use crate::template_result::TemplateResult;
 /// Rendering backend for the DOM.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct DomNode {
     node: Rc<Node>,
 }
@@ -54,6 +55,15 @@ impl AsRef<JsValue> for DomNode {
 impl From<DomNode> for JsValue {
     fn from(node: DomNode) -> Self {
         (*node.node).clone().into()
+    }
+}
+
+impl fmt::Debug for DomNode {
+    /// Prints outerHtml of [`Element`].
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("DomNode")
+            .field(&self.node.unchecked_ref::<Element>().outer_html())
+            .finish()
     }
 }
 

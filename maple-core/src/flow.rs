@@ -20,7 +20,7 @@ where
 {
     pub iterable: StateHandle<Vec<T>>,
     pub template: F,
-    pub key: K,
+    pub key: K, // TODO: make key optional
 }
 
 /// Keyed iteration. Use this instead of directly rendering an array of [`TemplateResult`]s.

@@ -79,6 +79,7 @@ pub fn insert_expression<G: GenericNode>(
                     current = Some(value);
                 });
             } else {
+                web_sys::console::log_1(&format!("{:#?}", current).into()); // FIXME
                 reconcile_fragments(
                     parent,
                     current.map(|x| x.flatten()).unwrap_or_default(),
@@ -172,14 +173,17 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
 ///   should be inserted under `parent`.
 pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) {
     // Sanity check: make sure all nodes in a are children of parent.
-    // #[cfg(debug_assertions)]
-    // {
-    //     for node in &a {
-    //         if node.parent_node().as_ref() != Some(&parent) {
-    //             panic!("node in existing nodes Vec is not a child of parent");
-    //         }
-    //     }
-    // }
+    #[cfg(debug_assertions)]
+    {
+        for (i, node) in a.iter().enumerate() {
+            if node.parent_node().as_ref() != Some(&parent) {
+                panic!(
+                    "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
+                    i, node
+                );
+            }
+        }
+    }
 
     let b_len = b.len();
     let mut a_end = a.len();
@@ -190,6 +194,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
 
     if a.is_empty() {
         if !b.is_empty() {
+            // Fast path for initial creation of new nodes.
             for node in &b {
                 parent.append_child(node);
             }
@@ -197,6 +202,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
         return;
     }
 
+    // Last node in a.
     let after = a[a_end - 1].next_sibling();
 
     while a_start < a_end || b_start < b_end {
@@ -221,8 +227,8 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
             while a_start < a_end {
                 if map.is_none() || map.as_ref().unwrap().contains_key(&a[a_start]) {
                     parent.remove_child(&a[a_start]);
-                    a_start += 1;
                 }
+                a_start += 1;
             }
         } else if a[a_start] == b[b_start] {
             // Common prefix.
@@ -247,34 +253,32 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
             // Fallback to map.
             if map.is_none() {
                 map = Some(HashMap::new());
-                let mut i = b_start;
-                while i < b_end {
-                    map.as_mut().unwrap().insert(b[i].clone(), i);
-                    i += 1;
+                for (i, item) in b.iter().enumerate().take(b_end).skip(b_start) {
+                    map.as_mut().unwrap().insert(item.clone(), i);
                 }
             }
+            let map = map.as_ref().unwrap();
 
-            debug_assert!(map.is_some());
-
-            let index = map.as_ref().unwrap().get(&a[a_start]);
+            let index = map.get(&a[a_start]);
             if let Some(index) = index {
                 if b_start < *index && *index < b_end {
                     let mut i = a_start;
                     let mut sequence = 1;
                     let mut t;
 
-                    while i + 1 < a_end && i < b_end {
+                    while i + 1 < a_end && i + 1 < b_end {
                         i += 1;
-                        t = map.as_ref().unwrap().get(&a[i]);
+                        t = map.get(&a[i]);
                         if t.is_none() || *t.unwrap() != *index + sequence {
-                            sequence += 1;
+                            break;
                         }
+                        sequence += 1;
                     }
 
                     if sequence > *index - b_start {
                         let node = &a[a_start];
                         while b_start < *index {
-                            parent.insert_child_before(&b[b_start + 1], Some(node));
+                            parent.insert_child_before(&b[b_start], Some(node));
                             b_start += 1;
                         }
                     } else {
@@ -288,6 +292,19 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
             } else {
                 parent.remove_child(&a[a_start]);
                 a_start += 1;
+            }
+        }
+    }
+
+    // Sanity check: make sure all nodes in b are children of parent after reconciliation.
+    #[cfg(debug_assertions)]
+    {
+        for (i, node) in b.iter().enumerate() {
+            if node.parent_node().as_ref() != Some(&parent) {
+                panic!(
+                    "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
+                    i, node
+                );
             }
         }
     }

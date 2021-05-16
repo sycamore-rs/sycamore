@@ -289,3 +289,21 @@ fn fragments() {
 
     assert_eq!(test_container.text_content().unwrap(), "123");
 }
+
+#[wasm_bindgen_test]
+fn fragments_text_nodes() {
+    let node = template! {
+        "1"
+        "2"
+        "3"
+    };
+
+    render_to(|| node, &test_container());
+
+    let test_container = document()
+        .query_selector("#test-container")
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(test_container.text_content().unwrap(), "123");
+}
