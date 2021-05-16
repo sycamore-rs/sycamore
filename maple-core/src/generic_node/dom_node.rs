@@ -1,6 +1,6 @@
 //! Rendering backend for the DOM.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -14,11 +14,45 @@ use crate::generic_node::{EventListener, GenericNode};
 use crate::reactive::{create_root, ReactiveScope};
 use crate::template_result::TemplateResult;
 
+// TODO: remove js snippet
+#[wasm_bindgen(inline_js = "
+let nodeIdMap = new Map();
+export function set_node_id(node, id) {
+    nodeIdMap.set(node, id);
+}
+export function get_node_id(node) {
+    return nodeIdMap.get(node)
+}
+")]
+extern "C" {
+    fn set_node_id(node: &Node, id: usize);
+    fn get_node_id(node: &Node) -> Option<usize>;
+}
+
+/// An unique id for every node.
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct NodeId(usize);
+
+impl NodeId {
+    fn new_with_node(node: &Node) -> Self {
+        thread_local!(static NODE_ID_COUNTER: Cell<usize> = Cell::new(0));
+
+        let id = NODE_ID_COUNTER.with(|x| {
+            let tmp = x.get();
+            x.set(tmp + 1);
+            tmp
+        });
+        set_node_id(node, id);
+        Self(id)
+    }
+}
+
 /// Rendering backend for the DOM.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[derive(Clone)]
 pub struct DomNode {
+    id: NodeId,
     node: Rc<Node>,
 }
 
@@ -34,7 +68,7 @@ impl DomNode {
 
 impl PartialEq for DomNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.node, &other.node)
+        self.id == other.id
     }
 }
 
@@ -42,7 +76,7 @@ impl Eq for DomNode {}
 
 impl Hash for DomNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.node).hash(state);
+        self.id.hash(state);
     }
 }
 
@@ -73,26 +107,34 @@ fn document() -> web_sys::Document {
 
 impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
+        let node = Rc::new(document().create_element(tag).unwrap().dyn_into().unwrap());
         DomNode {
-            node: Rc::new(document().create_element(tag).unwrap().dyn_into().unwrap()),
+            id: NodeId::new_with_node(&node),
+            node,
         }
     }
 
     fn text_node(text: &str) -> Self {
+        let node = Rc::new(document().create_text_node(text).into());
         DomNode {
-            node: Rc::new(document().create_text_node(text).into()),
+            id: NodeId::new_with_node(&node),
+            node,
         }
     }
 
     fn fragment() -> Self {
+        let node = Rc::new(document().create_document_fragment().into());
         DomNode {
-            node: Rc::new(document().create_document_fragment().into()),
+            id: NodeId::new_with_node(&node),
+            node,
         }
     }
 
     fn marker() -> Self {
+        let node = Rc::new(document().create_comment("").into());
         DomNode {
-            node: Rc::new(document().create_comment("").into()),
+            id: NodeId::new_with_node(&node),
+            node,
         }
     }
 
@@ -134,12 +176,14 @@ impl GenericNode for DomNode {
 
     fn parent_node(&self) -> Option<Self> {
         self.node.parent_node().map(|node| Self {
+            id: NodeId(get_node_id(&node).unwrap()),
             node: Rc::new(node),
         })
     }
 
     fn next_sibling(&self) -> Option<Self> {
         self.node.next_sibling().map(|node| Self {
+            id: NodeId(get_node_id(&node).unwrap()),
             node: Rc::new(node),
         })
     }
@@ -189,6 +233,7 @@ pub fn render_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, pare
     let scope = create_root(|| {
         insert(
             DomNode {
+                id: NodeId::new_with_node(parent),
                 node: Rc::new(parent.clone()),
             },
             template_result(),
@@ -247,6 +292,7 @@ pub fn hydrate_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, par
     let scope = create_root(|| {
         insert(
             DomNode {
+                id: NodeId::new_with_node(&parent),
                 node: Rc::new(parent.clone()),
             },
             template_result(),
