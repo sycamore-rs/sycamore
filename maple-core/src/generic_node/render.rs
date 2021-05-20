@@ -10,26 +10,7 @@ pub fn insert<G: GenericNode>(
     initial: Option<TemplateResult<G>>,
     marker: Option<G>,
 ) {
-    let mut current = initial;
-
-    match accessor.inner {
-        TemplateResultInner::Lazy(f) => {
-            create_effect(move || {
-                let value = f.as_ref().unwrap().borrow_mut()();
-                insert_expression(
-                    parent.clone(),
-                    value.clone(),
-                    current.clone(),
-                    marker.clone(),
-                    false,
-                );
-                current = Some(value);
-            });
-        }
-        _ => {
-            insert_expression(parent, accessor, current, marker, false);
-        }
-    }
+    insert_expression(parent, accessor, initial, marker, false);
 }
 
 pub fn insert_expression<G: GenericNode>(

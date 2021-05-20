@@ -1,3 +1,10 @@
+use ::std::vec::Vec;
+
+use ::maple_core::generic_node::{render, GenericNode};
+use ::maple_core::reactive;
+use ::maple_core::render::Render;
+use maple_core::template_result::TemplateResult;
+
 use super::*;
 
 #[wasm_bindgen_test]
@@ -153,38 +160,76 @@ fn nested_reactivity() {
 
     let node_ref = NodeRef::new();
 
-    let node = cloned!((count) => template! {
-        ul {
-            Indexed(IndexedProps {
-                iterable: count.handle(),
-                template: cloned!((node_ref) => move |item| template! {
-                    li(ref=node_ref) { (item.get()) }
-                })
-            })
-        }
-    });
-
-    web_sys::console::log_1(&node_ref.get::<DomNode>().inner_element());
+    // let node = cloned!((count) => template! {
+    //     ul {
+    //         Indexed(IndexedProps {
+    //             iterable: count.handle(),
+    //             template: cloned!((node_ref) => move |item| template! {
+    //                 li(ref=node_ref) { (item.get()) }
+    //             })
+    //         })
+    //     }
+    // });
+    let node = {
+        let count = count.clone();
+        TemplateResult::new_node({
+            let element = GenericNode::element("ul");
+            render::insert(
+                Clone::clone(&element),
+                reactive::untrack(|| {
+                    Indexed::<_>::__create_component(IndexedProps {
+                        iterable: count.handle(),
+                        template: {
+                            let node_ref = Clone::clone(&node_ref);
+                            move |item| {
+                                TemplateResult::new_node({
+                                    let element = DomNode::element("li");
+                                    web_sys::console::log_1(&element.inner_element());
+                                    NodeRef::set(&node_ref, element.clone());
+                                    render::insert(
+                                        element.clone(),
+                                        TemplateResult::new_lazy(move || {
+                                            let mut nodes = Render::create(&item.get());
+                                            if nodes.len() == 1 {
+                                                TemplateResult::new_node(nodes.remove(0))
+                                            } else {
+                                                let nodes = nodes
+                                                    .into_iter()
+                                                    .map(TemplateResult::new_node)
+                                                    .collect();
+                                                TemplateResult::new_fragment(nodes)
+                                            }
+                                        }),
+                                        None,
+                                        None,
+                                    );
+                                    element
+                                })
+                            }
+                        },
+                    })
+                }),
+                None,
+                None,
+            );
+            element
+        })
+    };
 
     render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
 
-    count.get()[2].set(4);
-    web_sys::console::log_1(&node_ref.get::<DomNode>().inner_element());
+    count.get()[0].set(4);
+    assert_eq!(p.text_content().unwrap(), "423");
 
-    assert_eq!(p.text_content().unwrap(), "124");
-
-    // count.get()[0].set(4);
-    // assert_eq!(p.text_content().unwrap(), "423");
-
-    // count.set({
-    //     let mut tmp = (*count.get()).clone();
-    //     tmp.push(Signal::new(5));
-    //     tmp
-    // });
-    // assert_eq!(p.text_content().unwrap(), "4235");
+    count.set({
+        let mut tmp = (*count.get()).clone();
+        tmp.push(Signal::new(5));
+        tmp
+    });
+    assert_eq!(p.text_content().unwrap(), "4235");
 }
 
 #[wasm_bindgen_test]
