@@ -30,9 +30,9 @@ pub fn insert_expression<G: GenericNode>(
         }
         TemplateResultInner::Lazy(f) => {
             create_effect(move || {
-                let mut value = f.as_ref().unwrap().borrow_mut()();
+                let mut value = f.as_ref().borrow_mut()();
                 while let TemplateResultInner::Lazy(f) = value.inner {
-                    value = f.as_ref().unwrap().borrow_mut()();
+                    value = f.as_ref().borrow_mut()();
                 }
                 insert_expression(
                     parent.clone(),
@@ -116,9 +116,9 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
         match template.inner {
             TemplateResultInner::Node(_) => v.push(template),
             TemplateResultInner::Lazy(f) if unwrap => {
-                let mut value = f.as_ref().unwrap().borrow_mut()();
+                let mut value = f.as_ref().borrow_mut()();
                 while let TemplateResultInner::Lazy(f) = value.inner {
-                    value = f.as_ref().unwrap().borrow_mut()();
+                    value = f.as_ref().borrow_mut()();
                 }
                 dynamic = normalize_incoming_fragment(
                     v,

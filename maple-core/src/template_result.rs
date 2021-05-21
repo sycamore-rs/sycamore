@@ -1,8 +1,8 @@
 //! Result of the [`template`](crate::template) macro.
 
 use std::cell::RefCell;
+use std::fmt;
 use std::rc::Rc;
-use std::{fmt, mem};
 
 use crate::generic_node::GenericNode;
 
@@ -12,7 +12,7 @@ pub(crate) enum TemplateResultInner<G: GenericNode> {
     /// A DOM node.
     Node(G),
     /// A lazy-computed [`TemplateResult`].
-    Lazy(Option<Rc<RefCell<dyn FnMut() -> TemplateResult<G>>>>),
+    Lazy(Rc<RefCell<dyn FnMut() -> TemplateResult<G>>>),
     /// A fragment of [`TemplateResult`]s.
     Fragment(Vec<TemplateResult<G>>),
 }
@@ -34,7 +34,7 @@ impl<G: GenericNode> TemplateResult<G> {
     /// Create a new [`TemplateResult`] from a [`FnOnce`].
     pub fn new_lazy(f: impl FnMut() -> TemplateResult<G> + 'static) -> Self {
         Self {
-            inner: TemplateResultInner::Lazy(Some(Rc::new(RefCell::new(f)))),
+            inner: TemplateResultInner::Lazy(Rc::new(RefCell::new(f))),
         }
     }
 
@@ -61,7 +61,7 @@ impl<G: GenericNode> TemplateResult<G> {
             TemplateResultInner::Lazy(lazy) => {
                 self.inner = TemplateResultInner::Fragment(vec![
                     TemplateResult {
-                        inner: TemplateResultInner::Lazy(mem::take(lazy)),
+                        inner: TemplateResultInner::Lazy(lazy.clone()),
                     },
                     template,
                 ])
@@ -76,7 +76,7 @@ impl<G: GenericNode> TemplateResult<G> {
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
             TemplateResultInner::Node(node) => vec![node],
-            TemplateResultInner::Lazy(lazy) => lazy.unwrap().borrow_mut()().flatten(),
+            TemplateResultInner::Lazy(lazy) => lazy.borrow_mut()().flatten(),
             TemplateResultInner::Fragment(fragment) => fragment
                 .into_iter()
                 .map(|x| x.flatten())
@@ -90,7 +90,7 @@ impl<G: GenericNode> fmt::Debug for TemplateResult<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.inner {
             TemplateResultInner::Node(node) => node.fmt(f),
-            TemplateResultInner::Lazy(lazy) => lazy.as_ref().unwrap().borrow_mut()().fmt(f),
+            TemplateResultInner::Lazy(lazy) => lazy.as_ref().borrow_mut()().fmt(f),
             TemplateResultInner::Fragment(fragment) => fragment.fmt(f),
         }
     }
