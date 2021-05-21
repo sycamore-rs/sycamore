@@ -189,6 +189,25 @@ fn template_interpolation_if_else() {
 }
 
 #[wasm_bindgen_test]
+fn template_interpolation_nested_reactivity() {
+    let count = Signal::new(0);
+    let text = cloned!((count) => template! { p { (count.get() ) } });
+    let node = template! {
+        p {
+            (text)
+        }
+    };
+
+    render_to(|| node, &test_container());
+
+    let p = document().query_selector("p").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "0");
+
+    count.set(1);
+    assert_eq!(p.text_content().unwrap(), "1");
+}
+
+#[wasm_bindgen_test]
 fn reactive_text() {
     let count = Signal::new(0);
 

@@ -15,14 +15,13 @@ use crate::reactive::{create_root, ReactiveScope};
 use crate::template_result::TemplateResult;
 
 // TODO: remove js snippet
-#[wasm_bindgen(inline_js = "
-let nodeIdMap = new Map();
-export function set_node_id(node, id) {
-    nodeIdMap.set(node, id);
-}
-export function get_node_id(node) {
-    return nodeIdMap.get(node)
-}
+#[wasm_bindgen(inline_js = "\
+export function set_node_id(node, id) {\
+    node.__mapleNodeId = id\
+}\
+export function get_node_id(node) {\
+    return node.__mapleNodeId\
+}\
 ")]
 extern "C" {
     fn set_node_id(node: &Node, id: usize);
