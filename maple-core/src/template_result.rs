@@ -61,7 +61,7 @@ impl<G: GenericNode> TemplateResult<G> {
             TemplateResultInner::Lazy(lazy) => {
                 self.inner = TemplateResultInner::Fragment(vec![
                     TemplateResult {
-                        inner: TemplateResultInner::Lazy(lazy.clone()),
+                        inner: TemplateResultInner::Lazy(Rc::clone(&lazy)),
                     },
                     template,
                 ])
