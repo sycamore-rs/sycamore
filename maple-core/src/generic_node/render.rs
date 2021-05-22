@@ -23,7 +23,7 @@ pub fn insert_expression<G: GenericNode>(
     match value.inner {
         TemplateResultInner::Node(node) => {
             if let Some(current) = current {
-                clear_children(parent, current.flatten(), None, Some(node));
+                clean_children(parent, current.flatten(), None, Some(node));
             } else {
                 parent.append_child(&node); // TODO: marker
             }
@@ -60,22 +60,27 @@ pub fn insert_expression<G: GenericNode>(
                     current = Some(value);
                 });
             } else {
-                reconcile_fragments(
-                    parent,
-                    current.map(|x| x.flatten()).unwrap_or_default(),
-                    v.into_iter()
-                        .map(|x| match x.inner {
-                            TemplateResultInner::Node(node) => node,
-                            _ => unreachable!(),
-                        })
-                        .collect(),
-                );
+                let v = v
+                    .into_iter()
+                    .map(|x| match x.inner {
+                        TemplateResultInner::Node(node) => node,
+                        _ => unreachable!(),
+                    })
+                    .collect::<Vec<_>>();
+                let current = current.map(|x| x.flatten()).unwrap_or_default();
+                if v.is_empty() {
+                    clean_children(parent, current, marker, None);
+                } else if current.is_empty() {
+                    append_nodes(&parent, v, marker);
+                } else {
+                    reconcile_fragments(parent, current, v);
+                }
             }
         }
     }
 }
 
-pub fn clear_children<G: GenericNode>(
+pub fn clean_children<G: GenericNode>(
     parent: G,
     current: Vec<G>,
     marker: Option<G>,
@@ -93,6 +98,12 @@ pub fn clear_children<G: GenericNode>(
         if node.parent_node().as_ref() == Some(&parent) {
             parent.replace_child(&node, &replacement);
         }
+    }
+}
+
+pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option<G>) {
+    for node in fragment {
+        parent.insert_child_before(&node, marker.as_ref());
     }
 }
 
@@ -151,7 +162,12 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
 /// * `a` - The current/existing nodes that are to be diffed.
 /// * `b` - The new nodes that are to be inserted. After the reconciliation, all the nodes in `b`
 ///   should be inserted under `parent`.
+///
+/// # Panics
+/// Panics if `a.is_empty()`. Append nodes instead.
 pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) {
+    debug_assert!(!a.is_empty(), "a cannot be empty");
+
     // Sanity check: make sure all nodes in a are children of parent.
     #[cfg(debug_assertions)]
     {
@@ -171,16 +187,6 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
     let mut a_start = 0;
     let mut b_start = 0;
     let mut map = None::<HashMap<G, usize>>;
-
-    if a.is_empty() {
-        if !b.is_empty() {
-            // Fast path for initial creation of new nodes.
-            for node in &b {
-                parent.append_child(node);
-            }
-        }
-        return;
-    }
 
     // Last node in a.
     let after = a[a_end - 1].next_sibling();
