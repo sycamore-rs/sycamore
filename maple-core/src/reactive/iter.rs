@@ -48,12 +48,13 @@ where
 
                 // Skip common prefix.
                 let mut start = 0;
-                let end = usize::min(items.len(), new_items.len());
-                while start < end && items[start] == new_items[start] {
+                let min_len = usize::min(items.len(), new_items.len());
+                while start < min_len && items[start] == new_items[start] {
                     start += 1;
                 }
+                debug_assert!(start <= min_len);
                 debug_assert!(
-                    items[start] != new_items[start],
+                    items.get(start) != new_items.get(start),
                     "start is the first index where items[start] != new_items[start]"
                 );
 
@@ -62,26 +63,27 @@ where
                 let mut new_end = new_items.len() - 1;
                 #[allow(clippy::suspicious_operation_groupings)]
                 // FIXME: make code clearer so that clippy won't complain
-                while start < end
-                    && start < new_end
-                    && items[end] == new_items[new_end]
-                {
+                while end >= start && new_end >= start && items[end] == new_items[new_end] {
+                    temp[new_end] = Some(mapped.borrow()[end].clone());
+                    temp_scopes[new_end] = scopes[end].clone();
                     end -= 1;
                     new_end -= 1;
-                    temp[new_end as usize] = Some(mapped.borrow()[end as usize].clone());
-                    temp_scopes[new_end as usize] = scopes[end as usize].clone();
                 }
+                debug_assert!(
+                    items[end] != new_items[new_end],
+                    "end and new_end are the last indexes where items[end] != new_items[new_end]"
+                );
 
                 // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
                 // natural order.
                 let mut new_indices = HashMap::new();
-                let mut new_indices_next = vec![0; (new_end + 1) as usize];
+                let mut new_indices_next = vec![0; new_end + 1];
                 if start < new_end {
-                    for i in (start..=new_end as usize).rev() {
-                        let item = &new_items[i];
-                        let j = new_indices.get(item);
-                        new_indices_next[i] = j.map(|j: &usize| *j as isize).unwrap_or(-1);
-                        new_indices.insert(item, i);
+                    for j in (start..=new_end).rev() {
+                        let item = &new_items[j];
+                        let i = new_indices.get(item);
+                        new_indices_next[j] = i.map(|i: &usize| *i as isize).unwrap_or(-1);
+                        new_indices.insert(item, j);
                     }
                 }
 
@@ -93,7 +95,7 @@ where
                         if let Some(mut j) = new_indices.get(item).copied() {
                             temp[j] = Some(mapped.borrow()[i].clone());
                             temp_scopes[j] = scopes[i].clone();
-                            j = new_indices_next[j] as usize;
+                            j = new_indices_next[j] as usize; // FIXME
                             new_indices.insert(item, j);
                         } else {
                             scopes[i] = None;
