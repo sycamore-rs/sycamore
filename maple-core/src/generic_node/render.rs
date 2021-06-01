@@ -20,12 +20,22 @@ pub fn insert_expression<G: GenericNode>(
     marker: Option<G>,
     unwrap_fragment: bool,
 ) {
+    debug_assert!(
+        !matches!(
+            current,
+            Some(TemplateResult {
+                inner: TemplateResultInner::Lazy(_)
+            })
+        ),
+        "current cannot be a lazy template"
+    );
+
     match value.inner {
         TemplateResultInner::Node(node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), None, Some(node));
             } else {
-                parent.append_child(&node); // TODO: marker
+                parent.insert_child_before(&node, marker.as_ref());
             }
         }
         TemplateResultInner::Lazy(f) => {
@@ -48,13 +58,15 @@ pub fn insert_expression<G: GenericNode>(
             let mut v = Vec::new();
             let dynamic = normalize_incoming_fragment(&mut v, fragment, unwrap_fragment);
             if dynamic {
+                let comment = G::marker();
+                parent.append_child(&comment);
                 create_effect(move || {
                     let value = TemplateResult::new_fragment(v.clone());
                     insert_expression(
                         parent.clone(),
                         value.clone(),
                         current.clone(),
-                        marker.clone(),
+                        Some(comment.clone()),
                         true,
                     );
                     current = Some(value);
@@ -68,9 +80,7 @@ pub fn insert_expression<G: GenericNode>(
                     })
                     .collect::<Vec<_>>();
                 let current = current.map(|x| x.flatten()).unwrap_or_default();
-                if v.is_empty() {
-                    clean_children(parent, current, marker, None);
-                } else if current.is_empty() {
+                if current.is_empty() {
                     append_nodes(&parent, v, marker);
                 } else {
                     reconcile_fragments(parent, current, v);

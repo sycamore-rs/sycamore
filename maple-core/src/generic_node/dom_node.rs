@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, Event, Node};
+use web_sys::{Comment, Element, Event, Node, Text};
 
 use crate::generic_node::render::insert;
 use crate::generic_node::{EventListener, GenericNode};
@@ -92,11 +92,18 @@ impl From<DomNode> for JsValue {
 }
 
 impl fmt::Debug for DomNode {
-    /// Prints outerHtml of [`Element`].
+    /// Prints outerHtml of [`Node`].
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("DomNode")
-            .field(&self.node.unchecked_ref::<Element>().outer_html())
-            .finish()
+        let outer_html = if let Some(element) = self.node.dyn_ref::<Element>() {
+            element.outer_html()
+        } else if let Some(text) = self.node.dyn_ref::<Text>() {
+            text.text_content().unwrap_or_default()
+        } else if let Some(comment) = self.node.dyn_ref::<Comment>() {
+            format!("<!--{}-->", comment.text_content().unwrap_or_default())
+        } else {
+            self.node.to_string().as_string().unwrap()
+        };
+        f.debug_tuple("DomNode").field(&outer_html).finish()
     }
 }
 

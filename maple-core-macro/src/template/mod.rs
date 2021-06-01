@@ -84,7 +84,19 @@ impl ToTokens for HtmlTree {
                         ::maple_core::generic_node::GenericNode::text_node(#text),
                     )
                 },
-                text::Text::Splice(_, _) => unimplemented!("splice at top level is not supported"),
+                text::Text::Splice(_, _) => quote! {
+                    ::maple_core::template_result::TemplateResult::new_lazy(move || {
+                        let mut nodes = ::maple_core::render::Render::create(&#text);
+                        if ::std::vec::Vec::len(&nodes) == 1 {
+                            ::maple_core::template_result::TemplateResult::new_node(
+                                ::std::vec::Vec::remove(&mut nodes, 0)
+                            )
+                        } else {
+                            let nodes = nodes.into_iter().map(::maple_core::template_result::TemplateResult::new_node).collect();
+                            ::maple_core::template_result::TemplateResult::new_fragment(nodes)
+                        }
+                    })
+                },
             },
         };
 
