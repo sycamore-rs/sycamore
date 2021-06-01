@@ -23,11 +23,11 @@ where
     move || {
         let new_items = list.get(); // Subscribe to list.
         untrack(|| {
-            if new_items.is_empty() && !items.is_empty() {
+            if new_items.is_empty() {
                 // Fast path for removing all items.
                 drop(mem::take(&mut scopes));
                 *mapped.borrow_mut() = Vec::new();
-            } else if !new_items.is_empty() && items.is_empty() {
+            } else if items.is_empty() {
                 // Fast path for new create.
                 for new_item in new_items.iter() {
                     let mut new_mapped = None;
@@ -38,6 +38,11 @@ where
                     scopes.push(Some(Rc::new(new_scope)));
                 }
             } else {
+                debug_assert!(
+                    !new_items.is_empty() && !items.is_empty(),
+                    "new_items.is_empty() and items.is_empty() are special cased"
+                );
+
                 let mut temp = vec![None; new_items.len()];
                 let mut temp_scopes = vec![None; new_items.len()];
 
@@ -47,15 +52,19 @@ where
                 while start < end && items[start] == new_items[start] {
                     start += 1;
                 }
+                debug_assert!(
+                    items[start] != new_items[start],
+                    "start is the first index where items[start] != new_items[start]"
+                );
 
                 // Skip common suffix.
-                let mut end = items.len() as isize - 1;
-                let mut new_end = new_items.len() as isize - 1;
+                let mut end = items.len() - 1;
+                let mut new_end = new_items.len() - 1;
                 #[allow(clippy::suspicious_operation_groupings)]
                 // FIXME: make code clearer so that clippy won't complain
-                while (start as isize) < end
-                    && (start as isize) < new_end
-                    && items[end as usize] == new_items[new_end as usize]
+                while start < end
+                    && start < new_end
+                    && items[end] == new_items[new_end]
                 {
                     end -= 1;
                     new_end -= 1;
@@ -67,7 +76,7 @@ where
                 // natural order.
                 let mut new_indices = HashMap::new();
                 let mut new_indices_next = vec![0; (new_end + 1) as usize];
-                if (start as isize) < new_end {
+                if start < new_end {
                     for i in (start..=new_end as usize).rev() {
                         let item = &new_items[i];
                         let j = new_indices.get(item);
@@ -78,7 +87,7 @@ where
 
                 // 1) Step through old items and see if they can be found in new set; if so, mark them
                 // as moved.
-                if (start as isize) < end {
+                if start < end {
                     for i in start..=end as usize {
                         let item = &items[i];
                         if let Some(mut j) = new_indices.get(item).copied() {
@@ -148,7 +157,7 @@ where
     move || {
         let new_items = list.get(); // Subscribe to list.
         untrack(|| {
-            if new_items.is_empty() && !items.is_empty() {
+            if new_items.is_empty() {
                 // Fast path for removing all items.
                 drop(mem::take(&mut scopes));
                 items = Vec::new();
