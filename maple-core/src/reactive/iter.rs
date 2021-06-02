@@ -77,49 +77,52 @@ where
                 // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
                 // natural order.
                 let mut new_indices = HashMap::new();
-                let mut new_indices_next = vec![0; new_end + 1];
-                if start < new_end {
-                    for j in (start..=new_end).rev() {
-                        let item = &new_items[j];
-                        let i = new_indices.get(item);
-                        new_indices_next[j] = i.map(|i: &usize| *i as isize).unwrap_or(-1);
-                        new_indices.insert(item, j);
-                    }
+                let mut new_indices_next = vec![None; new_end + 1];
+                for j in (start..=new_end).rev() {
+                    let item = &new_items[j];
+                    let i = new_indices.get(item);
+                    new_indices_next[j] = i.cloned();
+                    new_indices.insert(item, j);
                 }
 
                 // 1) Step through old items and see if they can be found in new set; if so, mark them
                 // as moved.
-                if start < end {
-                    for i in start..=end as usize {
-                        let item = &items[i];
-                        if let Some(mut j) = new_indices.get(item).copied() {
-                            temp[j] = Some(mapped.borrow()[i].clone());
-                            temp_scopes[j] = scopes[i].clone();
-                            j = new_indices_next[j] as usize; // FIXME
-                            new_indices.insert(item, j);
-                        } else {
-                            scopes[i] = None;
-                        }
+                for i in start..=end {
+                    let item = &items[i];
+                    if let Some(j) = new_indices.get(item).copied() {
+                        // Moved. j is index of item in new_items.
+                        temp[j] = Some(mapped.borrow()[i].clone());
+                        temp_scopes[j] = scopes[i].clone();
+                        new_indices_next[j].and_then(|j| new_indices.insert(item, j));
+                    } else {
+                        // Create new.
+                        scopes[i] = None;
                     }
                 }
 
                 // 2) Set all the new values, pulling from the moved array if copied, otherwise entering
                 // the new value.
-                for i in start..new_items.len() {
-                    if temp.get(i).is_some() {
+                for j in start..new_items.len() {
+                    if matches!(temp.get(j), Some(Some(_))) {
                         // Pull from moved array.
-                        mapped.borrow_mut()[i] = temp[i].clone().unwrap();
-                        scopes[i] = temp_scopes[i].clone();
+                        if j >= mapped.borrow().len() {
+                            debug_assert_eq!(mapped.borrow().len(), j);
+                            mapped.borrow_mut().push(temp[j].clone().unwrap());
+                            scopes.push(temp_scopes[j].clone());
+                        } else {
+                            mapped.borrow_mut()[j] = temp[j].clone().unwrap();
+                            scopes[j] = temp_scopes[j].clone();
+                        }
                     } else {
                         // Create new value.
                         let mut new_mapped = None;
                         let new_scope = create_root(|| {
-                            new_mapped = Some(map_fn(&new_items[i]));
+                            new_mapped = Some(map_fn(&new_items[j]));
                         });
 
-                        if mapped.borrow().len() > i {
-                            mapped.borrow_mut()[i] = new_mapped.unwrap();
-                            scopes[i] = Some(Rc::new(new_scope));
+                        if mapped.borrow().len() > j {
+                            mapped.borrow_mut()[j] = new_mapped.unwrap();
+                            scopes[j] = Some(Rc::new(new_scope));
                         } else {
                             mapped.borrow_mut().push(new_mapped.unwrap());
                             scopes.push(Some(Rc::new(new_scope)));
@@ -224,6 +227,16 @@ mod tests {
 
         a.set(vec![2, 2, 3, 4]);
         assert_eq!(*mapped(), vec![4, 4, 6, 8]);
+    }
+
+    #[test]
+    fn keyed_recompute_everything() {
+        let a = Signal::new(vec![1, 2, 3]);
+        let mut mapped = map_keyed(a.handle(), |x| *x * 2);
+        assert_eq!(*mapped(), vec![2, 4, 6]);
+
+        a.set(vec![4, 5, 6]);
+        assert_eq!(*mapped(), vec![8, 10, 12]);
     }
 
     /// Test fast path for clearing Vec.
