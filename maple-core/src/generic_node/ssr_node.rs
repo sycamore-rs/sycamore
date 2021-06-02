@@ -69,7 +69,7 @@ impl SsrNode {
     }
 
     #[track_caller]
-    fn unwrap_element(&self) -> &RefCell<Element> {
+    pub fn unwrap_element(&self) -> &RefCell<Element> {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => e,
             _ => panic!("node is not an element"),
@@ -77,7 +77,7 @@ impl SsrNode {
     }
 
     #[track_caller]
-    fn unwrap_text(&self) -> &RefCell<Text> {
+    pub fn unwrap_text(&self) -> &RefCell<Text> {
         match &self.0.ty.as_ref() {
             SsrNodeType::Text(e) => e,
             _ => panic!("node is not a text node"),
