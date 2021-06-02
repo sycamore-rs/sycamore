@@ -327,3 +327,23 @@ fn fragments_text_nodes() {
 
     assert_eq!(test_container.text_content().unwrap(), "123");
 }
+
+#[wasm_bindgen_test]
+fn lazy_fragment_reuse_nodes() {
+    let nodes = vec![template! { "1" }, template! { "2" }, template! { "3" }];
+
+    render_to(
+        cloned!((nodes) =>
+            move || TemplateResult::new_lazy(move || TemplateResult::new_fragment(nodes.clone()))
+        ),
+        &test_container(),
+    );
+
+    let p = document()
+        .query_selector("#test-container")
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(p.text_content().unwrap(), "123");
+    assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
+}

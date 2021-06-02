@@ -324,11 +324,8 @@ fn template_with_other_nodes_at_same_level() {
             li { "before" }
             Indexed(IndexedProps {
                 iterable: vec1.handle(),
-                template: |item| {
-                    web_sys::console::log_1(&"rendered".into());
-                    template! {
-                        (item)
-                    }
+                template: |item| template! {
+                    (item)
                 },
             })
             Indexed(IndexedProps {

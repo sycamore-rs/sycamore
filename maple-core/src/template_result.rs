@@ -50,6 +50,31 @@ impl<G: GenericNode> TemplateResult<G> {
         Self::new_node(G::marker())
     }
 
+    pub fn as_node(&self) -> Option<&G> {
+        if let TemplateResultInner::Node(v) = &self.inner {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_fragment(&self) -> Option<&Vec<TemplateResult<G>>> {
+        if let TemplateResultInner::Fragment(v) = &self.inner {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn as_lazy(&self) -> Option<&Rc<RefCell<dyn FnMut() -> TemplateResult<G>>>> {
+        if let TemplateResultInner::Lazy(v) = &self.inner {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
     pub fn append_template(&mut self, template: TemplateResult<G>) {
         match &mut self.inner {
             TemplateResultInner::Node(node) => {
@@ -73,6 +98,7 @@ impl<G: GenericNode> TemplateResult<G> {
     }
 
     /// Returns a `Vec` of nodes. Lazy nodes are evaluated.
+    #[deprecated(note = "footgun when rendering")]
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
             TemplateResultInner::Node(node) => vec![node],
