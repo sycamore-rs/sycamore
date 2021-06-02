@@ -84,23 +84,19 @@ impl SsrNode {
     }
 
     fn try_remove_child(&self, child: &Self) {
-        let mut children = match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children),
-            _ => panic!("node type cannot have children"),
-        };
-
-        if let Some(index) = children
-            .iter()
-            .enumerate()
-            .find_map(|(i, c)| (c == child).then(|| i))
-        {
-            children.remove(index);
-        }
-
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => e.borrow_mut().children = children,
+            SsrNodeType::Element(e) => {
+                let children = e
+                    .borrow()
+                    .children
+                    .clone()
+                    .into_iter()
+                    .filter(|node| node == child)
+                    .collect();
+                e.borrow_mut().children = children;
+            }
             _ => panic!("node type cannot have children"),
-        };
+        }
     }
 }
 
