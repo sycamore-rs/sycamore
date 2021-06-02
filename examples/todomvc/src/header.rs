@@ -8,9 +8,7 @@ use crate::AppState;
 pub fn header(app_state: AppState) -> TemplateResult<G> {
     let value = Signal::new(String::new());
 
-    let input_ref = NodeRef::<G>::new();
-
-    let handle_submit = cloned!((app_state, value, input_ref) => move |event: Event| {
+    let handle_submit = cloned!((app_state, value) => move |event: Event| {
         let event: KeyboardEvent = event.unchecked_into();
 
         if event.key() == "Enter" {
@@ -27,8 +25,7 @@ pub fn header(app_state: AppState) -> TemplateResult<G> {
     template! {
         header(class="header") {
             h1 { "todos" }
-            input(ref=input_ref,
-                class="new-todo",
+            input(class="new-todo",
                 placeholder="What needs to be done?",
                 bind:value=value,
                 on:keyup=handle_submit,
