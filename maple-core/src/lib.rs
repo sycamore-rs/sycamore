@@ -50,7 +50,7 @@ pub mod prelude {
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, untrack, Signal, StateHandle,
     };
-    pub use crate::render::Render;
+    pub use crate::render::IntoTemplate;
     pub use crate::template_result::TemplateResult;
 }
 

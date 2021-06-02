@@ -2,7 +2,7 @@ use std::iter::once;
 
 use maple_core::generic_node::{render, GenericNode};
 use maple_core::reactive;
-use maple_core::render::Render;
+use maple_core::render::IntoTemplate;
 use maple_core::template_result::TemplateResult;
 
 use super::*;
@@ -189,16 +189,7 @@ fn nested_reactivity() {
                                     render::insert(
                                         element.clone(),
                                         TemplateResult::new_lazy(move || {
-                                            let mut nodes = Render::create(&item.get());
-                                            if nodes.len() == 1 {
-                                                TemplateResult::new_node(nodes.remove(0))
-                                            } else {
-                                                let nodes = nodes
-                                                    .into_iter()
-                                                    .map(TemplateResult::new_node)
-                                                    .collect();
-                                                TemplateResult::new_fragment(nodes)
-                                            }
+                                            IntoTemplate::create(&item.get())
                                         }),
                                         None,
                                         None,
