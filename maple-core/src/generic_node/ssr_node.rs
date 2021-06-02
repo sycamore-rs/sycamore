@@ -25,7 +25,6 @@ enum SsrNodeType {
     Element(RefCell<Element>),
     Comment(RefCell<Comment>),
     Text(RefCell<Text>),
-    Fragment(RefCell<Fragment>),
 }
 
 #[derive(Debug, Clone)]
@@ -84,11 +83,9 @@ impl SsrNode {
         }
     }
 
-    // FIXME: recursively visit Fragments and call try_remove_child
     fn try_remove_child(&self, child: &Self) {
         let mut children = match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children.0),
-            SsrNodeType::Fragment(f) => mem::take(&mut f.borrow_mut().0),
+            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children),
             _ => panic!("node type cannot have children"),
         };
 
@@ -98,20 +95,10 @@ impl SsrNode {
             .find_map(|(i, c)| (c == child).then(|| i))
         {
             children.remove(index);
-        } else {
-            // try remove from child Fragments
-            for c in &children {
-                if let SsrNodeType::Fragment(fragment) = c.0.ty.as_ref() {
-                    for c in &fragment.borrow().0 {
-                        c.try_remove_child(&child);
-                    }
-                }
-            }
         }
 
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => e.borrow_mut().children.0 = children,
-            SsrNodeType::Fragment(f) => f.borrow_mut().0 = children,
+            SsrNodeType::Element(e) => e.borrow_mut().children = children,
             _ => panic!("node type cannot have children"),
         };
     }
@@ -149,8 +136,7 @@ impl GenericNode for SsrNode {
         child.set_parent(Rc::downgrade(&self.0));
 
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(element) => element.borrow_mut().children.0.push(child.clone()),
-            SsrNodeType::Fragment(fragment) => fragment.borrow_mut().0.push(child.clone()),
+            SsrNodeType::Element(element) => element.borrow_mut().children.push(child.clone()),
             _ => panic!("node type cannot have children"),
         }
     }
@@ -167,8 +153,7 @@ impl GenericNode for SsrNode {
         new_node.set_parent(Rc::downgrade(&self.0));
 
         let mut children = match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children.0),
-            SsrNodeType::Fragment(f) => mem::take(&mut f.borrow_mut().0),
+            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children),
             _ => panic!("node type cannot have children"),
         };
 
@@ -187,16 +172,14 @@ impl GenericNode for SsrNode {
         }
 
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => e.borrow_mut().children.0 = children,
-            SsrNodeType::Fragment(f) => f.borrow_mut().0 = children,
+            SsrNodeType::Element(e) => e.borrow_mut().children = children,
             _ => panic!("node type cannot have children"),
         };
     }
 
     fn remove_child(&self, child: &Self) {
         let mut children = match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children.0),
-            SsrNodeType::Fragment(f) => mem::take(&mut f.borrow_mut().0),
+            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children),
             _ => panic!("node type cannot have children"),
         };
 
@@ -208,8 +191,7 @@ impl GenericNode for SsrNode {
         children.remove(index);
 
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => e.borrow_mut().children.0 = children,
-            SsrNodeType::Fragment(f) => f.borrow_mut().0 = children,
+            SsrNodeType::Element(e) => e.borrow_mut().children = children,
             _ => panic!("node type cannot have children"),
         };
     }
@@ -218,7 +200,7 @@ impl GenericNode for SsrNode {
         new.set_parent(Rc::downgrade(&self.0));
 
         let mut ele = self.unwrap_element().borrow_mut();
-        let children = &mut ele.children.0;
+        let children = &mut ele.children;
         let index = children
             .iter()
             .enumerate()
@@ -255,10 +237,9 @@ impl GenericNode for SsrNode {
 
     fn update_inner_text(&self, text: &str) {
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(el) => el.borrow_mut().children.0 = vec![SsrNode::text_node(text)],
+            SsrNodeType::Element(el) => el.borrow_mut().children = vec![SsrNode::text_node(text)],
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
             SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
-            SsrNodeType::Fragment(f) => f.borrow_mut().0 = vec![SsrNode::text_node(text)],
         }
     }
 }
@@ -269,7 +250,6 @@ impl fmt::Display for SsrNode {
             SsrNodeType::Element(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Comment(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Text(x) => write!(f, "{}", x.borrow()),
-            SsrNodeType::Fragment(x) => write!(f, "{}", x.borrow()),
         }
     }
 }
@@ -278,7 +258,7 @@ impl fmt::Display for SsrNode {
 pub struct Element {
     name: String,
     attributes: HashMap<String, String>,
-    children: Fragment,
+    children: Vec<SsrNode>,
 }
 
 impl fmt::Display for Element {
@@ -294,10 +274,14 @@ impl fmt::Display for Element {
         }
 
         // Check if self-closing tag (void-element).
-        if self.children.0.is_empty() && VOID_ELEMENTS.iter().any(|tag| tag == &self.name) {
+        if self.children.is_empty() && VOID_ELEMENTS.iter().any(|tag| tag == &self.name) {
             write!(f, " />")?;
         } else {
-            write!(f, ">{}</{}>", self.children, self.name)?;
+            write!(f, ">")?;
+            for child in &self.children {
+                write!(f, "{}", child)?;
+            }
+            write!(f, "</{}>", self.name)?;
         }
         Ok(())
     }
@@ -318,18 +302,6 @@ pub struct Text(String);
 impl fmt::Display for Text {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", html_escape::encode_text_minimal(&self.0))
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Fragment(Vec<SsrNode>);
-
-impl fmt::Display for Fragment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for child in &self.0 {
-            write!(f, "{}", child)?;
-        }
-        Ok(())
     }
 }
 
