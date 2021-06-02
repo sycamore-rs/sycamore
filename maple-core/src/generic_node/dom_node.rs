@@ -128,14 +128,6 @@ impl GenericNode for DomNode {
         }
     }
 
-    fn fragment() -> Self {
-        let node = Rc::new(document().create_document_fragment().into());
-        DomNode {
-            id: NodeId::new_with_node(&node),
-            node,
-        }
-    }
-
     fn marker() -> Self {
         let node = Rc::new(document().create_comment("").into());
         DomNode {

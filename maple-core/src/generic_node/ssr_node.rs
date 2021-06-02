@@ -130,10 +130,6 @@ impl GenericNode for SsrNode {
         SsrNode::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
     }
 
-    fn fragment() -> Self {
-        SsrNode::new(SsrNodeType::Fragment(Default::default()))
-    }
-
     fn marker() -> Self {
         SsrNode::new(SsrNodeType::Comment(Default::default()))
     }

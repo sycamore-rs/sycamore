@@ -43,10 +43,6 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a new text node.
     fn text_node(text: &str) -> Self;
 
-    /// Create a new fragment (list of nodes). A fragment is not necessarily wrapped around by an
-    /// element.
-    fn fragment() -> Self;
-
     /// Create a marker (dummy) node. For [`DomNode`], this is implemented by creating an empty
     /// comment node. This is used, for example, in [`Keyed`] and [`Indexed`] for scenarios
     /// where you want to push a new item to the end of the list. If the list is empty, a dummy
