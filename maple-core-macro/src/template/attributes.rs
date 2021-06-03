@@ -1,8 +1,11 @@
 use std::fmt;
 
+use proc_macro2::TokenStream;
+use quote::{quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
 use syn::token::Paren;
 use syn::{parenthesized, Expr, Ident, Result, Token};
 
@@ -63,6 +66,125 @@ impl Parse for Attribute {
             equals_token: input.parse()?,
             expr: input.parse()?,
         })
+    }
+}
+
+impl ToTokens for Attribute {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let expr = &self.expr;
+        let expr_span = expr.span();
+
+        match &self.ty {
+            AttributeType::DomAttribute { name } => {
+                let name = name.to_string();
+                tokens.extend(quote_spanned! { expr_span=>
+                    ::maple_core::reactive::create_effect({
+                        let _el = ::std::clone::Clone::clone(&_el);
+                        move || {
+                            ::maple_core::generic_node::GenericNode::set_attribute(
+                                &_el,
+                                #name,
+                                &::std::format!("{}", #expr),
+                            );
+                        }
+                    });
+                });
+            }
+            AttributeType::Event { event } => {
+                // TODO: Should events be reactive?
+                tokens.extend(quote_spanned! { expr_span=>
+                    ::maple_core::generic_node::GenericNode::event(
+                        &_el,
+                        #event,
+                        ::std::boxed::Box::new(#expr),
+                    );
+                });
+            }
+            AttributeType::Bind { prop } => {
+                #[derive(Clone, Copy)]
+                enum JsPropertyType {
+                    Bool,
+                    String,
+                }
+
+                let (event_name, property_ty) = match prop.as_str() {
+                    "value" => ("input", JsPropertyType::String),
+                    "checked" => ("change", JsPropertyType::Bool),
+                    _ => {
+                        tokens.extend(
+                            syn::Error::new(
+                                prop.span(),
+                                &format!("property `{}` is not supported with bind:", prop),
+                            )
+                            .to_compile_error(),
+                        );
+                        return;
+                    }
+                };
+
+                let value_ty = match property_ty {
+                    JsPropertyType::Bool => quote! { ::std::primitive::bool },
+                    JsPropertyType::String => quote! { ::std::string::String },
+                };
+
+                let convert_into_jsvalue_fn = match property_ty {
+                    JsPropertyType::Bool => {
+                        quote! { ::maple_core::rt::JsValue::from_bool(*signal.get()) }
+                    }
+                    JsPropertyType::String => {
+                        quote! { ::maple_core::rt::JsValue::from_str(&::std::format!("{}", signal.get())) }
+                    }
+                };
+
+                let event_target_prop = quote! {
+                    ::maple_core::rt::Reflect::get(
+                        &event.target().unwrap(),
+                        &::std::convert::Into::<::maple_core::rt::JsValue>::into(#prop)
+                    ).unwrap()
+                };
+
+                let convert_from_jsvalue_fn = match property_ty {
+                    JsPropertyType::Bool => quote! {
+                        ::maple_core::rt::JsValue::as_bool(&#event_target_prop).unwrap()
+                    },
+                    JsPropertyType::String => quote! {
+                        ::maple_core::rt::JsValue::as_string(&#event_target_prop).unwrap()
+                    },
+                };
+
+                tokens.extend(quote_spanned! { expr_span=> {
+                    let signal: ::maple_core::reactive::Signal<#value_ty> = #expr;
+
+                    ::maple_core::reactive::create_effect({
+                        let signal = ::std::clone::Clone::clone(&signal);
+                        let _el = ::std::clone::Clone::clone(&_el);
+                        move || {
+                            ::maple_core::generic_node::GenericNode::set_property(
+                                &_el,
+                                #prop,
+                                &#convert_into_jsvalue_fn,
+                            );
+                        }
+                    });
+
+                    ::maple_core::generic_node::GenericNode::event(
+                        &_el,
+                        #event_name,
+                        ::std::boxed::Box::new(move |event: ::maple_core::rt::Event| {
+                            signal.set(#convert_from_jsvalue_fn);
+                        }),
+                    )
+                }});
+            }
+            AttributeType::Ref => {
+                tokens.extend(quote_spanned! { expr_span=>{
+                    ::maple_core::noderef::NodeRef::set(
+                        &#expr,
+                        ::std::clone::Clone::clone(&_el),
+                    );
+                }});
+            }
+        }
     }
 }
 
