@@ -125,7 +125,8 @@ impl<G: GenericNode> TemplateResult<G> {
     }
 
     /// Returns a `Vec` of nodes. Lazy nodes are evaluated.
-    #[deprecated(note = "footgun when rendering")]
+    // #[deprecated(note = "footgun when rendering")]
+    // TODO: re-enable
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
             TemplateResultInner::Node(node) => vec![node],

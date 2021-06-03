@@ -27,7 +27,7 @@ pub fn insert_expression<G: GenericNode>(
         current = Some(f.borrow_mut()());
     }
 
-    let multi = marker.is_some();
+    // let multi = marker.is_some();
 
     match value.inner {
         TemplateResultInner::Node(node) => {

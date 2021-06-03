@@ -48,9 +48,10 @@ impl ToTokens for Element {
             children,
         } = self;
 
-        let mut set_attributes = Vec::new();
-        let mut set_event_listeners = Vec::new();
-        let mut set_noderefs = Vec::new();
+        let mut quoted = quote! {
+            let _el = #tag_name;
+        };
+
         if let Some(attributes) = attributes {
             for attribute in &attributes.attributes {
                 let expr = &attribute.expr;
@@ -59,12 +60,12 @@ impl ToTokens for Element {
                 match &attribute.ty {
                     AttributeType::DomAttribute { name } => {
                         let name = name.to_string();
-                        set_attributes.push(quote_spanned! { expr_span=>
+                        quoted.extend(quote_spanned! { expr_span=>
                             ::maple_core::reactive::create_effect({
-                                let element = ::std::clone::Clone::clone(&element);
+                                let _el = ::std::clone::Clone::clone(&_el);
                                 move || {
                                     ::maple_core::generic_node::GenericNode::set_attribute(
-                                        &element,
+                                        &_el,
                                         #name,
                                         &::std::format!("{}", #expr),
                                     );
@@ -74,9 +75,9 @@ impl ToTokens for Element {
                     }
                     AttributeType::Event { event } => {
                         // TODO: Should events be reactive?
-                        set_event_listeners.push(quote_spanned! { expr_span=>
+                        quoted.extend(quote_spanned! { expr_span=>
                             ::maple_core::generic_node::GenericNode::event(
-                                &element,
+                                &_el,
                                 #event,
                                 ::std::boxed::Box::new(#expr),
                             );
@@ -134,15 +135,15 @@ impl ToTokens for Element {
                             },
                         };
 
-                        set_attributes.push(quote_spanned! { expr_span=> {
+                        quoted.extend(quote_spanned! { expr_span=> {
                             let signal: ::maple_core::reactive::Signal<#value_ty> = #expr;
 
                             ::maple_core::reactive::create_effect({
                                 let signal = ::std::clone::Clone::clone(&signal);
-                                let element = ::std::clone::Clone::clone(&element);
+                                let _el = ::std::clone::Clone::clone(&_el);
                                 move || {
                                     ::maple_core::generic_node::GenericNode::set_property(
-                                        &element,
+                                        &_el,
                                         #prop,
                                         &#convert_into_jsvalue_fn,
                                     );
@@ -150,7 +151,7 @@ impl ToTokens for Element {
                             });
 
                             ::maple_core::generic_node::GenericNode::event(
-                                &element,
+                                &_el,
                                 #event_name,
                                 ::std::boxed::Box::new(move |event: ::maple_core::rt::Event| {
                                     signal.set(#convert_from_jsvalue_fn);
@@ -159,10 +160,10 @@ impl ToTokens for Element {
                         }});
                     }
                     AttributeType::Ref => {
-                        set_noderefs.push(quote_spanned! { expr_span=>{
+                        quoted.extend(quote_spanned! { expr_span=>{
                             ::maple_core::noderef::NodeRef::set(
                                 &#expr,
-                                ::std::clone::Clone::clone(&element),
+                                ::std::clone::Clone::clone(&_el),
                             );
                         }});
                     }
@@ -170,25 +171,24 @@ impl ToTokens for Element {
             }
         }
 
-        let mut append_children = Vec::new();
         if let Some(children) = children {
             for child in &children.body {
-                let quoted = match child {
+                quoted.extend(match child {
                     HtmlTree::Component(component) => quote_spanned! { component.span()=>
                         ::maple_core::generic_node::render::insert(
-                            ::std::clone::Clone::clone(&element),
+                            ::std::clone::Clone::clone(&_el),
                             #component,
                             None, None,
                         );
                     },
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
-                        ::maple_core::generic_node::GenericNode::append_child(&element, &#element);
+                        ::maple_core::generic_node::GenericNode::append_child(&_el, &#element);
                     },
                     HtmlTree::Text(text) => match text {
                         Text::Text(_) => {
                             quote_spanned! { text.span()=>
                                 ::maple_core::generic_node::GenericNode::append_child(
-                                    &element,
+                                    &_el,
                                     &::maple_core::generic_node::GenericNode::text_node(#text),
                                 );
                             }
@@ -196,7 +196,7 @@ impl ToTokens for Element {
                         Text::Splice(_, _) => {
                             quote_spanned! { text.span()=>
                                 ::maple_core::generic_node::render::insert(
-                                    ::std::clone::Clone::clone(&element),
+                                    ::std::clone::Clone::clone(&_el),
                                     ::maple_core::template_result::TemplateResult::new_lazy(move ||
                                         ::maple_core::render::IntoTemplate::create(&#text)
                                     ),
@@ -205,21 +205,16 @@ impl ToTokens for Element {
                             }
                         }
                     },
-                };
-
-                append_children.push(quoted);
+                });
             }
         }
 
-        let quoted = quote! {{
-            let element = #tag_name;
-            #(#set_attributes)*
-            #(#set_event_listeners)*
-            #(#set_noderefs)*
-            #(#append_children)*
-            element
-        }};
-        tokens.extend(quoted);
+        quoted.extend(quote! {
+            _el
+        });
+        tokens.extend(quote! {{
+            #quoted
+        }});
     }
 }
 
