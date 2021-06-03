@@ -75,13 +75,40 @@ impl<G: GenericNode> TemplateResult<G> {
         }
     }
 
+    pub fn is_node(&self) -> bool {
+        matches!(
+            self,
+            TemplateResult {
+                inner: TemplateResultInner::Node(_)
+            }
+        )
+    }
+
+    pub fn is_fragment(&self) -> bool {
+        matches!(
+            self,
+            TemplateResult {
+                inner: TemplateResultInner::Fragment(_)
+            }
+        )
+    }
+
+    pub fn is_lazy(&self) -> bool {
+        matches!(
+            self,
+            TemplateResult {
+                inner: TemplateResultInner::Lazy(_)
+            }
+        )
+    }
+
     pub fn append_template(&mut self, template: TemplateResult<G>) {
         match &mut self.inner {
             TemplateResultInner::Node(node) => {
                 self.inner = TemplateResultInner::Fragment(vec![
                     TemplateResult::new_node(node.clone()),
                     template,
-                ])
+                ]);
             }
             TemplateResultInner::Lazy(lazy) => {
                 self.inner = TemplateResultInner::Fragment(vec![
@@ -89,7 +116,7 @@ impl<G: GenericNode> TemplateResult<G> {
                         inner: TemplateResultInner::Lazy(Rc::clone(&lazy)),
                     },
                     template,
-                ])
+                ]);
             }
             TemplateResultInner::Fragment(fragment) => {
                 fragment.push(template);

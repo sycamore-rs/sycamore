@@ -270,7 +270,7 @@ fn get_children(parent: &Element) -> Vec<Element> {
     vec.reserve(children_count as usize);
 
     for i in 0..children.length() {
-        vec.push(children.get_with_index(i).unwrap())
+        vec.push(children.get_with_index(i).unwrap());
     }
 
     vec

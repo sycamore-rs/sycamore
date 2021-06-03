@@ -20,15 +20,14 @@ pub fn insert_expression<G: GenericNode>(
     marker: Option<G>,
     unwrap_fragment: bool,
 ) {
-    debug_assert!(
-        !matches!(
-            current,
-            Some(TemplateResult {
-                inner: TemplateResultInner::Lazy(_)
-            })
-        ),
-        "current cannot be a lazy template"
-    );
+    while let Some(TemplateResult {
+        inner: TemplateResultInner::Lazy(f),
+    }) = current
+    {
+        current = Some(f.borrow_mut()());
+    }
+
+    let multi = marker.is_some();
 
     match value.inner {
         TemplateResultInner::Node(node) => {
@@ -58,15 +57,13 @@ pub fn insert_expression<G: GenericNode>(
             let mut v = Vec::new();
             let dynamic = normalize_incoming_fragment(&mut v, fragment, unwrap_fragment);
             if dynamic {
-                let comment = G::marker();
-                parent.append_child(&comment);
                 create_effect(move || {
                     let value = TemplateResult::new_fragment(v.clone());
                     insert_expression(
                         parent.clone(),
                         value.clone(),
                         current.clone(),
-                        Some(comment.clone()),
+                        marker.clone(),
                         true,
                     );
                     current = Some(value);
@@ -79,11 +76,29 @@ pub fn insert_expression<G: GenericNode>(
                         _ => unreachable!(),
                     })
                     .collect::<Vec<_>>();
-                let current = current.map(|x| x.flatten()).unwrap_or_default();
-                if current.is_empty() {
-                    append_nodes(&parent, v, marker);
-                } else {
-                    reconcile_fragments(parent, current, v);
+
+                match current {
+                    Some(current) => match current.inner {
+                        TemplateResultInner::Node(node) => {
+                            reconcile_fragments(parent, vec![node], v);
+                        }
+                        TemplateResultInner::Lazy(_) => unreachable!(),
+                        TemplateResultInner::Fragment(fragment) => {
+                            if fragment.is_empty() {
+                                append_nodes(&parent, v, marker);
+                            } else {
+                                reconcile_fragments(
+                                    parent,
+                                    fragment
+                                        .into_iter()
+                                        .map(|x| x.as_node().unwrap().clone())
+                                        .collect(),
+                                    v,
+                                );
+                            }
+                        }
+                    },
+                    None => append_nodes(&parent, v, marker),
                 }
             }
         }

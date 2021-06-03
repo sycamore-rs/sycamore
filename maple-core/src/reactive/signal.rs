@@ -171,7 +171,7 @@ impl<T: 'static> Signal<T> {
         for subscriber in subscribers {
             // subscriber might have already been destroyed in the case of nested effects
             if let Some(callback) = subscriber.try_callback() {
-                callback()
+                callback();
             }
         }
     }
@@ -203,7 +203,7 @@ impl<T: Eq> Eq for Signal<T> {}
 
 impl<T: Hash> Hash for Signal<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.get_untracked().hash(state)
+        self.get_untracked().hash(state);
     }
 }
 

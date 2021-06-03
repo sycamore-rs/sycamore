@@ -287,7 +287,7 @@ where
         create_effect_initial(move || {
             effect.borrow_mut()();
             (effect, ())
-        })
+        });
     }
 
     internal(Rc::new(RefCell::new(effect)));
@@ -656,7 +656,7 @@ mod tests {
         let scope = create_root(cloned!((cleanup_called) => move || {
             on_cleanup(move || {
                 cleanup_called.set(true);
-            })
+            });
         }));
 
         assert_eq!(*cleanup_called.get(), false);

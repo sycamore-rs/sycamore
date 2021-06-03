@@ -68,7 +68,7 @@ mod tests {
             let scope = Rc::clone(&scope);
             move || {
                 let scope = scope.take();
-                drop(scope)
+                drop(scope);
             }
         }));
     }

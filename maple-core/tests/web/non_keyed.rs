@@ -316,7 +316,7 @@ fn template_with_other_nodes_at_same_level() {
             Indexed(IndexedProps {
                 iterable: vec1.handle(),
                 template: |item| template! {
-                    (item)
+                    li { (item) }
                 },
             })
             Indexed(IndexedProps {
