@@ -79,8 +79,6 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn next_sibling(&self) -> Option<Self>;
 
     /// Remove this node from the tree.
-    ///
-    /// TODO: Remove this node on Drop.
     fn remove_self(&self);
 
     /// Add a [`EventListener`] to the event `name`.

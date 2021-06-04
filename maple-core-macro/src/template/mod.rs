@@ -4,13 +4,17 @@ mod attributes;
 mod children;
 mod component;
 mod element;
+mod gen_template_string;
 mod text;
+mod visit;
 
 use attributes::*;
 use children::*;
 use component::*;
 use element::*;
+use gen_template_string::*;
 use text::*;
+use visit::*;
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -79,12 +83,12 @@ impl ToTokens for HtmlTree {
                 ::maple_core::template_result::TemplateResult::new_node(#element)
             },
             Self::Text(text) => match text {
-                text::Text::Text(_) => quote! {
+                Text::Str(_) => quote! {
                     ::maple_core::template_result::TemplateResult::new_node(
                         ::maple_core::generic_node::GenericNode::text_node(#text),
                     )
                 },
-                text::Text::Splice(_, _) => quote! {
+                Text::Splice(_, _) => quote! {
                     ::maple_core::template_result::TemplateResult::new_lazy(move ||
                         ::maple_core::render::IntoTemplate::create(&#text)
                     )

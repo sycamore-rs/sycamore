@@ -72,7 +72,7 @@ impl ToTokens for Element {
                         ::maple_core::generic_node::GenericNode::append_child(&_el, &#element);
                     },
                     HtmlTree::Text(text) => match text {
-                        Text::Text(_) => {
+                        Text::Str(_) => {
                             quote_spanned! { text.span()=>
                                 ::maple_core::generic_node::GenericNode::append_child(
                                     &_el,
