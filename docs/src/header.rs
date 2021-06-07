@@ -1,4 +1,4 @@
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 #[component(Header<G>)]
 pub fn header() -> TemplateResult<G> {
@@ -6,17 +6,17 @@ pub fn header() -> TemplateResult<G> {
         header {
             nav(class="navbar navbar-expand-sm navbar-dark bg-dark") {
                 div(class="container-fluid") {
-                    a(class="navbar-brand", href="/#") { "Maple" }
+                    a(class="navbar-brand", href="/#") { "Sycamore" }
 
                     ul(class="navbar-nav") {
                         li(class="nav-item") {
                             a(class="nav-link", href="/getting_started/installation") { "Docs" }
                         }
                         li(class="nav-item") {
-                            a(class="nav-link", href="https://docs.rs/maple-core") { "API" }
+                            a(class="nav-link", href="https://docs.rs/sycamore") { "API" }
                         }
                         li(class="nav-item") {
-                            a(class="nav-link", href="https://github.com/lukechu10/maple") { "Repository" }
+                            a(class="nav-link", href="https://github.com/lukechu10/sycamore") { "Repository" }
                         }
                     }
                 }

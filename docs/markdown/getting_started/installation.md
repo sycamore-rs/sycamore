@@ -14,7 +14,7 @@ rustup target add wasm32-unknown-unknown
 
 ## Install Trunk
 
-[Trunk](https://trunkrs.dev) is the recommended build tool for Maple.
+[Trunk](https://trunkrs.dev) is the recommended build tool for Sycamore.
 If you are from JS land, Trunk is like [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but specifically tailored to Rust + WASM apps.
 
 You can use `cargo` to install Trunk:
@@ -25,7 +25,7 @@ cargo install trunk wasm-bindgen-cli
 
 For more information, head over to the [Trunk website](https://trunkrs.dev)
 
-## Create a new Maple project
+## Create a new Sycamore project
 
 Create a new Rust project using `cargo`:
 
@@ -34,12 +34,12 @@ cargo new my-project --bin
 cd my-project
 ```
 
-You now need to add Maple to your new project's dependencies. Add the following to your `Cargo.toml` file in your project folder:
+You now need to add Sycamore to your new project's dependencies. Add the following to your `Cargo.toml` file in your project folder:
 
 ```toml
-maple-core = "0.4.3"
+sycamore = "0.4.3"
 ```
 
-Be careful, the crate name is **`maple-core`**, not `maple`.
+Be careful, the crate name is **`sycamore`**, not `sycamore`.
 
-You should now be all set for your Maple adventure!
+You should now be all set for your Sycamore adventure!

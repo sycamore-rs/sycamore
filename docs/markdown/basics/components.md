@@ -1,6 +1,6 @@
 # Components
 
-Components in `maple` are structs that implement `Component`. A component can automatically be
+Components in `sycamore` are structs that implement `Component`. A component can automatically be
 created with the `#[component(ComponentName<G>)]` attribute on a function.
 
 Components receive their props through function arguments.
@@ -13,7 +13,7 @@ Getting a `StateHandle<T>` from a `Signal<T>` is easy. Just call the `.handle()`
 Here is an example of a simple component that displays the value of its prop:
 
 ```rust
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
 fn my_component(value: StateHandle<i32>) -> TemplateResult<G> {

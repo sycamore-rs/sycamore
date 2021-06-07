@@ -2,4 +2,4 @@
 
 TODO
 
-CSS in Maple needs more design before anything can be implemented.
+CSS in Sycamore needs more design before anything can be implemented.

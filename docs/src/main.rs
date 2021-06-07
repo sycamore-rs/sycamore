@@ -3,7 +3,7 @@ mod header;
 mod index;
 mod sidebar;
 
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 #[component(App<G>)]
 fn app() -> TemplateResult<G> {

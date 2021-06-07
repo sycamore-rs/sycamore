@@ -1,4 +1,4 @@
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 #[component(Copyright<G>)]
 pub fn copyright() -> TemplateResult<G> {

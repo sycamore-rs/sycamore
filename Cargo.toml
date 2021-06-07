@@ -1,7 +1,7 @@
 [workspace]
 members = [
-  "maple-core",
-  "maple-core-macro",
+  "packages/sycamore",
+  "packages/sycamore-macro",
   "examples/components",
   "examples/counter",
   "examples/hello",

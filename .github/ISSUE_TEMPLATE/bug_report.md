@@ -24,7 +24,7 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Environment**
-- Maple: [e.g. 0.1.0, master]
+- Sycamore: [e.g. 0.1.0, master]
 - Browser: [e.g. chrome, safari, if applicable]
 - OS: [e.g. Windows, if applicable]
 

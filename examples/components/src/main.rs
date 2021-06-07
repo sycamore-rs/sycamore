@@ -1,4 +1,4 @@
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
 fn my_component(num: StateHandle<i32>) -> TemplateResult<G> {

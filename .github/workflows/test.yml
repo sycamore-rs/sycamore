@@ -30,7 +30,7 @@ jobs:
         if: always()
 
       - name: Run headless browser tests
-        run: wasm-pack test maple-core --firefox --chrome --headless
+        run: wasm-pack test sycamore --firefox --chrome --headless
         if: always()
 
   clippy:
@@ -83,5 +83,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd maple-core
+          cd sycamore
           cargo miri test

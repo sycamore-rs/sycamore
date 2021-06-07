@@ -1,4 +1,4 @@
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 use web_sys::HtmlInputElement;
 
 use crate::{AppState, Filter};

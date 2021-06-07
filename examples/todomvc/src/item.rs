@@ -1,4 +1,4 @@
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 

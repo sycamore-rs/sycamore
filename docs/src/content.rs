@@ -1,5 +1,5 @@
-use maple_core::prelude::*;
 use pulldown_cmark::{html, Options, Parser};
+use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 

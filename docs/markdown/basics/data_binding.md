@@ -3,7 +3,7 @@
 You can bind your `Signal` to a DOM property with the `bind:` directive. When the DOM property is updated, so is your `Signal`. Here is an example.
 
 ```rust
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 let value = Signal::new(String::new());
 
