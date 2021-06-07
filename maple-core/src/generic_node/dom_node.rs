@@ -162,7 +162,7 @@ impl GenericNode for DomNode {
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
-        self.node.replace_child(&old.node, &new.node).unwrap();
+        self.node.replace_child(&new.node, &old.node).unwrap();
     }
 
     fn insert_sibling_before(&self, child: &Self) {

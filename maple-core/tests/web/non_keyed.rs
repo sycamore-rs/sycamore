@@ -1,7 +1,6 @@
 use std::iter::once;
 
 use maple_core::generic_node::{render, GenericNode};
-use maple_core::reactive;
 use maple_core::render::IntoTemplate;
 use maple_core::template_result::TemplateResult;
 

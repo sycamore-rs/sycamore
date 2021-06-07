@@ -32,7 +32,7 @@ pub fn insert_expression<G: GenericNode>(
     match value.inner {
         TemplateResultInner::Node(node) => {
             if let Some(current) = current {
-                clean_children(parent, current.flatten(), None, Some(node));
+                clean_children(parent, current.flatten(), marker, Some(node));
             } else {
                 parent.insert_child_before(&node, marker.as_ref());
             }
