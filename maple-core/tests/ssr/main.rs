@@ -19,11 +19,11 @@ fn reactive_text() {
 
     assert_eq!(
         render_to_string(cloned!((node) => move || node)),
-        "<p>0</p>"
+        "<p>0<!----></p>"
     );
 
     count.set(1);
-    assert_eq!(render_to_string(|| node), "<p>1</p>");
+    assert_eq!(render_to_string(|| node), "<p>1<!----></p>");
 }
 
 #[test]
