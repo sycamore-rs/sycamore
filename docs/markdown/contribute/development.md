@@ -4,14 +4,14 @@
 
 The Sycamore repository is configured for [gitpod.io](https://www.gitpod.io). This is the easiest way to contribute. Just click on the button below and a full-fledged development workspace will be spun up with all dependencies pre-installed and VSCode ready to go.
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/lukechu10/sycamore)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/sycamore-rs/sycamore)
 
 ## Using your local dev machine
 
 To install and work on Sycamore locally:
 
 ```bash
-git clone https://github.com/lukechu10/sycamore
+git clone https://github.com/sycamore-rs/sycamore
 cd sycamore
 ```
 

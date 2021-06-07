@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/sycamore)](https://crates.io/crates/sycamore)
 [![docs.rs](https://img.shields.io/docsrs/sycamore?color=blue&label=docs.rs)](https://docs.rs/sycamore)
-[![GitHub contributors](https://img.shields.io/github/contributors/lukechu10/sycamore)](https://github.com/lukechu10/sycamore/graphs/contributors)
+[![GitHub contributors](https://img.shields.io/github/contributors/sycamore-rs/sycamore)](https://github.com/sycamore-rs/sycamore/graphs/contributors)
 [![Discord](https://img.shields.io/discord/820400041332179004?label=discord)](https://discord.gg/vDwFUmm6mU)
 
 ## What is Sycamore?
@@ -20,6 +20,6 @@ Check out the [section on contributing](https://sycamore-rs.netlify.app/contribu
 
 Sycamore would not have been possible without the wonderful work of all the people who contributed. Thank you!
 
-<a href="https://github.com/lukechu10/sycamore/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=lukechu10/sycamore" />
+<a href="https://github.com/sycamore-rs/sycamore/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=sycamore-rs/sycamore" />
 </a>

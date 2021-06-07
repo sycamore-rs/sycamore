@@ -16,7 +16,7 @@ pub fn header() -> TemplateResult<G> {
                             a(class="nav-link", href="https://docs.rs/sycamore") { "API" }
                         }
                         li(class="nav-item") {
-                            a(class="nav-link", href="https://github.com/lukechu10/sycamore") { "Repository" }
+                            a(class="nav-link", href="https://github.com/sycamore-rs/sycamore") { "Repository" }
                         }
                     }
                 }
