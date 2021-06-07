@@ -62,10 +62,12 @@ impl ToTokens for Element {
             for child in &children.body {
                 quoted.extend(match child {
                     HtmlTree::Component(component) => quote_spanned! { component.span()=>
+                        let __marker = ::maple_core::generic_node::GenericNode::marker();
+                        ::maple_core::generic_node::GenericNode::append_child(&_el, &__marker);
                         ::maple_core::generic_node::render::insert(
                             ::std::clone::Clone::clone(&_el),
                             #component,
-                            None, None,
+                            None, Some(__marker),
                         );
                     },
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
@@ -82,12 +84,14 @@ impl ToTokens for Element {
                         }
                         Text::Splice(_, _) => {
                             quote_spanned! { text.span()=>
+                                let __marker = ::maple_core::generic_node::GenericNode::marker();
+                                ::maple_core::generic_node::GenericNode::append_child(&_el, &__marker);
                                 ::maple_core::generic_node::render::insert(
                                     ::std::clone::Clone::clone(&_el),
                                     ::maple_core::template_result::TemplateResult::new_lazy(move ||
                                         ::maple_core::render::IntoTemplate::create(&#text)
                                     ),
-                                    None, None,
+                                    None, Some(__marker),
                                 );
                             }
                         }

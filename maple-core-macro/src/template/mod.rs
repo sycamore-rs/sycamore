@@ -4,17 +4,13 @@ mod attributes;
 mod children;
 mod component;
 mod element;
-mod gen_template_string;
 mod text;
-mod visit;
 
 use attributes::*;
 use children::*;
 use component::*;
 use element::*;
-use gen_template_string::*;
 use text::*;
-use visit::*;
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
