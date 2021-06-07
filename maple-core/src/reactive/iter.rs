@@ -67,7 +67,8 @@ where
                     temp[new_end] = Some(mapped.borrow()[end].clone());
                     temp_scopes[new_end] = scopes[end].clone();
                     end -= 1;
-                    new_end -= 1;
+                    new_end -= 1; // FIXME: overflow panic on TodoMVC example when deleting first
+                                  // item
                 }
                 debug_assert!(
                     items[end] != new_items[new_end],
@@ -85,8 +86,8 @@ where
                     new_indices.insert(item, j);
                 }
 
-                // 1) Step through old items and see if they can be found in new set; if so, mark them
-                // as moved.
+                // 1) Step through old items and see if they can be found in new set; if so, mark
+                // them as moved.
                 for i in start..=end {
                     let item = &items[i];
                     if let Some(j) = new_indices.get(item).copied() {
@@ -100,8 +101,8 @@ where
                     }
                 }
 
-                // 2) Set all the new values, pulling from the moved array if copied, otherwise entering
-                // the new value.
+                // 2) Set all the new values, pulling from the moved array if copied, otherwise
+                // entering the new value.
                 for j in start..new_items.len() {
                     if matches!(temp.get(j), Some(Some(_))) {
                         // Pull from moved array.

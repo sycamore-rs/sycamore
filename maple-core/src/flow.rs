@@ -63,14 +63,11 @@ where
     } = props;
     let template = Rc::new(template);
 
-    let template_result = create_memo(move || {
-        let mapped = map_keyed(iterable.clone(), {
-            let template = Rc::clone(&template);
-            move |x| template(x.clone())
-        })();
-        TemplateResult::new_fragment((*mapped).clone())
+    let mut mapped = map_keyed(iterable, {
+        let template = Rc::clone(&template);
+        move |x| template(x.clone())
     });
-    TemplateResult::new_lazy(move || (*template_result.get()).clone())
+    TemplateResult::new_lazy(move || TemplateResult::new_fragment((*mapped()).clone()))
 }
 
 /// Props for [`Indexed`].
@@ -113,12 +110,9 @@ where
     let IndexedProps { iterable, template } = props;
     let template = Rc::new(template);
 
-    let template_result = create_memo(move || {
-        let mapped = map_indexed(iterable.clone(), {
-            let template = Rc::clone(&template);
-            move |x| template(x.clone())
-        })();
-        TemplateResult::new_fragment((*mapped).clone())
+    let mut mapped = map_indexed(iterable, {
+        let template = Rc::clone(&template);
+        move |x| template(x.clone())
     });
-    TemplateResult::new_lazy(move || (*template_result.get()).clone())
+    TemplateResult::new_lazy(move || TemplateResult::new_fragment((*mapped()).clone()))
 }
