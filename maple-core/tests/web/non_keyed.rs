@@ -1,9 +1,5 @@
 use std::iter::once;
 
-use maple_core::generic_node::{render, GenericNode};
-use maple_core::render::IntoTemplate;
-use maple_core::template_result::TemplateResult;
-
 use super::*;
 
 #[wasm_bindgen_test]
@@ -157,57 +153,16 @@ fn insert_front() {
 fn nested_reactivity() {
     let count = Signal::new(vec![1, 2, 3].into_iter().map(Signal::new).collect());
 
-    let node_ref = NodeRef::new();
-
-    // let node = cloned!((count) => template! {
-    //     ul {
-    //         Indexed(IndexedProps {
-    //             iterable: count.handle(),
-    //             template: cloned!((node_ref) => move |item| template! {
-    //                 li(ref=node_ref) { (item.get()) }
-    //             })
-    //         })
-    //     }
-    // });
-    let node = {
-        let count = count.clone();
-        TemplateResult::new_node({
-            let _el = DomNode::element("ul");
-            let __marker = DomNode::marker();
-            GenericNode::append_child(&_el, &__marker);
-            render::insert(
-                _el.clone(),
-                untrack(|| {
-                    Indexed::__create_component(IndexedProps {
-                        iterable: count.handle(),
-                        template: {
-                            let node_ref = node_ref.clone();
-                            move |item| {
-                                TemplateResult::new_node({
-                                    let _el = DomNode::element("li");
-                                    NodeRef::set(&node_ref, ::std::clone::Clone::clone(&_el));
-                                    let __marker = GenericNode::marker();
-                                    GenericNode::append_child(&_el, &__marker);
-                                    render::insert(
-                                        _el.clone(),
-                                        TemplateResult::new_lazy(move || {
-                                            IntoTemplate::create(&item.get())
-                                        }),
-                                        None,
-                                        Some(__marker),
-                                    );
-                                    _el
-                                })
-                            }
-                        },
-                    })
-                }),
-                None,
-                Some(__marker),
-            );
-            _el
-        })
-    };
+    let node = cloned!((count) => template! {
+        ul {
+            Indexed(IndexedProps {
+                iterable: count.handle(),
+                template: move |item| template! {
+                    li { (item.get()) }
+                }
+            })
+        }
+    });
 
     render_to(|| node, &test_container());
 

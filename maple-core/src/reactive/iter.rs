@@ -59,27 +59,30 @@ where
                 );
 
                 // Skip common suffix.
-                let mut end = items.len() - 1;
-                let mut new_end = new_items.len() - 1;
+                let mut end = items.len();
+                let mut new_end = new_items.len();
                 #[allow(clippy::suspicious_operation_groupings)]
                 // FIXME: make code clearer so that clippy won't complain
-                while end >= start && new_end >= start && items[end] == new_items[new_end] {
+                while end > start && new_end > start && items[end - 1] == new_items[new_end - 1] {
+                    end -= 1;
+                    new_end -= 1;
                     temp[new_end] = Some(mapped.borrow()[end].clone());
                     temp_scopes[new_end] = scopes[end].clone();
-                    end -= 1;
-                    new_end -= 1; // FIXME: overflow panic on TodoMVC example when deleting first
-                                  // item
                 }
                 debug_assert!(
-                    items[end] != new_items[new_end],
-                    "end and new_end are the last indexes where items[end] != new_items[new_end]"
+                    if end > 0 && new_end > 0 {
+                        items[end - 1] != new_items[new_end - 1]
+                    } else {
+                        true
+                    },
+                    "end and new_end are the last indexes where items[end - 1] != new_items[new_end - 1]"
                 );
 
                 // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
                 // natural order.
                 let mut new_indices = HashMap::new();
-                let mut new_indices_next = vec![None; new_end + 1];
-                for j in (start..=new_end).rev() {
+                let mut new_indices_next = vec![None; new_end];
+                for j in (start..new_end).rev() {
                     let item = &new_items[j];
                     let i = new_indices.get(item);
                     new_indices_next[j] = i.cloned();
@@ -88,7 +91,7 @@ where
 
                 // 1) Step through old items and see if they can be found in new set; if so, mark
                 // them as moved.
-                for i in start..=end {
+                for i in start..end {
                     let item = &items[i];
                     if let Some(j) = new_indices.get(item).copied() {
                         // Moved. j is index of item in new_items.
