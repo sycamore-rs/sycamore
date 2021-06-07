@@ -173,37 +173,40 @@ fn nested_reactivity() {
     let node = {
         let count = count.clone();
         TemplateResult::new_node({
-            let element = GenericNode::element("ul");
+            let _el = DomNode::element("ul");
+            let __marker = DomNode::marker();
+            GenericNode::append_child(&_el, &__marker);
             render::insert(
-                Clone::clone(&element),
-                reactive::untrack(|| {
-                    Indexed::<_>::__create_component(IndexedProps {
+                _el.clone(),
+                untrack(|| {
+                    Indexed::__create_component(IndexedProps {
                         iterable: count.handle(),
                         template: {
-                            let node_ref = Clone::clone(&node_ref);
+                            let node_ref = node_ref.clone();
                             move |item| {
                                 TemplateResult::new_node({
-                                    let element = DomNode::element("li");
-                                    web_sys::console::log_1(&element.inner_element());
-                                    NodeRef::set(&node_ref, element.clone());
+                                    let _el = DomNode::element("li");
+                                    NodeRef::set(&node_ref, ::std::clone::Clone::clone(&_el));
+                                    let __marker = GenericNode::marker();
+                                    GenericNode::append_child(&_el, &__marker);
                                     render::insert(
-                                        element.clone(),
+                                        _el.clone(),
                                         TemplateResult::new_lazy(move || {
                                             IntoTemplate::create(&item.get())
                                         }),
                                         None,
-                                        None,
+                                        Some(__marker),
                                     );
-                                    element
+                                    _el
                                 })
                             }
                         },
                     })
                 }),
                 None,
-                None,
+                Some(__marker),
             );
-            element
+            _el
         })
     };
 
