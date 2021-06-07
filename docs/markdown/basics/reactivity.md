@@ -1,12 +1,12 @@
 # Reactivity
 
-Instead of relying on a Virtual DOM (VDOM), Maple uses fine-grained reactivity to keep the DOM and state in sync.
-In fact, the reactivity part of Maple can be used on its own without the DOM rendering part.
+Instead of relying on a Virtual DOM (VDOM), Sycamore uses fine-grained reactivity to keep the DOM and state in sync.
+In fact, the reactivity part of Sycamore can be used on its own without the DOM rendering part.
 
 Reactivity is based on reactive primitives. Here is an example:
 
 ```rust
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 let state = Signal::new(0); // create an atom with an initial value of 0
 ```
 
@@ -72,14 +72,14 @@ assert_eq!(*double.get(), 2);
 
 `create_memo(...)` automatically recomputes the derived value when any of its dependencies change.
 
-Now that you understand `maple`'s reactivity system, we can look at how to use this to update the DOM.
+Now that you understand `sycamore`'s reactivity system, we can look at how to use this to update the DOM.
 
 ### Using reactivity with DOM updates
 
 Reactivity is automatically built-in into the `template!` macro. Say we have the following code:
 
 ```rust
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 let state = Signal::new(0);
 
@@ -93,7 +93,7 @@ let root = template! {
 This will expand to something approximately like:
 
 ```rust
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 let state = Signal::new(0);
 

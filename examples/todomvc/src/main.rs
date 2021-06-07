@@ -4,8 +4,8 @@ mod header;
 mod item;
 mod list;
 
-use maple_core::prelude::*;
 use serde::{Deserialize, Serialize};
+use sycamore::prelude::*;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -128,7 +128,7 @@ impl Filter {
     }
 }
 
-const KEY: &str = "todos-maple";
+const KEY: &str = "todos-sycamore";
 
 #[component(App<G>)]
 fn app() -> TemplateResult<G> {

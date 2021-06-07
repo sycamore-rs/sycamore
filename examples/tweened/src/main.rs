@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use maple_core::reactive::Tweened;
-use maple_core::{easing, prelude::*};
+use sycamore::reactive::Tweened;
+use sycamore::{easing, prelude::*};
 
 #[component(App<G>)]
 fn app() -> TemplateResult<G> {

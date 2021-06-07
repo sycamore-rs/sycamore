@@ -1,17 +1,17 @@
 # Project architecture
 
-All non proc-macro related code is in `/maple-core`.
-Proc-macro related code is in `/maple-core-macro`.
+All non proc-macro related code is in `/sycamore`.
+Proc-macro related code is in `/sycamore-macro`.
 
 ## Concepts and where to find them
 
 - #### Reactivity
 
-  - All the reactivity primitives are defined in `/maple-core/src/reactive.rs`.
+  - All the reactivity primitives are defined in `/sycamore/src/reactive.rs`.
 
 - #### `template!`
 
-  - The template macro is defined in `/maple-core-macro/src/lib.rs`.
+  - The template macro is defined in `/sycamore-macro/src/lib.rs`.
   - Different DOM node types are defined in separate files under the same directory.
   - [`trybuild`](https://github.com/dtolnay/trybuild) is used for testing proc-macros.
 

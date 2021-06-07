@@ -11,7 +11,7 @@ console_error_panic_hook = "0.1.6"
 console_log = "0.2.0"
 js-sys = "0.3"
 log = "0.4.14"
-maple-core = {path = "../maple-core"}
+sycamore = {path = "../packages/sycamore"}
 pulldown-cmark = "0.8"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

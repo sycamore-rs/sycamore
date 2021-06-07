@@ -11,6 +11,6 @@ version = "0.1.0"
 console_error_panic_hook = "0.1.6"
 console_log = "0.2.0"
 log = "0.4.14"
-maple-core = {path = "../../maple-core"}
+sycamore = {path = "../../packages/sycamore"}
 wasm-bindgen = "0.2"
 web-sys = "0.3"

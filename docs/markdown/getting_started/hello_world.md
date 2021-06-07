@@ -1,13 +1,13 @@
 # Hello, World!
 
-Maple tries to have as simple of an API as possible. In fact, the Hello World program in Maple is but slightly longer than the console version!
+Sycamore tries to have as simple of an API as possible. In fact, the Hello World program in Sycamore is but slightly longer than the console version!
 
 Here it is:
 
 ```rust
 // main.rs
 
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 fn main() {
     render(|| template! {
@@ -28,7 +28,7 @@ Nothing really special here. Trunk automatically uses `fn main` as your project'
 render(...)
 ```
 
-This function is provided by Maple and is used to render your app to the DOM (browser window). `render` accepts a closure (aka. lambda function) which should return a template to be rendered.
+This function is provided by Sycamore and is used to render your app to the DOM (browser window). `render` accepts a closure (aka. lambda function) which should return a template to be rendered.
 
 ```rust
 template! {

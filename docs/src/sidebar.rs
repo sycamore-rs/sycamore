@@ -1,4 +1,4 @@
-use maple_core::prelude::*;
+use sycamore::prelude::*;
 
 #[component(Sidebar<G>)]
 pub fn sidebar() -> TemplateResult<G> {
