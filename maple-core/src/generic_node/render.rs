@@ -66,7 +66,9 @@ pub fn insert_expression<G: GenericNode>(
                         marker.clone(),
                         true,
                     );
-                    current = Some(value);
+                    current = Some(value); // FIXME: should be return value of
+                                           // normalize_incoming_fragment called in recursive
+                                           // insert_expression
                 });
             } else {
                 let v = v
@@ -89,10 +91,7 @@ pub fn insert_expression<G: GenericNode>(
                             } else {
                                 reconcile_fragments(
                                     parent,
-                                    fragment
-                                        .into_iter()
-                                        .map(|x| x.as_node().unwrap().clone())
-                                        .collect(),
+                                    TemplateResult::new_fragment(fragment).flatten(),
                                     v,
                                 );
                             }
