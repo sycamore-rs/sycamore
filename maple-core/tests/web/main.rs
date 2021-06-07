@@ -1,5 +1,7 @@
 pub mod keyed;
 pub mod non_keyed;
+pub mod reconcile;
+pub mod render;
 
 use maple_core::prelude::*;
 use wasm_bindgen::JsCast;
@@ -117,6 +119,95 @@ fn interpolation() {
 }
 
 #[wasm_bindgen_test]
+fn template_interpolation() {
+    let text = template! { "Hello Maple!" };
+    let node = template! {
+        p {
+            (text)
+        }
+    };
+
+    render_to(|| node, &test_container());
+
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Maple!"
+    );
+}
+
+#[wasm_bindgen_test]
+fn template_interpolation_if_else() {
+    let show = Signal::new(true);
+    let node = cloned!((show) => template! {
+        p {
+            (if *show.get() {
+                template! { "Hello Maple!" }
+            } else {
+                template! {}
+            })
+        }
+    });
+
+    render_to(|| node, &test_container());
+
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Maple!"
+    );
+
+    show.set(false);
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        ""
+    );
+
+    show.set(true);
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Maple!"
+    );
+}
+
+#[wasm_bindgen_test]
+fn template_interpolation_nested_reactivity() {
+    let count = Signal::new(0);
+    let text = cloned!((count) => template! { p { (count.get() ) } });
+    let node = template! {
+        p {
+            (text)
+        }
+    };
+
+    render_to(|| node, &test_container());
+
+    let p = document().query_selector("p").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "0");
+
+    count.set(1);
+    assert_eq!(p.text_content().unwrap(), "1");
+}
+
+#[wasm_bindgen_test]
 fn reactive_text() {
     let count = Signal::new(0);
 
@@ -217,4 +308,42 @@ fn fragments() {
         .unwrap();
 
     assert_eq!(test_container.text_content().unwrap(), "123");
+}
+
+#[wasm_bindgen_test]
+fn fragments_text_nodes() {
+    let node = template! {
+        "1"
+        "2"
+        "3"
+    };
+
+    render_to(|| node, &test_container());
+
+    let test_container = document()
+        .query_selector("#test-container")
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(test_container.text_content().unwrap(), "123");
+}
+
+#[wasm_bindgen_test]
+fn lazy_fragment_reuse_nodes() {
+    let nodes = vec![template! { "1" }, template! { "2" }, template! { "3" }];
+
+    render_to(
+        cloned!((nodes) =>
+            move || TemplateResult::new_lazy(move || TemplateResult::new_fragment(nodes.clone()))
+        ),
+        &test_container(),
+    );
+
+    let p = document()
+        .query_selector("#test-container")
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(p.text_content().unwrap(), "123");
+    assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
 }

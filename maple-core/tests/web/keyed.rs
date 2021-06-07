@@ -1,3 +1,5 @@
+use std::iter::once;
+
 use super::*;
 
 #[wasm_bindgen_test]
@@ -206,11 +208,10 @@ fn fragment_template() {
     let p = document().query_selector("div").unwrap().unwrap();
 
     assert_eq!(
-        p.inner_html(),
+        p.text_content().unwrap(),
         "\
-<span>The value is: </span><strong>1</strong>\
-<span>The value is: </span><strong>2</strong>\
-<!---->"
+The value is: 1\
+The value is: 2"
     );
 
     count.set({
@@ -219,21 +220,19 @@ fn fragment_template() {
         tmp
     });
     assert_eq!(
-        p.inner_html(),
+        p.text_content().unwrap(),
         "\
-<span>The value is: </span><strong>1</strong>\
-<span>The value is: </span><strong>2</strong>\
-<span>The value is: </span><strong>3</strong>\
-<!---->"
+The value is: 1\
+The value is: 2\
+The value is: 3"
     );
 
     count.set(count.get()[1..].into());
     assert_eq!(
-        p.inner_html(),
+        p.text_content().unwrap(),
         "\
-<span>The value is: </span><strong>2</strong>\
-<span>The value is: </span><strong>3</strong>\
-<!---->"
+The value is: 2\
+The value is: 3"
     );
 }
 
@@ -269,4 +268,46 @@ fn template_top_level() {
 
     count.set(count.get()[1..].into());
     assert_eq!(p.text_content().unwrap(), "23");
+}
+
+#[wasm_bindgen_test]
+fn template_with_other_nodes_at_same_level() {
+    let vec1 = Signal::new(vec![1, 2]);
+    let vec2 = Signal::new(vec![4, 5]);
+
+    let node = cloned!((vec1, vec2) => template! {
+        ul {
+            li { "before" }
+            Keyed(KeyedProps {
+                iterable: vec1.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |_| todo!()
+            })
+            Keyed(KeyedProps {
+                iterable: vec2.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |_| todo!()
+            })
+            li { "after" }
+        }
+    });
+
+    render_to(|| node, &test_container());
+
+    let elem = document().query_selector("ul").unwrap().unwrap();
+
+    assert_eq!(elem.text_content().unwrap(), "before1245after");
+
+    vec1.set(vec1.get().iter().cloned().chain(once(3)).collect());
+    assert_eq!(elem.text_content().unwrap(), "before12345after");
+
+    vec1.set(Vec::new());
+    assert_eq!(elem.text_content().unwrap(), "before45after");
+
+    vec1.set(vec![1]);
+    assert_eq!(elem.text_content().unwrap(), "before145after");
 }

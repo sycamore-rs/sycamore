@@ -1,9 +1,11 @@
-use super::*;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
+
+use super::*;
 
 /// A readonly [`Signal`].
 ///
@@ -12,7 +14,8 @@ use std::rc::Rc;
 pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 
 impl<T: 'static> StateHandle<T> {
-    /// Get the current value of the state.
+    /// Get the current value of the state. When called inside a reactive scope, calling this will
+    /// add itself to the scope's dependencies.
     pub fn get(&self) -> Rc<T> {
         // If inside an effect, add this signal to dependency list.
         // If running inside a destructor, do nothing.
@@ -168,7 +171,7 @@ impl<T: 'static> Signal<T> {
         for subscriber in subscribers {
             // subscriber might have already been destroyed in the case of nested effects
             if let Some(callback) = subscriber.try_callback() {
-                callback()
+                callback();
             }
         }
     }
@@ -193,6 +196,14 @@ impl<T: 'static> Clone for Signal<T> {
 impl<T: PartialEq> PartialEq for Signal<T> {
     fn eq(&self, other: &Signal<T>) -> bool {
         self.get_untracked().eq(&other.get_untracked())
+    }
+}
+
+impl<T: Eq> Eq for Signal<T> {}
+
+impl<T: Hash> Hash for Signal<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.get_untracked().hash(state);
     }
 }
 

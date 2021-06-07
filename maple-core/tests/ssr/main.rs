@@ -17,8 +17,26 @@ fn reactive_text() {
         p { (count.get()) }
     });
 
-    assert_eq!(render_to_string(cloned!((node) => || node)), "<p>0</p>");
+    assert_eq!(
+        render_to_string(cloned!((node) => move || node)),
+        "<p>0<!----></p>"
+    );
 
     count.set(1);
-    assert_eq!(render_to_string(|| node), "<p>1</p>");
+    assert_eq!(render_to_string(|| node), "<p>1<!----></p>");
+}
+
+#[test]
+fn self_closing_tag() {
+    let node = template! {
+        div {
+            input
+            input(value="a")
+        }
+    };
+
+    assert_eq!(
+        render_to_string(|| node),
+        "<div><input /><input value=\"a\" /></div>"
+    )
 }

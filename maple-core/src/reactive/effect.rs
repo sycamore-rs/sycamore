@@ -47,7 +47,8 @@ impl Drop for Running {
 }
 
 /// Owns the effects created in the current reactive scope.
-/// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is dropped.
+/// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is
+/// dropped.
 #[derive(Default)]
 pub struct ReactiveScope {
     effects: Vec<Rc<RefCell<Option<Running>>>>,
@@ -148,15 +149,15 @@ impl Eq for Dependency {}
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 pub fn create_effect_initial<R: 'static>(
-    initial: impl FnOnce() -> (Rc<dyn Fn()>, R) + 'static,
+    initial: impl FnOnce() -> (Rc<RefCell<dyn FnMut()>>, R) + 'static,
 ) -> R {
-    type InitialFn = dyn FnOnce() -> (Rc<dyn Fn()>, Box<dyn Any>);
+    type InitialFn = dyn FnOnce() -> (Rc<RefCell<dyn FnMut()>>, Box<dyn Any>);
 
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
     fn internal(initial: Box<InitialFn>) -> Box<dyn Any> {
         let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
-        type MutEffect = Rc<RefCell<Option<Rc<dyn Fn()>>>>;
+        type MutEffect = Rc<RefCell<Option<Rc<RefCell<dyn FnMut()>>>>>;
         let effect: MutEffect = Rc::new(RefCell::new(None));
         let ret: Rc<RefCell<Option<Box<dyn Any>>>> = Rc::new(RefCell::new(None));
 
@@ -191,13 +192,14 @@ pub fn create_effect_initial<R: 'static>(
                         // Destroy old effects before new ones run.
                         let old_scope = mem::replace(
                             &mut running.borrow_mut().as_mut().unwrap().scope,
-                            ReactiveScope::new(), /* placeholder until an actual ReactiveScope is created */
+                            ReactiveScope::new(), /* placeholder until an actual ReactiveScope
+                                                   * is created */
                         );
                         drop(old_scope);
 
                         let effect = Rc::clone(&effect);
                         let scope = create_root(move || {
-                            effect.borrow().as_ref().unwrap()();
+                            effect.borrow().as_ref().unwrap().borrow_mut()();
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
                     }
@@ -278,17 +280,17 @@ pub fn create_effect_initial<R: 'static>(
 /// ```
 pub fn create_effect<F>(effect: F)
 where
-    F: Fn() + 'static,
+    F: FnMut() + 'static,
 {
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
-    fn internal(effect: Rc<dyn Fn()>) {
+    fn internal(effect: Rc<RefCell<dyn FnMut()>>) {
         create_effect_initial(move || {
-            effect();
+            effect.borrow_mut()();
             (effect, ())
-        })
+        });
     }
 
-    internal(Rc::new(effect));
+    internal(Rc::new(RefCell::new(effect)));
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
@@ -307,7 +309,7 @@ where
 /// ```
 pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
-    F: Fn() -> Out + 'static,
+    F: FnMut() -> Out + 'static,
     Out: 'static,
 {
     create_selector_with(derived, |_, _| false)
@@ -320,7 +322,7 @@ where
 /// To specify a custom comparison function, use [`create_selector_with`].
 pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
 where
-    F: Fn() -> Out + 'static,
+    F: FnMut() -> Out + 'static,
     Out: PartialEq + 'static,
 {
     create_selector_with(derived, PartialEq::eq)
@@ -337,26 +339,26 @@ where
 /// [`create_selector`].
 pub fn create_selector_with<F, Out, C>(derived: F, comparator: C) -> StateHandle<Out>
 where
-    F: Fn() -> Out + 'static,
+    F: FnMut() -> Out + 'static,
     Out: 'static,
     C: Fn(&Out, &Out) -> bool + 'static,
 {
-    let derived = Rc::new(derived);
+    let derived = Rc::new(RefCell::new(derived));
     let comparator = Rc::new(comparator);
 
     create_effect_initial(move || {
-        let memo = Signal::new(derived());
+        let memo = Signal::new(derived.borrow_mut()());
 
-        let effect = Rc::new({
+        let effect = Rc::new(RefCell::new({
             let memo = memo.clone();
             let derived = Rc::clone(&derived);
             move || {
-                let new_value = derived();
+                let new_value = derived.borrow_mut()();
                 if !comparator(&memo.get_untracked(), &new_value) {
                     memo.set(new_value);
                 }
             }
-        });
+        }));
 
         (effect, memo.into_handle())
     })
@@ -464,34 +466,6 @@ mod tests {
         assert_eq!(*double.get(), 2);
         state.set(2);
         assert_eq!(*double.get(), 4);
-    }
-
-    // FIXME: cycle detection is currently broken
-    #[test]
-    #[ignore]
-    #[should_panic(expected = "cannot create cyclic dependency")]
-    fn cyclic_effects_fail() {
-        let state = Signal::new(0);
-
-        create_effect(cloned!((state) => move || {
-            state.set(*state.get() + 1);
-        }));
-
-        state.set(1);
-    }
-
-    #[test]
-    #[ignore]
-    #[should_panic(expected = "cannot create cyclic dependency")]
-    fn cyclic_effects_fail_2() {
-        let state = Signal::new(0);
-
-        create_effect(cloned!((state) => move || {
-            let value = *state.get();
-            state.set(value + 1);
-        }));
-
-        state.set(1);
     }
 
     #[test]
@@ -682,7 +656,7 @@ mod tests {
         let scope = create_root(cloned!((cleanup_called) => move || {
             on_cleanup(move || {
                 cleanup_called.set(true);
-            })
+            });
         }));
 
         assert_eq!(*cleanup_called.get(), false);

@@ -1,15 +1,17 @@
 //! Reactive primitives.
 
 mod effect;
+mod iter;
 mod motion;
 mod signal;
 
 pub use effect::*;
+pub use iter::*;
 pub use motion::*;
 pub use signal::*;
 
-/// Creates a new reactive root / scope. Generally, you won't need this method as it is called automatically
-/// in [`render`](crate::render()).
+/// Creates a new reactive root / scope. Generally, you won't need this method as it is called
+/// automatically in [`render`](crate::generic_node::render).
 ///
 /// # Example
 /// ```
@@ -66,7 +68,7 @@ mod tests {
             let scope = Rc::clone(&scope);
             move || {
                 let scope = scope.take();
-                drop(scope)
+                drop(scope);
             }
         }));
     }

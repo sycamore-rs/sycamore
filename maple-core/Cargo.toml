@@ -32,6 +32,7 @@ features = [
   "Event",
   "HtmlElement",
   "HtmlInputElement",
+  "HtmlCollection",
   "Node",
   "Text",
   "Window",

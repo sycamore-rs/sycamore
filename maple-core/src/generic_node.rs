@@ -2,17 +2,16 @@
 
 #[cfg(feature = "dom")]
 pub mod dom_node;
+pub mod render;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
 
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
+use std::hash::Hash;
 
 use wasm_bindgen::prelude::*;
 use web_sys::Event;
 
-use crate::prelude::*;
 #[cfg(feature = "dom")]
 pub use dom_node::*;
 #[cfg(feature = "ssr")]
@@ -37,16 +36,12 @@ pub type EventListener = dyn Fn(Event);
 ///
 /// To implement your own rendering backend, you will need to create a new struct which implements
 /// [`GenericNode`].
-pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
+pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a new element node.
     fn element(tag: &str) -> Self;
 
     /// Create a new text node.
     fn text_node(text: &str) -> Self;
-
-    /// Create a new fragment (list of nodes). A fragment is not necessarily wrapped around by an
-    /// element.
-    fn fragment() -> Self;
 
     /// Create a marker (dummy) node. For [`DomNode`], this is implemented by creating an empty
     /// comment node. This is used, for example, in [`Keyed`] and [`Indexed`] for scenarios
@@ -84,8 +79,6 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
     fn next_sibling(&self) -> Option<Self>;
 
     /// Remove this node from the tree.
-    ///
-    /// TODO: Remove this node on Drop.
     fn remove_self(&self);
 
     /// Add a [`EventListener`] to the event `name`.
@@ -94,25 +87,4 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + 'static {
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
     fn update_inner_text(&self, text: &str);
-
-    /// Append an item that implements [`Render`] and automatically updates the DOM inside an
-    /// effect.
-    fn append_render(&self, child: Box<dyn Fn() -> Box<dyn Render<Self>>>) {
-        let parent = self.clone();
-
-        let nodes = create_effect_initial(cloned!((parent) => move || {
-            let node = RefCell::new(child().render());
-
-            let effect = cloned!((node) => move || {
-                let new_node = child().update_node(&parent, &node.borrow());
-                *node.borrow_mut() = new_node;
-            });
-
-            (Rc::new(effect), node)
-        }));
-
-        for node in nodes.borrow().iter() {
-            parent.append_child(node);
-        }
-    }
 }

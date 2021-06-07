@@ -5,6 +5,7 @@ members = [
   "examples/components",
   "examples/counter",
   "examples/hello",
+  "examples/iteration",
   "examples/ssr",
   "examples/todomvc",
   "examples/tweened",

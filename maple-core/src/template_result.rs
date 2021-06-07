@@ -1,18 +1,26 @@
 //! Result of the [`template`](crate::template) macro.
 
+use std::cell::RefCell;
+use std::fmt;
+use std::rc::Rc;
+
 use crate::generic_node::GenericNode;
 
 /// Internal type for [`TemplateResult`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TemplateResultInner<G: GenericNode> {
+#[derive(Clone)]
+pub(crate) enum TemplateResultInner<G: GenericNode> {
+    /// A DOM node.
     Node(G),
-    Fragment(Vec<G>),
+    /// A lazy-computed [`TemplateResult`].
+    Lazy(Rc<RefCell<dyn FnMut() -> TemplateResult<G>>>),
+    /// A fragment of [`TemplateResult`]s.
+    Fragment(Vec<TemplateResult<G>>),
 }
 
 /// Result of the [`template`](crate::template) macro. Should not be constructed manually.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct TemplateResult<G: GenericNode> {
-    inner: TemplateResultInner<G>,
+    pub(crate) inner: TemplateResultInner<G>,
 }
 
 impl<G: GenericNode> TemplateResult<G> {
@@ -23,13 +31,15 @@ impl<G: GenericNode> TemplateResult<G> {
         }
     }
 
-    /// Create a new [`TemplateResult`] from a `Vec` of [`GenericNode`]s.
-    pub fn new_fragment(fragment: Vec<G>) -> Self {
-        debug_assert!(
-            !fragment.is_empty(),
-            "fragment must have at least 1 child node, use empty() instead"
-        );
+    /// Create a new [`TemplateResult`] from a [`FnOnce`].
+    pub fn new_lazy(f: impl FnMut() -> TemplateResult<G> + 'static) -> Self {
+        Self {
+            inner: TemplateResultInner::Lazy(Rc::new(RefCell::new(f))),
+        }
+    }
 
+    /// Create a new [`TemplateResult`] from a `Vec` of [`GenericNode`]s.
+    pub fn new_fragment(fragment: Vec<TemplateResult<G>>) -> Self {
         Self {
             inner: TemplateResultInner::Fragment(fragment),
         }
@@ -40,79 +50,102 @@ impl<G: GenericNode> TemplateResult<G> {
         Self::new_node(G::marker())
     }
 
-    /// Gets the first node in the [`TemplateResult`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if the fragment has no child nodes.
-    pub fn first_node(&self) -> &G {
-        match &self.inner {
-            TemplateResultInner::Node(node) => node,
+    pub fn as_node(&self) -> Option<&G> {
+        if let TemplateResultInner::Node(v) = &self.inner {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_fragment(&self) -> Option<&Vec<TemplateResult<G>>> {
+        if let TemplateResultInner::Fragment(v) = &self.inner {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn as_lazy(&self) -> Option<&Rc<RefCell<dyn FnMut() -> TemplateResult<G>>>> {
+        if let TemplateResultInner::Lazy(v) = &self.inner {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn is_node(&self) -> bool {
+        matches!(
+            self,
+            TemplateResult {
+                inner: TemplateResultInner::Node(_)
+            }
+        )
+    }
+
+    pub fn is_fragment(&self) -> bool {
+        matches!(
+            self,
+            TemplateResult {
+                inner: TemplateResultInner::Fragment(_)
+            }
+        )
+    }
+
+    pub fn is_lazy(&self) -> bool {
+        matches!(
+            self,
+            TemplateResult {
+                inner: TemplateResultInner::Lazy(_)
+            }
+        )
+    }
+
+    pub fn append_template(&mut self, template: TemplateResult<G>) {
+        match &mut self.inner {
+            TemplateResultInner::Node(node) => {
+                self.inner = TemplateResultInner::Fragment(vec![
+                    TemplateResult::new_node(node.clone()),
+                    template,
+                ]);
+            }
+            TemplateResultInner::Lazy(lazy) => {
+                self.inner = TemplateResultInner::Fragment(vec![
+                    TemplateResult {
+                        inner: TemplateResultInner::Lazy(Rc::clone(&lazy)),
+                    },
+                    template,
+                ]);
+            }
             TemplateResultInner::Fragment(fragment) => {
-                fragment.first().expect("fragment has no child nodes")
+                fragment.push(template);
             }
         }
     }
 
-    /// Gets the last node in the [`TemplateResult`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if the fragment has no child nodes.
-    pub fn last_node(&self) -> &G {
-        match &self.inner {
-            TemplateResultInner::Node(node) => node,
-            TemplateResultInner::Fragment(fragment) => {
-                fragment.last().expect("fragment has no child nodes")
-            }
-        }
-    }
-
-    pub fn iter(&self) -> Iter<G> {
-        match &self.inner {
-            TemplateResultInner::Node(node) => Iter::Node(Some(node).into_iter()),
-            TemplateResultInner::Fragment(fragment) => Iter::Fragment(fragment.iter()),
-        }
-    }
-}
-
-impl<G: GenericNode> IntoIterator for TemplateResult<G> {
-    type Item = G;
-
-    type IntoIter = std::vec::IntoIter<G>;
-
-    fn into_iter(self) -> Self::IntoIter {
+    /// Returns a `Vec` of nodes. Lazy nodes are evaluated.
+    // #[deprecated(note = "footgun when rendering")]
+    // TODO: re-enable
+    pub fn flatten(self) -> Vec<G> {
         match self.inner {
-            TemplateResultInner::Node(node) => vec![node].into_iter(),
-            TemplateResultInner::Fragment(fragment) => fragment.into_iter(),
+            TemplateResultInner::Node(node) => vec![node],
+            TemplateResultInner::Lazy(lazy) => lazy.borrow_mut()().flatten(),
+            TemplateResultInner::Fragment(fragment) => fragment
+                .into_iter()
+                .map(|x| x.flatten())
+                .flatten()
+                .collect(),
         }
     }
 }
 
-/// An iterator over references of the nodes in [`TemplateResult`]. Created using
-/// [`TemplateResult::iter`].
-pub enum Iter<'a, G: GenericNode> {
-    Node(std::option::IntoIter<&'a G>),
-    Fragment(std::slice::Iter<'a, G>),
-}
-
-impl<'a, G: GenericNode> Iterator for Iter<'a, G> {
-    type Item = &'a G;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Iter::Node(node) => node.next(),
-            Iter::Fragment(fragment) => fragment.next(),
+impl<G: GenericNode> fmt::Debug for TemplateResult<G> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.inner {
+            TemplateResultInner::Node(node) => node.fmt(f),
+            TemplateResultInner::Lazy(lazy) => lazy.as_ref().borrow_mut()().fmt(f),
+            TemplateResultInner::Fragment(fragment) => fragment.fmt(f),
         }
-    }
-}
-
-impl<'a, G: GenericNode> IntoIterator for &'a TemplateResult<G> {
-    type Item = &'a G;
-
-    type IntoIter = Iter<'a, G>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
     }
 }

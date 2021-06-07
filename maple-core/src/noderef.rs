@@ -23,6 +23,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// Panics if the [`NodeRef`] is not set yet or is the wrong type.
     ///
     /// For a non panicking version, see [`NodeRef::try_get`].
+    #[track_caller]
     pub fn get<T: GenericNode>(&self) -> T {
         self.try_get().expect("NodeRef is not set")
     }
@@ -42,6 +43,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// Panics if the [`NodeRef`] is not set yet.
     ///
     /// For a non panicking version, see [`NodeRef::try_get_raw`].
+    #[track_caller]
     pub fn get_raw(&self) -> G {
         self.try_get().expect("NodeRef is not set")
     }

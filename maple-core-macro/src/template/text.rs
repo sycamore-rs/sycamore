@@ -5,7 +5,7 @@ use syn::token::Paren;
 use syn::{parenthesized, Expr, LitStr, Result};
 
 pub enum Text {
-    Text(LitStr),
+    Str(LitStr),
     Splice(Paren, Box<Expr>),
 }
 
@@ -16,7 +16,7 @@ impl Parse for Text {
             let paren = parenthesized!(content in input);
             Ok(Self::Splice(paren, content.parse()?))
         } else {
-            Ok(Self::Text(input.parse()?))
+            Ok(Self::Str(input.parse()?))
         }
     }
 }
@@ -24,7 +24,7 @@ impl Parse for Text {
 impl ToTokens for Text {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Text::Text(text) => {
+            Text::Str(text) => {
                 let quoted = text.to_token_stream();
                 tokens.extend(quoted);
             }

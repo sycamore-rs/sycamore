@@ -48,175 +48,64 @@ impl ToTokens for Element {
             children,
         } = self;
 
-        let mut set_attributes = Vec::new();
-        let mut set_event_listeners = Vec::new();
-        let mut set_noderefs = Vec::new();
+        let mut quoted = quote! {
+            let _el = #tag_name;
+        };
+
         if let Some(attributes) = attributes {
             for attribute in &attributes.attributes {
-                let expr = &attribute.expr;
-                let expr_span = expr.span();
-
-                match &attribute.ty {
-                    AttributeType::DomAttribute { name } => {
-                        let name = name.to_string();
-                        set_attributes.push(quote_spanned! { expr_span=>
-                            ::maple_core::reactive::create_effect({
-                                let element = ::std::clone::Clone::clone(&element);
-                                move || {
-                                    ::maple_core::generic_node::GenericNode::set_attribute(
-                                        &element,
-                                        #name,
-                                        &::std::format!("{}", #expr),
-                                    );
-                                }
-                            });
-                        });
-                    }
-                    AttributeType::Event { event } => {
-                        // TODO: Should events be reactive?
-                        set_event_listeners.push(quote_spanned! { expr_span=>
-                            ::maple_core::generic_node::GenericNode::event(
-                                &element,
-                                #event,
-                                ::std::boxed::Box::new(#expr),
-                            );
-                        });
-                    }
-                    AttributeType::Bind { prop } => {
-                        #[derive(Clone, Copy)]
-                        enum JsPropertyType {
-                            Bool,
-                            String,
-                        }
-
-                        let (event_name, property_ty) = match prop.as_str() {
-                            "value" => ("input", JsPropertyType::String),
-                            "checked" => ("change", JsPropertyType::Bool),
-                            _ => {
-                                tokens.extend(
-                                    syn::Error::new(
-                                        prop.span(),
-                                        &format!("property `{}` is not supported with bind:", prop),
-                                    )
-                                    .to_compile_error(),
-                                );
-                                return;
-                            }
-                        };
-
-                        let value_ty = match property_ty {
-                            JsPropertyType::Bool => quote! { ::std::primitive::bool },
-                            JsPropertyType::String => quote! { ::std::string::String },
-                        };
-
-                        let convert_into_jsvalue_fn = match property_ty {
-                            JsPropertyType::Bool => {
-                                quote! { ::maple_core::rt::JsValue::from_bool(*signal.get()) }
-                            }
-                            JsPropertyType::String => {
-                                quote! { ::maple_core::rt::JsValue::from_str(&::std::format!("{}", signal.get())) }
-                            }
-                        };
-
-                        let event_target_prop = quote! {
-                            ::maple_core::rt::Reflect::get(
-                                &event.target().unwrap(),
-                                &::std::convert::Into::<::maple_core::rt::JsValue>::into(#prop)
-                            ).unwrap()
-                        };
-
-                        let convert_from_jsvalue_fn = match property_ty {
-                            JsPropertyType::Bool => quote! {
-                                ::maple_core::rt::JsValue::as_bool(&#event_target_prop).unwrap()
-                            },
-                            JsPropertyType::String => quote! {
-                                ::maple_core::rt::JsValue::as_string(&#event_target_prop).unwrap()
-                            },
-                        };
-
-                        set_attributes.push(quote_spanned! { expr_span=> {
-                            let signal: ::maple_core::reactive::Signal<#value_ty> = #expr;
-
-                            ::maple_core::reactive::create_effect({
-                                let signal = ::std::clone::Clone::clone(&signal);
-                                let element = ::std::clone::Clone::clone(&element);
-                                move || {
-                                    ::maple_core::generic_node::GenericNode::set_property(
-                                        &element,
-                                        #prop,
-                                        &#convert_into_jsvalue_fn,
-                                    );
-                                }
-                            });
-
-                            ::maple_core::generic_node::GenericNode::event(
-                                &element,
-                                #event_name,
-                                ::std::boxed::Box::new(move |event: ::maple_core::rt::Event| {
-                                    signal.set(#convert_from_jsvalue_fn);
-                                }),
-                            )
-                        }});
-                    }
-                    AttributeType::Ref => {
-                        set_noderefs.push(quote_spanned! { expr_span=>
-                            ::maple_core::noderef::NodeRef::set(
-                                &#expr,
-                                ::std::clone::Clone::clone(&element),
-                            );
-                        });
-                    }
-                }
+                attribute.to_tokens(&mut quoted);
             }
         }
 
-        let mut append_children = Vec::new();
         if let Some(children) = children {
             for child in &children.body {
-                let quoted = match child {
+                quoted.extend(match child {
                     HtmlTree::Component(component) => quote_spanned! { component.span()=>
-                        for node in &#component {
-                            ::maple_core::generic_node::GenericNode::append_child(&element, node);
-                        }
+                        let __marker = ::maple_core::generic_node::GenericNode::marker();
+                        ::maple_core::generic_node::GenericNode::append_child(&_el, &__marker);
+                        ::maple_core::generic_node::render::insert(
+                            ::std::clone::Clone::clone(&_el),
+                            #component,
+                            None, Some(__marker),
+                        );
                     },
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
-                        ::maple_core::generic_node::GenericNode::append_child(&element, &#element);
+                        ::maple_core::generic_node::GenericNode::append_child(&_el, &#element);
                     },
                     HtmlTree::Text(text) => match text {
-                        Text::Text(_) => {
+                        Text::Str(_) => {
                             quote_spanned! { text.span()=>
                                 ::maple_core::generic_node::GenericNode::append_child(
-                                    &element,
+                                    &_el,
                                     &::maple_core::generic_node::GenericNode::text_node(#text),
                                 );
                             }
                         }
                         Text::Splice(_, _) => {
                             quote_spanned! { text.span()=>
-                                ::maple_core::generic_node::GenericNode::append_render(
-                                    &element,
-                                    ::std::boxed::Box::new(move || {
-                                        ::std::boxed::Box::new(#text)
-                                    }),
+                                let __marker = ::maple_core::generic_node::GenericNode::marker();
+                                ::maple_core::generic_node::GenericNode::append_child(&_el, &__marker);
+                                ::maple_core::generic_node::render::insert(
+                                    ::std::clone::Clone::clone(&_el),
+                                    ::maple_core::template_result::TemplateResult::new_lazy(move ||
+                                        ::maple_core::render::IntoTemplate::create(&#text)
+                                    ),
+                                    None, Some(__marker),
                                 );
                             }
                         }
                     },
-                };
-
-                append_children.push(quoted);
+                });
             }
         }
 
-        let quoted = quote! {{
-            let element = #tag_name;
-            #(#set_attributes)*
-            #(#set_event_listeners)*
-            #(#set_noderefs)*
-            #(#append_children)*
-            element
-        }};
-        tokens.extend(quoted);
+        quoted.extend(quote! {
+            _el
+        });
+        tokens.extend(quote! {{
+            #quoted
+        }});
     }
 }
 

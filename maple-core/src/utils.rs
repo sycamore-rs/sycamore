@@ -1,4 +1,8 @@
 //! Internal utilities for Maple.
+//!
+//! # Stability
+//! This API is currently unstable and can have breaking changed without a semver release.
+//! This might be stabilized in the future but it is use-at-your-own-risk for now.
 
 use std::cell::RefCell;
 use std::collections::HashSet;
@@ -10,6 +14,7 @@ thread_local! {
     static TASKS: RefCell<HashSet<Task>> = RefCell::new(HashSet::new());
 }
 
+/// A wrapper over a callback. Used with [`loop_raf`].
 #[derive(Clone)]
 pub struct Task {
     callback: Rc<dyn Fn() -> bool>,
@@ -46,7 +51,7 @@ impl PartialEq for Task {
 impl Eq for Task {}
 
 #[cfg(feature = "dom")]
-pub fn run_tasks() {
+pub(crate) fn run_tasks() {
     use wasm_bindgen::prelude::*;
     use wasm_bindgen::JsCast;
 
@@ -81,7 +86,7 @@ pub fn run_tasks() {
 }
 
 #[cfg(not(feature = "dom"))]
-pub fn run_tasks() {
+pub(crate) fn run_tasks() {
     // noop on non web targets
 }
 
