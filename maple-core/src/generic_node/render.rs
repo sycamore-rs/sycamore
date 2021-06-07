@@ -292,7 +292,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) 
                             b_start += 1;
                         }
                     } else {
-                        parent.replace_child(&b[b_start], &a[a_start]);
+                        parent.replace_child(&a[a_start], &b[b_start]);
                         a_start += 1;
                         b_start += 1;
                     }
