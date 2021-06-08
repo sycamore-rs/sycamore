@@ -39,9 +39,6 @@ jobs:
     env:
       RUSTFLAGS: -Dwarnings
 
-    env:
-      RUSTFLAGS: -Dwarnings
-
     steps:
       - uses: actions/checkout@v2
 
