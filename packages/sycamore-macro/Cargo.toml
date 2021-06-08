@@ -9,7 +9,7 @@ license = "MIT"
 name = "sycamore-macro"
 readme = "../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.4.3"
+version = "0.5.0-beta.0"
 
 [lib]
 proc-macro = true
