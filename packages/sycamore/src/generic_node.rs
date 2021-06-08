@@ -44,9 +44,10 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn text_node(text: &str) -> Self;
 
     /// Create a marker (dummy) node. For [`DomNode`], this is implemented by creating an empty
-    /// comment node. This is used, for example, in [`Keyed`] and [`Indexed`] for scenarios
-    /// where you want to push a new item to the end of the list. If the list is empty, a dummy
-    /// node is needed to store the position of the component.
+    /// comment node. This is used, for example, in [`Keyed`](crate::flow::Keyed) and
+    /// [`Indexed`](crate::flow::Indexed) for scenarios where you want to push a new item to the
+    /// end of the list. If the list is empty, a dummy node is needed to store the position of
+    /// the component.
     fn marker() -> Self;
 
     /// Sets an attribute on a node.

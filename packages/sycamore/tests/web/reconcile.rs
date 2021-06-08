@@ -18,13 +18,7 @@ fn insert_create_nodes() {
 
     insert(
         parent.clone(),
-        TemplateResult::new_fragment(
-            nodes
-                .to_vec()
-                .into_iter()
-                .map(TemplateResult::new_node)
-                .collect(),
-        ),
+        Template::new_fragment(nodes.to_vec().into_iter().map(Template::new_node).collect()),
         None,
         None,
     );

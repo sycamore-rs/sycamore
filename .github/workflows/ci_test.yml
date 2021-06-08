@@ -30,15 +30,12 @@ jobs:
         if: always()
 
       - name: Run headless browser tests
-        run: wasm-pack test sycamore --firefox --chrome --headless
+        run: wasm-pack test packages/sycamore --firefox --chrome --headless
         if: always()
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    env:
-      RUSTFLAGS: -Dwarnings
-
     env:
       RUSTFLAGS: -Dwarnings
 
@@ -83,5 +80,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd sycamore
+          cd packages/sycamore
           cargo miri test

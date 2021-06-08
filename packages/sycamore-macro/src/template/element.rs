@@ -88,7 +88,7 @@ impl ToTokens for Element {
                                 ::sycamore::generic_node::GenericNode::append_child(&_el, &__marker);
                                 ::sycamore::generic_node::render::insert(
                                     ::std::clone::Clone::clone(&_el),
-                                    ::sycamore::template_result::TemplateResult::new_lazy(move ||
+                                    ::sycamore::template::Template::new_lazy(move ||
                                         ::sycamore::render::IntoTemplate::create(&#text)
                                     ),
                                     None, Some(__marker),

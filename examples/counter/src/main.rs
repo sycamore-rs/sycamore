@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> TemplateResult<G> {
+fn app() -> Template<G> {
     let counter = Signal::new(0);
 
     create_effect(cloned!((counter) => move || {

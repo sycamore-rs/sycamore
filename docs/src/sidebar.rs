@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(Sidebar<G>)]
-pub fn sidebar() -> TemplateResult<G> {
+pub fn sidebar() -> Template<G> {
     template! {
         div(class="p-3 bg-white", style="min-width: 180px") {
             ul(class="list-unstyled ps-0") {

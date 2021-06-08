@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component(num: StateHandle<i32>) -> TemplateResult<G> {
+fn my_component(num: StateHandle<i32>) -> Template<G> {
     template! {
         div(class="my-component") {
             "My component"
@@ -14,7 +14,7 @@ fn my_component(num: StateHandle<i32>) -> TemplateResult<G> {
 }
 
 #[component(App<G>)]
-fn app() -> TemplateResult<G> {
+fn app() -> Template<G> {
     let state = Signal::new(1);
 
     let increment = cloned!((state) => move |_| {

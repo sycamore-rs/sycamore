@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use crate::generic_node::GenericNode;
 use crate::prelude::create_effect;
-use crate::template_result::{TemplateResult, TemplateResultInner};
+use crate::template::{Template, TemplateType};
 
 pub fn insert<G: GenericNode>(
     parent: G,
-    accessor: TemplateResult<G>,
-    initial: Option<TemplateResult<G>>,
+    accessor: Template<G>,
+    initial: Option<Template<G>>,
     marker: Option<G>,
 ) {
     insert_expression(parent, accessor, initial, marker, false);
@@ -15,13 +15,13 @@ pub fn insert<G: GenericNode>(
 
 pub fn insert_expression<G: GenericNode>(
     parent: G,
-    value: TemplateResult<G>,
-    mut current: Option<TemplateResult<G>>,
+    value: Template<G>,
+    mut current: Option<Template<G>>,
     marker: Option<G>,
     unwrap_fragment: bool,
 ) {
-    while let Some(TemplateResult {
-        inner: TemplateResultInner::Lazy(f),
+    while let Some(Template {
+        inner: TemplateType::Lazy(f),
     }) = current
     {
         current = Some(f.borrow_mut()());
@@ -30,17 +30,17 @@ pub fn insert_expression<G: GenericNode>(
     // let multi = marker.is_some();
 
     match value.inner {
-        TemplateResultInner::Node(node) => {
+        TemplateType::Node(node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), marker, Some(node));
             } else {
                 parent.insert_child_before(&node, marker.as_ref());
             }
         }
-        TemplateResultInner::Lazy(f) => {
+        TemplateType::Lazy(f) => {
             create_effect(move || {
                 let mut value = f.as_ref().borrow_mut()();
-                while let TemplateResultInner::Lazy(f) = value.inner {
+                while let TemplateType::Lazy(f) = value.inner {
                     value = f.as_ref().borrow_mut()();
                 }
                 insert_expression(
@@ -53,12 +53,12 @@ pub fn insert_expression<G: GenericNode>(
                 current = Some(value);
             });
         }
-        TemplateResultInner::Fragment(fragment) => {
+        TemplateType::Fragment(fragment) => {
             let mut v = Vec::new();
             let dynamic = normalize_incoming_fragment(&mut v, fragment, unwrap_fragment);
             if dynamic {
                 create_effect(move || {
-                    let value = TemplateResult::new_fragment(v.clone());
+                    let value = Template::new_fragment(v.clone());
                     insert_expression(
                         parent.clone(),
                         value.clone(),
@@ -74,24 +74,24 @@ pub fn insert_expression<G: GenericNode>(
                 let v = v
                     .into_iter()
                     .map(|x| match x.inner {
-                        TemplateResultInner::Node(node) => node,
+                        TemplateType::Node(node) => node,
                         _ => unreachable!(),
                     })
                     .collect::<Vec<_>>();
 
                 match current {
                     Some(current) => match current.inner {
-                        TemplateResultInner::Node(node) => {
+                        TemplateType::Node(node) => {
                             reconcile_fragments(parent, vec![node], v);
                         }
-                        TemplateResultInner::Lazy(_) => unreachable!(),
-                        TemplateResultInner::Fragment(fragment) => {
+                        TemplateType::Lazy(_) => unreachable!(),
+                        TemplateType::Fragment(fragment) => {
                             if fragment.is_empty() {
                                 append_nodes(&parent, v, marker);
                             } else {
                                 reconcile_fragments(
                                     parent,
-                                    TemplateResult::new_fragment(fragment).flatten(),
+                                    Template::new_fragment(fragment).flatten(),
                                     v,
                                 );
                             }
@@ -131,46 +131,46 @@ pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option
     }
 }
 
-/// Normalizes a `Vec<TemplateResult<G>>` into a `Vec<G>`.
+/// Normalizes a `Vec<Template<G>>` into a `Vec<G>`.
 ///
 /// Returns whether the normalized `Vec<G>` is dynamic (and should be rendered in an effect).
 ///
 /// # Params
 /// * `v` - The [`Vec`] to write the output to.
-/// * `fragment` - The `Vec<TemplateResult<G>>` to normalize.
+/// * `fragment` - The `Vec<Template<G>>` to normalize.
 /// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
 ///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
-    v: &mut Vec<TemplateResult<G>>,
-    fragment: Vec<TemplateResult<G>>,
+    v: &mut Vec<Template<G>>,
+    fragment: Vec<Template<G>>,
     unwrap: bool,
 ) -> bool {
     let mut dynamic = false;
 
     for template in fragment {
         match template.inner {
-            TemplateResultInner::Node(_) => v.push(template),
-            TemplateResultInner::Lazy(f) if unwrap => {
+            TemplateType::Node(_) => v.push(template),
+            TemplateType::Lazy(f) if unwrap => {
                 let mut value = f.as_ref().borrow_mut()();
-                while let TemplateResultInner::Lazy(f) = value.inner {
+                while let TemplateType::Lazy(f) = value.inner {
                     value = f.as_ref().borrow_mut()();
                 }
                 dynamic = normalize_incoming_fragment(
                     v,
                     match value.inner {
-                        TemplateResultInner::Node(_) => vec![value],
-                        TemplateResultInner::Fragment(fragment) => fragment,
+                        TemplateType::Node(_) => vec![value],
+                        TemplateType::Fragment(fragment) => fragment,
                         _ => unreachable!(),
                     },
                     false,
                 ) || dynamic;
             }
-            TemplateResultInner::Lazy(_) => {
+            TemplateType::Lazy(_) => {
                 // Not unwrap
                 v.push(template);
                 dynamic = true;
             }
-            TemplateResultInner::Fragment(fragment) => {
+            TemplateType::Fragment(fragment) => {
                 dynamic = normalize_incoming_fragment(v, fragment, false) || dynamic;
             }
         }

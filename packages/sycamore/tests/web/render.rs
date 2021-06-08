@@ -2,7 +2,7 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn lazy() {
-    let node: TemplateResult<DomNode> = TemplateResult::new_lazy(|| {
+    let node: Template<DomNode> = Template::new_lazy(|| {
         template! {
             div {
                 "Test"
@@ -29,8 +29,8 @@ fn lazy_reactive() {
         "1"
     });
 
-    let node: TemplateResult<DomNode> =
-        TemplateResult::new_lazy(cloned!((template) => move || (*template.get()).clone()));
+    let node: Template<DomNode> =
+        Template::new_lazy(cloned!((template) => move || (*template.get()).clone()));
 
     render_to(|| node, &test_container());
     let test_container = document()

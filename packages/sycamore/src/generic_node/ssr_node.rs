@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventListener, GenericNode};
 use crate::reactive::create_root;
-use crate::template_result::TemplateResult;
+use crate::template::Template;
 
 static VOID_ELEMENTS: &[&str] = &[
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
@@ -301,11 +301,11 @@ impl fmt::Display for Text {
     }
 }
 
-/// Render a [`TemplateResult`] into a static [`String`]. Useful
+/// Render a [`Template`] into a static [`String`]. Useful
 /// for rendering to a string on the server side.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
-pub fn render_to_string(template_result: impl FnOnce() -> TemplateResult<SsrNode>) -> String {
+pub fn render_to_string(template_result: impl FnOnce() -> Template<SsrNode>) -> String {
     let mut ret = String::new();
     let _scope = create_root(|| {
         for node in template_result().flatten() {

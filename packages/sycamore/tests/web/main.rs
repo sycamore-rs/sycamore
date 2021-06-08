@@ -334,7 +334,7 @@ fn lazy_fragment_reuse_nodes() {
 
     render_to(
         cloned!((nodes) =>
-            move || TemplateResult::new_lazy(move || TemplateResult::new_fragment(nodes.clone()))
+            move || Template::new_lazy(move || Template::new_fragment(nodes.clone()))
         ),
         &test_container(),
     );

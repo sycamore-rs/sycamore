@@ -12,7 +12,7 @@ use web_sys::{Comment, Element, Event, Node, Text};
 use crate::generic_node::render::insert;
 use crate::generic_node::{EventListener, GenericNode};
 use crate::reactive::{create_root, ReactiveScope};
-use crate::template_result::TemplateResult;
+use crate::template::Template;
 
 // TODO: remove js snippet
 #[wasm_bindgen(inline_js = "\
@@ -212,22 +212,22 @@ impl GenericNode for DomNode {
     }
 }
 
-/// Render a [`TemplateResult`] into the DOM.
+/// Render a [`Template`] into the DOM.
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
+pub fn render(template_result: impl FnOnce() -> Template<DomNode>) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
     render_to(template_result, &document.body().unwrap());
 }
 
-/// Render a [`TemplateResult`] under a `parent` node.
+/// Render a [`Template`] under a `parent` node.
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, parent: &Node) {
+pub fn render_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &Node) {
     let scope = create_root(|| {
         insert(
             DomNode {
@@ -247,13 +247,13 @@ pub fn render_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, pare
     GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
 }
 
-/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side
+/// Render a [`Template`] under a `parent` node by reusing existing nodes (client side
 /// hydration). Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn hydrate(template_result: impl FnOnce() -> TemplateResult<DomNode>) {
+pub fn hydrate(template_result: impl FnOnce() -> Template<DomNode>) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
@@ -276,13 +276,13 @@ fn get_children(parent: &Element) -> Vec<Element> {
     vec
 }
 
-/// Render a [`TemplateResult`] under a `parent` node by reusing existing nodes (client side
+/// Render a [`Template`] under a `parent` node by reusing existing nodes (client side
 /// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn hydrate_to(template_result: impl FnOnce() -> TemplateResult<DomNode>, parent: &Node) {
+pub fn hydrate_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &Node) {
     for child in get_children(parent.unchecked_ref()) {
         child.remove();
     }
