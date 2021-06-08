@@ -28,8 +28,8 @@ pub mod flow;
 pub mod generic_node;
 pub mod macros;
 pub mod noderef;
-pub mod reactive;
 pub mod render;
+pub mod rx;
 pub mod template;
 pub mod utils;
 
@@ -48,11 +48,11 @@ pub mod prelude {
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::{render_to_string, SsrNode};
     pub use crate::noderef::NodeRef;
-    pub use crate::reactive::{
+    pub use crate::render::IntoTemplate;
+    pub use crate::rx::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, untrack, Signal, StateHandle,
     };
-    pub use crate::render::IntoTemplate;
     pub use crate::template::Template;
 }
 

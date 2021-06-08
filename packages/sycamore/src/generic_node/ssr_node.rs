@@ -9,7 +9,7 @@ use std::{fmt, mem};
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventListener, GenericNode};
-use crate::reactive::create_root;
+use crate::rx::create_root;
 use crate::template::Template;
 
 static VOID_ELEMENTS: &[&str] = &[

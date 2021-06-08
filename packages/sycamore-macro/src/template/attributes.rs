@@ -78,7 +78,7 @@ impl ToTokens for Attribute {
             AttributeType::DomAttribute { name } => {
                 let name = name.to_string();
                 tokens.extend(quote_spanned! { expr_span=>
-                    ::sycamore::reactive::create_effect({
+                    ::sycamore::rx::create_effect({
                         let _el = ::std::clone::Clone::clone(&_el);
                         move || {
                             ::sycamore::generic_node::GenericNode::set_attribute(
@@ -153,9 +153,9 @@ impl ToTokens for Attribute {
                 };
 
                 tokens.extend(quote_spanned! { expr_span=> {
-                    let signal: ::sycamore::reactive::Signal<#value_ty> = #expr;
+                    let signal: ::sycamore::rx::Signal<#value_ty> = #expr;
 
-                    ::sycamore::reactive::create_effect({
+                    ::sycamore::rx::create_effect({
                         let signal = ::std::clone::Clone::clone(&signal);
                         let _el = ::std::clone::Clone::clone(&_el);
                         move || {
