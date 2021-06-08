@@ -10,7 +10,7 @@ pub fn header() -> TemplateResult<G> {
 
                     ul(class="navbar-nav") {
                         li(class="nav-item") {
-                            a(class="nav-link", href="/getting_started/installation") { "Docs" }
+                            a(class="nav-link", href="/getting_started/installation") { "Book" }
                         }
                         li(class="nav-item") {
                             a(class="nav-link", href="https://docs.rs/sycamore") { "API" }

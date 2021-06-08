@@ -9,7 +9,7 @@ pub fn index() -> TemplateResult<G> {
             }
 
             a(class="btn btn-primary", href="/getting_started/installation") {
-                "Getting started"
+                "Read the Book!"
             }
         }
     }
