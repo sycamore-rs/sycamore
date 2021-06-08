@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use sycamore::reactive::Tweened;
+use sycamore::rx::Tweened;
 use sycamore::{easing, prelude::*};
 
 #[component(App<G>)]

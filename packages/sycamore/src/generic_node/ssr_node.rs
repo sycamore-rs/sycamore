@@ -9,8 +9,8 @@ use std::{fmt, mem};
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventListener, GenericNode};
-use crate::reactive::create_root;
-use crate::template::Template;
+use crate::rx::create_root;
+use crate::template::TemplateResult;
 
 static VOID_ELEMENTS: &[&str] = &[
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
