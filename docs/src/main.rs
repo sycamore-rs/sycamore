@@ -6,7 +6,7 @@ mod sidebar;
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> TemplateResult<G> {
+fn app() -> Template<G> {
     let location = web_sys::window()
         .unwrap()
         .document()

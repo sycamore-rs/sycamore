@@ -30,7 +30,7 @@ pub mod macros;
 pub mod noderef;
 pub mod reactive;
 pub mod render;
-pub mod template_result;
+pub mod template;
 pub mod utils;
 
 /// Alias self to sycamore for proc-macros.
@@ -53,7 +53,7 @@ pub mod prelude {
         create_selector_with, on_cleanup, untrack, Signal, StateHandle,
     };
     pub use crate::render::IntoTemplate;
-    pub use crate::template_result::TemplateResult;
+    pub use crate::template::Template;
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

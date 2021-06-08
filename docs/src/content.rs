@@ -12,7 +12,7 @@ extern "C" {
 }
 
 #[component(Content<G>)]
-pub fn content() -> TemplateResult<G> {
+pub fn content() -> Template<G> {
     let location = web_sys::window()
         .unwrap()
         .document()

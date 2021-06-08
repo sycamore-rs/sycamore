@@ -131,7 +131,7 @@ impl Filter {
 const KEY: &str = "todos-sycamore";
 
 #[component(App<G>)]
-fn app() -> TemplateResult<G> {
+fn app() -> Template<G> {
     let local_storage = web_sys::window()
         .unwrap()
         .local_storage()
@@ -173,7 +173,7 @@ fn app() -> TemplateResult<G> {
                         list::List(app_state.clone())
                     }
                 } else {
-                    TemplateResult::empty()
+                    Template::empty()
                 })
 
                 // FIXME: merge two if/else statements
@@ -182,7 +182,7 @@ fn app() -> TemplateResult<G> {
                         footer::Footer(app_state2.clone())
                     }
                 } else {
-                    TemplateResult::empty()
+                    Template::empty()
                 })
             }
 

@@ -4,7 +4,7 @@ use web_sys::HtmlInputElement;
 use crate::{AppState, Filter};
 
 #[component(List<G>)]
-pub fn list(app_state: AppState) -> TemplateResult<G> {
+pub fn list(app_state: AppState) -> Template<G> {
     let todos_left = create_selector(cloned!((app_state) => move || {
         app_state.todos_left()
     }));

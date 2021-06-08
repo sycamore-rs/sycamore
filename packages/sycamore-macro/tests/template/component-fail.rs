@@ -1,17 +1,17 @@
 use sycamore::prelude::*;
 
 #[component(C<G>)]
-fn c() -> TemplateResult<G> {
+fn c() -> Template<G> {
     template! {
         div
     }
 }
 
 fn compile_fail<G: GenericNode>() {
-    let _: TemplateResult<G> = template! { UnknownComponent() };
+    let _: Template<G> = template! { UnknownComponent() };
 
-    let _: TemplateResult<G> = template! { C };
-    let _: TemplateResult<G> = template! { C(1) };
+    let _: Template<G> = template! { C };
+    let _: Template<G> = template! { C(1) };
 }
 
 fn main() {}

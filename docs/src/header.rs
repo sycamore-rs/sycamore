@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(Header<G>)]
-pub fn header() -> TemplateResult<G> {
+pub fn header() -> Template<G> {
     template! {
         header {
             nav(class="navbar navbar-expand-sm navbar-dark bg-dark") {

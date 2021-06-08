@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> TemplateResult<G> {
+fn app() -> Template<G> {
     let name = Signal::new(String::new());
 
     let handle_change = move |_| unreachable!();

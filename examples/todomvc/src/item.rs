@@ -10,7 +10,7 @@ pub struct ItemProps {
 }
 
 #[component(Item<G>)]
-pub fn item(props: ItemProps) -> TemplateResult<G> {
+pub fn item(props: ItemProps) -> Template<G> {
     let ItemProps { todo, app_state } = props;
 
     let title = cloned!((todo) => move || todo.get().title.clone());
@@ -117,7 +117,7 @@ pub fn item(props: ItemProps) -> TemplateResult<G> {
                     )
                 })
             } else {
-                TemplateResult::empty()
+                Template::empty()
             })
         }
     }

@@ -76,16 +76,16 @@ impl ToTokens for HtmlTree {
                 #component
             },
             Self::Element(element) => quote! {
-                ::sycamore::template_result::TemplateResult::new_node(#element)
+                ::sycamore::template::Template::new_node(#element)
             },
             Self::Text(text) => match text {
                 Text::Str(_) => quote! {
-                    ::sycamore::template_result::TemplateResult::new_node(
+                    ::sycamore::template::Template::new_node(
                         ::sycamore::generic_node::GenericNode::text_node(#text),
                     )
                 },
                 Text::Splice(_, _) => quote! {
-                    ::sycamore::template_result::TemplateResult::new_lazy(move ||
+                    ::sycamore::template::Template::new_lazy(move ||
                         ::sycamore::render::IntoTemplate::create(&#text)
                     )
                 },
@@ -116,11 +116,11 @@ impl ToTokens for HtmlRoot {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let quoted = match self.children.as_slice() {
             [] => quote! {
-                ::sycamore::template_result::TemplateResult::empty()
+                ::sycamore::template::Template::empty()
             },
             [node] => node.to_token_stream(),
             nodes => quote! {
-                ::sycamore::template_result::TemplateResult::new_fragment({
+                ::sycamore::template::Template::new_fragment({
                     let mut children = ::std::vec::Vec::new();
                     #(
                         children.push(#nodes);

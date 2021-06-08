@@ -1,4 +1,4 @@
-//! Iteration utility components for [`template`](crate::template).
+//! Iteration utility components for [`template`](crate::template!).
 //!
 //! Iteration can be either _"keyed"_ or _"non keyed"_.
 //! Use the [`Keyed`] and [`Indexed`] utility components respectively.
@@ -13,7 +13,7 @@ use crate::reactive::{map_indexed, map_keyed};
 /// Props for [`Keyed`].
 pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>
 where
-    F: Fn(T) -> TemplateResult<G>,
+    F: Fn(T) -> Template<G>,
     K: Fn(&T) -> Key,
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
@@ -23,7 +23,7 @@ where
     pub key: K, // TODO: make key optional
 }
 
-/// Keyed iteration. Use this instead of directly rendering an array of [`TemplateResult`]s.
+/// Keyed iteration. Use this instead of directly rendering an array of [`Template`]s.
 /// Using this will minimize re-renders instead of re-rendering every single node on every state
 /// change.
 ///
@@ -44,14 +44,14 @@ where
 ///         key: |item| *item,
 ///     })
 /// };
-/// # let _ : TemplateResult<DomNode> = node;
+/// # let _ : Template<DomNode> = node;
 /// ```
 #[component(Keyed<G>)]
 pub fn keyed<T: 'static, F: 'static, K: 'static, Key: 'static>(
     props: KeyedProps<T, F, G, K, Key>,
-) -> TemplateResult<G>
+) -> Template<G>
 where
-    F: Fn(T) -> TemplateResult<G>,
+    F: Fn(T) -> Template<G>,
     K: Fn(&T) -> Key,
     Key: Clone + Hash + Eq,
     T: Clone + Eq + Hash,
@@ -67,20 +67,20 @@ where
         let template = Rc::clone(&template);
         move |x| template(x.clone())
     });
-    TemplateResult::new_lazy(move || TemplateResult::new_fragment((*mapped()).clone()))
+    Template::new_lazy(move || Template::new_fragment((*mapped()).clone()))
 }
 
 /// Props for [`Indexed`].
 pub struct IndexedProps<T: 'static, F, G: GenericNode>
 where
-    F: Fn(T) -> TemplateResult<G>,
+    F: Fn(T) -> Template<G>,
 {
     pub iterable: StateHandle<Vec<T>>,
     pub template: F,
 }
 
 /// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of
-/// [`TemplateResult`]s. Using this will minimize re-renders instead of re-rendering every single
+/// [`Template`]s. Using this will minimize re-renders instead of re-rendering every single
 /// node on every state change.
 ///
 /// For keyed iteration, see [`Keyed`].
@@ -99,13 +99,13 @@ where
 ///         },
 ///     })
 /// };
-/// # let _ : TemplateResult<DomNode> = node;
+/// # let _ : Template<DomNode> = node;
 /// ```
 #[component(Indexed<G>)]
-pub fn indexed<T: 'static, F: 'static>(props: IndexedProps<T, F, G>) -> TemplateResult<G>
+pub fn indexed<T: 'static, F: 'static>(props: IndexedProps<T, F, G>) -> Template<G>
 where
     T: Clone + PartialEq,
-    F: Fn(T) -> TemplateResult<G>,
+    F: Fn(T) -> Template<G>,
 {
     let IndexedProps { iterable, template } = props;
     let template = Rc::new(template);
@@ -114,5 +114,5 @@ where
         let template = Rc::clone(&template);
         move |x| template(x.clone())
     });
-    TemplateResult::new_lazy(move || TemplateResult::new_fragment((*mapped()).clone()))
+    Template::new_lazy(move || Template::new_fragment((*mapped()).clone()))
 }

@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(Copyright<G>)]
-pub fn copyright() -> TemplateResult<G> {
+pub fn copyright() -> Template<G> {
     template! {
         footer(class="info") {
             p { "Double click to edit a todo" }

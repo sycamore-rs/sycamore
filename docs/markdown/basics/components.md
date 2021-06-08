@@ -16,7 +16,7 @@ Here is an example of a simple component that displays the value of its prop:
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component(value: StateHandle<i32>) -> TemplateResult<G> {
+fn my_component(value: StateHandle<i32>) -> Template<G> {
     template! {
         div(class="my-component") {
             "Value: " (value.get())
