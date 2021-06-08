@@ -9,13 +9,13 @@ fn app() -> TemplateResult<G> {
         div {
             h1 {
                 "Hello "
-                ({if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
+                (if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
                     cloned!((name) => template! {
                         span { (name.get()) }
                     })
                 } else {
                     template! { span { "World" } }
-                }})
+                })
                 "!"
             }
 

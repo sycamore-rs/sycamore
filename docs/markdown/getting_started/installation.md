@@ -37,9 +37,7 @@ cd my-project
 You now need to add Sycamore to your new project's dependencies. Add the following to your `Cargo.toml` file in your project folder:
 
 ```toml
-sycamore = "0.4.3"
+sycamore = "0.5.0-beta.0"
 ```
-
-Be careful, the crate name is **`sycamore`**, not `sycamore`.
 
 You should now be all set for your Sycamore adventure!
