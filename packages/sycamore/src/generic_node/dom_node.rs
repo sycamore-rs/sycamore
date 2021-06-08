@@ -12,7 +12,7 @@ use web_sys::{Comment, Element, Event, Node, Text};
 use crate::generic_node::render::insert;
 use crate::generic_node::{EventListener, GenericNode};
 use crate::rx::{create_root, ReactiveScope};
-use crate::template::TemplateResult;
+use crate::template::Template;
 
 // TODO: remove js snippet
 #[wasm_bindgen(inline_js = "\

@@ -49,7 +49,6 @@ pub mod prelude {
     pub use crate::generic_node::{render_to_string, SsrNode};
     pub use crate::noderef::NodeRef;
     pub use crate::render::IntoTemplate;
-    pub use crate::render::IntoTemplate;
     pub use crate::rx::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, untrack, Signal, StateHandle,
