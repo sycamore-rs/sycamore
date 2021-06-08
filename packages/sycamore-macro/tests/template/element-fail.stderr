@@ -1,29 +1,29 @@
 error: expected a valid HTML node
- --> $DIR/element-fail.rs:4:45
+ --> $DIR/element-fail.rs:4:39
   |
 4 |     let _: Template<G> = template! { p.my-class#id };
-  |                                             ^
+  |                                       ^
 
 error: expected `=`
- --> $DIR/element-fail.rs:6:50
+ --> $DIR/element-fail.rs:6:44
   |
 6 |     let _: Template<G> = template! { button(disabled) };
-  |                                                  ^^^^^^^^^^
+  |                                            ^^^^^^^^^^
 
 error: expected `=`
- --> $DIR/element-fail.rs:7:50
+ --> $DIR/element-fail.rs:7:44
   |
 7 |     let _: Template<G> = template! { button(on:click) };
-  |                                                  ^^^^^^^^^^
+  |                                            ^^^^^^^^^^
 
 error: unknown directive `unknown`
- --> $DIR/element-fail.rs:8:51
+ --> $DIR/element-fail.rs:8:45
   |
 8 |     let _: Template<G> = template! { button(unknown:directive="123") };
-  |                                                   ^^^^^^^
+  |                                             ^^^^^^^
 
 error: expected `=`
-  --> $DIR/element-fail.rs:10:52
+  --> $DIR/element-fail.rs:10:46
    |
 10 |     let _: Template<G> = template! { button(a.b.c="123") };
-   |                                                    ^
+   |                                              ^
