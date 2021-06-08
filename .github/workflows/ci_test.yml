@@ -80,5 +80,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd sycamore
+          cd packages/sycamore
           cargo miri test
