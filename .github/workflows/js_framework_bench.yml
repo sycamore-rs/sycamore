@@ -108,7 +108,7 @@ jobs:
           msg="${msg//'%'/'%25'}"
           msg="${msg//$'\n'/'%0A'}"
           msg="${msg//$'\r'/'%0D'}"
-          echo "::set-env name=MSG::$msg"
+          echo "name=$msg" >> $GITHUB_ENV
 
       - name: Post results
         uses: jungwinter/comment@v1
