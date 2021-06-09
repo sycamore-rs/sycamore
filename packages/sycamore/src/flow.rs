@@ -67,7 +67,7 @@ where
         let template = Rc::clone(&template);
         move |x| template(x.clone())
     });
-    Template::new_lazy(move || Template::new_fragment((*mapped()).clone()))
+    Template::new_lazy(move || Template::new_fragment(mapped()))
 }
 
 /// Props for [`Indexed`].
@@ -114,5 +114,5 @@ where
         let template = Rc::clone(&template);
         move |x| template(x.clone())
     });
-    Template::new_lazy(move || Template::new_fragment((*mapped()).clone()))
+    Template::new_lazy(move || Template::new_fragment(mapped()))
 }

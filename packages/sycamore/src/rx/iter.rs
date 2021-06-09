@@ -10,14 +10,14 @@ use super::*;
 pub fn map_keyed<T, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
-) -> impl FnMut() -> Rc<Vec<U>>
+) -> impl FnMut() -> Vec<U>
 where
     T: Eq + Clone + Hash,
     U: Clone + 'static,
 {
     // Previous state used for diffing.
-    let mut items = Vec::new();
-    let mapped = Rc::new(RefCell::new(Vec::<U>::new()));
+    let mut items = Rc::new(Vec::new());
+    let mapped = Rc::new(RefCell::new(Vec::new()));
     let mut scopes: Vec<Option<Rc<ReactiveScope>>> = Vec::new();
 
     move || {
@@ -140,12 +140,12 @@ where
             scopes.truncate(new_items.len());
 
             // 4) save a copy of the mapped items for the next update.
-            items = (*new_items).clone();
+            items = Rc::clone(&new_items);
             debug_assert!([items.len(), mapped.borrow().len(), scopes.len()]
                 .iter()
                 .all(|l| *l == new_items.len()));
 
-            Rc::new((*mapped).clone().into_inner())
+            mapped.borrow().clone()
         })
     }
 }
@@ -153,13 +153,13 @@ where
 pub fn map_indexed<T, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
-) -> impl FnMut() -> Rc<Vec<U>>
+) -> impl FnMut() -> Vec<U>
 where
     T: PartialEq + Clone,
     U: Clone + 'static,
 {
     // Previous state used for diffing.
-    let mut items = Vec::new();
+    let mut items = Rc::new(Vec::new());
     let mapped = Rc::new(RefCell::new(Vec::new()));
     let mut scopes = Vec::new();
 
@@ -169,9 +169,16 @@ where
             if new_items.is_empty() {
                 // Fast path for removing all items.
                 drop(mem::take(&mut scopes));
-                items = Vec::new();
+                items = Rc::new(Vec::new());
                 *mapped.borrow_mut() = Vec::new();
             } else {
+                // Pre-allocate space needed
+                if new_items.len() > items.len() {
+                    let new_count = new_items.len() - items.len();
+                    mapped.borrow_mut().reserve(new_count);
+                    scopes.reserve(new_count);
+                }
+
                 for (i, new_item) in new_items.iter().enumerate() {
                     let item = items.get(i);
 
@@ -203,13 +210,13 @@ where
                 scopes.truncate(new_items.len());
 
                 // save a copy of the mapped items for the next update.
-                items = (*new_items).clone();
+                items = Rc::clone(&new_items);
                 debug_assert!([items.len(), mapped.borrow().len(), scopes.len()]
                     .iter()
                     .all(|l| *l == new_items.len()));
             }
 
-            Rc::new((*mapped).clone().into_inner())
+            mapped.borrow().clone()
         })
     }
 }
