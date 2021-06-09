@@ -51,15 +51,6 @@ jobs:
           version: latest
           use-tool-cache: true
 
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: https
-          version: latest
-          use-tool-cache: true
-
-      - name: Start Server
-        run: http -p 8080 &
-
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
@@ -70,6 +61,9 @@ jobs:
           npm install
           (cd webdriver-ts && npm install)
           (cd webdriver-ts-results && npm install)
+
+      - name: Start Server
+        run: npm start &
 
       - name: Build
         run: |
