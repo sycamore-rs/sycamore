@@ -6,6 +6,7 @@ members = [
   "examples/counter",
   "examples/hello",
   "examples/iteration",
+  "examples/js-framework-benchmark",
   "examples/ssr",
   "examples/todomvc",
   "examples/tweened",
@@ -15,3 +16,5 @@ members = [
 [profile.release]
 lto = true
 opt-level = "z"
+# Enable only for debugging release builds only
+debug = true
