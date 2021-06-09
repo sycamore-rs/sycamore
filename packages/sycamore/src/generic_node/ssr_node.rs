@@ -17,9 +17,7 @@ static VOID_ELEMENTS: &[&str] = &[
     "track", "wbr", "command", "keygen", "menuitem",
 ];
 
-/// Rendering backend for Server Side Rendering, aka. SSR.
-///
-/// _This API requires the following crate features to be activated: `ssr`_
+/// Inner representation for [`SsrNode`].
 #[derive(Debug)]
 enum SsrNodeType {
     Element(RefCell<Element>),
@@ -34,6 +32,9 @@ struct SsrNodeInner {
     parent: RefCell<Weak<SsrNodeInner>>,
 }
 
+/// Rendering backend for Server Side Rendering, aka. SSR.
+///
+/// _This API requires the following crate features to be activated: `ssr`_
 #[derive(Debug, Clone)]
 pub struct SsrNode(Rc<SsrNodeInner>);
 
