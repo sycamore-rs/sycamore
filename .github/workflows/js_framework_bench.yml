@@ -105,9 +105,6 @@ jobs:
       - name: Write comment body
         run: |
           msg=$(cd results_diff && cargo run)
-          msg="${msg//'%'/'%25'}"
-          msg="${msg//$'\n'/'%0A'}"
-          msg="${msg//$'\r'/'%0D'}"
           echo $msg
           echo "MSG=$msg" >> $GITHUB_ENV
 
