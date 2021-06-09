@@ -49,7 +49,7 @@ impl ToTokens for Element {
         } = self;
 
         let mut quoted = quote! {
-            let _el = #tag_name;
+            let __el = #tag_name;
         };
 
         if let Some(attributes) = attributes {
@@ -63,21 +63,21 @@ impl ToTokens for Element {
                 quoted.extend(match child {
                     HtmlTree::Component(component) => quote_spanned! { component.span()=>
                         let __marker = ::sycamore::generic_node::GenericNode::marker();
-                        ::sycamore::generic_node::GenericNode::append_child(&_el, &__marker);
+                        ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
                         ::sycamore::generic_node::render::insert(
-                            ::std::clone::Clone::clone(&_el),
+                            &__el,
                             #component,
-                            None, Some(__marker),
+                            None, Some(&__marker),
                         );
                     },
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
-                        ::sycamore::generic_node::GenericNode::append_child(&_el, &#element);
+                        ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
                     },
                     HtmlTree::Text(text) => match text {
                         Text::Str(_) => {
                             quote_spanned! { text.span()=>
                                 ::sycamore::generic_node::GenericNode::append_child(
-                                    &_el,
+                                    &__el,
                                     &::sycamore::generic_node::GenericNode::text_node(#text),
                                 );
                             }
@@ -85,13 +85,13 @@ impl ToTokens for Element {
                         Text::Splice(_, _) => {
                             quote_spanned! { text.span()=>
                                 let __marker = ::sycamore::generic_node::GenericNode::marker();
-                                ::sycamore::generic_node::GenericNode::append_child(&_el, &__marker);
+                                ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
                                 ::sycamore::generic_node::render::insert(
-                                    ::std::clone::Clone::clone(&_el),
+                                    &__el,
                                     ::sycamore::template::Template::new_lazy(move ||
                                         ::sycamore::render::IntoTemplate::create(&#text)
                                     ),
-                                    None, Some(__marker),
+                                    None, Some(&__marker),
                                 );
                             }
                         }
@@ -101,7 +101,7 @@ impl ToTokens for Element {
         }
 
         quoted.extend(quote! {
-            _el
+            __el
         });
         tokens.extend(quote! {{
             #quoted
