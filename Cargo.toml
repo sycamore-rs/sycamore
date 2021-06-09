@@ -6,7 +6,6 @@ members = [
   "examples/counter",
   "examples/hello",
   "examples/iteration",
-  "examples/js-framework-benchmark",
   "examples/ssr",
   "examples/todomvc",
   "examples/tweened",
