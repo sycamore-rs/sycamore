@@ -20,8 +20,8 @@ jobs:
 
       - name: Configure benchmark
         run: |
-          search="{ git = \"https://github.com/sycamore-rs/sycamore\", branch = \"master\" }"
-          replace="{ git = \"${{ github.event.pull_request.head.repo.html_url }}\", branch = \"${{ github.event.pull_request.head.ref }}\" }"
+          search="{git = \"https://github.com/sycamore-rs/sycamore\", branch = \"master\"}"
+          replace="{git = \"${{ github.event.pull_request.head.repo.html_url }}\", branch = \"${{ github.event.pull_request.head.ref }}\"}"
           input=$(cat frameworks/keyed/sycamore/Cargo.toml)
           output=${input//"$search"/"$replace"}
           if [[ "$input" == "$output" ]]; then
