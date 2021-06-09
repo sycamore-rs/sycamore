@@ -39,11 +39,11 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: wasm-bindgen-cli
-          version: latest
-          use-tool-cache: true
+      - name: Install wasm-bindgen
+        run: >
+          wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.74/wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
+          tar -xf wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
+          sudo mv wasm-bindgen-0.2.74-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
       - uses: actions-rs/install@v0.1
         with:
@@ -72,11 +72,14 @@ jobs:
 
       - name: Benchmark
         run: npm run bench -- --headless
+        if: ${{ always() }}
 
       - name: Results
         run: npm run results
+        if: ${{ always() }}
 
       - name: Log results
         run: |
           msg=$(cd results_diff && cargo run)
           echo "$msg"
+        if: ${{ always() }}
