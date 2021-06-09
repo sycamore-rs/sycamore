@@ -15,7 +15,7 @@ jobs:
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'performance'))
 
     env:
-      MSG_FOOTER: |-
+      MSG_FOOTER: |
         <br/>
         Workflow: [${{ github.run_id }}](/${{ github.repository }}/actions/runs/${{ github.run_id }})
         *Adding new commits will generate a new report*
@@ -108,7 +108,8 @@ jobs:
           msg="${msg//'%'/'%25'}"
           msg="${msg//$'\n'/'%0A'}"
           msg="${msg//$'\r'/'%0D'}"
-          echo "name=$msg" >> $GITHUB_ENV
+          echo $msg
+          echo "MSG=$msg" >> $GITHUB_ENV
 
       - name: Post results
         uses: jungwinter/comment@v1
