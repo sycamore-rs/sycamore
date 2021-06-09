@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sycamore::prelude::*;
+use sycamore::rx::{map_indexed, map_keyed};
 
 pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity_signals", |b| {
@@ -10,7 +11,7 @@ pub fn bench(c: &mut Criterion) {
                 let value = state.get();
                 state.set(*value + 1);
             }
-        })
+        });
     });
 
     c.bench_function("reactivity_effects", |b| {
@@ -23,7 +24,29 @@ pub fn bench(c: &mut Criterion) {
             for _i in 0..1000 {
                 state.set(*state.get() + 1);
             }
-        })
+        });
+    });
+
+    c.bench_function("reactivity map indexed", |b| {
+        b.iter(|| {
+            let v = Signal::new((0..100).collect());
+            let mut mapped = map_indexed(v.handle(), |x| *x * 2);
+            mapped();
+
+            v.set((100..200).collect());
+            mapped();
+        });
+    });
+
+    c.bench_function("reactivity map keyed", |b| {
+        b.iter(|| {
+            let v = Signal::new((0..100).collect());
+            let mut mapped = map_keyed(v.handle(), |x| *x * 2);
+            mapped();
+
+            v.set((100..200).collect());
+            mapped();
+        });
     });
 }
 
