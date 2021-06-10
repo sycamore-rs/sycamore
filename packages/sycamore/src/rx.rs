@@ -1,4 +1,4 @@
-//! Reactive primitives.
+//! Reactive primitives for Sycamore.
 
 mod effect;
 mod iter;

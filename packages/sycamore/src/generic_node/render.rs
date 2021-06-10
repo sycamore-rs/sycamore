@@ -5,19 +5,19 @@ use crate::prelude::create_effect;
 use crate::template::{Template, TemplateType};
 
 pub fn insert<G: GenericNode>(
-    parent: G,
+    parent: &G,
     accessor: Template<G>,
     initial: Option<Template<G>>,
-    marker: Option<G>,
+    marker: Option<&G>,
 ) {
     insert_expression(parent, accessor, initial, marker, false);
 }
 
 pub fn insert_expression<G: GenericNode>(
-    parent: G,
+    parent: &G,
     value: Template<G>,
     mut current: Option<Template<G>>,
-    marker: Option<G>,
+    marker: Option<&G>,
     unwrap_fragment: bool,
 ) {
     while let Some(Template {
@@ -27,27 +27,27 @@ pub fn insert_expression<G: GenericNode>(
         current = Some(f.borrow_mut()());
     }
 
-    // let multi = marker.is_some();
-
     match value.inner {
         TemplateType::Node(node) => {
             if let Some(current) = current {
-                clean_children(parent, current.flatten(), marker, Some(node));
+                clean_children(parent, current.flatten(), marker, Some(&node));
             } else {
-                parent.insert_child_before(&node, marker.as_ref());
+                parent.insert_child_before(&node, marker);
             }
         }
         TemplateType::Lazy(f) => {
+            let parent = parent.clone();
+            let marker = marker.cloned();
             create_effect(move || {
                 let mut value = f.as_ref().borrow_mut()();
                 while let TemplateType::Lazy(f) = value.inner {
                     value = f.as_ref().borrow_mut()();
                 }
                 insert_expression(
-                    parent.clone(),
+                    &parent,
                     value.clone(),
                     current.clone(),
-                    marker.clone(),
+                    marker.as_ref(),
                     false,
                 );
                 current = Some(value);
@@ -57,13 +57,15 @@ pub fn insert_expression<G: GenericNode>(
             let mut v = Vec::new();
             let dynamic = normalize_incoming_fragment(&mut v, fragment, unwrap_fragment);
             if dynamic {
+                let parent = parent.clone();
+                let marker = marker.cloned();
                 create_effect(move || {
                     let value = Template::new_fragment(v.clone());
                     insert_expression(
-                        parent.clone(),
+                        &parent,
                         value.clone(),
                         current.clone(),
-                        marker.clone(),
+                        marker.as_ref(),
                         true,
                     );
                     current = Some(value); // FIXME: should be return value of
@@ -87,7 +89,7 @@ pub fn insert_expression<G: GenericNode>(
                         TemplateType::Lazy(_) => unreachable!(),
                         TemplateType::Fragment(fragment) => {
                             if fragment.is_empty() {
-                                append_nodes(&parent, v, marker);
+                                append_nodes(parent, v, marker);
                             } else {
                                 reconcile_fragments(
                                     parent,
@@ -97,7 +99,7 @@ pub fn insert_expression<G: GenericNode>(
                             }
                         }
                     },
-                    None => append_nodes(&parent, v, marker),
+                    None => append_nodes(parent, v, marker),
                 }
             }
         }
@@ -105,29 +107,33 @@ pub fn insert_expression<G: GenericNode>(
 }
 
 pub fn clean_children<G: GenericNode>(
-    parent: G,
+    parent: &G,
     current: Vec<G>,
-    marker: Option<G>,
-    replacement: Option<G>,
+    marker: Option<&G>,
+    replacement: Option<&G>,
 ) {
-    let replacement = replacement.unwrap_or_else(|| G::text_node(""));
-
     if marker == None {
         parent.update_inner_text("");
-        parent.append_child(&replacement);
+        if let Some(replacement) = replacement {
+            parent.append_child(replacement);
+        }
         return;
     }
 
     for node in current {
         if node.parent_node().as_ref() == Some(&parent) {
-            parent.replace_child(&node, &replacement);
+            if let Some(replacement) = replacement {
+                parent.replace_child(&node, &replacement);
+            } else {
+                parent.remove_child(&node);
+            }
         }
     }
 }
 
-pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option<G>) {
+pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option<&G>) {
     for node in fragment {
-        parent.insert_child_before(&node, marker.as_ref());
+        parent.insert_child_before(&node, marker);
     }
 }
 
@@ -189,7 +195,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
 ///
 /// # Panics
 /// Panics if `a.is_empty()`. Append nodes instead.
-pub fn reconcile_fragments<G: GenericNode>(parent: G, mut a: Vec<G>, b: Vec<G>) {
+pub fn reconcile_fragments<G: GenericNode>(parent: &G, mut a: Vec<G>, b: Vec<G>) {
     debug_assert!(!a.is_empty(), "a cannot be empty");
 
     // Sanity check: make sure all nodes in a are children of parent.

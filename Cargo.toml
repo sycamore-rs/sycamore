@@ -15,3 +15,5 @@ members = [
 [profile.release]
 lto = true
 opt-level = "z"
+# Enable only for debugging release builds only
+# debug = true

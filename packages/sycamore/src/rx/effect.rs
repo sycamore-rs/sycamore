@@ -252,7 +252,7 @@ pub fn create_effect_initial<R: 'static>(
 
         execute();
 
-        let ret = Rc::try_unwrap(ret).expect("ret should only have 1 strong reference");
+        let ret = Rc::try_unwrap(ret).unwrap(); // ret should only have 1 strong reference
         ret.into_inner().unwrap()
     }
 
@@ -278,19 +278,14 @@ pub fn create_effect_initial<R: 'static>(
 ///
 /// state.set(1); // Prints "State changed. New state value = 1"
 /// ```
-pub fn create_effect<F>(effect: F)
+pub fn create_effect<F>(mut effect: F)
 where
     F: FnMut() + 'static,
 {
-    /// Internal implementation: use dynamic dispatch to reduce code bloat.
-    fn internal(effect: Rc<RefCell<dyn FnMut()>>) {
-        create_effect_initial(move || {
-            effect.borrow_mut()();
-            (effect, ())
-        });
-    }
-
-    internal(Rc::new(RefCell::new(effect)));
+    create_effect_initial(move || {
+        effect();
+        (Rc::new(RefCell::new(effect)), ())
+    });
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
@@ -344,7 +339,6 @@ where
     C: Fn(&Out, &Out) -> bool + 'static,
 {
     let derived = Rc::new(RefCell::new(derived));
-    let comparator = Rc::new(comparator);
 
     create_effect_initial(move || {
         let memo = Signal::new(derived.borrow_mut()());

@@ -79,10 +79,10 @@ impl ToTokens for Attribute {
                 let name = name.to_string();
                 tokens.extend(quote_spanned! { expr_span=>
                     ::sycamore::rx::create_effect({
-                        let _el = ::std::clone::Clone::clone(&_el);
+                        let __el = ::std::clone::Clone::clone(&__el);
                         move || {
                             ::sycamore::generic_node::GenericNode::set_attribute(
-                                &_el,
+                                &__el,
                                 #name,
                                 &::std::format!("{}", #expr),
                             );
@@ -94,7 +94,7 @@ impl ToTokens for Attribute {
                 // TODO: Should events be reactive?
                 tokens.extend(quote_spanned! { expr_span=>
                     ::sycamore::generic_node::GenericNode::event(
-                        &_el,
+                        &__el,
                         #event,
                         ::std::boxed::Box::new(#expr),
                     );
@@ -157,10 +157,10 @@ impl ToTokens for Attribute {
 
                     ::sycamore::rx::create_effect({
                         let signal = ::std::clone::Clone::clone(&signal);
-                        let _el = ::std::clone::Clone::clone(&_el);
+                        let __el = ::std::clone::Clone::clone(&__el);
                         move || {
                             ::sycamore::generic_node::GenericNode::set_property(
-                                &_el,
+                                &__el,
                                 #prop,
                                 &#convert_into_jsvalue_fn,
                             );
@@ -168,7 +168,7 @@ impl ToTokens for Attribute {
                     });
 
                     ::sycamore::generic_node::GenericNode::event(
-                        &_el,
+                        &__el,
                         #event_name,
                         ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
                             signal.set(#convert_from_jsvalue_fn);
@@ -180,7 +180,7 @@ impl ToTokens for Attribute {
                 tokens.extend(quote_spanned! { expr_span=>{
                     ::sycamore::noderef::NodeRef::set(
                         &#expr,
-                        ::std::clone::Clone::clone(&_el),
+                        ::std::clone::Clone::clone(&__el),
                     );
                 }});
             }

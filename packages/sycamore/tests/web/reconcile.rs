@@ -17,7 +17,7 @@ fn insert_create_nodes() {
     let parent = DomNode::element("div");
 
     insert(
-        parent.clone(),
+        &parent,
         Template::new_fragment(nodes.to_vec().into_iter().map(Template::new_node).collect()),
         None,
         None,
@@ -40,7 +40,7 @@ fn reconcile_pop_nodes() {
     }
     assert_eq!(parent.inner_element().text_content().unwrap(), "123");
 
-    reconcile_fragments(parent.clone(), child_nodes, nodes[..2].to_vec());
+    reconcile_fragments(&parent, child_nodes, nodes[..2].to_vec());
     assert_eq!(parent.inner_element().text_content().unwrap(), "12");
 }
 
@@ -60,7 +60,7 @@ fn reconcile_remove_nodes() {
     assert_eq!(parent.inner_element().text_content().unwrap(), "123");
 
     reconcile_fragments(
-        parent.clone(),
+        &parent,
         child_nodes,
         vec![nodes[0].clone(), nodes[2].clone()],
     );
@@ -82,7 +82,7 @@ fn reconcile_append_nodes() {
     }
     assert_eq!(parent.inner_element().text_content().unwrap(), "12");
 
-    reconcile_fragments(parent.clone(), child_nodes, nodes.to_vec());
+    reconcile_fragments(&parent, child_nodes, nodes.to_vec());
     assert_eq!(parent.inner_element().text_content().unwrap(), "123");
 }
 
@@ -102,7 +102,7 @@ fn reconcile_swap_nodes() {
     assert_eq!(parent.inner_element().text_content().unwrap(), "123");
 
     reconcile_fragments(
-        parent.clone(),
+        &parent,
         child_nodes,
         vec![nodes[2].clone(), nodes[1].clone(), nodes[0].clone()],
     );
@@ -124,7 +124,7 @@ fn reconcile_clear_nodes() {
     }
     assert_eq!(parent.inner_element().text_content().unwrap(), "123");
 
-    reconcile_fragments(parent.clone(), child_nodes, Vec::new());
+    reconcile_fragments(&parent, child_nodes, Vec::new());
     assert_eq!(parent.inner_element().text_content().unwrap(), "");
 }
 
@@ -150,13 +150,13 @@ fn clear_and_insert_with_other_nodes_at_same_level() {
         "before123after"
     );
 
-    reconcile_fragments(parent.clone(), child_nodes.clone(), Vec::new());
+    reconcile_fragments(&parent, child_nodes.clone(), Vec::new());
     assert_eq!(
         parent.inner_element().text_content().unwrap(),
         "beforeafter"
     );
 
-    append_nodes(&parent, child_nodes, Some(after));
+    append_nodes(&parent, child_nodes, Some(&after));
     assert_eq!(
         parent.inner_element().text_content().unwrap(),
         "before123after"
@@ -185,7 +185,7 @@ fn clear_with_other_nodes_at_same_level() {
         "before123after"
     );
 
-    reconcile_fragments(parent.clone(), child_nodes, Vec::new());
+    reconcile_fragments(&parent, child_nodes, Vec::new());
     assert_eq!(
         parent.inner_element().text_content().unwrap(),
         "beforeafter"
@@ -214,11 +214,7 @@ fn insert_with_other_nodes_at_same_level() {
         "before123after"
     );
 
-    reconcile_fragments(
-        parent.clone(),
-        child_nodes.clone(),
-        child_nodes[..2].to_vec(),
-    );
+    reconcile_fragments(&parent, child_nodes.clone(), child_nodes[..2].to_vec());
     assert_eq!(
         parent.inner_element().text_content().unwrap(),
         "before12after"
@@ -247,11 +243,7 @@ fn reconcile_with_other_nodes_at_same_level() {
         "before123after"
     );
 
-    reconcile_fragments(
-        parent.clone(),
-        child_nodes.clone(),
-        child_nodes[..2].to_vec(),
-    );
+    reconcile_fragments(&parent, child_nodes.clone(), child_nodes[..2].to_vec());
     assert_eq!(
         parent.inner_element().text_content().unwrap(),
         "before12after"

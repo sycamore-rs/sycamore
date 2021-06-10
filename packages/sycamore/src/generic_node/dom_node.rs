@@ -230,7 +230,7 @@ pub fn render(template_result: impl FnOnce() -> Template<DomNode>) {
 pub fn render_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &Node) {
     let scope = create_root(|| {
         insert(
-            DomNode {
+            &DomNode {
                 id: NodeId::new_with_node(parent),
                 node: Rc::new(parent.clone()),
             },
@@ -289,7 +289,7 @@ pub fn hydrate_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &
 
     let scope = create_root(|| {
         insert(
-            DomNode {
+            &DomNode {
                 id: NodeId::new_with_node(&parent),
                 node: Rc::new(parent.clone()),
             },
