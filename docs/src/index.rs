@@ -3,13 +3,19 @@ use sycamore::prelude::*;
 #[component(Index<G>)]
 pub fn index() -> Template<G> {
     template! {
-        div {
-            h1 {
+        div(class="flex flex-col items-center w-full") {
+            h1(class="text-5xl font-bold mt-20 mb-5") {
                 "Sycamore"
             }
 
-            a(class="btn btn-primary", href="/getting_started/installation") {
-                "Read the Book!"
+            p(class="mb-10") {
+                "Pure Rust + WASM web-apps"
+            }
+
+            a(class="py-2 px-3 bg-white hover:bg-yellow-500 border-2 border-yellow-500 \
+            rounded font-medium transition",
+                href="/getting_started/installation") {
+                "Read the Book"
             }
         }
     }
