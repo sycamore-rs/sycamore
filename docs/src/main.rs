@@ -19,17 +19,19 @@ fn app() -> Template<G> {
         main {
             header::Header()
 
-            (if pathname != "/" {
-                template! {
-                    content::Content()
-                }
-            } else {
-                template! {
-                    div(class="container") {
-                        index::Index()
+            div(class="mt-12") {
+                (if pathname != "/" {
+                    template! {
+                        content::Content()
                     }
-                }
-            })
+                } else {
+                    template! {
+                        div(class="container mx-auto") {
+                            index::Index()
+                        }
+                    }
+                })
+            }
         }
     }
 }
