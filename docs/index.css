@@ -7,6 +7,10 @@
   @apply bg-gray-300 p-2 rounded;
 }
 
+.content code {
+  @apply bg-gray-200 px-2 rounded;
+}
+
 .content pre {
   @apply rounded;
 }
@@ -27,4 +31,16 @@
 }
 .content h3 {
   @apply text-lg font-bold;
+}
+.content h4 {
+  @apply text-base font-bold;
+}
+
+.content a {
+  @apply underline;
+}
+
+.content ul {
+  padding-inline-start: 30px;
+  @apply list-disc;
 }

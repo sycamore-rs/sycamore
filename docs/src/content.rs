@@ -53,11 +53,11 @@ pub fn content() -> Template<G> {
     }));
 
     template! {
-        div(class="content flex w-full") {
+        div(class="flex w-full") {
             div(class="flex-none") {
                 crate::sidebar::Sidebar()
             }
-            div(ref=docs_container_ref, class="flex-1 min-w-0 pr-4") {
+            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4") {
                 "Loading..."
             }
         }

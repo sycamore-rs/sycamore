@@ -32,6 +32,20 @@ static PAGES: &[(&str, &[(&str, &str)])] = &[
             ("JS Interop", "/advanced/js_interop"),
         ],
     ),
+    (
+        "Optimizations",
+        &[
+            ("Code Size", "/optimizations/code_size"),
+            ("Speed", "/optimizations/speed"),
+        ],
+    ),
+    (
+        "Contribute",
+        &[
+            ("Architecture", "/contribute/architecture"),
+            ("Development", "/contribute/development"),
+        ],
+    ),
 ];
 
 #[component(Sidebar<G>)]
