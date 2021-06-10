@@ -27,7 +27,7 @@ pub fn bench(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("reactivity map indexed", |b| {
+    c.bench_function("reactivity_map_indexed", |b| {
         b.iter(|| {
             let v = Signal::new((0..100).collect());
             let mut mapped = map_indexed(v.handle(), |x| *x * 2);
@@ -38,7 +38,7 @@ pub fn bench(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("reactivity map keyed", |b| {
+    c.bench_function("reactivity_map_keyed", |b| {
         b.iter(|| {
             let v = Signal::new((0..100).collect());
             let mut mapped = map_keyed(v.handle(), |x| *x * 2);
