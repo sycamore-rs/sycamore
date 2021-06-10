@@ -2,3 +2,29 @@
 @tailwind components;
 @tailwind screens;
 @tailwind utilities;
+
+.content blockquote {
+  @apply bg-gray-300 p-2 rounded;
+}
+
+.content pre {
+  @apply rounded;
+}
+
+.content pre > code {
+  @apply bg-gray-100;
+}
+
+.content table {
+  @apply w-full;
+}
+
+.content h1 {
+  @apply text-2xl font-bold;
+}
+.content h2 {
+  @apply text-xl font-bold;
+}
+.content h3 {
+  @apply text-lg font-bold;
+}
