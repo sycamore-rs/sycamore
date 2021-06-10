@@ -98,29 +98,17 @@ jobs:
         run: npm run results
 
       - name: Log results
+        id: log_results
         run: |
           msg=$(cd results_diff && cargo run)
           echo "$msg"
-
-      - name: Write comment body
-        run: |
-          msg=$(cd results_diff && cargo run)
-          echo $msg
-          echo "MSG=$msg" >> $GITHUB_ENV
-          cd results_diff && cargo run > out.txt
-
-      - name: Read file contents
-        id: read_bench
-        uses: andstor/file-reader-action@v1
-        with:
-          path: out.txt
 
       - name: Post results
         uses: jungwinter/comment@v1
         with:
           type: edit
           body: |
-            ${{ steps.read_bench.outputs.contents }}
+            ${{ steps.log_results.outputs.stdout }}
             ${{ env.MSG_FOOTER }}
           comment_id: ${{ steps.create_comment.outputs.id }}
           token: ${{ secrets.GITHUB_TOKEN }}
