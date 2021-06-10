@@ -16,6 +16,11 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
 
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+
       - name: Install trunk
         run: >
           wget -qO- https://github.com/thedodd/trunk/releases/download/v0.11.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- &&
@@ -39,7 +44,8 @@ jobs:
       - name: Build docs
         run: >
           cd docs/ &&
-          trunk build --release
+          npm ci &&
+          npm run prod
 
       - name: Build examples
         run: |
