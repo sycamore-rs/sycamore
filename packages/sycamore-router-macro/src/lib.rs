@@ -5,7 +5,7 @@ use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
 /// The `Router` procedural macro.
-#[proc_macro_derive(Router, attributes(to, err))]
+#[proc_macro_derive(Router, attributes(to, not_found))]
 pub fn router(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 

@@ -5,7 +5,7 @@ use nom::multi::separated_list0;
 use nom::sequence::delimited;
 use nom::IResult;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum SegmentAst<'a> {
     Param(&'a str),
     DynParam(&'a str),
@@ -13,8 +13,18 @@ pub enum SegmentAst<'a> {
 }
 
 #[derive(Debug)]
-pub struct RouteStr<'a> {
-    segments: Vec<SegmentAst<'a>>,
+pub struct RouteAst<'a> {
+    pub(crate) segments: Vec<SegmentAst<'a>>,
+}
+
+impl<'a> RouteAst<'a> {
+    pub fn dyn_segments(&self) -> Vec<SegmentAst<'a>> {
+        self.segments
+            .iter()
+            .filter(|x| matches!(x, SegmentAst::DynParam(_) | &SegmentAst::DynSegments(_)))
+            .copied()
+            .collect()
+    }
 }
 
 fn param(i: &str) -> IResult<&str, &str> {
@@ -37,13 +47,13 @@ fn segment(i: &str) -> IResult<&str, SegmentAst> {
     ))(i)
 }
 
-pub fn route(i: &str) -> IResult<&str, RouteStr> {
+pub fn route(i: &str) -> IResult<&str, RouteAst> {
     map(separated_list0(tag("/"), segment), |segments| {
         let segments = segments
             .into_iter()
             .filter(|x| !matches!(x, SegmentAst::Param("")))
             .collect();
-        RouteStr { segments }
+        RouteAst { segments }
     })(i)
 }
 
@@ -65,7 +75,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteStr {
+                    RouteAst {
                         segments: [],
                     },
                 )"#]],
@@ -77,22 +87,22 @@ mod tests {
         check(
             "/my/static/path",
             expect![[r#"
-            (
-                "",
-                RouteStr {
-                    segments: [
-                        Param(
-                            "my",
-                        ),
-                        Param(
-                            "static",
-                        ),
-                        Param(
-                            "path",
-                        ),
-                    ],
-                },
-            )"#]],
+                (
+                    "",
+                    RouteAst {
+                        segments: [
+                            Param(
+                                "my",
+                            ),
+                            Param(
+                                "static",
+                            ),
+                            Param(
+                                "path",
+                            ),
+                        ],
+                    },
+                )"#]],
         );
     }
 
@@ -101,16 +111,16 @@ mod tests {
         check(
             "/path/",
             expect![[r#"
-            (
-                "",
-                RouteStr {
-                    segments: [
-                        Param(
-                            "path",
-                        ),
-                    ],
-                },
-            )"#]],
+                (
+                    "",
+                    RouteAst {
+                        segments: [
+                            Param(
+                                "path",
+                            ),
+                        ],
+                    },
+                )"#]],
         );
     }
 
@@ -119,19 +129,19 @@ mod tests {
         check(
             "//path///segments////",
             expect![[r#"
-            (
-                "",
-                RouteStr {
-                    segments: [
-                        Param(
-                            "path",
-                        ),
-                        Param(
-                            "segments",
-                        ),
-                    ],
-                },
-            )"#]],
+                (
+                    "",
+                    RouteAst {
+                        segments: [
+                            Param(
+                                "path",
+                            ),
+                            Param(
+                                "segments",
+                            ),
+                        ],
+                    },
+                )"#]],
         );
     }
 
@@ -140,22 +150,22 @@ mod tests {
         check(
             "my/static/path",
             expect![[r#"
-            (
-                "",
-                RouteStr {
-                    segments: [
-                        Param(
-                            "my",
-                        ),
-                        Param(
-                            "static",
-                        ),
-                        Param(
-                            "path",
-                        ),
-                    ],
-                },
-            )"#]],
+                (
+                    "",
+                    RouteAst {
+                        segments: [
+                            Param(
+                                "my",
+                            ),
+                            Param(
+                                "static",
+                            ),
+                            Param(
+                                "path",
+                            ),
+                        ],
+                    },
+                )"#]],
         );
     }
 
@@ -164,16 +174,16 @@ mod tests {
         check(
             "path",
             expect![[r#"
-            (
-                "",
-                RouteStr {
-                    segments: [
-                        Param(
-                            "path",
-                        ),
-                    ],
-                },
-            )"#]],
+                (
+                    "",
+                    RouteAst {
+                        segments: [
+                            Param(
+                                "path",
+                            ),
+                        ],
+                    },
+                )"#]],
         );
     }
 
@@ -184,7 +194,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteStr {
+                    RouteAst {
                         segments: [
                             Param(
                                 "id",
@@ -203,19 +213,19 @@ mod tests {
         check(
             "/page/<path..>",
             expect![[r#"
-            (
-                "",
-                RouteStr {
-                    segments: [
-                        Param(
-                            "page",
-                        ),
-                        DynSegments(
-                            "path",
-                        ),
-                    ],
-                },
-            )"#]],
+                (
+                    "",
+                    RouteAst {
+                        segments: [
+                            Param(
+                                "page",
+                            ),
+                            DynSegments(
+                                "path",
+                            ),
+                        ],
+                    },
+                )"#]],
         );
     }
 
@@ -224,16 +234,16 @@ mod tests {
         check(
             "/<a/b>/",
             expect![[r#"
-            (
-                "",
-                RouteStr {
-                    segments: [
-                        DynParam(
-                            "a/b",
-                        ),
-                    ],
-                },
-            )"#]],
+                (
+                    "",
+                    RouteAst {
+                        segments: [
+                            DynParam(
+                                "a/b",
+                            ),
+                        ],
+                    },
+                )"#]],
         );
     }
 }
