@@ -1,5 +1,7 @@
 //! The Sycamore Router.
 
+use std::str::FromStr;
+
 pub trait Router {
     fn match_route(path: &[&str]) -> Self;
 }
@@ -81,6 +83,52 @@ impl Route {
         }
 
         Some(captures)
+    }
+}
+
+pub trait FromParam {
+    /// Set the value of the capture variable with the value of the `param`. Returns `false` if
+    /// unsuccessful (e.g. parsing error).
+    #[must_use]
+    fn set_value(&mut self, param: &str) -> bool;
+}
+
+impl<T> FromParam for T
+where
+    T: FromStr,
+{
+    fn set_value(&mut self, param: &str) -> bool {
+        match param.parse() {
+            Ok(val) => {
+                *self = val;
+                true
+            }
+            Err(_) => false,
+        }
+    }
+}
+
+pub trait FromSegments {
+    /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
+    /// unsuccessful (e.g. parsing error).
+    #[must_use]
+    fn set_value(&mut self, segments: Vec<&str>) -> bool;
+}
+
+impl<T> FromSegments for Vec<T>
+where
+    T: FromParam + Default,
+{
+    fn set_value(&mut self, segments: Vec<&str>) -> bool {
+        *self = Vec::with_capacity(segments.len());
+        for segment in segments {
+            let mut value = T::default();
+            if !value.set_value(segment) {
+                return false;
+            }
+            self.push(value);
+        }
+        true
     }
 }
 
