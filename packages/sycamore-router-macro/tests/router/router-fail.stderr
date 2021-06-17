@@ -23,3 +23,27 @@ error: mismatch between number of capture fields and variant fields
    |          ^^^^^^
    |
    = note: this error originates in a derive macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: mismatch between number of capture fields and variant fields
+  --> $DIR/router-fail.rs:27:10
+   |
+27 |     Path {}, // Missing capture field
+   |          ^^
+
+error: capture field name mismatch
+  --> $DIR/router-fail.rs:35:12
+   |
+35 |     Path { not_capture: u32 }, // Wrong capture field name
+   |            ^^^^^^^^^^^
+
+error: capture field name mismatch
+  --> $DIR/router-fail.rs:43:12
+   |
+43 |     Path { b: u32, a: u32 }, // Wrong order
+   |            ^
+
+error: capture field name mismatch
+  --> $DIR/router-fail.rs:51:12
+   |
+51 |     Path { a: u32 },
+   |            ^
