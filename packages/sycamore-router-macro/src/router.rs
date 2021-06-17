@@ -1,10 +1,8 @@
 use proc_macro2::TokenStream;
-use quote::quote;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::DeriveInput;
-use syn::Fields;
-use syn::LitStr;
+use syn::{DeriveInput, Fields, Ident, LitStr, Token};
 
 use crate::parser::route;
 use crate::parser::RouteAst;
@@ -54,7 +52,68 @@ pub fn router_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                             }
 
                             let capture_vars = match &variant.fields {
-                                Fields::Named(_) => todo!(),
+                                Fields::Named(f) => {
+                                    let mut captures = Vec::new();
+
+                                    for (i, (field, segment)) in
+                                        f.named.iter().zip(dyn_segments.iter()).enumerate()
+                                    {
+                                        let field_ty = &field.ty;
+                                        match segment {
+                                            SegmentAst::Param(_) => unreachable!(),
+                                            SegmentAst::DynParam(param) => {
+                                                if param
+                                                    != &field.ident.as_ref().unwrap().to_string()
+                                                {
+                                                    return Err(syn::Error::new(
+                                                        field.ident.span(),
+                                                        "capture field name mismatch",
+                                                    ));
+                                                }
+                                                let param_id: Ident = syn::parse_str(param)?;
+                                                captures.push(quote! {
+                                                    let mut #param_id = <#field_ty as ::std::default::Default>::default();
+                                                    if !::sycamore_router::FromParam::set_value(
+                                                        &mut #param_id,
+                                                        captures[#i].as_dyn_param().unwrap()
+                                                    ) {
+                                                        break;
+                                                    }
+                                                })
+                                            }
+                                            SegmentAst::DynSegments(param) => {
+                                                if param
+                                                    != &field.ident.as_ref().unwrap().to_string()
+                                                {
+                                                    return Err(syn::Error::new(
+                                                        field.ident.span(),
+                                                        "capture field name mismatch",
+                                                    ));
+                                                }
+                                                let param_id: Ident = syn::parse_str(param)?;
+                                                captures.push(quote! {
+                                                    let mut #param_id = <#field_ty as ::std::default::Default>::default();
+                                                    if !::sycamore_router::FromSegments::set_value(
+                                                        &mut #param_id,
+                                                        captures[#i].as_dyn_segments().unwrap()
+                                                    ) {
+                                                        break;
+                                                    }
+                                                })
+                                            }
+                                        }
+                                    }
+                                    let named: Punctuated<&Option<Ident>, Token![,]> =
+                                        f.named.iter().map(|x| &x.ident).collect();
+                                    quote! {
+                                        loop {
+                                            #(#captures)*
+                                            return Self::#variant_id {
+                                                #named
+                                            };
+                                        }
+                                    }
+                                }
                                 Fields::Unnamed(fu) => {
                                     let mut captures = Vec::new();
 
@@ -68,14 +127,24 @@ pub fn router_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                                                 let mut value = <#field_ty as ::std::default::Default>::default();
                                                 if ::sycamore_router::FromParam::set_value(
                                                     &mut value,
-                                                    captures[#i],
+                                                    captures[#i].as_dyn_param().unwrap()
                                                 ) {
                                                     value
                                                 } else {
                                                     break;
                                                 }
                                             }}),
-                                            SegmentAst::DynSegments(_) => todo!(),
+                                            SegmentAst::DynSegments(_) => captures.push(quote! {{
+                                                let mut value = <#field_ty as ::std::default::Default>::default();
+                                                if ::sycamore_router::FromSegments::set_value(
+                                                    &mut value,
+                                                    captures[#i].as_dyn_segments().unwrap()
+                                                ) {
+                                                    value
+                                                } else {
+                                                    break;
+                                                }
+                                            }}),
                                         }
                                     }
                                     quote! {
@@ -147,13 +216,13 @@ impl<'a> ToTokens for SegmentAst<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             SegmentAst::Param(param) => tokens.extend(quote! {
-                ::sycamore_router::Segment::Param(#param)
+                ::sycamore_router::Segment::Param(::std::string::ToString::to_string(#param))
             }),
             SegmentAst::DynParam(_) => tokens.extend(quote! {
-                ::sycamore_router::DynParam
+                ::sycamore_router::Segment::DynParam
             }),
             SegmentAst::DynSegments(_) => tokens.extend(quote! {
-                ::sycamore_router::DynSegments
+                ::sycamore_router::Segment::DynSegments
             }),
         }
     }

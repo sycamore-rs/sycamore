@@ -1,5 +1,7 @@
 //! The Sycamore Router.
 
+pub use sycamore_router_macro::Router;
+
 use std::str::FromStr;
 
 pub trait Router {
@@ -19,6 +21,24 @@ pub enum Segment {
 pub enum Capture<'a> {
     DynParam(&'a str),
     DynSegments(Vec<&'a str>),
+}
+
+impl<'a> Capture<'a> {
+    pub fn as_dyn_param(&self) -> Option<&&'a str> {
+        if let Self::DynParam(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_dyn_segments(&self) -> Option<&Vec<&'a str>> {
+        if let Self::DynSegments(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
 }
 
 pub struct Route {
