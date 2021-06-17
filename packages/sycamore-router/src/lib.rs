@@ -1,5 +1,8 @@
 //! The Sycamore Router.
 
+/// Alias self to sycamore_router for proc-macros.
+extern crate self as sycamore_router;
+
 pub use sycamore_router_macro::Router;
 
 use std::str::FromStr;
@@ -132,14 +135,14 @@ pub trait FromSegments {
     /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
     /// unsuccessful (e.g. parsing error).
     #[must_use]
-    fn set_value(&mut self, segments: Vec<&str>) -> bool;
+    fn set_value(&mut self, segments: &[&str]) -> bool;
 }
 
 impl<T> FromSegments for Vec<T>
 where
     T: FromParam + Default,
 {
-    fn set_value(&mut self, segments: Vec<&str>) -> bool {
+    fn set_value(&mut self, segments: &[&str]) -> bool {
         *self = Vec::with_capacity(segments.len());
         for segment in segments {
             let mut value = T::default();
@@ -306,5 +309,128 @@ mod tests {
                 Capture::DynSegments(vec!["e", "f", "g"]),
             ]),
         );
+    }
+
+    mod integration {
+        use crate::*;
+        use sycamore_router_macro::Router;
+
+        #[test]
+        fn simple_router() {
+            #[derive(Debug, PartialEq, Eq, Router)]
+            enum Routes {
+                #[to("/")]
+                Home,
+                #[to("/about")]
+                About,
+                #[not_found]
+                NotFound,
+            }
+
+            assert_eq!(Routes::match_route(&[]), Routes::Home);
+            assert_eq!(Routes::match_route(&["about"]), Routes::About);
+            assert_eq!(Routes::match_route(&["404"]), Routes::NotFound);
+            assert_eq!(
+                Routes::match_route(&["about", "something"]),
+                Routes::NotFound
+            );
+        }
+
+        #[test]
+        fn router_dyn_params() {
+            #[derive(Debug, PartialEq, Eq, Router)]
+            enum Routes {
+                #[to("/account/<id>")]
+                Account { id: u32 },
+                #[not_found]
+                NotFound,
+            }
+
+            assert_eq!(
+                Routes::match_route(&["account", "123"]),
+                Routes::Account { id: 123 }
+            );
+            assert_eq!(Routes::match_route(&["account", "-1"]), Routes::NotFound);
+            assert_eq!(Routes::match_route(&["account", "abc"]), Routes::NotFound);
+            assert_eq!(Routes::match_route(&["account"]), Routes::NotFound);
+        }
+
+        #[test]
+        fn router_multiple_dyn_params() {
+            #[derive(Debug, PartialEq, Eq, Router)]
+            enum Routes {
+                #[to("/hello/<name>/<age>")]
+                Hello { name: String, age: u32 },
+                #[not_found]
+                NotFound,
+            }
+
+            assert_eq!(
+                Routes::match_route(&["hello", "Bob", "21"]),
+                Routes::Hello {
+                    name: "Bob".to_string(),
+                    age: 21
+                }
+            );
+            assert_eq!(
+                Routes::match_route(&["hello", "21", "Bob"]),
+                Routes::NotFound
+            );
+            assert_eq!(Routes::match_route(&["hello"]), Routes::NotFound);
+        }
+
+        #[test]
+        fn router_multiple_dyn_segments() {
+            #[derive(Debug, PartialEq, Eq, Router)]
+            enum Routes {
+                #[to("/path/<path..>")]
+                Path { path: Vec<String> },
+                #[to("/numbers/<numbers..>")]
+                Numbers { numbers: Vec<u32> },
+                #[not_found]
+                NotFound,
+            }
+
+            assert_eq!(
+                Routes::match_route(&["path", "a", "b", "c"]),
+                Routes::Path {
+                    path: vec!["a".to_string(), "b".to_string(), "c".to_string()]
+                }
+            );
+            assert_eq!(
+                Routes::match_route(&["numbers", "1", "2", "3"]),
+                Routes::Numbers {
+                    numbers: vec![1, 2, 3]
+                }
+            );
+            assert_eq!(
+                Routes::match_route(&["path"]),
+                Routes::Path { path: Vec::new() }
+            );
+        }
+
+        #[test]
+        fn router_multiple_dyn_segments_match_lazy() {
+            #[derive(Debug, PartialEq, Eq, Router)]
+            enum Routes {
+                #[to("/path/<path..>/end")]
+                Path { path: Vec<u32> },
+                #[not_found]
+                NotFound,
+            }
+
+            assert_eq!(
+                Routes::match_route(&["path", "1", "2", "end"]),
+                Routes::Path { path: vec![1, 2] }
+            );
+            assert_eq!(
+                Routes::match_route(&["path", "end"]),
+                Routes::Path { path: Vec::new() }
+            );
+            assert_eq!(
+                Routes::match_route(&["path", "1", "end", "2"]),
+                Routes::NotFound
+            );
+        }
     }
 }
