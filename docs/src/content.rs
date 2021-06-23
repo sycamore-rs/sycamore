@@ -12,14 +12,13 @@ extern "C" {
 }
 
 #[component(Content<G>)]
-pub fn content() -> Template<G> {
+pub fn content(pathname: String) -> Template<G> {
     let location = web_sys::window()
         .unwrap()
         .document()
         .unwrap()
         .location()
         .unwrap();
-    let pathname = location.pathname().unwrap();
 
     let docs_container_ref = NodeRef::<G>::new();
 

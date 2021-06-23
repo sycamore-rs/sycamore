@@ -1,6 +1,6 @@
 //! The Sycamore Router.
 
-/// Alias self to sycamore_router for proc-macros.
+// Alias self to sycamore_router for proc-macros.
 extern crate self as sycamore_router;
 
 mod router;

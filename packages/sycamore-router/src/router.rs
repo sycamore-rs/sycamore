@@ -24,7 +24,7 @@ thread_local! {
 }
 
 #[component(Link<G>)]
-pub fn link(to: impl ToString) -> Template<G> {
+pub fn link((to, body): (impl ToString, Template<G>)) -> Template<G> {
     let href = Rc::new(to.to_string());
     let handle_click = cloned!((href) => move |ev: web_sys::Event| {
         ev.prevent_default();
@@ -37,7 +37,9 @@ pub fn link(to: impl ToString) -> Template<G> {
         });
     });
     template! {
-        a(href=href, on:click=handle_click)
+        a(href=href, on:click=handle_click) {
+            (body)
+        }
     }
 }
 

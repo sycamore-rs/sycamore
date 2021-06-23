@@ -1,4 +1,5 @@
 use sycamore::prelude::*;
+use sycamore_router::Link;
 
 static PAGES: &[(&str, &[(&str, &str)])] = &[
     (
@@ -59,9 +60,11 @@ pub fn sidebar() -> Template<G> {
                 .map(|page| {
                     template! {
                         li {
-                            a(class="pl-4 hover:bg-gray-300 w-full inline-block rounded transition", href=page.1) {
-                                (page.0)
-                            }
+                            Link((page.1, template! {
+                                span(class="pl-4 hover:bg-gray-300 w-full inline-block rounded transition") {
+                                    (page.0)
+                                }
+                            }))
                         }
                     }
                 })
