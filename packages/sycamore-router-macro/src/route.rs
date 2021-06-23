@@ -8,7 +8,7 @@ use crate::parser::route;
 use crate::parser::RouteAst;
 use crate::parser::SegmentAst;
 
-pub fn router_impl(input: DeriveInput) -> syn::Result<TokenStream> {
+pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut quoted = TokenStream::new();
     let mut err_quoted = TokenStream::new();
     let mut has_error_handler = false;
@@ -207,7 +207,7 @@ pub fn router_impl(input: DeriveInput) -> syn::Result<TokenStream> {
         }
         _ => Err(syn::Error::new(
             input.span(),
-            "Router can only be derived on enums",
+            "Route can only be derived on enums",
         )),
     }
 }

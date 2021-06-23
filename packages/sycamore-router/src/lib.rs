@@ -3,7 +3,7 @@
 /// Alias self to sycamore_router for proc-macros.
 extern crate self as sycamore_router;
 
-pub use sycamore_router_macro::Router;
+pub use sycamore_router_macro::Route;
 
 use std::str::FromStr;
 
@@ -313,11 +313,11 @@ mod tests {
 
     mod integration {
         use crate::*;
-        use sycamore_router_macro::Router;
+        use sycamore_router_macro::Route;
 
         #[test]
         fn simple_router() {
-            #[derive(Debug, PartialEq, Eq, Router)]
+            #[derive(Debug, PartialEq, Eq, Route)]
             enum Routes {
                 #[to("/")]
                 Home,
@@ -338,7 +338,7 @@ mod tests {
 
         #[test]
         fn router_dyn_params() {
-            #[derive(Debug, PartialEq, Eq, Router)]
+            #[derive(Debug, PartialEq, Eq, Route)]
             enum Routes {
                 #[to("/account/<id>")]
                 Account { id: u32 },
@@ -357,7 +357,7 @@ mod tests {
 
         #[test]
         fn router_multiple_dyn_params() {
-            #[derive(Debug, PartialEq, Eq, Router)]
+            #[derive(Debug, PartialEq, Eq, Route)]
             enum Routes {
                 #[to("/hello/<name>/<age>")]
                 Hello { name: String, age: u32 },
@@ -381,7 +381,7 @@ mod tests {
 
         #[test]
         fn router_multiple_dyn_segments() {
-            #[derive(Debug, PartialEq, Eq, Router)]
+            #[derive(Debug, PartialEq, Eq, Route)]
             enum Routes {
                 #[to("/path/<path..>")]
                 Path { path: Vec<String> },
@@ -411,7 +411,7 @@ mod tests {
 
         #[test]
         fn router_multiple_dyn_segments_match_lazy() {
-            #[derive(Debug, PartialEq, Eq, Router)]
+            #[derive(Debug, PartialEq, Eq, Route)]
             enum Routes {
                 #[to("/path/<path..>/end")]
                 Path { path: Vec<u32> },

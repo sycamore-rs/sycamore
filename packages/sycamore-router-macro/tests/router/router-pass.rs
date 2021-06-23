@@ -1,13 +1,13 @@
-use sycamore_router::Router;
+use sycamore_router::Route;
 
-#[derive(Router)]
-enum Router1 {
+#[derive(Route)]
+enum Routes1 {
     #[not_found]
     NotFound,
 }
 
-#[derive(Router)]
-enum Router2 {
+#[derive(Route)]
+enum Routes2 {
     #[to("/")]
     Home,
     #[to("/about")]
@@ -16,8 +16,8 @@ enum Router2 {
     NotFound,
 }
 
-#[derive(Router)]
-enum Router3 {
+#[derive(Route)]
+enum Routes3 {
     #[to("/hello/<name>/<age>")]
     Hello(String, u32),
     #[to("/account/<id>")]
@@ -26,8 +26,8 @@ enum Router3 {
     NotFound,
 }
 
-#[derive(Router)]
-enum Router4 {
+#[derive(Route)]
+enum Routes4 {
     #[to("/hello/<name>/<age>")]
     Hello { name: String, age: u32 },
     #[to("/account/<id>")]

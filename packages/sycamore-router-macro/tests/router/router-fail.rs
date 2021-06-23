@@ -1,52 +1,52 @@
-use sycamore_router::Router;
+use sycamore_router::Route;
 
-#[derive(Router)]
-struct Router1 {}
+#[derive(Route)]
+struct Routes1 {}
 
 // Missing #[not_found]
-#[derive(Router)]
-enum Router2 {}
+#[derive(Route)]
+enum Routes2 {}
 
-#[derive(Router)]
-enum Router3 {
+#[derive(Route)]
+enum Routes3 {
     #[not_found]
     NotFound(i32), // Cannot have field
 }
 
-#[derive(Router)]
-enum Router4 {
+#[derive(Route)]
+enum Routes4 {
     #[to("<capture>")]
     Path, // Missing capture field
     #[not_found]
     NotFound,
 }
 
-#[derive(Router)]
-enum Router5 {
+#[derive(Route)]
+enum Routes5 {
     #[to("<capture>")]
     Path {}, // Missing capture field
     #[not_found]
     NotFound,
 }
 
-#[derive(Router)]
-enum Router6 {
+#[derive(Route)]
+enum Routes6 {
     #[to("<capture>")]
     Path { not_capture: u32 }, // Wrong capture field name
     #[not_found]
     NotFound,
 }
 
-#[derive(Router)]
-enum Router7 {
+#[derive(Route)]
+enum Routes7 {
     #[to("<a>/<b>")]
     Path { b: u32, a: u32 }, // Wrong order
     #[not_found]
     NotFound,
 }
 
-#[derive(Router)]
-enum Router8 {
+#[derive(Route)]
+enum Routes8 {
     #[to("<a/b>")] // `a/b` is not an identifier
     Path { a: u32 },
     #[not_found]

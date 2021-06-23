@@ -1,13 +1,13 @@
-error: Router can only be derived on enums
+error: Route can only be derived on enums
  --> $DIR/router-fail.rs:4:1
   |
-4 | struct Router1 {}
+4 | struct Routes1 {}
   | ^^^^^^
 
 error: not found route not specified
  --> $DIR/router-fail.rs:8:1
   |
-8 | enum Router2 {}
+8 | enum Routes2 {}
   | ^^^^
 
 error: not found route cannot have any fields
@@ -19,8 +19,8 @@ error: not found route cannot have any fields
 error: mismatch between number of capture fields and variant fields
   --> $DIR/router-fail.rs:16:10
    |
-16 | #[derive(Router)]
-   |          ^^^^^^
+16 | #[derive(Route)]
+   |          ^^^^^
    |
    = note: this error originates in a derive macro (in Nightly builds, run with -Z macro-backtrace for more info)
 
