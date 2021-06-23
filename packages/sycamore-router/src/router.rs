@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
+use wasm_bindgen::prelude::*;
 
 use crate::Route;
 
@@ -50,6 +51,15 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
         ));
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap());
+
+    let history = web_sys::window().unwrap().history().unwrap();
+    create_effect(cloned!((pathname) => move || {
+        // Update History API.
+        history.push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str())).unwrap();
+
+        // TODO: listen to popstate
+    }));
+
     let path = create_memo(move || {
         pathname
             .get()
