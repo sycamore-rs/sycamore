@@ -1,0 +1,49 @@
+error: Route can only be derived on enums
+ --> $DIR/router-fail.rs:4:1
+  |
+4 | struct Routes1 {}
+  | ^^^^^^
+
+error: not found route not specified
+ --> $DIR/router-fail.rs:8:1
+  |
+8 | enum Routes2 {}
+  | ^^^^
+
+error: not found route cannot have any fields
+  --> $DIR/router-fail.rs:13:13
+   |
+13 |     NotFound(i32), // Cannot have field
+   |             ^^^^^
+
+error: mismatch between number of capture fields and variant fields
+  --> $DIR/router-fail.rs:16:10
+   |
+16 | #[derive(Route)]
+   |          ^^^^^
+   |
+   = note: this error originates in a derive macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: mismatch between number of capture fields and variant fields
+  --> $DIR/router-fail.rs:27:10
+   |
+27 |     Path {}, // Missing capture field
+   |          ^^
+
+error: capture field name mismatch
+  --> $DIR/router-fail.rs:35:12
+   |
+35 |     Path { not_capture: u32 }, // Wrong capture field name
+   |            ^^^^^^^^^^^
+
+error: capture field name mismatch
+  --> $DIR/router-fail.rs:43:12
+   |
+43 |     Path { b: u32, a: u32 }, // Wrong order
+   |            ^
+
+error: capture field name mismatch
+  --> $DIR/router-fail.rs:51:12
+   |
+51 |     Path { a: u32 },
+   |            ^

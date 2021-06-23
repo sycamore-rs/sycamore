@@ -1,0 +1,23 @@
+[package]
+authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
+edition = "2018"
+name = "sycamore-router"
+version = "0.5.0-beta.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sycamore = {path = "../sycamore", version = "=0.5.0-beta.0"}
+sycamore-router-macro = {path = "../sycamore-router-macro", version = "=0.5.0-beta.0"}
+wasm-bindgen = "0.2"
+
+[dependencies.web-sys]
+features = [
+  "Event",
+  "EventTarget",
+  "History",
+  "Location",
+  "PopStateEvent",
+  "Window",
+]
+version = "0.3"

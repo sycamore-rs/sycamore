@@ -216,25 +216,25 @@ impl GenericNode for DomNode {
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render(template_result: impl FnOnce() -> Template<DomNode>) {
+pub fn render(template: impl FnOnce() -> Template<DomNode>) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
-    render_to(template_result, &document.body().unwrap());
+    render_to(template, &document.body().unwrap());
 }
 
 /// Render a [`Template`] under a `parent` node.
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &Node) {
+pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
     let scope = create_root(|| {
         insert(
             &DomNode {
                 id: NodeId::new_with_node(parent),
                 node: Rc::new(parent.clone()),
             },
-            template_result(),
+            template(),
             None,
             None,
         );
@@ -253,11 +253,11 @@ pub fn render_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &N
 /// For rendering without hydration, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn hydrate(template_result: impl FnOnce() -> Template<DomNode>) {
+pub fn hydrate(template: impl FnOnce() -> Template<DomNode>) {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
 
-    hydrate_to(template_result, &document.body().unwrap());
+    hydrate_to(template, &document.body().unwrap());
 }
 
 /// Gets the children of an [`Element`] by collecting them into a [`Vec`]. Note that the returned
@@ -282,7 +282,7 @@ fn get_children(parent: &Element) -> Vec<Element> {
 /// For rendering without hydration, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn hydrate_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &Node) {
+pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
     for child in get_children(parent.unchecked_ref()) {
         child.remove();
     }
@@ -293,7 +293,7 @@ pub fn hydrate_to(template_result: impl FnOnce() -> Template<DomNode>, parent: &
                 id: NodeId::new_with_node(&parent),
                 node: Rc::new(parent.clone()),
             },
-            template_result(),
+            template(),
             None,
             None, // TODO
         );

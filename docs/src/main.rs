@@ -4,31 +4,38 @@ mod index;
 mod sidebar;
 
 use sycamore::prelude::*;
+use sycamore_router::{BrowserRouter, Route};
+
+#[derive(Route)]
+enum Routes {
+    #[to("/")]
+    Index,
+    #[to("/<_>/<_>")]
+    Docs(String, String),
+    #[not_found]
+    NotFound,
+}
 
 #[component(App<G>)]
 fn app() -> Template<G> {
-    let location = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .location()
-        .unwrap();
-    let pathname = location.pathname().unwrap();
-
     template! {
         main {
             header::Header()
 
             div(class="mt-12") {
-                (if pathname != "/" {
-                    template! {
-                        content::Content()
-                    }
-                } else {
-                    template! {
-                        div(class="container mx-auto") {
-                            index::Index()
-                        }
+                BrowserRouter(|route: Routes| {
+                    match route {
+                        Routes::Index => template! {
+                            div(class="container mx-auto") {
+                                index::Index()
+                            }
+                        },
+                        Routes::Docs(a, b) => template! {
+                            content::Content(format!("/{}/{}", a, b))
+                        },
+                        Routes::NotFound => template! {
+                            "404 Not Found"
+                        },
                     }
                 })
             }

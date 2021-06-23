@@ -12,6 +12,7 @@ console_log = "0.2.0"
 js-sys = "0.3"
 log = "0.4.14"
 sycamore = {path = "../packages/sycamore"}
+sycamore-router = {path = "../packages/sycamore-router"}
 pulldown-cmark = "0.8"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

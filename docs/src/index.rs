@@ -1,4 +1,5 @@
 use sycamore::prelude::*;
+use sycamore_router::Link;
 
 #[component(Index<G>)]
 pub fn index() -> Template<G> {
@@ -12,11 +13,12 @@ pub fn index() -> Template<G> {
                 "Pure Rust + WASM web-apps"
             }
 
-            a(class="py-2 px-3 bg-white hover:bg-yellow-500 border-2 border-yellow-500 \
-            rounded font-medium transition",
-                href="/getting_started/installation") {
-                "Read the Book"
-            }
+            Link(("/getting_started/installation", template! {
+                span(class="py-2 px-3 bg-white hover:bg-yellow-500 border-2 border-yellow-500 \
+                    rounded font-medium transition") {
+                    "Read the Book"
+                }
+            }))
         }
     }
 }

@@ -1,0 +1,21 @@
+[package]
+authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
+edition = "2018"
+name = "sycamore-router-macro"
+version = "0.5.0-beta.0"
+
+[lib]
+proc-macro = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nom = "6.1"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = {version = "1.0", features = ["full"]}
+
+[dev-dependencies]
+expect-test = "1.1"
+sycamore-router = {path = "../sycamore-router"}
+trybuild = "1.0"
