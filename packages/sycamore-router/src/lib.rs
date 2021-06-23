@@ -7,7 +7,7 @@ pub use sycamore_router_macro::Route;
 
 use std::str::FromStr;
 
-pub trait Router {
+pub trait Route {
     fn match_route(path: &[&str]) -> Self;
 }
 
@@ -44,11 +44,11 @@ impl<'a> Capture<'a> {
     }
 }
 
-pub struct Route {
+pub struct RoutePath {
     segments: Vec<Segment>,
 }
 
-impl Route {
+impl RoutePath {
     pub fn new(segments: Vec<Segment>) -> Self {
         Self { segments }
     }
@@ -160,7 +160,7 @@ mod tests {
     use super::*;
     use Segment::*;
 
-    fn check(path: &str, route: Route, expected: Option<Vec<Capture>>) {
+    fn check(path: &str, route: RoutePath, expected: Option<Vec<Capture>>) {
         let path = path
             .split('/')
             .filter(|s| !s.is_empty())
@@ -170,14 +170,14 @@ mod tests {
 
     #[test]
     fn index_path() {
-        check("/", Route::new(Vec::new()), Some(Vec::new()));
+        check("/", RoutePath::new(Vec::new()), Some(Vec::new()));
     }
 
     #[test]
     fn static_path_single_segment() {
         check(
             "/path",
-            Route::new(vec![Param("path".to_string())]),
+            RoutePath::new(vec![Param("path".to_string())]),
             Some(Vec::new()),
         );
     }
@@ -186,7 +186,7 @@ mod tests {
     fn static_path_multiple_segments() {
         check(
             "/my/static/path",
-            Route::new(vec![
+            RoutePath::new(vec![
                 Param("my".to_string()),
                 Param("static".to_string()),
                 Param("path".to_string()),
@@ -197,10 +197,10 @@ mod tests {
 
     #[test]
     fn do_not_match_if_leftover_segments() {
-        check("/path", Route::new(vec![]), None);
+        check("/path", RoutePath::new(vec![]), None);
         check(
             "/my/static/path",
-            Route::new(vec![Param("my".to_string()), Param("static".to_string())]),
+            RoutePath::new(vec![Param("my".to_string()), Param("static".to_string())]),
             None,
         );
     }
@@ -209,7 +209,7 @@ mod tests {
     fn dyn_param_single_segment() {
         check(
             "/abcdef",
-            Route::new(vec![DynParam]),
+            RoutePath::new(vec![DynParam]),
             Some(vec![Capture::DynParam("abcdef")]),
         );
     }
@@ -218,7 +218,7 @@ mod tests {
     fn dyn_param_with_leading_segment() {
         check(
             "/id/abcdef",
-            Route::new(vec![Param("id".to_string()), DynParam]),
+            RoutePath::new(vec![Param("id".to_string()), DynParam]),
             Some(vec![Capture::DynParam("abcdef")]),
         );
     }
@@ -227,7 +227,7 @@ mod tests {
     fn dyn_param_with_leading_and_trailing_segment() {
         check(
             "/id/abcdef/account",
-            Route::new(vec![
+            RoutePath::new(vec![
                 Param("id".to_string()),
                 DynParam,
                 Param("account".to_string()),
@@ -238,14 +238,14 @@ mod tests {
 
     #[test]
     fn dyn_param_final_missing_root() {
-        check("/", Route::new(vec![DynParam]), None);
+        check("/", RoutePath::new(vec![DynParam]), None);
     }
 
     #[test]
     fn dyn_param_final_missing() {
         check(
             "/id",
-            Route::new(vec![Param("id".to_string()), DynParam]),
+            RoutePath::new(vec![Param("id".to_string()), DynParam]),
             None,
         );
     }
@@ -254,7 +254,7 @@ mod tests {
     fn multiple_dyn_params() {
         check(
             "/a/b",
-            Route::new(vec![DynParam, DynParam]),
+            RoutePath::new(vec![DynParam, DynParam]),
             Some(vec![Capture::DynParam("a"), Capture::DynParam("b")]),
         );
     }
@@ -263,7 +263,7 @@ mod tests {
     fn dyn_segments_at_root() {
         check(
             "/a/b/c",
-            Route::new(vec![DynSegments]),
+            RoutePath::new(vec![DynSegments]),
             Some(vec![Capture::DynSegments(vec!["a", "b", "c"])]),
         );
     }
@@ -272,7 +272,7 @@ mod tests {
     fn dyn_segments_final() {
         check(
             "/id/a/b/c",
-            Route::new(vec![Param("id".to_string()), DynSegments]),
+            RoutePath::new(vec![Param("id".to_string()), DynSegments]),
             Some(vec![Capture::DynSegments(vec!["a", "b", "c"])]),
         );
     }
@@ -281,7 +281,7 @@ mod tests {
     fn dyn_segments_capture_lazy() {
         check(
             "/id/a/b/c/end",
-            Route::new(vec![
+            RoutePath::new(vec![
                 Param("id".to_string()),
                 DynSegments,
                 Param("end".to_string()),
@@ -294,7 +294,7 @@ mod tests {
     fn dyn_segments_can_capture_zero_segments() {
         check(
             "/",
-            Route::new(vec![DynSegments]),
+            RoutePath::new(vec![DynSegments]),
             Some(vec![Capture::DynSegments(Vec::new())]),
         );
     }
@@ -303,7 +303,7 @@ mod tests {
     fn multiple_dyn_segments() {
         check(
             "/a/b/c/param/e/f/g",
-            Route::new(vec![DynSegments, Param("param".to_string()), DynSegments]),
+            RoutePath::new(vec![DynSegments, Param("param".to_string()), DynSegments]),
             Some(vec![
                 Capture::DynSegments(vec!["a", "b", "c"]),
                 Capture::DynSegments(vec!["e", "f", "g"]),
@@ -313,7 +313,6 @@ mod tests {
 
     mod integration {
         use crate::*;
-        use sycamore_router_macro::Route;
 
         #[test]
         fn simple_router() {

@@ -5,7 +5,7 @@ use syn::spanned::Spanned;
 use syn::{DeriveInput, Fields, Ident, LitStr, Token};
 
 use crate::parser::route;
-use crate::parser::RouteAst;
+use crate::parser::RoutePathAst;
 use crate::parser::SegmentAst;
 
 pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
@@ -197,7 +197,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
             }
 
             Ok(quote! {
-                impl ::sycamore_router::Router for #ty_name {
+                impl ::sycamore_router::Route for #ty_name {
                     fn match_route(path: &[&str]) -> Self {
                         #quoted
                         #err_quoted
@@ -228,7 +228,7 @@ impl<'a> ToTokens for SegmentAst<'a> {
     }
 }
 
-impl<'a> ToTokens for RouteAst<'a> {
+impl<'a> ToTokens for RoutePathAst<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let segments = self
             .segments
@@ -237,7 +237,7 @@ impl<'a> ToTokens for RouteAst<'a> {
             .collect::<Vec<_>>();
 
         tokens.extend(quote! {
-            ::sycamore_router::Route::new(::std::vec![#(#segments),*])
+            ::sycamore_router::RoutePath::new(::std::vec![#(#segments),*])
         });
     }
 }

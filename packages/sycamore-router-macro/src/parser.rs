@@ -13,11 +13,11 @@ pub enum SegmentAst<'a> {
 }
 
 #[derive(Debug)]
-pub struct RouteAst<'a> {
+pub struct RoutePathAst<'a> {
     pub(crate) segments: Vec<SegmentAst<'a>>,
 }
 
-impl<'a> RouteAst<'a> {
+impl<'a> RoutePathAst<'a> {
     pub fn dyn_segments(&self) -> Vec<SegmentAst<'a>> {
         self.segments
             .iter()
@@ -47,13 +47,13 @@ fn segment(i: &str) -> IResult<&str, SegmentAst> {
     ))(i)
 }
 
-pub fn route(i: &str) -> IResult<&str, RouteAst> {
+pub fn route(i: &str) -> IResult<&str, RoutePathAst> {
     map(separated_list0(tag("/"), segment), |segments| {
         let segments = segments
             .into_iter()
             .filter(|x| !matches!(x, SegmentAst::Param("")))
             .collect();
-        RouteAst { segments }
+        RoutePathAst { segments }
     })(i)
 }
 
@@ -75,7 +75,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [],
                     },
                 )"#]],
@@ -89,7 +89,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             Param(
                                 "my",
@@ -113,7 +113,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             Param(
                                 "path",
@@ -131,7 +131,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             Param(
                                 "path",
@@ -152,7 +152,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             Param(
                                 "my",
@@ -176,7 +176,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             Param(
                                 "path",
@@ -194,7 +194,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             Param(
                                 "id",
@@ -215,7 +215,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             Param(
                                 "page",
@@ -236,7 +236,7 @@ mod tests {
             expect![[r#"
                 (
                     "",
-                    RouteAst {
+                    RoutePathAst {
                         segments: [
                             DynParam(
                                 "a/b",
