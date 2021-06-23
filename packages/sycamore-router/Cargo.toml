@@ -9,3 +9,12 @@ version = "0.5.0-beta.0"
 [dependencies]
 sycamore = {path = "../sycamore", version = "=0.5.0-beta.0"}
 sycamore-router-macro = {path = "../sycamore-router-macro", version = "=0.5.0-beta.0"}
+
+
+[dependencies.web-sys]
+features = [
+  "Event",
+  "Location",
+  "Window",
+]
+version = "0.3"
