@@ -110,7 +110,7 @@ impl Parse for ComponentFunction {
                     ReturnType::Default => {
                         return Err(syn::Error::new_spanned(
                             sig,
-                            "function must return `sycamore::template_result::Template`",
+                            "function must return `sycamore::template::Template`",
                         ))
                     }
                     ReturnType::Type(_, ty) => ty,

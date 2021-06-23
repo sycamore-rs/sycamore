@@ -305,10 +305,10 @@ impl fmt::Display for Text {
 /// for rendering to a string on the server side.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
-pub fn render_to_string(template_result: impl FnOnce() -> Template<SsrNode>) -> String {
+pub fn render_to_string(template: impl FnOnce() -> Template<SsrNode>) -> String {
     let mut ret = String::new();
     let _scope = create_root(|| {
-        for node in template_result().flatten() {
+        for node in template().flatten() {
             ret.push_str(&format!("{}", node));
         }
     });

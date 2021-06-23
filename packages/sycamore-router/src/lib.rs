@@ -3,9 +3,13 @@
 /// Alias self to sycamore_router for proc-macros.
 extern crate self as sycamore_router;
 
+mod router;
+
 pub use sycamore_router_macro::Route;
 
 use std::str::FromStr;
+
+pub use router::*;
 
 pub trait Route {
     fn match_route(path: &[&str]) -> Self;
