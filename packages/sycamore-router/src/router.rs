@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 
 use crate::Route;
 
@@ -30,10 +31,16 @@ pub fn link((to, body): (impl ToString, Template<G>)) -> Template<G> {
         ev.prevent_default();
 
         PATHNAME.with(|pathname| {
-            if pathname.borrow().is_none() {
+            if let Some(pathname) = pathname.borrow().as_ref() {
+                pathname.set(href.to_string());
+
+                // Update History API.
+                let history = web_sys::window().unwrap().history().unwrap();
+                history.push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str())).unwrap();
+            } else {
                 panic!("Link can only be used inside a BrowserRouter");
             }
-            pathname.borrow().as_ref().unwrap().set(href.to_string());
+
         });
     });
     template! {
@@ -54,13 +61,15 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap());
 
-    let history = web_sys::window().unwrap().history().unwrap();
-    create_effect(cloned!((pathname) => move || {
-        // Update History API.
-        history.push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str())).unwrap();
-
-        // TODO: listen to popstate
-    }));
+    // Listen to onpopstate.
+    let closure = Closure::wrap(Box::new(cloned!((pathname) => move || {
+        pathname.set(web_sys::window().unwrap().location().pathname().unwrap());
+    })) as Box<dyn FnMut()>);
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())
+        .unwrap();
+    closure.forget();
 
     let path = create_memo(move || {
         pathname

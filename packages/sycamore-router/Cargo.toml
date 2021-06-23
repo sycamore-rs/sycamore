@@ -14,8 +14,10 @@ wasm-bindgen = "0.2"
 [dependencies.web-sys]
 features = [
   "Event",
+  "EventTarget",
   "History",
   "Location",
+  "PopStateEvent",
   "Window",
 ]
 version = "0.3"
