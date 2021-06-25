@@ -1,6 +1,5 @@
 //! Easing functions.
 
-use core::f32;
 use std::f32::consts::PI;
 
 const EXP_BASE: f32 = 2.0;

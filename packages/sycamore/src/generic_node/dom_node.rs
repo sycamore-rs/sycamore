@@ -252,6 +252,9 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
+/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
+/// created nodes. This will be fixed in a later release.
+///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn hydrate(template: impl FnOnce() -> Template<DomNode>) {
     let window = web_sys::window().unwrap();
@@ -280,6 +283,9 @@ fn get_children(parent: &Element) -> Vec<Element> {
 /// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
 ///
 /// For rendering without hydration, use [`render`] instead.
+///
+/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
+/// created nodes. This will be fixed in a later release.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
