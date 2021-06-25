@@ -6,7 +6,7 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Event, Node, Text};
 
 use crate::generic_node::render::insert;
@@ -113,7 +113,13 @@ fn document() -> web_sys::Document {
 
 impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
-        let node = Rc::new(document().create_element(tag).unwrap().dyn_into().unwrap());
+        let node = Rc::new(
+            document()
+                .create_element(intern(tag))
+                .unwrap()
+                .dyn_into()
+                .unwrap(),
+        );
         DomNode {
             id: NodeId::new_with_node(&node),
             node,
