@@ -16,11 +16,12 @@ use crate::template::Template;
 
 // TODO: remove js snippet
 #[wasm_bindgen(inline_js = "\
+var m = new WeakMap();\
 export function set_node_id(node, id) {\
-    node.__sycamoreNodeId = id\
+    m.set(node, id)
 }\
 export function get_node_id(node) {\
-    return node.__sycamoreNodeId\
+    return m.get(node)
 }\
 ")]
 extern "C" {
