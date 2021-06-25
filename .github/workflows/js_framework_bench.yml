@@ -109,7 +109,7 @@ jobs:
         id: read_bench
         uses: andstor/file-reader-action@v1
         with:
-          path: "bench.txt"
+          path: results_diff/bench.txt
 
       - name: Post results
         uses: jungwinter/comment@v1
