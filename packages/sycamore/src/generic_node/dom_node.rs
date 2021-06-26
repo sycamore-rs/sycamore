@@ -1,17 +1,17 @@
 //! Rendering backend for the DOM.
 
-use std::cell::{Cell, RefCell};
+use std::cell::{Cell};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
-use web_sys::{Comment, Element, Event, Node, Text};
+use web_sys::{Comment, Element, Node, Text};
 
 use crate::generic_node::render::insert;
 use crate::generic_node::{EventListener, GenericNode};
-use crate::rx::{create_root, ReactiveScope};
+use crate::rx::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
 
 // TODO: remove js snippet
@@ -197,20 +197,14 @@ impl GenericNode for DomNode {
     }
 
     fn event(&self, name: &str, handler: Box<EventListener>) {
-        type EventListener = dyn Fn(Event);
-
-        thread_local! {
-            /// A global event listener pool to prevent [`Closure`]s from being deallocated.
-            /// TODO: remove events when elements are detached.
-            static EVENT_LISTENERS: RefCell<Vec<Closure<EventListener>>> = RefCell::new(Vec::new());
-        }
-
         let closure = Closure::wrap(handler);
         self.node
             .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
             .unwrap();
 
-        EVENT_LISTENERS.with(|event_listeners| event_listeners.borrow_mut().push(closure));
+        on_cleanup(move || {
+            drop(closure);
+        });
     }
 
     fn update_inner_text(&self, text: &str) {
