@@ -7,7 +7,7 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::token::Paren;
-use syn::{parenthesized, Expr, Ident, Result, Token};
+use syn::{parenthesized, Expr, ExprLit, Ident, Lit, Result, Token};
 
 pub enum AttributeType {
     /// Syntax: `name`.
@@ -77,6 +77,26 @@ impl ToTokens for Attribute {
         match &self.ty {
             AttributeType::DomAttribute { name } => {
                 let name = name.to_string();
+
+                let expr = if let Expr::Lit(ExprLit {
+                    lit: Lit::Str(text),
+                    ..
+                }) = expr
+                {
+                    // Since this is static text, intern it as it will likely be constructed many times.
+                    quote! {
+                        if ::std::cfg!(target_arch = "wasm32") {
+                            ::sycamore::rt::intern(#text)
+                        } else {
+                            #text
+                        }
+                    }
+                } else {
+                    quote! {
+                        #expr
+                    }
+                };
+
                 tokens.extend(quote_spanned! { expr_span=>
                     ::sycamore::rx::create_effect({
                         let __el = ::std::clone::Clone::clone(&__el);

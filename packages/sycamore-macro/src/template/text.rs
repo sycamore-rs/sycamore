@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::token::Paren;
 use syn::{parenthesized, Expr, LitStr, Result};
@@ -25,7 +25,14 @@ impl ToTokens for Text {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Text::Str(text) => {
-                let quoted = text.to_token_stream();
+                // Since this is static text, intern it as it will likely be constructed many times.
+                let quoted = quote! {
+                    if ::std::cfg!(target_arch = "wasm32") {
+                        ::sycamore::rt::intern(#text)
+                    } else {
+                        #text
+                    }
+                };
                 tokens.extend(quoted);
             }
             Text::Splice(_, expr) => {

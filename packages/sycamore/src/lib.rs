@@ -60,6 +60,6 @@ pub mod prelude {
 #[doc(hidden)]
 pub mod rt {
     pub use js_sys::Reflect;
-    pub use wasm_bindgen::{JsCast, JsValue};
+    pub use wasm_bindgen::{intern, JsCast, JsValue};
     pub use web_sys::Event;
 }
