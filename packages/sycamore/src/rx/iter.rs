@@ -7,12 +7,14 @@ use std::rc::Rc;
 use super::*;
 
 // Credits: Ported from TypeScript implementation in https://github.com/solidui/solid
-pub fn map_keyed<T, U>(
+pub fn map_keyed<T, K, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
+    key_fn: impl Fn(&T) -> K + 'static,
 ) -> impl FnMut() -> Vec<U>
 where
-    T: Eq + Clone + Hash,
+    T: Eq + Clone,
+    K: Eq + Hash,
     U: Clone + 'static,
 {
     // Previous state used for diffing.
@@ -84,20 +86,20 @@ where
                 let mut new_indices_next = vec![None; new_end];
                 for j in (start..new_end).rev() {
                     let item = &new_items[j];
-                    let i = new_indices.get(item);
+                    let i = new_indices.get(&key_fn(item));
                     new_indices_next[j] = i.cloned();
-                    new_indices.insert(item, j);
+                    new_indices.insert(key_fn(item), j);
                 }
 
                 // 1) Step through old items and see if they can be found in new set; if so, mark
                 // them as moved.
                 for i in start..end {
                     let item = &items[i];
-                    if let Some(j) = new_indices.get(item).copied() {
+                    if let Some(j) = new_indices.get(&key_fn(item)).copied() {
                         // Moved. j is index of item in new_items.
                         temp[j] = Some(mapped.borrow()[i].clone());
                         temp_scopes[j] = scopes[i].clone();
-                        new_indices_next[j].and_then(|j| new_indices.insert(item, j));
+                        new_indices_next[j].and_then(|j| new_indices.insert(key_fn(item), j));
                     } else {
                         // Create new.
                         scopes[i] = None;
@@ -230,7 +232,7 @@ mod tests {
     #[test]
     fn keyed() {
         let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_keyed(a.handle(), |x| *x * 2);
+        let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
         assert_eq!(*mapped(), vec![2, 4, 6]);
 
         a.set(vec![1, 2, 3, 4]);
@@ -243,7 +245,7 @@ mod tests {
     #[test]
     fn keyed_recompute_everything() {
         let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_keyed(a.handle(), |x| *x * 2);
+        let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
         assert_eq!(*mapped(), vec![2, 4, 6]);
 
         a.set(vec![4, 5, 6]);
@@ -254,7 +256,7 @@ mod tests {
     #[test]
     fn keyed_clear() {
         let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_keyed(a.handle(), |x| *x * 2);
+        let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
 
         a.set(Vec::new());
         assert_eq!(*mapped(), Vec::new());
@@ -265,13 +267,17 @@ mod tests {
     fn keyed_use_previous_computation() {
         let a = Signal::new(vec![1, 2, 3]);
         let counter = Rc::new(Cell::new(0));
-        let mut mapped = map_keyed(a.handle(), {
-            let counter = Rc::clone(&counter);
-            move |_| {
-                counter.set(counter.get() + 1);
-                counter.get()
-            }
-        });
+        let mut mapped = map_keyed(
+            a.handle(),
+            {
+                let counter = Rc::clone(&counter);
+                move |_| {
+                    counter.set(counter.get() + 1);
+                    counter.get()
+                }
+            },
+            |x| *x,
+        );
         assert_eq!(*mapped(), vec![1, 2, 3]);
 
         a.set(vec![1, 2]);

@@ -283,14 +283,14 @@ fn template_with_other_nodes_at_same_level() {
                 template: |item| template! {
                     li { (item) }
                 },
-                key: |_| todo!()
+                key: |x| *x
             })
             Keyed(KeyedProps {
                 iterable: vec2.handle(),
                 template: |item| template! {
                     li { (item) }
                 },
-                key: |_| todo!()
+                key: |x| *x
             })
             li { "after" }
         }

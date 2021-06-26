@@ -41,7 +41,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity_map_keyed", |b| {
         b.iter(|| {
             let v = Signal::new((0..100).collect());
-            let mut mapped = map_keyed(v.handle(), |x| *x * 2);
+            let mut mapped = map_keyed(v.handle(), |x| *x * 2, |x| *x);
             mapped();
 
             v.set((100..200).collect());

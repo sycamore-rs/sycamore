@@ -20,7 +20,7 @@ where
 {
     pub iterable: StateHandle<Vec<T>>,
     pub template: F,
-    pub key: K, // TODO: make key optional
+    pub key: K,
 }
 
 /// Keyed iteration. Use this instead of directly rendering an array of [`Template`]s.
@@ -59,14 +59,18 @@ where
     let KeyedProps {
         iterable,
         template,
-        key: _,
+        key,
     } = props;
     let template = Rc::new(template);
 
-    let mut mapped = map_keyed(iterable, {
-        let template = Rc::clone(&template);
-        move |x| template(x.clone())
-    });
+    let mut mapped = map_keyed(
+        iterable,
+        {
+            let template = Rc::clone(&template);
+            move |x| template(x.clone())
+        },
+        key,
+    );
     Template::new_lazy(move || Template::new_fragment(mapped()))
 }
 
