@@ -248,12 +248,15 @@ fn two_way_bind_to_props() {
     let value = Signal::new(String::new());
     let value2 = value.clone();
 
-    let node = cloned!((value) => template! {
-        input(bind:value=value)
-        p { (value2.get()) }
-    });
-
-    render_to(|| node, &test_container());
+    render_to(
+        || {
+            cloned!((value) => template! {
+                input(bind:value=value)
+                p { (value2.get()) }
+            })
+        },
+        &test_container(),
+    );
 
     let input = document()
         .query_selector("input")
