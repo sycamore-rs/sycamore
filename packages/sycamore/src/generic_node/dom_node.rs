@@ -145,7 +145,7 @@ impl GenericNode for DomNode {
     fn set_attribute(&self, name: &str, value: &str) {
         self.node
             .unchecked_ref::<Element>()
-            .set_attribute(name, value)
+            .set_attribute(intern(name), value)
             .unwrap();
     }
 
