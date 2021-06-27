@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::rc::Rc;
 
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
@@ -23,17 +22,6 @@ pub fn static_router<R: Route>(
 
 thread_local! {
     static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
-}
-
-#[component(Link<G>)]
-#[deprecated(note = "use anchor tags instead")]
-pub fn link((to, body): (impl ToString, Template<G>)) -> Template<G> {
-    let href = to.to_string();
-    template! {
-        a(href=href) {
-            (body)
-        }
-    }
 }
 
 #[component(BrowserRouter<G>)]
@@ -93,23 +81,24 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
                         let origin = a.origin();
                         let href = a.href();
                         let path = a.pathname();
-                        if origin == location.origin().unwrap() && href != location.href().unwrap()
-                        {
+                        if origin == location.origin().unwrap() {
                             ev.prevent_default();
-                            PATHNAME.with(|pathname| {
-                                let pathname = pathname.borrow().clone().unwrap();
-                                pathname.set(path.to_string());
+                            if href != location.href().unwrap() {
+                                PATHNAME.with(|pathname| {
+                                    let pathname = pathname.borrow().clone().unwrap();
+                                    pathname.set(path.to_string());
 
-                                // Update History API.
-                                let history = web_sys::window().unwrap().history().unwrap();
-                                history
-                                    .push_state_with_url(
-                                        &JsValue::UNDEFINED,
-                                        "",
-                                        Some(pathname.get().as_str()),
-                                    )
-                                    .unwrap();
-                            });
+                                    // Update History API.
+                                    let history = web_sys::window().unwrap().history().unwrap();
+                                    history
+                                        .push_state_with_url(
+                                            &JsValue::UNDEFINED,
+                                            "",
+                                            Some(pathname.get().as_str()),
+                                        )
+                                        .unwrap();
+                                });
+                            }
                         }
                     }
                 }),
