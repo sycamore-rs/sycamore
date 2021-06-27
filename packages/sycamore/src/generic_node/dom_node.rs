@@ -199,7 +199,7 @@ impl GenericNode for DomNode {
     fn event(&self, name: &str, handler: Box<EventListener>) {
         let closure = Closure::wrap(handler);
         self.node
-            .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
             .unwrap();
 
         on_cleanup(move || {
