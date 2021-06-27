@@ -1,5 +1,4 @@
 use sycamore::prelude::*;
-use sycamore_router::Link;
 
 #[component(Nav<G>)]
 fn nav() -> Template<G> {
@@ -11,12 +10,10 @@ fn nav() -> Template<G> {
                 // Brand section
                 div(class="flex-initial") {
                     div(class="flex space-x-4 text-white") {
-                        Link(("/", template! {
-                            span(class="py-2 px-3 text-sm font-medium \
-                            bg-gray-500 hover:bg-gray-600 transition-colors rounded", href="/#") {
-                                "Sycamore"
-                            }
-                        }))
+                        a(href="/#", class="py-2 px-3 text-sm font-medium \
+                        bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
+                            "Sycamore"
+                        }
                     }
                 }
                 // Links section
