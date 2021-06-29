@@ -17,7 +17,8 @@ pub use dom_node::*;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
 
-pub type EventListener = dyn Fn(Event);
+/// Type of event handlers.
+pub type EventHandler = dyn Fn(Event);
 
 /// Abstraction over a rendering backend.
 ///
@@ -82,8 +83,8 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Remove this node from the tree.
     fn remove_self(&self);
 
-    /// Add a [`EventListener`] to the event `name`.
-    fn event(&self, name: &str, handler: Box<EventListener>);
+    /// Add a [`EventHandler`] to the event `name`.
+    fn event(&self, name: &str, handler: Box<EventHandler>);
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.

@@ -8,7 +8,7 @@ use std::{fmt, mem};
 
 use wasm_bindgen::prelude::*;
 
-use crate::generic_node::{EventListener, GenericNode};
+use crate::generic_node::{EventHandler, GenericNode};
 use crate::rx::create_root;
 use crate::template::Template;
 
@@ -228,7 +228,7 @@ impl GenericNode for SsrNode {
         unimplemented!()
     }
 
-    fn event(&self, _name: &str, _handler: Box<EventListener>) {
+    fn event(&self, _name: &str, _handler: Box<EventHandler>) {
         // Noop. Events are attached on client side.
     }
 

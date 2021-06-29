@@ -10,7 +10,7 @@ use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
 use crate::generic_node::render::insert;
-use crate::generic_node::{EventListener, GenericNode};
+use crate::generic_node::{EventHandler, GenericNode};
 use crate::rx::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
 
@@ -196,7 +196,7 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event(&self, name: &str, handler: Box<EventListener>) {
+    fn event(&self, name: &str, handler: Box<EventHandler>) {
         let closure = Closure::wrap(handler);
         self.node
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
