@@ -1,6 +1,6 @@
 //! Rendering backend for the DOM.
 
-use std::cell::{Cell};
+use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;

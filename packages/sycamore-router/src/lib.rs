@@ -11,10 +11,14 @@ use std::str::FromStr;
 
 pub use router::*;
 
+/// Trait that is implemented for `enum`s that can match routes.
+///
+/// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro instead.
 pub trait Route {
     fn match_route(path: &[&str]) -> Self;
 }
 
+/// Represents an URL segment or segments.
 pub enum Segment {
     /// Match a specific segment.
     Param(String),
@@ -24,6 +28,7 @@ pub enum Segment {
     DynSegments,
 }
 
+/// Represents a capture of an URL segment or segments.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Capture<'a> {
     DynParam(&'a str),
@@ -48,6 +53,7 @@ impl<'a> Capture<'a> {
     }
 }
 
+/// A list of [`Segment`]s.
 pub struct RoutePath {
     segments: Vec<Segment>,
 }
@@ -113,6 +119,9 @@ impl RoutePath {
     }
 }
 
+/// Fallible conversion between a param capture into a value.
+///
+/// Implemented for all types that implement [`FromStr`] by default.
 pub trait FromParam {
     /// Set the value of the capture variable with the value of the `param`. Returns `false` if
     /// unsuccessful (e.g. parsing error).
@@ -135,6 +144,7 @@ where
     }
 }
 
+/// Fallible conversion between a list of param captures into a value.
 pub trait FromSegments {
     /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
     /// unsuccessful (e.g. parsing error).

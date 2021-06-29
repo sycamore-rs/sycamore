@@ -83,7 +83,8 @@ impl ToTokens for Attribute {
                     ..
                 }) = expr
                 {
-                    // Since this is static text, intern it as it will likely be constructed many times.
+                    // Since this is static text, intern it as it will likely be constructed many
+                    // times.
                     quote! {
                         if ::std::cfg!(target_arch = "wasm32") {
                             ::sycamore::rt::intern(#text)
