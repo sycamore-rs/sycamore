@@ -110,3 +110,21 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
         template
     })
 }
+
+pub fn navigate(url: &str) {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.borrow().is_some(),
+            "navigate can only be used with a BrowserRouter"
+        );
+
+        let pathname = pathname.borrow().clone().unwrap();
+        pathname.set(url.to_string());
+
+        // Update History API.
+        let history = web_sys::window().unwrap().history().unwrap();
+        history
+            .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str()))
+            .unwrap();
+    });
+}
