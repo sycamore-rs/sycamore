@@ -104,7 +104,7 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
                 }),
             );
         } else {
-            todo!();
+            panic!("render should return a single node");
         }
 
         template
