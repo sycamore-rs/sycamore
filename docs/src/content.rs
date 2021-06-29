@@ -56,7 +56,7 @@ pub fn content(pathname: String) -> Template<G> {
             div(class="flex-none") {
                 crate::sidebar::Sidebar()
             }
-            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4") {
+            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4 mb-2") {
                 "Loading..."
             }
         }
