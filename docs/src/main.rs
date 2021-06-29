@@ -20,25 +20,26 @@ enum Routes {
 fn app() -> Template<G> {
     template! {
         main {
-            header::Header()
-
-            div(class="mt-12") {
-                BrowserRouter(|route: Routes| {
-                    match route {
-                        Routes::Index => template! {
-                            div(class="container mx-auto") {
-                                index::Index()
-                            }
-                        },
-                        Routes::Docs(a, b) => template! {
-                            content::Content(format!("/{}/{}", a, b))
-                        },
-                        Routes::NotFound => template! {
-                            "404 Not Found"
-                        },
+            BrowserRouter(|route: Routes| {
+                template! {
+                    div(class="mt-12") {
+                        header::Header()
+                        (match &route {
+                            Routes::Index => template! {
+                                div(class="container mx-auto") {
+                                    index::Index()
+                                }
+                            },
+                            Routes::Docs(a, b) => template! {
+                                content::Content(format!("/{}/{}", a, b))
+                            },
+                            Routes::NotFound => template! {
+                                "404 Not Found"
+                            },
+                        })
                     }
-                })
-            }
+                }
+            })
         }
     }
 }

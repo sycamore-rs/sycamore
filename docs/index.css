@@ -1,6 +1,5 @@
 @tailwind base;
 @tailwind components;
-@tailwind screens;
 @tailwind utilities;
 
 .content blockquote {
@@ -38,6 +37,10 @@
 
 .content a {
   @apply underline;
+}
+
+.content p {
+  @apply my-3;
 }
 
 .content ul {
