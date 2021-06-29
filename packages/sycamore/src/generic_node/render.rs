@@ -1,9 +1,21 @@
+//! Utilities for rendering nodes.
+
 use std::collections::HashMap;
 
 use crate::generic_node::GenericNode;
 use crate::prelude::create_effect;
 use crate::template::{Template, TemplateType};
 
+/// Insert a [`GenericNode`] under `parent` at the specified `marker`. If `initial` is `Some(_)`,
+/// `initial` will be replaced with the new inserted node.
+///
+/// # Params
+/// * `parent` - The parent node to insert `accessor` under.
+/// * `accessor` - The [`Template`] to be inserted.
+/// * `initial` - An optional initial node that is already inserted into the DOM.
+/// * `marker` - An optional marker node. If `marker` is `Some(_)`, `accessor` will be inserted
+///   directly before `marker`. If `marker` is `None`, `accessor` will be appended at the end of
+///   `parent`.
 pub fn insert<G: GenericNode>(
     parent: &G,
     accessor: Template<G>,
@@ -13,7 +25,7 @@ pub fn insert<G: GenericNode>(
     insert_expression(parent, accessor, initial, marker, false);
 }
 
-pub fn insert_expression<G: GenericNode>(
+fn insert_expression<G: GenericNode>(
     parent: &G,
     value: Template<G>,
     mut current: Option<Template<G>>,
@@ -106,6 +118,14 @@ pub fn insert_expression<G: GenericNode>(
     }
 }
 
+/// Cleans the children specified by `current` from `parent`.
+///
+/// # Params
+/// * `parent` - The parent node from which to clean the children.
+/// * `current` - A [`Vec`] of [`GenericNode`]s that are to be removed.
+/// * `marker` - If `marker` is `None`, all the nodes from `parent` are removed regardless of
+///   `current`. This behavior will likely change in the future.
+/// * `replacement` - An optional replacement node for the removed nodes.
 pub fn clean_children<G: GenericNode>(
     parent: &G,
     current: Vec<G>,
@@ -131,6 +151,7 @@ pub fn clean_children<G: GenericNode>(
     }
 }
 
+/// Appends all the nodes in `fragment` to `parent` behind `marker`.
 pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option<&G>) {
     for node in fragment {
         parent.insert_child_before(&node, marker);

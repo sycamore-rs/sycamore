@@ -13,7 +13,8 @@ pub use router::*;
 
 /// Trait that is implemented for `enum`s that can match routes.
 ///
-/// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro instead.
+/// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro
+/// instead.
 pub trait Route {
     fn match_route(path: &[&str]) -> Self;
 }
