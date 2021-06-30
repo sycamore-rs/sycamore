@@ -54,6 +54,112 @@ The `#[not_found]` is a fallback route. It is the route that matches when all th
 don't. There must be one, and only one route marked with `#[not_found]`. Forgetting the not found
 route will cause a compile error.
 
+### Routes syntax
+
+#### Static routes
+
+The simplest routes are static routes. We already have the `"/"` and `"/about"` routes in our above
+example which are both static.
+
+Static routes can also be nested, e.g. `"/my/nested/path"`.
+
+#### Dynamic parameters
+
+Path parameters can be dynamic by using angle brackets around a variable name in the route's path.
+This will allow any segment to match the route in that position.
+
+For example, to match any route with `"hello"` followed by a name, we could use:
+
+```rust
+#[to("/hello/<name>")]
+Hello {
+    name: String,
+}
+```
+
+The `<name>` parameter is _captured_ by the `name` field in the `Hello` variant. For example, if we
+were to visit `/hello/sycamore`, we would find
+
+```rust
+AppRoutes::Hello { name: "sycamore".to_string() }
+```
+
+Multiple dynamic parameters are allowed. For example, the following route...
+
+```rust
+#[to("/repo/<org>/<name>")]
+Repo {
+    org: String,
+    name: String,
+}
+```
+
+...would match `/repo/sycamore-rs/sycamore` with a value of
+
+```rust
+AppRoutes::Repo {
+    org: "sycamore-rs".to_string(),
+    name: "sycamore".to_string(),
+}
+```
+
+#### Dynamic segments
+
+Dynamic segments can also be captured using the `<param..>` syntax.
+
+For example, the following route will match `"page"` followed by an arbitrary number of segments
+(including 0 segments).
+
+```rust
+#[to("/page/<path..>")]
+Page {
+    path: Vec<String>,
+}
+```
+
+Dynamic segments match lazily, meaning that once the next segment can be matched, the capture will
+be completed. For example, the following route will **not** capture the final `end` segment.
+
+```rust
+#[to("/start/<path..>/<end>")]
+Path {
+    path: Vec<String>,
+}
+```
+
+#### Unit variants
+
+Enum unit variants are also supported. The following route has the same behavior as the hello
+example from before.
+
+```rust
+#[to("/hello/<name>")]
+Hello(String)
+```
+
+#### Capture types
+
+Capture variables are not limited to `String`. In fact, any type that implements the
+[`FromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromParam.html)
+trait can be used as a capture.
+
+This trait is automatically implemented for types that already implement `FromStr`, which includes
+many standard library types.
+
+Because `FromParam` is fallible, the route will only match if the parameter can be parsed into the
+corresponding type.
+
+For example, `/account/123` will match the following route but `/account/abc` will not.
+
+```rust
+#[to("/account/<id>")]
+Account { id: u32 }
+```
+
+Likewise, the
+[`FromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromSegments.html)
+trait is the equivalent for dynamic segments.
+
 ### Using `BrowserRouter`
 
 To display content based on the route that matches, we can use a `BrowserRouter`.
