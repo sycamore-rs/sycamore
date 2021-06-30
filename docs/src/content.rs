@@ -29,18 +29,18 @@ pub fn content(pathname: String) -> Template<G> {
     let docs_container_ref = NodeRef::<G>::new();
 
     let markdown = Signal::new(String::new());
-    let html = create_memo(cloned!((markdown) => move || {
+    let content = create_memo(cloned!((markdown) => move || {
         let markdown = markdown.get();
 
         let mut outline = Vec::new();
-        let mut current = None;
+        let mut tmp = None;
 
         let options = Options::all();
         let parser = Parser::new_ext(markdown.as_ref(), options)
             .map(|event| {
                 match event {
                     Event::Start(Tag::Heading(_level)) => {
-                        current = Some(Outline{
+                        tmp = Some(Outline{
                             name:String::new(),
                             children:Vec::new(),
                         });
@@ -48,15 +48,15 @@ pub fn content(pathname: String) -> Template<G> {
                     Event::End(Tag::Heading(level)) => {
                         if level == 1 {} // Do nothing for level 1 heading
                         else if level == 2 {
-                            outline.push(current.take().unwrap());
+                            outline.push(tmp.take().unwrap());
                         } else {
                             let l = outline.last_mut().expect("cannot have non level 2 heading at root");
-                            l.children.push(current.take().unwrap());
+                            l.children.push(tmp.take().unwrap());
                         }
                     },
                     Event::Text(ref text) | Event::Code(ref text) => {
-                        if current.is_some() {
-                            current.as_mut().unwrap().name += text;
+                        if tmp.is_some() {
+                            tmp.as_mut().unwrap().name += text;
                         }
                     }
                     _ => {},
@@ -64,15 +64,18 @@ pub fn content(pathname: String) -> Template<G> {
                 event
             });
 
-        let mut output = String::new();
-        html::push_html(&mut output, parser);
+        let mut html = String::new();
+        html::push_html(&mut html, parser);
 
-        output
+        (html, outline)
     }));
 
-    create_effect(cloned!((docs_container_ref) => move || {
-        if !html.get().is_empty() {
-            docs_container_ref.get::<DomNode>().unchecked_into::<HtmlElement>().set_inner_html(html.get().as_ref());
+    create_effect(cloned!((content, docs_container_ref) => move || {
+        if !content.get().0.is_empty() {
+            docs_container_ref
+                .get::<DomNode>()
+                .unchecked_into::<HtmlElement>()
+                .set_inner_html(content.get().0.as_ref());
             highlight_all();
         }
     }));
@@ -92,6 +95,9 @@ pub fn content(pathname: String) -> Template<G> {
             }
             div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4 mb-2") {
                 "Loading..."
+            }
+            div(class="outline flex-none hidden lg:block lg:w-44") {
+                (format!("{:#?}", content.get().1))
             }
         }
     }
