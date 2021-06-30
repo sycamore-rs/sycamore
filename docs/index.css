@@ -24,15 +24,23 @@
 
 .content h1 {
   @apply text-2xl font-bold;
+  padding-top: 48px;
+  margin-top: -48px;
 }
 .content h2 {
   @apply text-xl font-bold;
+  padding-top: 48px;
+  margin-top: -48px;
 }
 .content h3 {
   @apply text-lg font-bold;
+  padding-top: 48px;
+  margin-top: -48px;
 }
 .content h4 {
   @apply text-base font-bold;
+  padding-top: 48px;
+  margin-top: -48px;
 }
 
 .content a {
@@ -46,4 +54,8 @@
 .content ul {
   padding-inline-start: 30px;
   @apply list-disc;
+}
+
+.outline a {
+  @apply text-gray-600 hover:text-yellow-400 mb-1 inline-block transition-colors;
 }

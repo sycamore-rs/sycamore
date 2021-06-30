@@ -43,7 +43,7 @@ How does the `create_effect(...)` function know to execute the closure every tim
 Calling `create_effect` creates a new _"reactivity scope"_ and calling `state.get()` inside this scope adds itself as a _dependency_.
 Now, when `state.set(...)` is called, it automatically calls all its _dependents_, in this case, `state` as it was called inside the closure.
 
-> #### What's that `cloned!` macro doing?
+> ## What's that `cloned!` macro doing?
 >
 > The `cloned!` macro is an utility macro for cloning the variables into the following expression. The previous `create_effect` function call could very well have been written as:
 >
@@ -74,7 +74,7 @@ assert_eq!(*double.get(), 2);
 
 Now that you understand `sycamore`'s reactivity system, we can look at how to use this to update the DOM.
 
-### Using reactivity with DOM updates
+## Using reactivity with DOM updates
 
 Reactivity is automatically built-in into the `template!` macro. Say we have the following code:
 

@@ -9,29 +9,41 @@ fn nav() -> Template<G> {
             div(class="flex flex-row justify-between items-center h-12") {
                 // Brand section
                 div(class="flex-initial") {
-                    div(class="flex space-x-4 text-white") {
-                        a(href="/#", class="py-2 px-3 text-sm font-medium \
+                    div(class="flex space-x-4") {
+                        a(href="/#", class="py-2 px-3 text-sm text-white font-medium \
                         bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
                             "Sycamore"
+                        }
+                        a(
+                            href="https://crates.io/crates/sycamore",
+                            class="text-gray-600 self-center",
+                            target="_blank",
+                        ) {
+                            "v0.5.0-beta.1"
                         }
                     }
                 }
                 // Links section
-                div(class="flex flex-row ml-2 space-x-4 text-white") {
-                    a(class="py-2 px-3 text-sm text-gray-600 hover:text-gray-800 hover:underline transition",
+                div(class="flex flex-row ml-2 space-x-4 text-gray-600") {
+                    a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
                         href="/getting_started/installation",
                     ) {
                         "Book"
                     }
-                    a(class="py-2 px-3 text-sm text-gray-600 hover:text-gray-800 hover:underline transition",
+                    a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
                         href="https://docs.rs/sycamore",
                     ) {
                         "API"
                     }
-                    a(class="py-2 px-3 text-sm text-gray-600 hover:text-gray-800 hover:underline transition",
+                    a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
                         href="https://github.com/sycamore-rs/sycamore",
                     ) {
                         "Repository"
+                    }
+                    a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
+                        href="https://discord.gg/vDwFUmm6mU",
+                    ) {
+                        "Discord"
                     }
                 }
             }
