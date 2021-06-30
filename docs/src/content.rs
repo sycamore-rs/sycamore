@@ -11,10 +11,40 @@ extern "C" {
     async fn fetch_md(url: &str) -> JsValue;
 }
 
-#[derive(Debug)]
-struct Outline {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Outline {
     name: String,
     children: Vec<Outline>,
+}
+
+#[component(OutlineView<G>)]
+pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
+    template! {
+        ul {
+            Indexed(IndexedProps {
+                iterable: outline,
+                template: |item| {
+                    let Outline { name, children } = item;
+                    let nested = children.iter().map(|x| {
+                        let name = x.name.clone();
+                        template! {
+                            li { (name) }
+                        }
+                    }).collect();
+                    let nested = Template::new_fragment(nested);
+
+                    template! {
+                        li {
+                            (name)
+                            ul(class="ml-3") {
+                                (nested)
+                            }
+                        }
+                    }
+                }
+            })
+        }
+    }
 }
 
 #[component(Content<G>)]
@@ -29,10 +59,11 @@ pub fn content(pathname: String) -> Template<G> {
     let docs_container_ref = NodeRef::<G>::new();
 
     let markdown = Signal::new(String::new());
-    let content = create_memo(cloned!((markdown) => move || {
+    let outline = Signal::new(Vec::new());
+    let html = create_memo(cloned!((markdown, outline) => move || {
         let markdown = markdown.get();
 
-        let mut outline = Vec::new();
+        let mut outline_tmp = Vec::new();
         let mut tmp = None;
 
         let options = Options::all();
@@ -48,9 +79,9 @@ pub fn content(pathname: String) -> Template<G> {
                     Event::End(Tag::Heading(level)) => {
                         if level == 1 {} // Do nothing for level 1 heading
                         else if level == 2 {
-                            outline.push(tmp.take().unwrap());
+                            outline_tmp.push(tmp.take().unwrap());
                         } else {
-                            let l = outline.last_mut().expect("cannot have non level 2 heading at root");
+                            let l = outline_tmp.last_mut().expect("cannot have non level 2 heading at root");
                             l.children.push(tmp.take().unwrap());
                         }
                     },
@@ -67,15 +98,17 @@ pub fn content(pathname: String) -> Template<G> {
         let mut html = String::new();
         html::push_html(&mut html, parser);
 
-        (html, outline)
+        outline.set(outline_tmp);
+
+        html
     }));
 
-    create_effect(cloned!((content, docs_container_ref) => move || {
-        if !content.get().0.is_empty() {
+    create_effect(cloned!((html, docs_container_ref) => move || {
+        if !html.get().is_empty() {
             docs_container_ref
                 .get::<DomNode>()
                 .unchecked_into::<HtmlElement>()
-                .set_inner_html(content.get().0.as_ref());
+                .set_inner_html(html.get().as_ref());
             highlight_all();
         }
     }));
@@ -97,7 +130,7 @@ pub fn content(pathname: String) -> Template<G> {
                 "Loading..."
             }
             div(class="outline flex-none hidden lg:block lg:w-44") {
-                (format!("{:#?}", content.get().1))
+                OutlineView(outline.handle())
             }
         }
     }
