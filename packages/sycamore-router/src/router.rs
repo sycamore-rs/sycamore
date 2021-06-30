@@ -106,7 +106,9 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
                             } else if Ok(&hash) != location.hash().as_ref() {
                                 // Same origin, same path, different anchor.
                                 // Use default browser behavior.
-                                return;
+                            } else {
+                                // Same page. Do nothing.
+                                ev.prevent_default();
                             }
                         }
                     }
