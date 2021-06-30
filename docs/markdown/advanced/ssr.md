@@ -10,6 +10,18 @@ DOM. When rendering on the server, however, we don't have a DOM accessible to us
 `render_to_string` has the same API as `render` except it returns a string that can be sent to the
 browser using your favorite web server.
 
+```rust
+let node = template! {
+    div(class="my-class") {
+        button { "Click me" }
+    }
+}
+let html = render_to_string(|| node);
+
+// Prints: <div class="my-class"><button>Click me</button></div>
+println!("{}", html);
+```
+
 ## Hydration
 
 Sycamore currently implements a very "naive" method of hydration. The current `hydrate` and
