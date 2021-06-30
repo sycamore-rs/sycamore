@@ -32,9 +32,15 @@ extern "C" {
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct NodeId(usize);
 
+impl Default for NodeId {
+    fn default() -> Self {
+        Self(0)
+    }
+}
+
 impl NodeId {
     fn new_with_node(node: &Node) -> Self {
-        thread_local!(static NODE_ID_COUNTER: Cell<usize> = Cell::new(0));
+        thread_local!(static NODE_ID_COUNTER: Cell<usize> = Cell::new(1)); // 0 is reserved for default value.
 
         let id = NODE_ID_COUNTER.with(|x| {
             let tmp = x.get();
