@@ -17,10 +17,10 @@ use crate::template::Template;
 // TODO: remove js snippet
 #[wasm_bindgen(inline_js = "\
 export function set_node_id(node, id) {\
-    node.__sycamoreNodeId = id\
+    node.$$$nodeId = id\
 }\
 export function get_node_id(node) {\
-    return node.__sycamoreNodeId\
+    return node.$$$nodeId\
 }\
 ")]
 extern "C" {
@@ -29,7 +29,7 @@ extern "C" {
 }
 
 /// An unique id for every node.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct NodeId(usize);
 
 impl Default for NodeId {
@@ -57,7 +57,7 @@ impl NodeId {
 /// _This API requires the following crate features to be activated: `dom`_
 #[derive(Clone)]
 pub struct DomNode {
-    id: NodeId,
+    id: Cell<NodeId>,
     node: Rc<Node>,
 }
 
@@ -69,11 +69,23 @@ impl DomNode {
     pub fn unchecked_into<T: JsCast>(self) -> T {
         (*self.node).clone().unchecked_into()
     }
+
+    fn get_node_id(&self) -> NodeId {
+        if self.id.get().0 == 0 {
+            // self.id not yet initialized.
+            if let Some(id) = get_node_id(&self.node) {
+                self.id.set(NodeId(id));
+            } else {
+                self.id.set(NodeId::new_with_node(&self.node));
+            }
+        }
+        self.id.get()
+    }
 }
 
 impl PartialEq for DomNode {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
+        self.node == other.node
     }
 }
 
@@ -81,7 +93,7 @@ impl Eq for DomNode {}
 
 impl Hash for DomNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
+        self.get_node_id().hash(state);
     }
 }
 
@@ -127,7 +139,7 @@ impl GenericNode for DomNode {
                 .unwrap(),
         );
         DomNode {
-            id: NodeId::new_with_node(&node),
+            id: Default::default(),
             node,
         }
     }
@@ -135,7 +147,7 @@ impl GenericNode for DomNode {
     fn text_node(text: &str) -> Self {
         let node = Rc::new(document().create_text_node(text).into());
         DomNode {
-            id: NodeId::new_with_node(&node),
+            id: Default::default(),
             node,
         }
     }
@@ -143,7 +155,7 @@ impl GenericNode for DomNode {
     fn marker() -> Self {
         let node = Rc::new(document().create_comment("").into());
         DomNode {
-            id: NodeId::new_with_node(&node),
+            id: Default::default(),
             node,
         }
     }
@@ -186,14 +198,14 @@ impl GenericNode for DomNode {
 
     fn parent_node(&self) -> Option<Self> {
         self.node.parent_node().map(|node| Self {
-            id: NodeId(get_node_id(&node).unwrap()),
+            id: Default::default(),
             node: Rc::new(node),
         })
     }
 
     fn next_sibling(&self) -> Option<Self> {
         self.node.next_sibling().map(|node| Self {
-            id: NodeId(get_node_id(&node).unwrap()),
+            id: Default::default(),
             node: Rc::new(node),
         })
     }
@@ -237,7 +249,7 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
     let scope = create_root(|| {
         insert(
             &DomNode {
-                id: NodeId::new_with_node(parent),
+                id: Default::default(),
                 node: Rc::new(parent.clone()),
             },
             template(),
@@ -302,7 +314,7 @@ pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
     let scope = create_root(|| {
         insert(
             &DomNode {
-                id: NodeId::new_with_node(&parent),
+                id: Default::default(),
                 node: Rc::new(parent.clone()),
             },
             template(),
