@@ -26,8 +26,7 @@ pub fn content(pathname: String) -> Template<G> {
     let html = create_memo(cloned!((markdown) => move || {
         let markdown = markdown.get();
 
-        let mut options = Options::empty();
-        options.insert(Options::ENABLE_TABLES);
+        let options = Options::all();
         let parser = Parser::new_ext(markdown.as_ref(), options);
 
         let mut output = String::new();
