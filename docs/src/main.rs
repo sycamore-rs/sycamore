@@ -6,7 +6,7 @@ mod sidebar;
 use sycamore::prelude::*;
 use sycamore_router::{BrowserRouter, Route};
 
-#[derive(Route)]
+#[derive(Debug, Route)]
 enum Routes {
     #[to("/")]
     Index,

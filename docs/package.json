@@ -10,8 +10,6 @@
     "autoprefixer": "^10.2.6",
     "concurrently": "^6.2.0",
     "cross-env": "^7.0.3",
-    "postcss": "^8.3.1",
-    "postcss-cli": "^8.3.1",
     "tailwindcss": "^2.1.4"
   },
   "private": true

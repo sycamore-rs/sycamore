@@ -39,7 +39,7 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap());
 
-    // Listen to onpopstate.
+    // Listen to popstate event.
     let closure = Closure::wrap(Box::new(cloned!((pathname) => move || {
         pathname.set(web_sys::window().unwrap().location().pathname().unwrap());
     })) as Box<dyn FnMut()>);
@@ -49,7 +49,7 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
         .unwrap();
     closure.forget();
 
-    let path = create_memo(move || {
+    let path = create_selector(move || {
         pathname
             .get()
             .split('/')
@@ -83,25 +83,30 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
 
                         let a = a.unchecked_into::<HtmlAnchorElement>();
                         let origin = a.origin();
-                        let href = a.href();
                         let path = a.pathname();
-                        if origin == location.origin().unwrap() {
-                            ev.prevent_default();
-                            if href != location.href().unwrap() {
+                        let hash = a.hash();
+                        if Ok(origin) == location.origin() {
+                            if Ok(&path) != location.pathname().as_ref() {
+                                // Same origin, different path.
+                                ev.prevent_default();
                                 PATHNAME.with(|pathname| {
                                     let pathname = pathname.borrow().clone().unwrap();
                                     pathname.set(path.to_string());
-
+                                    
                                     // Update History API.
                                     let history = web_sys::window().unwrap().history().unwrap();
                                     history
-                                        .push_state_with_url(
-                                            &JsValue::UNDEFINED,
-                                            "",
-                                            Some(pathname.get().as_str()),
-                                        )
-                                        .unwrap();
+                                    .push_state_with_url(
+                                        &JsValue::UNDEFINED,
+                                        "",
+                                        Some(pathname.get().as_str()),
+                                    )
+                                    .unwrap();
                                 });
+                            } else if Ok(&hash) != location.hash().as_ref() {
+                                // Same origin, same path, different anchor.
+                                // Use default browser behavior.
+                                return;
                             }
                         }
                     }

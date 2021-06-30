@@ -1,4 +1,4 @@
-use pulldown_cmark::{html, Event, Options, Parser, Tag};
+use pulldown_cmark::{html, CowStr, Event, Options, Parser, Tag};
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
@@ -20,22 +20,31 @@ pub struct Outline {
 #[component(OutlineView<G>)]
 pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
     template! {
-        ul {
+        ul(class="mt-4 text-sm pl-2 border-l border-gray-400") {
             Indexed(IndexedProps {
                 iterable: outline,
                 template: |item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
                         let name = x.name.clone();
+                        let href = format!("#{}", x.name.trim().to_lowercase().replace(" ", "-"));
                         template! {
-                            li { (name) }
+                            li {
+                                a(href=href) {
+                                    (name)
+                                }
+                            }
                         }
                     }).collect();
                     let nested = Template::new_fragment(nested);
 
+                    let href = format!("#{}", name.trim().to_lowercase().replace(" ", "-"));
+
                     template! {
                         li {
-                            (name)
+                            a(href=href) {
+                                (name)
+                            }
                             ul(class="ml-3") {
                                 (nested)
                             }
@@ -68,31 +77,46 @@ pub fn content(pathname: String) -> Template<G> {
 
         let options = Options::all();
         let parser = Parser::new_ext(markdown.as_ref(), options)
-            .map(|event| {
+            .filter_map(|event| {
                 match event {
-                    Event::Start(Tag::Heading(_level)) => {
-                        tmp = Some(Outline{
-                            name:String::new(),
-                            children:Vec::new(),
-                        });
+                    Event::Start(Tag::Heading(level)) => {
+                        if level == 1 {
+                            Some(event)
+                        } else {
+                            tmp = Some(Outline{
+                                name: String::new(),
+                                children: Vec::new(),
+                            });
+                            None
+                        }
                     },
                     Event::End(Tag::Heading(level)) => {
-                        if level == 1 {} // Do nothing for level 1 heading
-                        else if level == 2 {
-                            outline_tmp.push(tmp.take().unwrap());
+                        if level == 1 {
+                            Some(event)
                         } else {
-                            let l = outline_tmp.last_mut().expect("cannot have non level 2 heading at root");
-                            l.children.push(tmp.take().unwrap());
+                            let tmp = tmp.take().unwrap();
+                            let anchor = tmp.name.trim().to_lowercase().replace(" ", "-");
+                            let name = tmp.name.clone();
+                            if level == 2 {
+                                outline_tmp.push(tmp);
+                            } else {
+                                let l = outline_tmp.last_mut().expect("cannot have non level 2 heading at root");
+                                l.children.push(tmp);
+                            }
+                            Some(Event::Html(CowStr::from(format!("<h{} id=\"{}\">{}</h{}>", level, anchor, name, level))))
                         }
                     },
                     Event::Text(ref text) | Event::Code(ref text) => {
                         if tmp.is_some() {
                             tmp.as_mut().unwrap().name += text;
+                            // Some(event)
+                            None
+                        } else {
+                            Some(event)
                         }
                     }
-                    _ => {},
-                };
-                event
+                    _ => Some(event),
+                }
             });
 
         let mut html = String::new();
@@ -126,10 +150,10 @@ pub fn content(pathname: String) -> Template<G> {
             div(class="flex-none") {
                 crate::sidebar::Sidebar()
             }
-            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4 mb-2") {
+            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4 mb-2 mr-44") {
                 "Loading..."
             }
-            div(class="outline flex-none hidden lg:block lg:w-44") {
+            div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0") {
                 OutlineView(outline.handle())
             }
         }
