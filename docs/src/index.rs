@@ -19,7 +19,7 @@ pub fn index() -> Template<G> {
                 "Read the Book"
             }
         }
-        div(class="text-white flex flex-col w-full md:flex-row space-y-4 md:space-y-0 md:space-x-4") {
+        div(class="text-white flex flex-col w-full md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-10") {
             div(class="bg-red-500 md:flex-1 rounded-md p-6") {
                 h1(class="text-lg text-center font-semibold mb-3") { "Lightning speed" }
                 p {

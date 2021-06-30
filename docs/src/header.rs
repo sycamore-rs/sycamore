@@ -14,7 +14,11 @@ fn nav() -> Template<G> {
                         bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
                             "Sycamore"
                         }
-                        span(class="text-gray-600 self-center") {
+                        a(
+                            href="https://crates.io/crates/sycamore",
+                            class="text-gray-600 self-center",
+                            target="_blank",
+                        ) {
                             "v0.5.0-beta.1"
                         }
                     }
@@ -35,6 +39,11 @@ fn nav() -> Template<G> {
                         href="https://github.com/sycamore-rs/sycamore",
                     ) {
                         "Repository"
+                    }
+                    a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
+                        href="https://discord.gg/vDwFUmm6mU",
+                    ) {
+                        "Discord"
                     }
                 }
             }
