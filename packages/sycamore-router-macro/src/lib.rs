@@ -4,7 +4,7 @@ mod route;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
-/// The `Router` procedural macro.
+/// The `Route` procedural macro.
 #[proc_macro_derive(Route, attributes(to, not_found))]
 pub fn route(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

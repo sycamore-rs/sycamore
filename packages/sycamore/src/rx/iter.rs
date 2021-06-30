@@ -1,3 +1,5 @@
+//! Reactive utilities for dealing with lists.
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -6,7 +8,19 @@ use std::rc::Rc;
 
 use super::*;
 
-// Credits: Ported from TypeScript implementation in https://github.com/solidui/solid
+/// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
+/// computed, meaning that it's value will only be updated when requested. Modifications to the
+/// input `Vec` are diffed using keys to prevent recomputing values that have not changed.
+///
+/// This function is the underlying utility behind [`Keyed`](crate::flow::Keyed).
+///
+/// # Params
+/// * `list` - The list to be mapped. The list must be a [`StateHandle`] (obtained from a
+///   [`Signal`]) and therefore reactive.
+/// * `map_fn` - A closure that maps from the input type to the output type.
+/// * `key_fn` - A closure that returns an _unique_ key to each entry.
+///
+///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
 pub fn map_keyed<T, K, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
@@ -152,6 +166,18 @@ where
     }
 }
 
+/// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
+/// computed, meaning that it's value will only be updated when requested. Modifications to the
+/// input `Vec` are diffed by index to prevent recomputing values that have not changed.
+///
+/// Generally, it is preferred to use [`map_keyed`] instead when a key function is available.
+///
+/// This function is the underlying utility behind [`Indexed`](crate::flow::Indexed).
+///
+/// # Params
+/// * `list` - The list to be mapped. The list must be a [`StateHandle`] (obtained from a
+///   [`Signal`]) and therefore reactive.
+/// * `map_fn` - A closure that maps from the input type to the output type.
 pub fn map_indexed<T, U>(
     list: StateHandle<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,

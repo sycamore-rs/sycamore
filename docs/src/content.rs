@@ -26,8 +26,7 @@ pub fn content(pathname: String) -> Template<G> {
     let html = create_memo(cloned!((markdown) => move || {
         let markdown = markdown.get();
 
-        let mut options = Options::empty();
-        options.insert(Options::ENABLE_TABLES);
+        let options = Options::all();
         let parser = Parser::new_ext(markdown.as_ref(), options);
 
         let mut output = String::new();
@@ -56,7 +55,7 @@ pub fn content(pathname: String) -> Template<G> {
             div(class="flex-none") {
                 crate::sidebar::Sidebar()
             }
-            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4") {
+            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4 mb-2") {
                 "Loading..."
             }
         }

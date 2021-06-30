@@ -7,6 +7,7 @@ use web_sys::{Element, HtmlAnchorElement};
 
 use crate::Route;
 
+/// A router that never changes location. Useful for SSR when the app will never change URL.
 #[component(StaticRouter<G>)]
 pub fn static_router<R: Route>(
     (pathname, render): (String, impl Fn(R) -> Template<G> + 'static),
@@ -24,6 +25,9 @@ thread_local! {
     static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
 }
 
+/// A router that uses the
+/// [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) to keep the
+/// UI in sync with the URL.
 #[component(BrowserRouter<G>)]
 pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> Template<G> {
     PATHNAME.with(|pathname| {
@@ -109,4 +113,29 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
 
         template
     })
+}
+
+/// Navigates to the specified `url`. The url should have the same origin as the app.
+///
+/// This is useful for imperatively navigating to an url when using an anchor tag (`<a>`) is not
+/// possible/suitable (e.g. when submitting a form).
+///
+/// # Panics
+/// This function will `panic!()` if a [`BrowserRouter`] has not yet been created.
+pub fn navigate(url: &str) {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.borrow().is_some(),
+            "navigate can only be used with a BrowserRouter"
+        );
+
+        let pathname = pathname.borrow().clone().unwrap();
+        pathname.set(url.to_string());
+
+        // Update History API.
+        let history = web_sys::window().unwrap().history().unwrap();
+        history
+            .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str()))
+            .unwrap();
+    });
 }
