@@ -1,4 +1,4 @@
-use pulldown_cmark::{html, Options, Parser};
+use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
@@ -9,6 +9,12 @@ export async function fetch_md(url) { return await (await fetch(url)).text(); }"
 extern "C" {
     fn highlight_all();
     async fn fetch_md(url: &str) -> JsValue;
+}
+
+#[derive(Debug)]
+struct Outline {
+    name: String,
+    children: Vec<Outline>,
 }
 
 #[component(Content<G>)]
@@ -26,8 +32,37 @@ pub fn content(pathname: String) -> Template<G> {
     let html = create_memo(cloned!((markdown) => move || {
         let markdown = markdown.get();
 
+        let mut outline = Vec::new();
+        let mut current = None;
+
         let options = Options::all();
-        let parser = Parser::new_ext(markdown.as_ref(), options);
+        let parser = Parser::new_ext(markdown.as_ref(), options)
+            .map(|event| {
+                match event {
+                    Event::Start(Tag::Heading(_level)) => {
+                        current = Some(Outline{
+                            name:String::new(),
+                            children:Vec::new(),
+                        });
+                    },
+                    Event::End(Tag::Heading(level)) => {
+                        if level == 1 {} // Do nothing for level 1 heading
+                        else if level == 2 {
+                            outline.push(current.take().unwrap());
+                        } else {
+                            let l = outline.last_mut().expect("cannot have non level 2 heading at root");
+                            l.children.push(current.take().unwrap());
+                        }
+                    },
+                    Event::Text(ref text) | Event::Code(ref text) => {
+                        if current.is_some() {
+                            current.as_mut().unwrap().name += text;
+                        }
+                    }
+                    _ => {},
+                };
+                event
+            });
 
         let mut output = String::new();
         html::push_html(&mut output, parser);
