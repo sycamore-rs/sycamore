@@ -149,29 +149,25 @@ impl GenericNode for SsrNode {
 
         new_node.set_parent(Rc::downgrade(&self.0));
 
-        let mut children = match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children),
-            _ => panic!("node type cannot have children"),
-        };
-
         match reference_node {
             None => self.append_child(new_node),
             Some(reference) => {
-                children.insert(
-                    children
-                        .iter()
-                        .enumerate()
-                        .find_map(|(i, child)| (child == reference).then(|| i))
-                        .expect("couldn't find reference node"),
-                    new_node.clone(),
-                );
+                match self.0.ty.as_ref() {
+                    SsrNodeType::Element(e) => {
+                        let children = &mut e.borrow_mut().children;
+                        children.insert(
+                            children
+                                .iter()
+                                .enumerate()
+                                .find_map(|(i, child)| (child == reference).then(|| i))
+                                .expect("couldn't find reference node"),
+                            new_node.clone(),
+                        );
+                    }
+                    _ => panic!("node type cannot have children"),
+                };
             }
         }
-
-        match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => e.borrow_mut().children = children,
-            _ => panic!("node type cannot have children"),
-        };
     }
 
     fn remove_child(&self, child: &Self) {

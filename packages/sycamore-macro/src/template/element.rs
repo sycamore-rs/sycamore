@@ -59,42 +59,68 @@ impl ToTokens for Element {
         }
 
         if let Some(children) = children {
-            for child in &children.body {
+            let mut children = children.body.iter().peekable();
+            while let Some(child) = children.next() {
                 quoted.extend(match child {
-                    HtmlTree::Component(component) => quote_spanned! { component.span()=>
-                        let __marker = ::sycamore::generic_node::GenericNode::marker();
-                        ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
-                        ::sycamore::generic_node::render::insert(
-                            &__el,
-                            #component,
-                            None, Some(&__marker),
-                        );
-                    },
+                    HtmlTree::Component(_) | HtmlTree::Text(Text::Splice(..)) => {
+                        let quote_marker =
+                        if let Some(HtmlTree::Element(element)) =
+                            children.next_if(|x| matches!(x, HtmlTree::Element(_)))
+                        {
+                            quote_spanned! { element.span()=>
+                                let __marker = #element;
+                                ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
+                                let __marker = ::std::option::Option::Some(&__marker);
+                            }
+                        } else if let Some(HtmlTree::Text(Text::Str(text))) =
+                            children.next_if(|x| matches!(x, HtmlTree::Text(Text::Str(_))))
+                        {
+                            quote_spanned! { text.span()=>
+                                let __marker = ::sycamore::generic_node::GenericNode::text_node(#text);
+                                ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
+                                let __marker = ::std::option::Option::Some(&__marker);
+                            }
+                        } else if children.peek().is_none() {
+                            quote! {
+                                let __marker = ::std::option::Option::None;
+                            }
+                        } else {
+                            quote! {
+                                let __marker = ::sycamore::generic_node::GenericNode::marker();
+                                ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
+                                let __marker = ::std::option::Option::Some(&__marker);
+                            }
+                        };
+                        match child {
+                            HtmlTree::Component(component) => quote_spanned! { component.span()=>
+                                #quote_marker
+                                ::sycamore::generic_node::render::insert(
+                                    &__el,
+                                    #component,
+                                    None, __marker,
+                                );
+                            },
+                            HtmlTree::Text(text @ Text::Splice(..)) => quote_spanned! { text.span()=>
+                                #quote_marker
+                                ::sycamore::generic_node::render::insert(
+                                   &__el,
+                                   ::sycamore::template::Template::new_lazy(move ||
+                                       ::sycamore::render::IntoTemplate::create(&#text)
+                                   ),
+                                   None, __marker,
+                               );
+                            },
+                            _ => unreachable!()
+                        }
+                    }
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
                         ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
                     },
-                    HtmlTree::Text(text) => match text {
-                        Text::Str(_) => {
-                            quote_spanned! { text.span()=>
-                                ::sycamore::generic_node::GenericNode::append_child(
-                                    &__el,
-                                    &::sycamore::generic_node::GenericNode::text_node(#text),
-                                );
-                            }
-                        }
-                        Text::Splice(_, _) => {
-                            quote_spanned! { text.span()=>
-                                let __marker = ::sycamore::generic_node::GenericNode::marker();
-                                ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
-                                ::sycamore::generic_node::render::insert(
-                                    &__el,
-                                    ::sycamore::template::Template::new_lazy(move ||
-                                        ::sycamore::render::IntoTemplate::create(&#text)
-                                    ),
-                                    None, Some(&__marker),
-                                );
-                            }
-                        }
+                    HtmlTree::Text(text @ Text::Str(_)) => quote_spanned! { text.span()=>
+                        ::sycamore::generic_node::GenericNode::append_child(
+                            &__el,
+                            &::sycamore::generic_node::GenericNode::text_node(#text),
+                        );
                     },
                 });
             }
