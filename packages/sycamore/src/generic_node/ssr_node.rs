@@ -217,11 +217,26 @@ impl GenericNode for SsrNode {
     }
 
     fn next_sibling(&self) -> Option<Self> {
-        unimplemented!()
+        let parent = self.parent_node().expect("node must have a parent");
+        match parent.0.ty.as_ref() {
+            SsrNodeType::Element(e) => {
+                let children = &e.borrow().children;
+                children
+                    .iter()
+                    .skip_while(|child| *child != self)
+                    .skip(1)
+                    .take(1)
+                    .cloned()
+                    .next()
+            }
+            _ => panic!("node type cannot have children"),
+        }
     }
 
     fn remove_self(&self) {
-        unimplemented!()
+        self.parent_node()
+            .expect("node must have a parent")
+            .remove_child(self);
     }
 
     fn event(&self, _name: &str, _handler: Box<EventHandler>) {
