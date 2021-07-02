@@ -26,7 +26,6 @@ pub mod component;
 pub mod easing;
 pub mod flow;
 pub mod generic_node;
-pub mod into_template;
 pub mod macros;
 pub mod noderef;
 pub mod rx;
