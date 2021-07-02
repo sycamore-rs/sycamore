@@ -1,7 +1,7 @@
 # `Tweened`
 
-Tweened states update their values over a period of time.
-For example, the following code snippet interpolates a value from 0 to 100 over a period of 200ms:
+Tweened states update their values over a period of time. For example, the following code snippet
+interpolates a value from 0 to 100 over a period of 200ms:
 
 ```rust
 use std::time::Duration;

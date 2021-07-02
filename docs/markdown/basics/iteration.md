@@ -1,7 +1,7 @@
 # Iteration
 
-Sycamore uses components for rendering lists. This is to prevent recreating DOM nodes every time
-the list changes. The components serve as wrappers to make rendering lists more ergonomic.
+Sycamore uses components for rendering lists. This is to prevent recreating DOM nodes every time the
+list changes. The components serve as wrappers to make rendering lists more ergonomic.
 
 ## `Keyed`
 
@@ -48,8 +48,8 @@ template! {
 ## `.iter().map()`
 
 Lastly, to render a static list (a list that will never change), you can use the good-ol' `.map()`
-function from the standard library. Be sure that the list is indeed static, because otherwise
-every single node will be re-rendered every time the list changes.
+function from the standard library. Be sure that the list is indeed static, because otherwise every
+single node will be re-rendered every time the list changes.
 
 ```rust
 let count = vec![1, 2];

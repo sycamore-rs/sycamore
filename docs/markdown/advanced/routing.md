@@ -16,20 +16,17 @@ sycamore-router = "0.5.0-beta.1"
 
 ### Compatibility with `sycamore`
 
-Note that the major version
-number for `sycamore-router` corresponds to the same major version number for `sycamore` (e.g.
-`sycamore-router v0.5.x` is compatible with `sycamore v0.5.x`).
+Note that the major version number for `sycamore-router` corresponds to the same major version
+number for `sycamore` (e.g. `sycamore-router v0.5.x` is compatible with `sycamore v0.5.x`).
 
-## How to use `sycamore-router`
+## Creating routes
 
 Start off by adding `use sycamore_router::{BrowserRouter, Route}` to the top of your source code.
 This imports the symbols needed to define our router.
 
-### Creating routes
-
-The heart of the router is an `enum`. Each variant of the `enum` represents a different route.
-To make our `enum` usable with `BrowserRouter`, we will use the `Route` derive macro to implement
-the required traits for us.
+The heart of the router is an `enum`. Each variant of the `enum` represents a different route. To
+make our `enum` usable with `BrowserRouter`, we will use the `Route` derive macro to implement the
+required traits for us.
 
 Here is an example:
 
@@ -47,16 +44,16 @@ enum AppRoutes {
 
 Note that each variant is marked with either the `#[to(_)]` or `#[not_found]` attribute.
 
-The `#[to(_)]` attribute designates a route. For example, `#[to("/about")]` designates the route
-for the about page.
+The `#[to(_)]` attribute designates a route. For example, `#[to("/about")]` designates the route for
+the about page.
 
 The `#[not_found]` is a fallback route. It is the route that matches when all the other routes
 don't. There must be one, and only one route marked with `#[not_found]`. Forgetting the not found
 route will cause a compile error.
 
-### Routes syntax
+## Routes syntax
 
-#### Static routes
+### Static routes
 
 The simplest routes are static routes. We already have the `"/"` and `"/about"` routes in our above
 example which are both static.
@@ -103,7 +100,7 @@ AppRoutes::Repo {
 }
 ```
 
-#### Dynamic segments
+### Dynamic segments
 
 Dynamic segments can also be captured using the `<param..>` syntax.
 
@@ -140,8 +137,8 @@ Hello(String)
 #### Capture types
 
 Capture variables are not limited to `String`. In fact, any type that implements the
-[`FromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromParam.html)
-trait can be used as a capture.
+[`FromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromParam.html) trait can
+be used as a capture.
 
 This trait is automatically implemented for types that already implement `FromStr`, which includes
 many standard library types.
@@ -160,7 +157,7 @@ Likewise, the
 [`FromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromSegments.html)
 trait is the equivalent for dynamic segments.
 
-### Using `BrowserRouter`
+## Using `BrowserRouter`
 
 To display content based on the route that matches, we can use a `BrowserRouter`.
 
@@ -186,13 +183,13 @@ template! {
 route as a parameter. Any clicks on anchor tags (`<a>`) created inside the `BrowserRouter` will be
 intercepted and handled by the router.
 
-### Using `StaticRouter`
+## Using `StaticRouter`
 
 Whereas `BrowserRouter` is used inside the context of a browser, `StaticRouter` is used for SSR.
 
 The difference between a `BrowserRouter` and a `StaticRouter` is that the url is provided to
-`StaticRouter` only during the initialization phase. The initial url is provided as an argument
-to `StaticRouter`.
+`StaticRouter` only during the initialization phase. The initial url is provided as an argument to
+`StaticRouter`.
 
 ```rust
 use sycamore_router::{Route, StaticRouter};
@@ -214,7 +211,7 @@ template! {
 }
 ```
 
-### Using `navigate`
+## Using `navigate`
 
 Calling `navigate` navigates to the specified `url`. The url should have the same origin as the app.
 

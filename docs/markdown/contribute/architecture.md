@@ -1,19 +1,38 @@
 # Project architecture
 
-All non proc-macro related code is in `/sycamore`.
-Proc-macro related code is in `/sycamore-macro`.
+All non proc-macro related code is in `/packages/sycamore`. Proc-macro related code is in
+`/packages/sycamore-macro`.
 
-## Concepts and where to find them
+## Directory structure
 
 - #### Reactivity
 
-  - All the reactivity primitives are defined in `/sycamore/src/reactive.rs`.
+  - All the reactivity primitives are defined in `/packages/sycamore/src/rx.rs`.
+
+- #### `GenericNode`
+
+  - `GenericNode` is a trait that serves as an abstraction for different rendering backends. Most
+    commonly used types are `DomNode` for rendering in the browser to DOM nodes and `SsrNode` for
+    rendering on the server to static HTML.
+
+  - The `sycamore::generic_node::render` module contains backend agnostic utilities for rendering
+    nodes.
+
+- #### `Template`
+
+  - `Template` is a wrapper type around a `GenericNode` that is produced by the `template!` macro. A
+    `Template` can be rendered using the utilities in `sycamore::generic_node::render`.
 
 - #### `template!`
 
-  - The template macro is defined in `/sycamore-macro/src/lib.rs`.
-  - Different DOM node types are defined in separate files under the same directory.
+  - The template macro is defined in `/packages/sycamore-macro/src/lib.rs`.
+
   - [`trybuild`](https://github.com/dtolnay/trybuild) is used for testing proc-macros.
 
-- #### Components
-  - Components are just functions! There is no special code for handling components at runtime.
+## Fragment diffing
+
+`Template` fragments are diffed in the `sycamore::generic_node::render::reconcile_fragments(_)`
+method.
+
+The diffing done by `Keyed` and `Indexed` is independent of the diffing done when rendering
+fragments. Learn more about this in [`Iteration`](../basics/iteration).

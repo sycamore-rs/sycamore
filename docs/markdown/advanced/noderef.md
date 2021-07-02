@@ -3,8 +3,8 @@
 Sometimes we want to be able to reference a node in the DOM directly. We can do so by using
 `NodeRef`.
 
-A `NodeRef` can be created by using `NodeRef::new()`. This can be assigned, in turn, to a node
-using the `ref` property in the `template!` macro.
+A `NodeRef` can be created by using `NodeRef::new()`. This can be assigned, in turn, to a node using
+the `ref` property in the `template!` macro.
 
 ```rust
 let node_ref = NodeRef::new();
@@ -23,5 +23,5 @@ node_ref.get::<DomNode>()
 ```
 
 Note that this method will `panic!` if the `NodeRef` has not been assigned to a node or if the
-`NodeRef` has the wrong type. That means that calling `node_ref.get::<DomNode>()` will `panic!` in
-a server side rendering context (which uses `SsrNode` instead of `DomNode`).
+`NodeRef` has the wrong type. That means that calling `node_ref.get::<DomNode>()` will `panic!` in a
+server side rendering context (which uses `SsrNode` instead of `DomNode`).

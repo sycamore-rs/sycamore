@@ -5,8 +5,9 @@ created with the `#[component(ComponentName<G>)]` attribute on a function.
 
 Components receive their props through function arguments.
 
-For components to automatically react to prop changes, they should accept a prop with type `StateHandle<T>` and call the function in the `template!` to subscribe to the state.
-A `StateHandle<T>` is just a readonly `Signal<T>`.
+For components to automatically react to prop changes, they should accept a prop with type
+`StateHandle<T>` and call the function in the `template!` to subscribe to the state. A
+`StateHandle<T>` is just a readonly `Signal<T>`.
 
 Getting a `StateHandle<T>` from a `Signal<T>` is easy. Just call the `.handle()` method.
 

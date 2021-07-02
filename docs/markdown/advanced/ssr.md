@@ -3,6 +3,8 @@
 Sycamore supports creating isomorphic web applications (apps that use the same code to run on both
 the server and the client).
 
+## `render_to_string`
+
 So far, we've been using the `render` or `render_to` functions to mount our app into the browser's
 DOM. When rendering on the server, however, we don't have a DOM accessible to use so we use
 `render_to_string` instead.
@@ -22,6 +24,8 @@ let html = render_to_string(|| node);
 println!("{}", html);
 ```
 
+Note that you will need to enable the `"ssr"` feature on `sycamore` in your `Cargo.toml` file.
+
 ## Hydration
 
 Sycamore currently implements a very "naive" method of hydration. The current `hydrate` and
@@ -32,3 +36,10 @@ This still retains many benefits of SSR. The initial load time will still be fas
 will be able to see markup without executing anything.
 
 Once proper hydration is implemented, time to interactive will be improved.
+
+## Quick Start Templates
+
+- [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template): A quick
+  start template for using Sycamore with Rocket. Batteries included with `sycamore-router`.
+- [`sycamore-rocket-minimal-template`](https://github.com/sycamore-rs/sycamore-rocket-minimal-template):
+  A minimal template for using Sycamore with Rocket.
