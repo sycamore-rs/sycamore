@@ -4,46 +4,46 @@ static PAGES: &[(&str, &[(&str, &str)])] = &[
     (
         "Getting Started",
         &[
-            ("Installation", "/getting_started/installation"),
-            ("Hello World!", "/getting_started/hello_world"),
+            ("Installation", "getting_started/installation"),
+            ("Hello World!", "getting_started/hello_world"),
         ],
     ),
     (
         "Basics",
         &[
-            ("template!", "/basics/template"),
-            ("Reactivity", "/basics/reactivity"),
-            ("Components", "/basics/components"),
-            ("Control Flow", "/basics/control_flow"),
-            ("Iteration", "/basics/iteration"),
-            ("Data Binding", "/basics/data_binding"),
+            ("template!", "basics/template"),
+            ("Reactivity", "basics/reactivity"),
+            ("Components", "basics/components"),
+            ("Control Flow", "basics/control_flow"),
+            ("Iteration", "basics/iteration"),
+            ("Data Binding", "basics/data_binding"),
         ],
     ),
     (
         "Advanced Guides",
         &[
-            ("NodeRef", "/advanced/noderef"),
-            ("Tweened", "/advanced/tweened"),
-            ("Advanced Reactivity", "/advanced/advanced_reactivity"),
-            ("CSS", "/advanced/css"),
-            ("Testing", "/advanced/testing"),
-            ("Routing", "/advanced/routing"),
-            ("SSR", "/advanced/ssr"),
-            ("JS Interop", "/advanced/js_interop"),
+            ("NodeRef", "advanced/noderef"),
+            ("Tweened", "advanced/tweened"),
+            ("Advanced Reactivity", "advanced/advanced_reactivity"),
+            ("CSS", "advanced/css"),
+            ("Testing", "advanced/testing"),
+            ("Routing", "advanced/routing"),
+            ("SSR", "advanced/ssr"),
+            ("JS Interop", "advanced/js_interop"),
         ],
     ),
     (
         "Optimizations",
         &[
-            ("Code Size", "/optimizations/code_size"),
-            ("Speed", "/optimizations/speed"),
+            ("Code Size", "optimizations/code_size"),
+            ("Speed", "optimizations/speed"),
         ],
     ),
     (
         "Contribute",
         &[
-            ("Architecture", "/contribute/architecture"),
-            ("Development", "/contribute/development"),
+            ("Architecture", "contribute/architecture"),
+            ("Development", "contribute/development"),
         ],
     ),
 ];
@@ -60,7 +60,7 @@ pub fn sidebar() -> Template<G> {
                     template! {
                         li {
                             a(
-                                href=page.1,
+                                href=format!("/docs/{}", page.1),
                                 class="pl-4 hover:bg-gray-300 w-full inline-block rounded transition",
                             ) {
                                 (page.0)

@@ -10,7 +10,7 @@ use sycamore_router::{BrowserRouter, Route};
 enum Routes {
     #[to("/")]
     Index,
-    #[to("/<_>/<_>")]
+    #[to("/docs/<_>/<_>")]
     Docs(String, String),
     #[not_found]
     NotFound,
