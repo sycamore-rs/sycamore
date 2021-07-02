@@ -226,6 +226,24 @@ fn reactive_text() {
 }
 
 #[wasm_bindgen_test]
+fn reactive_text_do_not_destroy_previous_children() {
+    let count = Signal::new(0);
+
+    let node = cloned!((count) => template! {
+        p { "Value: " (count.get()) }
+    });
+
+    sycamore::render_to(|| node, &test_container());
+
+    let p = document().query_selector("p").unwrap().unwrap();
+
+    assert_eq!(p.text_content().unwrap(), "Value: 0");
+
+    count.set(1);
+    assert_eq!(p.text_content().unwrap(), "Value: 1");
+}
+
+#[wasm_bindgen_test]
 fn reactive_attribute() {
     let count = Signal::new(0);
 
