@@ -26,7 +26,7 @@ fn nav() -> Template<G> {
                 // Links section
                 div(class="flex flex-row ml-2 space-x-4 text-gray-600") {
                     a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
-                        href="/getting_started/installation",
+                        href="/docs/getting_started/installation",
                     ) {
                         "Book"
                     }

@@ -12,7 +12,7 @@ pub fn index() -> Template<G> {
                 "Fast isomorphic web apps in Rust + WASM"
             }
             a(
-                href="/getting_started/installation",
+                href="/docs/getting_started/installation",
                 class="py-2 px-3 bg-white hover:bg-yellow-500 border-2 border-yellow-500 \
                 rounded font-medium transition",
             ) {

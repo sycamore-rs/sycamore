@@ -59,7 +59,7 @@ jobs:
             echo "building: $example"
             (
               cd "$path"
-              dist_dir="$output/example/$example"
+              dist_dir="$output/examples/$example"
               mkdir "$dist_dir"
               trunk build --release --dist "$dist_dir" --public-url "/example/$example"
             )
