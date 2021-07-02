@@ -14,7 +14,11 @@ template! {
 
 Now, when the user types into the input, the `value` signal will automatically be synced.
 
-The way this works is by listening to specific events on the DOM node according to the property. For instance, `value` uses the `on:input` event. Below is a table of supported properties and events that are listened to.
+The way this works is by listening to specific events on the DOM node according to the property. For instance, `value` uses the `on:input` event. 
+
+## Supported properties
+
+Below is a table of supported properties and events that are listened to.
 
 | Property      | Event name    | Signal type  |
 | :------------ | :------------ | :----------- |

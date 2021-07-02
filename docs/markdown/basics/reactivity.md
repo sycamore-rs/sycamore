@@ -3,7 +3,9 @@
 Instead of relying on a Virtual DOM (VDOM), Sycamore uses fine-grained reactivity to keep the DOM and state in sync.
 In fact, the reactivity part of Sycamore can be used on its own without the DOM rendering part.
 
-Reactivity is based on reactive primitives. Here is an example:
+## Signal
+
+Reactivity is based on reactive primitives. A `Signal` is data that is reactive. Here is an example:
 
 ```rust
 use sycamore::prelude::*;
@@ -22,6 +24,8 @@ To update the state, we call the `.set(...)` method on `state`:
 state.set(1);
 println!("The state is: {}", state.get()); // should now print "The state is: 1"
 ```
+
+## Effects
 
 Why would this be useful? It's useful because it provides a way to easily be notified of any state changes.
 For example, say we wanted to print out every state change. This can easily be accomplished like so:
@@ -43,7 +47,7 @@ How does the `create_effect(...)` function know to execute the closure every tim
 Calling `create_effect` creates a new _"reactivity scope"_ and calling `state.get()` inside this scope adds itself as a _dependency_.
 Now, when `state.set(...)` is called, it automatically calls all its _dependents_, in this case, `state` as it was called inside the closure.
 
-> ## What's that `cloned!` macro doing?
+> ### What's that `cloned!` macro doing?
 >
 > The `cloned!` macro is an utility macro for cloning the variables into the following expression. The previous `create_effect` function call could very well have been written as:
 >
@@ -57,6 +61,8 @@ Now, when `state.set(...)` is called, it automatically calls all its _dependents
 > ```
 >
 > This is ultimately just a workaround until something happens in [Rust RFC #2407](https://github.com/rust-lang/rfcs/issues/2407).
+
+## Memos
 
 We can also easily create a derived state using `create_memo(...)` which is really just an ergonomic wrapper around `create_effect`:
 
