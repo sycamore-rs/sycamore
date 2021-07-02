@@ -30,7 +30,7 @@ jobs:
         if: always()
 
       - name: Run headless browser tests
-        run: wasm-pack test packages/sycamore --firefox --chrome --headless
+        run: cd packages/sycamore && wasm-pack test --firefox --chrome --headless
         if: always()
 
   clippy:
