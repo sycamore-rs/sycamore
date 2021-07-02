@@ -54,7 +54,7 @@ jobs:
               cd "$path"
               dist_dir="$output/example/$example"
               mkdir "$dist_dir"
-              trunk build --release --dist "$dist_dir" --public-url "/example/$example"
+              trunk build --release --dist "$dist_dir" --public-url "/examples/$example"
             )
           done
 
