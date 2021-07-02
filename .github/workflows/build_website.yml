@@ -50,7 +50,7 @@ jobs:
       - name: Build examples
         run: |
           output="$(pwd)/docs/dist"
-          mkdir "$output/example"
+          mkdir "$output/examples"
           for path in examples/*; do
             if [[ ! -d $path ]]; then
               continue
