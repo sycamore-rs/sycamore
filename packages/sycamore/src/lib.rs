@@ -26,9 +26,9 @@ pub mod component;
 pub mod easing;
 pub mod flow;
 pub mod generic_node;
+pub mod into_template;
 pub mod macros;
 pub mod noderef;
-pub mod render;
 pub mod rx;
 pub mod template;
 pub mod utils;
@@ -36,24 +36,28 @@ pub mod utils;
 /// Alias self to sycamore for proc-macros.
 extern crate self as sycamore;
 
+#[cfg(feature = "dom")]
+pub use crate::generic_node::{hydrate, hydrate_to, render, render_to, DomNode};
+#[cfg(feature = "ssr")]
+pub use crate::generic_node::{render_to_string, SsrNode};
+
 /// The sycamore prelude.
 pub mod prelude {
     pub use sycamore_macro::{component, template};
 
     pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
-    pub use crate::generic_node::GenericNode;
     #[cfg(feature = "dom")]
-    pub use crate::generic_node::{hydrate, hydrate_to, render, render_to, DomNode};
+    pub use crate::generic_node::DomNode;
+    pub use crate::generic_node::GenericNode;
     #[cfg(feature = "ssr")]
-    pub use crate::generic_node::{render_to_string, SsrNode};
+    pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
-    pub use crate::render::IntoTemplate;
     pub use crate::rx::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, untrack, Signal, StateHandle,
     };
-    pub use crate::template::Template;
+    pub use crate::template::{IntoTemplate, Template};
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

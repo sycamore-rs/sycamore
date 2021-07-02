@@ -13,7 +13,7 @@ pub fn bench(c: &mut Criterion) {
                 }
             }
 
-            let _ssr = render_to_string(|| template! { App() });
+            let _ssr = sycamore::render_to_string(|| template! { App() });
         })
     });
 
@@ -48,7 +48,7 @@ pub fn bench(c: &mut Criterion) {
                 }
             }
 
-            let _ssr = render_to_string(|| template! { App() });
+            let _ssr = sycamore::render_to_string(|| template! { App() });
         })
     });
 }

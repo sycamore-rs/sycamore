@@ -10,7 +10,7 @@ fn lazy() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     assert_eq!(
         document()
@@ -32,7 +32,7 @@ fn lazy_reactive() {
     let node: Template<DomNode> =
         Template::new_lazy(cloned!((template) => move || (*template.get()).clone()));
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
     let test_container = document()
         .query_selector("test-container")
         .unwrap()
@@ -57,7 +57,7 @@ fn lazy_in_fragment() {
         "after"
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
     let test_container = document()
         .query_selector("test-container")
         .unwrap()

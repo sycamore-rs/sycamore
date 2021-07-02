@@ -653,10 +653,10 @@ mod tests {
             });
         }));
 
-        assert_eq!(*cleanup_called.get(), false);
+        assert!(!*cleanup_called.get());
 
         drop(scope);
-        assert_eq!(*cleanup_called.get(), true);
+        assert!(*cleanup_called.get());
     }
 
     #[test]
