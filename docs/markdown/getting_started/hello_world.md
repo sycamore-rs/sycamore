@@ -10,7 +10,7 @@ Here it is:
 use sycamore::prelude::*;
 
 fn main() {
-    render(|| template! {
+    sycamore::render(|| template! {
         p { "Hello, World!" }
     });
 }
@@ -25,7 +25,7 @@ fn main() {
 Nothing really special here. Trunk automatically uses `fn main` as your project's entrypoint. No need for any `#[wasm_bindgen(start)]` here.
 
 ```rust
-render(...)
+sycamore::render(...)
 ```
 
 This function is provided by Sycamore and is used to render your app to the DOM (browser window). `render` accepts a closure (aka. lambda function) which should return a template to be rendered.

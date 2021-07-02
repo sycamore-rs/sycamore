@@ -129,16 +129,17 @@ fn insert_expression<G: GenericNode>(
 pub fn clean_children<G: GenericNode>(
     parent: &G,
     current: Vec<G>,
-    marker: Option<&G>,
+    _marker: Option<&G>,
     replacement: Option<&G>,
 ) {
-    if marker == None {
-        parent.update_inner_text("");
-        if let Some(replacement) = replacement {
-            parent.append_child(replacement);
-        }
-        return;
-    }
+    // TODO: hot path for removing all children
+    // if marker == None {
+    //     parent.update_inner_text("");
+    //     if let Some(replacement) = replacement {
+    //         parent.append_child(replacement);
+    //     }
+    //     return;
+    // }
 
     for node in current {
         if node.parent_node().as_ref() == Some(&parent) {

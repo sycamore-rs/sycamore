@@ -26,6 +26,6 @@ fn app() -> Template<G> {
 }
 
 fn main() {
-    let s = render_to_string(|| template! { App() });
+    let s = sycamore::render_to_string(|| template! { App() });
     println!("{}", s);
 }

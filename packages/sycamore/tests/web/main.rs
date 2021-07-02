@@ -49,7 +49,7 @@ fn test_container() -> Node {
 fn empty_template() {
     let node = template! {};
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     assert_eq!(
         document()
@@ -67,7 +67,7 @@ fn hello_world() {
         p { "Hello World!" }
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     assert_eq!(
         &document()
@@ -87,7 +87,7 @@ fn hello_world_noderef() {
         p(ref=p_ref) { "Hello World!" }
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     assert_eq!(
         &p_ref
@@ -105,7 +105,7 @@ fn interpolation() {
         p { (text) }
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     assert_eq!(
         document()
@@ -127,7 +127,7 @@ fn template_interpolation() {
         }
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     assert_eq!(
         document()
@@ -153,7 +153,7 @@ fn template_interpolation_if_else() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     assert_eq!(
         document()
@@ -198,7 +198,7 @@ fn template_interpolation_nested_reactivity() {
         }
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("p").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "0");
@@ -215,7 +215,7 @@ fn reactive_text() {
         p { (count.get()) }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("p").unwrap().unwrap();
 
@@ -226,6 +226,24 @@ fn reactive_text() {
 }
 
 #[wasm_bindgen_test]
+fn reactive_text_do_not_destroy_previous_children() {
+    let count = Signal::new(0);
+
+    let node = cloned!((count) => template! {
+        p { "Value: " (count.get()) }
+    });
+
+    sycamore::render_to(|| node, &test_container());
+
+    let p = document().query_selector("p").unwrap().unwrap();
+
+    assert_eq!(p.text_content().unwrap(), "Value: 0");
+
+    count.set(1);
+    assert_eq!(p.text_content().unwrap(), "Value: 1");
+}
+
+#[wasm_bindgen_test]
 fn reactive_attribute() {
     let count = Signal::new(0);
 
@@ -233,7 +251,7 @@ fn reactive_attribute() {
         span(attribute=count.get())
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let span = document().query_selector("span").unwrap().unwrap();
 
@@ -248,7 +266,7 @@ fn two_way_bind_to_props() {
     let value = Signal::new(String::new());
     let value2 = value.clone();
 
-    render_to(
+    sycamore::render_to(
         || {
             cloned!((value) => template! {
                 input(bind:value=value)
@@ -285,7 +303,7 @@ fn noderefs() {
         }
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let input_ref = document().query_selector("input").unwrap().unwrap();
 
@@ -303,7 +321,7 @@ fn fragments() {
         p { "3" }
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let test_container = document()
         .query_selector("#test-container")
@@ -321,7 +339,7 @@ fn fragments_text_nodes() {
         "3"
     };
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let test_container = document()
         .query_selector("#test-container")
@@ -335,7 +353,7 @@ fn fragments_text_nodes() {
 fn lazy_fragment_reuse_nodes() {
     let nodes = vec![template! { "1" }, template! { "2" }, template! { "3" }];
 
-    render_to(
+    sycamore::render_to(
         cloned!((nodes) =>
             move || Template::new_lazy(move || Template::new_fragment(nodes.clone()))
         ),

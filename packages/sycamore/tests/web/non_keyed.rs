@@ -17,7 +17,7 @@ fn append() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
 
@@ -49,7 +49,7 @@ fn swap_rows() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -84,7 +84,7 @@ fn delete_row() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -112,7 +112,7 @@ fn clear() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -136,7 +136,7 @@ fn insert_front() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -164,7 +164,7 @@ fn nested_reactivity() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document().query_selector("ul").unwrap().unwrap();
     assert_eq!(p.text_content().unwrap(), "123");
@@ -196,7 +196,7 @@ fn fragment_template() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let elem = document().query_selector("div").unwrap().unwrap();
 
@@ -242,7 +242,7 @@ fn template_top_level() {
         })
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let p = document()
         .query_selector("#test-container")
@@ -286,7 +286,7 @@ fn template_with_other_nodes_at_same_level() {
         }
     });
 
-    render_to(|| node, &test_container());
+    sycamore::render_to(|| node, &test_container());
 
     let elem = document().query_selector("ul").unwrap().unwrap();
 

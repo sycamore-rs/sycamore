@@ -6,7 +6,7 @@ fn hello_world() {
         p { "Hello World!" }
     };
 
-    assert_eq!(render_to_string(|| node), "<p>Hello World!</p>");
+    assert_eq!(sycamore::render_to_string(|| node), "<p>Hello World!</p>");
 }
 
 #[test]
@@ -18,12 +18,12 @@ fn reactive_text() {
     });
 
     assert_eq!(
-        render_to_string(cloned!((node) => move || node)),
+        sycamore::render_to_string(cloned!((node) => move || node)),
         "<p>0</p>"
     );
 
     count.set(1);
-    assert_eq!(render_to_string(|| node), "<p>1</p>");
+    assert_eq!(sycamore::render_to_string(|| node), "<p>1</p>");
 }
 
 #[test]
@@ -36,7 +36,7 @@ fn self_closing_tag() {
     };
 
     assert_eq!(
-        render_to_string(|| node),
+        sycamore::render_to_string(|| node),
         "<div><input /><input value=\"a\" /></div>"
     )
 }

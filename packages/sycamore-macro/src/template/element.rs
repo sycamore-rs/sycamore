@@ -105,7 +105,7 @@ impl ToTokens for Element {
                                 ::sycamore::generic_node::render::insert(
                                    &__el,
                                    ::sycamore::template::Template::new_lazy(move ||
-                                       ::sycamore::render::IntoTemplate::create(&#text)
+                                       ::sycamore::template::IntoTemplate::create(&#text)
                                    ),
                                    None, __marker,
                                );
