@@ -45,11 +45,9 @@ where
             } else if items.is_empty() {
                 // Fast path for new create.
                 for new_item in new_items.iter() {
-                    let mut new_mapped = None;
                     let new_scope = create_root(|| {
-                        new_mapped = Some(map_fn(new_item));
+                        mapped.borrow_mut().push(map_fn(new_item));
                     });
-                    mapped.borrow_mut().push(new_mapped.unwrap());
                     scopes.push(Some(Rc::new(new_scope)));
                 }
             } else {
@@ -97,7 +95,8 @@ where
                 // natural order.
                 let mut new_indices = HashMap::new();
 
-                // Indexes for new_indices_next are shifted by start because values at 0..start are always None.
+                // Indexes for new_indices_next are shifted by start because values at 0..start are
+                // always None.
                 let mut new_indices_next = vec![None; new_end - start];
                 for j in (start..new_end).rev() {
                     let item = &new_items[j];
@@ -213,18 +212,14 @@ where
                     let item = items.get(i);
 
                     if item.is_none() {
-                        let mut new_mapped = None;
                         let new_scope = create_root(|| {
-                            new_mapped = Some(map_fn(new_item));
+                            mapped.borrow_mut().push(map_fn(new_item));
                         });
-                        mapped.borrow_mut().push(new_mapped.unwrap());
                         scopes.push(new_scope);
                     } else if item != Some(new_item) {
-                        let mut new_mapped = None;
                         let new_scope = create_root(|| {
-                            new_mapped = Some(map_fn(new_item));
+                            mapped.borrow_mut()[i] = map_fn(new_item);
                         });
-                        mapped.borrow_mut()[i] = new_mapped.unwrap();
                         scopes[i] = new_scope;
                     }
                 }

@@ -180,9 +180,8 @@ pub fn create_effect_initial<R: 'static>(
                     contexts.borrow_mut().push(Rc::downgrade(&running));
 
                     if let Some(initial) = initial.take() {
-                        let effect = Rc::clone(&effect);
                         let ret = Weak::upgrade(&ret).unwrap();
-                        let scope = create_root(move || {
+                        let scope = create_root(|| {
                             let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
                             *effect.borrow_mut() = Some(effect_tmp);
                             *ret.borrow_mut() = Some(ret_tmp);
@@ -197,8 +196,7 @@ pub fn create_effect_initial<R: 'static>(
                         );
                         drop(old_scope);
 
-                        let effect = Rc::clone(&effect);
-                        let scope = create_root(move || {
+                        let scope = create_root(|| {
                             effect.borrow_mut().as_mut().unwrap()();
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
