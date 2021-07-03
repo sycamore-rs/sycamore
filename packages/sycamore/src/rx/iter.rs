@@ -3,7 +3,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::mem;
 use std::rc::Rc;
 
 use super::*;
@@ -41,16 +40,14 @@ where
         untrack(|| {
             if new_items.is_empty() {
                 // Fast path for removing all items.
-                drop(mem::take(&mut scopes));
+                scopes = Vec::new();
                 *mapped.borrow_mut() = Vec::new();
             } else if items.is_empty() {
                 // Fast path for new create.
                 for new_item in new_items.iter() {
-                    let mut new_mapped = None;
                     let new_scope = create_root(|| {
-                        new_mapped = Some(map_fn(new_item));
+                        mapped.borrow_mut().push(map_fn(new_item));
                     });
-                    mapped.borrow_mut().push(new_mapped.unwrap());
                     scopes.push(Some(Rc::new(new_scope)));
                 }
             } else {
@@ -97,11 +94,14 @@ where
                 // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
                 // natural order.
                 let mut new_indices = HashMap::new();
-                let mut new_indices_next = vec![None; new_end];
+
+                // Indexes for new_indices_next are shifted by start because values at 0..start are
+                // always None.
+                let mut new_indices_next = vec![None; new_end - start];
                 for j in (start..new_end).rev() {
                     let item = &new_items[j];
                     let i = new_indices.get(&key_fn(item));
-                    new_indices_next[j] = i.cloned();
+                    new_indices_next[j - start] = i.copied();
                     new_indices.insert(key_fn(item), j);
                 }
 
@@ -113,7 +113,8 @@ where
                         // Moved. j is index of item in new_items.
                         temp[j] = Some(mapped.borrow()[i].clone());
                         temp_scopes[j] = scopes[i].clone();
-                        new_indices_next[j].and_then(|j| new_indices.insert(key_fn(item), j));
+                        new_indices_next[j - start]
+                            .and_then(|j| new_indices.insert(key_fn(item), j));
                     } else {
                         // Create new.
                         scopes[i] = None;
@@ -196,7 +197,7 @@ where
         untrack(|| {
             if new_items.is_empty() {
                 // Fast path for removing all items.
-                drop(mem::take(&mut scopes));
+                scopes = Vec::new();
                 items = Rc::new(Vec::new());
                 *mapped.borrow_mut() = Vec::new();
             } else {
@@ -211,18 +212,14 @@ where
                     let item = items.get(i);
 
                     if item.is_none() {
-                        let mut new_mapped = None;
                         let new_scope = create_root(|| {
-                            new_mapped = Some(map_fn(new_item));
+                            mapped.borrow_mut().push(map_fn(new_item));
                         });
-                        mapped.borrow_mut().push(new_mapped.unwrap());
                         scopes.push(new_scope);
                     } else if item != Some(new_item) {
-                        let mut new_mapped = None;
                         let new_scope = create_root(|| {
-                            new_mapped = Some(map_fn(new_item));
+                            mapped.borrow_mut()[i] = map_fn(new_item);
                         });
-                        mapped.borrow_mut()[i] = new_mapped.unwrap();
                         scopes[i] = new_scope;
                     }
                 }
