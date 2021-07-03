@@ -64,11 +64,8 @@ jobs:
           tar -xf wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
           sudo mv wasm-bindgen-0.2.74-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: wasm-pack
-          version: latest
-          use-tool-cache: true
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Setup Node
         uses: actions/setup-node@v1
