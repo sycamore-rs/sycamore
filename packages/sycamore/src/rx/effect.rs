@@ -149,15 +149,15 @@ impl Eq for Dependency {}
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
 pub fn create_effect_initial<R: 'static>(
-    initial: impl FnOnce() -> (Rc<RefCell<dyn FnMut()>>, R) + 'static,
+    initial: impl FnOnce() -> (Box<dyn FnMut()>, R) + 'static,
 ) -> R {
-    type InitialFn = dyn FnOnce() -> (Rc<RefCell<dyn FnMut()>>, Box<dyn Any>);
+    type InitialFn = dyn FnOnce() -> (Box<dyn FnMut()>, Box<dyn Any>);
 
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
     fn internal(initial: Box<InitialFn>) -> Box<dyn Any> {
         let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
-        type MutEffect = Rc<RefCell<Option<Rc<RefCell<dyn FnMut()>>>>>;
+        type MutEffect = Rc<RefCell<Option<Box<dyn FnMut()>>>>;
         let effect: MutEffect = Rc::new(RefCell::new(None));
         let ret: Rc<RefCell<Option<Box<dyn Any>>>> = Rc::new(RefCell::new(None));
 
@@ -199,7 +199,7 @@ pub fn create_effect_initial<R: 'static>(
 
                         let effect = Rc::clone(&effect);
                         let scope = create_root(move || {
-                            effect.borrow().as_ref().unwrap().borrow_mut()();
+                            effect.borrow_mut().as_mut().unwrap()();
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
                     }
@@ -284,7 +284,7 @@ where
 {
     create_effect_initial(move || {
         effect();
-        (Rc::new(RefCell::new(effect)), ())
+        (Box::new(effect), ())
     });
 }
 
@@ -343,7 +343,7 @@ where
     create_effect_initial(move || {
         let memo = Signal::new(derived.borrow_mut()());
 
-        let effect = Rc::new(RefCell::new({
+        let effect = {
             let memo = memo.clone();
             let derived = Rc::clone(&derived);
             move || {
@@ -352,9 +352,9 @@ where
                     memo.set(new_value);
                 }
             }
-        }));
+        };
 
-        (effect, memo.into_handle())
+        (Box::new(effect), memo.into_handle())
     })
 }
 
