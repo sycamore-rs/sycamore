@@ -3,7 +3,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::mem;
 use std::rc::Rc;
 
 use super::*;
@@ -41,7 +40,7 @@ where
         untrack(|| {
             if new_items.is_empty() {
                 // Fast path for removing all items.
-                drop(mem::take(&mut scopes));
+                scopes = Vec::new();
                 *mapped.borrow_mut() = Vec::new();
             } else if items.is_empty() {
                 // Fast path for new create.
@@ -196,7 +195,7 @@ where
         untrack(|| {
             if new_items.is_empty() {
                 // Fast path for removing all items.
-                drop(mem::take(&mut scopes));
+                scopes = Vec::new();
                 items = Rc::new(Vec::new());
                 *mapped.borrow_mut() = Vec::new();
             } else {

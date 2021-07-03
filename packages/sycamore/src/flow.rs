@@ -4,7 +4,6 @@
 //! Use the [`Keyed`] and [`Indexed`] utility components respectively.
 
 use std::hash::Hash;
-use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
 use crate::prelude::*;
@@ -61,16 +60,8 @@ where
         template,
         key,
     } = props;
-    let template = Rc::new(template);
 
-    let mut mapped = map_keyed(
-        iterable,
-        {
-            let template = Rc::clone(&template);
-            move |x| template(x.clone())
-        },
-        key,
-    );
+    let mut mapped = map_keyed(iterable, move |x| template(x.clone()), key);
     Template::new_lazy(move || Template::new_fragment(mapped()))
 }
 
@@ -112,11 +103,7 @@ where
     F: Fn(T) -> Template<G>,
 {
     let IndexedProps { iterable, template } = props;
-    let template = Rc::new(template);
 
-    let mut mapped = map_indexed(iterable, {
-        let template = Rc::clone(&template);
-        move |x| template(x.clone())
-    });
+    let mut mapped = map_indexed(iterable, move |x| template(x.clone()));
     Template::new_lazy(move || Template::new_fragment(mapped()))
 }
