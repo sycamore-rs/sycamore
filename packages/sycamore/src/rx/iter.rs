@@ -96,11 +96,13 @@ where
                 // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
                 // natural order.
                 let mut new_indices = HashMap::new();
-                let mut new_indices_next = vec![None; new_end];
+
+                // Indexes for new_indices_next are shifted by start because values at 0..start are always None.
+                let mut new_indices_next = vec![None; new_end - start];
                 for j in (start..new_end).rev() {
                     let item = &new_items[j];
                     let i = new_indices.get(&key_fn(item));
-                    new_indices_next[j] = i.cloned();
+                    new_indices_next[j - start] = i.copied();
                     new_indices.insert(key_fn(item), j);
                 }
 
@@ -112,7 +114,8 @@ where
                         // Moved. j is index of item in new_items.
                         temp[j] = Some(mapped.borrow()[i].clone());
                         temp_scopes[j] = scopes[i].clone();
-                        new_indices_next[j].and_then(|j| new_indices.insert(key_fn(item), j));
+                        new_indices_next[j - start]
+                            .and_then(|j| new_indices.insert(key_fn(item), j));
                     } else {
                         // Create new.
                         scopes[i] = None;
