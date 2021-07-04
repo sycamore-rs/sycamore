@@ -126,7 +126,11 @@ impl fmt::Debug for DomNode {
 }
 
 fn document() -> web_sys::Document {
-    web_sys::window().unwrap().document().unwrap()
+    thread_local! {
+        /// Cache document since it is frequently accessed to prevent going through js-interop.
+        static DOCUMENT: web_sys::Document = web_sys::window().unwrap().document().unwrap();
+    };
+    DOCUMENT.with(|document| document.clone())
 }
 
 impl GenericNode for DomNode {
