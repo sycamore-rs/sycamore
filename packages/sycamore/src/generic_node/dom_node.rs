@@ -179,6 +179,13 @@ impl GenericNode for DomNode {
         self.node.append_child(&child.node).unwrap();
     }
 
+    fn first_child(&self) -> Option<Self> {
+        self.node.first_child().map(|node| Self {
+            id: Default::default(),
+            node: Rc::new(node),
+        })
+    }
+
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
             .insert_before(&new_node.node, reference_node.map(|n| n.node.as_ref()))

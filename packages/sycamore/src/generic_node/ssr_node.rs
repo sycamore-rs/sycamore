@@ -138,6 +138,13 @@ impl GenericNode for SsrNode {
         }
     }
 
+    fn first_child(&self) -> Option<Self> {
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(element) => element.borrow_mut().children.first().cloned(),
+            _ => panic!("node type cannot have children"),
+        }
+    }
+
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         if let Some(reference_node) = reference_node {
             debug_assert_eq!(

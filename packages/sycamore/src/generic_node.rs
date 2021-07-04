@@ -64,6 +64,9 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Appends a child to the node's children.
     fn append_child(&self, child: &Self);
 
+    /// Get the first child of the node.
+    fn first_child(&self) -> Option<Self>;
+
     /// Insert a new child node to this node's children. If `reference_node` is `Some`, the child
     /// will be inserted before the reference node. Else if `None`, the child will be inserted
     /// at the end.
