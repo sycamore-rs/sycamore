@@ -93,4 +93,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
     fn update_inner_text(&self, text: &str);
+
+    /// Create a deep clone of the node.
+    fn clone_node(&self) -> Self;
 }

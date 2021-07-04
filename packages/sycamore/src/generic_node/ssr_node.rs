@@ -18,7 +18,7 @@ static VOID_ELEMENTS: &[&str] = &[
 ];
 
 /// Inner representation for [`SsrNode`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum SsrNodeType {
     Element(RefCell<Element>),
     Comment(RefCell<Comment>),
@@ -249,6 +249,14 @@ impl GenericNode for SsrNode {
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
             SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
         }
+    }
+
+    fn clone_node(&self) -> Self {
+        let inner = SsrNodeInner {
+            ty: Rc::new(self.0.ty.as_ref().clone()),
+            parent: RefCell::new(Weak::new()),
+        };
+        Self(Rc::new(inner))
     }
 }
 

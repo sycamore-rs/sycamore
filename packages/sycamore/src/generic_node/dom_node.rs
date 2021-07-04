@@ -232,6 +232,13 @@ impl GenericNode for DomNode {
     fn update_inner_text(&self, text: &str) {
         self.node.set_text_content(Some(text));
     }
+
+    fn clone_node(&self) -> Self {
+        Self {
+            node: Rc::new(self.node.clone_node_with_deep(true).unwrap()),
+            id: Default::default(),
+        }
+    }
 }
 
 /// Render a [`Template`] into the DOM.
