@@ -581,6 +581,41 @@ mod tests {
     }
 
     #[test]
+    fn nested_effects_trigger_outer_effect() {
+        let trigger = Signal::new(());
+
+        let outer_counter = Signal::new(0);
+        let inner_counter = Signal::new(0);
+        let inner_cleanup_counter = Signal::new(0);
+
+        create_effect(
+            cloned!((trigger, outer_counter, inner_counter, inner_cleanup_counter) => move || {
+                trigger.get(); // subscribe to trigger
+                outer_counter.set(*outer_counter.get_untracked() + 1);
+
+                create_effect(cloned!((trigger, inner_counter, inner_cleanup_counter) => move || {
+                    trigger.set(()); // update trigger which should recreate the outer effect
+                    inner_counter.set(*inner_counter.get_untracked() + 1);
+
+                    on_cleanup(cloned!((inner_cleanup_counter) => move || {
+                        inner_cleanup_counter.set(*inner_cleanup_counter.get_untracked() + 1);
+                    }));
+                }));
+            }),
+        );
+
+        assert_eq!(*outer_counter.get(), 1);
+        assert_eq!(*inner_counter.get(), 1);
+        assert_eq!(*inner_cleanup_counter.get(), 0);
+
+        trigger.set(());
+
+        assert_eq!(*outer_counter.get(), 2);
+        assert_eq!(*inner_counter.get(), 2);
+        assert_eq!(*inner_cleanup_counter.get(), 1);
+    }
+
+    #[test]
     fn destroy_effects_on_scope_drop() {
         let counter = Signal::new(0);
 
