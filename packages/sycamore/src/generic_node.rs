@@ -2,7 +2,6 @@
 
 #[cfg(feature = "dom")]
 pub mod dom_node;
-pub mod render;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
 

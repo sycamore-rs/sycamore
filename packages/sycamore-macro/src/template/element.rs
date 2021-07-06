@@ -94,7 +94,7 @@ impl ToTokens for Element {
                         match child {
                             HtmlTree::Component(component) => quote_spanned! { component.span()=>
                                 #quote_marker
-                                ::sycamore::generic_node::render::insert(
+                                ::sycamore::utils::render::insert(
                                     &__el,
                                     #component,
                                     None, __marker,
@@ -102,7 +102,7 @@ impl ToTokens for Element {
                             },
                             HtmlTree::Text(text @ Text::Splice(..)) => quote_spanned! { text.span()=>
                                 #quote_marker
-                                ::sycamore::generic_node::render::insert(
+                                ::sycamore::utils::render::insert(
                                    &__el,
                                    ::sycamore::template::Template::new_dyn(move ||
                                        ::sycamore::template::IntoTemplate::create(&#text)

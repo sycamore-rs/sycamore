@@ -1,6 +1,6 @@
 //! Tests for [`reconcile_fragments`].
 
-use sycamore::generic_node::render::{append_nodes, insert, reconcile_fragments};
+use sycamore::utils::render::{append_nodes, insert, reconcile_fragments};
 use sycamore::generic_node::DomNode;
 
 use super::*;

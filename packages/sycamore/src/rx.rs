@@ -11,7 +11,7 @@ pub use motion::*;
 pub use signal::*;
 
 /// Creates a new reactive root / scope. Generally, you won't need this method as it is called
-/// automatically in [`render`](crate::generic_node::render()).
+/// automatically in [`render`](crate::utils::render()).
 ///
 /// # Example
 /// ```
