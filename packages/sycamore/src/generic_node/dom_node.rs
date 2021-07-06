@@ -259,6 +259,7 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
             template(),
             None,
             None,
+            false,
         );
     });
 
@@ -324,6 +325,7 @@ pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
             template(),
             None,
             None, // TODO
+            false,
         );
     });
 

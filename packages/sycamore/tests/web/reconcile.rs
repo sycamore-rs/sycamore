@@ -23,6 +23,7 @@ fn insert_create_nodes() {
         Template::new_fragment(nodes.to_vec().into_iter().map(Template::new_node).collect()),
         None,
         None,
+        true,
     );
     assert_eq!(parent.inner_element().text_content().unwrap(), "123");
 }

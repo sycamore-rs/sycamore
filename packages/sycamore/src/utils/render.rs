@@ -17,13 +17,18 @@ use crate::template::{Template, TemplateType};
 /// * `marker` - An optional marker node. If `marker` is `Some(_)`, `accessor` will be inserted
 ///   directly before `marker`. If `marker` is `None`, `accessor` will be appended at the end of
 ///   `parent`.
+/// * `multi` - A boolean flag indicating whether the node to be inserted is the only child of
+///   `parent`. Setting this to `true` will enable certain optimizations when clearing the node.
+///   Even if the node to be inserted is the only child of `parent`, `multi` can still be set to
+///   `false` but forgoes the optimizations.
 pub fn insert<G: GenericNode>(
     parent: &G,
     accessor: Template<G>,
     initial: Option<Template<G>>,
     marker: Option<&G>,
+    multi: bool,
 ) {
-    insert_expression(parent, &accessor, initial, marker, false);
+    insert_expression(parent, &accessor, initial, marker, false, multi);
 }
 
 fn insert_expression<G: GenericNode>(
@@ -32,6 +37,7 @@ fn insert_expression<G: GenericNode>(
     mut current: Option<Template<G>>,
     marker: Option<&G>,
     unwrap_fragment: bool,
+    multi: bool,
 ) {
     while let Some(Template {
         inner: TemplateType::Dyn(f),
@@ -43,7 +49,7 @@ fn insert_expression<G: GenericNode>(
     match &value.inner {
         TemplateType::Node(node) => {
             if let Some(current) = current {
-                clean_children(parent, current.flatten(), marker, Some(&node));
+                clean_children(parent, current.flatten(), marker, Some(&node), multi);
             } else {
                 parent.insert_child_before(&node, marker);
             }
@@ -57,7 +63,14 @@ fn insert_expression<G: GenericNode>(
                 while let TemplateType::Dyn(f) = &value.inner {
                     value = f.get();
                 }
-                insert_expression(&parent, &value, current.clone(), marker.as_ref(), false);
+                insert_expression(
+                    &parent,
+                    &value,
+                    current.clone(),
+                    marker.as_ref(),
+                    false,
+                    multi,
+                );
                 current = Some(value.as_ref().clone());
             });
         }
@@ -69,7 +82,14 @@ fn insert_expression<G: GenericNode>(
                 let marker = marker.cloned();
                 create_effect(move || {
                     let value = Template::new_fragment(v.clone());
-                    insert_expression(&parent, &value, current.clone(), marker.as_ref(), true);
+                    insert_expression(
+                        &parent,
+                        &value,
+                        current.clone(),
+                        marker.as_ref(),
+                        true,
+                        false,
+                    );
                     current = Some(value); // FIXME: should be return value of
                                            // normalize_incoming_fragment called in recursive
                                            // insert_expression
@@ -83,21 +103,26 @@ fn insert_expression<G: GenericNode>(
                     })
                     .collect::<Vec<_>>();
 
-                match current {
-                    Some(current) => match current.inner {
-                        TemplateType::Node(node) => {
-                            reconcile_fragments(parent, &mut [node], &v);
-                        }
-                        TemplateType::Dyn(_) => unreachable!(),
-                        TemplateType::Fragment(ref fragment) => {
-                            if fragment.is_empty() {
-                                append_nodes(parent, v, marker);
-                            } else {
-                                reconcile_fragments(parent, &mut current.flatten(), &v);
+                if v.is_empty() && current.is_some() && !multi {
+                    // Fast path when new array is empty.
+                    clean_children(parent, Vec::new(), None, None, false);
+                } else {
+                    match current {
+                        Some(current) => match current.inner {
+                            TemplateType::Node(node) => {
+                                reconcile_fragments(parent, &mut [node], &v);
                             }
-                        }
-                    },
-                    None => append_nodes(parent, v, marker),
+                            TemplateType::Dyn(_) => unreachable!(),
+                            TemplateType::Fragment(ref fragment) => {
+                                if fragment.is_empty() {
+                                    append_nodes(parent, v, marker);
+                                } else {
+                                    reconcile_fragments(parent, &mut current.flatten(), &v);
+                                }
+                            }
+                        },
+                        None => append_nodes(parent, v, marker),
+                    }
                 }
             }
         }
@@ -117,15 +142,15 @@ pub fn clean_children<G: GenericNode>(
     current: Vec<G>,
     _marker: Option<&G>,
     replacement: Option<&G>,
+    multi: bool,
 ) {
-    // TODO: hot path for removing all children
-    // if marker == None {
-    //     parent.update_inner_text("");
-    //     if let Some(replacement) = replacement {
-    //         parent.append_child(replacement);
-    //     }
-    //     return;
-    // }
+    if !multi {
+        parent.update_inner_text("");
+        if let Some(replacement) = replacement {
+            parent.append_child(replacement);
+        }
+        return;
+    }
 
     for node in current {
         if node.parent_node().as_ref() == Some(&parent) {
