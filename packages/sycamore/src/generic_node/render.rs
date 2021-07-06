@@ -51,7 +51,7 @@ fn insert_expression<G: GenericNode>(
             let parent = parent.clone();
             let marker = marker.cloned();
             create_effect(move || {
-                let mut value = f.as_ref().borrow_mut()();
+                let mut value = f.borrow_mut()();
                 while let TemplateType::Lazy(f) = value.inner {
                     value = f.as_ref().borrow_mut()();
                 }

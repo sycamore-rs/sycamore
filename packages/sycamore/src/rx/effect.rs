@@ -21,7 +21,9 @@ thread_local! {
 /// State of the current running effect.
 /// When the state is dropped, all dependencies are removed (both links and backlinks).
 pub(super) struct Running {
+    /// Callback to run when the effect is recreated.
     pub(super) execute: Rc<dyn Fn()>,
+    /// A list of dependencies which trigger the effect.
     pub(super) dependencies: HashSet<Dependency>,
     /// The reactive scope owns all effects created within it.
     scope: ReactiveScope,
@@ -51,7 +53,9 @@ impl Drop for Running {
 /// dropped.
 #[derive(Default)]
 pub struct ReactiveScope {
+    /// Effects created in this scope.
     effects: Vec<Rc<RefCell<Option<Running>>>>,
+    /// Callbacks to call when the scope is dropped.
     cleanup: Vec<Box<dyn FnOnce()>>,
 }
 
@@ -123,6 +127,7 @@ impl Eq for Callback {}
 pub(super) struct Dependency(pub(super) Weak<dyn AnySignalInner>);
 
 impl Dependency {
+    #[track_caller]
     fn signal(&self) -> Rc<dyn AnySignalInner> {
         self.0.upgrade().expect("backlink should always be valid")
     }
@@ -163,11 +168,13 @@ pub fn create_effect_initial<R: 'static>(
 
         let initial = RefCell::new(Some(initial));
 
+        // Callback for when the effect's dependencies are triggered.
         let execute: Rc<dyn Fn()> = Rc::new({
             let running = Rc::downgrade(&running);
             let ret = Rc::downgrade(&ret);
             move || {
                 CONTEXTS.with(|contexts| {
+                    // Record initial context size to verify that it is the same after.
                     let initial_context_size = contexts.borrow().len();
 
                     // Upgrade running now to make sure running is valid for the whole duration of
@@ -177,34 +184,39 @@ pub fn create_effect_initial<R: 'static>(
                     // Recreate effect dependencies each time effect is called.
                     running.borrow_mut().as_mut().unwrap().clear_dependencies();
 
+                    // Push new reactive scope.
                     contexts.borrow_mut().push(Rc::downgrade(&running));
 
                     if let Some(initial) = initial.take() {
+                        // Call initial callback.
                         let ret = Weak::upgrade(&ret).unwrap();
                         let scope = create_root(|| {
-                            let (effect_tmp, ret_tmp) = initial(); // Call initial callback.
+                            // Run initial effect closure.
+                            let (effect_tmp, ret_tmp) = initial();
                             *effect.borrow_mut() = Some(effect_tmp);
                             *ret.borrow_mut() = Some(ret_tmp);
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
                     } else {
                         // Destroy old effects before new ones run.
-                        let old_scope = mem::replace(
-                            &mut running.borrow_mut().as_mut().unwrap().scope,
-                            ReactiveScope::new(), /* placeholder until an actual ReactiveScope
-                                                   * is created */
-                        );
-                        drop(old_scope);
 
-                        let scope = create_root(|| {
+                        // We want to destroy the old scope before creating the new one, so that
+                        // cleanup functions will be run before the effect
+                        // closure is called again.
+                        mem::take(&mut running.borrow_mut().as_mut().unwrap().scope);
+
+                        // Run effect closure.
+                        let new_scope = create_root(|| {
                             effect.borrow_mut().as_mut().unwrap()();
                         });
-                        running.borrow_mut().as_mut().unwrap().scope = scope;
+                        running.borrow_mut().as_mut().unwrap().scope = new_scope;
                     }
 
                     // Attach new dependencies.
                     for dependency in &running.borrow().as_ref().unwrap().dependencies {
                         dependency.signal().subscribe(Callback(Rc::downgrade(
+                            // Reference the same closure we are in right now.
+                            // When the dependency changes, this closure will be called again.
                             &running.borrow().as_ref().unwrap().execute,
                         )));
                     }
@@ -438,6 +450,39 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
     });
 }
 
+/// Gets the number of dependencies of the current reactive scope.
+///
+/// If the function is called outside a reactive scope, it will return `None`.
+///
+/// # Example
+/// ```
+/// use sycamore::prelude::*;
+/// use sycamore::rx::dependency_count;
+///
+/// assert_eq!(dependency_count(), None);
+///
+/// let state = Signal::new(1);
+/// create_effect(move || {
+///     assert_eq!(dependency_count(), Some(0));
+///     state.get();
+///     assert_eq!(dependency_count(), Some(1));
+/// });
+/// ```
+pub fn dependency_count() -> Option<usize> {
+    CONTEXTS.with(|contexts| {
+        contexts.borrow().last().map(|last_context| {
+            last_context
+                .upgrade()
+                .expect("Running should be valid while inside reactive scope")
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .dependencies
+                .len()
+        })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -533,6 +578,41 @@ mod tests {
 
         trigger.set(());
         assert_eq!(*counter.get(), 2); // old inner effect should be destroyed and thus not executed
+    }
+
+    #[test]
+    fn nested_effects_trigger_outer_effect() {
+        let trigger = Signal::new(());
+
+        let outer_counter = Signal::new(0);
+        let inner_counter = Signal::new(0);
+        let inner_cleanup_counter = Signal::new(0);
+
+        create_effect(
+            cloned!((trigger, outer_counter, inner_counter, inner_cleanup_counter) => move || {
+                trigger.get(); // subscribe to trigger
+                outer_counter.set(*outer_counter.get_untracked() + 1);
+
+                create_effect(cloned!((trigger, inner_counter, inner_cleanup_counter) => move || {
+                    trigger.set(()); // update trigger which should recreate the outer effect
+                    inner_counter.set(*inner_counter.get_untracked() + 1);
+
+                    on_cleanup(cloned!((inner_cleanup_counter) => move || {
+                        inner_cleanup_counter.set(*inner_cleanup_counter.get_untracked() + 1);
+                    }));
+                }));
+            }),
+        );
+
+        assert_eq!(*outer_counter.get(), 1);
+        assert_eq!(*inner_counter.get(), 1);
+        assert_eq!(*inner_cleanup_counter.get(), 0);
+
+        trigger.set(());
+
+        assert_eq!(*outer_counter.get(), 2);
+        assert_eq!(*inner_counter.get(), 2);
+        assert_eq!(*inner_cleanup_counter.get(), 1);
     }
 
     #[test]
