@@ -1,10 +1,9 @@
 //! Result of the [`template`](crate::template!) macro.
 
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
+use crate::rx::{create_memo, StateHandle};
 
 /// Internal type for [`Template`].
 #[derive(Clone)]
@@ -12,7 +11,7 @@ pub(crate) enum TemplateType<G: GenericNode> {
     /// A DOM node.
     Node(G),
     /// A dynamic [`Template`].
-    Dyn(Rc<RefCell<dyn FnMut() -> Template<G>>>),
+    Dyn(StateHandle<Template<G>>),
     /// A fragment of [`Template`]s.
     Fragment(Vec<Template<G>>),
 }
@@ -33,8 +32,9 @@ impl<G: GenericNode> Template<G> {
 
     /// Create a new [`Template`] from a [`FnMut`].
     pub fn new_dyn(f: impl FnMut() -> Template<G> + 'static) -> Self {
+        let memo = create_memo(f);
         Self {
-            inner: TemplateType::Dyn(Rc::new(RefCell::new(f))),
+            inner: TemplateType::Dyn(memo),
         }
     }
 
@@ -67,7 +67,7 @@ impl<G: GenericNode> Template<G> {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn as_dyn(&self) -> Option<&Rc<RefCell<dyn FnMut() -> Template<G>>>> {
+    pub fn as_dyn(&self) -> Option<&StateHandle<Template<G>>> {
         if let TemplateType::Dyn(v) = &self.inner {
             Some(v)
         } else {
@@ -108,10 +108,10 @@ impl<G: GenericNode> Template<G> {
                 self.inner =
                     TemplateType::Fragment(vec![Template::new_node(node.clone()), template]);
             }
-            TemplateType::Dyn(lazy) => {
+            TemplateType::Dyn(dyn_handle) => {
                 self.inner = TemplateType::Fragment(vec![
                     Template {
-                        inner: TemplateType::Dyn(Rc::clone(&lazy)),
+                        inner: TemplateType::Dyn(dyn_handle.clone()),
                     },
                     template,
                 ]);
@@ -128,7 +128,7 @@ impl<G: GenericNode> Template<G> {
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
             TemplateType::Node(node) => vec![node],
-            TemplateType::Dyn(lazy) => lazy.borrow_mut()().flatten(),
+            TemplateType::Dyn(lazy) => lazy.get().as_ref().clone().flatten(),
             TemplateType::Fragment(fragment) => fragment
                 .into_iter()
                 .map(|x| x.flatten())
@@ -142,7 +142,7 @@ impl<G: GenericNode> fmt::Debug for Template<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.inner {
             TemplateType::Node(node) => node.fmt(f),
-            TemplateType::Dyn(lazy) => lazy.as_ref().borrow_mut()().fmt(f),
+            TemplateType::Dyn(lazy) => lazy.get().fmt(f),
             TemplateType::Fragment(fragment) => fragment.fmt(f),
         }
     }

@@ -36,7 +36,7 @@ fn insert_expression<G: GenericNode>(
         inner: TemplateType::Dyn(f),
     }) = current
     {
-        current = Some(f.borrow_mut()());
+        current = Some(f.get().as_ref().clone());
     }
 
     match value.inner {
@@ -51,9 +51,9 @@ fn insert_expression<G: GenericNode>(
             let parent = parent.clone();
             let marker = marker.cloned();
             create_effect(move || {
-                let mut value = f.borrow_mut()();
+                let mut value = f.get().as_ref().clone();
                 while let TemplateType::Dyn(f) = value.inner {
-                    value = f.as_ref().borrow_mut()();
+                    value = f.get().as_ref().clone();
                 }
                 insert_expression(
                     &parent,
@@ -179,9 +179,9 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
         match template.inner {
             TemplateType::Node(_) => v.push(template),
             TemplateType::Dyn(f) if unwrap => {
-                let mut value = f.as_ref().borrow_mut()();
-                while let TemplateType::Dyn(f) = value.inner {
-                    value = f.as_ref().borrow_mut()();
+                let mut value = f.get().as_ref().clone();
+                while let TemplateType::Dyn(f) = &value.inner {
+                    value = f.get().as_ref().clone();
                 }
                 dynamic = normalize_incoming_fragment(
                     v,
