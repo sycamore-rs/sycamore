@@ -59,6 +59,7 @@ impl ToTokens for Element {
         }
 
         if let Some(children) = children {
+            let multi = children.body.len() != 1;
             let mut children = children.body.iter().peekable();
             while let Some(child) = children.next() {
                 quoted.extend(match child {
@@ -94,20 +95,20 @@ impl ToTokens for Element {
                         match child {
                             HtmlTree::Component(component) => quote_spanned! { component.span()=>
                                 #quote_marker
-                                ::sycamore::generic_node::render::insert(
+                                ::sycamore::utils::render::insert(
                                     &__el,
                                     #component,
-                                    None, __marker,
+                                    None, __marker, #multi
                                 );
                             },
                             HtmlTree::Text(text @ Text::Splice(..)) => quote_spanned! { text.span()=>
                                 #quote_marker
-                                ::sycamore::generic_node::render::insert(
+                                ::sycamore::utils::render::insert(
                                    &__el,
-                                   ::sycamore::template::Template::new_lazy(move ||
+                                   ::sycamore::template::Template::new_dyn(move ||
                                        ::sycamore::template::IntoTemplate::create(&#text)
                                    ),
-                                   None, __marker,
+                                   None, __marker, #multi
                                );
                             },
                             _ => unreachable!()

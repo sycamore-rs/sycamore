@@ -15,13 +15,13 @@ All non proc-macro related code is in `/packages/sycamore`. Proc-macro related c
     commonly used types are `DomNode` for rendering in the browser to DOM nodes and `SsrNode` for
     rendering on the server to static HTML.
 
-  - The `sycamore::generic_node::render` module contains backend agnostic utilities for rendering
+  - The `sycamore::utils::render` module contains backend agnostic utilities for rendering
     nodes.
 
 - #### `Template`
 
   - `Template` is a wrapper type around a `GenericNode` that is produced by the `template!` macro. A
-    `Template` can be rendered using the utilities in `sycamore::generic_node::render`.
+    `Template` can be rendered using the utilities in `sycamore::utils::render`.
 
 - #### `template!`
 
@@ -31,7 +31,7 @@ All non proc-macro related code is in `/packages/sycamore`. Proc-macro related c
 
 ## Fragment diffing
 
-`Template` fragments are diffed in the `sycamore::generic_node::render::reconcile_fragments(_)`
+`Template` fragments are diffed in the `sycamore::utils::render::reconcile_fragments(_)`
 method.
 
 The diffing done by `Keyed` and `Indexed` is independent of the diffing done when rendering

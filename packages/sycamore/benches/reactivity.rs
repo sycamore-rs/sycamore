@@ -8,8 +8,7 @@ pub fn bench(c: &mut Criterion) {
             let state = Signal::new(black_box(0));
 
             for _i in 0..1000 {
-                let value = state.get();
-                state.set(*value + 1);
+                state.set(*state.get() + 1);
             }
         });
     });
@@ -18,7 +17,8 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let state = Signal::new(black_box(0));
             create_effect(cloned!((state) => move || {
-                let _double = *state.get() * 2;
+                let double = *state.get() * 2;
+                black_box(double);
             }));
 
             for _i in 0..1000 {

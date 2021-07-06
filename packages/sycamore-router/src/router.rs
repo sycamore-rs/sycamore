@@ -58,7 +58,7 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
             .collect::<Vec<_>>()
     });
 
-    Template::new_lazy(move || {
+    Template::new_dyn(move || {
         let route = R::match_route(
             path.get()
                 .iter()

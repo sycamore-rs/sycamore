@@ -2,7 +2,6 @@
 
 #[cfg(feature = "dom")]
 pub mod dom_node;
-pub mod render;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
 
@@ -37,6 +36,11 @@ pub type EventHandler = dyn Fn(Event);
 ///
 /// To implement your own rendering backend, you will need to create a new struct which implements
 /// [`GenericNode`].
+///
+/// # Cloning
+///
+/// [`GenericNode`]s should be cheaply cloneable (usually backed by a [`Rc`](std::rc::Rc) or other
+/// reference counted container) and preserve reference equality.
 pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a new element node.
     fn element(tag: &str) -> Self;

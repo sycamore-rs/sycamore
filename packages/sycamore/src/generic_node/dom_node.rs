@@ -9,10 +9,10 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
-use crate::generic_node::render::insert;
 use crate::generic_node::{EventHandler, GenericNode};
 use crate::rx::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
+use crate::utils::render::insert;
 
 // TODO: remove js snippet
 #[wasm_bindgen(inline_js = "\
@@ -259,6 +259,7 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
             template(),
             None,
             None,
+            false,
         );
     });
 
@@ -324,6 +325,7 @@ pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
             template(),
             None,
             None, // TODO
+            false,
         );
     });
 

@@ -350,12 +350,12 @@ fn fragments_text_nodes() {
 }
 
 #[wasm_bindgen_test]
-fn lazy_fragment_reuse_nodes() {
+fn dyn_fragment_reuse_nodes() {
     let nodes = vec![template! { "1" }, template! { "2" }, template! { "3" }];
 
     sycamore::render_to(
         cloned!((nodes) =>
-            move || Template::new_lazy(move || Template::new_fragment(nodes.clone()))
+            move || Template::new_dyn(move || Template::new_fragment(nodes.clone()))
         ),
         &test_container(),
     );

@@ -2,7 +2,7 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn lazy() {
-    let node: Template<DomNode> = Template::new_lazy(|| {
+    let node: Template<DomNode> = Template::new_dyn(|| {
         template! {
             div {
                 "Test"
@@ -30,7 +30,7 @@ fn lazy_reactive() {
     });
 
     let node: Template<DomNode> =
-        Template::new_lazy(cloned!((template) => move || (*template.get()).clone()));
+        Template::new_dyn(cloned!((template) => move || (*template.get()).clone()));
 
     sycamore::render_to(|| node, &test_container());
     let test_container = document()
