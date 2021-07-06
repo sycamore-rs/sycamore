@@ -1,6 +1,7 @@
 //! Utilities for rendering nodes.
 
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
 use crate::prelude::create_effect;
@@ -62,7 +63,7 @@ fn insert_expression<G: GenericNode>(
         }
         TemplateType::Fragment(fragment) => {
             let mut v = Vec::new();
-            let dynamic = normalize_incoming_fragment(&mut v, fragment.clone(), unwrap_fragment);
+            let dynamic = normalize_incoming_fragment(&mut v, fragment.as_ref(), unwrap_fragment);
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
@@ -85,18 +86,14 @@ fn insert_expression<G: GenericNode>(
                 match current {
                     Some(current) => match current.inner {
                         TemplateType::Node(node) => {
-                            reconcile_fragments(parent, vec![node], v);
+                            reconcile_fragments(parent, &mut [node], &v);
                         }
                         TemplateType::Dyn(_) => unreachable!(),
-                        TemplateType::Fragment(fragment) => {
+                        TemplateType::Fragment(ref fragment) => {
                             if fragment.is_empty() {
                                 append_nodes(parent, v, marker);
                             } else {
-                                reconcile_fragments(
-                                    parent,
-                                    Template::new_fragment(fragment).flatten(),
-                                    v,
-                                );
+                                reconcile_fragments(parent, &mut current.flatten(), &v);
                             }
                         }
                     },
@@ -159,36 +156,35 @@ pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option
 ///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
     v: &mut Vec<Template<G>>,
-    fragment: Vec<Template<G>>,
+    fragment: &[Template<G>],
     unwrap: bool,
 ) -> bool {
     let mut dynamic = false;
 
     for template in fragment {
-        match template.inner {
-            TemplateType::Node(_) => v.push(template),
+        match &template.inner {
+            TemplateType::Node(_) => v.push(template.clone()),
             TemplateType::Dyn(f) if unwrap => {
                 let mut value = f.get().as_ref().clone();
                 while let TemplateType::Dyn(f) = &value.inner {
                     value = f.get().as_ref().clone();
                 }
-                dynamic = normalize_incoming_fragment(
-                    v,
-                    match value.inner {
-                        TemplateType::Node(_) => vec![value],
-                        TemplateType::Fragment(fragment) => fragment,
-                        _ => unreachable!(),
-                    },
-                    false,
-                ) || dynamic;
+                let fragment: Rc<Box<[Template<G>]>> = match &value.inner {
+                    TemplateType::Node(_) => Rc::new(Box::new([value])),
+                    TemplateType::Fragment(fragment) => Rc::clone(&fragment),
+                    _ => unreachable!(),
+                };
+                dynamic =
+                    normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
             }
             TemplateType::Dyn(_) => {
                 // Not unwrap
-                v.push(template);
+                v.push(template.clone());
                 dynamic = true;
             }
             TemplateType::Fragment(fragment) => {
-                dynamic = normalize_incoming_fragment(v, fragment, false) || dynamic;
+                dynamic =
+                    normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
             }
         }
     }
@@ -206,7 +202,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
 ///
 /// # Panics
 /// Panics if `a.is_empty()`. Append nodes instead.
-pub fn reconcile_fragments<G: GenericNode>(parent: &G, mut a: Vec<G>, b: Vec<G>) {
+pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     debug_assert!(!a.is_empty(), "a cannot be empty");
 
     // Sanity check: make sure all nodes in a are children of parent.

@@ -1,6 +1,7 @@
 //! Result of the [`template`](crate::template!) macro.
 
 use std::fmt;
+use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
 use crate::rx::{create_memo, StateHandle};
@@ -13,7 +14,8 @@ pub(crate) enum TemplateType<G: GenericNode> {
     /// A dynamic [`Template`].
     Dyn(StateHandle<Template<G>>),
     /// A fragment of [`Template`]s.
-    Fragment(Vec<Template<G>>),
+    #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
+    Fragment(Rc<Box<[Template<G>]>>),
 }
 
 /// Result of the [`template`](crate::template!) macro. Should not be constructed manually.
@@ -41,7 +43,7 @@ impl<G: GenericNode> Template<G> {
     /// Create a new [`Template`] from a `Vec` of [`GenericNode`]s.
     pub fn new_fragment(fragment: Vec<Template<G>>) -> Self {
         Self {
-            inner: TemplateType::Fragment(fragment),
+            inner: TemplateType::Fragment(Rc::from(fragment.into_boxed_slice())),
         }
     }
 
@@ -58,7 +60,7 @@ impl<G: GenericNode> Template<G> {
         }
     }
 
-    pub fn as_fragment(&self) -> Option<&Vec<Template<G>>> {
+    pub fn as_fragment(&self) -> Option<&[Template<G>]> {
         if let TemplateType::Fragment(v) = &self.inner {
             Some(v)
         } else {
@@ -108,8 +110,8 @@ impl<G: GenericNode> Template<G> {
             TemplateType::Node(node) => vec![node],
             TemplateType::Dyn(lazy) => lazy.get().as_ref().clone().flatten(),
             TemplateType::Fragment(fragment) => fragment
-                .into_iter()
-                .map(|x| x.flatten())
+                .iter()
+                .map(|x| x.clone().flatten())
                 .flatten()
                 .collect(),
         }
