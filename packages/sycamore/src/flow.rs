@@ -62,7 +62,7 @@ where
     } = props;
 
     let mut mapped = map_keyed(iterable, move |x| template(x.clone()), key);
-    Template::new_lazy(move || Template::new_fragment(mapped()))
+    Template::new_dyn(move || Template::new_fragment(mapped()))
 }
 
 /// Props for [`Indexed`].
@@ -105,5 +105,5 @@ where
     let IndexedProps { iterable, template } = props;
 
     let mut mapped = map_indexed(iterable, move |x| template(x.clone()));
-    Template::new_lazy(move || Template::new_fragment(mapped()))
+    Template::new_dyn(move || Template::new_fragment(mapped()))
 }

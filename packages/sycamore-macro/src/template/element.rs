@@ -104,7 +104,7 @@ impl ToTokens for Element {
                                 #quote_marker
                                 ::sycamore::generic_node::render::insert(
                                    &__el,
-                                   ::sycamore::template::Template::new_lazy(move ||
+                                   ::sycamore::template::Template::new_dyn(move ||
                                        ::sycamore::template::IntoTemplate::create(&#text)
                                    ),
                                    None, __marker,

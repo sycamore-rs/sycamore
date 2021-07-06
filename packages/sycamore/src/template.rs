@@ -11,8 +11,8 @@ use crate::generic_node::GenericNode;
 pub(crate) enum TemplateType<G: GenericNode> {
     /// A DOM node.
     Node(G),
-    /// A lazy-computed [`Template`].
-    Lazy(Rc<RefCell<dyn FnMut() -> Template<G>>>),
+    /// A dynamic [`Template`].
+    Dyn(Rc<RefCell<dyn FnMut() -> Template<G>>>),
     /// A fragment of [`Template`]s.
     Fragment(Vec<Template<G>>),
 }
@@ -32,9 +32,9 @@ impl<G: GenericNode> Template<G> {
     }
 
     /// Create a new [`Template`] from a [`FnMut`].
-    pub fn new_lazy(f: impl FnMut() -> Template<G> + 'static) -> Self {
+    pub fn new_dyn(f: impl FnMut() -> Template<G> + 'static) -> Self {
         Self {
-            inner: TemplateType::Lazy(Rc::new(RefCell::new(f))),
+            inner: TemplateType::Dyn(Rc::new(RefCell::new(f))),
         }
     }
 
@@ -67,8 +67,8 @@ impl<G: GenericNode> Template<G> {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn as_lazy(&self) -> Option<&Rc<RefCell<dyn FnMut() -> Template<G>>>> {
-        if let TemplateType::Lazy(v) = &self.inner {
+    pub fn as_dyn(&self) -> Option<&Rc<RefCell<dyn FnMut() -> Template<G>>>> {
+        if let TemplateType::Dyn(v) = &self.inner {
             Some(v)
         } else {
             None
@@ -93,11 +93,11 @@ impl<G: GenericNode> Template<G> {
         )
     }
 
-    pub fn is_lazy(&self) -> bool {
+    pub fn is_dyn(&self) -> bool {
         matches!(
             self,
             Template {
-                inner: TemplateType::Lazy(_)
+                inner: TemplateType::Dyn(_)
             }
         )
     }
@@ -108,10 +108,10 @@ impl<G: GenericNode> Template<G> {
                 self.inner =
                     TemplateType::Fragment(vec![Template::new_node(node.clone()), template]);
             }
-            TemplateType::Lazy(lazy) => {
+            TemplateType::Dyn(lazy) => {
                 self.inner = TemplateType::Fragment(vec![
                     Template {
-                        inner: TemplateType::Lazy(Rc::clone(&lazy)),
+                        inner: TemplateType::Dyn(Rc::clone(&lazy)),
                     },
                     template,
                 ]);
@@ -128,7 +128,7 @@ impl<G: GenericNode> Template<G> {
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
             TemplateType::Node(node) => vec![node],
-            TemplateType::Lazy(lazy) => lazy.borrow_mut()().flatten(),
+            TemplateType::Dyn(lazy) => lazy.borrow_mut()().flatten(),
             TemplateType::Fragment(fragment) => fragment
                 .into_iter()
                 .map(|x| x.flatten())
@@ -142,7 +142,7 @@ impl<G: GenericNode> fmt::Debug for Template<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.inner {
             TemplateType::Node(node) => node.fmt(f),
-            TemplateType::Lazy(lazy) => lazy.as_ref().borrow_mut()().fmt(f),
+            TemplateType::Dyn(lazy) => lazy.as_ref().borrow_mut()().fmt(f),
             TemplateType::Fragment(fragment) => fragment.fmt(f),
         }
     }

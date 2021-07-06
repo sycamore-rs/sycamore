@@ -85,7 +85,7 @@ impl ToTokens for HtmlTree {
                     )
                 },
                 Text::Splice(_, _) => quote! {
-                    ::sycamore::template::Template::new_lazy(move ||
+                    ::sycamore::template::Template::new_dyn(move ||
                         ::sycamore::template::IntoTemplate::create(&#text)
                     )
                 },

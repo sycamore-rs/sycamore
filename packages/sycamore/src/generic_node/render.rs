@@ -33,7 +33,7 @@ fn insert_expression<G: GenericNode>(
     unwrap_fragment: bool,
 ) {
     while let Some(Template {
-        inner: TemplateType::Lazy(f),
+        inner: TemplateType::Dyn(f),
     }) = current
     {
         current = Some(f.borrow_mut()());
@@ -47,12 +47,12 @@ fn insert_expression<G: GenericNode>(
                 parent.insert_child_before(&node, marker);
             }
         }
-        TemplateType::Lazy(f) => {
+        TemplateType::Dyn(f) => {
             let parent = parent.clone();
             let marker = marker.cloned();
             create_effect(move || {
                 let mut value = f.borrow_mut()();
-                while let TemplateType::Lazy(f) = value.inner {
+                while let TemplateType::Dyn(f) = value.inner {
                     value = f.as_ref().borrow_mut()();
                 }
                 insert_expression(
@@ -98,7 +98,7 @@ fn insert_expression<G: GenericNode>(
                         TemplateType::Node(node) => {
                             reconcile_fragments(parent, vec![node], v);
                         }
-                        TemplateType::Lazy(_) => unreachable!(),
+                        TemplateType::Dyn(_) => unreachable!(),
                         TemplateType::Fragment(fragment) => {
                             if fragment.is_empty() {
                                 append_nodes(parent, v, marker);
@@ -178,9 +178,9 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
     for template in fragment {
         match template.inner {
             TemplateType::Node(_) => v.push(template),
-            TemplateType::Lazy(f) if unwrap => {
+            TemplateType::Dyn(f) if unwrap => {
                 let mut value = f.as_ref().borrow_mut()();
-                while let TemplateType::Lazy(f) = value.inner {
+                while let TemplateType::Dyn(f) = value.inner {
                     value = f.as_ref().borrow_mut()();
                 }
                 dynamic = normalize_incoming_fragment(
@@ -193,7 +193,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
                     false,
                 ) || dynamic;
             }
-            TemplateType::Lazy(_) => {
+            TemplateType::Dyn(_) => {
                 // Not unwrap
                 v.push(template);
                 dynamic = true;
