@@ -22,12 +22,12 @@ pub fn insert<G: GenericNode>(
     initial: Option<Template<G>>,
     marker: Option<&G>,
 ) {
-    insert_expression(parent, accessor, initial, marker, false);
+    insert_expression(parent, &accessor, initial, marker, false);
 }
 
 fn insert_expression<G: GenericNode>(
     parent: &G,
-    value: Template<G>,
+    value: &Template<G>,
     mut current: Option<Template<G>>,
     marker: Option<&G>,
     unwrap_fragment: bool,
@@ -39,7 +39,7 @@ fn insert_expression<G: GenericNode>(
         current = Some(f.get().as_ref().clone());
     }
 
-    match value.inner {
+    match &value.inner {
         TemplateType::Node(node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), marker, Some(&node));
@@ -50,36 +50,25 @@ fn insert_expression<G: GenericNode>(
         TemplateType::Dyn(f) => {
             let parent = parent.clone();
             let marker = marker.cloned();
+            let f = f.clone();
             create_effect(move || {
-                let mut value = f.get().as_ref().clone();
-                while let TemplateType::Dyn(f) = value.inner {
-                    value = f.get().as_ref().clone();
+                let mut value = f.get();
+                while let TemplateType::Dyn(f) = &value.inner {
+                    value = f.get();
                 }
-                insert_expression(
-                    &parent,
-                    value.clone(),
-                    current.clone(),
-                    marker.as_ref(),
-                    false,
-                );
-                current = Some(value);
+                insert_expression(&parent, &value, current.clone(), marker.as_ref(), false);
+                current = Some(value.as_ref().clone());
             });
         }
         TemplateType::Fragment(fragment) => {
             let mut v = Vec::new();
-            let dynamic = normalize_incoming_fragment(&mut v, fragment, unwrap_fragment);
+            let dynamic = normalize_incoming_fragment(&mut v, fragment.clone(), unwrap_fragment);
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
                 create_effect(move || {
                     let value = Template::new_fragment(v.clone());
-                    insert_expression(
-                        &parent,
-                        value.clone(),
-                        current.clone(),
-                        marker.as_ref(),
-                        true,
-                    );
+                    insert_expression(&parent, &value, current.clone(), marker.as_ref(), true);
                     current = Some(value); // FIXME: should be return value of
                                            // normalize_incoming_fragment called in recursive
                                            // insert_expression
