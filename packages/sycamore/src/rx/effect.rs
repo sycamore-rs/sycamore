@@ -122,29 +122,25 @@ impl PartialEq for Callback {
 }
 impl Eq for Callback {}
 
-/// A [`Weak`] backlink to a [`Signal`] for any type `T`.
+/// A strong backlink to a [`Signal`] for any type `T`.
 #[derive(Clone)]
-pub(super) struct Dependency(pub(super) Weak<dyn AnySignalInner>);
+pub(super) struct Dependency(pub(super) Rc<dyn AnySignalInner>);
 
 impl Dependency {
-    #[track_caller]
     fn signal(&self) -> Rc<dyn AnySignalInner> {
-        self.0.upgrade().expect("backlink should always be valid")
+        Rc::clone(&self.0)
     }
 }
 
 impl Hash for Dependency {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.signal()).hash(state);
+        Rc::as_ptr(&self.0).hash(state);
     }
 }
 
 impl PartialEq for Dependency {
     fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<()>(
-            Rc::as_ptr(&self.signal()).cast(),
-            Rc::as_ptr(&other.signal()).cast(),
-        )
+        ptr::eq::<()>(Rc::as_ptr(&self.0).cast(), Rc::as_ptr(&other.0).cast())
     }
 }
 impl Eq for Dependency {}
@@ -670,6 +666,18 @@ mod tests {
 
         assert_eq!(*outer_counter.get(), 2);
         assert_eq!(*inner_counter.get(), 2);
+    }
+
+    #[test]
+    fn drop_signal_inside_effect() {
+        let state = RefCell::new(Some(Signal::new(0)));
+
+        create_effect(move || {
+            if let Some(state) = state.take() {
+                state.get(); // subscribe to state
+                drop(state);
+            }
+        });
     }
 
     #[test]

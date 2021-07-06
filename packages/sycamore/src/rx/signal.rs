@@ -22,7 +22,7 @@ impl<T: 'static> StateHandle<T> {
         // If running inside a destructor, do nothing.
         let _ = CONTEXTS.try_with(|contexts| {
             if let Some(last_context) = contexts.borrow().last() {
-                let signal = Rc::downgrade(&self.0);
+                let signal = Rc::clone(&self.0);
 
                 last_context
                     .upgrade()
