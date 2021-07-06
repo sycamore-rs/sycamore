@@ -31,7 +31,7 @@ impl<G: GenericNode> Template<G> {
         }
     }
 
-    /// Create a new [`Template`] from a [`FnOnce`].
+    /// Create a new [`Template`] from a [`FnMut`].
     pub fn new_lazy(f: impl FnMut() -> Template<G> + 'static) -> Self {
         Self {
             inner: TemplateType::Lazy(Rc::new(RefCell::new(f))),

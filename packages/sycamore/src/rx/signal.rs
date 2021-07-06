@@ -1,9 +1,10 @@
 use std::cell::RefCell;
-use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
+
+use indexmap::IndexSet;
 
 use super::*;
 
@@ -21,7 +22,7 @@ impl<T: 'static> StateHandle<T> {
         // If running inside a destructor, do nothing.
         let _ = CONTEXTS.try_with(|contexts| {
             if let Some(last_context) = contexts.borrow().last() {
-                let signal = Rc::downgrade(&self.0);
+                let signal = Rc::clone(&self.0);
 
                 last_context
                     .upgrade()
@@ -168,7 +169,8 @@ impl<T: 'static> Signal<T> {
         // Clone subscribers to prevent modifying list when calling callbacks.
         let subscribers = self.handle.0.borrow().subscribers.clone();
 
-        for subscriber in subscribers {
+        // Reverse order of subscribers to trigger outer effects before inner effects.
+        for subscriber in subscribers.iter().rev() {
             // subscriber might have already been destroyed in the case of nested effects
             if let Some(callback) = subscriber.try_callback() {
                 callback();
@@ -237,14 +239,14 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Signal<T> {
 
 pub(super) struct SignalInner<T> {
     inner: Rc<T>,
-    subscribers: HashSet<Callback>,
+    subscribers: IndexSet<Callback>,
 }
 
 impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
-            subscribers: HashSet::new(),
+            subscribers: IndexSet::new(),
         }
     }
 

@@ -16,8 +16,8 @@ version = "0.5.0-beta.1"
 [dependencies]
 chrono = {version = "0.4", features = ["wasmbind"]}
 html-escape = {version = "0.2.7", optional = true}
+indexmap = "1.7"
 js-sys = {version = "0.3", optional = true}
-ref-cast = "1.0"
 serde = {version = "1.0", optional = true}
 sycamore-macro = {path = "../sycamore-macro", version = "=0.5.0-beta.1"}
 wasm-bindgen = {version = "0.2", optional = true, features = ["enable-interning"]}
