@@ -616,6 +616,37 @@ mod tests {
     }
 
     #[test]
+    fn create_nested_effect_from_outside() {
+        let trigger = Signal::new(());
+        let outer_counter = Signal::new(0);
+        let inner_counter = Signal::new(0);
+
+        let inner_effect: Signal<Option<Box<dyn Fn()>>> = Signal::new(None);
+
+        create_effect(
+            cloned!((trigger, outer_counter, inner_counter, inner_effect) => move || {
+                trigger.get(); // subscribe to trigger
+                outer_counter.set(*outer_counter.get_untracked() + 1);
+
+                if inner_effect.get_untracked().is_none() {
+                    inner_effect.set(Some(Box::new(cloned!((inner_counter) => move || {
+                        inner_counter.set(*inner_counter.get_untracked() + 1);
+                    }))));
+                }
+            }),
+        );
+
+        create_effect(move || (*inner_effect.get()).as_ref().unwrap()());
+
+        assert_eq!(*outer_counter.get(), 1);
+        assert_eq!(*inner_counter.get(), 1);
+
+        trigger.set(());
+        assert_eq!(*outer_counter.get(), 2);
+        assert_eq!(*inner_counter.get(), 1);
+    }
+
+    #[test]
     fn destroy_effects_on_scope_drop() {
         let counter = Signal::new(0);
 
