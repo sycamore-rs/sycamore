@@ -102,26 +102,6 @@ impl<G: GenericNode> Template<G> {
         )
     }
 
-    pub fn append_template(&mut self, template: Template<G>) {
-        match &mut self.inner {
-            TemplateType::Node(node) => {
-                self.inner =
-                    TemplateType::Fragment(vec![Template::new_node(node.clone()), template]);
-            }
-            TemplateType::Dyn(dyn_handle) => {
-                self.inner = TemplateType::Fragment(vec![
-                    Template {
-                        inner: TemplateType::Dyn(dyn_handle.clone()),
-                    },
-                    template,
-                ]);
-            }
-            TemplateType::Fragment(fragment) => {
-                fragment.push(template);
-            }
-        }
-    }
-
     /// Returns a `Vec` of nodes. Lazy nodes are evaluated.
     // #[deprecated(note = "footgun when rendering")]
     // TODO: re-enable
