@@ -19,7 +19,7 @@ fn nav() -> Template<G> {
                             class="text-gray-600 self-center",
                             target="_blank",
                         ) {
-                            "v0.5.0-beta.1"
+                            "v0.5.0"
                         }
                     }
                 }
