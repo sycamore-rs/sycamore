@@ -53,7 +53,7 @@ where
     F: Fn(T) -> Template<G>,
     K: Fn(&T) -> Key,
     Key: Clone + Hash + Eq,
-    T: Clone + Eq + Hash,
+    T: Clone + Eq,
 {
     let KeyedProps {
         iterable,
