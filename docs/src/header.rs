@@ -36,9 +36,14 @@ fn nav() -> Template<G> {
                         "API"
                     }
                     a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
+                        href="/news",
+                    ) {
+                        "News"
+                    }
+                    a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
                         href="https://github.com/sycamore-rs/sycamore",
                     ) {
-                        "Repository"
+                        "GitHub"
                     }
                     a(class="py-2 px-3 text-sm hover:text-gray-800 hover:underline transition",
                         href="https://discord.gg/vDwFUmm6mU",
