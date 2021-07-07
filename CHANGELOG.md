@@ -2,6 +2,9 @@
 
 ## ✨ **0.5.0** _(2021-07-06)_
 
+Release post:
+[https://sycamore-rs.netlify.app/news/announcing-v0.5.0](https://sycamore-rs.netlify.app/news/announcing-v0.5.0)
+
 #### Changelog
 
 - #### ⚡️ Features
