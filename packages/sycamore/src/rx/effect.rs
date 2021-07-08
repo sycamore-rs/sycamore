@@ -7,6 +7,8 @@ use std::ptr;
 use std::rc::Rc;
 use std::rc::Weak;
 
+use smallvec::SmallVec;
+
 use super::*;
 
 thread_local! {
@@ -48,7 +50,7 @@ impl Running {
 #[derive(Default)]
 pub struct ReactiveScope {
     /// Effects created in this scope.
-    effects: Vec<Rc<RefCell<Option<Running>>>>,
+    effects: SmallVec<[Rc<RefCell<Option<Running>>>; 4]>,
     /// Callbacks to call when the scope is dropped.
     cleanup: Vec<Box<dyn FnOnce()>>,
 }
