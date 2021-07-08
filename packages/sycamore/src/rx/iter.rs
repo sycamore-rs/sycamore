@@ -256,23 +256,23 @@ mod tests {
     fn keyed() {
         let a = Signal::new(vec![1, 2, 3]);
         let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
-        assert_eq!(*mapped(), vec![2, 4, 6]);
+        assert_eq!(mapped(), vec![2, 4, 6]);
 
         a.set(vec![1, 2, 3, 4]);
-        assert_eq!(*mapped(), vec![2, 4, 6, 8]);
+        assert_eq!(mapped(), vec![2, 4, 6, 8]);
 
         a.set(vec![2, 2, 3, 4]);
-        assert_eq!(*mapped(), vec![4, 4, 6, 8]);
+        assert_eq!(mapped(), vec![4, 4, 6, 8]);
     }
 
     #[test]
     fn keyed_recompute_everything() {
         let a = Signal::new(vec![1, 2, 3]);
         let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
-        assert_eq!(*mapped(), vec![2, 4, 6]);
+        assert_eq!(mapped(), vec![2, 4, 6]);
 
         a.set(vec![4, 5, 6]);
-        assert_eq!(*mapped(), vec![8, 10, 12]);
+        assert_eq!(mapped(), vec![8, 10, 12]);
     }
 
     /// Test fast path for clearing Vec.
@@ -282,7 +282,7 @@ mod tests {
         let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
 
         a.set(Vec::new());
-        assert_eq!(*mapped(), Vec::new());
+        assert_eq!(mapped(), Vec::<i32>::new());
     }
 
     /// Test that using [`map_keyed`] will reuse previous computations.
@@ -301,29 +301,29 @@ mod tests {
             },
             |x| *x,
         );
-        assert_eq!(*mapped(), vec![1, 2, 3]);
+        assert_eq!(mapped(), vec![1, 2, 3]);
 
         a.set(vec![1, 2]);
-        assert_eq!(*mapped(), vec![1, 2]);
+        assert_eq!(mapped(), vec![1, 2]);
 
         a.set(vec![1, 2, 4]);
-        assert_eq!(*mapped(), vec![1, 2, 4]);
+        assert_eq!(mapped(), vec![1, 2, 4]);
 
         a.set(vec![1, 2, 3, 4]);
-        assert_eq!(*mapped(), vec![1, 2, 5, 4]);
+        assert_eq!(mapped(), vec![1, 2, 5, 4]);
     }
 
     #[test]
     fn indexed() {
         let a = Signal::new(vec![1, 2, 3]);
         let mut mapped = map_indexed(a.handle(), |x| *x * 2);
-        assert_eq!(*mapped(), vec![2, 4, 6]);
+        assert_eq!(mapped(), vec![2, 4, 6]);
 
         a.set(vec![1, 2, 3, 4]);
-        assert_eq!(*mapped(), vec![2, 4, 6, 8]);
+        assert_eq!(mapped(), vec![2, 4, 6, 8]);
 
         a.set(vec![2, 2, 3, 4]);
-        assert_eq!(*mapped(), vec![4, 4, 6, 8]);
+        assert_eq!(mapped(), vec![4, 4, 6, 8]);
     }
 
     /// Test fast path for clearing Vec.
@@ -333,7 +333,7 @@ mod tests {
         let mut mapped = map_indexed(a.handle(), |x| *x * 2);
 
         a.set(Vec::new());
-        assert_eq!(*mapped(), Vec::new());
+        assert_eq!(mapped(), Vec::<i32>::new());
     }
 
     /// Test that result of mapped function can be listened to.
@@ -368,15 +368,15 @@ mod tests {
                 counter.get()
             }
         });
-        assert_eq!(*mapped(), vec![1, 2, 3]);
+        assert_eq!(mapped(), vec![1, 2, 3]);
 
         a.set(vec![1, 2]);
-        assert_eq!(*mapped(), vec![1, 2]);
+        assert_eq!(mapped(), vec![1, 2]);
 
         a.set(vec![1, 2, 4]);
-        assert_eq!(*mapped(), vec![1, 2, 4]);
+        assert_eq!(mapped(), vec![1, 2, 4]);
 
         a.set(vec![1, 3, 4]);
-        assert_eq!(*mapped(), vec![1, 5, 4]);
+        assert_eq!(mapped(), vec![1, 5, 4]);
     }
 }
