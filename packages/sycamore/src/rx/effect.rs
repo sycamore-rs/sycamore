@@ -40,7 +40,6 @@ pub(super) struct Running {
 
 impl Running {
     /// Clears the dependencies (both links and backlinks).
-    /// Should be called when re-executing an effect to recreate all dependencies.
     fn clear_dependencies(&mut self) {
         for dependency in &self.dependencies {
             dependency
@@ -48,6 +47,16 @@ impl Running {
                 .unsubscribe(&Callback(Rc::downgrade(&self.execute)));
         }
         self.dependencies.clear();
+    }
+
+    /// Returns the current dependencies and replaces dependencies on the [`Running`] with a new
+    /// [`HashSet`] with the same capacity as the old [`HashSet`] because the number of dependencies
+    /// is unlikely to change.
+    ///
+    /// Does **NOT** unsubscribe the signals pointed to by the dependencies.
+    fn take_dependencies(&mut self) -> HashSet<Dependency> {
+        let len = self.dependencies.len();
+        mem::replace(&mut self.dependencies, HashSet::with_capacity(len))
     }
 }
 
@@ -192,9 +201,19 @@ pub fn create_effect_initial<R: 'static>(
                             *ret.borrow_mut() = Some(ret_tmp);
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
+
+                        // Attach new dependencies.
+                        for dep in &running.borrow().as_ref().unwrap().dependencies {
+                            dep.signal().subscribe(Callback(Rc::downgrade(
+                                // Reference the same closure we are in right now.
+                                // When the dependency changes, this closure will be called again.
+                                &running.borrow().as_ref().unwrap().execute,
+                            )));
+                        }
                     } else {
                         // Recreate effect dependencies each time effect is called.
-                        running.borrow_mut().as_mut().unwrap().clear_dependencies();
+                        let old_dependencies =
+                            running.borrow_mut().as_mut().unwrap().take_dependencies();
 
                         // Destroy old effects before new ones run.
 
@@ -208,15 +227,23 @@ pub fn create_effect_initial<R: 'static>(
                             effect.as_mut().unwrap()();
                         });
                         running.borrow_mut().as_mut().unwrap().scope = new_scope;
-                    }
 
-                    // Attach new dependencies.
-                    for dependency in &running.borrow().as_ref().unwrap().dependencies {
-                        dependency.signal().subscribe(Callback(Rc::downgrade(
-                            // Reference the same closure we are in right now.
-                            // When the dependency changes, this closure will be called again.
-                            &running.borrow().as_ref().unwrap().execute,
-                        )));
+                        let running = running.borrow();
+                        let new_dependencies = &running.as_ref().unwrap().dependencies;
+                        // Unsubscribe from deps in old_dependencies not found in new_dependencies.
+                        for dep in old_dependencies.difference(new_dependencies) {
+                            dep.signal().unsubscribe(&Callback(Rc::downgrade(
+                                &running.as_ref().unwrap().execute,
+                            )));
+                        }
+                        // Subscribe to deps in new_dependencies not found in old_dependencies.
+                        for dep in new_dependencies.difference(&old_dependencies) {
+                            dep.signal().subscribe(Callback(Rc::downgrade(
+                                // Reference the same closure we are in right now.
+                                // When the dependency changes, this closure will be called again.
+                                &running.as_ref().unwrap().execute,
+                            )));
+                        }
                     }
 
                     // Remove reactive context.
