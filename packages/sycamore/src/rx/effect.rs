@@ -179,9 +179,6 @@ pub fn create_effect_initial<R: 'static>(
                     // the effect.
                     let running = running.upgrade().unwrap();
 
-                    // Recreate effect dependencies each time effect is called.
-                    running.borrow_mut().as_mut().unwrap().clear_dependencies();
-
                     // Push new reactive scope.
                     contexts.borrow_mut().push(Rc::downgrade(&running));
 
@@ -196,6 +193,9 @@ pub fn create_effect_initial<R: 'static>(
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
                     } else {
+                        // Recreate effect dependencies each time effect is called.
+                        running.borrow_mut().as_mut().unwrap().clear_dependencies();
+
                         // Destroy old effects before new ones run.
 
                         // We want to destroy the old scope before creating the new one, so that
