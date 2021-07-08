@@ -42,12 +42,6 @@ impl Running {
     }
 }
 
-impl Drop for Running {
-    fn drop(&mut self) {
-        self.clear_dependencies();
-    }
-}
-
 /// Owns the effects created in the current reactive scope.
 /// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is
 /// dropped.
