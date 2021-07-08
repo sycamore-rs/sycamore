@@ -37,7 +37,7 @@ fn app() -> Template<G> {
                             },
                             Routes::Docs(a, b) => template! {
                                 content::Content(content::ContentProps {
-                                    pathname: format!("/markdown/{}/{}.md", a, b),
+                                    pathname: format!("/static/docs/{}/{}.json", a, b),
                                     show_sidebar: true,
                                 })
                             },
