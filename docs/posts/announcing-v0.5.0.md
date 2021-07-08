@@ -7,7 +7,7 @@ _SSR + Routing_
 Hello everybody! Sycamore is a library for building isomorphic web applications in Rust and
 WebAssembly.
 
-I'm happy to announce that we've just release v0.5.0. This is the biggest release yet with loads of
+I'm happy to announce that we've just released v0.5.0. This is the biggest release yet, with loads of
 new features and bug fixes.
 
 (By the way, if you are looking for another library called "Maple", you found it. Maple is now
