@@ -133,19 +133,21 @@ impl<G: GenericNode> fmt::Debug for Template<G> {
 pub trait IntoTemplate<G: GenericNode> {
     /// Called during the initial render when creating the DOM nodes. Should return a
     /// `Vec` of [`GenericNode`]s.
-    fn create(&self) -> Template<G>;
+    fn create(self) -> Template<G>;
 }
 
 impl<G: GenericNode> IntoTemplate<G> for Template<G> {
-    fn create(&self) -> Template<G> {
-        self.clone()
+    fn create(self) -> Template<G> {
+        self
     }
 }
 
 impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
-    fn create(&self) -> Template<G> {
-        if let Some(str) = <dyn Any>::downcast_ref::<&str>(self) {
+    fn create(self) -> Template<G> {
+        if let Some(str) = <dyn Any>::downcast_ref::<&str>(&self) {
             Template::new_node(G::text_node(str))
+        } else if let Some(string) = <dyn Any>::downcast_ref::<String>(&self) {
+            Template::new_node(G::text_node(string))
         } else {
             Template::new_node(G::text_node(&self.to_string()))
         }
