@@ -9,6 +9,10 @@ use std::rc::Weak;
 
 use smallvec::SmallVec;
 
+/// The number of effects that are allocated on the stack before resorting to heap allocation in
+/// [`ReactiveScope`].
+const REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY: usize = 4;
+
 use super::*;
 
 thread_local! {
@@ -50,7 +54,7 @@ impl Running {
 #[derive(Default)]
 pub struct ReactiveScope {
     /// Effects created in this scope.
-    effects: SmallVec<[Rc<RefCell<Option<Running>>>; 4]>,
+    effects: SmallVec<[Rc<RefCell<Option<Running>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
     /// Callbacks to call when the scope is dropped.
     cleanup: Vec<Box<dyn FnOnce()>>,
 }
