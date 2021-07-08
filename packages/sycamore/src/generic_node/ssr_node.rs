@@ -336,7 +336,7 @@ pub fn render_to_string(template: impl FnOnce() -> Template<SsrNode>) -> String 
     let mut ret = String::new();
     let _scope = create_root(|| {
         for node in template().flatten() {
-            ret.push_str(&format!("{}", node));
+            ret.push_str(&node.to_string());
         }
     });
 

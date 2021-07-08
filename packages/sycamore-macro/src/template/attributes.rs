@@ -105,7 +105,7 @@ impl ToTokens for Attribute {
                             ::sycamore::generic_node::GenericNode::set_attribute(
                                 &__el,
                                 #name,
-                                &::std::format!("{}", #expr),
+                                &::std::string::ToString::to_string(&#expr),
                             );
                         }
                     });
@@ -153,7 +153,11 @@ impl ToTokens for Attribute {
                         quote! { ::sycamore::rt::JsValue::from_bool(*signal.get()) }
                     }
                     JsPropertyType::String => {
-                        quote! { ::sycamore::rt::JsValue::from_str(&::std::format!("{}", signal.get())) }
+                        quote! {
+                            ::sycamore::rt::JsValue::from_str(
+                                &::std::string::ToString::to_string(&signal.get())
+                            )
+                        }
                     }
                 };
 
