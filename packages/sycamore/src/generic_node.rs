@@ -58,6 +58,13 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Sets an attribute on a node.
     fn set_attribute(&self, name: &str, value: &str);
 
+    /// Sets the `class` attribute on a node.
+    /// This should have the same outcome as calling `set_attribute("class", value)`.
+    /// For [`DomNode`], this sets the `className` property directly which is about 2x faster (on Chrome).
+    fn set_class_name(&self, value: &str) {
+        self.set_attribute("class", value);
+    }
+
     /// Sets a property on a node.
     fn set_property(&self, name: &str, value: &JsValue);
 
