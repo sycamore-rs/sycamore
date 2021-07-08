@@ -9,18 +9,21 @@ use std::rc::Weak;
 
 use smallvec::SmallVec;
 
+use super::*;
+
 /// The number of effects that are allocated on the stack before resorting to heap allocation in
 /// [`ReactiveScope`].
 const REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY: usize = 4;
 
-use super::*;
+/// Initial capacity for [`CONTEXTS`].
+const CONTEXTS_INITIAL_CAPACITY: usize = 10;
 
 thread_local! {
     /// Context of the effect that is currently running. `None` if no effect is running.
     ///
     /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
     /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
-    pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::new());
+    pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::with_capacity(CONTEXTS_INITIAL_CAPACITY));
     pub(super) static SCOPE: RefCell<Option<ReactiveScope>> = RefCell::new(None);
 }
 
