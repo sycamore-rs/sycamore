@@ -125,6 +125,10 @@ impl GenericNode for SsrNode {
             .insert(name.to_string(), value.to_string());
     }
 
+    fn set_class_name(&self, value: &str) {
+        self.set_attribute("class", value);
+    }
+
     fn set_property(&self, _name: &str, _value: &JsValue) {
         // Noop.
     }
