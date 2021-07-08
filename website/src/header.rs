@@ -15,7 +15,7 @@ fn nav() -> Template<G> {
                             "Sycamore"
                         }
                         a(
-                            href="https://crates.io/crates/sycamore",
+                            href="/versions",
                             class="text-gray-600 self-center",
                             target="_blank",
                         ) {

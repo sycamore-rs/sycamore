@@ -3,6 +3,7 @@ mod header;
 mod index;
 mod news_index;
 mod sidebar;
+mod versions;
 
 use sycamore::prelude::*;
 use sycamore_router::{BrowserRouter, Route};
@@ -13,10 +14,14 @@ enum Routes {
     Index,
     #[to("/docs/<_>/<_>")]
     Docs(String, String),
+    #[to("/docs/<_>/<_>/<_>")]
+    VersionedDocs(String, String, String),
     #[to("/news")]
     NewsIndex,
     #[to("/news/<_>")]
     Post(String),
+    #[to("/versions")]
+    Versions,
     #[not_found]
     NotFound,
 }
@@ -41,6 +46,12 @@ fn app() -> Template<G> {
                                     show_sidebar: true,
                                 })
                             },
+                            Routes::VersionedDocs(version, a, b) => template! {
+                                content::Content(content::ContentProps {
+                                    pathname: format!("/static/docs/{}/{}/{}.json", version, a, b),
+                                    show_sidebar: true,
+                                })
+                            },
                             Routes::NewsIndex => template! {
                                 news_index::NewsIndex()
                             },
@@ -49,6 +60,9 @@ fn app() -> Template<G> {
                                     pathname: format!("/static/posts/{}.json", post),
                                     show_sidebar: false,
                                 })
+                            },
+                            Routes::Versions => template! {
+                                versions::Versions()
                             },
                             Routes::NotFound => template! {
                                 "404 Not Found"

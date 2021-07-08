@@ -60,7 +60,7 @@ pub fn sidebar() -> Template<G> {
                     template! {
                         li {
                             a(
-                                href=format!("/docs/{}", page.1),
+                                href=format!("../{}", page.1),
                                 class="pl-4 hover:bg-gray-300 w-full inline-block rounded transition",
                             ) {
                                 (page.0)
