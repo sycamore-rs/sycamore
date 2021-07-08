@@ -46,7 +46,7 @@ fn app() -> Template<G> {
                             },
                             Routes::Post(post) => template! {
                                 content::Content(content::ContentProps {
-                                    pathname: format!("/posts/{}.md", post),
+                                    pathname: format!("/static/posts/{}.json", post),
                                     show_sidebar: false,
                                 })
                             },

@@ -86,31 +86,38 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
     })
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    println!("cargo:rerun-if-changed=markdown");
-
+fn build_dir(base: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     // Even though it is considered bad practice to write to a directory outside of OUT_DIR, we do
     // it anyways so that Trunk can copy it into the dist/ directory.
     let out_dir = Path::new("../website/static");
-    let base = PathBuf::from("./markdown");
 
-    for entry in WalkDir::new(&base) {
+    for entry in WalkDir::new(base) {
         let entry = entry?;
 
         if entry.path().extension() == Some(&OsString::from_str("md").unwrap()) {
             // File is markdown.
 
-            let output = parse(entry.path())?;
-            let output_dir: PathBuf = out_dir.join("docs");
+            let page = parse(entry.path())?;
+            let output_dir: PathBuf = out_dir.join(output);
             let output_path: PathBuf = output_dir
                 .join(entry.path().strip_prefix(&base).unwrap())
                 .with_extension("json");
 
-            let output_json = serde_json::to_string(&output).unwrap();
+            let output_json = serde_json::to_string(&page).unwrap();
             fs::create_dir_all(output_path.parent().unwrap())?;
             fs::write(output_path, output_json)?;
         }
     }
+
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    println!("cargo:rerun-if-changed=markdown");
+    println!("cargo:rerun-if-changed=posts");
+
+    build_dir(Path::new("./markdown"), Path::new("docs"))?;
+    build_dir(Path::new("./posts"), Path::new("posts"))?;
 
     Ok(())
 }
