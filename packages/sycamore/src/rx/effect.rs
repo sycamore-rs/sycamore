@@ -22,7 +22,7 @@ thread_local! {
 /// When the state is dropped, all dependencies are removed (both links and backlinks).
 pub(super) struct Running {
     /// Callback to run when the effect is recreated.
-    pub(super) execute: Rc<dyn Fn()>,
+    pub(super) execute: Rc<RefCell<dyn FnMut()>>,
     /// A list of dependencies which trigger the effect.
     pub(super) dependencies: HashSet<Dependency>,
     /// The reactive scope owns all effects created within it.
@@ -91,17 +91,17 @@ impl Drop for ReactiveScope {
 }
 
 #[derive(Clone)]
-pub(super) struct Callback(pub(super) Weak<dyn Fn()>);
+pub(super) struct Callback(pub(super) Weak<RefCell<dyn FnMut()>>);
 
 impl Callback {
     #[track_caller]
     #[must_use = "returned value must be manually called"]
-    pub fn callback(&self) -> Rc<dyn Fn()> {
+    pub fn callback(&self) -> Rc<RefCell<dyn FnMut()>> {
         self.try_callback().expect("callback is not valid anymore")
     }
 
     #[must_use = "returned value must be manually called"]
-    pub fn try_callback(&self) -> Option<Rc<dyn Fn()>> {
+    pub fn try_callback(&self) -> Option<Rc<RefCell<dyn FnMut()>>> {
         self.0.upgrade()
     }
 }
@@ -158,14 +158,13 @@ pub fn create_effect_initial<R: 'static>(
     fn internal(initial: Box<InitialFn>) -> Box<dyn Any> {
         let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
 
-        type MutEffect = Rc<RefCell<Option<Box<dyn FnMut()>>>>;
-        let effect: MutEffect = Rc::new(RefCell::new(None));
+        let mut effect: Option<Box<dyn FnMut()>> = None;
         let ret: Rc<RefCell<Option<Box<dyn Any>>>> = Rc::new(RefCell::new(None));
 
-        let initial = RefCell::new(Some(initial));
+        let mut initial = Some(initial);
 
         // Callback for when the effect's dependencies are triggered.
-        let execute: Rc<dyn Fn()> = Rc::new({
+        let execute: Rc<RefCell<dyn FnMut()>> = Rc::new(RefCell::new({
             let running = Rc::downgrade(&running);
             let ret = Rc::downgrade(&ret);
             move || {
@@ -189,7 +188,7 @@ pub fn create_effect_initial<R: 'static>(
                         let scope = create_root(|| {
                             // Run initial effect closure.
                             let (effect_tmp, ret_tmp) = initial();
-                            *effect.borrow_mut() = Some(effect_tmp);
+                            effect = Some(effect_tmp);
                             *ret.borrow_mut() = Some(ret_tmp);
                         });
                         running.borrow_mut().as_mut().unwrap().scope = scope;
@@ -203,7 +202,7 @@ pub fn create_effect_initial<R: 'static>(
 
                         // Run effect closure.
                         let new_scope = create_root(|| {
-                            effect.borrow_mut().as_mut().unwrap()();
+                            effect.as_mut().unwrap()();
                         });
                         running.borrow_mut().as_mut().unwrap().scope = new_scope;
                     }
@@ -227,7 +226,7 @@ pub fn create_effect_initial<R: 'static>(
                     );
                 });
             }
-        });
+        }));
 
         *running.borrow_mut() = Some(Running {
             execute: Rc::clone(&execute),
@@ -256,7 +255,7 @@ pub fn create_effect_initial<R: 'static>(
             }
         });
 
-        execute();
+        execute.borrow_mut()();
 
         let ret = Rc::try_unwrap(ret).unwrap(); // ret should only have 1 strong reference
         ret.into_inner().unwrap()

@@ -78,38 +78,38 @@ impl ToTokens for Attribute {
             AttributeType::DomAttribute { name } => {
                 let name = name.to_string();
 
-                let expr = if let Expr::Lit(ExprLit {
+                if let Expr::Lit(ExprLit {
                     lit: Lit::Str(text),
                     ..
                 }) = expr
                 {
                     // Since this is static text, intern it as it will likely be constructed many
                     // times.
-                    quote! {
-                        if ::std::cfg!(target_arch = "wasm32") {
-                            ::sycamore::rt::intern(#text)
-                        } else {
-                            #text
-                        }
-                    }
-                } else {
-                    quote! {
-                        #expr
-                    }
-                };
-
-                tokens.extend(quote_spanned! { expr_span=>
-                    ::sycamore::rx::create_effect({
-                        let __el = ::std::clone::Clone::clone(&__el);
-                        move || {
-                            ::sycamore::generic_node::GenericNode::set_attribute(
-                                &__el,
-                                #name,
-                                &::std::format!("{}", #expr),
-                            );
-                        }
+                    tokens.extend(quote_spanned! { expr_span=>
+                        ::sycamore::generic_node::GenericNode::set_attribute(
+                            &__el,
+                            #name,
+                            if ::std::cfg!(target_arch = "wasm32") {
+                                ::sycamore::rt::intern(#text)
+                            } else {
+                                #text
+                            },
+                        );
                     });
-                });
+                } else {
+                    tokens.extend(quote_spanned! { expr_span=>
+                        ::sycamore::rx::create_effect({
+                            let __el = ::std::clone::Clone::clone(&__el);
+                            move || {
+                                ::sycamore::generic_node::GenericNode::set_attribute(
+                                    &__el,
+                                    #name,
+                                    &::std::string::ToString::to_string(&#expr),
+                                );
+                            }
+                        });
+                    });
+                };
             }
             AttributeType::Event { event } => {
                 // TODO: Should events be reactive?
@@ -153,7 +153,11 @@ impl ToTokens for Attribute {
                         quote! { ::sycamore::rt::JsValue::from_bool(*signal.get()) }
                     }
                     JsPropertyType::String => {
-                        quote! { ::sycamore::rt::JsValue::from_str(&::std::format!("{}", signal.get())) }
+                        quote! {
+                            ::sycamore::rt::JsValue::from_str(
+                                &::std::string::ToString::to_string(&signal.get())
+                            )
+                        }
                     }
                 };
 

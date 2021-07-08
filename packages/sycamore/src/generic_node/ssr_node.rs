@@ -18,7 +18,7 @@ static VOID_ELEMENTS: &[&str] = &[
 ];
 
 /// Inner representation for [`SsrNode`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum SsrNodeType {
     Element(RefCell<Element>),
     Comment(RefCell<Comment>),
@@ -138,6 +138,13 @@ impl GenericNode for SsrNode {
         }
     }
 
+    fn first_child(&self) -> Option<Self> {
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(element) => element.borrow_mut().children.first().cloned(),
+            _ => panic!("node type cannot have children"),
+        }
+    }
+
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         if let Some(reference_node) = reference_node {
             debug_assert_eq!(
@@ -250,6 +257,14 @@ impl GenericNode for SsrNode {
             SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
         }
     }
+
+    fn clone_node(&self) -> Self {
+        let inner = SsrNodeInner {
+            ty: Rc::new(self.0.ty.as_ref().clone()),
+            parent: RefCell::new(Weak::new()),
+        };
+        Self(Rc::new(inner))
+    }
 }
 
 impl fmt::Display for SsrNode {
@@ -321,7 +336,7 @@ pub fn render_to_string(template: impl FnOnce() -> Template<SsrNode>) -> String 
     let mut ret = String::new();
     let _scope = create_root(|| {
         for node in template().flatten() {
-            ret.push_str(&format!("{}", node));
+            ret.push_str(&node.to_string());
         }
     });
 
