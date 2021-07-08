@@ -70,7 +70,7 @@ impl ToTokens for Element {
                 let is_dynamic = match child {
                     HtmlTree::Component(_) => true,
                     HtmlTree::Text(Text::Splice(_, expr))
-                        if !matches!(expr.as_ref(), Expr::Path(_)) =>
+                        if !matches!(expr.as_ref(), Expr::Lit(_) | Expr::Path(_)) =>
                     {
                         true
                     }
