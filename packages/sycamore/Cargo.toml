@@ -19,6 +19,7 @@ html-escape = {version = "0.2.7", optional = true}
 indexmap = "1.7"
 js-sys = {version = "0.3", optional = true}
 serde = {version = "1.0", optional = true}
+smallvec = "1.6"
 sycamore-macro = {path = "../sycamore-macro", version = "=0.5.0"}
 wasm-bindgen = {version = "0.2", optional = true, features = ["enable-interning"]}
 
