@@ -135,7 +135,7 @@ impl ToTokens for Attribute {
                         tokens.extend(
                             syn::Error::new(
                                 prop.span(),
-                                &format!("property `{}` is not supported with bind:", prop),
+                                "property `{}` is not supported with bind:".push_str(prop),
                             )
                             .to_compile_error(),
                         );
