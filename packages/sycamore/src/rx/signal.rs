@@ -8,9 +8,6 @@ use indexmap::IndexSet;
 
 use super::*;
 
-/// The initial capacity of [`Signal`]'s subscriber list.
-const SIGNAL_SUBSCRIBERS_INITIAL_CAPACITY: usize = 4;
-
 /// A readonly [`Signal`].
 ///
 /// Returned by functions that provide a handle to access state.
@@ -249,7 +246,7 @@ impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
-            subscribers: IndexSet::with_capacity(SIGNAL_SUBSCRIBERS_INITIAL_CAPACITY),
+            subscribers: IndexSet::new(),
         }
     }
 
