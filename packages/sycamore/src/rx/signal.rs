@@ -173,7 +173,7 @@ impl<T: 'static> Signal<T> {
         for subscriber in subscribers.iter().rev() {
             // subscriber might have already been destroyed in the case of nested effects
             if let Some(callback) = subscriber.try_callback() {
-                callback.borrow_mut()();
+                callback();
             }
         }
     }

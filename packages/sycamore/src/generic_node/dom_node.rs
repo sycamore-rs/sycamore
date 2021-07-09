@@ -179,13 +179,6 @@ impl GenericNode for DomNode {
         self.node.append_child(&child.node).unwrap();
     }
 
-    fn first_child(&self) -> Option<Self> {
-        self.node.first_child().map(|node| Self {
-            id: Default::default(),
-            node: Rc::new(node),
-        })
-    }
-
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
             .insert_before(&new_node.node, reference_node.map(|n| n.node.as_ref()))
@@ -238,13 +231,6 @@ impl GenericNode for DomNode {
 
     fn update_inner_text(&self, text: &str) {
         self.node.set_text_content(Some(text));
-    }
-
-    fn clone_node(&self) -> Self {
-        Self {
-            node: Rc::new(self.node.clone_node_with_deep(true).unwrap()),
-            id: Default::default(),
-        }
     }
 }
 

@@ -1,6 +1,5 @@
 //! Result of the [`template`](crate::template!) macro.
 
-use std::any::Any;
 use std::fmt;
 use std::rc::Rc;
 
@@ -142,12 +141,8 @@ impl<G: GenericNode> IntoTemplate<G> for Template<G> {
     }
 }
 
-impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
+impl<T: fmt::Display + ?Sized, G: GenericNode> IntoTemplate<G> for T {
     fn create(&self) -> Template<G> {
-        if let Some(str) = <dyn Any>::downcast_ref::<&str>(self) {
-            Template::new_node(G::text_node(str))
-        } else {
-            Template::new_node(G::text_node(&self.to_string()))
-        }
+        Template::new_node(G::text_node(&format!("{}", self)))
     }
 }
