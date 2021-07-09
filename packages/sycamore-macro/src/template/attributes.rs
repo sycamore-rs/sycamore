@@ -77,60 +77,37 @@ impl ToTokens for Attribute {
         match &self.ty {
             AttributeType::DomAttribute { name } => {
                 let name = name.to_string();
-                // Use `set_class_name` instead of `set_attribute` for better performance.
-                let is_class = name == "class";
-                let is_dynamic = !matches!(
-                    expr,
-                    Expr::Lit(ExprLit {
-                        lit: Lit::Str(_),
-                        ..
-                    })
-                );
-                let quoted_text = if let Expr::Lit(ExprLit {
+
+                if let Expr::Lit(ExprLit {
                     lit: Lit::Str(text),
                     ..
                 }) = expr
                 {
-                    quote_spanned! { text.span()=>
-                        if ::std::cfg!(target_arch = "wasm32") {
-                            ::sycamore::rt::intern(#text)
-                        } else {
-                            #text
-                        }
-                    }
-                } else {
-                    quote! {
-                        &::std::string::ToString::to_string(&#expr)
-                    }
-                };
-                let quoted_set_attribute = if is_class {
-                    quote! {
-                        ::sycamore::generic_node::GenericNode::set_class_name(&__el, #quoted_text);
-                    }
-                } else {
-                    quote! {
+                    // Since this is static text, intern it as it will likely be constructed many
+                    // times.
+                    tokens.extend(quote_spanned! { expr_span=>
                         ::sycamore::generic_node::GenericNode::set_attribute(
                             &__el,
                             #name,
-                            #quoted_text,
+                            if ::std::cfg!(target_arch = "wasm32") {
+                                ::sycamore::rt::intern(#text)
+                            } else {
+                                #text
+                            },
                         );
-                    }
-                };
-
-                if is_dynamic {
+                    });
+                } else {
                     tokens.extend(quote_spanned! { expr_span=>
                         ::sycamore::rx::create_effect({
                             let __el = ::std::clone::Clone::clone(&__el);
                             move || {
-                                #quoted_set_attribute
+                                ::sycamore::generic_node::GenericNode::set_attribute(
+                                    &__el,
+                                    #name,
+                                    &::std::string::ToString::to_string(&#expr),
+                                );
                             }
                         });
-                    });
-                } else {
-                    // Since this is static text, intern it as it will likely be constructed many
-                    // times.
-                    tokens.extend(quote_spanned! { expr_span=>
-                        #quoted_set_attribute
                     });
                 };
             }
