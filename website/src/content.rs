@@ -103,6 +103,8 @@ pub fn content(
         }
     }));
 
+    let sidebar_version0 = sidebar_version.clone();
+
     template! {
         div(class="flex w-full") {
             (if show_sidebar {
@@ -116,11 +118,39 @@ pub fn content(
             })
             div(class="flex-1 container mx-auto") {
                 div(
-                    ref=docs_container_ref,
                     class=format!("content min-w-0 pr-4 mb-2 lg:mr-44 {}",
                     if show_sidebar { "" } else { "container mx-auto lg:ml-auto lg:mr-44" }),
                 ) {
-                    "Loading..."
+                    (if sidebar_version0.as_deref() == Some(crate::NEXT_VERSION) {
+                        template! {
+                            div(class="bg-yellow-500 text-white w-full rounded-md mt-4 px-4 py-3") {
+                                p { "This is unreleased documentation for Sycamore next version." }
+                                p {
+                                    "For up-to-date documentation, see the "
+                                    a(href=format!("/docs/{}/getting_started/hello_world", crate::LATEST_MAJOR_VERSION)) {
+                                        "latest version"
+                                    }
+                                    "."
+                                }
+                            }
+                        }
+                    } else if sidebar_version0.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
+                        template! {
+                            div(class="bg-yellow-500 text-white w-full rounded-md mt-4 px-4 py-3") {
+                                p { "This is outdated documentation for Sycamore." }
+                                p {
+                                    "For up-to-date documentation, see the "
+                                    a(href=format!("/docs/{}/getting_started/hello_world", crate::LATEST_MAJOR_VERSION)) {
+                                        "latest version"
+                                    }
+                                    "."
+                                }
+                            }
+                        }
+                    } else {
+                        template! {}
+                    })
+                    div(ref=docs_container_ref) { "Loading..." }
                 }
                 div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0 top-0 mt-12") {
                     OutlineView(outline.handle())

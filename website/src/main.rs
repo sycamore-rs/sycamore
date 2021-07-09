@@ -8,6 +8,9 @@ mod versions;
 use sycamore::prelude::*;
 use sycamore_router::{BrowserRouter, Route};
 
+const LATEST_MAJOR_VERSION: &str = "v0.5";
+const NEXT_VERSION: &str = "next";
+
 #[derive(Debug, Route)]
 enum Routes {
     #[to("/")]
