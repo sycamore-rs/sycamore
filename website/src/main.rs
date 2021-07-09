@@ -43,13 +43,13 @@ fn app() -> Template<G> {
                             Routes::Docs(a, b) => template! {
                                 content::Content(content::ContentProps {
                                     pathname: format!("/static/docs/{}/{}.json", a, b),
-                                    show_sidebar: true,
+                                    sidebar_version: Some("next".to_string()),
                                 })
                             },
                             Routes::VersionedDocs(version, a, b) => template! {
                                 content::Content(content::ContentProps {
                                     pathname: format!("/static/docs/{}/{}/{}.json", version, a, b),
-                                    show_sidebar: true,
+                                    sidebar_version: Some(version.clone()),
                                 })
                             },
                             Routes::NewsIndex => template! {
@@ -58,7 +58,7 @@ fn app() -> Template<G> {
                             Routes::Post(post) => template! {
                                 content::Content(content::ContentProps {
                                     pathname: format!("/static/posts/{}.json", post),
-                                    show_sidebar: false,
+                                    sidebar_version: None,
                                 })
                             },
                             Routes::Versions => template! {

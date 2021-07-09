@@ -64,16 +64,18 @@ pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
 
 pub struct ContentProps {
     pub pathname: String,
-    pub show_sidebar: bool,
+    pub sidebar_version: Option<String>,
 }
 
 #[component(Content<G>)]
 pub fn content(
     ContentProps {
         pathname,
-        show_sidebar,
+        sidebar_version,
     }: ContentProps,
 ) -> Template<G> {
+    let show_sidebar = sidebar_version.is_some();
+
     let docs_container_ref = NodeRef::<G>::new();
 
     let html = Signal::new(None::<String>);
@@ -106,7 +108,7 @@ pub fn content(
             (if show_sidebar {
                 template! {
                     div(class="flex-none") {
-                        crate::sidebar::Sidebar()
+                        crate::sidebar::Sidebar(sidebar_version.clone().unwrap())
                     }
                 }
             } else {
