@@ -56,18 +56,8 @@ pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
     }
 }
 
-pub struct ContentProps {
-    pub pathname: String,
-    pub show_sidebar: bool,
-}
-
 #[component(Content<G>)]
-pub fn content(
-    ContentProps {
-        pathname,
-        show_sidebar,
-    }: ContentProps,
-) -> Template<G> {
+pub fn content(pathname: String) -> Template<G> {
     let location = web_sys::window()
         .unwrap()
         .document()
@@ -148,35 +138,23 @@ pub fn content(
     }));
 
     wasm_bindgen_futures::spawn_local(cloned!((markdown) => async move {
-        log::info!("Getting markdown at {}", pathname);
+        log::info!("Getting documentation at {}", pathname);
 
-        let url = format!("{}{}", location.origin().unwrap(), pathname);
+        let url = format!("{}/markdown{}.md", location.origin().unwrap(), pathname);
         let text = fetch_md(&url).await.as_string().unwrap();
         markdown.set(text);
     }));
 
     template! {
         div(class="flex w-full") {
-            (if show_sidebar {
-                template! {
-                    div(class="flex-none") {
-                        crate::sidebar::Sidebar()
-                    }
-                }
-            } else {
-                template! {}
-            })
-            div(class="flex-1 container mx-auto") {
-                div(
-                    ref=docs_container_ref,
-                    class=format!("content min-w-0 pr-4 mb-2 lg:mr-44 {}",
-                    if show_sidebar { "" } else { "container mx-auto lg:ml-auto lg:mr-44" }),
-                ) {
-                    "Loading..."
-                }
-                div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0 top-0 mt-12") {
-                    OutlineView(outline.handle())
-                }
+            div(class="flex-none") {
+                crate::sidebar::Sidebar()
+            }
+            div(ref=docs_container_ref, class="content flex-1 min-w-0 pr-4 mb-2 lg:mr-44") {
+                "Loading..."
+            }
+            div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0") {
+                OutlineView(outline.handle())
             }
         }
     }

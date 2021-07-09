@@ -12,10 +12,6 @@ enum Routes {
     Index,
     #[to("/docs/<_>/<_>")]
     Docs(String, String),
-    #[to("/news")]
-    NewsIndex,
-    #[to("/news/<_>")]
-    Post(String),
     #[not_found]
     NotFound,
 }
@@ -25,7 +21,6 @@ fn app() -> Template<G> {
     template! {
         main {
             BrowserRouter(|route: Routes| {
-                log::info!("{:?}", route);
                 template! {
                     div(class="mt-12") {
                         header::Header()
@@ -36,19 +31,7 @@ fn app() -> Template<G> {
                                 }
                             },
                             Routes::Docs(a, b) => template! {
-                                content::Content(content::ContentProps {
-                                    pathname: format!("/markdown/{}/{}.md", a, b),
-                                    show_sidebar: true,
-                                })
-                            },
-                            Routes::NewsIndex => template! {
-                                "News"
-                            },
-                            Routes::Post(post) => template! {
-                                content::Content(content::ContentProps {
-                                    pathname: format!("/posts/{}.md", post),
-                                    show_sidebar: false,
-                                })
+                                content::Content(format!("/{}/{}", a, b))
                             },
                             Routes::NotFound => template! {
                                 "404 Not Found"
