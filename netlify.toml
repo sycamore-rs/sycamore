@@ -3,11 +3,6 @@ from = "/docs/*"
 status = 200
 to = "/index.html"
 
-[[redirects]]
-from = "/news/*"
-status = 200
-to = "/index.html"
-
 [[headers]]
 for = "*.css"
 [headers.values]
