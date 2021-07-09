@@ -93,7 +93,7 @@ pub fn sidebar(version: String) -> Template<G> {
                         href="/versions",
                         class="pl-4 text-gray-700 hover:bg-gray-300 w-full inline-block rounded transition",
                     ) {
-                        "Version: " (version)
+                        "Version: " span(class="text-bold") { (version) }
                     }
                 }
                 (sections)

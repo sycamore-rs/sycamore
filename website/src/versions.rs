@@ -30,7 +30,7 @@ fn versioned_docs_link_view(
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
-            ) { "Release" }
+            ) { "Release Notes" }
         },
         VersionedDocsLink::None => template! {
             a(
@@ -40,7 +40,7 @@ fn versioned_docs_link_view(
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
-            ) { "Release" }
+            ) { "Release Notes" }
         },
         VersionedDocsLink::Next => template! {
             a(

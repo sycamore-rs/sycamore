@@ -1,10 +1,5 @@
 [[redirects]]
-from = "/docs/*"
-status = 200
-to = "/index.html"
-
-[[redirects]]
-from = "/news/*"
+from = "/*"
 status = 200
 to = "/index.html"
 

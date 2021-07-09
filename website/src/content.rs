@@ -130,11 +130,11 @@ pub fn content(
                                     a(href=format!("/docs/{}/getting_started/hello_world", crate::LATEST_MAJOR_VERSION)) {
                                         "latest version"
                                     }
-                                    "."
+                                    " (" (crate::LATEST_MAJOR_VERSION) ")."
                                 }
                             }
                         }
-                    } else if sidebar_version0.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
+                    } else if sidebar_version0.is_some() && sidebar_version0.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
                         template! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 px-4 py-3") {
                                 p { "This is outdated documentation for Sycamore." }
@@ -143,7 +143,8 @@ pub fn content(
                                     a(href=format!("/docs/{}/getting_started/hello_world", crate::LATEST_MAJOR_VERSION)) {
                                         "latest version"
                                     }
-                                    "."
+                                    " (" (crate::LATEST_MAJOR_VERSION) ")."
+
                                 }
                             }
                         }
