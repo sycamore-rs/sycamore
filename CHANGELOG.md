@@ -1,35 +1,5 @@
 # Changelog
 
-## ✨ **0.5.1** _(2021-07-09)_
-
-#### Changelog
-
-- #### 🛠 Fixes
-
-  - Remove `Hash` trait bound from `T` in `Keyed` [[@lukechu10],
-    [#148](https://github.com/sycamore-rs/sycamore/pull/148)]
-
-- #### 🛠 Internal Fixes and Improvements
-
-  - Add news section to website with v0.5.0 release post [[@lukechu10],
-    [#149](https://github.com/sycamore-rs/sycamore/pull/149),
-    [#149](https://github.com/sycamore-rs/sycamore/pull/149)]
-  - Fix typo in v0.5.0 release post [[@tshepang],
-    [#156](https://github.com/sycamore-rs/sycamore/pull/156)]
-  - Add versioned docs to website [[@lukechu10],
-    [#160](https://github.com/sycamore-rs/sycamore/pull/160)]
-
-- #### 🚅 Performance Improvements
-
-  - Reduce allocations when creating `Template`s [[@lukechu10],
-    [#143](https://github.com/sycamore-rs/sycamore/pull/143)]
-  - Do not create effects when splice is static (using simple heuristic) [[@lukechu10],
-    [#155](https://github.com/sycamore-rs/sycamore/pull/155)]
-  - Set `className` directly instead of calling `setAttribute` [[@lukechu10],
-    [#157](https://github.com/sycamore-rs/sycamore/pull/157)]
-  - Optimize `create_effect` [[@lukechu10],
-    [#159](https://github.com/sycamore-rs/sycamore/pull/159)]
-
 ## ✨ **0.5.0** _(2021-07-06)_
 
 Release post:
@@ -353,4 +323,3 @@ Release post:
 [@lights0123]: https://github.com/lights0123
 [@riey]: https://github.com/Riey
 [@tmpr]: https://github.com/tmpr
-[@tshepang]: https://github.com/tshepang
