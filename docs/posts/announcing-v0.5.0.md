@@ -1,5 +1,3 @@
-_2021-07-06_
-
 # Announcing Sycamore v0.5.0!
 
 _SSR + Routing_
@@ -73,17 +71,6 @@ source code is available right here:
 
 Check out the new documentation website at
 [sycamore-rs.netlify.app](https://sycamore-rs.netlify.app).
-
-### New Quick Start templates
-
-We've also added three new templates for getting started with Sycamore.
-
-- [`sycamore-trunk-gitpod-template`](https://github.com/sycamore-rs/sycamore-trunk-gitpod-template) -
-  Template for creating a Sycamore Single Page Application (SPA).
-- [`sycamore-rocket-minimal-template`](https://github.com/sycamore-rs/sycamore-rocket-minimal-template) -
-  Bare bones template for building a Sycamore app with Rocket and server side rendering.
-- [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template) -
-  SvelteKit-like started for creating a Sycamore isomorphic application.
 
 ### Conclusion
 

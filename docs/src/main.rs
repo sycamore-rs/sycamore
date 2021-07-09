@@ -1,7 +1,6 @@
 mod content;
 mod header;
 mod index;
-mod news_index;
 mod sidebar;
 
 use sycamore::prelude::*;
@@ -26,6 +25,7 @@ fn app() -> Template<G> {
     template! {
         main {
             BrowserRouter(|route: Routes| {
+                log::info!("{:?}", route);
                 template! {
                     div(class="mt-12") {
                         header::Header()
@@ -42,7 +42,7 @@ fn app() -> Template<G> {
                                 })
                             },
                             Routes::NewsIndex => template! {
-                                news_index::NewsIndex()
+                                "News"
                             },
                             Routes::Post(post) => template! {
                                 content::Content(content::ContentProps {
