@@ -34,15 +34,15 @@ jobs:
           tar -xf wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
           sudo mv wasm-bindgen-0.2.74-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
-      - name: Build docs
+      - name: Build website
         run: >
-          cd docs/ &&
+          cd website/ &&
           npm ci &&
           npm run prod
 
       - name: Build examples
         run: |
-          output="$(pwd)/docs/dist"
+          output="$(pwd)/website/dist"
           mkdir "$output/examples"
           for path in examples/*; do
             if [[ ! -d $path ]]; then
@@ -59,7 +59,7 @@ jobs:
           done
 
       - name: Create .nojekyll file
-        run: touch docs/dist/.nojekyll
+        run: touch website/dist/.nojekyll
 
       - name: Deploy to netlify
         uses: netlify/actions/cli@master

@@ -3,9 +3,13 @@ mod header;
 mod index;
 mod news_index;
 mod sidebar;
+mod versions;
 
 use sycamore::prelude::*;
 use sycamore_router::{BrowserRouter, Route};
+
+const LATEST_MAJOR_VERSION: &str = "v0.5";
+const NEXT_VERSION: &str = "next";
 
 #[derive(Debug, Route)]
 enum Routes {
@@ -13,10 +17,14 @@ enum Routes {
     Index,
     #[to("/docs/<_>/<_>")]
     Docs(String, String),
+    #[to("/docs/<_>/<_>/<_>")]
+    VersionedDocs(String, String, String),
     #[to("/news")]
     NewsIndex,
     #[to("/news/<_>")]
     Post(String),
+    #[to("/versions")]
+    Versions,
     #[not_found]
     NotFound,
 }
@@ -37,8 +45,14 @@ fn app() -> Template<G> {
                             },
                             Routes::Docs(a, b) => template! {
                                 content::Content(content::ContentProps {
-                                    pathname: format!("/markdown/{}/{}.md", a, b),
-                                    show_sidebar: true,
+                                    pathname: format!("/static/docs/{}/{}.json", a, b),
+                                    sidebar_version: Some("next".to_string()),
+                                })
+                            },
+                            Routes::VersionedDocs(version, a, b) => template! {
+                                content::Content(content::ContentProps {
+                                    pathname: format!("/static/docs/{}/{}/{}.json", version, a, b),
+                                    sidebar_version: Some(version.clone()),
                                 })
                             },
                             Routes::NewsIndex => template! {
@@ -46,9 +60,12 @@ fn app() -> Template<G> {
                             },
                             Routes::Post(post) => template! {
                                 content::Content(content::ContentProps {
-                                    pathname: format!("/posts/{}.md", post),
-                                    show_sidebar: false,
+                                    pathname: format!("/static/posts/{}.json", post),
+                                    sidebar_version: None,
                                 })
+                            },
+                            Routes::Versions => template! {
+                                versions::Versions()
                             },
                             Routes::NotFound => template! {
                                 "404 Not Found"
