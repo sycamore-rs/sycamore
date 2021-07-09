@@ -91,9 +91,9 @@ pub fn sidebar(version: String) -> Template<G> {
                 li {
                     a(
                         href="/versions",
-                        class="pl-4 text-gray-700 hover:bg-gray-300 w-full inline-block rounded transition",
+                        class="pl-4 font-bold text-gray-700 hover:bg-gray-300 w-full inline-block rounded transition",
                     ) {
-                        "Version: " span(class="text-bold") { (version) }
+                        "Version: " (version)
                     }
                 }
                 (sections)
