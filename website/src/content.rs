@@ -123,7 +123,7 @@ pub fn content(
                 ) {
                     (if sidebar_version0.as_deref() == Some(crate::NEXT_VERSION) {
                         template! {
-                            div(class="bg-yellow-500 text-white w-full rounded-md mt-4 px-4 py-3") {
+                            div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is unreleased documentation for Sycamore next version." }
                                 p {
                                     "For up-to-date documentation, see the "
@@ -136,7 +136,7 @@ pub fn content(
                         }
                     } else if sidebar_version0.is_some() && sidebar_version0.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
                         template! {
-                            div(class="bg-yellow-500 text-white w-full rounded-md mt-4 px-4 py-3") {
+                            div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is outdated documentation for Sycamore." }
                                 p {
                                     "For up-to-date documentation, see the "
