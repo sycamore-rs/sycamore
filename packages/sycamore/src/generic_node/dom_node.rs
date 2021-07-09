@@ -306,7 +306,8 @@ fn get_children(parent: &Element) -> Vec<Element> {
     let children = parent.children();
     let children_count = children.length();
 
-    let mut vec = Vec::with_capacity(children_count as usize);
+    let mut vec = Vec::new();
+    vec.reserve(children_count as usize);
 
     for i in 0..children.length() {
         vec.push(children.get_with_index(i).unwrap());

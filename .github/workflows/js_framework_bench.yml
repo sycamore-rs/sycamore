@@ -16,7 +16,7 @@ jobs:
 
     env:
       MSG_FOOTER: |
-        
+        <br/>
         Workflow: [${{ github.run_id }}](/${{ github.repository }}/actions/runs/${{ github.run_id }})
         *Adding new commits will generate a new report*
 

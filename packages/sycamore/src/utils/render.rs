@@ -300,7 +300,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         } else {
             // Fallback to map.
             if map.is_none() {
-                map = Some(HashMap::with_capacity(b_end - b_start));
+                map = Some(HashMap::new());
                 for (i, item) in b.iter().enumerate().take(b_end).skip(b_start) {
                     map.as_mut().unwrap().insert(item.clone(), i);
                 }

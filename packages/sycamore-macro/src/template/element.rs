@@ -5,7 +5,7 @@ use quote::{quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::spanned::Spanned;
-use syn::{token, Expr, Ident, Token};
+use syn::{token, Ident, Token};
 
 use super::*;
 
@@ -62,23 +62,8 @@ impl ToTokens for Element {
             let multi = children.body.len() != 1;
             let mut children = children.body.iter().peekable();
             while let Some(child) = children.next() {
-                // True if the child is a component or a splice that is not a simple path.
-                // Example:
-                // template! { MyComponent() } // is_dynamic = true
-                // template! { (state.get()) } // is_dynamic = true
-                // template! { (state) } // is_dynamic = false
-                let is_dynamic = match child {
-                    HtmlTree::Component(_) => true,
-                    HtmlTree::Text(Text::Splice(_, expr))
-                        if !matches!(expr.as_ref(), Expr::Path(_)) =>
-                    {
-                        true
-                    }
-                    _ => false,
-                };
-
                 quoted.extend(match child {
-                    _ if is_dynamic => {
+                    HtmlTree::Component(_) | HtmlTree::Text(Text::Splice(..)) => {
                         let quote_marker =
                         if let Some(HtmlTree::Element(element)) =
                             children.next_if(|x| matches!(x, HtmlTree::Element(_)))
@@ -138,17 +123,6 @@ impl ToTokens for Element {
                             &::sycamore::generic_node::GenericNode::text_node(#text),
                         );
                     },
-                    HtmlTree::Text(text @ Text::Splice(..)) => {
-                        assert!(!is_dynamic);
-                        quote_spanned! { text.span()=>
-                            ::sycamore::utils::render::insert(
-                                &__el,
-                                ::sycamore::template::IntoTemplate::create(&#text),
-                                None, None, #multi
-                            );
-                        }
-                    },
-                    _ => unreachable!("all branches covered by match guards"),
                 });
             }
         }
