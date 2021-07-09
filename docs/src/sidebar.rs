@@ -49,7 +49,7 @@ static PAGES: &[(&str, &[(&str, &str)])] = &[
 ];
 
 #[component(Sidebar<G>)]
-pub fn sidebar(version: String) -> Template<G> {
+pub fn sidebar() -> Template<G> {
     let sections = PAGES
         .iter()
         .map(|section| {
@@ -60,7 +60,7 @@ pub fn sidebar(version: String) -> Template<G> {
                     template! {
                         li {
                             a(
-                                href=format!("../{}", page.1),
+                                href=format!("/docs/{}", page.1),
                                 class="pl-4 hover:bg-gray-300 w-full inline-block rounded transition",
                             ) {
                                 (page.0)
@@ -73,7 +73,7 @@ pub fn sidebar(version: String) -> Template<G> {
             let pages = Template::new_fragment(pages);
             template! {
                 li {
-                    h1(class="text-lg font-bold py-1 pl-2") {
+                    p(class="text-lg font-bold py-1 pl-2") {
                         (section.0)
                     }
                     ul(class="text-gray-700") {
@@ -88,14 +88,6 @@ pub fn sidebar(version: String) -> Template<G> {
     template! {
         aside(class="p-3 bg-white w-44") {
             ul(class="text-black") {
-                li {
-                    a(
-                        href="/versions",
-                        class="pl-4 font-bold text-gray-700 hover:bg-gray-300 w-full inline-block rounded transition",
-                    ) {
-                        "Version: " (version)
-                    }
-                }
                 (sections)
             }
         }
