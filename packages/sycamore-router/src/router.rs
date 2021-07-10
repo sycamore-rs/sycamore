@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, HtmlAnchorElement};
+use web_sys::{Element, HtmlAnchorElement, KeyboardEvent};
 
 use crate::Route;
 
@@ -85,7 +85,10 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
                         let origin = a.origin();
                         let path = a.pathname();
                         let hash = a.hash();
-                        if Ok(origin) == location.origin() {
+
+                        let meta_keys_pressed =
+                            meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
+                        if !meta_keys_pressed && Ok(origin) == location.origin() {
                             if Ok(&path) != location.pathname().as_ref() {
                                 // Same origin, different path.
                                 ev.prevent_default();
@@ -145,4 +148,8 @@ pub fn navigate(url: &str) {
             .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str()))
             .unwrap();
     });
+}
+
+fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {
+    kb_event.meta_key() || kb_event.ctrl_key() || kb_event.shift_key() || kb_event.alt_key()
 }
