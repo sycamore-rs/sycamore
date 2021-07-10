@@ -33,7 +33,7 @@ For more information, head over to the [Trunk website](https://trunkrs.dev)
 Create a new Rust project using `cargo`:
 
 ```bash
-cargo new my-project --bin
+cargo new my-project
 cd my-project
 ```
 
