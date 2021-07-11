@@ -24,9 +24,9 @@ features = [
   "EventTarget",
   "History",
   "HtmlAnchorElement",
+  "KeyboardEvent",
   "Location",
   "PopStateEvent",
   "Window",
-  "KeyboardEvent",
 ]
 version = "0.3"
