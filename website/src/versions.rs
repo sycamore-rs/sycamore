@@ -22,7 +22,7 @@ fn versioned_docs_link_view(
         VersionedDocsLink::Some(link) => template! {
             a(
                 class="hover:text-yellow-500 transition-colors",
-                href=format!("/docs/{}/getting_started/hello_world", link),
+                href=format!("/docs/{}/getting_started/installation", link),
             ) { "Book" }
             a(
                 class="hover:text-yellow-500 transition-colors",
@@ -46,7 +46,7 @@ fn versioned_docs_link_view(
         VersionedDocsLink::Next => template! {
             a(
                 class="hover:text-yellow-500 transition-colors",
-                href="/docs/getting_started/hello_world",
+                href="/docs/getting_started/installation",
             ) { "Book" }
         },
     }
