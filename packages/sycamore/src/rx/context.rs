@@ -39,8 +39,8 @@ where
     F: FnOnce() -> Template<G>,
     G: GenericNode,
 {
-    value: T,
-    children: F,
+    pub value: T,
+    pub children: F,
 }
 
 /// Add a new context to the current [`ReactiveScope`].
@@ -58,11 +58,11 @@ where
             scope
                 .contexts
                 .insert(value.type_id(), Box::new(Context { value }));
-
-            children()
         } else {
             panic!("ContextProvider must be used inside ReactiveScope");
         }
+
+        children()
     })
 }
 
@@ -70,7 +70,7 @@ where
 ///
 /// # Panics
 /// This function will `panic!` if the context is not found in the current scope or a parent scope.
-pub fn use_context<T: Clone + 'static>() {
+pub fn use_context<T: Clone + 'static>() -> T {
     SCOPES.with(|scopes| {
         // Walk up the scope stack until we find a context that matches type or `panic!`.
         for scope in scopes.borrow().iter().rev() {
@@ -81,5 +81,5 @@ pub fn use_context<T: Clone + 'static>() {
         }
 
         panic!("context not found for type");
-    });
+    })
 }

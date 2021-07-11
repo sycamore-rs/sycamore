@@ -5,6 +5,7 @@ members = [
   "packages/sycamore-router",
   "packages/sycamore-router-macro",
   "examples/components",
+  "examples/context",
   "examples/counter",
   "examples/hello",
   "examples/iteration",
