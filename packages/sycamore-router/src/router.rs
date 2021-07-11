@@ -153,3 +153,57 @@ pub fn navigate(url: &str) {
 fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {
     kb_event.meta_key() || kb_event.ctrl_key() || kb_event.shift_key() || kb_event.alt_key()
 }
+
+#[cfg(test)]
+mod tests {
+    use sycamore::prelude::*;
+
+    use super::*;
+
+    #[test]
+    fn static_router() {
+        #[derive(Route)]
+        enum Routes {
+            #[to("/")]
+            Home,
+            #[to("/about")]
+            About,
+            #[not_found]
+            NotFound,
+        }
+
+        #[component(Comp<G>)]
+        fn comp(path: String) -> Template<G> {
+            template! {
+                StaticRouter((path, |route: Routes| {
+                    match route {
+                        Routes::Home => template! {
+                            "Home"
+                        },
+                        Routes::About => template! {
+                            "About"
+                        },
+                        Routes::NotFound => template! {
+                            "Not Found"
+                        }
+                    }
+                }))
+            }
+        }
+
+        assert_eq!(
+            sycamore::render_to_string(|| template! { Comp("/".to_string()) }),
+            "Home"
+        );
+
+        assert_eq!(
+            sycamore::render_to_string(|| template! { Comp("/about".to_string()) }),
+            "About"
+        );
+
+        assert_eq!(
+            sycamore::render_to_string(|| template! { Comp("/404".to_string()) }),
+            "Not Found"
+        );
+    }
+}
