@@ -127,7 +127,7 @@ pub fn content(
                                 p { "This is unreleased documentation for Sycamore next version." }
                                 p {
                                     "For up-to-date documentation, see the "
-                                    a(href=format!("/docs/{}/getting_started/hello_world", crate::LATEST_MAJOR_VERSION)) {
+                                    a(href=format!("/docs/{}/getting_started/installation", crate::LATEST_MAJOR_VERSION)) {
                                         "latest version"
                                     }
                                     " (" (crate::LATEST_MAJOR_VERSION) ")."
@@ -140,7 +140,7 @@ pub fn content(
                                 p { "This is outdated documentation for Sycamore." }
                                 p {
                                     "For up-to-date documentation, see the "
-                                    a(href=format!("/docs/{}/getting_started/hello_world", crate::LATEST_MAJOR_VERSION)) {
+                                    a(href=format!("/docs/{}/getting_started/installation", crate::LATEST_MAJOR_VERSION)) {
                                         "latest version"
                                     }
                                     " (" (crate::LATEST_MAJOR_VERSION) ")."
