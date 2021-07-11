@@ -44,6 +44,9 @@ where
 }
 
 /// Add a new context to the current [`ReactiveScope`].
+///
+/// # Panics
+/// This component will `panic!` if not inside a reactive scope.
 #[component(ContextProvider<G>)]
 pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> Template<G>
 where
