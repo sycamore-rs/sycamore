@@ -40,13 +40,13 @@ pub use signal::*;
 pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
     fn internal<'a>(callback: Box<dyn FnOnce() + 'a>) -> ReactiveScope {
-        SCOPE.with(|scope| {
-            let outer_scope = scope.replace(Some(ReactiveScope::new()));
+        SCOPES.with(|scopes| {
+            // Push new empty scope on the stack.
+            scopes.borrow_mut().push(ReactiveScope::new());
             callback();
 
-            scope
-                .replace(outer_scope)
-                .expect("ReactiveScope should be valid inside the reactive root")
+            // Pop the scope from the stack and return it.
+            scopes.borrow_mut().pop().unwrap()
         })
     }
 

@@ -17,18 +17,28 @@ const REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY: usize = 4;
 
 /// Initial capacity for [`CONTEXTS`].
 const CONTEXTS_INITIAL_CAPACITY: usize = 10;
+/// Initial capacity for [`SCOPES`].
+const SCOPES_INITIAL_CAPACITY: usize = 4;
 
 thread_local! {
     /// Context of the effect that is currently running. `None` if no effect is running.
     ///
-    /// This is an array of callbacks that, when called, will add the a `Signal` to the `handle` in the argument.
-    /// The callbacks return another callback which will unsubscribe the `handle` from the `Signal`.
-    pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> = RefCell::new(Vec::with_capacity(CONTEXTS_INITIAL_CAPACITY));
-    pub(super) static SCOPE: RefCell<Option<ReactiveScope>> = RefCell::new(None);
+    /// The [`Running`] contains an array of callbacks that, when called, will add the a `Signal` to
+    /// the `handle` in the argument. The callbacks return another callback which will unsubscribe the
+    /// `handle` from the `Signal`.
+    pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> =
+        RefCell::new(Vec::with_capacity(CONTEXTS_INITIAL_CAPACITY));
+    /// Explicit stack of [`ReactiveScope`]s.
+    pub(super) static SCOPES: RefCell<Vec<ReactiveScope>> =
+        RefCell::new(Vec::with_capacity(SCOPES_INITIAL_CAPACITY));
 }
 
 /// State of the current running effect.
 /// When the state is dropped, all dependencies are removed (both links and backlinks).
+///
+/// The difference between [`Running`] and [`ReactiveScope`] is that [`Running`] is used for
+/// dependency tracking whereas [`ReactiveScope`] is used for resource cleanup. Each [`Running`]
+/// contains a [`ReactiveScope`].
 pub(super) struct Running {
     /// Callback to run when the effect is recreated.
     pub(super) execute: Rc<RefCell<dyn FnMut()>>,
@@ -54,6 +64,10 @@ impl Running {
 /// Owns the effects created in the current reactive scope.
 /// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is
 /// dropped.
+///
+/// A new [`ReactiveScope`] is usually created with [`create_root`]. A new [`ReactiveScope`] is also
+/// created when a new effect is created with [`create_effect`] and other reactive utilities that
+/// call it under the hood.
 #[derive(Default)]
 pub struct ReactiveScope {
     /// Effects created in this scope.
@@ -242,10 +256,11 @@ pub fn create_effect_initial<R: 'static>(
             "Running should be owned exclusively by ReactiveScope"
         );
 
-        SCOPE.with(|scope| {
-            if scope.borrow().is_some() {
+        SCOPES.with(|scope| {
+            if scope.borrow().last().is_some() {
                 scope
                     .borrow_mut()
+                    .last_mut()
                     .as_mut()
                     .unwrap()
                     .add_effect_state(running);
@@ -428,10 +443,11 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
 /// assert_eq!(*cleanup_called.get(), true);
 /// ```
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
-    SCOPE.with(|scope| {
-        if scope.borrow().is_some() {
+    SCOPES.with(|scope| {
+        if scope.borrow().last().is_some() {
             scope
                 .borrow_mut()
+                .last_mut()
                 .as_mut()
                 .unwrap()
                 .add_cleanup(Box::new(f));
