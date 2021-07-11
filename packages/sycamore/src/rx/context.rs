@@ -86,3 +86,24 @@ pub fn use_context<T: Clone + 'static>() -> T {
         panic!("context not found for type");
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_context() {
+        sycamore::render_to_string(|| {
+            template! {
+                ContextProvider(ContextProviderProps {
+                    value: 1i32,
+                    children: || {
+                        let ctx = use_context::<i32>();
+                        assert_eq!(ctx, 1);
+                        template! {}
+                    }
+                })
+            }
+        });
+    }
+}
