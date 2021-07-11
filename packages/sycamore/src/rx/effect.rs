@@ -1,6 +1,6 @@
-use std::any::Any;
+use std::any::{Any, TypeId};
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::ptr;
@@ -74,6 +74,8 @@ pub struct ReactiveScope {
     effects: SmallVec<[Rc<RefCell<Option<Running>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
     /// Callbacks to call when the scope is dropped.
     cleanup: Vec<Box<dyn FnOnce()>>,
+    /// Contexts created in this scope.
+    pub(super) contexts: HashMap<TypeId, Box<dyn ContextAny>>,
 }
 
 impl ReactiveScope {
@@ -261,7 +263,6 @@ pub fn create_effect_initial<R: 'static>(
                 scope
                     .borrow_mut()
                     .last_mut()
-                    .as_mut()
                     .unwrap()
                     .add_effect_state(running);
             } else {
@@ -381,7 +382,9 @@ where
     })
 }
 
-/// Run the passed closure inside an untracked scope.
+/// Run the passed closure inside an untracked dependency scope.
+///
+/// This does **NOT** create a new [`ReactiveScope`].
 ///
 /// See also [`StateHandle::get_untracked()`].
 ///
@@ -448,7 +451,6 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
             scope
                 .borrow_mut()
                 .last_mut()
-                .as_mut()
                 .unwrap()
                 .add_cleanup(Box::new(f));
         } else {

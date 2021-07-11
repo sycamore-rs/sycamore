@@ -1,10 +1,12 @@
 //! Reactive primitives for Sycamore.
 
+mod context;
 mod effect;
 mod iter;
 mod motion;
 mod signal;
 
+pub use context::*;
 pub use effect::*;
 pub use iter::*;
 pub use motion::*;
