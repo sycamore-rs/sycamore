@@ -43,10 +43,7 @@ where
     pub children: F,
 }
 
-/// Add a new context to the current [`ReactiveScope`].
-///
-/// # Panics
-/// This component will `panic!` if not inside a reactive scope.
+/// Creates a new [`ReactiveScope`] with a context.
 #[component(ContextProvider<G>)]
 pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> Template<G>
 where
@@ -56,16 +53,13 @@ where
     let ContextProviderProps { value, children } = props;
 
     SCOPES.with(|scopes| {
-        // Add context to the current scope.
-        if let Some(scope) = scopes.borrow_mut().last_mut() {
-            scope
-                .contexts
-                .insert(value.type_id(), Box::new(Context { value }));
-        } else {
-            panic!("ContextProvider must be used inside ReactiveScope");
-        }
-
-        children()
+        // Create a new ReactiveScope with a context.
+        let mut scope = ReactiveScope::default();
+        scope.context = Some(Box::new(Context { value }));
+        scopes.borrow_mut().push(scope);
+        let template = children();
+        scopes.borrow_mut().pop();
+        template
     })
 }
 
@@ -77,9 +71,10 @@ pub fn use_context<T: Clone + 'static>() -> T {
     SCOPES.with(|scopes| {
         // Walk up the scope stack until we find a context that matches type or `panic!`.
         for scope in scopes.borrow().iter().rev() {
-            if let Some(context) = scope.contexts.get(&TypeId::of::<T>()) {
-                let value = context.get_value().downcast_ref::<T>().unwrap();
-                return value.clone();
+            if let Some(context) = &scope.context {
+                if let Some(value) = context.get_value().downcast_ref::<T>() {
+                    return value.clone();
+                }
             }
         }
 

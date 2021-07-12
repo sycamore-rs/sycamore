@@ -1,6 +1,6 @@
-use std::any::{Any, TypeId};
+use std::any::Any;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::ptr;
@@ -75,7 +75,7 @@ pub struct ReactiveScope {
     /// Callbacks to call when the scope is dropped.
     cleanup: Vec<Box<dyn FnOnce()>>,
     /// Contexts created in this scope.
-    pub(super) contexts: HashMap<TypeId, Box<dyn ContextAny>>,
+    pub(super) context: Option<Box<dyn ContextAny>>,
 }
 
 impl ReactiveScope {
