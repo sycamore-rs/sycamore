@@ -13,7 +13,7 @@ use super::*;
 
 /// The number of effects that are allocated on the stack before resorting to heap allocation in
 /// [`ReactiveScope`].
-const REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY: usize = 4;
+const REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY: usize = 2;
 
 /// Initial capacity for [`CONTEXTS`].
 const CONTEXTS_INITIAL_CAPACITY: usize = 10;
