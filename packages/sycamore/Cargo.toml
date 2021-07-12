@@ -16,7 +16,7 @@ version = "0.5.1"
 [dependencies]
 chrono = {version = "0.4", features = ["wasmbind"]}
 html-escape = {version = "0.2.7", optional = true}
-indexmap = "1.7"
+indexmap = { version = "1.7.0", features = ["std"] }
 js-sys = {version = "0.3"}
 serde = {version = "1.0", optional = true}
 smallvec = "1.6"
