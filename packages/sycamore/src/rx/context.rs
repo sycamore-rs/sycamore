@@ -87,7 +87,7 @@ pub fn use_context<T: Clone + 'static>() -> T {
     })
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ssr"))]
 mod tests {
     use super::*;
 
