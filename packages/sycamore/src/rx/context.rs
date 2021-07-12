@@ -58,7 +58,8 @@ where
         scope.context = Some(Box::new(Context { value }));
         scopes.borrow_mut().push(scope);
         let template = children();
-        scopes.borrow_mut().pop();
+        let scope = scopes.borrow_mut().pop().unwrap();
+        on_cleanup(move || drop(scope));
         template
     })
 }
