@@ -113,12 +113,6 @@ impl Drop for ReactiveScope {
 pub(super) struct Callback(pub(super) Weak<RefCell<dyn FnMut()>>);
 
 impl Callback {
-    #[track_caller]
-    #[must_use = "returned value must be manually called"]
-    pub fn callback(&self) -> Rc<RefCell<dyn FnMut()>> {
-        self.try_callback().expect("callback is not valid anymore")
-    }
-
     #[must_use = "returned value must be manually called"]
     pub fn try_callback(&self) -> Option<Rc<RefCell<dyn FnMut()>>> {
         self.0.upgrade()
