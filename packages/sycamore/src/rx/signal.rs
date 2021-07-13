@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use indexmap::IndexSet;
+use indexmap::IndexMap;
 
 use super::*;
 
@@ -170,7 +170,7 @@ impl<T: 'static> Signal<T> {
         let subscribers = self.handle.0.borrow().subscribers.clone();
 
         // Reverse order of subscribers to trigger outer effects before inner effects.
-        for subscriber in subscribers.iter().rev() {
+        for subscriber in subscribers.values().rev() {
             // subscriber might have already been destroyed in the case of nested effects
             if let Some(callback) = subscriber.try_callback() {
                 callback.borrow_mut()();
@@ -239,26 +239,26 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Signal<T> {
 
 pub(super) struct SignalInner<T> {
     inner: Rc<T>,
-    subscribers: IndexSet<Callback>,
+    subscribers: IndexMap<CallbackPtr, Callback>,
 }
 
 impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
-            subscribers: IndexSet::new(),
+            subscribers: IndexMap::new(),
         }
     }
 
     /// Adds a handler to the subscriber list. If the handler is already a subscriber, does nothing.
     fn subscribe(&mut self, handler: Callback) {
-        self.subscribers.insert(handler);
+        self.subscribers.insert(handler.as_ptr(), handler);
     }
 
     /// Removes a handler from the subscriber list. If the handler is not a subscriber, does
     /// nothing.
-    fn unsubscribe(&mut self, handler: &Callback) {
-        self.subscribers.remove(handler);
+    fn unsubscribe(&mut self, handler: CallbackPtr) {
+        self.subscribers.remove(&handler);
     }
 
     /// Updates the inner value. This does **NOT** call the subscribers.
@@ -273,7 +273,7 @@ pub(super) trait AnySignalInner {
     /// Wrapper around [`SignalInner::subscribe`].
     fn subscribe(&self, handler: Callback);
     /// Wrapper around [`SignalInner::unsubscribe`].
-    fn unsubscribe(&self, handler: &Callback);
+    fn unsubscribe(&self, handler: CallbackPtr);
 }
 
 impl<T> AnySignalInner for RefCell<SignalInner<T>> {
@@ -281,7 +281,7 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
         self.borrow_mut().subscribe(handler);
     }
 
-    fn unsubscribe(&self, handler: &Callback) {
+    fn unsubscribe(&self, handler: CallbackPtr) {
         self.borrow_mut().unsubscribe(handler);
     }
 }

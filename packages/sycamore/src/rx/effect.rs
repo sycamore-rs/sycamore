@@ -2,10 +2,8 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use std::mem;
-use std::ptr;
-use std::rc::Rc;
-use std::rc::Weak;
+use std::rc::{Rc, Weak};
+use std::{mem, ptr};
 
 use smallvec::SmallVec;
 
@@ -13,7 +11,7 @@ use super::*;
 
 /// The number of effects that are allocated on the stack before resorting to heap allocation in
 /// [`ReactiveScope`].
-const REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY: usize = 4;
+const REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY: usize = 2;
 
 /// Initial capacity for [`CONTEXTS`].
 const CONTEXTS_INITIAL_CAPACITY: usize = 10;
@@ -53,9 +51,7 @@ impl Running {
     /// Should be called when re-executing an effect to recreate all dependencies.
     fn clear_dependencies(&mut self) {
         for dependency in &self.dependencies {
-            dependency
-                .signal()
-                .unsubscribe(&Callback(Rc::downgrade(&self.execute)));
+            dependency.signal().unsubscribe(Rc::as_ptr(&self.execute));
         }
         self.dependencies.clear();
     }
@@ -109,37 +105,21 @@ impl Drop for ReactiveScope {
     }
 }
 
+pub(super) type CallbackPtr = *const RefCell<dyn FnMut()>;
+
 #[derive(Clone)]
 pub(super) struct Callback(pub(super) Weak<RefCell<dyn FnMut()>>);
 
 impl Callback {
-    #[track_caller]
-    #[must_use = "returned value must be manually called"]
-    pub fn callback(&self) -> Rc<RefCell<dyn FnMut()>> {
-        self.try_callback().expect("callback is not valid anymore")
-    }
-
     #[must_use = "returned value must be manually called"]
     pub fn try_callback(&self) -> Option<Rc<RefCell<dyn FnMut()>>> {
         self.0.upgrade()
     }
-}
 
-impl Hash for Callback {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.callback()).hash(state);
+    pub fn as_ptr(&self) -> CallbackPtr {
+        Weak::as_ptr(&self.0)
     }
 }
-
-impl PartialEq for Callback {
-    fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<()>(
-            Rc::as_ptr(&self.callback()).cast(),
-            Rc::as_ptr(&other.callback()).cast(),
-        )
-    }
-}
-impl Eq for Callback {}
 
 /// A strong backlink to a [`Signal`] for any type `T`.
 #[derive(Clone)]
@@ -226,12 +206,15 @@ pub fn create_effect_initial<R: 'static>(
                         running.borrow_mut().as_mut().unwrap().scope = new_scope;
                     }
 
+                    let running = running.borrow();
+                    let running = running.as_ref().unwrap();
+
                     // Attach new dependencies.
-                    for dependency in &running.borrow().as_ref().unwrap().dependencies {
+                    for dependency in &running.dependencies {
                         dependency.signal().subscribe(Callback(Rc::downgrade(
                             // Reference the same closure we are in right now.
                             // When the dependency changes, this closure will be called again.
-                            &running.borrow().as_ref().unwrap().execute,
+                            &running.execute,
                         )));
                     }
 

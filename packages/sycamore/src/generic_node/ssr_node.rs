@@ -2,9 +2,9 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
-use std::{fmt, mem};
 
 use wasm_bindgen::prelude::*;
 
@@ -150,14 +150,6 @@ impl GenericNode for SsrNode {
     }
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
-        if let Some(reference_node) = reference_node {
-            debug_assert_eq!(
-                reference_node.parent_node().as_ref(),
-                Some(self),
-                "reference node is not a child of this node"
-            );
-        }
-
         new_node.set_parent(Rc::downgrade(&self.0));
 
         match reference_node {
@@ -166,14 +158,12 @@ impl GenericNode for SsrNode {
                 match self.0.ty.as_ref() {
                     SsrNodeType::Element(e) => {
                         let children = &mut e.borrow_mut().children;
-                        children.insert(
-                            children
-                                .iter()
-                                .enumerate()
-                                .find_map(|(i, child)| (child == reference).then(|| i))
-                                .expect("couldn't find reference node"),
-                            new_node.clone(),
-                        );
+                        let index = children
+                            .iter()
+                            .enumerate()
+                            .find_map(|(i, child)| (child == reference).then(|| i))
+                            .expect("reference node is not a child of this node");
+                        children.insert(index, new_node.clone());
                     }
                     _ => panic!("node type cannot have children"),
                 };
@@ -182,22 +172,20 @@ impl GenericNode for SsrNode {
     }
 
     fn remove_child(&self, child: &Self) {
-        let mut children = match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children),
-            _ => panic!("node type cannot have children"),
-        };
-
-        let index = children
-            .iter()
-            .enumerate()
-            .find_map(|(i, c)| (c == child).then(|| i))
-            .expect("couldn't find child");
-        children.remove(index);
-
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => e.borrow_mut().children = children,
+            SsrNodeType::Element(e) => {
+                child.set_parent(Weak::new());
+                let index = e
+                    .borrow()
+                    .children
+                    .iter()
+                    .enumerate()
+                    .find_map(|(i, c)| (c == child).then(|| i))
+                    .expect("the node to be removed is not a child of this node");
+                e.borrow_mut().children.remove(index);
+            }
             _ => panic!("node type cannot have children"),
-        };
+        }
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
@@ -209,7 +197,8 @@ impl GenericNode for SsrNode {
             .iter()
             .enumerate()
             .find_map(|(i, c)| (c == old).then(|| i))
-            .expect("Couldn't find child");
+            .expect("the node to be replaced is not a child of this node");
+        children[index].set_parent(Weak::new());
         children[index] = new.clone();
     }
 
