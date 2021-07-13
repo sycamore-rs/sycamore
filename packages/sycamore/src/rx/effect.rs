@@ -127,16 +127,13 @@ impl Callback {
 
 impl Hash for Callback {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Rc::as_ptr(&self.callback()).hash(state);
+        Weak::as_ptr(&self.0).hash(state);
     }
 }
 
 impl PartialEq for Callback {
     fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<()>(
-            Rc::as_ptr(&self.callback()).cast(),
-            Rc::as_ptr(&other.callback()).cast(),
-        )
+        ptr::eq::<()>(Weak::as_ptr(&self.0).cast(), Weak::as_ptr(&other.0).cast())
     }
 }
 impl Eq for Callback {}
