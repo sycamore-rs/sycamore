@@ -53,9 +53,7 @@ impl Running {
     /// Should be called when re-executing an effect to recreate all dependencies.
     fn clear_dependencies(&mut self) {
         for dependency in &self.dependencies {
-            dependency
-                .signal()
-                .unsubscribe(&Callback(Rc::downgrade(&self.execute)));
+            dependency.signal().unsubscribe(Rc::as_ptr(&self.execute));
         }
         self.dependencies.clear();
     }
@@ -109,6 +107,8 @@ impl Drop for ReactiveScope {
     }
 }
 
+pub(super) type CallbackPtr = *const RefCell<dyn FnMut()>;
+
 #[derive(Clone)]
 pub(super) struct Callback(pub(super) Weak<RefCell<dyn FnMut()>>);
 
@@ -117,20 +117,11 @@ impl Callback {
     pub fn try_callback(&self) -> Option<Rc<RefCell<dyn FnMut()>>> {
         self.0.upgrade()
     }
-}
 
-impl Hash for Callback {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        Weak::as_ptr(&self.0).hash(state);
+    pub fn as_ptr(&self) -> CallbackPtr {
+        Weak::as_ptr(&self.0)
     }
 }
-
-impl PartialEq for Callback {
-    fn eq(&self, other: &Self) -> bool {
-        ptr::eq::<()>(Weak::as_ptr(&self.0).cast(), Weak::as_ptr(&other.0).cast())
-    }
-}
-impl Eq for Callback {}
 
 /// A strong backlink to a [`Signal`] for any type `T`.
 #[derive(Clone)]
