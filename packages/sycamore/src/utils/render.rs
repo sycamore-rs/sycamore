@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
-use crate::prelude::create_effect;
+use crate::rx::create_effect;
 use crate::template::{Template, TemplateType};
 
 /// Insert a [`GenericNode`] under `parent` at the specified `marker`. If `initial` is `Some(_)`,

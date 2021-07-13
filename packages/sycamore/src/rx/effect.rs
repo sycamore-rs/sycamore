@@ -208,12 +208,15 @@ pub fn create_effect_initial<R: 'static>(
                         running.borrow_mut().as_mut().unwrap().scope = new_scope;
                     }
 
+                    let running = running.borrow();
+                    let running = running.as_ref().unwrap();
+
                     // Attach new dependencies.
-                    for dependency in &running.borrow().as_ref().unwrap().dependencies {
+                    for dependency in &running.dependencies {
                         dependency.signal().subscribe(Callback(Rc::downgrade(
                             // Reference the same closure we are in right now.
                             // When the dependency changes, this closure will be called again.
-                            &running.borrow().as_ref().unwrap().execute,
+                            &running.execute,
                         )));
                     }
 
