@@ -2,10 +2,8 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use std::mem;
-use std::ptr;
-use std::rc::Rc;
-use std::rc::Weak;
+use std::rc::{Rc, Weak};
+use std::{mem, ptr};
 
 use smallvec::SmallVec;
 
