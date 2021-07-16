@@ -72,6 +72,56 @@ fn swap_rows() {
 }
 
 #[wasm_bindgen_test]
+fn update_row() {
+    let count = Signal::new(vec![1, 2]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Keyed(KeyedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |item| *item,
+            })
+        }
+    });
+
+    sycamore::render_to(|| node, &test_container());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "12");
+
+    count.set(vec![1, 3]);
+    assert_eq!(p.text_content().unwrap(), "13");
+}
+
+#[wasm_bindgen_test]
+fn trigger_with_same_data() {
+    let count = Signal::new(vec![1, 2]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Keyed(KeyedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |item| *item,
+            })
+        }
+    });
+
+    sycamore::render_to(|| node, &test_container());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "12");
+
+    count.set(count.get().as_ref().clone());
+    assert_eq!(p.text_content().unwrap(), "12");
+}
+
+#[wasm_bindgen_test]
 fn delete_row() {
     let count = Signal::new(vec![1, 2, 3]);
 
@@ -98,6 +148,56 @@ fn delete_row() {
         tmp
     });
     assert_eq!(p.text_content().unwrap(), "13");
+}
+
+#[wasm_bindgen_test]
+fn delete_row_from_start() {
+    let count = Signal::new(vec![1, 2]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Keyed(KeyedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |item| *item,
+            })
+        }
+    });
+
+    sycamore::render_to(|| node, &test_container());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "12");
+
+    count.set(count.get().iter().cloned().skip(1).collect());
+    assert_eq!(p.text_content().unwrap(), "2");
+}
+
+#[wasm_bindgen_test]
+fn delete_row_from_end() {
+    let count = Signal::new(vec![1, 2]);
+
+    let node = cloned!((count) => template! {
+        ul {
+            Keyed(KeyedProps {
+                iterable: count.handle(),
+                template: |item| template! {
+                    li { (item) }
+                },
+                key: |item| *item,
+            })
+        }
+    });
+
+    sycamore::render_to(|| node, &test_container());
+
+    let p = document().query_selector("ul").unwrap().unwrap();
+    assert_eq!(p.text_content().unwrap(), "12");
+
+    count.set(count.get().iter().cloned().take(1).collect());
+    assert_eq!(p.text_content().unwrap(), "1");
 }
 
 #[wasm_bindgen_test]
