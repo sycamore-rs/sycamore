@@ -67,7 +67,8 @@ where
                 }
                 debug_assert!(start <= min_len);
                 debug_assert!(
-                    items.get(start) != new_items.get(start),
+                    (items.get(start).is_none() && new_items.get(start).is_none())
+                        || (items.get(start) != new_items.get(start)),
                     "start is the first index where items[start] != new_items[start]"
                 );
 
@@ -83,8 +84,9 @@ where
                     temp_scopes[new_end] = scopes[end].clone();
                 }
                 debug_assert!(
-                    if end > 0 && new_end > 0 {
-                        items[end - 1] != new_items[new_end - 1]
+                    if end != 0 && new_end != 0 {
+                        (end == items.len() && new_end == new_items.len())
+                            || (items[end - 1] != new_items[new_end - 1])
                     } else {
                         true
                     },
