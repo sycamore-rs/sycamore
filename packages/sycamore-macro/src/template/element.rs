@@ -40,6 +40,38 @@ impl Parse for Element {
     }
 }
 
+// pub fn impl_element(element: &Element) -> TokenStream {
+//     // region: codegen template
+//     let accessors = Vec::new();
+
+//     let tag = element.tag_name.to_string();
+//     let codegen_template = quote! {
+//         let __root = ::sycamore::generic_node::GenericNode::element(#tag);
+//     };
+
+//     if let Some(children) = &element.children {
+//         for child in &children.body {
+//             match child {
+//                 HtmlTree::Component(_component) => todo!(),
+//                 HtmlTree::Element(_element) => todo!(),
+//                 HtmlTree::Text(_text) => todo!(),
+//             }
+//         }
+//     }
+
+//     // endregion
+
+//     // region: codegen insert dynamic
+//     // endregion
+//     quote! {
+//         #codegen_template
+//     }
+// }
+
+// fn visit_element(element: &Element) -> TokenStream {
+//     todo!();
+// }
+
 impl ToTokens for Element {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Element {
@@ -67,18 +99,30 @@ impl ToTokens for Element {
                 // template! { MyComponent() } // is_dynamic = true
                 // template! { (state.get()) } // is_dynamic = true
                 // template! { (state) } // is_dynamic = false
-                let is_dynamic = match child {
-                    HtmlTree::Component(_) => true,
-                    HtmlTree::Text(Text::Splice(_, expr))
-                        if !matches!(expr.as_ref(), Expr::Lit(_) | Expr::Path(_)) =>
-                    {
-                        true
-                    }
-                    _ => false,
-                };
-
                 quoted.extend(match child {
-                    _ if is_dynamic => {
+                    HtmlTree::Element(element) => quote_spanned! { element.span()=>
+                        ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
+                    },
+                    HtmlTree::Text(text) => quote_spanned! { text.span()=>
+                        ::sycamore::generic_node::GenericNode::append_child(
+                            &__el,
+                            &::sycamore::generic_node::GenericNode::text_node(#text),
+                        );
+                    },
+                    HtmlTree::Splice(splice @ Splice {
+                        expr: Expr::Lit(_) | Expr::Path(_), ..
+                    }) => {
+                        quote_spanned! { splice.span()=>
+                            ::sycamore::utils::render::insert(
+                                &__el,
+                                ::sycamore::template::IntoTemplate::create(&#splice),
+                                None, None, #multi
+                            );
+                        }
+                    },
+                    // Dynamic.
+                    HtmlTree::Component(_)
+                    | HtmlTree::Splice(_) => {
                         let quote_marker =
                         if let Some(HtmlTree::Element(element)) =
                             children.next_if(|x| matches!(x, HtmlTree::Element(_)))
@@ -88,8 +132,8 @@ impl ToTokens for Element {
                                 ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
                                 let __marker = ::std::option::Option::Some(&__marker);
                             }
-                        } else if let Some(HtmlTree::Text(Text::Str(text))) =
-                            children.next_if(|x| matches!(x, HtmlTree::Text(Text::Str(_))))
+                        } else if let Some(HtmlTree::Text(text)) =
+                            children.next_if(|x| matches!(x, HtmlTree::Text(_)))
                         {
                             quote_spanned! { text.span()=>
                                 let __marker = ::sycamore::generic_node::GenericNode::text_node(#text);
@@ -116,12 +160,12 @@ impl ToTokens for Element {
                                     None, __marker, #multi
                                 );
                             },
-                            HtmlTree::Text(text @ Text::Splice(..)) => quote_spanned! { text.span()=>
+                            HtmlTree::Splice(splice) => quote_spanned! { splice.span()=>
                                 #quote_marker
                                 ::sycamore::utils::render::insert(
                                    &__el,
                                    ::sycamore::template::Template::new_dyn(move ||
-                                       ::sycamore::template::IntoTemplate::create(&#text)
+                                       ::sycamore::template::IntoTemplate::create(&#splice)
                                    ),
                                    None, __marker, #multi
                                );
@@ -129,26 +173,6 @@ impl ToTokens for Element {
                             _ => unreachable!()
                         }
                     }
-                    HtmlTree::Element(element) => quote_spanned! { element.span()=>
-                        ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
-                    },
-                    HtmlTree::Text(text @ Text::Str(_)) => quote_spanned! { text.span()=>
-                        ::sycamore::generic_node::GenericNode::append_child(
-                            &__el,
-                            &::sycamore::generic_node::GenericNode::text_node(#text),
-                        );
-                    },
-                    HtmlTree::Text(text @ Text::Splice(..)) => {
-                        assert!(!is_dynamic);
-                        quote_spanned! { text.span()=>
-                            ::sycamore::utils::render::insert(
-                                &__el,
-                                ::sycamore::template::IntoTemplate::create(&#text),
-                                None, None, #multi
-                            );
-                        }
-                    },
-                    _ => unreachable!("all branches covered by match guards"),
                 });
             }
         }
