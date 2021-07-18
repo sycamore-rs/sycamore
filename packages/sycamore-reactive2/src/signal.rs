@@ -149,13 +149,13 @@ pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
 
 #[cfg(test)]
 mod tests {
-    use crate::effect::create_root_scope;
+    use crate::effect::create_root;
 
     use super::*;
 
     #[test]
     fn signal_read_write() {
-        let _ = create_root_scope(|| {
+        let _ = create_root(|| {
             let (state, set_state) = create_signal(0);
             assert_eq!(*state.get(), 0);
             set_state.set(1);
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn signal_read_outside_alive_scope() {
         let mut get_state = None;
-        let root = create_root_scope(|| {
+        let root = create_root(|| {
             let (state, _) = create_signal(0);
             get_state = Some(state);
         });
@@ -180,7 +180,7 @@ mod tests {
     #[should_panic(expected = "reactive scope for signal already destroyed")]
     fn signal_read_with_scope_already_destroyed() {
         let mut get_state = None;
-        let _ = create_root_scope(|| {
+        let _ = create_root(|| {
             let (state, _) = create_signal(0);
             get_state = Some(state);
         });
