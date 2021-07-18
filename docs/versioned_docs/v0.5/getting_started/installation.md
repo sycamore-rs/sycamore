@@ -33,7 +33,7 @@ For more information, head over to the [Trunk website](https://trunkrs.dev)
 Create a new Rust project using `cargo`:
 
 ```bash
-cargo new my-project --bin
+cargo new my-project
 cd my-project
 ```
 
@@ -41,7 +41,7 @@ You now need to add Sycamore to your new project's dependencies. Add the followi
 `Cargo.toml` file in your project folder:
 
 ```toml
-sycamore = "0.5.1"
+sycamore = ""
 ```
 
 You should now be all set for your Sycamore adventure!
