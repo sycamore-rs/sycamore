@@ -3,15 +3,17 @@
 //! For more information, read the section on [Reactivity](https://sycamore-rs.netlify.app/docs/basics/reactivity)
 //! in the Sycamore Book.
 
-mod effect;
-mod iter;
-mod signal;
 mod context;
+pub mod effect;
+mod effect_old;
+mod iter;
+pub mod signal;
+mod signal_old;
 
-pub use effect::*;
-pub use iter::*;
-pub use signal::*;
 pub use context::*;
+pub use effect_old::*;
+pub use iter::*;
+pub use signal_old::*;
 
 /// Utility macro for cloning all the arguments and expanding the expression.
 ///
