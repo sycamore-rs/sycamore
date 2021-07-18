@@ -28,7 +28,7 @@ struct SignalId {
     signal_index: usize,
 }
 
-/// A `ReadSignal` is an accessor to some reactive state allocated in the current reactive scope.
+/// A `ReadSignal` is a handle to some reactive state allocated in the current reactive scope.
 pub struct ReadSignal<T> {
     id: SignalId,
     /// Use `*const T` instead of `T` to prevent drop check.
@@ -72,6 +72,7 @@ impl<T: 'static> ReadSignal<T> {
     }
 }
 
+/// A `WriteSignal` is a handle to set some reactive data.
 pub struct WriteSignal<T> {
     id: SignalId,
     /// Use `*const T` instead of `T` to prevent drop check.
@@ -115,6 +116,19 @@ impl<T: 'static> WriteSignal<T> {
     }
 }
 
+/// Creates a new signal with the given value.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive2::effect::create_root;
+/// # use sycamore_reactive2::signal::create_signal;
+/// # let _ = create_root(|| {
+/// let (state, set_state) = create_signal(0);
+/// assert_eq!(*state.get(), 0);
+/// set_state.set(1);
+/// assert_eq!(*state.get(), 1);
+/// # });
+/// ```
 pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
     CURRENT_SCOPE.with(|current_scope| {
         let scope = current_scope
