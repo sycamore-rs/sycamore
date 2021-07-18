@@ -275,7 +275,7 @@ pub fn create_effect_initial<R: 'static>(
 ///
 /// # Example
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore_reactive2::*;
 ///
 /// let state = Signal::new(0);
 ///
@@ -299,7 +299,7 @@ where
 ///
 /// # Example
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore_reactive2::*;
 ///
 /// let state = Signal::new(0);
 ///
@@ -374,7 +374,7 @@ where
 /// # Example
 ///
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore_reactive2::*;
 ///
 /// let state = Signal::new(1);
 ///
@@ -413,7 +413,7 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
 ///
 /// # Example
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore_reactive2::*;
 ///
 /// let cleanup_called = Signal::new(false);
 ///
@@ -455,7 +455,7 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
 ///
 /// # Example
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore_reactive2::*;
 ///
 /// assert_eq!(dependency_count(), None);
 ///

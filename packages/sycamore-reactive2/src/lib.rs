@@ -21,7 +21,7 @@ pub use signal_old::*;
 ///
 /// # Example
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore_reactive2::*;
 ///
 /// let state = Signal::new(0);
 ///
@@ -47,7 +47,7 @@ macro_rules! cloned {
 ///
 /// # Example
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore_reactive2::*;
 ///
 /// let trigger = Signal::new(());
 /// let counter = Signal::new(0);
