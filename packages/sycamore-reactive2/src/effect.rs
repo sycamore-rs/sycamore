@@ -1,81 +1,106 @@
 use std::any::Any;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::mem;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
-use slab::Slab;
+use slotmap::{new_key_type, SlotMap};
+
+new_key_type! {
+    pub(crate) struct ScopeKey;
+}
 
 thread_local! {
     /// The current [`ReactiveScope`] of the current thread and the key to [`SCOPES`].
-    pub(crate) static CURRENT_SCOPE: RefCell<Option<(ReactiveScope, usize)>> = RefCell::new(None);
-    /// A slab of all [`ReactiveScope`]s that are currently valid in the current thread.
-    pub(crate) static SCOPES: RefCell<Slab<ReactiveScope>> = RefCell::new(Slab::new());
+    pub(crate) static CURRENT_SCOPE: RefCell<Option<ReactiveScope>> = RefCell::new(None);
+    /// A slotmap of all [`ReactiveScope`]s that are currently valid in the current thread.
+    ///
+    /// All scopes inside the slotmap should be valid because they are tied to the lifetime of a
+    /// [`ReactiveScopeInner`]. When the [`ReactiveScopeInner`] is dropped, the matching weak
+    /// reference in the slotmap is removed.
+    /// 
+    /// This is essentially a list of valid [`ReactiveScopeInner`]s using RAII.
+    pub(crate) static SCOPES: RefCell<SlotMap<ScopeKey, WeakReactiveScope>> = RefCell::new(SlotMap::with_key());
+}
+
+/// Insert a scope into [`SCOPES`]. Returns the created [`ScopeKey`].
+fn insert_scope(scope: WeakReactiveScope) -> ScopeKey {
+    SCOPES.with(|scopes| scopes.borrow_mut().insert(scope))
+}
+
+/// Removes a scope from [`SCOPES`].
+///
+/// # Panics
+/// This method will `panic!()` if the key is not found in [`SCOPES`].
+fn remove_scope(key: ScopeKey) {
+    SCOPES.with(|scopes| {
+        scopes
+            .borrow_mut()
+            .remove(key)
+            .expect("could not find scope with key")
+    });
+}
+
+#[derive(Default)]
+pub(crate) struct ReactiveScopeInner {
+    /// The key to the [`WeakReactiveScope`] in [`SCOPES`]. The value should always be `Some` after
+    /// initialization.
+    pub(crate) key: Option<ScopeKey>,
+    /// The [`ReactiveScope`] owns all signals that are created within the scope.
+    pub(crate) signals: Vec<Box<dyn Any>>,
+    /// The [`ReactiveScope`] owns child reactive scopes.
+    pub(crate) child_scopes: Vec<ReactiveScope>,
+    /// A weak backlink to the parent of the scope.
+    pub(crate) parent: Weak<RefCell<Self>>,
+}
+
+impl ReactiveScopeInner {
+    /// Creates a new [`ReactiveScopeInner`]. Note that `key` is set to `None` by default. It is up
+    /// to the responsibility of the caller to initialize `key` with the `ScopeKey` for [`SCOPES`].
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Drop for ReactiveScopeInner {
+    /// Remove itself from [`SCOPES`].
+    fn drop(&mut self) {
+        let key = self.key.unwrap();
+        remove_scope(key);
+    }
 }
 
 #[derive(Clone)]
 pub struct ReactiveScope {
-    /// Unique identifier for this scope.
-    id: usize,
-    /// The [`ReactiveScope`] owns all signals that are created within the scope.
-    signals: Rc<RefCell<Vec<Box<dyn Any>>>>,
+    pub(crate) inner: Rc<RefCell<ReactiveScopeInner>>,
 }
 
 impl ReactiveScope {
-    /// Returns an incrementing unique identifier for a new [`ReactiveScope`].
-    fn get_next_id() -> usize {
-        thread_local! {
-            static NEXT_ID: Cell<usize> = Cell::new(0);
-        }
+    /// Create a new [`ReactiveScope`] and inserts it into [`SCOPES`].
+    fn new() -> Self {
+        let inner = Rc::new(RefCell::new(ReactiveScopeInner::new()));
+        let weak = Rc::downgrade(&inner);
+        let key = insert_scope(weak);
 
-        NEXT_ID.with(|next_id| {
-            let id = next_id.get();
-            next_id.set(id + 1);
-            id
-        })
+        // initialize ReactiveScopeInner.key
+        inner.borrow_mut().key = Some(key);
+
+        Self { inner }
     }
 
-    /// Get the reactive scope's id.
-    pub(crate) fn id(&self) -> usize {
-        self.id
-    }
-
-    /// Get a reference to the reactive scope's signals.
-    pub fn signals(&self) -> &Rc<RefCell<Vec<Box<dyn Any>>>> {
-        &self.signals
+    /// Get the [`ScopeKey`] for the scope.
+    pub(crate) fn key(&self) -> ScopeKey {
+        self.inner.borrow().key.unwrap()
     }
 }
 
-/// Wrapper around [`ReactiveScope`] that will remove the [`ReactiveScope`] from the valid scope
-/// slab when it is dropped.
-pub struct RootScope {
-    key: usize,
-    _scope: ReactiveScope,
-}
+pub(crate) type WeakReactiveScope = Weak<RefCell<ReactiveScopeInner>>;
 
-impl Drop for RootScope {
-    fn drop(&mut self) {
-        remove_scope(self.key);
-    }
-}
-
-fn insert_scope(scope: ReactiveScope) -> usize {
-    SCOPES.with(|scopes| scopes.borrow_mut().insert(scope))
-}
-
-fn remove_scope(key: usize) {
-    SCOPES.with(|scopes| scopes.borrow_mut().remove(key));
-}
-
-pub fn create_root_scope(f: impl FnOnce()) -> RootScope {
+#[must_use = "immediately dropping a ReactiveScope will drop all child scopes"]
+pub fn create_root_scope(f: impl FnOnce()) -> ReactiveScope {
     CURRENT_SCOPE.with(|current_scope| {
-        let scope = ReactiveScope {
-            id: ReactiveScope::get_next_id(),
-            signals: Rc::new(RefCell::new(Vec::new())),
-        };
-        let key = insert_scope(scope.clone());
-        let outer = mem::replace(&mut *current_scope.borrow_mut(), Some((scope, key)));
+        let scope = ReactiveScope::new();
+        let outer = mem::replace(&mut *current_scope.borrow_mut(), Some(scope));
         f();
-        let (scope, key) = mem::replace(&mut *current_scope.borrow_mut(), outer).unwrap();
-        RootScope { key, _scope: scope }
+        mem::replace(&mut *current_scope.borrow_mut(), outer).unwrap()
     })
 }

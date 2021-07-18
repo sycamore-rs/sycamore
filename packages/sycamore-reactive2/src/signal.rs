@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use crate::effect::{CURRENT_SCOPE, SCOPES};
+use crate::effect::{ScopeKey, CURRENT_SCOPE, SCOPES};
 
 /// Backing storage for a signal.
 pub(crate) struct SignalData<T> {
@@ -23,9 +23,7 @@ struct SignalId {
     /// Key to the reactive scope in the slab. Note that accessing the value pointed to by this key
     /// is not enough to ensure that the `ReadSignal` is still valid. One must also check that the
     /// `scope_id` also matches.
-    scope_key: usize,
-    /// Id of the reactive scope.
-    scope_id: usize,
+    scope_key: ScopeKey,
     /// Index of the signal in the reactive scope's signal array.
     signal_index: usize,
 }
@@ -56,10 +54,14 @@ impl<T: 'static> ReadSignal<T> {
         SCOPES.with(|scopes| {
             let scopes = scopes.borrow();
             let scope = scopes.get(self.id.scope_key);
-            if scope.is_none() || scope.unwrap().id() != self.id.scope_id {
+            if scope.is_none() {
                 panic!("reactive scope for signal already destroyed");
             }
-            let data = &scope.unwrap().signals().borrow()[self.id.signal_index];
+            let scope = scope
+                .unwrap()
+                .upgrade()
+                .expect("weak reference should always be valid");
+            let data = &scope.borrow().signals[self.id.signal_index];
             Rc::clone(
                 &data
                     .downcast_ref::<SignalData<T>>()
@@ -96,10 +98,14 @@ impl<T: 'static> WriteSignal<T> {
         SCOPES.with(|scopes| {
             let scopes = scopes.borrow_mut();
             let scope = scopes.get(self.id.scope_key);
-            if scope.is_none() || scope.unwrap().id() != self.id.scope_id {
+            if scope.is_none() {
                 panic!("reactive scope for signal already destroyed");
             }
-            let data = &mut scope.unwrap().signals().borrow_mut()[self.id.signal_index];
+            let scope = scope
+                .unwrap()
+                .upgrade()
+                .expect("weak reference should always be valid");
+            let data = &mut scope.borrow_mut().signals[self.id.signal_index];
             let data = data
                 .downcast_mut::<SignalData<T>>()
                 .expect("SignalData should have correct type");
@@ -119,14 +125,12 @@ pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
         let data = SignalData {
             inner: Rc::new(value),
         };
-        let scope_id = scope.0.id();
-        let scope_key = scope.1;
-        let signal_index = scope.0.signals().borrow().len();
-        scope.0.signals().borrow_mut().push(Box::new(data));
+        let scope_key = scope.key();
+        let signal_index = scope.inner.borrow().signals.len();
+        scope.inner.borrow_mut().signals.push(Box::new(data));
 
         let signal_id = SignalId {
             scope_key,
-            scope_id,
             signal_index,
         };
 
@@ -151,7 +155,7 @@ mod tests {
 
     #[test]
     fn signal_read_write() {
-        create_root_scope(|| {
+        let _ = create_root_scope(|| {
             let (state, set_state) = create_signal(0);
             assert_eq!(*state.get(), 0);
             set_state.set(1);
@@ -176,7 +180,7 @@ mod tests {
     #[should_panic(expected = "reactive scope for signal already destroyed")]
     fn signal_read_with_scope_already_destroyed() {
         let mut get_state = None;
-        create_root_scope(|| {
+        let _ = create_root_scope(|| {
             let (state, _) = create_signal(0);
             get_state = Some(state);
         });
