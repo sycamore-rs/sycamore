@@ -1,5 +1,5 @@
 use sycamore::prelude::*;
-use sycamore::rx::{use_context, ContextProvider, ContextProviderProps};
+use sycamore::context::{use_context, ContextProvider, ContextProviderProps};
 
 #[component(Counter<G>)]
 fn counter() -> Template<G> {
