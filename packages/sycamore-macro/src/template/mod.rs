@@ -4,13 +4,13 @@ mod attributes;
 mod children;
 mod component;
 mod element;
-mod text;
+mod splice;
 
 use attributes::*;
 use children::*;
 use component::*;
 use element::*;
-use text::*;
+use splice::*;
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -23,20 +23,24 @@ pub enum HtmlType {
     Component,
     Element,
     Text,
+    Splice,
 }
 
 pub enum HtmlTree {
     Component(Component),
     Element(Element),
-    Text(Text),
+    Text(LitStr),
+    Splice(Splice),
 }
 
 impl HtmlTree {
     fn peek_type(input: ParseStream) -> Option<HtmlType> {
         let input = input.fork(); // do not affect original ParseStream
 
-        if input.peek(LitStr) || input.peek(Paren) {
+        if input.peek(LitStr) {
             Some(HtmlType::Text)
+        } else if input.peek(Paren) {
+            Some(HtmlType::Splice)
         } else if input.peek(Token![::]) {
             Some(HtmlType::Component)
         } else if input.peek(Ident::peek_any) {
@@ -65,6 +69,7 @@ impl Parse for HtmlTree {
             HtmlType::Component => Self::Component(input.parse()?),
             HtmlType::Element => Self::Element(input.parse()?),
             HtmlType::Text => Self::Text(input.parse()?),
+            HtmlType::Splice => Self::Splice(input.parse()?),
         })
     }
 }
@@ -78,17 +83,15 @@ impl ToTokens for HtmlTree {
             Self::Element(element) => quote! {
                 ::sycamore::template::Template::new_node(#element)
             },
-            Self::Text(text) => match text {
-                Text::Str(_) => quote! {
-                    ::sycamore::template::Template::new_node(
-                        ::sycamore::generic_node::GenericNode::text_node(#text),
-                    )
-                },
-                Text::Splice(_, _) => quote! {
-                    ::sycamore::template::Template::new_dyn(move ||
-                        ::sycamore::template::IntoTemplate::create(&#text)
-                    )
-                },
+            Self::Text(text) => quote! {
+                ::sycamore::template::Template::new_node(
+                    ::sycamore::generic_node::GenericNode::text_node(#text),
+                )
+            },
+            Self::Splice(splice) => quote! {
+                ::sycamore::template::Template::new_dyn(move ||
+                    ::sycamore::template::IntoTemplate::create(&#splice)
+                )
             },
         };
 
