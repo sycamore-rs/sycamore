@@ -40,38 +40,6 @@ impl Parse for Element {
     }
 }
 
-// pub fn impl_element(element: &Element) -> TokenStream {
-//     // region: codegen template
-//     let accessors = Vec::new();
-
-//     let tag = element.tag_name.to_string();
-//     let codegen_template = quote! {
-//         let __root = ::sycamore::generic_node::GenericNode::element(#tag);
-//     };
-
-//     if let Some(children) = &element.children {
-//         for child in &children.body {
-//             match child {
-//                 HtmlTree::Component(_component) => todo!(),
-//                 HtmlTree::Element(_element) => todo!(),
-//                 HtmlTree::Text(_text) => todo!(),
-//             }
-//         }
-//     }
-
-//     // endregion
-
-//     // region: codegen insert dynamic
-//     // endregion
-//     quote! {
-//         #codegen_template
-//     }
-// }
-
-// fn visit_element(element: &Element) -> TokenStream {
-//     todo!();
-// }
-
 impl ToTokens for Element {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Element {
@@ -120,7 +88,7 @@ impl ToTokens for Element {
                             );
                         }
                     },
-                    // Dynamic.
+                    // Child is dynamic.
                     HtmlTree::Component(_)
                     | HtmlTree::Splice(_) => {
                         let quote_marker =
