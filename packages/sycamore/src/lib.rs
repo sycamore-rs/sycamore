@@ -27,10 +27,13 @@ pub mod easing;
 pub mod flow;
 pub mod generic_node;
 pub mod macros;
+pub mod motion;
 pub mod noderef;
-pub mod rx;
 pub mod template;
 pub mod utils;
+pub mod context;
+
+pub use sycamore_reactive as rx;
 
 /// Alias self to sycamore for proc-macros.
 extern crate self as sycamore;
