@@ -158,4 +158,29 @@ mod tests {
             assert_eq!(*state.get(), 1);
         });
     }
+
+    #[test]
+    fn signal_read_outside_alive_scope() {
+        let mut get_state = None;
+        let root = create_root_scope(|| {
+            let (state, _) = create_signal(0);
+            get_state = Some(state);
+        });
+
+        get_state.unwrap().get(); // root is still active
+
+        drop(root);
+    }
+
+    #[test]
+    #[should_panic(expected = "reactive scope for signal already destroyed")]
+    fn signal_read_with_scope_already_destroyed() {
+        let mut get_state = None;
+        create_root_scope(|| {
+            let (state, _) = create_signal(0);
+            get_state = Some(state);
+        });
+
+        get_state.unwrap().get();
+    }
 }
