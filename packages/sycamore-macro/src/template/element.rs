@@ -62,8 +62,8 @@ impl ToTokens for Element {
             let multi = children.body.len() != 1;
             let mut children = children.body.iter().peekable();
             while let Some(child) = children.next() {
-                // True if the child is a component or a splice that is not a simple path.
-                // Example:
+                // Child is dynamic if the child is a component or a splice that is not a simple
+                // path. Example:
                 // template! { MyComponent() } // is_dynamic = true
                 // template! { (state.get()) } // is_dynamic = true
                 // template! { (state) } // is_dynamic = false
