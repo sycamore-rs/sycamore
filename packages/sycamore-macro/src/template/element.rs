@@ -72,6 +72,12 @@ impl ToTokens for Element {
                         ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
                     },
                     HtmlTree::Text(text) => quote_spanned! { text.span()=>
+                        // Since this is static text, intern it as it will likely be constructed many times.
+                        if ::std::cfg!(target_arch = "wasm32") {
+                            ::sycamore::rt::intern(#text);
+                        } else {
+                            #text;
+                        }
                         ::sycamore::generic_node::GenericNode::append_child(
                             &__el,
                             &::sycamore::generic_node::GenericNode::text_node(#text),
