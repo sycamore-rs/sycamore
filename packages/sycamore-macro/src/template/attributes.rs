@@ -125,7 +125,7 @@ impl ToTokens for Attribute {
 
                 if is_dynamic {
                     tokens.extend(quote_spanned! { expr_span=>
-                        ::sycamore::rx::create_effect({
+                        ::sycamore::reactive::create_effect({
                             let __el = ::std::clone::Clone::clone(&__el);
                             move || {
                                 #quoted_set_attribute
@@ -229,9 +229,9 @@ impl ToTokens for Attribute {
                 };
 
                 tokens.extend(quote_spanned! { expr_span=> {
-                    let signal: ::sycamore::rx::Signal<#value_ty> = #expr;
+                    let signal: ::sycamore::reactive::Signal<#value_ty> = #expr;
 
-                    ::sycamore::rx::create_effect({
+                    ::sycamore::reactive::create_effect({
                         let signal = ::std::clone::Clone::clone(&signal);
                         let __el = ::std::clone::Clone::clone(&__el);
                         move || {

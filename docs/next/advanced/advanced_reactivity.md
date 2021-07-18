@@ -21,7 +21,7 @@ and a `children` prop which is the child components that have access to the cont
 
 ```rust
 use sycamore::prelude::*;
-use sycamore::rx::{ContextProvider, ContextProviderProps, use_context};
+use sycamore::reactive::{ContextProvider, ContextProviderProps, use_context};
 
 struct Counter(Signal<i32>);
 

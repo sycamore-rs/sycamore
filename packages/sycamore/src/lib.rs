@@ -33,7 +33,7 @@ pub mod template;
 pub mod utils;
 pub mod context;
 
-pub use sycamore_reactive as rx;
+pub use sycamore_reactive as reactive;
 
 /// Alias self to sycamore for proc-macros.
 extern crate self as sycamore;
@@ -55,7 +55,7 @@ pub mod prelude {
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
-    pub use crate::rx::{
+    pub use crate::reactive::{
         create_effect, create_effect_initial, create_memo, create_root, create_selector,
         create_selector_with, on_cleanup, untrack, Signal, StateHandle,
     };

@@ -456,7 +456,7 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
 /// # Example
 /// ```
 /// use sycamore::prelude::*;
-/// use sycamore::rx::dependency_count;
+/// use sycamore::reactive::dependency_count;
 ///
 /// assert_eq!(dependency_count(), None);
 ///
