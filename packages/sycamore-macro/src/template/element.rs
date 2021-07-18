@@ -75,8 +75,6 @@ impl ToTokens for Element {
                         // Since this is static text, intern it as it will likely be constructed many times.
                         if ::std::cfg!(target_arch = "wasm32") {
                             ::sycamore::rt::intern(#text);
-                        } else {
-                            #text;
                         }
                         ::sycamore::generic_node::GenericNode::append_child(
                             &__el,
