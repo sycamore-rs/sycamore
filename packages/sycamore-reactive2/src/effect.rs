@@ -150,4 +150,25 @@ mod tests {
             assert_eq!(*double.get(), 4);
         });
     }
+
+    #[test]
+    fn effect_should_subscribe_once() {
+        let _ = create_root(|| {
+            let (state, set_state) = create_signal(0);
+
+            let (counter, set_counter) = create_signal(0);
+            create_effect(move || {
+                set_counter.set(*counter.get_untracked() + 1);
+
+                // call state.get() twice but should subscribe once
+                state.get();
+                state.get();
+            });
+
+            assert_eq!(*counter.get(), 1);
+
+            set_state.set(1);
+            assert_eq!(*counter.get(), 2);
+        });
+    }
 }
