@@ -6,6 +6,7 @@ use std::rc::{Rc, Weak};
 
 use slotmap::{new_key_type, SlotMap};
 
+use crate::effect::EffectState;
 use crate::signal::SignalDataAny;
 
 new_key_type! {
@@ -52,6 +53,8 @@ pub(crate) struct ReactiveScopeInner {
     pub(crate) key: Option<ScopeKey>,
     /// The [`ReactiveScope`] owns all signals that are created within the scope.
     pub(crate) signals: Vec<Box<dyn SignalDataAny>>,
+    /// The [`ReactiveScope`] owns all the effects that are created within the scope.
+    effects: Vec<Rc<RefCell<Option<EffectState>>>>,
     /// Callbacks to run when the scope is dropped.
     cleanups: Vec<CleanupCallback>,
 }
@@ -99,6 +102,10 @@ impl ReactiveScope {
     /// Get the [`ScopeKey`] for the scope.
     pub(crate) fn key(&self) -> ScopeKey {
         self.inner.borrow().key.unwrap()
+    }
+
+    pub(crate) fn add_effect_state(&self, effect: Rc<RefCell<Option<EffectState>>>) {
+        self.inner.borrow_mut().effects.push(effect);
     }
 
     /// Adds a callback that will be called when the [`ReactiveScope`] is dropped.

@@ -7,7 +7,7 @@ use std::rc::{Rc, Weak};
 
 use indexmap::IndexMap;
 
-use crate::effect::{EffectState, EffectStatePtr};
+use crate::effect::{EffectState, EffectStatePtr, CURRENT_LISTENER};
 use crate::scope::{ScopeKey, CURRENT_SCOPE, SCOPES};
 
 /// Backing storage for a signal.
@@ -32,7 +32,8 @@ pub(crate) trait SignalDataAny: Any {
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn subscribe(&mut self, effect: Weak<RefCell<Option<EffectState>>>);
     fn unsubscribe(&mut self, ptr: EffectStatePtr);
-    fn trigger_update(&self);
+    #[must_use]
+    fn clone_dependents(&self) -> IndexMap<EffectStatePtr, Weak<RefCell<Option<EffectState>>>>;
 }
 
 impl<T: 'static> SignalDataAny for SignalData<T> {
@@ -48,10 +49,8 @@ impl<T: 'static> SignalDataAny for SignalData<T> {
     fn unsubscribe(&mut self, ptr: EffectStatePtr) {
         self.dependents.remove(&ptr);
     }
-    fn trigger_update(&self) {
-        for dependent in self.dependents.values() {
-            dependent.upgrade().unwrap().borrow().as_ref().unwrap().trigger();
-        }
+    fn clone_dependents(&self) -> IndexMap<EffectStatePtr, Weak<RefCell<Option<EffectState>>>> {
+        self.dependents.clone()
     }
 }
 
@@ -124,13 +123,31 @@ impl<T> Clone for ReadSignal<T> {
 impl<T> Copy for ReadSignal<T> {}
 
 impl<T: 'static> ReadSignal<T> {
-    /// Gets the value of the signal.
+    /// Gets the value of the signal. If called inside a listener, will add itself as a dependency.
     ///
     /// # Panics
     /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
     /// the [`ReadSignal`] is no longer valid.
     #[track_caller]
     pub fn get(self) -> Rc<T> {
+        // If inside an effect, add this signal to dependency list.
+        // If running inside a destructor, do nothing.
+        let _ = CURRENT_LISTENER.try_with(|current_listener| {
+            if let Some(listener) = current_listener.borrow().as_ref() {
+                listener.add_dependency(self.id);
+            }
+        });
+
+        self.get_untracked()
+    }
+
+    /// Gets the value of the signal. Does not perform any tracking.
+    ///
+    /// # Panics
+    /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
+    /// the [`ReadSignal`] is no longer valid.
+    #[track_caller]
+    pub fn get_untracked(self) -> Rc<T> {
         self.id.get(|data| match data {
             Some(data) => Rc::clone(
                 &data
@@ -166,20 +183,30 @@ impl<T: 'static> WriteSignal<T> {
     /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
     /// the [`ReadSignal`] is no longer valid.
     pub fn set(self, value: T) {
+        let mut dependents = None;
         self.id.get_mut(|data| match data {
             Some(data) => {
                 data.as_any_mut()
                     .downcast_mut::<SignalData<T>>()
                     .expect("SignalData should have correct type")
                     .inner = Rc::new(value);
-                data.trigger_update();
+                dependents = Some(data.clone_dependents());
             }
             None => panic!("reactive scope for signal already destroyed"),
         });
+        // Rerun all effects that depend on this signal.
+        for dependent in dependents.unwrap().values() {
+            // Clone the callback to prevent holding a borrow to the EffectState.
+            let callback = Rc::clone(&dependent.upgrade().unwrap().borrow().as_ref().unwrap().callback);
+            callback.borrow_mut()();
+        }
     }
 }
 
 /// Creates a new signal with the given value.
+///
+/// # Panics
+/// This function will `panic!()` if it is not used inside a reactive scope.
 ///
 /// # Example
 /// ```
@@ -192,6 +219,7 @@ impl<T: 'static> WriteSignal<T> {
 /// assert_eq!(*state.get(), 1);
 /// # });
 /// ```
+#[track_caller]
 pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
     CURRENT_SCOPE.with(|current_scope| {
         let scope = current_scope
