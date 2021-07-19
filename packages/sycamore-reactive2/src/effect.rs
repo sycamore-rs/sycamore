@@ -1,12 +1,12 @@
 //! Side effects and derived signals.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashSet;
 use std::mem;
 use std::rc::{Rc, Weak};
 
-use crate::scope::{create_root, ReactiveScope, CURRENT_SCOPE};
-use crate::signal::SignalId;
+use crate::scope::{create_root, current_scope, ReactiveScope, CURRENT_SCOPE};
+use crate::signal::{create_signal, ReadSignal, SignalId, WriteSignal};
 
 thread_local! {
     /// The current effect listener or `None`.
@@ -48,11 +48,31 @@ impl Listener {
 
 pub(crate) type EffectStatePtr = *const RefCell<Option<EffectState>>;
 
-/// Creates a new effect.
-/// TODO: add docs
+/// Creates a new effect. Any signals that are accessed inside the effect closure are added as
+/// dependencies. When a dependency is updated, the effect is re-executed.
+///
+/// The effect closure is executed in a new reactive scope which is recreated on every re-execution.
+/// This means that signals created within the effect might not be valid outside the effect. This
+/// also means that inner effects created within this effect will be recreated.
 ///
 /// # Panics
 /// This function will `panic!()` if it is called outside of a reactive scope.
+/// # Example
+/// ```
+/// # use sycamore_reactive2::effect::create_effect;
+/// # use sycamore_reactive2::scope::create_root;
+/// # use sycamore_reactive2::signal::create_signal;
+///
+/// # let _ = create_root(|| {
+/// let (state, set_state) = create_signal(0);
+///
+/// create_effect(move || {
+///     println!("State changed. New state value = {}", state.get());
+/// }); // Prints "State changed. New state value = 0"
+///
+/// set_state.set(1); // Prints "State changed. New state value = 1"
+/// # });
+/// ```
 pub fn create_effect(mut f: impl FnMut() + 'static) {
     let effect_state = Rc::new(RefCell::new(None));
 
@@ -124,6 +144,97 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
             panic!("create_effect must be used inside a reactive scope")
         }
     });
+}
+
+/// Creates a memoized value from some signals. Also know as "derived stores".
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive2::effect::create_memo;
+/// # use sycamore_reactive2::scope::create_root;
+/// # use sycamore_reactive2::signal::create_signal;
+///
+/// # let _ = create_root(|| {
+/// let (state, set_state) = create_signal(0);
+///
+/// let double = create_memo(move || *state.get() * 2);
+/// assert_eq!(*double.get(), 0);
+///
+/// set_state.set(1);
+/// assert_eq!(*double.get(), 2);
+/// # });
+/// ```
+///
+/// # Panics
+/// This function will `panic!()` if it is used outside of a reactive scope.
+pub fn create_memo<F, T>(derived: F) -> ReadSignal<T>
+where
+    F: FnMut() -> T + 'static,
+    T: 'static,
+{
+    create_selector_with(derived, |_, _| false)
+}
+
+/// Creates a memoized value from some signals. Also know as "derived stores".
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is
+/// the same. That is why the output of the function must implement [`PartialEq`].
+///
+/// To specify a custom comparison function, use [`create_selector_with`].
+///
+/// # Panics
+/// This function will `panic!()` if it is used outside of a reactive scope.
+#[track_caller]
+pub fn create_selector<F, T>(derived: F) -> ReadSignal<T>
+where
+    F: FnMut() -> T + 'static,
+    T: PartialEq + 'static,
+{
+    create_selector_with(derived, PartialEq::eq)
+}
+
+/// Creates a memoized value from some signals. Also know as "derived stores".
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is
+/// the same.
+///
+/// It takes a comparison function to compare the old and new value, which returns `true` if they
+/// are the same and `false` otherwise.
+///
+/// To use the type's [`PartialEq`] implementation instead of a custom function, use
+/// [`create_selector`].
+///
+/// # Panics
+/// This function will `panic!()` if it is used outside of a reactive scope.
+#[track_caller]
+pub fn create_selector_with<F, T, C>(mut derived: F, comparator: C) -> ReadSignal<T>
+where
+    F: FnMut() -> T + 'static,
+    T: 'static,
+    C: Fn(&T, &T) -> bool + 'static,
+{
+    let memo = Rc::new(Cell::new(None::<(ReadSignal<T>, WriteSignal<T>)>));
+
+    let scope = current_scope().expect("create_signal must be used inside a ReactiveScope");
+
+    create_effect({
+        let memo = Rc::clone(&memo);
+        move || {
+            let new_value = derived();
+            if let Some((memo, set_memo)) = memo.get() {
+                if !comparator(&memo.get_untracked(), &new_value) {
+                    set_memo.set(new_value);
+                }
+            } else {
+                scope.extend(|| {
+                    // We want the signal to live as long as the outer scope instead of the effect
+                    // scope.
+                    memo.set(Some(create_signal(new_value)));
+                });
+            }
+            debug_assert!(memo.get().is_some());
+        }
+    });
+
+    memo.get().unwrap().0
 }
 
 #[cfg(test)]

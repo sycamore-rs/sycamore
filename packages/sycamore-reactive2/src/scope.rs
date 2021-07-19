@@ -81,6 +81,10 @@ impl Drop for ReactiveScopeInner {
     }
 }
 
+/// Owns the signals, effects, and cleanup callbacks created within it.
+///
+/// A `ReactiveScope` can be cloned cheaply because it is backed by a `Rc` (reference-counted)
+/// pointer.
 #[derive(Clone)]
 pub struct ReactiveScope {
     pub(crate) inner: Rc<RefCell<ReactiveScopeInner>>,
@@ -117,6 +121,19 @@ impl ReactiveScope {
             .cleanups
             .push(CleanupCallback(Box::new(callback)));
     }
+
+    /// Extends the reactive scope.
+    ///
+    /// Most likely you want to use this method to run some code in an outer scope rather than an
+    /// inner scope.
+    pub fn extend(&self, f: impl FnOnce()) {
+        CURRENT_SCOPE.with(|current_scope| {
+            let scope = self.clone();
+            let outer = mem::replace(&mut *current_scope.borrow_mut(), Some(scope));
+            f();
+            mem::replace(&mut *current_scope.borrow_mut(), outer).unwrap();
+        });
+    }
 }
 
 pub(crate) type WeakReactiveScope = Weak<RefCell<ReactiveScopeInner>>;
@@ -144,6 +161,11 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
             .expect("not inside a reactive scope")
             .add_cleanup_callback(f);
     });
+}
+
+/// Returns a shallow clone of the current scope or `None` if not inside a reactive scope.
+pub fn current_scope() -> Option<ReactiveScope> {
+    CURRENT_SCOPE.with(|current_scope| current_scope.borrow().clone())
 }
 
 #[cfg(test)]

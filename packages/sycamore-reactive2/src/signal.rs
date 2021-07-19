@@ -148,16 +148,20 @@ impl<T: 'static> ReadSignal<T> {
     /// the [`ReadSignal`] is no longer valid.
     #[track_caller]
     pub fn get_untracked(self) -> Rc<T> {
-        self.id.get(|data| match data {
-            Some(data) => Rc::clone(
-                &data
-                    .as_any()
-                    .downcast_ref::<SignalData<T>>()
-                    .expect("SignalData should have correct type")
-                    .inner,
-            ),
-            None => panic!("reactive scope for signal already destroyed"),
-        })
+        self.id
+            .get(|data| {
+                data.map(|data| {
+                    Rc::clone(
+                        &data
+                            .as_any()
+                            .downcast_ref::<SignalData<T>>()
+                            .expect("SignalData should have correct type")
+                            .inner,
+                    )
+                })
+            })
+            .expect("reactive scope for signal already destroyed") // Panic outside of closure for
+                                                                   // #[track_caller] to work.
     }
 }
 
@@ -184,20 +188,30 @@ impl<T: 'static> WriteSignal<T> {
     /// the [`ReadSignal`] is no longer valid.
     pub fn set(self, value: T) {
         let mut dependents = None;
-        self.id.get_mut(|data| match data {
-            Some(data) => {
-                data.as_any_mut()
-                    .downcast_mut::<SignalData<T>>()
-                    .expect("SignalData should have correct type")
-                    .inner = Rc::new(value);
-                dependents = Some(data.clone_dependents());
-            }
-            None => panic!("reactive scope for signal already destroyed"),
-        });
+        self.id
+            .get_mut(|data| {
+                data.map(|data| {
+                    data.as_any_mut()
+                        .downcast_mut::<SignalData<T>>()
+                        .expect("SignalData should have correct type")
+                        .inner = Rc::new(value);
+                    dependents = Some(data.clone_dependents());
+                })
+            })
+            .expect("reactive scope for signal already destroyed"); // Panic outside of closure for #[track_caller] to work.
+
         // Rerun all effects that depend on this signal.
         for dependent in dependents.unwrap().values() {
             // Clone the callback to prevent holding a borrow to the EffectState.
-            let callback = Rc::clone(&dependent.upgrade().unwrap().borrow().as_ref().unwrap().callback);
+            let callback = Rc::clone(
+                &dependent
+                    .upgrade()
+                    .unwrap()
+                    .borrow()
+                    .as_ref()
+                    .unwrap()
+                    .callback,
+            );
             callback.borrow_mut()();
         }
     }
@@ -206,7 +220,7 @@ impl<T: 'static> WriteSignal<T> {
 /// Creates a new signal with the given value.
 ///
 /// # Panics
-/// This function will `panic!()` if it is not used inside a reactive scope.
+/// This function will `panic!()` if it is used outside of a reactive scope.
 ///
 /// # Example
 /// ```
