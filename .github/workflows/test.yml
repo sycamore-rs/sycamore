@@ -125,3 +125,5 @@ jobs:
         run: |
           cd packages/sycamore
           cargo miri test
+          cd ../sycamore-reactive
+          cargo miri test
