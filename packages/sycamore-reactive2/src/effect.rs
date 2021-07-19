@@ -70,7 +70,7 @@ pub(crate) type EffectStatePtr = *const RefCell<Option<EffectState>>;
 ///     println!("State changed. New state value = {}", state.get());
 /// }); // Prints "State changed. New state value = 0"
 ///
-/// set_state.set(1); // Prints "State changed. New state value = 1"
+/// set_set_state.set(1); // Prints "State changed. New state value = 1"
 /// # });
 /// ```
 pub fn create_effect(mut f: impl FnMut() + 'static) {
@@ -160,7 +160,7 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
 /// let double = create_memo(move || *state.get() * 2);
 /// assert_eq!(*double.get(), 0);
 ///
-/// set_state.set(1);
+/// set_set_state.set(1);
 /// assert_eq!(*double.get(), 2);
 /// # });
 /// ```
@@ -244,6 +244,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::scope::on_cleanup;
     use crate::signal::create_signal;
 
     use super::*;
@@ -285,6 +286,345 @@ mod tests {
 
             set_state.set(1);
             assert_eq!(*counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn effect_should_recreate_dependencies() {
+        let _ = create_root(|| {
+            let (condition, set_condition) = create_signal(true);
+
+            let (state1, set_state1) = create_signal(0);
+            let (state2, set_state2) = create_signal(1);
+
+            let (counter, set_counter) = create_signal(0);
+            create_effect(move || {
+                set_counter.set(*counter.get_untracked() + 1);
+
+                if *condition.get() {
+                    state1.get();
+                } else {
+                    state2.get();
+                }
+            });
+
+            assert_eq!(*counter.get(), 1);
+
+            set_state1.set(1);
+            assert_eq!(*counter.get(), 2);
+
+            set_state2.set(1);
+            assert_eq!(*counter.get(), 2); // not tracked
+
+            set_condition.set(false);
+            assert_eq!(*counter.get(), 3);
+
+            set_state1.set(2);
+            assert_eq!(*counter.get(), 3); // not tracked
+
+            set_state2.set(2);
+            assert_eq!(*counter.get(), 4); // tracked after condition.set
+        });
+    }
+
+    #[test]
+    fn nested_effects_should_recreate_inner() {
+        let _ = create_root(|| {
+            let (counter, set_counter) = create_signal(0);
+
+            let (trigger, set_trigger) = create_signal(());
+
+            create_effect(move || {
+                trigger.get(); // subscribe to trigger
+
+                create_effect(move || {
+                    set_counter.set(*counter.get_untracked() + 1);
+                });
+            });
+
+            assert_eq!(*counter.get(), 1);
+
+            set_trigger.set(());
+            assert_eq!(*counter.get(), 2); // old inner effect should be destroyed and thus not
+                                           // executed
+        });
+    }
+
+    #[test]
+    fn nested_effects_trigger_outer_effect() {
+        let _ = create_root(|| {
+            let (trigger, set_trigger) = create_signal(());
+
+            let (outer_counter, set_outer_counter) = create_signal(0);
+            let (inner_counter, set_inner_counter) = create_signal(0);
+            let (inner_cleanup_counter, set_inner_cleanup_counter) = create_signal(0);
+
+            create_effect(move || {
+                trigger.get(); // subscribe to trigger
+                set_outer_counter.set(*outer_counter.get_untracked() + 1);
+
+                create_effect(move || {
+                    set_trigger.set(()); // update trigger which should recreate the outer effect
+                    set_inner_counter.set(*inner_counter.get_untracked() + 1);
+
+                    on_cleanup(move || {
+                        set_inner_cleanup_counter.set(*inner_cleanup_counter.get_untracked() + 1);
+                    });
+                });
+            });
+
+            assert_eq!(*outer_counter.get(), 1);
+            assert_eq!(*inner_counter.get(), 1);
+            assert_eq!(*inner_cleanup_counter.get(), 0);
+
+            set_trigger.set(());
+
+            assert_eq!(*outer_counter.get(), 2);
+            assert_eq!(*inner_counter.get(), 2);
+            assert_eq!(*inner_cleanup_counter.get(), 1);
+        });
+    }
+
+    #[test]
+    fn create_nested_effect_from_outside() {
+        let _ = create_root(|| {
+            let (trigger, set_trigger) = create_signal(());
+            let (outer_counter, set_outer_counter) = create_signal(0);
+            let (inner_counter, set_inner_counter) = create_signal(0);
+
+            let (inner_effect, set_inner_effect) = create_signal(None::<Box<dyn Fn()>>);
+
+            create_effect(move || {
+                trigger.get(); // subscribe to trigger
+                set_outer_counter.set(*outer_counter.get_untracked() + 1);
+
+                if inner_effect.get_untracked().is_none() {
+                    set_inner_effect.set(Some(Box::new(move || {
+                        set_inner_counter.set(*inner_counter.get_untracked() + 1);
+                    })));
+                }
+            });
+
+            create_effect(move || (*inner_effect.get()).as_ref().unwrap()());
+
+            assert_eq!(*outer_counter.get(), 1);
+            assert_eq!(*inner_counter.get(), 1);
+
+            set_trigger.set(());
+            assert_eq!(*outer_counter.get(), 2);
+            assert_eq!(*inner_counter.get(), 1);
+        });
+    }
+
+    #[test]
+    fn outer_effects_rerun_first() {
+        let _ = create_root(|| {
+            let (trigger, set_trigger) = create_signal(());
+
+            let (outer_counter, set_outer_counter) = create_signal(0);
+            let (inner_counter, set_inner_counter) = create_signal(0);
+
+            create_effect(move || {
+                trigger.get(); // subscribe to trigger
+                set_outer_counter.set(*outer_counter.get_untracked() + 1);
+
+                create_effect(move || {
+                    trigger.get(); // subscribe to trigger
+                    set_inner_counter.set(*inner_counter.get_untracked() + 1);
+                });
+            });
+
+            assert_eq!(*outer_counter.get(), 1);
+            assert_eq!(*inner_counter.get(), 1);
+
+            set_trigger.set(());
+
+            assert_eq!(*outer_counter.get(), 2);
+            assert_eq!(*inner_counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn destroy_effects_on_scope_drop() {
+        let _ = create_root(|| {
+            let (counter, set_counter) = create_signal(0);
+
+            let (trigger, set_trigger) = create_signal(());
+
+            let scope = create_root(move || {
+                create_effect(move || {
+                    trigger.get(); // subscribe to trigger
+                    set_counter.set(*counter.get_untracked() + 1);
+                });
+            });
+
+            assert_eq!(*counter.get(), 1);
+
+            set_trigger.set(());
+            assert_eq!(*counter.get(), 2);
+
+            drop(scope);
+            set_trigger.set(());
+            assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
+        });
+    }
+
+    #[test]
+    fn memo() {
+        let _ = create_root(|| {
+            let (state, set_state) = create_signal(0);
+
+            let double = create_memo(move || *state.get() * 2);
+            assert_eq!(*double.get(), 0);
+
+            set_state.set(1);
+            assert_eq!(*double.get(), 2);
+
+            set_state.set(2);
+            assert_eq!(*double.get(), 4);
+        });
+    }
+
+    #[test]
+    /// Make sure value is memoized rather than executed on demand.
+    fn memo_only_run_once() {
+        let _ = create_root(|| {
+            let (state, set_state) = create_signal(0);
+
+            let (counter, set_counter) = create_signal(0);
+            let double = create_memo(move || {
+                set_counter.set(*counter.get_untracked() + 1);
+
+                *state.get() * 2
+            });
+            assert_eq!(*counter.get(), 1); // once for calculating initial derived state
+
+            set_state.set(2);
+            assert_eq!(*counter.get(), 2);
+            assert_eq!(*double.get(), 4);
+            assert_eq!(*counter.get(), 2); // should still be 2 after access
+        });
+    }
+
+    #[test]
+    fn dependency_on_memo() {
+        let _ = create_root(|| {
+            let (state, set_state) = create_signal(0);
+
+            let double = create_memo(move || *state.get() * 2);
+
+            let quadruple = create_memo(move || *double.get() * 2);
+
+            assert_eq!(*quadruple.get(), 0);
+
+            set_state.set(1);
+            assert_eq!(*quadruple.get(), 4);
+        });
+    }
+
+    #[test]
+    fn untracked_memo() {
+        let _ = create_root(|| {
+            let (state, set_state) = create_signal(1);
+
+            let double = create_memo(move || *state.get_untracked() * 2);
+
+            assert_eq!(*double.get(), 2);
+
+            set_state.set(2);
+            assert_eq!(*double.get(), 2); // double value should still be true because state.get()
+                                          // was
+                                          // inside untracked
+        });
+    }
+
+    #[test]
+    fn selector() {
+        let _ = create_root(|| {
+            let (state, set_state) = create_signal(0);
+
+            let double = create_selector(move || *state.get() * 2);
+
+            let (counter, set_counter) = create_signal(0);
+            create_effect(move || {
+                set_counter.set(*counter.get_untracked() + 1);
+
+                double.get();
+            });
+            assert_eq!(*double.get(), 0);
+            assert_eq!(*counter.get(), 1);
+
+            set_state.set(0);
+            assert_eq!(*double.get(), 0);
+            assert_eq!(*counter.get(), 1); // calling set_state should not trigger the effect
+
+            set_state.set(2);
+            assert_eq!(*double.get(), 4);
+            assert_eq!(*counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn cleanup() {
+        let _ = create_root(|| {
+            let (cleanup_called, set_cleanup_called) = create_signal(false);
+            let scope = create_root(move || {
+                on_cleanup(move || {
+                    set_cleanup_called.set(true);
+                });
+            });
+
+            assert!(!*cleanup_called.get());
+
+            drop(scope);
+            assert!(*cleanup_called.get());
+        });
+    }
+
+    #[test]
+    fn cleanup_in_effect() {
+        let _ = create_root(|| {
+            let (trigger, set_trigger) = create_signal(());
+
+            let (counter, set_counter) = create_signal(0);
+
+            create_effect(move || {
+                trigger.get(); // subscribe to trigger
+
+                on_cleanup(move || {
+                    set_counter.set(*counter.get() + 1);
+                });
+            });
+
+            assert_eq!(*counter.get(), 0);
+
+            set_trigger.set(());
+            assert_eq!(*counter.get(), 1);
+
+            set_trigger.set(());
+            assert_eq!(*counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn cleanup_is_untracked() {
+        let _ = create_root(|| {
+            let (trigger, set_trigger) = create_signal(());
+
+            let (counter, set_counter) = create_signal(0);
+
+            create_effect(move || {
+                set_counter.set(*counter.get_untracked() + 1);
+
+                on_cleanup(move || {
+                    trigger.get(); // do not subscribe to trigger
+                });
+            });
+
+            assert_eq!(*counter.get(), 1);
+
+            set_trigger.set(());
+            assert_eq!(*counter.get(), 1);
         });
     }
 }
