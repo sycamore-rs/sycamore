@@ -7,6 +7,7 @@ mod context;
 pub mod effect;
 mod effect_old;
 mod iter;
+pub mod scope;
 pub mod signal;
 mod signal_old;
 

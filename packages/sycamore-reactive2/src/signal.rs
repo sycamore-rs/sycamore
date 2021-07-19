@@ -1,11 +1,19 @@
-use std::marker::PhantomData;
-use std::rc::Rc;
+//! Reactive signals.
 
-use crate::effect::{ScopeKey, CURRENT_SCOPE, SCOPES};
+use std::any::Any;
+use std::cell::RefCell;
+use std::marker::PhantomData;
+use std::rc::{Rc, Weak};
+
+use indexmap::IndexMap;
+
+use crate::effect::{EffectState, EffectStatePtr};
+use crate::scope::{ScopeKey, CURRENT_SCOPE, SCOPES};
 
 /// Backing storage for a signal.
 pub(crate) struct SignalData<T> {
     inner: Rc<T>,
+    dependents: IndexMap<EffectStatePtr, Weak<RefCell<Option<EffectState>>>>,
 }
 
 /// Explicitly implement `Clone` to prevent type bounds on `T`.
@@ -13,19 +21,91 @@ impl<T> Clone for SignalData<T> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
+            dependents: self.dependents.clone(),
         }
     }
 }
 
+/// A trait for any `SignalData<T>`.
+pub(crate) trait SignalDataAny: Any {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn subscribe(&mut self, effect: Weak<RefCell<Option<EffectState>>>);
+    fn unsubscribe(&mut self, ptr: EffectStatePtr);
+    fn trigger_update(&self);
+}
+
+impl<T: 'static> SignalDataAny for SignalData<T> {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+    fn subscribe(&mut self, effect: Weak<RefCell<Option<EffectState>>>) {
+        self.dependents.insert(Weak::as_ptr(&effect), effect);
+    }
+    fn unsubscribe(&mut self, ptr: EffectStatePtr) {
+        self.dependents.remove(&ptr);
+    }
+    fn trigger_update(&self) {
+        for dependent in self.dependents.values() {
+            dependent.upgrade().unwrap().borrow().as_ref().unwrap().trigger();
+        }
+    }
+}
+
+impl<T> Drop for SignalData<T> {
+    fn drop(&mut self) {
+        // TODO: Remove self from all effect dependencies.
+    }
+}
+
 /// Data needed to refer to a SignalData.
-#[derive(Clone, Copy)]
-struct SignalId {
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct SignalId {
     /// Key to the reactive scope in the slab. Note that accessing the value pointed to by this key
     /// is not enough to ensure that the `ReadSignal` is still valid. One must also check that the
     /// `scope_id` also matches.
     scope_key: ScopeKey,
     /// Index of the signal in the reactive scope's signal array.
     signal_index: usize,
+}
+
+impl SignalId {
+    pub fn get<Out>(self, f: impl FnOnce(Option<&dyn SignalDataAny>) -> Out) -> Out {
+        SCOPES.with(|scopes| {
+            let scopes = scopes.borrow();
+            let scope = scopes.get(self.scope_key);
+            if scope.is_none() {
+                return f(None);
+            }
+            let scope = scope
+                .unwrap()
+                .upgrade()
+                .expect("weak reference should always be valid");
+            let scope = scope.borrow();
+            let data = scope.signals[self.signal_index].as_ref();
+            f(Some(data))
+        })
+    }
+
+    pub fn get_mut<Out>(self, f: impl FnOnce(Option<&mut dyn SignalDataAny>) -> Out) -> Out {
+        SCOPES.with(|scopes| {
+            let scopes = scopes.borrow();
+            let scope = scopes.get(self.scope_key);
+            if scope.is_none() {
+                return f(None);
+            }
+            let scope = scope
+                .unwrap()
+                .upgrade()
+                .expect("weak reference should always be valid");
+            let mut scope = scope.borrow_mut();
+            let data = scope.signals[self.signal_index].as_mut();
+            f(Some(data))
+        })
+    }
 }
 
 /// A `ReadSignal` is a handle to some reactive state allocated in the current reactive scope.
@@ -51,23 +131,15 @@ impl<T: 'static> ReadSignal<T> {
     /// the [`ReadSignal`] is no longer valid.
     #[track_caller]
     pub fn get(self) -> Rc<T> {
-        SCOPES.with(|scopes| {
-            let scopes = scopes.borrow();
-            let scope = scopes.get(self.id.scope_key);
-            if scope.is_none() {
-                panic!("reactive scope for signal already destroyed");
-            }
-            let scope = scope
-                .unwrap()
-                .upgrade()
-                .expect("weak reference should always be valid");
-            let data = &scope.borrow().signals[self.id.signal_index];
-            Rc::clone(
+        self.id.get(|data| match data {
+            Some(data) => Rc::clone(
                 &data
+                    .as_any()
                     .downcast_ref::<SignalData<T>>()
                     .expect("SignalData should have correct type")
                     .inner,
-            )
+            ),
+            None => panic!("reactive scope for signal already destroyed"),
         })
     }
 }
@@ -88,30 +160,21 @@ impl<T> Clone for WriteSignal<T> {
 impl<T> Copy for WriteSignal<T> {}
 
 impl<T: 'static> WriteSignal<T> {
-    /// Updates the value of the signal.
-    ///
-    /// TODO: trigger dependencies
+    /// Updates the value of the signal and triggers all dependents.
     ///
     /// # Panics
     /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
     /// the [`ReadSignal`] is no longer valid.
     pub fn set(self, value: T) {
-        SCOPES.with(|scopes| {
-            let scopes = scopes.borrow_mut();
-            let scope = scopes.get(self.id.scope_key);
-            if scope.is_none() {
-                panic!("reactive scope for signal already destroyed");
+        self.id.get_mut(|data| match data {
+            Some(data) => {
+                data.as_any_mut()
+                    .downcast_mut::<SignalData<T>>()
+                    .expect("SignalData should have correct type")
+                    .inner = Rc::new(value);
+                data.trigger_update();
             }
-            let scope = scope
-                .unwrap()
-                .upgrade()
-                .expect("weak reference should always be valid");
-            let data = &mut scope.borrow_mut().signals[self.id.signal_index];
-            let data = data
-                .downcast_mut::<SignalData<T>>()
-                .expect("SignalData should have correct type");
-
-            data.inner = Rc::new(value);
+            None => panic!("reactive scope for signal already destroyed"),
         });
     }
 }
@@ -120,7 +183,7 @@ impl<T: 'static> WriteSignal<T> {
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive2::effect::create_root;
+/// # use sycamore_reactive2::scope::create_root;
 /// # use sycamore_reactive2::signal::create_signal;
 /// # let _ = create_root(|| {
 /// let (state, set_state) = create_signal(0);
@@ -138,6 +201,7 @@ pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
 
         let data = SignalData {
             inner: Rc::new(value),
+            dependents: IndexMap::new(),
         };
         let scope_key = scope.key();
         let signal_index = scope.inner.borrow().signals.len();
@@ -163,7 +227,7 @@ pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
 
 #[cfg(test)]
 mod tests {
-    use crate::effect::create_root;
+    use crate::scope::create_root;
 
     use super::*;
 

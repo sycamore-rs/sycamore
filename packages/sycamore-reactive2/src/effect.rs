@@ -1,159 +1,104 @@
-use std::any::Any;
+//! Side effects and derived signals.
+
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::mem;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
-use slotmap::{new_key_type, SlotMap};
-
-new_key_type! {
-    pub(crate) struct ScopeKey;
-}
+use crate::scope::{create_root, ReactiveScope};
+use crate::signal::SignalId;
 
 thread_local! {
-    /// The current [`ReactiveScope`] of the current thread and the key to [`SCOPES`].
-    pub(crate) static CURRENT_SCOPE: RefCell<Option<ReactiveScope>> = RefCell::new(None);
-    /// A slotmap of all [`ReactiveScope`]s that are currently valid in the current thread.
-    ///
-    /// All scopes inside the slotmap should be valid because they are tied to the lifetime of a
-    /// [`ReactiveScopeInner`]. When the [`ReactiveScopeInner`] is dropped, the matching weak
-    /// reference in the slotmap is removed.
-    ///
-    /// This is essentially a list of valid [`ReactiveScopeInner`]s using RAII.
-    pub(crate) static SCOPES: RefCell<SlotMap<ScopeKey, WeakReactiveScope>> = RefCell::new(SlotMap::with_key());
+    /// The current effect listener or `None`.
+    pub(crate) static CURRENT_LISTENER: RefCell<Option<Listener>> = RefCell::new(None);
 }
 
-/// Insert a scope into [`SCOPES`]. Returns the created [`ScopeKey`].
-fn insert_scope(scope: WeakReactiveScope) -> ScopeKey {
-    SCOPES.with(|scopes| scopes.borrow_mut().insert(scope))
+pub(crate) struct EffectState {
+    callback: Rc<RefCell<dyn FnMut()>>,
+    dependencies: HashSet<SignalId>,
+    scope: Option<ReactiveScope>,
 }
 
-/// Removes a scope from [`SCOPES`].
-///
-/// # Panics
-/// This method will `panic!()` if the key is not found in [`SCOPES`].
-fn remove_scope(key: ScopeKey) {
-    SCOPES.with(|scopes| {
-        scopes
-            .borrow_mut()
-            .remove(key)
-            .expect("could not find scope with key")
-    });
-}
-
-struct CleanupCallback(Box<dyn FnOnce()>);
-
-#[derive(Default)]
-pub(crate) struct ReactiveScopeInner {
-    /// The key to the [`WeakReactiveScope`] in [`SCOPES`]. The value should always be `Some` after
-    /// initialization.
-    pub(crate) key: Option<ScopeKey>,
-    /// The [`ReactiveScope`] owns all signals that are created within the scope.
-    pub(crate) signals: Vec<Box<dyn Any>>,
-    /// Callbacks to run when the scope is dropped.
-    cleanups: Vec<CleanupCallback>,
-}
-
-impl ReactiveScopeInner {
-    /// Creates a new [`ReactiveScopeInner`]. Note that `key` is set to `None` by default. It is up
-    /// to the responsibility of the caller to initialize `key` with the `ScopeKey` for [`SCOPES`].
-    fn new() -> Self {
-        Self::default()
+impl EffectState {
+    /// Rerun the effect.
+    pub fn trigger(&self) {
+        self.callback.borrow_mut()();
     }
 }
 
-impl Drop for ReactiveScopeInner {
-    /// Remove itself from [`SCOPES`].
-    fn drop(&mut self) {
-        // Run cleanup callbacks.
-        for cb in mem::take(&mut self.cleanups) {
-            cb.0()
-        }
+pub(crate) struct Listener(Rc<RefCell<Option<EffectState>>>);
 
-        // Remove self from `SCOPES`.
-        let key = self.key.unwrap();
-        remove_scope(key);
-    }
-}
-
-#[derive(Clone)]
-pub struct ReactiveScope {
-    pub(crate) inner: Rc<RefCell<ReactiveScopeInner>>,
-}
-
-impl ReactiveScope {
-    /// Create a new [`ReactiveScope`] and inserts it into [`SCOPES`].
-    fn new() -> Self {
-        let inner = Rc::new(RefCell::new(ReactiveScopeInner::new()));
-        let weak = Rc::downgrade(&inner);
-        let key = insert_scope(weak);
-
-        // initialize ReactiveScopeInner.key
-        inner.borrow_mut().key = Some(key);
-
-        Self { inner }
-    }
-
-    /// Get the [`ScopeKey`] for the scope.
-    pub(crate) fn key(&self) -> ScopeKey {
-        self.inner.borrow().key.unwrap()
-    }
-
-    /// Adds a callback that will be called when the [`ReactiveScope`] is dropped.
-    ///
-    /// If you want to add a cleanup callback to the *current* scope, use [`on_cleanup`] instead.
-    pub fn add_cleanup_callback(&self, callback: impl FnOnce() + 'static) {
-        self.inner
-            .borrow_mut()
-            .cleanups
-            .push(CleanupCallback(Box::new(callback)));
-    }
-}
-
-pub(crate) type WeakReactiveScope = Weak<RefCell<ReactiveScopeInner>>;
-
-/// Create a new detached [`ReactiveScope`].
-#[must_use = "immediately dropping a ReactiveScope will drop all child scopes"]
-pub fn create_root(f: impl FnOnce()) -> ReactiveScope {
-    CURRENT_SCOPE.with(|current_scope| {
-        let scope = ReactiveScope::new();
-        let outer = mem::replace(&mut *current_scope.borrow_mut(), Some(scope));
-        f();
-        mem::replace(&mut *current_scope.borrow_mut(), outer).unwrap()
-    })
-}
-
-/// Adds a cleanup callback to the current scope.
-///
-/// # Panics
-/// This function will `panic!()` if not inside a reactive scope.
-pub fn on_cleanup(f: impl FnOnce() + 'static) {
-    CURRENT_SCOPE.with(|current_scope| {
-        current_scope
-            .borrow()
-            .as_ref()
-            .expect("not inside a reactive scope")
-            .add_cleanup_callback(f);
-    });
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::signal::create_signal;
-
-    use super::*;
-
-    #[test]
-    fn cleanup() {
-        let _ = create_root(|| {
-            let (cleanup_called, set_cleanup_called) = create_signal(false);
-            let scope = create_root(move || {
-                on_cleanup(move || {
-                    set_cleanup_called.set(true);
-                });
+impl Listener {
+    /// Clears the dependencies (both links and backlinks).
+    /// Should be called when re-executing an effect to recreate all dependencies.
+    fn clear_dependencies(&self) {
+        for dependency in &self.0.borrow().as_ref().unwrap().dependencies {
+            dependency.get_mut(|data| {
+                if let Some(data) = data {
+                    data.unsubscribe(Rc::as_ptr(&self.0));
+                }
             });
-            assert!(!*cleanup_called.get());
-            drop(scope);
-            assert!(*cleanup_called.get());
-        });
+        }
+        self.0.borrow_mut().as_mut().unwrap().dependencies.clear();
     }
+}
+
+pub(crate) type EffectStatePtr = *const RefCell<Option<EffectState>>;
+
+pub fn create_effect(mut f: impl FnMut() + 'static) {
+    let effect_state = Rc::new(RefCell::new(None));
+
+    // Callback for when the effect's dependencies are triggered.
+    let callback: Rc<RefCell<dyn FnMut()>> = Rc::new(RefCell::new({
+        let effect_state = Rc::clone(&effect_state);
+        move || {
+            CURRENT_LISTENER.with(|listener| {
+                // Create new listener.
+                let new_listener = Listener(Rc::clone(&effect_state));
+                // Recreate effect dependencies each time effect is called.
+                new_listener.clear_dependencies();
+                // Swap in the new listener.
+                let old_listener = mem::replace(&mut *listener.borrow_mut(), Some(new_listener));
+
+                // Destroy old effects before new ones run.
+
+                // We want to destroy the old scope before creating the new one, so that
+                // cleanup functions will be run before the effect
+                // closure is called again.
+                let _: Option<ReactiveScope> =
+                    mem::take(&mut effect_state.borrow_mut().as_mut().unwrap().scope);
+
+                // Run the effect in a new scope.
+                let scope = create_root(|| {
+                    f();
+                });
+                effect_state.borrow_mut().as_mut().unwrap().scope = Some(scope);
+
+                // Attach new dependencies.
+                let effect_state_ref = effect_state.borrow();
+                let effect_state_ref = effect_state_ref.as_ref().unwrap();
+                for dependency in &effect_state_ref.dependencies {
+                    dependency.get_mut(|data| {
+                        if let Some(data) = data {
+                            // Signal might have already been destroyed inside the effect.
+                            data.subscribe(Rc::downgrade(&effect_state))
+                        }
+                    })
+                }
+
+                // Restore old listener.
+                mem::replace(&mut *listener.borrow_mut(), old_listener).unwrap();
+            });
+        }
+    }));
+
+    *effect_state.borrow_mut() = Some(EffectState {
+        callback: Rc::clone(&callback),
+        dependencies: HashSet::new(),
+        scope: None,
+    });
+    debug_assert_eq!(Rc::strong_count(&effect_state), 1);
+
+    // Effect always calls the callback once.
+    callback.borrow_mut()();
 }
