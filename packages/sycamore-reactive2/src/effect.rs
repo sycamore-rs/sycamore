@@ -213,7 +213,8 @@ where
 {
     let memo = Rc::new(Cell::new(None::<(ReadSignal<T>, WriteSignal<T>)>));
 
-    let scope = current_scope().expect("create_signal must be used inside a ReactiveScope");
+    let mut scope =
+        Some(current_scope().expect("create_signal must be used inside a ReactiveScope"));
 
     create_effect({
         let memo = Rc::clone(&memo);
@@ -224,11 +225,15 @@ where
                     set_memo.set(new_value);
                 }
             } else {
-                scope.extend(|| {
+                // This branch will only be executed once.
+                scope.as_ref().unwrap().extend(|| {
                     // We want the signal to live as long as the outer scope instead of the effect
                     // scope.
                     memo.set(Some(create_signal(new_value)));
                 });
+                // Do not hold a reference to the scope. This prevents a memory leak because the
+                // scope also owns the effect and thereby the effect closure.
+                drop(scope.take());
             }
             debug_assert!(memo.get().is_some());
         }
