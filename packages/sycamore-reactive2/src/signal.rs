@@ -201,18 +201,14 @@ impl<T: 'static> WriteSignal<T> {
             .expect("reactive scope for signal already destroyed"); // Panic outside of closure for #[track_caller] to work.
 
         // Rerun all effects that depend on this signal.
-        for dependent in dependents.unwrap().values() {
-            // Clone the callback to prevent holding a borrow to the EffectState.
-            let callback = Rc::clone(
-                &dependent
-                    .upgrade()
-                    .unwrap()
-                    .borrow()
-                    .as_ref()
-                    .unwrap()
-                    .callback,
-            );
-            callback.borrow_mut()();
+        // Reverse order to re-run outer effects before inner effects.
+        for dependent in dependents.unwrap().values().rev() {
+            // Effect might have already been destroyed.
+            if let Some(effect) = dependent.upgrade() {
+                // Clone the callback to prevent holding a borrow to the EffectState.
+                let callback = Rc::clone(&effect.borrow().as_ref().unwrap().callback);
+                callback.borrow_mut()();
+            }
         }
     }
 }

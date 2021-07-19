@@ -242,6 +242,38 @@ where
     memo.get().unwrap().0
 }
 
+/// Run the passed closure inside an untracked dependency scope.
+///
+/// This does **NOT** create a new [`ReactiveScope`].
+///
+/// See also [`ReadSignal::get_untracked`].
+///
+/// # Example
+///
+/// ```
+/// use sycamore_reactive2::*;
+///
+/// let state = Signal::new(1);
+///
+/// let double = create_memo({
+///     let state = state.clone();
+///     move || untrack(|| *state.get() * 2)
+/// });
+///
+/// assert_eq!(*double.get(), 2);
+///
+/// state.set(2);
+/// // double value should still be old value because state was untracked
+/// assert_eq!(*double.get(), 2);
+/// ```
+pub fn untrack<T>(f: impl FnOnce() -> T) {
+    CURRENT_LISTENER.with(|current_listener| {
+        let scope = mem::take(&mut *current_listener.borrow_mut());
+        f();
+        *current_listener.borrow_mut() = scope;
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use crate::scope::on_cleanup;

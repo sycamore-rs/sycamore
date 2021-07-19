@@ -6,7 +6,7 @@ use std::rc::{Rc, Weak};
 
 use slotmap::{new_key_type, SlotMap};
 
-use crate::effect::EffectState;
+use crate::effect::{untrack, EffectState};
 use crate::signal::SignalDataAny;
 
 new_key_type! {
@@ -72,7 +72,7 @@ impl Drop for ReactiveScopeInner {
     fn drop(&mut self) {
         // Run cleanup callbacks.
         for cb in mem::take(&mut self.cleanups) {
-            cb.0()
+            untrack(cb.0)
         }
 
         // Remove self from `SCOPES`.
