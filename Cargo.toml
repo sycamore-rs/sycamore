@@ -11,7 +11,7 @@ members = [
   "examples/hello",
   "examples/iteration",
   "examples/ssr",
-  "examples/todomvc",
+  # "examples/todomvc",
   "examples/tweened",
   "docs",
   "website",

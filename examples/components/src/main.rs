@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component(num: StateHandle<i32>) -> Template<G> {
+fn my_component(num: ReadSignal<i32>) -> Template<G> {
     template! {
         div(class="my-component") {
             "My component"
@@ -15,11 +15,11 @@ fn my_component(num: StateHandle<i32>) -> Template<G> {
 
 #[component(App<G>)]
 fn app() -> Template<G> {
-    let state = Signal::new(1);
+    let (state, set_state) = create_signal(1);
 
-    let increment = cloned!((state) => move |_| {
-        state.set(*state.get() + 1);
-    });
+    let increment = move |_| {
+        set_state.set(*state.get() + 1);
+    };
 
     template! {
         div {
@@ -27,8 +27,8 @@ fn app() -> Template<G> {
                 "Component demo"
             }
 
-            MyComponent(state.handle())
-            MyComponent(state.handle())
+            MyComponent(state)
+            MyComponent(state)
 
             button(on:click=increment) {
                 "Increment"

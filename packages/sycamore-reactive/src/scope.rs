@@ -99,7 +99,6 @@ impl ReactiveScopeInner {
 
             // Drop effects now so that the cleanup functions can still access signals from outer
             // scope.
-            debug_assert!(effects.iter().all(|e| Rc::strong_count(e) == 1));
             drop(effects);
         }
     }

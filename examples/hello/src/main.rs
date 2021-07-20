@@ -2,24 +2,23 @@ use sycamore::prelude::*;
 
 #[component(App<G>)]
 fn app() -> Template<G> {
-    let name = Signal::new(String::new());
-    let name2 = name.clone();
+    let (name, set_name) = create_signal(String::new());
 
     template! {
         div {
             h1 {
                 "Hello "
-                (if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
-                    cloned!((name) => template! {
+                (if *create_selector(move || !name.get().is_empty()).get() {
+                    template! {
                         span { (name.get()) }
-                    })
+                    }
                 } else {
                     template! { span { "World" } }
                 })
                 "!"
             }
 
-            input(bind:value=name2)
+            input(bind:value=(name, set_name))
         }
     }
 }

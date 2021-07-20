@@ -15,6 +15,9 @@ use indexmap::IndexMap;
 use crate::effect::{EffectState, EffectStatePtr, CURRENT_LISTENER};
 use crate::scope::{ScopeKey, SCOPE_STACK, VALID_SCOPES};
 
+/// A type alias for `(ReadSignal<T>, WriteSignal<T>)`.
+pub type ReadWriteSignal<T> = (ReadSignal<T>, WriteSignal<T>);
+
 /// An error returned by [`ReadSignal::get`] and [`WriteSignal::set`].
 #[derive(Debug, Clone)]
 pub struct ScopeDestroyedError {

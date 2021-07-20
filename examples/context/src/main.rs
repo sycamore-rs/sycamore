@@ -1,25 +1,27 @@
-use sycamore::prelude::*;
 use sycamore::context::{use_context, ContextProvider, ContextProviderProps};
+use sycamore::prelude::*;
+
+struct State(i32);
 
 #[component(Counter<G>)]
 fn counter() -> Template<G> {
-    let counter = use_context::<Signal<i32>>();
+    let (counter, _) = use_context::<(ReadSignal<State>, WriteSignal<State>)>();
 
     template! {
         p(class="value") {
             "Value: "
-            (counter.get())
+            (counter.get().0)
         }
     }
 }
 
 #[component(Controls<G>)]
 pub fn controls() -> Template<G> {
-    let counter = use_context::<Signal<i32>>();
+    let (counter, set_counter) = use_context::<(ReadSignal<State>, WriteSignal<State>)>();
 
-    let increment = cloned!((counter) => move |_| counter.set(*counter.get() + 1));
+    let increment = move |_| set_counter.set(State(counter.get().0 + 1));
 
-    let reset = cloned!((counter) => move |_| counter.set(0));
+    let reset = move |_| set_counter.set(State(0));
 
     template! {
         button(class="increment", on:click=increment) {
@@ -33,15 +35,15 @@ pub fn controls() -> Template<G> {
 
 #[component(App<G>)]
 fn app() -> Template<G> {
-    let counter = Signal::new(0);
+    let (counter, set_counter) = create_signal(0);
 
-    create_effect(cloned!((counter) => move || {
+    create_effect(move || {
         log::info!("Counter value: {}", *counter.get());
-    }));
+    });
 
     template! {
         ContextProvider(ContextProviderProps {
-            value: counter,
+            value: (counter, set_counter),
             children: move || {
                 template! {
                     div {

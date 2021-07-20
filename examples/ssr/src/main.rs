@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 
 #[component(App<G>)]
 fn app() -> Template<G> {
-    let name = Signal::new(String::new());
+    let (name, _) = create_signal(String::new());
 
     let handle_change = move |_| unreachable!();
 
@@ -10,13 +10,13 @@ fn app() -> Template<G> {
         div {
             h1 {
                 "Hello "
-                ({if !name.get().is_empty() {
-                    cloned!((name) => template! {
+                (if !name.get().is_empty() {
+                    template! {
                         span { (name.get()) }
-                    })
+                    }
                 } else {
                     template! { span { "World" } }
-                }})
+                })
                 "!"
             }
 

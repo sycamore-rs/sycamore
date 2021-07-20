@@ -57,7 +57,7 @@ pub mod prelude {
         create_effect, create_memo, create_selector, create_selector_with, untrack,
     };
     pub use crate::reactive::scope::{create_root, on_cleanup};
-    pub use crate::reactive::signal::{create_signal, ReadSignal, WriteSignal};
+    pub use crate::reactive::signal::{create_signal, ReadSignal, ReadWriteSignal, WriteSignal};
     pub use crate::template::{IntoTemplate, Template};
 }
 
