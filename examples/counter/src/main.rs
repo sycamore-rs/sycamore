@@ -2,15 +2,14 @@ use sycamore::prelude::*;
 
 #[component(App<G>)]
 fn app() -> Template<G> {
-    let counter = Signal::new(0);
+    let (counter, set_counter) = create_signal(0);
 
-    create_effect(cloned!((counter) => move || {
+    create_effect(move || {
         log::info!("Counter value: {}", *counter.get());
-    }));
+    });
 
-    let increment = cloned!((counter) => move |_| counter.set(*counter.get() + 1));
-
-    let reset = cloned!((counter) => move |_| counter.set(0));
+    let increment = move |_| set_counter.set(*counter.get() + 1);
+    let reset = move |_| set_counter.set(0);
 
     template! {
         div {

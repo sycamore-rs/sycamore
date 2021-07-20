@@ -14,10 +14,10 @@ pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>
 where
     F: Fn(T) -> Template<G>,
     K: Fn(&T) -> Key,
-    Key: Clone + Hash + Eq,
-    T: Clone + PartialEq,
+    Key: Eq + Hash,
+    T: Eq + Clone,
 {
-    pub iterable: StateHandle<Vec<T>>,
+    pub iterable: ReadSignal<Vec<T>>,
     pub template: F,
     pub key: K,
 }
@@ -32,11 +32,11 @@ where
 /// ```no_run
 /// use sycamore::prelude::*;
 ///
-/// let count = Signal::new(vec![1, 2]);
+/// let (count, set_count) = create_signal(vec![1, 2]);
 ///
 /// let node = template! {
 ///     Keyed(KeyedProps {
-///         iterable: count.handle(),
+///         iterable: count,
 ///         template: |item| template! {
 ///             li { (item) }
 ///         },
@@ -52,8 +52,8 @@ pub fn keyed<T: 'static, F: 'static, K: 'static, Key: 'static>(
 where
     F: Fn(T) -> Template<G>,
     K: Fn(&T) -> Key,
-    Key: Clone + Hash + Eq,
-    T: Clone + Eq,
+    Key: Eq + Hash,
+    T: Eq + Clone,
 {
     let KeyedProps {
         iterable,
@@ -70,7 +70,7 @@ pub struct IndexedProps<T: 'static, F, G: GenericNode>
 where
     F: Fn(T) -> Template<G>,
 {
-    pub iterable: StateHandle<Vec<T>>,
+    pub iterable: ReadSignal<Vec<T>>,
     pub template: F,
 }
 
@@ -84,11 +84,11 @@ where
 /// ```no_run
 /// use sycamore::prelude::*;
 ///
-/// let count = Signal::new(vec![1, 2]);
+/// let (count, set_count) = create_signal(vec![1, 2]);
 ///
 /// let node = template! {
 ///     Indexed(IndexedProps {
-///         iterable: count.handle(),
+///         iterable: count,
 ///         template: |item| template! {
 ///             li { (item) }
 ///         },

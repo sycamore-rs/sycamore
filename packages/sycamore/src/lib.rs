@@ -23,15 +23,14 @@
 pub use sycamore_macro::{component, template};
 
 pub mod component;
+pub mod context;
 pub mod easing;
 pub mod flow;
 pub mod generic_node;
-pub mod macros;
 pub mod motion;
 pub mod noderef;
 pub mod template;
 pub mod utils;
-pub mod context;
 
 pub use sycamore_reactive as reactive;
 
@@ -47,7 +46,6 @@ pub use crate::generic_node::{render_to_string, SsrNode};
 pub mod prelude {
     pub use sycamore_macro::{component, template};
 
-    pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;
@@ -55,10 +53,11 @@ pub mod prelude {
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
-    pub use crate::reactive::{
-        create_effect, create_effect_initial, create_memo, create_root, create_selector,
-        create_selector_with, on_cleanup, untrack, Signal, StateHandle,
+    pub use crate::reactive::effect::{
+        create_effect, create_memo, create_selector, create_selector_with,
     };
+    pub use crate::reactive::scope::{create_root, on_cleanup};
+    pub use crate::reactive::signal::{create_signal, ReadSignal, WriteSignal};
     pub use crate::template::{IntoTemplate, Template};
 }
 

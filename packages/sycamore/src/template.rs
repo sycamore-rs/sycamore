@@ -5,7 +5,8 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
-use crate::reactive::{create_memo, StateHandle};
+use crate::reactive::effect::create_memo;
+use crate::reactive::signal::ReadSignal;
 
 /// Internal type for [`Template`].
 #[derive(Clone)]
@@ -13,7 +14,7 @@ pub(crate) enum TemplateType<G: GenericNode> {
     /// A DOM node.
     Node(G),
     /// A dynamic [`Template`].
-    Dyn(StateHandle<Template<G>>),
+    Dyn(ReadSignal<Template<G>>),
     /// A fragment of [`Template`]s.
     #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
     Fragment(Rc<Box<[Template<G>]>>),
@@ -70,7 +71,7 @@ impl<G: GenericNode> Template<G> {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn as_dyn(&self) -> Option<&StateHandle<Template<G>>> {
+    pub fn as_dyn(&self) -> Option<&ReadSignal<Template<G>>> {
         if let TemplateType::Dyn(v) = &self.inner {
             Some(v)
         } else {

@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
 
-use super::*;
+use crate::effect::untrack;
+use crate::scope::{create_root, ReactiveScope};
+use crate::signal::ReadSignal;
 
 /// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
 /// computed, meaning that it's value will only be updated when requested. Modifications to the
@@ -21,19 +23,19 @@ use super::*;
 ///
 ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
 pub fn map_keyed<T, K, U>(
-    list: StateHandle<Vec<T>>,
+    list: ReadSignal<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
     key_fn: impl Fn(&T) -> K + 'static,
 ) -> impl FnMut() -> Vec<U>
 where
-    T: Eq + Clone,
+    T: Eq + Clone + 'static,
     K: Eq + Hash,
     U: Clone + 'static,
 {
     // Previous state used for diffing.
     let mut items = Rc::new(Vec::new());
     let mapped = Rc::new(RefCell::new(Vec::new()));
-    let mut scopes: Vec<Option<Rc<ReactiveScope>>> = Vec::new();
+    let mut scopes: Vec<Option<ReactiveScope>> = Vec::new();
 
     move || {
         let new_items = list.get(); // Subscribe to list.
@@ -48,7 +50,7 @@ where
                     let new_scope = create_root(|| {
                         mapped.borrow_mut().push(map_fn(new_item));
                     });
-                    scopes.push(Some(Rc::new(new_scope)));
+                    scopes.push(Some(new_scope));
                 }
             } else {
                 debug_assert!(
@@ -145,10 +147,10 @@ where
 
                         if mapped.borrow().len() > j {
                             mapped.borrow_mut()[j] = new_mapped.unwrap();
-                            scopes[j] = Some(Rc::new(new_scope));
+                            scopes[j] = Some(new_scope);
                         } else {
                             mapped.borrow_mut().push(new_mapped.unwrap());
-                            scopes.push(Some(Rc::new(new_scope)));
+                            scopes.push(Some(new_scope));
                         }
                     }
                 }
@@ -182,11 +184,11 @@ where
 ///   [`Signal`]) and therefore reactive.
 /// * `map_fn` - A closure that maps from the input type to the output type.
 pub fn map_indexed<T, U>(
-    list: StateHandle<Vec<T>>,
+    list: ReadSignal<Vec<T>>,
     map_fn: impl Fn(&T) -> U + 'static,
 ) -> impl FnMut() -> Vec<U>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + 'static,
     U: Clone + 'static,
 {
     // Previous state used for diffing.
@@ -252,133 +254,149 @@ where
 mod tests {
     use std::cell::Cell;
 
+    use crate::effect::create_effect;
+    use crate::signal::create_signal;
+
     use super::*;
 
     #[test]
     fn keyed() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
-        assert_eq!(mapped(), vec![2, 4, 6]);
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let mut mapped = map_keyed(a, |x| *x * 2, |x| *x);
+            assert_eq!(mapped(), vec![2, 4, 6]);
 
-        a.set(vec![1, 2, 3, 4]);
-        assert_eq!(mapped(), vec![2, 4, 6, 8]);
+            set_a.set(vec![1, 2, 3, 4]);
+            assert_eq!(mapped(), vec![2, 4, 6, 8]);
 
-        a.set(vec![2, 2, 3, 4]);
-        assert_eq!(mapped(), vec![4, 4, 6, 8]);
+            set_a.set(vec![2, 2, 3, 4]);
+            assert_eq!(mapped(), vec![4, 4, 6, 8]);
+        });
     }
 
     #[test]
     fn keyed_recompute_everything() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
-        assert_eq!(mapped(), vec![2, 4, 6]);
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let mut mapped = map_keyed(a, |x| *x * 2, |x| *x);
+            assert_eq!(mapped(), vec![2, 4, 6]);
 
-        a.set(vec![4, 5, 6]);
-        assert_eq!(mapped(), vec![8, 10, 12]);
+            set_a.set(vec![4, 5, 6]);
+            assert_eq!(mapped(), vec![8, 10, 12]);
+        });
     }
 
     /// Test fast path for clearing Vec.
     #[test]
     fn keyed_clear() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_keyed(a.handle(), |x| *x * 2, |x| *x);
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let mut mapped = map_keyed(a, |x| *x * 2, |x| *x);
 
-        a.set(Vec::new());
-        assert_eq!(mapped(), Vec::<i32>::new());
+            set_a.set(Vec::new());
+            assert_eq!(mapped(), Vec::<i32>::new());
+        });
     }
 
     /// Test that using [`map_keyed`] will reuse previous computations.
     #[test]
     fn keyed_use_previous_computation() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let counter = Rc::new(Cell::new(0));
-        let mut mapped = map_keyed(
-            a.handle(),
-            {
-                let counter = Rc::clone(&counter);
-                move |_| {
-                    counter.set(counter.get() + 1);
-                    counter.get()
-                }
-            },
-            |x| *x,
-        );
-        assert_eq!(mapped(), vec![1, 2, 3]);
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let counter = Rc::new(Cell::new(0));
+            let mut mapped = map_keyed(
+                a,
+                {
+                    let counter = Rc::clone(&counter);
+                    move |_| {
+                        counter.set(counter.get() + 1);
+                        counter.get()
+                    }
+                },
+                |x| *x,
+            );
+            assert_eq!(mapped(), vec![1, 2, 3]);
 
-        a.set(vec![1, 2]);
-        assert_eq!(mapped(), vec![1, 2]);
+            set_a.set(vec![1, 2]);
+            assert_eq!(mapped(), vec![1, 2]);
 
-        a.set(vec![1, 2, 4]);
-        assert_eq!(mapped(), vec![1, 2, 4]);
+            set_a.set(vec![1, 2, 4]);
+            assert_eq!(mapped(), vec![1, 2, 4]);
 
-        a.set(vec![1, 2, 3, 4]);
-        assert_eq!(mapped(), vec![1, 2, 5, 4]);
+            set_a.set(vec![1, 2, 3, 4]);
+            assert_eq!(mapped(), vec![1, 2, 5, 4]);
+        });
     }
 
     #[test]
     fn indexed() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_indexed(a.handle(), |x| *x * 2);
-        assert_eq!(mapped(), vec![2, 4, 6]);
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let mut mapped = map_indexed(a, |x| *x * 2);
+            assert_eq!(mapped(), vec![2, 4, 6]);
 
-        a.set(vec![1, 2, 3, 4]);
-        assert_eq!(mapped(), vec![2, 4, 6, 8]);
+            set_a.set(vec![1, 2, 3, 4]);
+            assert_eq!(mapped(), vec![2, 4, 6, 8]);
 
-        a.set(vec![2, 2, 3, 4]);
-        assert_eq!(mapped(), vec![4, 4, 6, 8]);
+            set_a.set(vec![2, 2, 3, 4]);
+            assert_eq!(mapped(), vec![4, 4, 6, 8]);
+        });
     }
 
     /// Test fast path for clearing Vec.
     #[test]
     fn indexed_clear() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_indexed(a.handle(), |x| *x * 2);
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let mut mapped = map_indexed(a, |x| *x * 2);
 
-        a.set(Vec::new());
-        assert_eq!(mapped(), Vec::<i32>::new());
+            set_a.set(Vec::new());
+            assert_eq!(mapped(), Vec::<i32>::new());
+        });
     }
 
     /// Test that result of mapped function can be listened to.
     #[test]
     fn indexed_react() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let mut mapped = map_indexed(a.handle(), |x| *x * 2);
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let mut mapped = map_indexed(a, |x| *x * 2);
 
-        let counter = Signal::new(0);
-        create_effect({
-            let counter = counter.clone();
-            move || {
-                counter.set(*counter.get_untracked() + 1);
+            let (counter, set_counter) = create_signal(0);
+            create_effect(move || {
+                set_counter.set(*counter.get_untracked() + 1);
                 mapped(); // Subscribe to mapped.
-            }
-        });
+            });
 
-        assert_eq!(*counter.get(), 1);
-        a.set(vec![1, 2, 3, 4]);
-        assert_eq!(*counter.get(), 2);
+            assert_eq!(*counter.get(), 1);
+            set_a.set(vec![1, 2, 3, 4]);
+            assert_eq!(*counter.get(), 2);
+        });
     }
 
     /// Test that using [`map_indexed`] will reuse previous computations.
     #[test]
     fn indexed_use_previous_computation() {
-        let a = Signal::new(vec![1, 2, 3]);
-        let counter = Rc::new(Cell::new(0));
-        let mut mapped = map_indexed(a.handle(), {
-            let counter = Rc::clone(&counter);
-            move |_| {
-                counter.set(counter.get() + 1);
-                counter.get()
-            }
+        let _ = create_root(|| {
+            let (a, set_a) = create_signal(vec![1, 2, 3]);
+            let counter = Rc::new(Cell::new(0));
+            let mut mapped = map_indexed(a, {
+                let counter = Rc::clone(&counter);
+                move |_| {
+                    counter.set(counter.get() + 1);
+                    counter.get()
+                }
+            });
+            assert_eq!(mapped(), vec![1, 2, 3]);
+
+            set_a.set(vec![1, 2]);
+            assert_eq!(mapped(), vec![1, 2]);
+
+            set_a.set(vec![1, 2, 4]);
+            assert_eq!(mapped(), vec![1, 2, 4]);
+
+            set_a.set(vec![1, 3, 4]);
+            assert_eq!(mapped(), vec![1, 5, 4]);
         });
-        assert_eq!(mapped(), vec![1, 2, 3]);
-
-        a.set(vec![1, 2]);
-        assert_eq!(mapped(), vec![1, 2]);
-
-        a.set(vec![1, 2, 4]);
-        assert_eq!(mapped(), vec![1, 2, 4]);
-
-        a.set(vec![1, 3, 4]);
-        assert_eq!(mapped(), vec![1, 5, 4]);
     }
 }

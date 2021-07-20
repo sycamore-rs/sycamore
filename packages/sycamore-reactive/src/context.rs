@@ -1,6 +1,6 @@
 use std::any::{Any, TypeId};
 
-use super::*;
+use crate::scope::SCOPE_STACK;
 
 /// Trait for any type of context.
 ///
@@ -30,15 +30,15 @@ impl<T: 'static> ContextAny for Context<T> {
     }
 }
 
-/// Get the value of a context in the current [`ReactiveScope`].
+/// Get the value of a context in the current [`ReactiveScope`](crate::effect::ReactiveScope).
 ///
 /// # Panics
-/// This function will `panic!` if the context is not found in the current scope or a parent scope.
+/// This function will `panic!()` if the context is not found in the current scope or a parent scope.
 pub fn use_context<T: Clone + 'static>() -> T {
-    SCOPES.with(|scopes| {
+    SCOPE_STACK.with(|scope_stack| {
         // Walk up the scope stack until we find a context that matches type or `panic!`.
-        for scope in scopes.borrow().iter().rev() {
-            if let Some(context) = &scope.context {
+        for scope in scope_stack.borrow().iter().rev() {
+            if let Some(context) = &scope.inner.borrow().context {
                 if let Some(value) = context.get_value().downcast_ref::<T>() {
                     return value.clone();
                 }

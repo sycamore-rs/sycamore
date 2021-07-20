@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use chrono::prelude::*;
 use chrono::Duration;
-use sycamore_reactive::Signal;
 
+use crate::reactive::signal::{create_signal, ReadSignal, WriteSignal};
 use crate::utils::{loop_raf, Task};
 
 /// Describes a trait that can be linearly interpolate between two points.
@@ -66,7 +66,7 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
 pub struct Tweened<T: Lerp + Clone + 'static>(Rc<RefCell<TweenedInner<T>>>);
 
 struct TweenedInner<T: Lerp + Clone + 'static> {
-    signal: Signal<T>,
+    signal: (ReadSignal<T>, WriteSignal<T>),
     current_task: Option<Task>,
     transition_duration: Duration,
     easing_fn: Rc<dyn Fn(f32) -> f32>,
@@ -80,7 +80,7 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         easing_fn: impl Fn(f32) -> f32 + 'static,
     ) -> Self {
         Self(Rc::new(RefCell::new(TweenedInner {
-            signal: Signal::new(initial),
+            signal: create_signal(initial),
             current_task: None,
             transition_duration: Duration::from_std(transition_duration)
                 .expect("transition_duration is greater than the maximum value"),
@@ -112,10 +112,10 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
                 / transition_duration.num_milliseconds() as f32;
 
             if now < start_time + transition_duration {
-                signal.set(start.lerp(&new_value, easing_fn(scalar)));
+                signal.1.set(start.lerp(&new_value, easing_fn(scalar)));
                 true
             } else {
-                signal.set(new_value.clone());
+                signal.1.set(new_value.clone());
                 false
             }
         });
@@ -140,8 +140,8 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
     }
 
     /// Get the inner signal backing the state.
-    pub fn signal(&self) -> Signal<T> {
-        self.0.borrow().signal.clone()
+    pub fn signal(&self) -> ReadSignal<T> {
+        self.0.borrow().signal.0
     }
 }
 

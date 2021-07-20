@@ -125,7 +125,7 @@ impl ToTokens for Attribute {
 
                 if is_dynamic {
                     tokens.extend(quote_spanned! { expr_span=>
-                        ::sycamore::reactive::create_effect({
+                        ::sycamore::reactive::effect::create_effect({
                             let __el = ::std::clone::Clone::clone(&__el);
                             move || {
                                 #quoted_set_attribute
@@ -201,12 +201,12 @@ impl ToTokens for Attribute {
 
                 let convert_into_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => {
-                        quote! { ::sycamore::rt::JsValue::from_bool(*signal.get()) }
+                        quote! { ::sycamore::rt::JsValue::from_bool(*__signal.0.get()) }
                     }
                     JsPropertyType::String => {
                         quote! {
                             ::sycamore::rt::JsValue::from_str(
-                                &::std::string::ToString::to_string(&signal.get())
+                                &::std::string::ToString::to_string(&__signal.0.get())
                             )
                         }
                     }
@@ -229,10 +229,11 @@ impl ToTokens for Attribute {
                 };
 
                 tokens.extend(quote_spanned! { expr_span=> {
-                    let signal: ::sycamore::reactive::Signal<#value_ty> = #expr;
+                    let __signal: (::sycamore::reactive::signal::ReadSignal<#value_ty>,
+                        ::sycamore::reactive::signal::WriteSignal<#value_ty>) =
+                            #expr;
 
-                    ::sycamore::reactive::create_effect({
-                        let signal = ::std::clone::Clone::clone(&signal);
+                    ::sycamore::reactive::effect::create_effect({
                         let __el = ::std::clone::Clone::clone(&__el);
                         move || {
                             ::sycamore::generic_node::GenericNode::set_property(
@@ -247,7 +248,7 @@ impl ToTokens for Attribute {
                         &__el,
                         #event_name,
                         ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                            signal.set(#convert_from_jsvalue_fn);
+                            __signal.1.set(#convert_from_jsvalue_fn);
                         }),
                     )
                 }});

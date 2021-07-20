@@ -27,7 +27,7 @@ pub fn map_keyed<T, K, U>(
     key_fn: impl Fn(&T) -> K + 'static,
 ) -> impl FnMut() -> Vec<U>
 where
-    T: Eq + Clone,
+    T: Clone,
     K: Eq + Hash,
     U: Clone + 'static,
 {

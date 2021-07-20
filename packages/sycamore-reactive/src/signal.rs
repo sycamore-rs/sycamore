@@ -1,324 +1,375 @@
+//! Reactive signals.
+
+use std::any::Any;
 use std::cell::RefCell;
-use std::fmt;
+use std::error::Error;
+use std::fmt::{Display, Formatter, Result};
 use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::rc::Rc;
+use std::marker::PhantomData;
+#[cfg(debug_assertions)]
+use std::panic::Location;
+use std::rc::{Rc, Weak};
 
 use indexmap::IndexMap;
 
-use super::*;
+use crate::effect::{EffectState, EffectStatePtr, CURRENT_LISTENER};
+use crate::scope::{ScopeKey, SCOPE_STACK, VALID_SCOPES};
 
-/// A readonly [`Signal`].
-///
-/// Returned by functions that provide a handle to access state.
-/// Use [`Signal::handle`] or [`Signal::into_handle`] to retrieve a handle from a [`Signal`].
-pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
+/// An error returned by [`ReadSignal::get`] and [`WriteSignal::set`].
+#[derive(Debug, Clone)]
+pub struct ScopeDestroyedError {
+    #[cfg(debug_assertions)]
+    creation_loc: Location<'static>,
+    #[cfg(debug_assertions)]
+    scope_creation_loc: Location<'static>,
+}
 
-impl<T: 'static> StateHandle<T> {
-    /// Get the current value of the state. When called inside a reactive scope, calling this will
-    /// add itself to the scope's dependencies.
-    pub fn get(&self) -> Rc<T> {
+impl Error for ScopeDestroyedError {}
+
+impl Display for ScopeDestroyedError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        writeln!(f, "reactive scope for signal already destroyed")?;
+        #[cfg(debug_assertions)]
+        {
+            writeln!(f, "signal created at {}", self.creation_loc)?;
+            writeln!(f, "inside scope created at {}", self.scope_creation_loc)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Backing storage for a signal.
+pub(crate) struct SignalData<T> {
+    inner: Rc<T>,
+    dependents: IndexMap<EffectStatePtr, Weak<RefCell<Option<EffectState>>>>,
+}
+
+/// Explicitly implement `Clone` to prevent type bounds on `T`.
+impl<T> Clone for SignalData<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            dependents: self.dependents.clone(),
+        }
+    }
+}
+
+/// A trait for any `SignalData<T>`.
+pub(crate) trait SignalDataAny: Any {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn subscribe(&mut self, effect: Weak<RefCell<Option<EffectState>>>);
+    fn unsubscribe(&mut self, ptr: EffectStatePtr);
+    #[must_use]
+    fn clone_dependents(&self) -> IndexMap<EffectStatePtr, Weak<RefCell<Option<EffectState>>>>;
+}
+
+impl<T: 'static> SignalDataAny for SignalData<T> {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+    fn subscribe(&mut self, effect: Weak<RefCell<Option<EffectState>>>) {
+        self.dependents.insert(Weak::as_ptr(&effect), effect);
+    }
+    fn unsubscribe(&mut self, ptr: EffectStatePtr) {
+        self.dependents.remove(&ptr);
+    }
+    fn clone_dependents(&self) -> IndexMap<EffectStatePtr, Weak<RefCell<Option<EffectState>>>> {
+        self.dependents.clone()
+    }
+}
+
+impl<T> Drop for SignalData<T> {
+    fn drop(&mut self) {
+        // TODO: Remove self from all effect dependencies.
+    }
+}
+
+/// Data needed to refer to a SignalData.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct SignalId {
+    /// Key to the reactive scope in the slab. Note that accessing the value pointed to by this key
+    /// is not enough to ensure that the `ReadSignal` is still valid. One must also check that the
+    /// `scope_id` also matches.
+    scope_key: ScopeKey,
+    /// Index of the signal in the reactive scope's signal array.
+    signal_index: usize,
+    /// The source location where the signal was created. Only available in debug mode.
+    ///
+    /// Used when accessing the signal when scope is no longer valid to provide a useful error
+    /// message.
+    #[cfg(debug_assertions)]
+    creation_loc: Location<'static>,
+    /// The source location where the enclosing scope was created. Only available in debug mode.
+    ///
+    /// Used when accessing the signal when scope is no longer valid to provide a useful error
+    /// message.
+    #[cfg(debug_assertions)]
+    scope_creation_loc: Location<'static>,
+}
+
+impl SignalId {
+    pub fn get<Out>(self, f: impl FnOnce(Option<&dyn SignalDataAny>) -> Out) -> Out {
+        VALID_SCOPES.with(|scopes| {
+            let scopes = scopes.borrow();
+            let scope = scopes.get(self.scope_key);
+            if scope.is_none() {
+                return f(None);
+            }
+            let scope = scope.unwrap().0.borrow();
+            let data = scope.signals[self.signal_index].as_ref();
+            f(Some(data))
+        })
+    }
+
+    pub fn get_mut<Out>(self, f: impl FnOnce(Option<&mut dyn SignalDataAny>) -> Out) -> Out {
+        VALID_SCOPES.with(|scopes| {
+            let scopes = scopes.borrow();
+            let scope = scopes.get(self.scope_key);
+            if scope.is_none() {
+                return f(None);
+            }
+            let mut scope = scope.unwrap().0.borrow_mut();
+            let data = scope.signals[self.signal_index].as_mut();
+            f(Some(data))
+        })
+    }
+}
+
+/// A `ReadSignal` is a handle to some reactive state allocated in the current reactive scope.
+pub struct ReadSignal<T> {
+    id: SignalId,
+    /// Use `*const T` instead of `T` to prevent drop check.
+    _phantom: PhantomData<*const T>,
+}
+
+/// Explicitly implement `Clone` + `Copy` to prevent type bounds on `T`.
+impl<T> Clone for ReadSignal<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<T> Copy for ReadSignal<T> {}
+
+impl<T: PartialEq + 'static> PartialEq for ReadSignal<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_untracked().eq(&other.get_untracked())
+    }
+}
+impl<T: Eq + 'static> Eq for ReadSignal<T> {}
+
+impl<T: Hash + 'static> Hash for ReadSignal<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.get_untracked().hash(state);
+    }
+}
+
+impl<T: 'static> ReadSignal<T> {
+    /// Gets the value of the signal. If called inside a listener, will add itself as a dependency.
+    ///
+    /// # Panics
+    /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
+    /// the [`ReadSignal`] is no longer valid.
+    #[track_caller]
+    pub fn get(self) -> Rc<T> {
         // If inside an effect, add this signal to dependency list.
         // If running inside a destructor, do nothing.
-        let _ = CONTEXTS.try_with(|contexts| {
-            if let Some(last_context) = contexts.borrow().last() {
-                let signal = Rc::clone(&self.0);
-
-                last_context
-                    .upgrade()
-                    .expect("Running should be valid while inside reactive scope")
-                    .borrow_mut()
-                    .as_mut()
-                    .unwrap()
-                    .dependencies
-                    .insert(Dependency(signal));
+        let _ = CURRENT_LISTENER.try_with(|current_listener| {
+            if let Some(listener) = current_listener.borrow().as_ref() {
+                listener.add_dependency(self.id);
             }
         });
 
         self.get_untracked()
     }
 
-    /// Get the current value of the state, without tracking this as a dependency if inside a
-    /// reactive context.
+    /// Gets the value of the signal. Does not perform any tracking.
     ///
-    /// # Example
-    ///
-    /// ```
-    /// use sycamore_reactive::*;
-    ///
-    /// let state = Signal::new(1);
-    ///
-    /// let double = create_memo({
-    ///     let state = state.clone();
-    ///     move || *state.get_untracked() * 2
-    /// });
-    ///
-    /// assert_eq!(*double.get(), 2);
-    ///
-    /// state.set(2);
-    /// // double value should still be old value because state was untracked
-    /// assert_eq!(*double.get(), 2);
-    /// ```
-    pub fn get_untracked(&self) -> Rc<T> {
-        Rc::clone(&self.0.borrow().inner)
-    }
-}
-
-impl<T: 'static> Clone for StateHandle<T> {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
-    }
-}
-
-impl<T: fmt::Debug> fmt::Debug for StateHandle<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("StateHandle")
-            .field(&self.get_untracked())
-            .finish()
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<T: serde::Serialize> serde::Serialize for StateHandle<T> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.get_untracked().as_ref().serialize(serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for StateHandle<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        Ok(Signal::new(T::deserialize(deserializer)?).handle())
-    }
-}
-
-/// State that can be set.
-///
-/// # Example
-/// ```
-/// use sycamore_reactive::*;
-///
-/// let state = Signal::new(0);
-/// assert_eq!(*state.get(), 0);
-///
-/// state.set(1);
-/// assert_eq!(*state.get(), 1);
-/// ```
-pub struct Signal<T: 'static> {
-    handle: StateHandle<T>,
-}
-
-impl<T: 'static> Signal<T> {
-    /// Creates a new signal with the given value.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore_reactive::*;
-    /// let state = Signal::new(0);
-    /// # assert_eq!(*state.get(), 0);
-    /// ```
-    pub fn new(initial: T) -> Self {
-        Self {
-            handle: StateHandle(Rc::new(RefCell::new(SignalInner::new(initial)))),
+    /// # Panics
+    /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
+    /// the [`ReadSignal`] is no longer valid.
+    #[track_caller]
+    pub fn get_untracked(self) -> Rc<T> {
+        let data = self.id.get(|data| {
+            data.map(|data| {
+                Rc::clone(
+                    &data
+                        .as_any()
+                        .downcast_ref::<SignalData<T>>()
+                        .expect("SignalData should have correct type")
+                        .inner,
+                )
+            })
+        });
+        match data {
+            Some(data) => data,
+            None => panic!(
+                "{}",
+                ScopeDestroyedError {
+                    #[cfg(debug_assertions)]
+                    creation_loc: self.id.creation_loc,
+                    #[cfg(debug_assertions)]
+                    scope_creation_loc: self.id.scope_creation_loc,
+                }
+            ),
         }
     }
+}
 
-    /// Set the current value of the state.
-    ///
-    /// This will notify and update any effects and memos that depend on this value.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore_reactive::*;
-    ///
-    /// let state = Signal::new(0);
-    /// assert_eq!(*state.get(), 0);
-    ///
-    /// state.set(1);
-    /// assert_eq!(*state.get(), 1);
-    /// ```
-    pub fn set(&self, new_value: T) {
-        self.handle.0.borrow_mut().update(new_value);
+/// A `WriteSignal` is a handle to set some reactive data.
+pub struct WriteSignal<T> {
+    id: SignalId,
+    /// Use `*const T` instead of `T` to prevent drop check.
+    _phantom: PhantomData<*const T>,
+}
 
-        self.trigger_subscribers();
+/// Explicitly implement `Clone` + `Copy` to prevent type bounds on `T`.
+impl<T> Clone for WriteSignal<T> {
+    fn clone(&self) -> Self {
+        *self
     }
+}
+impl<T> Copy for WriteSignal<T> {}
 
-    /// Get the [`StateHandle`] associated with this signal.
+impl<T: 'static> WriteSignal<T> {
+    /// Updates the value of the signal and triggers all dependents.
     ///
-    /// This is a shortcut for `(*signal).clone()`.
-    pub fn handle(&self) -> StateHandle<T> {
-        self.handle.clone()
-    }
+    /// # Panics
+    /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
+    /// the [`ReadSignal`] is no longer valid.
+    #[track_caller]
+    pub fn set(self, value: T) {
+        let mut dependents = None;
+        let success = self
+            .id
+            .get_mut(|data| {
+                data.map(|data| {
+                    data.as_any_mut()
+                        .downcast_mut::<SignalData<T>>()
+                        .expect("SignalData should have correct type")
+                        .inner = Rc::new(value);
+                    dependents = Some(data.clone_dependents());
+                })
+            })
+            .is_some();
+        if !success {
+            panic!(
+                "{}",
+                ScopeDestroyedError {
+                    #[cfg(debug_assertions)]
+                    creation_loc: self.id.creation_loc,
+                    #[cfg(debug_assertions)]
+                    scope_creation_loc: self.id.scope_creation_loc,
+                }
+            )
+        }
 
-    /// Consumes this signal and returns its underlying [`StateHandle`].
-    pub fn into_handle(self) -> StateHandle<T> {
-        self.handle
-    }
-
-    /// Calls all the subscribers without modifying the state.
-    /// This can be useful when using patterns such as inner mutability where the state updated will
-    /// not be automatically triggered. In the general case, however, it is preferable to use
-    /// [`Signal::set`] instead.
-    pub fn trigger_subscribers(&self) {
-        // Clone subscribers to prevent modifying list when calling callbacks.
-        let subscribers = self.handle.0.borrow().subscribers.clone();
-
-        // Reverse order of subscribers to trigger outer effects before inner effects.
-        for subscriber in subscribers.values().rev() {
-            // subscriber might have already been destroyed in the case of nested effects
-            if let Some(callback) = subscriber.try_callback() {
+        // Rerun all effects that depend on this signal.
+        // Reverse order to re-run outer effects before inner effects.
+        for dependent in dependents.unwrap().values().rev() {
+            // Effect might have already been destroyed.
+            if let Some(effect) = dependent.upgrade() {
+                // Clone the callback to prevent holding a borrow to the EffectState.
+                let callback = Rc::clone(&effect.borrow().as_ref().unwrap().callback);
                 callback.borrow_mut()();
             }
         }
     }
 }
 
-impl<T: 'static> Deref for Signal<T> {
-    type Target = StateHandle<T>;
+/// Creates a new signal with the given value.
+///
+/// # Panics
+/// This function will `panic!()` if it is used outside of a reactive scope.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive2::scope::create_root;
+/// # use sycamore_reactive2::signal::create_signal;
+/// # let _ = create_root(|| {
+/// let (state, set_state) = create_signal(0);
+/// assert_eq!(*state.get(), 0);
+/// set_state.set(1);
+/// assert_eq!(*state.get(), 1);
+/// # });
+/// ```
+#[track_caller]
+pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
+    let scope = SCOPE_STACK
+        .with(|scope_stack| scope_stack.borrow().last().cloned())
+        .expect("create_signal must be used inside a ReactiveScope");
 
-    fn deref(&self) -> &Self::Target {
-        &self.handle
-    }
-}
+    let data = SignalData {
+        inner: Rc::new(value),
+        dependents: IndexMap::new(),
+    };
+    let scope_key = scope.key();
+    let signal_index = scope.inner.borrow().signals.len();
+    scope.inner.borrow_mut().signals.push(Box::new(data));
 
-impl<T: 'static> Clone for Signal<T> {
-    fn clone(&self) -> Self {
-        Self {
-            handle: self.handle.clone(),
-        }
-    }
-}
+    let signal_id = SignalId {
+        scope_key,
+        signal_index,
+        #[cfg(debug_assertions)]
+        creation_loc: *Location::caller(),
+        #[cfg(debug_assertions)]
+        scope_creation_loc: scope.inner.borrow().creation_loc,
+    };
 
-impl<T: PartialEq> PartialEq for Signal<T> {
-    fn eq(&self, other: &Signal<T>) -> bool {
-        self.get_untracked().eq(&other.get_untracked())
-    }
-}
-
-impl<T: Eq> Eq for Signal<T> {}
-
-impl<T: Hash> Hash for Signal<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.get_untracked().hash(state);
-    }
-}
-
-impl<T: fmt::Debug> fmt::Debug for Signal<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Signal")
-            .field(&self.get_untracked())
-            .finish()
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<T: serde::Serialize> serde::Serialize for Signal<T> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.get_untracked().as_ref().serialize(serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Signal<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        Ok(Signal::new(T::deserialize(deserializer)?))
-    }
-}
-
-pub(super) struct SignalInner<T> {
-    inner: Rc<T>,
-    subscribers: IndexMap<CallbackPtr, Callback>,
-}
-
-impl<T> SignalInner<T> {
-    fn new(value: T) -> Self {
-        Self {
-            inner: Rc::new(value),
-            subscribers: IndexMap::new(),
-        }
-    }
-
-    /// Adds a handler to the subscriber list. If the handler is already a subscriber, does nothing.
-    fn subscribe(&mut self, handler: Callback) {
-        self.subscribers.insert(handler.as_ptr(), handler);
-    }
-
-    /// Removes a handler from the subscriber list. If the handler is not a subscriber, does
-    /// nothing.
-    fn unsubscribe(&mut self, handler: CallbackPtr) {
-        self.subscribers.remove(&handler);
-    }
-
-    /// Updates the inner value. This does **NOT** call the subscribers.
-    /// You will have to do so manually with `trigger_subscribers`.
-    fn update(&mut self, new_value: T) {
-        self.inner = Rc::new(new_value);
-    }
-}
-
-/// Trait for any [`SignalInner`], regardless of type param `T`.
-pub(super) trait AnySignalInner {
-    /// Wrapper around [`SignalInner::subscribe`].
-    fn subscribe(&self, handler: Callback);
-    /// Wrapper around [`SignalInner::unsubscribe`].
-    fn unsubscribe(&self, handler: CallbackPtr);
-}
-
-impl<T> AnySignalInner for RefCell<SignalInner<T>> {
-    fn subscribe(&self, handler: Callback) {
-        self.borrow_mut().subscribe(handler);
-    }
-
-    fn unsubscribe(&self, handler: CallbackPtr) {
-        self.borrow_mut().unsubscribe(handler);
-    }
+    (
+        ReadSignal {
+            id: signal_id,
+            _phantom: PhantomData,
+        },
+        WriteSignal {
+            id: signal_id,
+            _phantom: PhantomData,
+        },
+    )
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::scope::create_root;
+
     use super::*;
 
     #[test]
-    fn signals() {
-        let state = Signal::new(0);
-        assert_eq!(*state.get(), 0);
-
-        state.set(1);
-        assert_eq!(*state.get(), 1);
+    fn signal_read_write() {
+        let _ = create_root(|| {
+            let (state, set_state) = create_signal(0);
+            assert_eq!(*state.get(), 0);
+            set_state.set(1);
+            assert_eq!(*state.get(), 1);
+        });
     }
 
     #[test]
-    fn signal_composition() {
-        let state = Signal::new(0);
+    fn signal_read_outside_alive_scope() {
+        let mut get_state = None;
+        let root = create_root(|| {
+            let (state, _) = create_signal(0);
+            get_state = Some(state);
+        });
 
-        let double = || *state.get() * 2;
+        get_state.unwrap().get(); // root is still active
 
-        assert_eq!(double(), 0);
-
-        state.set(1);
-        assert_eq!(double(), 2);
+        drop(root);
     }
 
     #[test]
-    fn state_handle() {
-        let state = Signal::new(0);
-        let readonly = state.handle();
+    #[should_panic(expected = "reactive scope for signal already destroyed")]
+    fn signal_read_with_scope_already_destroyed() {
+        let mut get_state = None;
+        let _ = create_root(|| {
+            let (state, _) = create_signal(0);
+            get_state = Some(state);
+        });
 
-        assert_eq!(*readonly.get(), 0);
-
-        state.set(1);
-        assert_eq!(*readonly.get(), 1);
+        get_state.unwrap().get();
     }
 }

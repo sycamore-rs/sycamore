@@ -3,7 +3,6 @@ members = [
   "packages/sycamore",
   "packages/sycamore-macro",
   "packages/sycamore-reactive",
-  "packages/sycamore-reactive2",
   "packages/sycamore-router",
   "packages/sycamore-router-macro",
   "examples/components",

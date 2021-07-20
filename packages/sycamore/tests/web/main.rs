@@ -1,7 +1,7 @@
 pub mod keyed;
-pub mod non_keyed;
-pub mod reconcile;
-pub mod render;
+// pub mod non_keyed;
+// pub mod reconcile;
+// pub mod render;
 
 use sycamore::prelude::*;
 use wasm_bindgen::JsCast;
@@ -142,229 +142,249 @@ fn template_interpolation() {
 
 #[wasm_bindgen_test]
 fn template_interpolation_if_else() {
-    let show = Signal::new(true);
-    let node = cloned!((show) => template! {
-        p {
-            (if *show.get() {
-                template! { "Hello Sycamore!" }
-            } else {
-                template! {}
-            })
-        }
+    let _ = create_root(|| {
+        let (show, set_show) = create_signal(true);
+        let node = template! {
+            p {
+                (if *show.get() {
+                    template! { "Hello Sycamore!" }
+                } else {
+                    template! {}
+                })
+            }
+        };
+
+        sycamore::render_to(|| node, &test_container());
+
+        assert_eq!(
+            document()
+                .query_selector("p")
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .unwrap(),
+            "Hello Sycamore!"
+        );
+
+        set_show.set(false);
+        assert_eq!(
+            document()
+                .query_selector("p")
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .unwrap(),
+            ""
+        );
+
+        set_show.set(true);
+        assert_eq!(
+            document()
+                .query_selector("p")
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .unwrap(),
+            "Hello Sycamore!"
+        );
     });
-
-    sycamore::render_to(|| node, &test_container());
-
-    assert_eq!(
-        document()
-            .query_selector("p")
-            .unwrap()
-            .unwrap()
-            .text_content()
-            .unwrap(),
-        "Hello Sycamore!"
-    );
-
-    show.set(false);
-    assert_eq!(
-        document()
-            .query_selector("p")
-            .unwrap()
-            .unwrap()
-            .text_content()
-            .unwrap(),
-        ""
-    );
-
-    show.set(true);
-    assert_eq!(
-        document()
-            .query_selector("p")
-            .unwrap()
-            .unwrap()
-            .text_content()
-            .unwrap(),
-        "Hello Sycamore!"
-    );
 }
 
 #[wasm_bindgen_test]
 fn template_interpolation_nested_reactivity() {
-    let count = Signal::new(0);
-    let text = cloned!((count) => template! { p { (count.get() ) } });
-    let node = template! {
-        p {
-            (text)
-        }
-    };
+    let _ = create_root(|| {
+        let (count, set_count) = create_signal(0);
+        let text = template! { p { (count.get() ) } };
+        let node = template! {
+            p {
+                (text)
+            }
+        };
 
-    sycamore::render_to(|| node, &test_container());
+        sycamore::render_to(|| node, &test_container());
 
-    let p = document().query_selector("p").unwrap().unwrap();
-    assert_eq!(p.text_content().unwrap(), "0");
+        let p = document().query_selector("p").unwrap().unwrap();
+        assert_eq!(p.text_content().unwrap(), "0");
 
-    count.set(1);
-    assert_eq!(p.text_content().unwrap(), "1");
+        set_count.set(1);
+        assert_eq!(p.text_content().unwrap(), "1");
+    });
 }
 
 #[wasm_bindgen_test]
 fn reactive_text() {
-    let count = Signal::new(0);
+    let _ = create_root(|| {
+        let (count, set_count) = create_signal(0);
 
-    let node = cloned!((count) => template! {
-        p { (count.get()) }
+        let node = template! {
+            p { (count.get()) }
+        };
+
+        sycamore::render_to(|| node, &test_container());
+
+        let p = document().query_selector("p").unwrap().unwrap();
+
+        assert_eq!(p.text_content().unwrap(), "0");
+
+        set_count.set(1);
+        assert_eq!(p.text_content().unwrap(), "1");
     });
-
-    sycamore::render_to(|| node, &test_container());
-
-    let p = document().query_selector("p").unwrap().unwrap();
-
-    assert_eq!(p.text_content().unwrap(), "0");
-
-    count.set(1);
-    assert_eq!(p.text_content().unwrap(), "1");
 }
 
 #[wasm_bindgen_test]
 fn reactive_text_do_not_destroy_previous_children() {
-    let count = Signal::new(0);
+    let _ = create_root(|| {
+        let (count, set_count) = create_signal(0);
 
-    let node = cloned!((count) => template! {
-        p { "Value: " (count.get()) }
+        let node = template! {
+            p { "Value: " (count.get()) }
+        };
+
+        sycamore::render_to(|| node, &test_container());
+
+        let p = document().query_selector("p").unwrap().unwrap();
+
+        assert_eq!(p.text_content().unwrap(), "Value: 0");
+
+        set_count.set(1);
+        assert_eq!(p.text_content().unwrap(), "Value: 1");
     });
-
-    sycamore::render_to(|| node, &test_container());
-
-    let p = document().query_selector("p").unwrap().unwrap();
-
-    assert_eq!(p.text_content().unwrap(), "Value: 0");
-
-    count.set(1);
-    assert_eq!(p.text_content().unwrap(), "Value: 1");
 }
 
 #[wasm_bindgen_test]
 fn reactive_attribute() {
-    let count = Signal::new(0);
+    let _ = create_root(|| {
+        let (count, set_count) = create_signal(0);
 
-    let node = cloned!((count) => template! {
-        span(attribute=count.get())
+        let node = template! {
+            span(attribute=count.get())
+        };
+
+        sycamore::render_to(|| node, &test_container());
+
+        let span = document().query_selector("span").unwrap().unwrap();
+
+        assert_eq!(span.get_attribute("attribute").unwrap(), "0");
+
+        set_count.set(1);
+        assert_eq!(span.get_attribute("attribute").unwrap(), "1");
     });
-
-    sycamore::render_to(|| node, &test_container());
-
-    let span = document().query_selector("span").unwrap().unwrap();
-
-    assert_eq!(span.get_attribute("attribute").unwrap(), "0");
-
-    count.set(1);
-    assert_eq!(span.get_attribute("attribute").unwrap(), "1");
 }
 
 #[wasm_bindgen_test]
 fn two_way_bind_to_props() {
-    let value = Signal::new(String::new());
-    let value2 = value.clone();
+    let _ = create_root(|| {
+        let (value, set_value) = create_signal(String::new());
 
-    sycamore::render_to(
-        || {
-            cloned!((value) => template! {
-                input(bind:value=value)
-                p { (value2.get()) }
-            })
-        },
-        &test_container(),
-    );
+        sycamore::render_to(
+            || {
+                template! {
+                    input(bind:value=(value, set_value))
+                    p { (value.get()) }
+                }
+            },
+            &test_container(),
+        );
 
-    let input = document()
-        .query_selector("input")
-        .unwrap()
-        .unwrap()
-        .unchecked_into::<HtmlInputElement>();
+        let input = document()
+            .query_selector("input")
+            .unwrap()
+            .unwrap()
+            .unchecked_into::<HtmlInputElement>();
 
-    value.set("abc".to_string());
-    assert_eq!(
-        js_sys::Reflect::get(&input, &"value".into()).unwrap(),
-        "abc"
-    );
+        set_value.set("abc".to_string());
+        assert_eq!(
+            js_sys::Reflect::get(&input, &"value".into()).unwrap(),
+            "abc"
+        );
 
-    js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
-    input.dispatch_event(&Event::new("input").unwrap()).unwrap();
-    assert_eq!(value.get().as_str(), "def");
+        js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
+        input.dispatch_event(&Event::new("input").unwrap()).unwrap();
+        assert_eq!(value.get().as_str(), "def");
+    });
 }
 
 #[wasm_bindgen_test]
 fn noderefs() {
-    let noderef = NodeRef::new();
+    let _ = create_root(|| {
+        let noderef = NodeRef::new();
 
-    let node = template! {
-        div {
-            input(ref=noderef)
-        }
-    };
+        let node = template! {
+            div {
+                input(ref=noderef)
+            }
+        };
 
-    sycamore::render_to(|| node, &test_container());
+        sycamore::render_to(|| node, &test_container());
 
-    let input_ref = document().query_selector("input").unwrap().unwrap();
+        let input_ref = document().query_selector("input").unwrap().unwrap();
 
-    assert_eq!(
-        Node::from(input_ref),
-        noderef.get::<DomNode>().unchecked_into()
-    );
+        assert_eq!(
+            Node::from(input_ref),
+            noderef.get::<DomNode>().unchecked_into()
+        );
+    });
 }
 
 #[wasm_bindgen_test]
 fn fragments() {
-    let node = template! {
-        p { "1" }
-        p { "2" }
-        p { "3" }
-    };
+    let _ = create_root(|| {
+        let node = template! {
+            p { "1" }
+            p { "2" }
+            p { "3" }
+        };
 
-    sycamore::render_to(|| node, &test_container());
+        sycamore::render_to(|| node, &test_container());
 
-    let test_container = document()
-        .query_selector("#test-container")
-        .unwrap()
-        .unwrap();
+        let test_container = document()
+            .query_selector("#test-container")
+            .unwrap()
+            .unwrap();
 
-    assert_eq!(test_container.text_content().unwrap(), "123");
+        assert_eq!(test_container.text_content().unwrap(), "123");
+    });
 }
 
 #[wasm_bindgen_test]
 fn fragments_text_nodes() {
-    let node = template! {
-        "1"
-        "2"
-        "3"
-    };
+    let _ = create_root(|| {
+        let node = template! {
+            "1"
+            "2"
+            "3"
+        };
 
-    sycamore::render_to(|| node, &test_container());
+        sycamore::render_to(|| node, &test_container());
 
-    let test_container = document()
-        .query_selector("#test-container")
-        .unwrap()
-        .unwrap();
+        let test_container = document()
+            .query_selector("#test-container")
+            .unwrap()
+            .unwrap();
 
-    assert_eq!(test_container.text_content().unwrap(), "123");
+        assert_eq!(test_container.text_content().unwrap(), "123");
+    });
 }
 
 #[wasm_bindgen_test]
 fn dyn_fragment_reuse_nodes() {
-    let nodes = vec![template! { "1" }, template! { "2" }, template! { "3" }];
+    let _ = create_root(|| {
+        let nodes = vec![template! { "1" }, template! { "2" }, template! { "3" }];
 
-    sycamore::render_to(
-        cloned!((nodes) =>
-            move || Template::new_dyn(move || Template::new_fragment(nodes.clone()))
-        ),
-        &test_container(),
-    );
+        sycamore::render_to(
+            {
+                let nodes = nodes.clone();
+                move || Template::new_dyn(move || Template::new_fragment(nodes.clone()))
+            },
+            &test_container(),
+        );
 
-    let p = document()
-        .query_selector("#test-container")
-        .unwrap()
-        .unwrap();
+        let p = document()
+            .query_selector("#test-container")
+            .unwrap()
+            .unwrap();
 
-    assert_eq!(p.text_content().unwrap(), "123");
-    assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
+        assert_eq!(p.text_content().unwrap(), "123");
+        assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
+    });
 }

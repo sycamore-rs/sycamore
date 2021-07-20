@@ -10,7 +10,7 @@ use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
 use crate::generic_node::{EventHandler, GenericNode};
-use crate::reactive::{create_root, on_cleanup, ReactiveScope};
+use crate::reactive::scope::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
 use crate::utils::render::insert;
 
