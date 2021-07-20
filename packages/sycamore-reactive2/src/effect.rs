@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::mem;
 use std::rc::{Rc, Weak};
 
-use crate::scope::{create_root, current_scope, ReactiveScope, CURRENT_SCOPE};
+use crate::scope::{create_root, current_scope, ReactiveScope, SCOPE_STACK};
 use crate::signal::{create_signal, ReadSignal, SignalId, WriteSignal};
 
 thread_local! {
@@ -137,8 +137,8 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
     callback.borrow_mut()();
 
     // Move effect to current scope.
-    CURRENT_SCOPE.with(|current_scope| {
-        if let Some(scope) = current_scope.borrow().as_ref() {
+    SCOPE_STACK.with(|scope_stack| {
+        if let Some(scope) = scope_stack.borrow().last() {
             scope.add_effect_state(effect_state);
         } else {
             panic!("create_effect must be used inside a reactive scope")

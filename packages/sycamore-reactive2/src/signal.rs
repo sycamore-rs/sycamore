@@ -12,7 +12,7 @@ use std::rc::{Rc, Weak};
 use indexmap::IndexMap;
 
 use crate::effect::{EffectState, EffectStatePtr, CURRENT_LISTENER};
-use crate::scope::{ScopeKey, CURRENT_SCOPE, SCOPES};
+use crate::scope::{ScopeKey, SCOPE_STACK, VALID_SCOPES};
 
 /// An error returned by [`ReadSignal::get`] and [`WriteSignal::set`].
 #[derive(Debug, Clone)]
@@ -113,7 +113,7 @@ pub(crate) struct SignalId {
 
 impl SignalId {
     pub fn get<Out>(self, f: impl FnOnce(Option<&dyn SignalDataAny>) -> Out) -> Out {
-        SCOPES.with(|scopes| {
+        VALID_SCOPES.with(|scopes| {
             let scopes = scopes.borrow();
             let scope = scopes.get(self.scope_key);
             if scope.is_none() {
@@ -126,7 +126,7 @@ impl SignalId {
     }
 
     pub fn get_mut<Out>(self, f: impl FnOnce(Option<&mut dyn SignalDataAny>) -> Out) -> Out {
-        SCOPES.with(|scopes| {
+        VALID_SCOPES.with(|scopes| {
             let scopes = scopes.borrow();
             let scope = scopes.get(self.scope_key);
             if scope.is_none() {
@@ -285,8 +285,8 @@ impl<T: 'static> WriteSignal<T> {
 /// ```
 #[track_caller]
 pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
-    let scope = CURRENT_SCOPE
-        .with(|current_scope| current_scope.borrow().clone())
+    let scope = SCOPE_STACK
+        .with(|scope_stack| scope_stack.borrow().last().cloned())
         .expect("create_signal must be used inside a ReactiveScope");
 
     let data = SignalData {

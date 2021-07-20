@@ -10,14 +10,15 @@ use slotmap::{new_key_type, SlotMap};
 
 use crate::effect::{untrack, EffectState};
 use crate::signal::SignalDataAny;
+use crate::ContextAny;
 
 new_key_type! {
     pub(crate) struct ScopeKey;
 }
 
 thread_local! {
-    /// The current [`ReactiveScope`] of the current thread and the key to [`SCOPES`].
-    pub(crate) static CURRENT_SCOPE: RefCell<Option<ReactiveScope>> = RefCell::new(None);
+    /// A stack of [`ReactiveScope`] on the current thread.
+    pub(crate) static SCOPE_STACK: RefCell<Vec<ReactiveScope>> = RefCell::new(Vec::new());
     /// A slotmap of all [`ReactiveScope`]s that are currently valid in the current thread.
     ///
     /// All scopes inside the slotmap should be valid because they are tied to the lifetime of a
@@ -25,20 +26,20 @@ thread_local! {
     /// reference in the slotmap is removed.
     ///
     /// This is essentially a list of valid [`ReactiveScopeInner`]s using RAII.
-    pub(crate) static SCOPES: RefCell<SlotMap<ScopeKey, ReactiveScopeGlobalRef>> = RefCell::new(SlotMap::with_key());
+    pub(crate) static VALID_SCOPES: RefCell<SlotMap<ScopeKey, ReactiveScopeGlobalRef>> = RefCell::new(SlotMap::with_key());
 }
 
-/// Insert a scope into [`SCOPES`]. Returns the created [`ScopeKey`].
+/// Insert a scope into [`VALID_SCOPES`]. Returns the created [`ScopeKey`].
 fn insert_scope(scope: ReactiveScopeGlobalRef) -> ScopeKey {
-    SCOPES.with(|scopes| scopes.borrow_mut().insert(scope))
+    VALID_SCOPES.with(|scopes| scopes.borrow_mut().insert(scope))
 }
 
-/// Removes a scope from [`SCOPES`].
+/// Removes a scope from [`VALID_SCOPES`].
 ///
 /// # Panics
-/// This method will `panic!()` if the key is not found in [`SCOPES`].
+/// This method will `panic!()` if the key is not found in [`VALID_SCOPES`].
 fn remove_scope(key: ScopeKey) {
-    SCOPES.with(|scopes| {
+    VALID_SCOPES.with(|scopes| {
         scopes
             .borrow_mut()
             .remove(key)
@@ -49,7 +50,7 @@ fn remove_scope(key: ScopeKey) {
 struct CleanupCallback(Box<dyn FnOnce()>);
 
 pub(crate) struct ReactiveScopeInner {
-    /// The key to the [`WeakReactiveScope`] in [`SCOPES`]. The value should always be `Some` after
+    /// The key to the [`WeakReactiveScope`] in [`VALID_SCOPES`]. The value should always be `Some` after
     /// initialization.
     pub(crate) key: Option<ScopeKey>,
     /// The [`ReactiveScope`] owns all signals that are created within the scope.
@@ -58,6 +59,8 @@ pub(crate) struct ReactiveScopeInner {
     effects: Vec<Rc<RefCell<Option<EffectState>>>>,
     /// Callbacks to run when the scope is dropped.
     cleanups: Vec<CleanupCallback>,
+    /// An optional context for the scope.
+    pub(crate) context: Option<Box<dyn ContextAny>>,
     /// The source location where the scope was created. Only available in debug mode.
     ///
     /// Used when accessing the signal when scope is no longer valid to provide a useful error
@@ -68,7 +71,7 @@ pub(crate) struct ReactiveScopeInner {
 
 impl ReactiveScopeInner {
     /// Creates a new [`ReactiveScopeInner`]. Note that `key` is set to `None` by default. It is up
-    /// to the responsibility of the caller to initialize `key` with the `ScopeKey` for [`SCOPES`].
+    /// to the responsibility of the caller to initialize `key` with the `ScopeKey` for [`VALID_SCOPES`].
     #[cfg_attr(debug_assertions, track_caller)]
     fn new() -> Self {
         Self {
@@ -76,6 +79,7 @@ impl ReactiveScopeInner {
             signals: Default::default(),
             effects: Default::default(),
             cleanups: Default::default(),
+            context: Default::default(),
             #[cfg(debug_assertions)]
             creation_loc: *Location::caller(),
         }
@@ -113,7 +117,7 @@ pub struct ReactiveScope {
 }
 
 impl ReactiveScope {
-    /// Create a new [`ReactiveScope`] and inserts it into [`SCOPES`].
+    /// Create a new [`ReactiveScope`] and inserts it into [`VALID_SCOPES`].
     #[cfg_attr(debug_assertions, track_caller)]
     fn new() -> Self {
         let inner = Rc::new(RefCell::new(ReactiveScopeInner::new()));
@@ -149,11 +153,11 @@ impl ReactiveScope {
     /// Most likely you want to use this method to run some code in an outer scope rather than an
     /// inner scope.
     pub fn extend(&self, f: impl FnOnce()) {
-        CURRENT_SCOPE.with(|current_scope| {
+        SCOPE_STACK.with(|scope_stack| {
             let scope = self.clone();
-            let outer = mem::replace(&mut *current_scope.borrow_mut(), Some(scope));
+            scope_stack.borrow_mut().push(scope);
             f();
-            mem::replace(&mut *current_scope.borrow_mut(), outer).unwrap();
+            scope_stack.borrow_mut().pop().unwrap();
         });
     }
 }
@@ -182,10 +186,10 @@ impl Drop for ReactiveScope {
 #[track_caller]
 pub fn create_root(f: impl FnOnce()) -> ReactiveScope {
     let scope = ReactiveScope::new();
-    CURRENT_SCOPE.with(|current_scope| {
-        let outer = mem::replace(&mut *current_scope.borrow_mut(), Some(scope));
+    SCOPE_STACK.with(|scope_stack| {
+        scope_stack.borrow_mut().push(scope);
         f();
-        mem::replace(&mut *current_scope.borrow_mut(), outer).unwrap()
+        scope_stack.borrow_mut().pop().unwrap()
     })
 }
 
@@ -194,10 +198,10 @@ pub fn create_root(f: impl FnOnce()) -> ReactiveScope {
 /// # Panics
 /// This function will `panic!()` if not inside a reactive scope.
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
-    CURRENT_SCOPE.with(|current_scope| {
+    SCOPE_STACK.with(|current_scope| {
         current_scope
             .borrow()
-            .as_ref()
+            .last()
             .expect("not inside a reactive scope")
             .add_cleanup_callback(f);
     });
@@ -205,7 +209,7 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
 
 /// Returns a shallow clone of the current scope or `None` if not inside a reactive scope.
 pub fn current_scope() -> Option<ReactiveScope> {
-    CURRENT_SCOPE.with(|current_scope| current_scope.borrow().clone())
+    SCOPE_STACK.with(|scope_stack| scope_stack.borrow().last().cloned())
 }
 
 #[cfg(test)]
