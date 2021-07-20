@@ -79,11 +79,7 @@ impl SignalId {
             if scope.is_none() {
                 return f(None);
             }
-            let scope = scope
-                .unwrap()
-                .upgrade()
-                .expect("weak reference should always be valid");
-            let scope = scope.borrow();
+            let scope = scope.unwrap().0.borrow();
             let data = scope.signals[self.signal_index].as_ref();
             f(Some(data))
         })
@@ -96,11 +92,7 @@ impl SignalId {
             if scope.is_none() {
                 return f(None);
             }
-            let scope = scope
-                .unwrap()
-                .upgrade()
-                .expect("weak reference should always be valid");
-            let mut scope = scope.borrow_mut();
+            let mut scope = scope.unwrap().0.borrow_mut();
             let data = scope.signals[self.signal_index].as_mut();
             f(Some(data))
         })

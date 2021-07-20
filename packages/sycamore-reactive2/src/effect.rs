@@ -70,7 +70,7 @@ pub(crate) type EffectStatePtr = *const RefCell<Option<EffectState>>;
 ///     println!("State changed. New state value = {}", state.get());
 /// }); // Prints "State changed. New state value = 0"
 ///
-/// set_set_state.set(1); // Prints "State changed. New state value = 1"
+/// set_state.set(1); // Prints "State changed. New state value = 1"
 /// # });
 /// ```
 pub fn create_effect(mut f: impl FnMut() + 'static) {
@@ -160,7 +160,7 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
 /// let double = create_memo(move || *state.get() * 2);
 /// assert_eq!(*double.get(), 0);
 ///
-/// set_set_state.set(1);
+/// set_state.set(1);
 /// assert_eq!(*double.get(), 2);
 /// # });
 /// ```
