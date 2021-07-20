@@ -1,7 +1,7 @@
 pub mod keyed;
 pub mod non_keyed;
-// pub mod reconcile;
-// pub mod render;
+pub mod reconcile;
+pub mod render;
 
 use sycamore::prelude::*;
 use wasm_bindgen::JsCast;
