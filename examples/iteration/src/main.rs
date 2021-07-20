@@ -2,20 +2,20 @@ use sycamore::prelude::*;
 
 #[component(App<G>)]
 fn app() -> Template<G> {
-    let items = Signal::new(vec![
+    let (items, set_items) = create_signal(vec![
         template! { "Hello!" },
         template! { "I am an item in a fragment"},
     ]);
 
-    let add_item = cloned!((items) => move |_| {
-        items.set(
+    let add_item = move |_| {
+        set_items.set(
             (*items.get())
                 .clone()
                 .into_iter()
                 .chain(Some(template! { "New item" }))
                 .collect(),
         );
-    });
+    };
 
     template! {
         div {
