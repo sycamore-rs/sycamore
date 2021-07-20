@@ -59,9 +59,9 @@ pub(crate) type EffectStatePtr = *const RefCell<Option<EffectState>>;
 /// This function will `panic!()` if it is called outside of a reactive scope.
 /// # Example
 /// ```
-/// # use sycamore_reactive2::effect::create_effect;
-/// # use sycamore_reactive2::scope::create_root;
-/// # use sycamore_reactive2::signal::create_signal;
+/// # use sycamore_reactive::effect::create_effect;
+/// # use sycamore_reactive::scope::create_root;
+/// # use sycamore_reactive::signal::create_signal;
 ///
 /// # let _ = create_root(|| {
 /// let (state, set_state) = create_signal(0);
@@ -150,9 +150,9 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive2::effect::create_memo;
-/// # use sycamore_reactive2::scope::create_root;
-/// # use sycamore_reactive2::signal::create_signal;
+/// # use sycamore_reactive::effect::create_memo;
+/// # use sycamore_reactive::scope::create_root;
+/// # use sycamore_reactive::signal::create_signal;
 ///
 /// # let _ = create_root(|| {
 /// let (state, set_state) = create_signal(0);
@@ -251,9 +251,9 @@ where
 /// # Example
 ///
 /// ```
-/// # use sycamore_reactive2::effect::{create_memo, untrack};
-/// # use sycamore_reactive2::scope::create_root;
-/// # use sycamore_reactive2::signal::create_signal;
+/// # use sycamore_reactive::effect::{create_memo, untrack};
+/// # use sycamore_reactive::scope::create_root;
+/// # use sycamore_reactive::signal::create_signal;
 ///
 /// # let _ = create_root(|| {
 /// let (state, set_state) = create_signal(1);

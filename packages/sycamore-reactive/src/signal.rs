@@ -291,8 +291,8 @@ impl<T: 'static> WriteSignal<T> {
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive2::scope::create_root;
-/// # use sycamore_reactive2::signal::create_signal;
+/// # use sycamore_reactive::scope::create_root;
+/// # use sycamore_reactive::signal::create_signal;
 /// # let _ = create_root(|| {
 /// let (state, set_state) = create_signal(0);
 /// assert_eq!(*state.get(), 0);
