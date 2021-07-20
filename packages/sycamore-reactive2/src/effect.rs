@@ -251,20 +251,21 @@ where
 /// # Example
 ///
 /// ```
-/// use sycamore_reactive2::*;
+/// # use sycamore_reactive2::effect::{create_memo, untrack};
+/// # use sycamore_reactive2::scope::create_root;
+/// # use sycamore_reactive2::signal::create_signal;
 ///
-/// let state = Signal::new(1);
+/// # let _ = create_root(|| {
+/// let (state, set_state) = create_signal(1);
 ///
-/// let double = create_memo({
-///     let state = state.clone();
-///     move || untrack(|| *state.get() * 2)
-/// });
+/// let double = create_memo(move || untrack(|| *state.get() * 2));
 ///
 /// assert_eq!(*double.get(), 2);
 ///
-/// state.set(2);
+/// set_state.set(2);
 /// // double value should still be old value because state was untracked
 /// assert_eq!(*double.get(), 2);
+/// # });
 /// ```
 pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     CURRENT_LISTENER.with(|current_listener| {
