@@ -1,5 +1,5 @@
 pub mod keyed;
-// pub mod non_keyed;
+pub mod non_keyed;
 // pub mod reconcile;
 // pub mod render;
 

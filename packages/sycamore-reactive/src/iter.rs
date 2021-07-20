@@ -120,7 +120,7 @@ where
                         new_indices_next[j - start]
                             .and_then(|j| new_indices.insert(key_fn(item), j));
                     } else {
-                        // Create new.
+                        // Destroy old scope.
                         scopes[i] = None;
                     }
                 }

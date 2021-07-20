@@ -47,8 +47,8 @@ fn insert_expression<G: GenericNode>(
         current = Some(f.get().as_ref().clone());
     }
 
-    match &value.inner {
-        TemplateType::Node(node) => {
+    match value.inner {
+        TemplateType::Node(ref node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), marker, Some(node), multi);
             } else {
@@ -58,10 +58,9 @@ fn insert_expression<G: GenericNode>(
         TemplateType::Dyn(f) => {
             let parent = parent.clone();
             let marker = marker.cloned();
-            let f = f.clone();
             create_effect(move || {
                 let mut value = f.get();
-                while let TemplateType::Dyn(f) = &value.inner {
+                while let TemplateType::Dyn(f) = value.inner {
                     value = f.get();
                 }
                 insert_expression(
@@ -75,7 +74,7 @@ fn insert_expression<G: GenericNode>(
                 current = Some(value.as_ref().clone());
             });
         }
-        TemplateType::Fragment(fragment) => {
+        TemplateType::Fragment(ref fragment) => {
             let mut v = Vec::new();
             let dynamic = normalize_incoming_fragment(&mut v, fragment.as_ref(), unwrap_fragment);
             if dynamic {
