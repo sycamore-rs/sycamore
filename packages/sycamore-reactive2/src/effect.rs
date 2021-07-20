@@ -266,11 +266,12 @@ where
 /// // double value should still be old value because state was untracked
 /// assert_eq!(*double.get(), 2);
 /// ```
-pub fn untrack<T>(f: impl FnOnce() -> T) {
+pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     CURRENT_LISTENER.with(|current_listener| {
         let scope = mem::take(&mut *current_listener.borrow_mut());
-        f();
+        let ret = f();
         *current_listener.borrow_mut() = scope;
+        ret
     })
 }
 
