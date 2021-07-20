@@ -65,21 +65,21 @@ impl ReactiveScopeInner {
     fn new() -> Self {
         Self::default()
     }
-}
 
-impl Drop for ReactiveScopeInner {
-    /// Remove itself from [`SCOPES`].
-    fn drop(&mut self) {
+    /// Runs cleanup callbacks and destroys owned effects to trigger nested cleanup callbacks.
+    fn cleanup(&mut self) {
         // Run cleanup callbacks.
         for cb in mem::take(&mut self.cleanups) {
             untrack(cb.0)
         }
 
-        // Remove self from `SCOPES`.
-        let key = self.key.unwrap();
-        remove_scope(key);
+        // Drop effects now so that the cleanup functions can still access signals from outer scope.
+        debug_assert!(self.effects.iter().all(|e| Rc::strong_count(e) == 1));
+        drop(mem::take(&mut self.effects));
     }
 }
+
+pub(crate) struct ReactiveScopeGlobalRef(pub Rc<RefCell<ReactiveScopeInner>>);
 
 /// Owns the signals, effects, and cleanup callbacks created within it.
 ///
@@ -136,6 +136,21 @@ impl ReactiveScope {
     }
 }
 
+impl Drop for ReactiveScope {
+    fn drop(&mut self) {
+        if Rc::strong_count(&self.inner) == 2 {
+            // Only 2 strong refs left. One is self and the other is stored in `SCOPES`.
+            // Run cleanup in ReactiveScopeInner but wait until cleanup is finished before
+            // destroying ref in `SCOPES` so that cleanup functions can still access signals.
+            self.inner.borrow_mut().cleanup();
+
+            // Remove self from `SCOPES`.
+            remove_scope(self.key());
+        }
+    }
+}
+
+#[deprecated]
 pub(crate) type WeakReactiveScope = Weak<RefCell<ReactiveScopeInner>>;
 
 /// Create a new detached [`ReactiveScope`].
