@@ -46,12 +46,14 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("reactivity_map_keyed", |b| {
         b.iter(|| {
-            let (v, set_v) = create_signal((0..100).collect());
-            let mut mapped = map_keyed(v, |x| *x * 2, |x| *x);
-            mapped();
+            let _ = create_root(|| {
+                let (v, set_v) = create_signal((0..100).collect());
+                let mut mapped = map_keyed(v, |x| *x * 2, |x| *x);
+                mapped();
 
-            set_v.set((100..200).collect());
-            mapped();
+                set_v.set((100..200).collect());
+                mapped();
+            });
         });
     });
 }

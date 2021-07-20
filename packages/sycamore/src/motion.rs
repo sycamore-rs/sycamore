@@ -101,7 +101,7 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
 
         let start_time = Utc::now();
-        let signal = self.0.borrow().signal.clone();
+        let signal = self.0.borrow().signal;
         let transition_duration = self.0.borrow().transition_duration;
 
         let task = Task::new(move || {
@@ -154,7 +154,7 @@ impl<T: Lerp + Clone + 'static> Clone for Tweened<T> {
 impl<T: Lerp + Clone + 'static> Clone for TweenedInner<T> {
     fn clone(&self) -> Self {
         Self {
-            signal: self.signal.clone(),
+            signal: self.signal,
             current_task: self.current_task.clone(),
             transition_duration: self.transition_duration,
             easing_fn: Rc::clone(&self.easing_fn),

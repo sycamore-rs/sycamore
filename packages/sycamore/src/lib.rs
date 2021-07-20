@@ -54,7 +54,7 @@ pub mod prelude {
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
     pub use crate::reactive::effect::{
-        create_effect, create_memo, create_selector, create_selector_with,
+        create_effect, create_memo, create_selector, create_selector_with, untrack,
     };
     pub use crate::reactive::scope::{create_root, on_cleanup};
     pub use crate::reactive::signal::{create_signal, ReadSignal, WriteSignal};

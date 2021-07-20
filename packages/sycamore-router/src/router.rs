@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::generic_node::EventHandler;
-use sycamore::prelude::*;
-use sycamore::rx::ReactiveScope;
+use sycamore::reactive::scope::ReactiveScope;
+use sycamore::{prelude::*, template};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
@@ -30,7 +30,7 @@ pub trait Integration {
 }
 
 thread_local! {
-    static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
+    static PATHNAME: RefCell<Option<(ReactiveScope, ReadSignal<String>, WriteSignal<String>)>> = RefCell::new(None);
 }
 
 /// A router integration that uses the
@@ -165,7 +165,12 @@ where
     PATHNAME.with(|pathname| {
         assert!(pathname.borrow().is_none());
         // Get initial url from window.location.
-        *pathname.borrow_mut() = Some(Signal::new(integration.initial_pathname()));
+        let mut signal = None::<(ReadSignal<String>, WriteSignal<String>)>;
+        let scope = create_root(|| {
+            signal = Some(create_signal(integration.initial_pathname()));
+        });
+        let signal = signal.unwrap();
+        *pathname.borrow_mut() = Some((scope, signal.0, signal.1));
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap());
 
@@ -177,12 +182,17 @@ where
     });
 
     // Listen to popstate event.
-    integration.on_popstate(Box::new(cloned!((integration, pathname) => move || {
-        pathname.set(integration.current_pathname());
-    })));
+    integration.on_popstate(Box::new({
+        let pathname = pathname.clone();
+        let integration = integration.clone();
+        move || {
+            pathname.set(integration.current_pathname());
+        }
+    }));
 
     let path = create_selector(move || {
         pathname
+            .1
             .get()
             .split('/')
             .filter(|s| !s.is_empty())
@@ -191,25 +201,38 @@ where
     });
 
     let template = Signal::new((ReactiveScope::new(), Template::empty()));
-    create_effect(cloned!((template) => move || {
-        let path = path.get();
-        spawn_local(cloned!((render, integration, path, template) => async move {
-            let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice()).await;
-            // Delegate click events from child <a> tags.
-            let mut t = None;
-            let scope = create_root(|| {
-                let tmp = render(route);
-                if let Some(node) = tmp.as_node() {
-                    node.event("click", integration.click_handler());
-                } else {
-                    // TODO: support fragments and lazy nodes
-                    panic!("render should return a single node");
-                }
-                t = Some(tmp);
+    create_effect({
+        let template = template.clone();
+        move || {
+            let path = path.get();
+            let render = render.clone();
+            let integration = integration.clone();
+            let path = path.clone();
+            let template = template.clone();
+            spawn_local(async move {
+                let route = R::match_route(
+                    path.iter()
+                        .map(|s| s.as_str())
+                        .collect::<Vec<_>>()
+                        .as_slice(),
+                )
+                .await;
+                // Delegate click events from child <a> tags.
+                let mut t = None;
+                let scope = create_root(|| {
+                    let tmp = render(route);
+                    if let Some(node) = tmp.as_node() {
+                        node.event("click", integration.click_handler());
+                    } else {
+                        // TODO: support fragments and lazy nodes
+                        panic!("render should return a single node");
+                    }
+                    t = Some(tmp);
+                });
+                template.set((scope, t.unwrap()));
             });
-            template.set((scope, t.unwrap()));
-        }));
-    }));
+        }
+    });
 
     Template::new_dyn(move || template.get().as_ref().1.clone())
 }
@@ -276,13 +299,13 @@ pub fn navigate(url: &str) {
         );
 
         let pathname = pathname.borrow().clone().unwrap();
-        pathname.set(url.to_string());
+        pathname.2.set(url.to_string());
 
         // Update History API.
         let window = web_sys::window().unwrap();
         let history = window.history().unwrap();
         history
-            .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str()))
+            .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.1.get().as_str()))
             .unwrap();
         window.scroll_to_with_x_and_y(0.0, 0.0);
     });

@@ -34,12 +34,12 @@ pub fn bench(c: &mut Criterion) {
 
             #[component(App<G>)]
             fn app() -> Template<G> {
-                let values = Signal::new((0i32..=10).collect::<Vec<_>>());
+                let (values, _set_values) = create_signal((0i32..=10).collect::<Vec<_>>());
 
                 template! {
                     div(class="my-container") {
                         Indexed(IndexedProps {
-                            iterable: values.handle(),
+                            iterable: values,
                             template: |x| template! {
                                 ListItem(x)
                             }
