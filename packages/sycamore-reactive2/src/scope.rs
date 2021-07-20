@@ -2,6 +2,8 @@
 
 use std::cell::RefCell;
 use std::mem;
+#[cfg(debug_assertions)]
+use std::panic::Location;
 use std::rc::Rc;
 
 use slotmap::{new_key_type, SlotMap};
@@ -46,7 +48,6 @@ fn remove_scope(key: ScopeKey) {
 
 struct CleanupCallback(Box<dyn FnOnce()>);
 
-#[derive(Default)]
 pub(crate) struct ReactiveScopeInner {
     /// The key to the [`WeakReactiveScope`] in [`SCOPES`]. The value should always be `Some` after
     /// initialization.
@@ -57,13 +58,27 @@ pub(crate) struct ReactiveScopeInner {
     effects: Vec<Rc<RefCell<Option<EffectState>>>>,
     /// Callbacks to run when the scope is dropped.
     cleanups: Vec<CleanupCallback>,
+    /// The source location where the scope was created. Only available in debug mode.
+    ///
+    /// Used when accessing the signal when scope is no longer valid to provide a useful error
+    /// message.
+    #[cfg(debug_assertions)]
+    pub(crate) creation_loc: Location<'static>,
 }
 
 impl ReactiveScopeInner {
     /// Creates a new [`ReactiveScopeInner`]. Note that `key` is set to `None` by default. It is up
     /// to the responsibility of the caller to initialize `key` with the `ScopeKey` for [`SCOPES`].
+    #[cfg_attr(debug_assertions, track_caller)]
     fn new() -> Self {
-        Self::default()
+        Self {
+            key: Default::default(),
+            signals: Default::default(),
+            effects: Default::default(),
+            cleanups: Default::default(),
+            #[cfg(debug_assertions)]
+            creation_loc: *Location::caller(),
+        }
     }
 
     /// Returns a closure that runs cleanup callbacks and destroys owned effects to trigger nested
@@ -99,6 +114,7 @@ pub struct ReactiveScope {
 
 impl ReactiveScope {
     /// Create a new [`ReactiveScope`] and inserts it into [`SCOPES`].
+    #[cfg_attr(debug_assertions, track_caller)]
     fn new() -> Self {
         let inner = Rc::new(RefCell::new(ReactiveScopeInner::new()));
         let key = insert_scope(ReactiveScopeGlobalRef(inner.clone()));

@@ -3,6 +3,8 @@
 use std::any::Any;
 use std::cell::RefCell;
 use std::marker::PhantomData;
+#[cfg(debug_assertions)]
+use std::panic::Location;
 use std::rc::{Rc, Weak};
 
 use indexmap::IndexMap;
@@ -69,6 +71,18 @@ pub(crate) struct SignalId {
     scope_key: ScopeKey,
     /// Index of the signal in the reactive scope's signal array.
     signal_index: usize,
+    /// The source location where the signal was created. Only available in debug mode.
+    ///
+    /// Used when accessing the signal when scope is no longer valid to provide a useful error
+    /// message.
+    #[cfg(debug_assertions)]
+    creation_loc: Location<'static>,
+    /// The source location where the enclosing scope was created. Only available in debug mode.
+    ///
+    /// Used when accessing the signal when scope is no longer valid to provide a useful error
+    /// message.
+    #[cfg(debug_assertions)]
+    scope_creation_loc: Location<'static>,
 }
 
 impl SignalId {
@@ -140,20 +154,35 @@ impl<T: 'static> ReadSignal<T> {
     /// the [`ReadSignal`] is no longer valid.
     #[track_caller]
     pub fn get_untracked(self) -> Rc<T> {
-        self.id
-            .get(|data| {
-                data.map(|data| {
-                    Rc::clone(
-                        &data
-                            .as_any()
-                            .downcast_ref::<SignalData<T>>()
-                            .expect("SignalData should have correct type")
-                            .inner,
-                    )
-                })
+        let data = self.id.get(|data| {
+            data.map(|data| {
+                Rc::clone(
+                    &data
+                        .as_any()
+                        .downcast_ref::<SignalData<T>>()
+                        .expect("SignalData should have correct type")
+                        .inner,
+                )
             })
-            .expect("reactive scope for signal already destroyed") // Panic outside of closure for
-                                                                   // #[track_caller] to work.
+        });
+        match data {
+            Some(data) => data,
+            None => {
+                // Debug mode.
+                #[cfg(debug_assertions)]
+                {
+                    panic!(
+                        "reactive scope for signal already destroyed\
+                    \nsignal created at {}\
+                    \ninside scope created at {}",
+                        self.id.creation_loc, self.id.scope_creation_loc
+                    );
+                }
+                // Release mode.
+                #[cfg(not(debug_assertions))]
+                panic!("reactive scope for signal already destroyed");
+            }
+        }
     }
 }
 
@@ -178,9 +207,11 @@ impl<T: 'static> WriteSignal<T> {
     /// # Panics
     /// This method will `panic!()` if the [`ReactiveScope`](crate::effect::ReactiveScope) that owns
     /// the [`ReadSignal`] is no longer valid.
+    #[track_caller]
     pub fn set(self, value: T) {
         let mut dependents = None;
-        self.id
+        let success = self
+            .id
             .get_mut(|data| {
                 data.map(|data| {
                     data.as_any_mut()
@@ -190,7 +221,22 @@ impl<T: 'static> WriteSignal<T> {
                     dependents = Some(data.clone_dependents());
                 })
             })
-            .expect("reactive scope for signal already destroyed"); // Panic outside of closure for #[track_caller] to work.
+            .is_some();
+        if !success {
+            // Debug mode.
+            #[cfg(debug_assertions)]
+            {
+                panic!(
+                    "reactive scope for signal already destroyed\
+                                \nsignal created at {}\
+                                \ninside scope created at {}",
+                    self.id.creation_loc, self.id.scope_creation_loc
+                );
+            }
+            // Release mode.
+            #[cfg(not(debug_assertions))]
+            panic!("reactive scope for signal already destroyed");
+        }
 
         // Rerun all effects that depend on this signal.
         // Reverse order to re-run outer effects before inner effects.
@@ -240,6 +286,10 @@ pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
         let signal_id = SignalId {
             scope_key,
             signal_index,
+            #[cfg(debug_assertions)]
+            creation_loc: *Location::caller(),
+            #[cfg(debug_assertions)]
+            scope_creation_loc: scope.inner.borrow().creation_loc,
         };
 
         (
