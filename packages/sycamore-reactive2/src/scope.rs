@@ -179,9 +179,10 @@ impl Drop for ReactiveScope {
 
 /// Create a new detached [`ReactiveScope`].
 #[must_use = "immediately dropping a ReactiveScope will drop all child scopes"]
+#[track_caller]
 pub fn create_root(f: impl FnOnce()) -> ReactiveScope {
+    let scope = ReactiveScope::new();
     CURRENT_SCOPE.with(|current_scope| {
-        let scope = ReactiveScope::new();
         let outer = mem::replace(&mut *current_scope.borrow_mut(), Some(scope));
         f();
         mem::replace(&mut *current_scope.borrow_mut(), outer).unwrap()

@@ -2,6 +2,8 @@
 
 use std::any::Any;
 use std::cell::RefCell;
+use std::error::Error;
+use std::fmt::{Display, Formatter, Result};
 use std::marker::PhantomData;
 #[cfg(debug_assertions)]
 use std::panic::Location;
@@ -11,6 +13,30 @@ use indexmap::IndexMap;
 
 use crate::effect::{EffectState, EffectStatePtr, CURRENT_LISTENER};
 use crate::scope::{ScopeKey, CURRENT_SCOPE, SCOPES};
+
+/// An error returned by [`ReadSignal::get`] and [`WriteSignal::set`].
+#[derive(Debug, Clone)]
+pub struct ScopeDestroyedError {
+    #[cfg(debug_assertions)]
+    creation_loc: Location<'static>,
+    #[cfg(debug_assertions)]
+    scope_creation_loc: Location<'static>,
+}
+
+impl Error for ScopeDestroyedError {}
+
+impl Display for ScopeDestroyedError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        writeln!(f, "reactive scope for signal already destroyed")?;
+        #[cfg(debug_assertions)]
+        {
+            writeln!(f, "signal created at {}", self.creation_loc)?;
+            writeln!(f, "inside scope created at {}", self.scope_creation_loc)?;
+        }
+
+        Ok(())
+    }
+}
 
 /// Backing storage for a signal.
 pub(crate) struct SignalData<T> {
@@ -167,21 +193,15 @@ impl<T: 'static> ReadSignal<T> {
         });
         match data {
             Some(data) => data,
-            None => {
-                // Debug mode.
-                #[cfg(debug_assertions)]
-                {
-                    panic!(
-                        "reactive scope for signal already destroyed\
-                    \nsignal created at {}\
-                    \ninside scope created at {}",
-                        self.id.creation_loc, self.id.scope_creation_loc
-                    );
+            None => panic!(
+                "{}",
+                ScopeDestroyedError {
+                    #[cfg(debug_assertions)]
+                    creation_loc: self.id.creation_loc,
+                    #[cfg(debug_assertions)]
+                    scope_creation_loc: self.id.scope_creation_loc,
                 }
-                // Release mode.
-                #[cfg(not(debug_assertions))]
-                panic!("reactive scope for signal already destroyed");
-            }
+            ),
         }
     }
 }
@@ -223,19 +243,15 @@ impl<T: 'static> WriteSignal<T> {
             })
             .is_some();
         if !success {
-            // Debug mode.
-            #[cfg(debug_assertions)]
-            {
-                panic!(
-                    "reactive scope for signal already destroyed\
-                                \nsignal created at {}\
-                                \ninside scope created at {}",
-                    self.id.creation_loc, self.id.scope_creation_loc
-                );
-            }
-            // Release mode.
-            #[cfg(not(debug_assertions))]
-            panic!("reactive scope for signal already destroyed");
+            panic!(
+                "{}",
+                ScopeDestroyedError {
+                    #[cfg(debug_assertions)]
+                    creation_loc: self.id.creation_loc,
+                    #[cfg(debug_assertions)]
+                    scope_creation_loc: self.id.scope_creation_loc,
+                }
+            )
         }
 
         // Rerun all effects that depend on this signal.
@@ -269,40 +285,37 @@ impl<T: 'static> WriteSignal<T> {
 /// ```
 #[track_caller]
 pub fn create_signal<T: 'static>(value: T) -> (ReadSignal<T>, WriteSignal<T>) {
-    CURRENT_SCOPE.with(|current_scope| {
-        let scope = current_scope
-            .borrow()
-            .clone()
-            .expect("create_signal must be used inside a ReactiveScope");
+    let scope = CURRENT_SCOPE
+        .with(|current_scope| current_scope.borrow().clone())
+        .expect("create_signal must be used inside a ReactiveScope");
 
-        let data = SignalData {
-            inner: Rc::new(value),
-            dependents: IndexMap::new(),
-        };
-        let scope_key = scope.key();
-        let signal_index = scope.inner.borrow().signals.len();
-        scope.inner.borrow_mut().signals.push(Box::new(data));
+    let data = SignalData {
+        inner: Rc::new(value),
+        dependents: IndexMap::new(),
+    };
+    let scope_key = scope.key();
+    let signal_index = scope.inner.borrow().signals.len();
+    scope.inner.borrow_mut().signals.push(Box::new(data));
 
-        let signal_id = SignalId {
-            scope_key,
-            signal_index,
-            #[cfg(debug_assertions)]
-            creation_loc: *Location::caller(),
-            #[cfg(debug_assertions)]
-            scope_creation_loc: scope.inner.borrow().creation_loc,
-        };
+    let signal_id = SignalId {
+        scope_key,
+        signal_index,
+        #[cfg(debug_assertions)]
+        creation_loc: *Location::caller(),
+        #[cfg(debug_assertions)]
+        scope_creation_loc: scope.inner.borrow().creation_loc,
+    };
 
-        (
-            ReadSignal {
-                id: signal_id,
-                _phantom: PhantomData,
-            },
-            WriteSignal {
-                id: signal_id,
-                _phantom: PhantomData,
-            },
-        )
-    })
+    (
+        ReadSignal {
+            id: signal_id,
+            _phantom: PhantomData,
+        },
+        WriteSignal {
+            id: signal_id,
+            _phantom: PhantomData,
+        },
+    )
 }
 
 #[cfg(test)]
