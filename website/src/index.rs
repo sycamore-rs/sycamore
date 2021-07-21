@@ -42,7 +42,7 @@ pub fn index() -> Template<G> {
             div(class="bg-yellow-600 md:flex-1 rounded-md p-6") {
                 h1(class="text-lg text-center font-semibold mb-3") { "No JavaScript" }
                 p(class="mb-2") {
-                    "Had enough of JavaScript? So do we."
+                    "Had enough of JavaScript? So have we."
                 }
                 p {
                     "Create apps using Sycamore without touching a single line of JS."
