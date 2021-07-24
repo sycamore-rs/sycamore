@@ -72,8 +72,6 @@ impl Integration for StaticIntegration {
 /// UI in sync with the URL.
 #[derive(Default)]
 pub struct HistoryIntegration {
-    /// This field is to prevent downstream users from creating a new `HistoryIntegration` without
-    /// the `new` method.
     _internal: (),
 }
 
