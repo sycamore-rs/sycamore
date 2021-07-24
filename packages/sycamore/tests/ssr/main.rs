@@ -49,5 +49,8 @@ fn fragments() {
         p { "3" }
     };
 
-    assert_eq!(sycamore::render_to_string(|| node), "<p>1</p><p>2</p><p>3</p>");
+    assert_eq!(
+        sycamore::render_to_string(|| node),
+        "<p>1</p><p>2</p><p>3</p>"
+    );
 }

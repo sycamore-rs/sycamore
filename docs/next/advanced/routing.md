@@ -21,12 +21,12 @@ number for `sycamore` (e.g. `sycamore-router v0.5.x` is compatible with `sycamor
 
 ## Creating routes
 
-Start off by adding `use sycamore_router::{BrowserRouter, Route}` to the top of your source code.
-This imports the symbols needed to define our router.
+Start off by adding `use sycamore_router::{Route, Router, RouterProps}` to the top of your source
+code. This imports the symbols needed to define our router.
 
 The heart of the router is an `enum`. Each variant of the `enum` represents a different route. To
-make our `enum` usable with `BrowserRouter`, we will use the `Route` derive macro to implement the
-required traits for us.
+make our `enum` usable with `Router`, we will use the `Route` derive macro to implement the required
+traits for us.
 
 Here is an example:
 
@@ -157,13 +157,13 @@ Likewise, the
 [`FromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromSegments.html)
 trait is the equivalent for dynamic segments.
 
-## Using `BrowserRouter`
+## Using `Router`
 
-To display content based on the route that matches, we can use a `BrowserRouter`.
+To display content based on the route that matches, we can use a `Router`.
 
 ```rust
 template! {
-    BrowserRouter(|route: AppRoutes| {
+    Router(RouterProps::new(HistoryIntegration::new(), |route: AppRoutes| {
         match route {
             AppRoutes::Index => template! {
                 "This is the index page"
@@ -179,23 +179,26 @@ template! {
 }
 ```
 
-`BrowserRouter` is just a component like any other. The props accept a closure taking the matched
-route as a parameter. Any clicks on anchor tags (`<a>`) created inside the `BrowserRouter` will be
-intercepted and handled by the router.
+`Router` is just a component like any other. The props accept a closure taking the matched route as
+a parameter and an "integration". The integration is for adapting the router to different
+environments (e.g. server-side rendering). The `HistoryIntegration` is a built-in integration that
+uses the [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API).
 
-## Using `StaticRouter`
+Any clicks on anchor tags (`<a>`) created inside the `Router` will be intercepted and handled by the
+router.
 
-Whereas `BrowserRouter` is used inside the context of a browser, `StaticRouter` is used for SSR.
+## Server-side rendering and `StaticIntegration`
 
-The difference between a `BrowserRouter` and a `StaticRouter` is that the url is provided to
-`StaticRouter` only during the initialization phase. The initial url is provided as an argument to
-`StaticRouter`.
+Whereas `HistoryIntegration` is used inside the context of a browser, `StaticIntegration` can be
+used for SSR.
+
+The difference between a `HistoryIntegration` and a `StaticIntegration` is that the url is provided
+to `StaticIntegration` during the initialization phase. The initial url is provided as an argument
+to `StaticIntegration::new`.
 
 ```rust
-use sycamore_router::{Route, StaticRouter};
-
 template! {
-    StaticRouter(("/about", |route: AppRoutes| {
+    Router(StaticIntegration::new("/about"), |route: AppRoutes| {
         match route {
             AppRoutes::Index => template! {
                 "This is the index page"
@@ -207,9 +210,13 @@ template! {
                 "404 Not Found"
             },
         }
-    }))
+    })
 }
 ```
+
+## Integrations
+
+TODO: docs for creating custom router integrations.
 
 ## Using `navigate`
 
