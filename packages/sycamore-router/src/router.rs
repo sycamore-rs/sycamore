@@ -1,5 +1,8 @@
 use std::cell::RefCell;
+use std::marker::PhantomData;
+use std::rc::Rc;
 
+use sycamore::generic_node::EventHandler;
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -7,47 +10,204 @@ use web_sys::{Element, HtmlAnchorElement, KeyboardEvent};
 
 use crate::Route;
 
-/// A router that never changes location. Useful for SSR when the app will never change URL.
-#[component(StaticRouter<G>)]
-pub fn static_router<R: Route>(
-    (pathname, render): (String, impl Fn(R) -> Template<G> + 'static),
-) -> Template<G> {
-    let path = pathname
-        .split('/')
-        .filter(|s| !s.is_empty())
-        .collect::<Vec<_>>();
+/// A router integration provides the methods for adapting a router to a certain environment (e.g.
+/// server or browser).
+pub trait Integration {
+    /// Get the initial pathname.
+    fn initial_pathname(&self) -> String;
 
-    let route = R::match_route(&path);
-    render(route)
+    /// Get the current pathname.
+    fn current_pathname(&self) -> String;
+
+    /// Add a callback for listening to the `popstate` event.
+    fn on_popstate(&self, f: Box<dyn FnMut()>);
+
+    /// Get the click handler that is run when links are clicked.
+
+    fn click_handler(&self) -> Box<EventHandler>;
 }
 
 thread_local! {
     static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
 }
 
-/// A router that uses the
+/// A router that never changes path. Useful for SSR when the app will only be rendered once.
+pub struct StaticIntegration {
+    pathname: String,
+}
+
+impl StaticIntegration {
+    /// Create a new [`StaticRouter`] with the given initial pathname.
+    pub fn new(initial_pathname: String) -> Self {
+        Self {
+            pathname: initial_pathname,
+        }
+    }
+}
+
+impl Integration for StaticIntegration {
+    fn initial_pathname(&self) -> String {
+        self.pathname.clone()
+    }
+
+    fn current_pathname(&self) -> String {
+        unreachable!()
+    }
+
+    fn on_popstate(&self, _: Box<dyn FnMut()>) {
+        // no-op
+        // Path never changes for a static router.
+    }
+
+    fn click_handler(&self) -> Box<EventHandler> {
+        Box::new(|_| {
+            // no-op
+            // This will ensure that `current_pathname` and `on_popstate` will never be called.
+        })
+    }
+}
+
+/// A router integration that uses the
 /// [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) to keep the
 /// UI in sync with the URL.
-#[component(BrowserRouter<G>)]
-pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> Template<G> {
+#[derive(Default)]
+pub struct HistoryIntegration {
+    _internal: (),
+}
+
+impl HistoryIntegration {
+    /// Create a new [`HistoryIntegration`].
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Integration for HistoryIntegration {
+    fn initial_pathname(&self) -> String {
+        web_sys::window().unwrap().location().pathname().unwrap()
+    }
+
+    fn current_pathname(&self) -> String {
+        web_sys::window().unwrap().location().pathname().unwrap()
+    }
+
+    fn on_popstate(&self, f: Box<dyn FnMut()>) {
+        let closure = Closure::wrap(f);
+        web_sys::window()
+            .unwrap()
+            .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())
+            .unwrap();
+        closure.forget();
+    }
+
+    fn click_handler(&self) -> Box<EventHandler> {
+        Box::new(|ev| {
+            if let Some(a) = ev
+                .target()
+                .unwrap()
+                .unchecked_into::<Element>()
+                .closest("a[href]")
+                .unwrap()
+            {
+                let location = web_sys::window().unwrap().location();
+
+                let a = a.unchecked_into::<HtmlAnchorElement>();
+                let origin = a.origin();
+                let path = a.pathname();
+                let hash = a.hash();
+
+                let meta_keys_pressed = meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
+                if !meta_keys_pressed && Ok(origin) == location.origin() {
+                    if Ok(&path) != location.pathname().as_ref() {
+                        // Same origin, different path.
+                        ev.prevent_default();
+                        PATHNAME.with(|pathname| {
+                            let pathname = pathname.borrow().clone().unwrap();
+                            pathname.set(path.to_string());
+
+                            // Update History API.
+                            let history = web_sys::window().unwrap().history().unwrap();
+                            history
+                                .push_state_with_url(
+                                    &JsValue::UNDEFINED,
+                                    "",
+                                    Some(pathname.get().as_str()),
+                                )
+                                .unwrap();
+                        });
+                    } else if Ok(&hash) != location.hash().as_ref() {
+                        // Same origin, same path, different anchor.
+                        // Use default browser behavior.
+                    } else {
+                        // Same page. Do nothing.
+                        ev.prevent_default();
+                    }
+                }
+            }
+        })
+    }
+}
+
+/// Props for [`Router`].
+pub struct RouterProps<R, F, G>
+where
+    R: Route,
+    F: Fn(R) -> Template<G>,
+    G: GenericNode,
+{
+    render: F,
+    integration: Box<dyn Integration>,
+    _phantom: PhantomData<*const (R, G)>,
+}
+
+impl<R, F, G> RouterProps<R, F, G>
+where
+    R: Route,
+    F: Fn(R) -> Template<G> + 'static,
+    G: GenericNode,
+{
+    /// Create a new [`RouterProps`].
+    pub fn new(integration: impl Integration + 'static, render: F) -> Self {
+        Self {
+            render,
+            integration: Box::new(integration),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+/// The sycamore router component.
+#[component(Router<G>)]
+pub fn router<R, F>(props: RouterProps<R, F, G>) -> Template<G>
+where
+    R: Route,
+    F: Fn(R) -> Template<G> + 'static,
+{
+    let RouterProps {
+        render,
+        integration,
+        _phantom,
+    } = props;
+    let integration = Rc::new(integration);
+
     PATHNAME.with(|pathname| {
         assert!(pathname.borrow().is_none());
         // Get initial url from window.location.
-        *pathname.borrow_mut() = Some(Signal::new(
-            web_sys::window().unwrap().location().pathname().unwrap(),
-        ));
+        *pathname.borrow_mut() = Some(Signal::new(integration.initial_pathname()));
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap());
 
+    // Set PATHNAME to None when the Router is destroyed.
+    on_cleanup(|| {
+        PATHNAME.with(|pathname| {
+            *pathname.borrow_mut() = None;
+        });
+    });
+
     // Listen to popstate event.
-    let closure = Closure::wrap(Box::new(cloned!((pathname) => move || {
-        pathname.set(web_sys::window().unwrap().location().pathname().unwrap());
-    })) as Box<dyn FnMut()>);
-    web_sys::window()
-        .unwrap()
-        .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())
-        .unwrap();
-    closure.forget();
+    integration.on_popstate(Box::new(cloned!((integration, pathname) => move || {
+        pathname.set(integration.current_pathname());
+    })));
 
     let path = create_selector(move || {
         pathname
@@ -69,55 +229,9 @@ pub fn browser_router<R: Route>(render: impl Fn(R) -> Template<G> + 'static) -> 
         // Delegate click events from child <a> tags.
         let template = untrack(|| render(route));
         if let Some(node) = template.as_node() {
-            node.event(
-                "click",
-                Box::new(|ev| {
-                    if let Some(a) = ev
-                        .target()
-                        .unwrap()
-                        .unchecked_into::<Element>()
-                        .closest("a[href]")
-                        .unwrap()
-                    {
-                        let location = web_sys::window().unwrap().location();
-
-                        let a = a.unchecked_into::<HtmlAnchorElement>();
-                        let origin = a.origin();
-                        let path = a.pathname();
-                        let hash = a.hash();
-
-                        let meta_keys_pressed =
-                            meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
-                        if !meta_keys_pressed && Ok(origin) == location.origin() {
-                            if Ok(&path) != location.pathname().as_ref() {
-                                // Same origin, different path.
-                                ev.prevent_default();
-                                PATHNAME.with(|pathname| {
-                                    let pathname = pathname.borrow().clone().unwrap();
-                                    pathname.set(path.to_string());
-
-                                    // Update History API.
-                                    let history = web_sys::window().unwrap().history().unwrap();
-                                    history
-                                        .push_state_with_url(
-                                            &JsValue::UNDEFINED,
-                                            "",
-                                            Some(pathname.get().as_str()),
-                                        )
-                                        .unwrap();
-                                });
-                            } else if Ok(&hash) != location.hash().as_ref() {
-                                // Same origin, same path, different anchor.
-                                // Use default browser behavior.
-                            } else {
-                                // Same page. Do nothing.
-                                ev.prevent_default();
-                            }
-                        }
-                    }
-                }),
-            );
+            node.event("click", integration.click_handler());
         } else {
+            // TODO: support fragments and lazy nodes
             panic!("render should return a single node");
         }
 
@@ -175,7 +289,7 @@ mod tests {
         #[component(Comp<G>)]
         fn comp(path: String) -> Template<G> {
             template! {
-                StaticRouter((path, |route: Routes| {
+                Router(RouterProps::new(StaticIntegration::new(path), |route: Routes| {
                     match route {
                         Routes::Home => template! {
                             "Home"
