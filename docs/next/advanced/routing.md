@@ -21,12 +21,12 @@ number for `sycamore` (e.g. `sycamore-router v0.5.x` is compatible with `sycamor
 
 ## Creating routes
 
-Start off by adding `use sycamore_router::{Router, Route}` to the top of your source code. This
-imports the symbols needed to define our router.
+Start off by adding `use sycamore_router::{Route, Router, RouterProps}` to the top of your source
+code. This imports the symbols needed to define our router.
 
 The heart of the router is an `enum`. Each variant of the `enum` represents a different route. To
-make our `enum` usable with `BrowserRouter`, we will use the `Route` derive macro to implement the
-required traits for us.
+make our `enum` usable with `Router`, we will use the `Route` derive macro to implement the required
+traits for us.
 
 Here is an example:
 
@@ -213,6 +213,10 @@ template! {
     })
 }
 ```
+
+## Integrations
+
+TODO: docs for creating custom router integrations.
 
 ## Using `navigate`
 

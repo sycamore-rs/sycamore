@@ -113,10 +113,6 @@ fn build_dir(base: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("cargo:rerun-if-changed=next");
-    println!("cargo:rerun-if-changed=versioned_docs");
-    println!("cargo:rerun-if-changed=posts");
-
     build_dir(Path::new("./next"), Path::new("docs"))?;
     build_dir(Path::new("./versioned_docs"), Path::new("docs"))?;
     build_dir(Path::new("./posts"), Path::new("posts"))?;
