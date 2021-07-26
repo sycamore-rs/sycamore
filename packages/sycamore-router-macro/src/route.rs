@@ -64,6 +64,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         "preload" => {
                             let preload_fn: Expr = attr.parse_args()?;
                             quote_preload = Some(quote_spanned! { attr.span()=>
+                                #[allow(clippy::redundant_closure_call)]
                                 let data = (#preload_fn)().await;
                             });
                         }
@@ -194,7 +195,8 @@ fn impl_to(
                     "preload field must be named `data`",
                 ));
             }
-            quote! {
+            quote_spanned! {variant.span()=>
+                #[allow(clippy::never_loop)]
                 loop {
                     #(#captures)*
                     return Self::#variant_id {
