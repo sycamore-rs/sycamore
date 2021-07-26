@@ -10,7 +10,7 @@ use serde::Serialize;
 use walkdir::WalkDir;
 
 // Sync definition with website/src/content.rs
-#[derive(Serialize)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 struct MarkdownPage {
     html: String,
     outline: Vec<Outline>,

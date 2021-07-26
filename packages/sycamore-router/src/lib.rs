@@ -15,7 +15,7 @@ pub use router::*;
 ///
 /// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro
 /// instead.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub trait Route {
     async fn match_route(path: &[&str]) -> Self;
 }

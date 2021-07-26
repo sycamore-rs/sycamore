@@ -56,7 +56,7 @@ enum Routes8 {
 #[derive(Route)]
 enum Routes9 {
     #[to("/")]
-    #[preload(|| async { todo!() })]
+    #[preload(|_| async { todo!() })]
     Path, // Missing `data` field.
     #[not_found]
     NotFound,

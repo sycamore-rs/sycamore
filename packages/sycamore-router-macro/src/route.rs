@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::{ToTokens, quote, quote_spanned};
+use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{Attribute, DeriveInput, Expr, Fields, Ident, LitStr, Token, Variant};
@@ -64,8 +64,11 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         "preload" => {
                             let preload_fn: Expr = attr.parse_args()?;
                             quote_preload = Some(quote_spanned! { attr.span()=>
+                                let __path_vec = __path.to_vec().iter().map(|__p|
+                                    ::std::string::ToString::to_string(__p)
+                                ).collect::<::std::vec::Vec<::std::string::String>>();
                                 #[allow(clippy::redundant_closure_call)]
-                                let data = (#preload_fn)().await;
+                                let data = (#preload_fn)(__path_vec).await;
                             });
                         }
                         _ => {}
@@ -85,9 +88,9 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
             }
 
             Ok(quote! {
-                #[::sycamore_router::rt::async_trait]
+                #[::sycamore_router::rt::async_trait(?Send)]
                 impl ::sycamore_router::Route for #ty_name {
-                    async fn match_route(path: &[&str]) -> Self {
+                    async fn match_route(__path: &[&str]) -> Self {
                         #quoted
                         #err_quoted
                     }
@@ -253,7 +256,7 @@ fn impl_to(
     };
     Ok(quote! {
         let route = #route;
-        if let Some(captures) = route.match_path(path) {
+        if let Some(captures) = route.match_path(__path) {
             // Try to capture variables.
             #capture_vars
         }
