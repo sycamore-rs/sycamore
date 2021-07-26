@@ -4,8 +4,10 @@ use std::rc::Rc;
 
 use sycamore::generic_node::EventHandler;
 use sycamore::prelude::*;
+use sycamore::rx::ReactiveScope;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::spawn_local;
 use web_sys::{Element, HtmlAnchorElement, KeyboardEvent};
 
 use crate::Route;
@@ -182,7 +184,7 @@ where
 #[component(Router<G>)]
 pub fn router<R, F>(props: RouterProps<R, F, G>) -> Template<G>
 where
-    R: Route,
+    R: Route + 'static,
     F: Fn(R) -> Template<G> + 'static,
 {
     let RouterProps {
@@ -190,6 +192,7 @@ where
         integration,
         _phantom,
     } = props;
+    let render = Rc::new(render);
     let integration = Rc::new(integration);
 
     PATHNAME.with(|pathname| {
@@ -220,25 +223,28 @@ where
             .collect::<Vec<_>>()
     });
 
-    Template::new_dyn(move || {
-        let route = R::match_route(
-            path.get()
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>()
-                .as_slice(),
-        );
-        // Delegate click events from child <a> tags.
-        let template = untrack(|| render(route));
-        if let Some(node) = template.as_node() {
-            node.event("click", integration.click_handler());
-        } else {
-            // TODO: support fragments and lazy nodes
-            panic!("render should return a single node");
-        }
+    let template = Signal::new((ReactiveScope::new(),Template::empty()));
+    create_effect(cloned!((template) => move || {
+        let path = path.get();
+        spawn_local(cloned!((render, integration, path, template) => async move {
+            let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice()).await;
+            // Delegate click events from child <a> tags.
+            let mut t = None;
+            let scope = create_root(|| {
+                let tmp = render(route);
+                if let Some(node) = tmp.as_node() {
+                    node.event("click", integration.click_handler());
+                } else {
+                    // TODO: support fragments and lazy nodes
+                    panic!("render should return a single node");
+                }
+                t = Some(tmp);
+            });
+            template.set((scope, t.unwrap()));
+        }));
+    }));
 
-        template
-    })
+    Template::new_dyn(move || template.get().as_ref().1.clone())
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -277,6 +283,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "not implemented on non wasm32 target"]
     fn static_router() {
         #[derive(Route)]
         enum Routes {
