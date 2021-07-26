@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote, quote_spanned};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Attribute, DeriveInput, Fields, Ident, LitStr, Token, Variant};
+use syn::{Attribute, DeriveInput, Expr, Fields, Ident, LitStr, Token, Variant};
 
 use crate::parser::route;
 use crate::parser::RoutePathAst;
@@ -25,8 +25,8 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                     .iter()
                     .any(|attr| *attr.path.get_ident().unwrap() == "preload");
 
-                let mut quote_match_route = None;
-                let mut quote_prefetch = None;
+                let mut quote_match_route = TokenStream::new();
+                let mut quote_preload = None;
 
                 for attr in &variant.attrs {
                     let attr_name = match attr.path.get_ident() {
@@ -36,8 +36,12 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
 
                     match attr_name.as_str() {
                         "to" => {
-                            quote_match_route =
-                                Some(impl_to(attr, variant, variant_id, has_preload_handler)?);
+                            quote_match_route.extend(impl_to(
+                                attr,
+                                variant,
+                                variant_id,
+                                has_preload_handler,
+                            )?);
                         }
                         "not_found" => {
                             if has_error_handler {
@@ -58,12 +62,15 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                             has_error_handler = true;
                         }
                         "preload" => {
-                            quote_prefetch = Some(quote! {});
+                            let preload_fn: Expr = attr.parse_args()?;
+                            quote_preload = Some(quote_spanned! { attr.span()=>
+                                let data = (#preload_fn)().await;
+                            });
                         }
                         _ => {}
                     }
                 }
-                if let Some(quote_prefetch) = quote_prefetch {
+                if let Some(quote_prefetch) = quote_preload {
                     quoted.extend(quote_prefetch);
                 }
                 quoted.extend(quote_match_route);
@@ -121,7 +128,7 @@ fn impl_to(
     if expected_fields_len != variant.fields.len() {
         if has_preload_handler && dyn_segments.len() == variant.fields.len() {
             return Err(syn::Error::new(
-                variant.fields.span(),
+                variant.span(),
                 "missing field for preload data",
             ));
         } else {
@@ -179,20 +186,13 @@ fn impl_to(
                     }
                 }
             }
-            let mut named: Punctuated<&Option<Ident>, Token![,]> =
+            let named: Punctuated<&Option<Ident>, Token![,]> =
                 f.named.iter().map(|x| &x.ident).collect();
-            if has_preload_handler {
-                if f.named.last().unwrap().ident.as_ref().unwrap() != "data" {
-                    return Err(syn::Error::new(
-                        f.named.last().unwrap().span(),
-                        "preload field must be named `data`",
-                    ));
-                }
-
-                captures.push(quote! {
-                    let data = todo!();
-                });
-                named.push(&f.named.last().unwrap().ident);
+            if has_preload_handler && f.named.last().unwrap().ident.as_ref().unwrap() != "data" {
+                return Err(syn::Error::new(
+                    f.named.last().unwrap().span(),
+                    "preload field must be named `data`",
+                ));
             }
             quote! {
                 loop {
@@ -234,6 +234,9 @@ fn impl_to(
                         }
                     }}),
                 }
+            }
+            if has_preload_handler {
+                captures.push(quote! { data });
             }
             quote! {
                 // Run captures inside a loop in order to allow early break inside the expression.

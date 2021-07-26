@@ -36,4 +36,22 @@ enum Routes4 {
     NotFound,
 }
 
+#[derive(Route)]
+enum Routes5 {
+    #[to("/account")]
+    #[preload(|| async { todo!() })]
+    Account { data: String },
+    #[to("/account2")]
+    #[preload(|| async { todo!() })]
+    Account2(String),
+    #[to("/account3/<id>")]
+    #[preload(|| async { todo!() })]
+    Account3 { id: u32, data: String },
+    #[to("/account4/<id>")]
+    #[preload(|| async { todo!() })]
+    Account4(u32, String),
+    #[not_found]
+    NotFound,
+}
+
 fn main() {}
