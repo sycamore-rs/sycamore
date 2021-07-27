@@ -52,18 +52,16 @@ fn switch<G: GenericNode>(route: Routes) -> Template<G> {
                 index::Index()
             }
         },
-        Routes::Docs(a, b, data) => {
+        Routes::Docs(_, _, data) => {
             template! {
                 content::Content(content::ContentProps {
-                    pathname: format!("/static/docs/{}/{}.json", a, b),
                     data,
                     sidebar_version: Some("next".to_string()),
                 })
             }
         }
-        Routes::VersionedDocs(version, a, b, data) => template! {
+        Routes::VersionedDocs(version, _, _, data) => template! {
             content::Content(content::ContentProps {
-                pathname: format!("/static/docs/{}/{}/{}.json", version, a, b),
                 data,
                 sidebar_version: Some(version.clone()),
             })
@@ -71,9 +69,8 @@ fn switch<G: GenericNode>(route: Routes) -> Template<G> {
         Routes::NewsIndex => template! {
             news_index::NewsIndex()
         },
-        Routes::Post(post, data) => template! {
+        Routes::Post(_, data) => template! {
             content::Content(content::ContentProps {
-                pathname: format!("/static/posts/{}.json", post),
                 data,
                 sidebar_version: None,
             })

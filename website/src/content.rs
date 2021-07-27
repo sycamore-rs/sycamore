@@ -2,7 +2,6 @@ use std::any::TypeId;
 
 use serde_lite::Deserialize;
 use sycamore::prelude::*;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
@@ -18,11 +17,6 @@ pub struct MarkdownPage {
 pub struct Outline {
     name: String,
     children: Vec<Outline>,
-}
-
-#[wasm_bindgen(inline_js = "export function highlight_element(el) { hljs.highlightElement(el); }")]
-extern "C" {
-    fn highlight_element(el: &HtmlElement);
 }
 
 #[component(OutlineView<G>)]
@@ -65,7 +59,6 @@ pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
 }
 
 pub struct ContentProps {
-    pub pathname: String,
     pub data: MarkdownPage,
     pub sidebar_version: Option<String>,
 }
@@ -73,7 +66,6 @@ pub struct ContentProps {
 #[component(Content<G>)]
 pub fn content(
     ContentProps {
-        pathname,
         data,
         sidebar_version,
     }: ContentProps,
@@ -90,7 +82,6 @@ pub fn content(
             .inner_element()
             .unchecked_into::<HtmlElement>();
         element.set_inner_html(&data.html);
-        highlight_element(&element);
     }
 
     let sidebar_version0 = sidebar_version.clone();
