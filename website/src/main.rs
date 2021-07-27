@@ -14,10 +14,8 @@ use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
 const LATEST_MAJOR_VERSION: &str = "v0.5";
 const NEXT_VERSION: &str = "next";
 
-async fn docs_preload(path: Vec<String>) -> MarkdownPage {
-    let pathname = format!("/static/docs/{}.json", path.join("/"));
-
-    let text = Request::get(&pathname).send().await.unwrap().text().await;
+async fn docs_preload(path: String) -> MarkdownPage {
+    let text = Request::get(&path).send().await.unwrap().text().await;
     if let Ok(text) = text {
         let intermediate = serde_json::from_str(&text).unwrap();
         MarkdownPage::deserialize(&intermediate).unwrap()
@@ -31,15 +29,15 @@ enum Routes {
     #[to("/")]
     Index,
     #[to("/docs/<_>/<_>")]
-    #[preload(|path: Vec<String>| docs_preload(path[1..].to_vec()))]
+    #[preload(|path: Vec<String>| docs_preload(format!("/static/docs/{}.json", path[1..].join("/"))))]
     Docs(String, String, MarkdownPage),
     #[to("/docs/<_>/<_>/<_>")]
-    #[preload(|path: Vec<String>| docs_preload(path[1..].to_vec()))]
+    #[preload(|path: Vec<String>| docs_preload(format!("/static/docs/{}.json", path[1..].join("/"))))]
     VersionedDocs(String, String, String, MarkdownPage),
     #[to("/news")]
     NewsIndex,
     #[to("/news/<_>")]
-    #[preload(|path: Vec<String>| docs_preload(path[1..].to_vec()))]
+    #[preload(|path: Vec<String>| docs_preload(format!("/static/posts/{}.json", path[1..].join("/"))))]
     Post(String, MarkdownPage),
     #[to("/versions")]
     Versions,
