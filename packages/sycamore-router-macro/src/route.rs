@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Attribute, DeriveInput, Expr, Fields, Ident, LitStr, Token, Variant};
+use syn::{DeriveInput, Expr, Fields, Ident, LitStr, Token, Variant};
 
 use crate::parser::route;
 use crate::parser::RoutePathAst;
@@ -25,8 +25,11 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                     .iter()
                     .any(|attr| *attr.path.get_ident().unwrap() == "preload");
 
-                let mut quote_match_route = TokenStream::new();
-                let mut quote_preload = None;
+                let mut quote_capture_vars = TokenStream::new();
+                let mut quote_preload = TokenStream::new();
+                let mut route_path_ast = None;
+
+                let mut is_to_route = false;
 
                 for attr in &variant.attrs {
                     let attr_name = match attr.path.get_ident() {
@@ -36,12 +39,28 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
 
                     match attr_name.as_str() {
                         "to" => {
-                            quote_match_route.extend(impl_to(
-                                attr,
+                            // region: parse route
+                            let route_litstr: LitStr = attr.parse_args()?;
+                            let route_str = route_litstr.value();
+                            let route = match route(&route_str) {
+                                Ok(("", route_ast)) => route_ast,
+                                Ok((_, _)) => unreachable!("parser error"),
+                                Err(_err) => {
+                                    return Err(syn::Error::new(
+                                        route_litstr.span(),
+                                        "route is malformed",
+                                    ));
+                                }
+                            };
+                            // endregion
+                            quote_capture_vars.extend(impl_to(
                                 variant,
                                 variant_id,
+                                &route,
                                 has_preload_handler,
                             )?);
+                            route_path_ast = Some(route);
+                            is_to_route = true;
                         }
                         "not_found" => {
                             if has_error_handler {
@@ -63,7 +82,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         }
                         "preload" => {
                             let preload_fn: Expr = attr.parse_args()?;
-                            quote_preload = Some(quote_spanned! { attr.span()=>
+                            quote_preload.extend(quote_spanned! { attr.span()=>
                                 let __path_vec = __path.to_vec().iter().map(|__p|
                                     ::std::string::ToString::to_string(__p)
                                 ).collect::<::std::vec::Vec<::std::string::String>>();
@@ -74,10 +93,18 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         _ => {}
                     }
                 }
-                if let Some(quote_prefetch) = quote_preload {
-                    quoted.extend(quote_prefetch);
+                if is_to_route {
+                    let route_path_ast = route_path_ast.unwrap();
+                    quoted.extend(quote! {
+                        let __route = #route_path_ast;
+                        if let Some(__captures) = __route.match_path(__path) {
+                            // Run preload function.
+                            #quote_preload
+                            // Try to capture variables.
+                            #quote_capture_vars
+                        }
+                    });
                 }
-                quoted.extend(quote_match_route);
             }
 
             if !has_error_handler {
@@ -106,23 +133,11 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
 
 /// Implementation for `#[to(_)]` attribute.
 fn impl_to(
-    attr: &Attribute,
     variant: &Variant,
     variant_id: &Ident,
+    route: &RoutePathAst,
     has_preload_handler: bool,
 ) -> Result<TokenStream, syn::Error> {
-    // region: parse route
-    let route_litstr: LitStr = attr.parse_args()?;
-    let route_str = route_litstr.value();
-    let route = match route(&route_str) {
-        Ok(("", route_ast)) => route_ast,
-        Ok((_, _)) => unreachable!("parser error"),
-        Err(_err) => {
-            return Err(syn::Error::new(route_litstr.span(), "route is malformed"));
-        }
-    };
-    // endregion
-
     let dyn_segments = route.dyn_segments();
     let expected_fields_len = if has_preload_handler {
         dyn_segments.len() + 1
@@ -143,7 +158,7 @@ fn impl_to(
         }
     }
 
-    let capture_vars = match &variant.fields {
+    Ok(match &variant.fields {
         // For named fields, captures must match the field name.
         Fields::Named(f) => {
             let mut captures = Vec::new();
@@ -164,7 +179,7 @@ fn impl_to(
                             let mut #param_id = <#field_ty as ::std::default::Default>::default();
                             if !::sycamore_router::FromParam::set_value(
                                 &mut #param_id,
-                                captures[#i].as_dyn_param().unwrap()
+                                __captures[#i].as_dyn_param().unwrap()
                             ) {
                                 break;
                             }
@@ -182,7 +197,7 @@ fn impl_to(
                             let mut #param_id = <#field_ty as ::std::default::Default>::default();
                             if !::sycamore_router::FromSegments::set_value(
                                 &mut #param_id,
-                                captures[#i].as_dyn_segments().unwrap()
+                                __captures[#i].as_dyn_segments().unwrap()
                             ) {
                                 break;
                             }
@@ -220,7 +235,7 @@ fn impl_to(
                         let mut value = <#field_ty as ::std::default::Default>::default();
                         if ::sycamore_router::FromParam::set_value(
                             &mut value,
-                            captures[#i].as_dyn_param().unwrap()
+                            __captures[#i].as_dyn_param().unwrap()
                         ) {
                             value
                         } else {
@@ -231,7 +246,7 @@ fn impl_to(
                         let mut value = <#field_ty as ::std::default::Default>::default();
                         if ::sycamore_router::FromSegments::set_value(
                             &mut value,
-                            captures[#i].as_dyn_segments().unwrap()
+                            __captures[#i].as_dyn_segments().unwrap()
                         ) {
                             value
                         } else {
@@ -253,17 +268,10 @@ fn impl_to(
         Fields::Unit => quote! {
             return Self::#variant_id;
         },
-    };
-    Ok(quote! {
-        let route = #route;
-        if let Some(captures) = route.match_path(__path) {
-            // Try to capture variables.
-            #capture_vars
-        }
     })
 }
 
-impl<'a> ToTokens for SegmentAst<'a> {
+impl ToTokens for SegmentAst {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             SegmentAst::Param(param) => tokens.extend(quote! {
@@ -279,7 +287,7 @@ impl<'a> ToTokens for SegmentAst<'a> {
     }
 }
 
-impl<'a> ToTokens for RoutePathAst<'a> {
+impl ToTokens for RoutePathAst {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let segments = self
             .segments

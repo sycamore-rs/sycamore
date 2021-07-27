@@ -15,7 +15,7 @@ const LATEST_MAJOR_VERSION: &str = "v0.5";
 const NEXT_VERSION: &str = "next";
 
 async fn docs_preload(path: Vec<String>) -> MarkdownPage {
-    let pathname = format!("/static/docs/{}/{}.json", path[0], path[1]);
+    let pathname = format!("/static/docs/{}.json", path.join("/"));
 
     let text = Request::get(&pathname).send().await.unwrap().text().await;
     if let Ok(text) = text {
