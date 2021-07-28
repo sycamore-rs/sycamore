@@ -4,14 +4,16 @@ use std::rc::Rc;
 
 use sycamore::generic_node::EventHandler;
 use sycamore::prelude::*;
+use sycamore::rx::ReactiveScope;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::spawn_local;
 use web_sys::{Element, HtmlAnchorElement, KeyboardEvent};
 
 use crate::Route;
 
 /// A router integration provides the methods for adapting a router to a certain environment (e.g.
-/// server or browser).
+/// history API).
 pub trait Integration {
     /// Get the initial pathname.
     fn initial_pathname(&self) -> String;
@@ -29,42 +31,6 @@ pub trait Integration {
 
 thread_local! {
     static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
-}
-
-/// A router that never changes path. Useful for SSR when the app will only be rendered once.
-pub struct StaticIntegration {
-    pathname: String,
-}
-
-impl StaticIntegration {
-    /// Create a new [`StaticRouter`] with the given initial pathname.
-    pub fn new(initial_pathname: String) -> Self {
-        Self {
-            pathname: initial_pathname,
-        }
-    }
-}
-
-impl Integration for StaticIntegration {
-    fn initial_pathname(&self) -> String {
-        self.pathname.clone()
-    }
-
-    fn current_pathname(&self) -> String {
-        unreachable!()
-    }
-
-    fn on_popstate(&self, _: Box<dyn FnMut()>) {
-        // no-op
-        // Path never changes for a static router.
-    }
-
-    fn click_handler(&self) -> Box<EventHandler> {
-        Box::new(|_| {
-            // no-op
-            // This will ensure that `current_pathname` and `on_popstate` will never be called.
-        })
-    }
 }
 
 /// A router integration that uses the
@@ -178,11 +144,12 @@ where
     }
 }
 
-/// The sycamore router component.
+/// The sycamore router component. This component expects to be used inside a browser environment.
+/// For server environments, see [`StaticRouter`].
 #[component(Router<G>)]
 pub fn router<R, F>(props: RouterProps<R, F, G>) -> Template<G>
 where
-    R: Route,
+    R: Route + 'static,
     F: Fn(R) -> Template<G> + 'static,
 {
     let RouterProps {
@@ -190,6 +157,7 @@ where
         integration,
         _phantom,
     } = props;
+    let render = Rc::new(render);
     let integration = Rc::new(integration);
 
     PATHNAME.with(|pathname| {
@@ -220,25 +188,75 @@ where
             .collect::<Vec<_>>()
     });
 
-    Template::new_dyn(move || {
-        let route = R::match_route(
-            path.get()
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>()
-                .as_slice(),
-        );
-        // Delegate click events from child <a> tags.
-        let template = untrack(|| render(route));
-        if let Some(node) = template.as_node() {
-            node.event("click", integration.click_handler());
-        } else {
-            // TODO: support fragments and lazy nodes
-            panic!("render should return a single node");
-        }
+    let template = Signal::new((ReactiveScope::new(), Template::empty()));
+    create_effect(cloned!((template) => move || {
+        let path = path.get();
+        spawn_local(cloned!((render, integration, path, template) => async move {
+            let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice()).await;
+            // Delegate click events from child <a> tags.
+            let mut t = None;
+            let scope = create_root(|| {
+                let tmp = render(route);
+                if let Some(node) = tmp.as_node() {
+                    node.event("click", integration.click_handler());
+                } else {
+                    // TODO: support fragments and lazy nodes
+                    panic!("render should return a single node");
+                }
+                t = Some(tmp);
+            });
+            template.set((scope, t.unwrap()));
+        }));
+    }));
 
-        template
-    })
+    Template::new_dyn(move || template.get().as_ref().1.clone())
+}
+
+/// Props for [`StaticRouter`].
+pub struct StaticRouterProps<R, F, G>
+where
+    R: Route,
+    F: Fn(R) -> Template<G>,
+    G: GenericNode,
+{
+    render: F,
+    route: R,
+    _phantom: PhantomData<*const (R, G)>,
+}
+
+impl<R, F, G> StaticRouterProps<R, F, G>
+where
+    R: Route,
+    F: Fn(R) -> Template<G>,
+    G: GenericNode,
+{
+    /// Create a new [`StaticRouterProps`].
+    pub fn new(route: R, render: F) -> Self {
+        Self {
+            render,
+            route,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+/// A router that only renders once with the given `route`.
+///
+/// This is useful for SSR where we want the HTML to be rendered instantly instead of waiting for
+/// the route preload to finish loading.
+#[component(StaticRouter<G>)]
+pub fn static_router<R, F>(props: StaticRouterProps<R, F, G>) -> Template<G>
+where
+    R: Route + 'static,
+    F: Fn(R) -> Template<G> + 'static,
+{
+    let StaticRouterProps {
+        render,
+        route,
+        _phantom,
+    } = props;
+
+    render(route)
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -290,8 +308,15 @@ mod tests {
 
         #[component(Comp<G>)]
         fn comp(path: String) -> Template<G> {
+            let route = futures::executor::block_on(Routes::match_route(
+                &path
+                    .split('/')
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<_>>(),
+            ));
+
             template! {
-                Router(RouterProps::new(StaticIntegration::new(path), |route: Routes| {
+                StaticRouter(StaticRouterProps::new(route, |route: Routes| {
                     match route {
                         Routes::Home => template! {
                             "Home"

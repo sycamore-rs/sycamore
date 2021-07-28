@@ -5,24 +5,24 @@ use nom::multi::separated_list0;
 use nom::sequence::delimited;
 use nom::IResult;
 
-#[derive(Debug, Clone, Copy)]
-pub enum SegmentAst<'a> {
-    Param(&'a str),
-    DynParam(&'a str),
-    DynSegments(&'a str),
+#[derive(Debug, Clone)]
+pub enum SegmentAst {
+    Param(String),
+    DynParam(String),
+    DynSegments(String),
 }
 
 #[derive(Debug)]
-pub struct RoutePathAst<'a> {
-    pub(crate) segments: Vec<SegmentAst<'a>>,
+pub struct RoutePathAst {
+    pub(crate) segments: Vec<SegmentAst>,
 }
 
-impl<'a> RoutePathAst<'a> {
-    pub fn dyn_segments(&self) -> Vec<SegmentAst<'a>> {
+impl RoutePathAst {
+    pub fn dyn_segments(&self) -> Vec<SegmentAst> {
         self.segments
             .iter()
             .filter(|x| matches!(x, SegmentAst::DynParam(_) | &SegmentAst::DynSegments(_)))
-            .copied()
+            .cloned()
             .collect()
     }
 }
@@ -41,9 +41,9 @@ fn dyn_segments(i: &str) -> IResult<&str, &str> {
 
 fn segment(i: &str) -> IResult<&str, SegmentAst> {
     alt((
-        map(dyn_segments, |s| SegmentAst::DynSegments(s)),
-        map(dyn_param, |s| SegmentAst::DynParam(s)),
-        map(param, |s| SegmentAst::Param(s)),
+        map(dyn_segments, |s| SegmentAst::DynSegments(s.to_string())),
+        map(dyn_param, |s| SegmentAst::DynParam(s.to_string())),
+        map(param, |s| SegmentAst::Param(s.to_string())),
     ))(i)
 }
 
@@ -51,7 +51,7 @@ pub fn route(i: &str) -> IResult<&str, RoutePathAst> {
     map(separated_list0(tag("/"), segment), |segments| {
         let segments = segments
             .into_iter()
-            .filter(|x| !matches!(x, SegmentAst::Param("")))
+            .filter(|x| !matches!(x, SegmentAst::Param(param) if param.is_empty()))
             .collect();
         RoutePathAst { segments }
     })(i)

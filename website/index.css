@@ -11,11 +11,9 @@
 }
 
 .content pre {
-  @apply rounded;
-}
-
-.content pre > code {
-  @apply bg-gray-100;
+  /* Important style */
+  background-color: rgb(244, 244, 245) !important;
+  @apply rounded block p-2;
 }
 
 .content table {
