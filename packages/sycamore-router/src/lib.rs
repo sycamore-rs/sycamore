@@ -16,8 +16,21 @@ pub use router::*;
 /// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro
 /// instead.
 #[async_trait::async_trait(?Send)]
-pub trait Route {
-    async fn match_route(path: &[&str]) -> Self;
+pub trait Route: Sized {
+    /// Matches a route with the given path segments. Note that in general, empty segments should be
+    /// filtered out before passed as an argument.
+    ///
+    /// It is likely that you are looking for the [`Route::match_path`] method instead.
+    async fn match_route(segments: &[&str]) -> Self;
+
+    /// Matches a route with the given path.
+    async fn match_path(path: &str) -> Self {
+        let segments = path
+            .split('/')
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>();
+        Self::match_route(&segments).await
+    }
 }
 
 /// Represents an URL segment or segments.

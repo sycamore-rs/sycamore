@@ -187,18 +187,23 @@ uses the [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/Hi
 Any clicks on anchor tags (`<a>`) created inside the `Router` will be intercepted and handled by the
 router.
 
-## Server-side rendering and `StaticIntegration`
+## Server-side rendering and `StaticRouter`
 
-Whereas `HistoryIntegration` is used inside the context of a browser, `StaticIntegration` can be
-used for SSR.
+Whereas `Router` is used inside the context of a browser, `StaticRouter` can be used for SSR.
 
-The difference between a `HistoryIntegration` and a `StaticIntegration` is that the url is provided
-to `StaticIntegration` during the initialization phase. The initial url is provided as an argument
-to `StaticIntegration::new`.
+The difference between a `Router` and a `StaticRouter` is that the route is provided to
+`StaticRouter` during the initialization phase. The initial route is provided as an argument to
+`StaticRouterProps::new`.
+
+This is so that `StaticRouter` can return a `Template` immediately without blocking to wait for the
+route preload. The route is expected to be resolved separately using the `Route::match_path`
+function.
 
 ```rust
+let route = AppRoutes::match_path(path).await;
+
 template! {
-    Router(StaticIntegration::new("/about"), |route: AppRoutes| {
+    StaticRouter(StaticRouterProps::new(route, |route: AppRoutes| {
         match route {
             AppRoutes::Index => template! {
                 "This is the index page"
@@ -210,7 +215,7 @@ template! {
                 "404 Not Found"
             },
         }
-    })
+    }))
 }
 ```
 
@@ -237,7 +242,7 @@ is expected to return a `Future` (basically an `async` function).
 
 ```rust
 #[to("/my_route")]
-#[preload(|| async { /* fetch some data */ })]
+#[preload(|path| async { /* fetch some data */ })]
 MyRoute {
     data: String
 }
@@ -245,3 +250,6 @@ MyRoute {
 
 When using a `preload` attribute, the `data` field (or the last field in an tuple field) has a
 special meaning. This field has the value of the preloaded data.
+
+The `path` parameter in the `preload` closure is the path that was matched. This currently has type
+`Vec<String>` but might be changed to the concrete type that was matched in the future.

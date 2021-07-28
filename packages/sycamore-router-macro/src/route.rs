@@ -83,11 +83,11 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         "preload" => {
                             let preload_fn: Expr = attr.parse_args()?;
                             quote_preload.extend(quote_spanned! { attr.span()=>
-                                let __path_vec = __path.to_vec().iter().map(|__p|
+                                let __segments_vec = __segments.to_vec().iter().map(|__p|
                                     ::std::string::ToString::to_string(__p)
                                 ).collect::<::std::vec::Vec<::std::string::String>>();
                                 #[allow(clippy::redundant_closure_call)]
-                                let data = (#preload_fn)(__path_vec).await;
+                                let data = (#preload_fn)(__segments_vec).await;
                             });
                         }
                         _ => {}
@@ -97,7 +97,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                     let route_path_ast = route_path_ast.unwrap();
                     quoted.extend(quote! {
                         let __route = #route_path_ast;
-                        if let Some(__captures) = __route.match_path(__path) {
+                        if let Some(__captures) = __route.match_path(__segments) {
                             // Run preload function.
                             #quote_preload
                             // Try to capture variables.
@@ -117,7 +117,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
             Ok(quote! {
                 #[::sycamore_router::rt::async_trait(?Send)]
                 impl ::sycamore_router::Route for #ty_name {
-                    async fn match_route(__path: &[&str]) -> Self {
+                    async fn match_route(__segments: &[&str]) -> Self {
                         #quoted
                         #err_quoted
                     }
