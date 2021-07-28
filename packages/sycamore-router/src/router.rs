@@ -128,7 +128,8 @@ impl Integration for HistoryIntegration {
                             pathname.set(path.to_string());
 
                             // Update History API.
-                            let history = web_sys::window().unwrap().history().unwrap();
+                            let window = web_sys::window().unwrap();
+                            let history = window.history().unwrap();
                             history
                                 .push_state_with_url(
                                     &JsValue::UNDEFINED,
@@ -136,6 +137,7 @@ impl Integration for HistoryIntegration {
                                     Some(pathname.get().as_str()),
                                 )
                                 .unwrap();
+                            window.scroll_to_with_x_and_y(0.0, 0.0);
                         });
                     } else if Ok(&hash) != location.hash().as_ref() {
                         // Same origin, same path, different anchor.
@@ -259,10 +261,12 @@ pub fn navigate(url: &str) {
         pathname.set(url.to_string());
 
         // Update History API.
-        let history = web_sys::window().unwrap().history().unwrap();
+        let window = web_sys::window().unwrap();
+        let history = window.history().unwrap();
         history
             .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str()))
             .unwrap();
+        window.scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
