@@ -103,7 +103,7 @@ impl RoutePath {
                         match next_segment {
                             Segment::Param(next_param) => {
                                 let mut capture = Vec::new();
-                                while let Some(next_path) = paths.next() {
+                                for next_path in &mut paths {
                                     if next_path == next_param {
                                         captures.push(Capture::DynSegments(capture));
                                         break;
@@ -117,7 +117,7 @@ impl RoutePath {
                     } else {
                         // All remaining segments are captured.
                         let mut capture = Vec::new();
-                        while let Some(next_path) = paths.next() {
+                        for next_path in &mut paths {
                             capture.push(*next_path);
                         }
                         captures.push(Capture::DynSegments(capture));

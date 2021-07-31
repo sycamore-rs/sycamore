@@ -13,7 +13,7 @@
 .content pre {
   /* Important style */
   background-color: rgb(244, 244, 245) !important;
-  @apply rounded block p-2;
+  @apply rounded block p-2 whitespace-pre-wrap;
 }
 
 .content table {

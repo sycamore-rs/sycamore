@@ -1,9 +1,5 @@
-use std::any::TypeId;
-
 use serde_lite::Deserialize;
 use sycamore::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::HtmlElement;
 
 // Sync definition with docs/build.rs
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -66,24 +62,11 @@ pub struct ContentProps {
 #[component(Content<G>)]
 pub fn content(
     ContentProps {
-        data,
+        data: MarkdownPage { html, outline },
         sidebar_version,
     }: ContentProps,
 ) -> Template<G> {
     let show_sidebar = sidebar_version.is_some();
-
-    let docs_container_ref = NodeRef::new();
-    let docs_container = template! {
-        div(ref=docs_container_ref)
-    };
-    if TypeId::of::<G>() == TypeId::of::<DomNode>() {
-        let element = docs_container_ref
-            .get::<DomNode>()
-            .inner_element()
-            .unchecked_into::<HtmlElement>();
-        element.set_inner_html(&data.html);
-    }
-
     let sidebar_version0 = sidebar_version.clone();
 
     template! {
@@ -132,10 +115,10 @@ pub fn content(
                     } else {
                         template! {}
                     })
-                    (docs_container)
+                    div(dangerously_set_inner_html=&html)
                 }
                 div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0 top-0 mt-12") {
-                    OutlineView(data.outline)
+                    OutlineView(outline)
                 }
             }
         }

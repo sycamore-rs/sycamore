@@ -94,7 +94,7 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
         }
         Event::Text(ref text) | Event::Code(ref text) => {
             if inside_code_block {
-                code_block_buf.push_str(&text);
+                code_block_buf.push_str(text);
                 None
             } else if tmp.is_some() {
                 tmp.as_mut().unwrap().name += text;

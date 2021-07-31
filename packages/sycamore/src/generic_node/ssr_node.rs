@@ -23,6 +23,7 @@ enum SsrNodeType {
     Element(RefCell<Element>),
     Comment(RefCell<Comment>),
     Text(RefCell<Text>),
+    RawText(RefCell<RawText>),
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +99,16 @@ impl SsrNode {
             }
             _ => panic!("node type cannot have children"),
         }
+    }
+
+    /// Create a new raw text node.
+    ///
+    /// Do not pass unsanitized user input to this function. When the node is rendered, no escaping
+    /// will be performed which might lead to a XSS (Cross Site Scripting) attack.
+    pub fn raw_text_node(html: &str) -> Self {
+        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(
+            html.to_string(),
+        ))))
     }
 }
 
@@ -248,6 +259,18 @@ impl GenericNode for SsrNode {
             SsrNodeType::Element(el) => el.borrow_mut().children = vec![SsrNode::text_node(text)],
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
             SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
+            SsrNodeType::RawText(_t) => panic!("cannot update inner text on raw text node"),
+        }
+    }
+
+    fn dangerously_set_inner_html(&self, html: &str) {
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(el) => {
+                el.borrow_mut().children = vec![SsrNode::raw_text_node(html)];
+            }
+            SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
+            SsrNodeType::Text(_t) => panic!("cannot update inner text on text node"),
+            SsrNodeType::RawText(t) => t.borrow_mut().0 = html.to_string(),
         }
     }
 
@@ -266,6 +289,7 @@ impl fmt::Display for SsrNode {
             SsrNodeType::Element(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Comment(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Text(x) => write!(f, "{}", x.borrow()),
+            SsrNodeType::RawText(x) => write!(f, "{}", x.borrow()),
         }
     }
 }
@@ -318,6 +342,16 @@ pub struct Text(String);
 impl fmt::Display for Text {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", html_escape::encode_text_minimal(&self.0))
+    }
+}
+
+/// Un-escaped text node.
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
+pub struct RawText(String);
+
+impl fmt::Display for RawText {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

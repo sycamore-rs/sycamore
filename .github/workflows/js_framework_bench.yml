@@ -67,12 +67,12 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - name: Setup Node
+      - name: Setup NodeJS
         uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: 14.x
 
-      - name: npm Install
+      - name: npm install
         run: |
           npm install
           (cd webdriver-ts && npm install)

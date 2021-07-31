@@ -49,9 +49,9 @@ fn insert_expression<G: GenericNode>(
     match &value.inner {
         TemplateType::Node(node) => {
             if let Some(current) = current {
-                clean_children(parent, current.flatten(), marker, Some(&node), multi);
+                clean_children(parent, current.flatten(), marker, Some(node), multi);
             } else {
-                parent.insert_child_before(&node, marker);
+                parent.insert_child_before(node, marker);
             }
         }
         TemplateType::Dyn(f) => {
@@ -153,9 +153,9 @@ pub fn clean_children<G: GenericNode>(
     }
 
     for node in current {
-        if node.parent_node().as_ref() == Some(&parent) {
+        if node.parent_node().as_ref() == Some(parent) {
             if let Some(replacement) = replacement {
-                parent.replace_child(&node, &replacement);
+                parent.replace_child(&node, replacement);
             } else {
                 parent.remove_child(&node);
             }
@@ -196,7 +196,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
                 }
                 let fragment: Rc<Box<[Template<G>]>> = match &value.inner {
                     TemplateType::Node(_) => Rc::new(Box::new([value])),
-                    TemplateType::Fragment(fragment) => Rc::clone(&fragment),
+                    TemplateType::Fragment(fragment) => Rc::clone(fragment),
                     _ => unreachable!(),
                 };
                 dynamic =
@@ -234,7 +234,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     #[cfg(debug_assertions)]
     {
         for (i, node) in a.iter().enumerate() {
-            if node.parent_node().as_ref() != Some(&parent) {
+            if node.parent_node().as_ref() != Some(parent) {
                 panic!(
                     "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
                     i, node
@@ -348,7 +348,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     #[cfg(debug_assertions)]
     {
         for (i, node) in b.iter().enumerate() {
-            if node.parent_node().as_ref() != Some(&parent) {
+            if node.parent_node().as_ref() != Some(parent) {
                 panic!(
                     "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
                     i, node

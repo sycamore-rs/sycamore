@@ -18,21 +18,34 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
 
-      - name: Use Node.js 14.x
+      - name: Setup NodeJS
         uses: actions/setup-node@v2
         with:
           node-version: 14.x
 
       - name: Install trunk
         run: >
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.12.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- &&
-          sudo mv trunk /usr/bin/
+          wget -qO-
+          https://github.com/thedodd/trunk/releases/download/v0.12.1/trunk-x86_64-unknown-linux-gnu.tar.gz
+          | tar -xzf- && sudo mv trunk /usr/bin/
+
+      - name: Cargo generate-lockfile
+        run: cargo generate-lockfile
+
+      - name: Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build website
         run: >
-          cd website/ &&
-          npm ci &&
-          npm run prod
+          cd website/ && npm ci && npm run prod
 
       - name: Build examples
         run: |
