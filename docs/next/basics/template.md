@@ -62,6 +62,24 @@ template! {
 }
 ```
 
+#### `dangerously_set_inner_html`
+
+The special `dangerously_set_inner_html` attribute is used to set an HTML string as the child of an
+element. This should generally be avoided because it is a possible security risk. Never pass user
+input to this attribute as that will create an XSS (Cross-Site Scripting) vulnerability.
+
+```rust
+template! {
+    div(dangerously_set_inner_html="<span>Inner HTML!</span>")
+
+    // DO NOT DO THIS!!!
+    div(dangerously_set_inner_html=user_input)
+    // DO NOT DO THIS!!!
+}
+```
+
+Instead, when displaying user input, use interpolation syntax instead.
+
 ### Events
 
 Events are attached using the `on:*` directive.
