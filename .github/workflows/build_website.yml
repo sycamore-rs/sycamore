@@ -30,7 +30,7 @@ jobs:
         run: cargo generate-lockfile
 
       - name: Cargo cache
-      - uses: actions/cache@v2
+        uses: actions/cache@v2
         with:
           path: |
             ~/.cargo/bin/
