@@ -244,6 +244,10 @@ impl GenericNode for DomNode {
         self.node.set_text_content(Some(text));
     }
 
+    fn dangerously_set_inner_html(&self, html: &str) {
+        self.node.unchecked_ref::<Element>().set_inner_html(html);
+    }
+
     fn clone_node(&self) -> Self {
         Self {
             node: Rc::new(self.node.clone_node_with_deep(true).unwrap()),

@@ -103,6 +103,11 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// a new text node.
     fn update_inner_text(&self, text: &str);
 
+    /// Updates the inner html of the node.
+    /// The html will not be parsed in non-browser environments. This means that accessing methods
+    /// such as [`first_child`](GenericNode::first_child) will return `None`.
+    fn dangerously_set_inner_html(&self, html: &str);
+
     /// Create a deep clone of the node.
     fn clone_node(&self) -> Self;
 }
