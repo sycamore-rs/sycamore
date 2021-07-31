@@ -22,7 +22,7 @@ error: mismatch between number of capture fields and variant fields
 16 | #[derive(Route)]
    |          ^^^^^
    |
-   = note: this error originates in a derive macro (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the derive macro `Route` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: mismatch between number of capture fields and variant fields
   --> $DIR/router-fail.rs:27:10
