@@ -1,11 +1,11 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
+use ahash::AHashMap;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventHandler, GenericNode};
@@ -116,7 +116,7 @@ impl GenericNode for SsrNode {
     fn element(tag: &str) -> Self {
         SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
-            attributes: HashMap::new(),
+            attributes: AHashMap::new(),
             children: Default::default(),
         })))
     }
@@ -297,7 +297,7 @@ impl fmt::Display for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
     name: String,
-    attributes: HashMap<String, String>,
+    attributes: AHashMap<String, String>,
     children: Vec<SsrNode>,
 }
 
