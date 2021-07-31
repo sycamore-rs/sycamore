@@ -50,9 +50,6 @@ jobs:
           echo "$output" > frameworks/keyed/sycamore/Cargo.toml
           echo "$output"
 
-      - name: Setup ChromeDriver
-        uses: nanasess/setup-chromedriver@master
-
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
