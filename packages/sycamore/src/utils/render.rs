@@ -1,7 +1,8 @@
 //! Utilities for rendering nodes.
 
-use std::collections::HashMap;
 use std::rc::Rc;
+
+use ahash::AHashMap;
 
 use crate::generic_node::GenericNode;
 use crate::rx::create_effect;
@@ -248,7 +249,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     let mut b_end = b_len;
     let mut a_start = 0;
     let mut b_start = 0;
-    let mut map = None::<HashMap<G, usize>>;
+    let mut map = None::<AHashMap<G, usize>>;
 
     // Last node in a.
     let after = a[a_end - 1].next_sibling();
@@ -300,7 +301,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         } else {
             // Fallback to map.
             if map.is_none() {
-                map = Some(HashMap::with_capacity(b_end - b_start));
+                map = Some(AHashMap::with_capacity(b_end - b_start));
                 for (i, item) in b.iter().enumerate().take(b_end).skip(b_start) {
                     map.as_mut().unwrap().insert(item.clone(), i);
                 }

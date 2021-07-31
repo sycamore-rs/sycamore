@@ -1,10 +1,10 @@
 use std::any::Any;
 use std::cell::RefCell;
-use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 use std::{mem, ptr};
 
+use ahash::AHashSet;
 use smallvec::SmallVec;
 
 use super::*;
@@ -41,7 +41,7 @@ pub(super) struct Running {
     /// Callback to run when the effect is recreated.
     pub(super) execute: Rc<RefCell<dyn FnMut()>>,
     /// A list of dependencies which trigger the effect.
-    pub(super) dependencies: HashSet<Dependency>,
+    pub(super) dependencies: AHashSet<Dependency>,
     /// The reactive scope owns all effects created within it.
     scope: ReactiveScope,
 }
@@ -232,7 +232,7 @@ pub fn create_effect_initial<R: 'static>(
 
         *running.borrow_mut() = Some(Running {
             execute: Rc::clone(&execute),
-            dependencies: HashSet::new(),
+            dependencies: AHashSet::new(),
             scope: ReactiveScope::new(),
         });
         debug_assert_eq!(
