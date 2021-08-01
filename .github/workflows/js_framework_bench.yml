@@ -55,12 +55,6 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Install wasm-bindgen
-        run: >
-          wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.74/wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
-          tar -xf wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
-          sudo mv wasm-bindgen-0.2.74-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
-
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
