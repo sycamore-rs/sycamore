@@ -64,6 +64,10 @@ jobs:
         with:
           node-version: 14.x
 
+      - name: Install chromedriver
+        uses: nanasess/setup-chromedriver@master
+        with:
+
       - name: npm install
         run: |
           npm install
