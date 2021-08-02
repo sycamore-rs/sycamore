@@ -39,4 +39,4 @@ error: children and inner html cannot be both set
 16 | |     };
    | |_____^
    |
-   = note: this error originates in the macro `template` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
