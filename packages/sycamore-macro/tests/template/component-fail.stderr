@@ -4,7 +4,7 @@ error: unexpected end of input, expected parentheses
 13 |     let _: Template<G> = template! { C };
    |                          ^^^^^^^^^^^^^^^
    |
-   = note: this error originates in the macro `template` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0433]: failed to resolve: use of undeclared type `UnknownComponent`
   --> $DIR/component-fail.rs:11:38

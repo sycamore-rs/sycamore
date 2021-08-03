@@ -7,8 +7,18 @@ env:
 
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test on ${{ matrix.os }} (using rustc ${{ matrix.rust }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust:
+          - 1.53.0
+          - stable
+          - nightly
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -16,7 +26,7 @@ jobs:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           override: true
 
       - name: Install wasm-pack
@@ -34,11 +44,17 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
+        if: matrix.rust == '1.53.0'
+        env:
+          RUN_UI_TESTS: true
         run: cargo test
-        if: always()
+
+      - name: Run tests (excluding UI)
+        run: cargo test
+        if: matrix.rust != '1.53.0'
 
       - name: Run headless browser tests
         run: cd packages/sycamore && wasm-pack test --firefox --chrome --headless

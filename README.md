@@ -18,6 +18,11 @@ Learn more at the [Sycamore website](https://sycamore-rs.netlify.app), or stop b
 Issue reports and Pull Requests are always welcome!
 Check out the [section on contributing](https://sycamore-rs.netlify.app/contribute/architecture) in the docs.
 
+## MSRV
+
+The minimum supported Rust toolchain is v1.53.0.
+Sycamore is not guaranteed to compile on an older version of Rust.
+
 ## Contributors
 
 Sycamore would not have been possible without the wonderful work of all the people who contributed. Thank you!
