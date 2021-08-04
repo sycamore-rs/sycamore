@@ -14,18 +14,16 @@ use crate::rx::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
 use crate::utils::render::insert;
 
-// TODO: remove js snippet
-#[wasm_bindgen(inline_js = "\
-export function set_node_id(node, id) {\
-    node.$$$nodeId = id\
-}\
-export function get_node_id(node) {\
-    return node.$$$nodeId\
-}\
-")]
+#[wasm_bindgen]
 extern "C" {
-    fn set_node_id(node: &Node, id: usize);
-    fn get_node_id(node: &Node) -> Option<usize>;
+    #[wasm_bindgen(extends = Node)]
+    type NodeWithId;
+
+    #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
+    fn node_id(this: &NodeWithId) -> Option<usize>;
+
+    #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
+    fn set_node_id(this: &NodeWithId, id: usize);
 }
 
 /// An unique id for every node.
@@ -47,7 +45,7 @@ impl NodeId {
             x.set(tmp + 1);
             tmp
         });
-        set_node_id(node, id);
+        node.unchecked_ref::<NodeWithId>().set_node_id(id);
         Self(id)
     }
 }
@@ -73,7 +71,7 @@ impl DomNode {
     fn get_node_id(&self) -> NodeId {
         if self.id.get().0 == 0 {
             // self.id not yet initialized.
-            if let Some(id) = get_node_id(&self.node) {
+            if let Some(id) = self.node.unchecked_ref::<NodeWithId>().node_id() {
                 self.id.set(NodeId(id));
             } else {
                 self.id.set(NodeId::new_with_node(&self.node));
