@@ -1,0 +1,5 @@
+error: function must return `sycamore::template::Template`
+ --> $DIR/component-fail.rs:5:1
+  |
+5 | fn comp1() {
+  | ^^^^^^^^^^
