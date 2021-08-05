@@ -150,7 +150,7 @@ impl Parse for ComponentFunction {
             }
             item => Err(syn::Error::new_spanned(
                 item,
-                "`function_component` attribute can only be applied to functions",
+                "`component` attribute can only be applied to functions",
             )),
         }
     }
