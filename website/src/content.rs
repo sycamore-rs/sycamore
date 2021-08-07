@@ -83,7 +83,7 @@ pub fn content(
             div(class="flex-1 container mx-auto") {
                 div(
                     class=format!("content min-w-0 pr-4 mb-2 lg:mr-44 {}",
-                    if show_sidebar { "" } else { "container mx-auto lg:ml-auto lg:mr-44" }),
+                    if show_sidebar { "" } else { "container mx-auto pl-4 lg:ml-auto lg:pr-48" }),
                 ) {
                     (if sidebar_version0.as_deref() == Some(crate::NEXT_VERSION) {
                         template! {
