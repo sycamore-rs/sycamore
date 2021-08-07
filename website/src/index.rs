@@ -35,7 +35,7 @@ pub fn index() -> Template<G> {
                 h1(class="text-lg text-center font-semibold mb-3") { "Ergonomic and intuitive" }
                 p {
                     "Write code that feels natural. Everything is built on "
-                    a(href="/basics/reactivity", class="underline") { "reactive primitives" }
+                    a(href="/docs/basics/reactivity", class="underline") { "reactive primitives" }
                     " without a cumbersome virtual DOM."
                 }
             }
