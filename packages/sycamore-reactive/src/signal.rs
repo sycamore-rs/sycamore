@@ -20,8 +20,8 @@ impl<T: 'static> StateHandle<T> {
     pub fn get(&self) -> Rc<T> {
         // If inside an effect, add this signal to dependency list.
         // If running inside a destructor, do nothing.
-        let _ = CONTEXTS.try_with(|contexts| {
-            if let Some(last_context) = contexts.borrow().last() {
+        let _ = LISTENERS.try_with(|listeners| {
+            if let Some(last_context) = listeners.borrow().last() {
                 let signal = Rc::clone(&self.0);
 
                 last_context

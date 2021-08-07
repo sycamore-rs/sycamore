@@ -19,12 +19,10 @@ const CONTEXTS_INITIAL_CAPACITY: usize = 10;
 const SCOPES_INITIAL_CAPACITY: usize = 4;
 
 thread_local! {
-    /// Context of the effect that is currently running. `None` if no effect is running.
+    /// Listeners for the effect that is currently running. `None` if no effect is running.
     ///
-    /// The [`Running`] contains an array of callbacks that, when called, will add the a `Signal` to
-    /// the `handle` in the argument. The callbacks return another callback which will unsubscribe the
-    /// `handle` from the `Signal`.
-    pub(super) static CONTEXTS: RefCell<Vec<Weak<RefCell<Option<Running>>>>> =
+    /// The [`Listener`] contains a list of [`Signal`]s that were accessed within the scope.
+    pub(super) static LISTENERS: RefCell<Vec<Weak<RefCell<Option<Listener>>>>> =
         RefCell::new(Vec::with_capacity(CONTEXTS_INITIAL_CAPACITY));
     /// Explicit stack of [`ReactiveScope`]s.
     pub(super) static SCOPES: RefCell<Vec<ReactiveScope>> =
@@ -34,10 +32,10 @@ thread_local! {
 /// State of the current running effect.
 /// When the state is dropped, all dependencies are removed (both links and backlinks).
 ///
-/// The difference between [`Running`] and [`ReactiveScope`] is that [`Running`] is used for
-/// dependency tracking whereas [`ReactiveScope`] is used for resource cleanup. Each [`Running`]
+/// The difference between [`Listener`] and [`ReactiveScope`] is that [`Listener`] is used for
+/// dependency tracking whereas [`ReactiveScope`] is used for resource cleanup. Each [`Listener`]
 /// contains a [`ReactiveScope`].
-pub(super) struct Running {
+pub(super) struct Listener {
     /// Callback to run when the effect is recreated.
     pub(super) execute: Rc<RefCell<dyn FnMut()>>,
     /// A list of dependencies which trigger the effect.
@@ -46,7 +44,7 @@ pub(super) struct Running {
     scope: ReactiveScope,
 }
 
-impl Running {
+impl Listener {
     /// Clears the dependencies (both links and backlinks).
     /// Should be called when re-executing an effect to recreate all dependencies.
     fn clear_dependencies(&mut self) {
@@ -67,7 +65,7 @@ impl Running {
 #[derive(Default)]
 pub struct ReactiveScope {
     /// Effects created in this scope.
-    effects: SmallVec<[Rc<RefCell<Option<Running>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
+    effects: SmallVec<[Rc<RefCell<Option<Listener>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
     /// Callbacks to call when the scope is dropped.
     cleanup: Vec<Box<dyn FnOnce()>>,
     /// Contexts created in this scope.
@@ -83,7 +81,7 @@ impl ReactiveScope {
     }
 
     /// Add an effect that is owned by this [`ReactiveScope`].
-    pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Running>>>) {
+    pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Listener>>>) {
         self.effects.push(effect);
     }
 
@@ -155,7 +153,7 @@ pub fn create_effect_initial<R: 'static>(
 
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
     fn internal(initial: Box<InitialFn>) -> Box<dyn Any> {
-        let running: Rc<RefCell<Option<Running>>> = Rc::new(RefCell::new(None));
+        let running: Rc<RefCell<Option<Listener>>> = Rc::new(RefCell::new(None));
 
         let mut effect: Option<Box<dyn FnMut()>> = None;
         let ret: Rc<RefCell<Option<Box<dyn Any>>>> = Rc::new(RefCell::new(None));
@@ -167,16 +165,16 @@ pub fn create_effect_initial<R: 'static>(
             let running = Rc::downgrade(&running);
             let ret = Rc::downgrade(&ret);
             move || {
-                CONTEXTS.with(|contexts| {
+                LISTENERS.with(|listeners| {
                     // Record initial context size to verify that it is the same after.
-                    let initial_context_size = contexts.borrow().len();
+                    let initial_context_size = listeners.borrow().len();
 
                     // Upgrade running now to make sure running is valid for the whole duration of
                     // the effect.
                     let running = running.upgrade().unwrap();
 
                     // Push new reactive scope.
-                    contexts.borrow_mut().push(Rc::downgrade(&running));
+                    listeners.borrow_mut().push(Rc::downgrade(&running));
 
                     if let Some(initial) = initial.take() {
                         // Call initial callback.
@@ -219,18 +217,18 @@ pub fn create_effect_initial<R: 'static>(
                     }
 
                     // Remove reactive context.
-                    contexts.borrow_mut().pop();
+                    listeners.borrow_mut().pop();
 
                     debug_assert_eq!(
                         initial_context_size,
-                        contexts.borrow().len(),
+                        listeners.borrow().len(),
                         "context size should not change before and after create_effect_initial"
                     );
                 });
             }
         }));
 
-        *running.borrow_mut() = Some(Running {
+        *running.borrow_mut() = Some(Listener {
             execute: Rc::clone(&execute),
             dependencies: AHashSet::new(),
             scope: ReactiveScope::new(),
@@ -394,12 +392,12 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     let g = Rc::clone(&f);
 
     // Do not panic if running inside destructor.
-    if let Ok(ret) = CONTEXTS.try_with(|contexts| {
-        let tmp = contexts.take();
+    if let Ok(ret) = LISTENERS.try_with(|listeners| {
+        let tmp = listeners.take();
 
         let ret = f.take().unwrap()();
 
-        *contexts.borrow_mut() = tmp;
+        *listeners.borrow_mut() = tmp;
 
         ret
     }) {
@@ -467,8 +465,8 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
 /// });
 /// ```
 pub fn dependency_count() -> Option<usize> {
-    CONTEXTS.with(|contexts| {
-        contexts.borrow().last().map(|last_context| {
+    LISTENERS.with(|listeners| {
+        listeners.borrow().last().map(|last_context| {
             last_context
                 .upgrade()
                 .expect("Running should be valid while inside reactive scope")
