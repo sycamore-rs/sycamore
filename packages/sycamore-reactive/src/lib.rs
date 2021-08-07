@@ -1,4 +1,7 @@
 //! Reactive primitives for Sycamore.
+//!
+//! To learn more, read the section on [Reactivity](https://sycamore-rs.netlify.app/docs/basics/reactivity)
+//! in the Sycamore Book.
 
 mod context;
 mod effect;
@@ -15,7 +18,7 @@ pub use signal::*;
 ///
 /// # Example
 /// ```
-/// use sycamore::prelude::*;
+/// use sycamore_reactive::*;
 ///
 /// let trigger = Signal::new(());
 /// let counter = Signal::new(0);
@@ -59,7 +62,7 @@ pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
 ///
 /// # Example
 /// ```
-/// use sycamore::prelude::*;
+/// use sycamore_reactive::*;
 ///
 /// let state = Signal::new(0);
 ///

@@ -6,7 +6,7 @@ fn comp1() -> Template<G> {
 }
 
 #[component(Comp2<G>)]
-fn comp2(props: ()) -> Template<G> {
+fn comp2(_props: ()) -> Template<G> {
     todo!();
 }
 

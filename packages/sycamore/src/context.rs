@@ -24,3 +24,25 @@ where
 
     create_context_scope(value, children)
 }
+
+#[cfg(all(test, feature = "ssr"))]
+mod tests {
+    use super::*;
+    use sycamore_reactive::use_context;
+
+    #[test]
+    fn basic_context() {
+        sycamore::render_to_string(|| {
+            template! {
+                ContextProvider(ContextProviderProps {
+                    value: 1i32,
+                    children: || {
+                        let ctx = use_context::<i32>();
+                        assert_eq!(ctx, 1);
+                        template! {}
+                    }
+                })
+            }
+        });
+    }
+}

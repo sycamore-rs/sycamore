@@ -49,6 +49,7 @@ pub fn use_context<T: Clone + 'static>() -> T {
     })
 }
 
+/// Creates a new [`ReactiveScope`] with a context and runs the supplied callback function.
 pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) -> Out {
     SCOPES.with(|scopes| {
         // Create a new ReactiveScope with a context.
@@ -60,25 +61,4 @@ pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) 
         on_cleanup(move || drop(scope));
         out
     })
-}
-
-#[cfg(all(test, feature = "ssr"))]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn basic_context() {
-        sycamore::render_to_string(|| {
-            template! {
-                ContextProvider(ContextProviderProps {
-                    value: 1i32,
-                    children: || {
-                        let ctx = use_context::<i32>();
-                        assert_eq!(ctx, 1);
-                        template! {}
-                    }
-                })
-            }
-        });
-    }
 }

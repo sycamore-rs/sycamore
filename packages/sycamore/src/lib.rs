@@ -3,7 +3,7 @@
 //! Sycamore is a VDOM-less web library with fine-grained reactivity.
 //!
 //! This is the API docs for sycamore. If you are looking for the usage docs, checkout the
-//! [Sycamore Book](https://sycamore-rs.netlify.app/getting_started/installation).
+//! [Sycamore Book](https://sycamore-rs.netlify.app/docs/getting_started/installation).
 //!
 //! ## Features
 //! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on

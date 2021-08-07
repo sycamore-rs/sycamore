@@ -44,7 +44,7 @@ impl<T: 'static> StateHandle<T> {
     /// # Example
     ///
     /// ```
-    /// use sycamore::prelude::*;
+    /// use sycamore_reactive::*;
     ///
     /// let state = Signal::new(1);
     ///
@@ -102,7 +102,7 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for StateHandle<T>
 ///
 /// # Example
 /// ```
-/// use sycamore::prelude::*;
+/// use sycamore_reactive::*;
 ///
 /// let state = Signal::new(0);
 /// assert_eq!(*state.get(), 0);
@@ -119,7 +119,7 @@ impl<T: 'static> Signal<T> {
     ///
     /// # Example
     /// ```
-    /// # use sycamore::prelude::*;
+    /// # use sycamore_reactive::*;
     /// let state = Signal::new(0);
     /// # assert_eq!(*state.get(), 0);
     /// ```
@@ -135,7 +135,7 @@ impl<T: 'static> Signal<T> {
     ///
     /// # Example
     /// ```
-    /// # use sycamore::prelude::*;
+    /// # use sycamore_reactive::*;
     ///
     /// let state = Signal::new(0);
     /// assert_eq!(*state.get(), 0);
