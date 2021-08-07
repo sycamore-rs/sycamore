@@ -14,7 +14,7 @@ members = [
   # "examples/todomvc",
   "examples/tweened",
   "docs",
-  # "website",
+  "website",
 ]
 
 [profile.release]

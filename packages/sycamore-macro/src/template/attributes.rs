@@ -143,7 +143,7 @@ impl ToTokens for Attribute {
             AttributeType::DangerouslySetInnerHtml => {
                 if is_dynamic {
                     tokens.extend(quote_spanned! { expr_span=>
-                        ::sycamore::rx::create_effect({
+                        ::sycamore::reactive::effect::create_effect({
                             let __el = ::std::clone::Clone::clone(&__el);
                             move || {
                                 ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(

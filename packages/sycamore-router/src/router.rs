@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::generic_node::EventHandler;
+use sycamore::prelude::*;
 use sycamore::reactive::scope::ReactiveScope;
-use sycamore::{prelude::*, template};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
@@ -91,7 +91,7 @@ impl Integration for HistoryIntegration {
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
                             let pathname = pathname.borrow().clone().unwrap();
-                            pathname.set(path.to_string());
+                            pathname.2.set(path.to_string());
 
                             // Update History API.
                             let window = web_sys::window().unwrap();
@@ -100,7 +100,7 @@ impl Integration for HistoryIntegration {
                                 .push_state_with_url(
                                     &JsValue::UNDEFINED,
                                     "",
-                                    Some(pathname.get().as_str()),
+                                    Some(pathname.1.get().as_str()),
                                 )
                                 .unwrap();
                             window.scroll_to_with_x_and_y(0.0, 0.0);
@@ -186,7 +186,7 @@ where
         let pathname = pathname.clone();
         let integration = integration.clone();
         move || {
-            pathname.set(integration.current_pathname());
+            pathname.2.set(integration.current_pathname());
         }
     }));
 
@@ -200,7 +200,7 @@ where
             .collect::<Vec<_>>()
     });
 
-    let template = Signal::new((ReactiveScope::new(), Template::empty()));
+    let template = create_signal((None, Template::empty()));
     create_effect({
         let template = template.clone();
         move || {
@@ -229,12 +229,12 @@ where
                     }
                     t = Some(tmp);
                 });
-                template.set((scope, t.unwrap()));
+                template.1.set((Some(scope), t.unwrap()));
             });
         }
     });
 
-    Template::new_dyn(move || template.get().as_ref().1.clone())
+    Template::new_dyn(move || template.0.get().as_ref().1.clone())
 }
 
 /// Props for [`StaticRouter`].

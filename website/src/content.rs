@@ -20,7 +20,7 @@ pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
     template! {
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400") {
             Indexed(IndexedProps {
-                iterable: Signal::new(outline).handle(),
+                iterable: create_signal(outline).0,
                 template: |item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
