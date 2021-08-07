@@ -1,8 +1,6 @@
 use std::any::{Any, TypeId};
 
-use crate::prelude::*;
-
-use super::*;
+use crate::*;
 
 /// Trait for any type of context.
 ///
@@ -32,38 +30,6 @@ impl<T: 'static> ContextAny for Context<T> {
     }
 }
 
-/// Props for [`ContextProvider`].
-pub struct ContextProviderProps<T, F, G>
-where
-    T: 'static,
-    F: FnOnce() -> Template<G>,
-    G: GenericNode,
-{
-    pub value: T,
-    pub children: F,
-}
-
-/// Creates a new [`ReactiveScope`] with a context.
-#[component(ContextProvider<G>)]
-pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> Template<G>
-where
-    T: 'static,
-    F: FnOnce() -> Template<G>,
-{
-    let ContextProviderProps { value, children } = props;
-
-    SCOPES.with(|scopes| {
-        // Create a new ReactiveScope with a context.
-        let mut scope = ReactiveScope::default();
-        scope.context = Some(Box::new(Context { value }));
-        scopes.borrow_mut().push(scope);
-        let template = children();
-        let scope = scopes.borrow_mut().pop().unwrap();
-        on_cleanup(move || drop(scope));
-        template
-    })
-}
-
 /// Get the value of a context in the current [`ReactiveScope`].
 ///
 /// # Panics
@@ -80,6 +46,19 @@ pub fn use_context<T: Clone + 'static>() -> T {
         }
 
         panic!("context not found for type");
+    })
+}
+
+pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) -> Out {
+    SCOPES.with(|scopes| {
+        // Create a new ReactiveScope with a context.
+        let mut scope = ReactiveScope::default();
+        scope.context = Some(Box::new(Context { value }));
+        scopes.borrow_mut().push(scope);
+        let out = f();
+        let scope = scopes.borrow_mut().pop().unwrap();
+        on_cleanup(move || drop(scope));
+        out
     })
 }
 

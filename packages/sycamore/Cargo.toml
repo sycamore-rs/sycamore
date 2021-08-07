@@ -19,9 +19,9 @@ chrono = { version = "0.4.19", features = ["wasmbind"] }
 html-escape = { version = "0.2.9", optional = true }
 indexmap = { version = "1.7.0", features = ["std"] }
 js-sys = "0.3.51"
-serde = { version = "1.0.127", optional = true }
 smallvec = "1.6.1"
 sycamore-macro = { path = "../sycamore-macro", version = "=0.5.2" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "=0.5.2" }
 wasm-bindgen = { version = "0.2.74", features = ["enable-interning"] }
 
 [dependencies.web-sys]
@@ -49,6 +49,7 @@ wasm-bindgen-test = "0.3.24"
 default = ["dom"]
 dom = []
 ssr = ["html-escape"]
+serde = ["sycamore-reactive/serde"]
 
 [[bench]]
 harness = false

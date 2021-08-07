@@ -3,13 +3,11 @@
 mod context;
 mod effect;
 mod iter;
-mod motion;
 mod signal;
 
 pub use context::*;
 pub use effect::*;
 pub use iter::*;
-pub use motion::*;
 pub use signal::*;
 
 /// Creates a new reactive root / scope. Generally, you won't need this method as it is called
@@ -55,6 +53,33 @@ pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
     internal(Box::new(callback))
 }
 
+/// Utility macro for cloning all the arguments and expanding the expression.
+///
+/// Temporary workaround for [Rust RFC #2407](https://github.com/rust-lang/rfcs/issues/2407).
+///
+/// # Example
+/// ```
+/// use sycamore::prelude::*;
+///
+/// let state = Signal::new(0);
+///
+/// create_effect(cloned!((state) => move || {
+///    state.get();
+/// }));
+///
+/// // state still accessible outside of the effect
+/// let _ = state.get();
+/// ```
+#[macro_export]
+macro_rules! cloned {
+    (($($arg:ident),*) => $e:expr) => {{
+        // clone all the args
+        $( let $arg = ::std::clone::Clone::clone(&$arg); )*
+
+        $e
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use std::cell::RefCell;
@@ -73,5 +98,27 @@ mod tests {
                 drop(scope);
             }
         }));
+    }
+
+    #[test]
+    fn cloned() {
+        let state = Signal::new(0);
+
+        let _x = cloned!((state) => state);
+
+        // state still accessible because it was cloned instead of moved
+        let _ = state.get();
+    }
+
+    #[test]
+    fn cloned_closure() {
+        let state = Signal::new(0);
+
+        create_effect(cloned!((state) => move || {
+            state.get();
+        }));
+
+        // state still accessible outside of the effect
+        let _ = state.get();
     }
 }
