@@ -2,6 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url><loc>https://sycamore-rs.netlify.app</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/news</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/versions</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/news/announcing-v0.5.0</loc><changefreq>yearly</changefreq><priority>0.8</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/advanced_reactivity</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/css</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>

@@ -200,6 +200,7 @@ fn generate_sitemap_xml() -> Result<(), Box<dyn Error>> {
 
     write_url(&mut buf, "", "monthly", "1.0")?;
     write_url(&mut buf, "/news", "monthly", "0.8")?;
+    write_url(&mut buf, "/versions", "monthly", "0.3")?;
 
     // News
     generate_sitemap_for_dir(&mut buf, "/news", Path::new("posts"), "yearly", "0.8")?;
