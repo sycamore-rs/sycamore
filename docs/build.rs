@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::ffi::OsString;
+use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{fs, mem};
@@ -11,6 +12,8 @@ use syntect::highlighting::ThemeSet;
 use syntect::html::highlighted_html_for_string;
 use syntect::parsing::SyntaxSet;
 use walkdir::WalkDir;
+
+static HOSTNAME: &str = "https://sycamore-rs.netlify.app";
 
 // Sync definition with website/src/content.rs
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -141,11 +144,109 @@ fn build_dir(base: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn generate_sitemap_for_dir(
+    buf: &mut impl Write,
+    base: &str,
+    dir: &Path,
+    changefreq: &str,
+    priority: &str,
+) -> Result<(), Box<dyn Error>> {
+    for entry in WalkDir::new(dir)
+        .into_iter()
+        .map(|e| e.unwrap())
+        .filter(|e| e.path().is_file())
+    {
+        let path = entry.path().strip_prefix(&dir).unwrap().with_extension("");
+        let path_str = path.iter().fold(String::new(), |acc, c| {
+            format!("{}/{}", acc, c.to_str().unwrap())
+        });
+
+        write_url(buf, &format!("{}{}", base, path_str), changefreq, priority)?;
+    }
+
+    Ok(())
+}
+
+fn write_url(
+    buf: &mut impl Write,
+    path: &str,
+    changefreq: &str,
+    priority: &str,
+) -> Result<(), Box<dyn Error>> {
+    writeln!(
+        buf,
+        "<url>\
+                <loc>{hostname}{path}</loc>\
+                <changefreq>{changefreq}</changefreq>\
+                <priority>{priority}</priority>\
+            </url>",
+        hostname = HOSTNAME,
+        path = path,
+        changefreq = changefreq,
+        priority = priority,
+    )?;
+    Ok(())
+}
+
+fn generate_sitemap_xml() -> Result<(), Box<dyn Error>> {
+    let out_path = Path::new("../website/sitemap.xml");
+
+    let mut buf = String::new();
+    writeln!(buf, r#"<?xml version="1.0" encoding="UTF-8"?>"#)?;
+    writeln!(
+        buf,
+        r#"<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">"#
+    )?;
+
+    write_url(&mut buf, "", "monthly", "1.0")?;
+    write_url(&mut buf, "/news", "monthly", "0.8")?;
+
+    // News
+    generate_sitemap_for_dir(&mut buf, "/news", Path::new("posts"), "yearly", "0.8")?;
+
+    // Docs for master
+    generate_sitemap_for_dir(&mut buf, "/docs", Path::new("./next"), "weekly", "0.5")?;
+
+    // Versioned docs
+    for dir in fs::read_dir(Path::new("./versioned_docs"))? {
+        let dir = dir?;
+        let path = dir.path();
+        if path.is_dir() {
+            let version = path.file_name().unwrap().to_str().unwrap();
+            generate_sitemap_for_dir(
+                &mut buf,
+                &format!("/docs/{}", version),
+                &dir.path(),
+                "yearly",
+                "0.3",
+            )?;
+        }
+    }
+
+    // Examples
+    for dir in fs::read_dir(Path::new("../examples"))? {
+        let dir = dir?;
+        let path = dir.path();
+        if path.is_dir() {
+            let name = path.file_name().unwrap().to_str().unwrap();
+            write_url(&mut buf, &format!("/examples/{}", name), "monthly", "0.5")?;
+        }
+    }
+
+    writeln!(buf, r#"</urlset>"#)?;
+
+    fs::write(out_path, buf)?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=next");
     println!("cargo:rerun-if-changed=versioned_docs");
     println!("cargo:rerun-if-changed=posts");
+
+    generate_sitemap_xml()?;
 
     build_dir(Path::new("./next"), Path::new("docs"))?;
     build_dir(Path::new("./versioned_docs"), Path::new("docs"))?;
