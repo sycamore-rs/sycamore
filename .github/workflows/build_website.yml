@@ -1,6 +1,10 @@
 name: Build Website
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
   deploy:
@@ -23,8 +27,9 @@ jobs:
 
       - name: Install trunk
         run: >
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.12.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- &&
-          sudo mv trunk /usr/bin/
+          wget -qO-
+          https://github.com/thedodd/trunk/releases/download/v0.12.1/trunk-x86_64-unknown-linux-gnu.tar.gz
+          | tar -xzf- && sudo mv trunk /usr/bin/
 
       - name: Cargo generate-lockfile
         run: cargo generate-lockfile
@@ -42,9 +47,7 @@ jobs:
 
       - name: Build website
         run: >
-          cd website/ &&
-          npm ci &&
-          npm run prod
+          cd website/ && npm ci && npm run prod
 
       - name: Build examples
         run: |
