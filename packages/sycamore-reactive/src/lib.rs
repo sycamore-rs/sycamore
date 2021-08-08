@@ -41,19 +41,19 @@ pub use signal::*;
 /// ```
 #[must_use = "create_root returns the reactive scope of the effects created inside this scope"]
 pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
-    /// Internal implementation: use dynamic dispatch to reduce code bloat.
-    fn internal<'a>(callback: Box<dyn FnOnce() + 'a>) -> ReactiveScope {
-        SCOPES.with(|scopes| {
-            // Push new empty scope on the stack.
-            scopes.borrow_mut().push(ReactiveScope::new());
-            callback();
+    _create_root(Box::new(callback))
+}
 
-            // Pop the scope from the stack and return it.
-            scopes.borrow_mut().pop().unwrap()
-        })
-    }
+/// Internal implementation: use dynamic dispatch to reduce code bloat.
+fn _create_root<'a>(callback: Box<dyn FnOnce() + 'a>) -> ReactiveScope {
+    SCOPES.with(|scopes| {
+        // Push new empty scope on the stack.
+        scopes.borrow_mut().push(ReactiveScope::new());
+        callback();
 
-    internal(Box::new(callback))
+        // Pop the scope from the stack and return it.
+        scopes.borrow_mut().pop().unwrap()
+    })
 }
 
 /// Utility macro for cloning all the arguments and expanding the expression.
