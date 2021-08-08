@@ -37,7 +37,7 @@ thread_local! {
 /// contains a [`ReactiveScope`].
 pub(super) struct Listener {
     /// Callback to run when the effect is recreated.
-    pub(super) execute: Rc<RefCell<dyn FnMut()>>,
+    pub(super) callback: Rc<RefCell<dyn FnMut()>>,
     /// A list of dependencies which trigger the effect.
     pub(super) dependencies: AHashSet<Dependency>,
     /// The reactive scope owns all effects created within it.
@@ -49,7 +49,7 @@ impl Listener {
     /// Should be called when re-executing an effect to recreate all dependencies.
     fn clear_dependencies(&mut self) {
         for dependency in &self.dependencies {
-            dependency.signal().unsubscribe(Rc::as_ptr(&self.execute));
+            dependency.signal().unsubscribe(Rc::as_ptr(&self.callback));
         }
         self.dependencies.clear();
     }
@@ -153,7 +153,7 @@ pub fn create_effect_initial<R: 'static>(
 
     /// Internal implementation: use dynamic dispatch to reduce code bloat.
     fn internal(initial: Box<InitialFn>) -> Box<dyn Any> {
-        let running: Rc<RefCell<Option<Listener>>> = Rc::new(RefCell::new(None));
+        let listener: Rc<RefCell<Option<Listener>>> = Rc::new(RefCell::new(None));
 
         let mut effect: Option<Box<dyn FnMut()>> = None;
         let ret: Rc<RefCell<Option<Box<dyn Any>>>> = Rc::new(RefCell::new(None));
@@ -161,8 +161,8 @@ pub fn create_effect_initial<R: 'static>(
         let mut initial = Some(initial);
 
         // Callback for when the effect's dependencies are triggered.
-        let execute: Rc<RefCell<dyn FnMut()>> = Rc::new(RefCell::new({
-            let running = Rc::downgrade(&running);
+        let callback: Rc<RefCell<dyn FnMut()>> = Rc::new(RefCell::new({
+            let listener = Rc::downgrade(&listener);
             let ret = Rc::downgrade(&ret);
             move || {
                 LISTENERS.with(|listeners| {
@@ -171,10 +171,13 @@ pub fn create_effect_initial<R: 'static>(
 
                     // Upgrade running now to make sure running is valid for the whole duration of
                     // the effect.
-                    let running = running.upgrade().unwrap();
+                    let listener = listener.upgrade().unwrap();
 
                     // Push new reactive scope.
-                    listeners.borrow_mut().push(Rc::downgrade(&running));
+                    listeners.borrow_mut().push(Rc::downgrade(&listener));
+
+                    let old_dependencies =
+                        mem::take(&mut listener.borrow_mut().as_mut().unwrap().dependencies);
 
                     if let Some(initial) = initial.take() {
                         // Call initial callback.
@@ -185,34 +188,40 @@ pub fn create_effect_initial<R: 'static>(
                             effect = Some(effect_tmp);
                             *ret.borrow_mut() = Some(ret_tmp);
                         });
-                        running.borrow_mut().as_mut().unwrap().scope = scope;
+                        listener.borrow_mut().as_mut().unwrap().scope = scope;
                     } else {
-                        // Recreate effect dependencies each time effect is called.
-                        running.borrow_mut().as_mut().unwrap().clear_dependencies();
-
                         // Destroy old effects before new ones run.
 
                         // We want to destroy the old scope before creating the new one, so that
                         // cleanup functions will be run before the effect
                         // closure is called again.
-                        mem::take(&mut running.borrow_mut().as_mut().unwrap().scope);
+                        mem::take(&mut listener.borrow_mut().as_mut().unwrap().scope);
 
                         // Run effect closure.
                         let new_scope = create_root(|| {
                             effect.as_mut().unwrap()();
                         });
-                        running.borrow_mut().as_mut().unwrap().scope = new_scope;
+                        listener.borrow_mut().as_mut().unwrap().scope = new_scope;
                     }
 
-                    let running = running.borrow();
-                    let running = running.as_ref().unwrap();
+                    let listener = listener.borrow();
+                    let listener = listener.as_ref().unwrap();
 
-                    // Attach new dependencies.
-                    for dependency in &running.dependencies {
-                        dependency.signal().subscribe(Callback(Rc::downgrade(
+                    // Unsubscribe from removed dependencies.
+                    // Removed dependencies are those that are in old dependencies but not in new dependencies.
+                    for old_dependency in old_dependencies.difference(&listener.dependencies) {
+                        old_dependency
+                            .signal()
+                            .unsubscribe(listener.callback.as_ref());
+                    }
+
+                    // Subscribe to new dependencies.
+                    // New dependencies are those that are in new dependencies but not in old dependencies.
+                    for new_dependency in listener.dependencies.difference(&old_dependencies) {
+                        new_dependency.signal().subscribe(Callback(Rc::downgrade(
                             // Reference the same closure we are in right now.
                             // When the dependency changes, this closure will be called again.
-                            &running.execute,
+                            &listener.callback,
                         )));
                     }
 
@@ -228,13 +237,13 @@ pub fn create_effect_initial<R: 'static>(
             }
         }));
 
-        *running.borrow_mut() = Some(Listener {
-            execute: Rc::clone(&execute),
+        *listener.borrow_mut() = Some(Listener {
+            callback: Rc::clone(&callback),
             dependencies: AHashSet::new(),
             scope: ReactiveScope::new(),
         });
         debug_assert_eq!(
-            Rc::strong_count(&running),
+            Rc::strong_count(&listener),
             1,
             "Running should be owned exclusively by ReactiveScope"
         );
@@ -245,17 +254,17 @@ pub fn create_effect_initial<R: 'static>(
                     .borrow_mut()
                     .last_mut()
                     .unwrap()
-                    .add_effect_state(running);
+                    .add_effect_state(listener);
             } else {
                 thread_local! {
                     static GLOBAL_SCOPE: RefCell<ReactiveScope> = RefCell::new(ReactiveScope::new());
                 }
                 GLOBAL_SCOPE
-                    .with(|global_scope| global_scope.borrow_mut().add_effect_state(running));
+                    .with(|global_scope| global_scope.borrow_mut().add_effect_state(listener));
             }
         });
 
-        execute.borrow_mut()();
+        callback.borrow_mut()();
 
         let ret = Rc::try_unwrap(ret).unwrap(); // ret should only have 1 strong reference
         ret.into_inner().unwrap()
@@ -499,6 +508,16 @@ mod tests {
         assert_eq!(*double.get(), 2);
         state.set(2);
         assert_eq!(*double.get(), 4);
+    }
+
+    #[test]
+    fn effect_do_not_create_infinite_loop() {
+        let state = Signal::new(0);
+        create_effect(cloned!((state) => move || {
+            state.get();
+            state.set(0);
+        }));
+        state.set(0);
     }
 
     #[test]
