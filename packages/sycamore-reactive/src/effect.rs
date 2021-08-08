@@ -146,6 +146,7 @@ impl Eq for Dependency {}
 ///
 /// Unlike [`create_effect`], this will allow the closure to run different code upon first
 /// execution, so it can return a value.
+#[inline]
 pub fn create_effect_initial<R: 'static>(
     initial: impl FnOnce() -> (Box<dyn FnMut()>, R) + 'static,
 ) -> R {
@@ -292,6 +293,7 @@ pub fn create_effect_initial<R: 'static>(
 ///
 /// state.set(1); // Prints "State changed. New state value = 1"
 /// ```
+#[inline]
 pub fn create_effect<F>(mut effect: F)
 where
     F: FnMut() + 'static,
@@ -316,6 +318,7 @@ where
 /// state.set(1);
 /// assert_eq!(*double.get(), 2);
 /// ```
+#[inline]
 pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: FnMut() -> Out + 'static,
@@ -329,6 +332,7 @@ where
 /// the same. That is why the output of the function must implement [`PartialEq`].
 ///
 /// To specify a custom comparison function, use [`create_selector_with`].
+#[inline]
 pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
 where
     F: FnMut() -> Out + 'static,

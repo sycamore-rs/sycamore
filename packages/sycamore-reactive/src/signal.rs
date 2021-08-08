@@ -59,6 +59,7 @@ impl<T: 'static> StateHandle<T> {
     /// // double value should still be old value because state was untracked
     /// assert_eq!(*double.get(), 2);
     /// ```
+    #[inline]
     pub fn get_untracked(&self) -> Rc<T> {
         Rc::clone(&self.0.borrow().inner)
     }
@@ -123,6 +124,7 @@ impl<T: 'static> Signal<T> {
     /// let state = Signal::new(0);
     /// # assert_eq!(*state.get(), 0);
     /// ```
+    #[inline]
     pub fn new(initial: T) -> Self {
         Self {
             handle: StateHandle(Rc::new(RefCell::new(SignalInner::new(initial)))),
@@ -152,11 +154,13 @@ impl<T: 'static> Signal<T> {
     /// Get the [`StateHandle`] associated with this signal.
     ///
     /// This is a shortcut for `(*signal).clone()`.
+    #[inline]
     pub fn handle(&self) -> StateHandle<T> {
         self.handle.clone()
     }
 
     /// Consumes this signal and returns its underlying [`StateHandle`].
+    #[inline]
     pub fn into_handle(self) -> StateHandle<T> {
         self.handle
     }
