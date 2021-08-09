@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use sycamore::generic_node::EventHandler;
 use sycamore::prelude::*;
-use sycamore::rx::ReactiveScope;
+use sycamore::reactive::ReactiveScope;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sycamore::prelude::*;
-use sycamore::rx::{map_indexed, map_keyed};
+use sycamore::reactive::{map_indexed, map_keyed};
 
 pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity_signals", |b| {

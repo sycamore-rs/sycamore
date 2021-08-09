@@ -200,7 +200,8 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 let listener = listener.as_ref().unwrap();
 
                 // Unsubscribe from removed dependencies.
-                // Removed dependencies are those that are in old dependencies but not in new dependencies.
+                // Removed dependencies are those that are in old dependencies but not in new
+                // dependencies.
                 for old_dependency in old_dependencies.difference(&listener.dependencies) {
                     old_dependency
                         .signal()
@@ -208,7 +209,8 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 }
 
                 // Subscribe to new dependencies.
-                // New dependencies are those that are in new dependencies but not in old dependencies.
+                // New dependencies are those that are in new dependencies but not in old
+                // dependencies.
                 for new_dependency in listener.dependencies.difference(&old_dependencies) {
                     new_dependency.signal().subscribe(Callback(Rc::downgrade(
                         // Reference the same closure we are in right now.
@@ -286,6 +288,18 @@ where
 /// the same. That is why the output of the function must implement [`PartialEq`].
 ///
 /// To specify a custom comparison function, use [`create_selector_with`].
+///
+/// # Example
+/// ```rust
+/// use sycamore_reactive::*;
+///
+/// let state = Signal::new(0);
+/// let double = create_selector(cloned!((state) => move || *state.get() * 2));
+/// assert_eq!(*double.get(), 0);
+///
+/// state.set(1);
+/// assert_eq!(*double.get(), 2);
+/// ```
 #[inline]
 pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
 where

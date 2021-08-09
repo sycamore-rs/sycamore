@@ -9,7 +9,7 @@ use ahash::AHashMap;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventHandler, GenericNode};
-use crate::rx::create_root;
+use crate::reactive::create_root;
 use crate::template::Template;
 
 static VOID_ELEMENTS: &[&str] = &[

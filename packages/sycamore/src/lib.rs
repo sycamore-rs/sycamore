@@ -21,7 +21,7 @@
 #![deny(clippy::type_repetition_in_bounds)]
 
 pub use sycamore_macro::{component, template};
-pub use sycamore_reactive as rx;
+pub use sycamore_reactive as reactive;
 
 pub mod component;
 pub mod context;
@@ -52,7 +52,7 @@ pub mod prelude {
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
-    pub use crate::rx::{
+    pub use crate::reactive::{
         cloned, create_effect, create_memo, create_root, create_selector, create_selector_with,
         on_cleanup, untrack, Signal, StateHandle,
     };

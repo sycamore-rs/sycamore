@@ -17,6 +17,17 @@ pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 impl<T: 'static> StateHandle<T> {
     /// Get the current value of the state. When called inside a reactive scope, calling this will
     /// add itself to the scope's dependencies.
+    ///
+    /// # Example
+    /// ```rust
+    /// use sycamore_reactive::*;
+    ///
+    /// let state = Signal::new(0);
+    /// assert_eq!(*state.get(), 0);
+    ///
+    /// state.set(1);
+    /// assert_eq!(*state.get(), 1);
+    /// ```
     pub fn get(&self) -> Rc<T> {
         // If inside an effect, add this signal to dependency list.
         // If running inside a destructor, do nothing.
