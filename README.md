@@ -16,7 +16,7 @@ Learn more at the [Sycamore website](https://sycamore-rs.netlify.app), or stop b
 ## Contributing
 
 Issue reports and Pull Requests are always welcome!
-Check out the [section on contributing](https://sycamore-rs.netlify.app/contribute/architecture) in the docs.
+Check out the [section on contributing](https://sycamore-rs.netlify.app/docs/contribute/architecture) in the docs.
 
 ## MSRV
 
