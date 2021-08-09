@@ -1,4 +1,5 @@
 use sycamore_reactive::create_context_scope;
+pub use sycamore_reactive::use_context;
 
 use crate::prelude::*;
 
@@ -14,6 +15,36 @@ where
 }
 
 /// Creates a new [`ReactiveScope`] with a context.
+///
+/// # Example
+/// ```rust
+/// use sycamore::prelude::*;
+/// use sycamore::context::{ContextProvider, ContextProviderProps, use_context};
+///
+/// #[derive(Clone)]
+/// struct Counter(Signal<i32>);
+///
+/// #[component(CounterView<G>)]
+/// fn counter_view() -> Template<G> {
+///     let counter = use_context::<Counter>();
+///
+///     template! {
+///         (counter.0.get())
+///     }
+/// }
+///
+/// # #[component(App<G>)]
+/// # fn app() -> Template<G> {
+/// template! {
+///     ContextProvider(ContextProviderProps {
+///         value: Counter(Signal::new(0)),
+///         children: || template! {
+///             CounterView()
+///         }
+///     })
+/// }
+/// # }
+/// ```
 #[component(ContextProvider<G>)]
 pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> Template<G>
 where
