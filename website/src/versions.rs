@@ -55,6 +55,12 @@ fn versioned_docs_link_view(
 
 #[component(Versions<G>)]
 pub fn versions() -> Template<G> {
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .set_title("Versions - Sycamore");
+
     let versions = VERSIONS
         .iter()
         .map(|(name, versioned_docs_link)| {
