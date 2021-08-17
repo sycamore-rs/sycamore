@@ -17,6 +17,12 @@ pub struct Outline {
 
 #[component(OutlineView<G>)]
 pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .set_title("Sycamore"); // TODO: get title from markdown file
+
     template! {
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400") {
             Indexed(IndexedProps {

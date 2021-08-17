@@ -1,3 +1,5 @@
+//! Context API.
+
 use sycamore_reactive::create_context_scope;
 pub use sycamore_reactive::use_context;
 

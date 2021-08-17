@@ -119,6 +119,12 @@ impl<G: GenericNode> Template<G> {
     }
 }
 
+impl<G: GenericNode> Default for Template<G> {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 impl<G: GenericNode> fmt::Debug for Template<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.inner {
