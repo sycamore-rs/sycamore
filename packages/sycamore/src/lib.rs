@@ -30,6 +30,7 @@ pub mod flow;
 pub mod generic_node;
 pub mod motion;
 pub mod noderef;
+pub mod portal;
 pub mod template;
 pub mod utils;
 
