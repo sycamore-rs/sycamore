@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use sycamore::portal::{Portal, PortalProps};
 
 use super::*;
@@ -14,17 +17,21 @@ fn test_portal() {
     test_container.append_child(&el2).unwrap();
 
     let portal = Signal::new(None);
+    let portal_root = Rc::new(RefCell::new(None));
 
     sycamore::render_to(
-        cloned!((portal) => move || {
-            portal.set(Some(template! {
-                Portal(PortalProps {
-                    children: template! { "Hello World!" },
-                    selector: "#portal-target",
-                })
+        cloned!((portal, portal_root) => move || {
+            let root = create_root(cloned!((portal) => move || {
+                portal.set(Some(template! {
+                    Portal(PortalProps {
+                        children: template! { "Hello World!" },
+                        selector: "#portal-target",
+                    })
+                }));
             }));
+            *portal_root.borrow_mut() = Some(root);
             template! {
-                (portal.get().as_ref().as_ref().cloned().unwrap_or_default())
+                (portal.get().as_ref().clone().unwrap_or_default())
             }
         }),
         &el2,
@@ -33,7 +40,7 @@ fn test_portal() {
     assert_eq!(el.inner_html(), "Hello World!");
 
     // Destroying the portal should remove the portal from the DOM.
-    // portal.set(None);
+    drop(portal_root.take());
 
-    // assert_eq!(el.inner_html(), "");
+    assert_eq!(el.inner_html(), "");
 }
