@@ -56,16 +56,16 @@ impl NodeId {
 #[derive(Clone)]
 pub struct DomNode {
     id: Cell<NodeId>,
-    node: Rc<Node>,
+    node: Node,
 }
 
 impl DomNode {
     pub fn inner_element(&self) -> Node {
-        (*self.node).clone()
+        self.node.clone()
     }
 
     pub fn unchecked_into<T: JsCast>(self) -> T {
-        (*self.node).clone().unchecked_into()
+        self.node.clone().unchecked_into()
     }
 
     fn get_node_id(&self) -> NodeId {
@@ -133,13 +133,11 @@ fn document() -> web_sys::Document {
 
 impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
-        let node = Rc::new(
-            document()
-                .create_element(intern(tag))
-                .unwrap()
-                .dyn_into()
-                .unwrap(),
-        );
+        let node = document()
+            .create_element(intern(tag))
+            .unwrap()
+            .dyn_into()
+            .unwrap();
         DomNode {
             id: Default::default(),
             node,
@@ -147,7 +145,7 @@ impl GenericNode for DomNode {
     }
 
     fn text_node(text: &str) -> Self {
-        let node = Rc::new(document().create_text_node(text).into());
+        let node = document().create_text_node(text).into();
         DomNode {
             id: Default::default(),
             node,
@@ -155,7 +153,7 @@ impl GenericNode for DomNode {
     }
 
     fn marker() -> Self {
-        let node = Rc::new(document().create_comment("").into());
+        let node = document().create_comment("").into();
         DomNode {
             id: Default::default(),
             node,
@@ -184,7 +182,7 @@ impl GenericNode for DomNode {
     fn first_child(&self) -> Option<Self> {
         self.node.first_child().map(|node| Self {
             id: Default::default(),
-            node: Rc::new(node),
+            node,
         })
     }
 
@@ -212,14 +210,14 @@ impl GenericNode for DomNode {
     fn parent_node(&self) -> Option<Self> {
         self.node.parent_node().map(|node| Self {
             id: Default::default(),
-            node: Rc::new(node),
+            node,
         })
     }
 
     fn next_sibling(&self) -> Option<Self> {
         self.node.next_sibling().map(|node| Self {
             id: Default::default(),
-            node: Rc::new(node),
+            node,
         })
     }
 
@@ -248,7 +246,7 @@ impl GenericNode for DomNode {
 
     fn clone_node(&self) -> Self {
         Self {
-            node: Rc::new(self.node.clone_node_with_deep(true).unwrap()),
+            node: self.node.clone_node_with_deep(true).unwrap(),
             id: Default::default(),
         }
     }
@@ -274,7 +272,7 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
         insert(
             &DomNode {
                 id: Default::default(),
-                node: Rc::new(parent.clone()),
+                node: parent.clone(),
             },
             template(),
             None,
@@ -339,7 +337,7 @@ pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
         insert(
             &DomNode {
                 id: Default::default(),
-                node: Rc::new(parent.clone()),
+                node: parent.clone(),
             },
             template(),
             None,
