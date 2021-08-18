@@ -27,7 +27,7 @@ pub type EventHandler = dyn Fn(Event);
 ///
 /// Note that components are **NOT** represented by [`GenericNode`]. Instead, components are
 /// _disappearing_, meaning that they are simply functions that generate [`GenericNode`]s inside a
-/// new reactive context. This means that there is no overhead whatsoever when using components.
+/// new reactive context. This means that using components add minimal overhead.
 ///
 /// Sycamore ships with 2 rendering backends out of the box:
 /// * [`DomNode`] - Rendering in the browser (to real DOM nodes).
