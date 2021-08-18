@@ -3,7 +3,6 @@
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
