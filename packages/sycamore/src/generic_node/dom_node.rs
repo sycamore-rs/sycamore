@@ -64,7 +64,7 @@ impl DomNode {
     }
 
     pub fn unchecked_into<T: JsCast>(self) -> T {
-        self.node.clone().unchecked_into()
+        self.node.unchecked_into()
     }
 
     fn get_node_id(&self) -> NodeId {
