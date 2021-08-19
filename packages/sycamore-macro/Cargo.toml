@@ -23,4 +23,4 @@ syn = { version = "1.0.74", features = ["full"] }
 
 [dev-dependencies]
 sycamore = { path = "../sycamore" }
-trybuild = "1.0.43"
+trybuild = "1.0.45"

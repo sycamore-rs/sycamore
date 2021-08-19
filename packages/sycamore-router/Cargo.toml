@@ -17,8 +17,8 @@ version = "0.5.2"
 async-trait = "0.1.51"
 sycamore = {path = "../sycamore", version = "=0.5.2"}
 sycamore-router-macro = {path = "../sycamore-router-macro", version = "=0.5.2"}
-wasm-bindgen = "0.2.74"
-wasm-bindgen-futures = "0.4.24"
+wasm-bindgen = "0.2.76"
+wasm-bindgen-futures = "0.4.26"
 
 [dependencies.web-sys]
 features = [
@@ -31,7 +31,7 @@ features = [
   "PopStateEvent",
   "Window",
 ]
-version = "0.3.51"
+version = "0.3.53"
 
 [dev-dependencies]
 futures = "0.3.16"
