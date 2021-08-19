@@ -189,7 +189,7 @@ fn write_url(
 }
 
 fn generate_sitemap_xml() -> Result<(), Box<dyn Error>> {
-    let out_path = Path::new("../website/sitemap.xml");
+    let out_path = Path::new("../website/sitemap_index.xml");
 
     let mut buf = String::new();
     writeln!(buf, r#"<?xml version="1.0" encoding="UTF-8"?>"#)?;
