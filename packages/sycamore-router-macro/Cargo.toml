@@ -25,4 +25,4 @@ syn = { version = "1.0.74", features = ["full"] }
 [dev-dependencies]
 expect-test = "1.1.0"
 sycamore-router = {path = "../sycamore-router"}
-trybuild = "1.0.43"
+trybuild = "1.0.45"
