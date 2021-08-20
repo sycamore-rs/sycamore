@@ -35,15 +35,19 @@ impl ToTokens for Component {
 
         let quoted = if args.empty_or_trailing() {
             quote_spanned! { paren.span=>
-                ::sycamore::reactive::untrack(||
-                    #path::<_>::__create_component#generics(())
-                )
+                ::sycamore::reactive::untrack(|| {
+                    #[allow(unused_imports)]
+                    use ::sycamore::component::Component;
+                    #path#generics::__create_component(())
+                })
             }
         } else {
             quote_spanned! { path.span()=>
-                ::sycamore::reactive::untrack(||
-                    #path::<_>::__create_component#generics(#args)
-                )
+                ::sycamore::reactive::untrack(|| {
+                    #[allow(unused_imports)]
+                    use ::sycamore::component::Component;
+                    #path#generics::__create_component(#args)
+                })
             }
         };
 

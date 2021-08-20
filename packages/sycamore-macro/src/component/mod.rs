@@ -182,7 +182,44 @@ pub fn component_impl(
         return_type,
     } = component;
 
-    let (impl_generics, _ty_generics, where_clause) = generics.split_for_impl();
+    let prop_ty = match &arg {
+        FnArg::Receiver(_) => unreachable!(),
+        FnArg::Typed(pat_ty) => &pat_ty.ty,
+    };
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    // Add the GenericNode type to generics.
+    let impl_generics = impl_generics
+        .into_token_stream()
+        .into_iter()
+        .collect::<Vec<_>>();
+    // Throw away first and last TokenTree to get rid of angle brackets.
+    let impl_generics_len = impl_generics.len();
+    let mut impl_generics = impl_generics
+        .into_iter()
+        .take(impl_generics_len.saturating_sub(1))
+        .skip(1)
+        .collect::<TokenStream>();
+    if impl_generics.is_empty() {
+        impl_generics = generic_node.into_token_stream();
+    } else {
+        impl_generics.extend(quote! { ,#generic_node });
+    }
+    let impl_generics = quote! { <#impl_generics> };
+
+    // Generics for the PhantomData.
+    let phantom_generics = ty_generics
+        .clone()
+        .into_token_stream()
+        .into_iter()
+        .collect::<Vec<_>>();
+    // Throw away first and last TokenTree to get rid of angle brackets.
+    let phantom_generics_len = phantom_generics.len();
+    let phantom_generics = phantom_generics
+        .into_iter()
+        .take(phantom_generics_len.saturating_sub(1))
+        .skip(1)
+        .collect::<TokenStream>();
 
     if name == component_name {
         return Err(syn::Error::new_spanned(
@@ -193,23 +230,19 @@ pub fn component_impl(
 
     let quoted = quote! {
         #(#attrs)*
-        #vis struct #component_name<#generic_node> {
+        #vis struct #component_name#generics {
             #[doc(hidden)]
-            _marker: ::std::marker::PhantomData<#generic_node_ty>,
+            _marker: ::std::marker::PhantomData<(#phantom_generics)>,
         }
 
-        impl<#generic_node> ::sycamore::component::Component<#generic_node_ty>
-            for #component_name<#generic_node_ty>
+        impl#impl_generics ::sycamore::component::Component::<#generic_node_ty> for #component_name#ty_generics
+            #where_clause
         {
             #[cfg(debug_assertions)]
             const NAME: &'static ::std::primitive::str = #component_name_str;
-        }
+            type Props = #prop_ty;
 
-        impl<#generic_node> #component_name<#generic_node_ty> {
-            #[doc(hidden)]
-            pub fn __create_component#impl_generics(#arg) -> #return_type
-                #where_clause
-            {
+            fn __create_component(#arg) -> #return_type{
                 #block
             }
         }
