@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    Attribute, Block, FnArg, Generics, Ident, Item, ItemFn, Result, ReturnType, Type, TypeParam,
+    Attribute, Block, FnArg, GenericParam, Generics, Ident, Item, ItemFn, Result, ReturnType, Type,
     Visibility,
 };
 
@@ -167,7 +167,7 @@ pub fn component_impl(
 
     let component_name_str = component_name.to_string();
     let generic_node_ty = generic_node_ty.type_params().next().unwrap();
-    let generic_node: TypeParam = syn::parse_quote! {
+    let generic_node: GenericParam = syn::parse_quote! {
         #generic_node_ty: ::sycamore::generic_node::GenericNode
     };
 
@@ -175,7 +175,7 @@ pub fn component_impl(
         block,
         props_type: _,
         arg,
-        generics,
+        mut generics,
         vis,
         attrs,
         name,
@@ -187,25 +187,22 @@ pub fn component_impl(
         FnArg::Typed(pat_ty) => &pat_ty.ty,
     };
 
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-    // Add the GenericNode type to generics.
-    let impl_generics = impl_generics
-        .into_token_stream()
-        .into_iter()
-        .collect::<Vec<_>>();
-    // Throw away first and last TokenTree to get rid of angle brackets.
-    let impl_generics_len = impl_generics.len();
-    let mut impl_generics = impl_generics
-        .into_iter()
-        .take(impl_generics_len.saturating_sub(1))
-        .skip(1)
-        .collect::<TokenStream>();
-    if impl_generics.is_empty() {
-        impl_generics = generic_node.into_token_stream();
+    // Add the GenericNode type param to generics.
+    let first_generic_param_index = generics
+        .params
+        .iter()
+        .enumerate()
+        .find(|(_, param)| matches!(param, GenericParam::Type(_) | GenericParam::Const(_)))
+        .map(|(i, _)| i);
+    if let Some(first_generic_param_index) = first_generic_param_index {
+        generics
+            .params
+            .insert(first_generic_param_index, generic_node);
     } else {
-        impl_generics.extend(quote! { ,#generic_node });
+        generics.params.push(generic_node);
     }
-    let impl_generics = quote! { <#impl_generics> };
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     // Generics for the PhantomData.
     let phantom_generics = ty_generics
