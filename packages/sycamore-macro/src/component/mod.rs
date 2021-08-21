@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    Attribute, Block, FnArg, Generics, Ident, Item, ItemFn, Result, ReturnType, Type, TypeParam,
+    Attribute, Block, FnArg, GenericParam, Generics, Ident, Item, ItemFn, Result, ReturnType, Type,
     Visibility,
 };
 
@@ -167,7 +167,7 @@ pub fn component_impl(
 
     let component_name_str = component_name.to_string();
     let generic_node_ty = generic_node_ty.type_params().next().unwrap();
-    let generic_node: TypeParam = syn::parse_quote! {
+    let generic_node: GenericParam = syn::parse_quote! {
         #generic_node_ty: ::sycamore::generic_node::GenericNode
     };
 
@@ -175,14 +175,48 @@ pub fn component_impl(
         block,
         props_type: _,
         arg,
-        generics,
+        mut generics,
         vis,
         attrs,
         name,
         return_type,
     } = component;
 
-    let (impl_generics, _ty_generics, where_clause) = generics.split_for_impl();
+    let prop_ty = match &arg {
+        FnArg::Receiver(_) => unreachable!(),
+        FnArg::Typed(pat_ty) => &pat_ty.ty,
+    };
+
+    // Add the GenericNode type param to generics.
+    let first_generic_param_index = generics
+        .params
+        .iter()
+        .enumerate()
+        .find(|(_, param)| matches!(param, GenericParam::Type(_) | GenericParam::Const(_)))
+        .map(|(i, _)| i);
+    if let Some(first_generic_param_index) = first_generic_param_index {
+        generics
+            .params
+            .insert(first_generic_param_index, generic_node);
+    } else {
+        generics.params.push(generic_node);
+    }
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    // Generics for the PhantomData.
+    let phantom_generics = ty_generics
+        .clone()
+        .into_token_stream()
+        .into_iter()
+        .collect::<Vec<_>>();
+    // Throw away first and last TokenTree to get rid of angle brackets.
+    let phantom_generics_len = phantom_generics.len();
+    let phantom_generics = phantom_generics
+        .into_iter()
+        .take(phantom_generics_len.saturating_sub(1))
+        .skip(1)
+        .collect::<TokenStream>();
 
     if name == component_name {
         return Err(syn::Error::new_spanned(
@@ -193,23 +227,19 @@ pub fn component_impl(
 
     let quoted = quote! {
         #(#attrs)*
-        #vis struct #component_name<#generic_node> {
+        #vis struct #component_name#generics {
             #[doc(hidden)]
-            _marker: ::std::marker::PhantomData<#generic_node_ty>,
+            _marker: ::std::marker::PhantomData<(#phantom_generics)>,
         }
 
-        impl<#generic_node> ::sycamore::component::Component<#generic_node_ty>
-            for #component_name<#generic_node_ty>
+        impl#impl_generics ::sycamore::component::Component::<#generic_node_ty> for #component_name#ty_generics
+            #where_clause
         {
             #[cfg(debug_assertions)]
             const NAME: &'static ::std::primitive::str = #component_name_str;
-        }
+            type Props = #prop_ty;
 
-        impl<#generic_node> #component_name<#generic_node_ty> {
-            #[doc(hidden)]
-            pub fn __create_component#impl_generics(#arg) -> #return_type
-                #where_clause
-            {
+            fn __create_component(#arg) -> #return_type{
                 #block
             }
         }
