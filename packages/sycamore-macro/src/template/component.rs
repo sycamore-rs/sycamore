@@ -61,7 +61,7 @@ impl ToTokens for Component {
             quote_spanned! { paren.span=>
                 ::sycamore::reactive::untrack(|| {
                     #[allow(unused_imports)]
-                    use ::sycamore::component::Component;
+                    use ::sycamore::component::Component as __Component;
                     #path#generics::__create_component(())
                 })
             }
@@ -69,7 +69,7 @@ impl ToTokens for Component {
             quote_spanned! { path.span()=>
                 ::sycamore::reactive::untrack(|| {
                     #[allow(unused_imports)]
-                    use ::sycamore::component::Component;
+                    use ::sycamore::component::Component as __Component;
                     #path#generics::__create_component(#args)
                 })
             }
