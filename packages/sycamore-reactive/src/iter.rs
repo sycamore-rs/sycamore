@@ -61,12 +61,12 @@ where
                 let mut temp_scopes = vec![None; new_items.len()];
 
                 // Skip common prefix.
-                let mut start = 0;
                 let min_len = usize::min(items.len(), new_items.len());
-                while start < min_len && items[start] == new_items[start] {
-                    start += 1;
-                }
-                debug_assert!(start <= min_len);
+                let start = items
+                    .iter()
+                    .zip(new_items.iter())
+                    .position(|(a, b)| a != b)
+                    .unwrap_or(min_len);
                 debug_assert!(
                     (items.get(start).is_none() && new_items.get(start).is_none())
                         || (items.get(start) != new_items.get(start)),
