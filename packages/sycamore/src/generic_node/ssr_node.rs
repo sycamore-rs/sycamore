@@ -209,7 +209,7 @@ impl GenericNode for SsrNode {
             .enumerate()
             .find_map(|(i, c)| (c == old).then(|| i))
             .expect("the node to be replaced is not a child of this node");
-        children[index].set_parent(Weak::new());
+        *children[index].0.parent.borrow_mut() = Weak::new();
         children[index] = new.clone();
     }
 

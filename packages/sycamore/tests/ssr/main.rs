@@ -27,6 +27,23 @@ fn reactive_text() {
 }
 
 #[test]
+fn reactive_text_with_siblings() {
+    let count = Signal::new(0);
+
+    let node = cloned!((count) => template! {
+        p { "before" (count.get()) "after" }
+    });
+
+    assert_eq!(
+        sycamore::render_to_string(cloned!((node) => move || node)),
+        "<p>before0after</p>"
+    );
+
+    count.set(1);
+    assert_eq!(sycamore::render_to_string(|| node), "<p>before1after</p>");
+}
+
+#[test]
 fn self_closing_tag() {
     let node = template! {
         div {
