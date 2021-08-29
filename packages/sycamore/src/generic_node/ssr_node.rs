@@ -303,13 +303,16 @@ pub struct Element {
 
 impl WriteToString for Element {
     fn write_to_string(&self, s: &mut String) {
+        s.reserve("<".len() + self.name.len());
         s.push('<');
         s.push_str(&self.name);
         for (name, value) in &self.attributes {
+            let value_escaped = html_escape::encode_double_quoted_attribute(value);
+            s.reserve(" ".len() + name.len() + "=\"".len() + value_escaped.len() + "\"".len());
             s.push(' ');
             s.push_str(name);
             s.push_str("=\"");
-            s.push_str(&html_escape::encode_double_quoted_attribute(value));
+            s.push_str(&value_escaped);
             s.push('"');
         }
 
@@ -321,6 +324,7 @@ impl WriteToString for Element {
             for child in &self.children {
                 child.write_to_string(s);
             }
+            s.reserve("</".len() + self.name.len() + ">".len());
             s.push_str("</");
             s.push_str(&self.name);
             s.push('>');
