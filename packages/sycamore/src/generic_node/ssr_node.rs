@@ -1,7 +1,6 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
 use std::cell::RefCell;
-use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
@@ -280,13 +279,17 @@ impl GenericNode for SsrNode {
     }
 }
 
-impl fmt::Display for SsrNode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+trait WriteToString {
+    fn write_to_string(&self, s: &mut String);
+}
+
+impl WriteToString for SsrNode {
+    fn write_to_string(&self, s: &mut String) {
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(x) => write!(f, "{}", x.borrow()),
-            SsrNodeType::Comment(x) => write!(f, "{}", x.borrow()),
-            SsrNodeType::Text(x) => write!(f, "{}", x.borrow()),
-            SsrNodeType::RawText(x) => write!(f, "{}", x.borrow()),
+            SsrNodeType::Element(x) => x.borrow().write_to_string(s),
+            SsrNodeType::Comment(x) => x.borrow().write_to_string(s),
+            SsrNodeType::Text(x) => x.borrow().write_to_string(s),
+            SsrNodeType::RawText(x) => x.borrow().write_to_string(s),
         }
     }
 }
@@ -298,47 +301,45 @@ pub struct Element {
     children: Vec<SsrNode>,
 }
 
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<{}", self.name)?;
+impl WriteToString for Element {
+    fn write_to_string(&self, s: &mut String) {
+        s.push_str(&format!("<{}", self.name));
         for (name, value) in &self.attributes {
-            write!(
-                f,
+            s.push_str(&format!(
                 r#" {}="{}""#,
                 name,
                 html_escape::encode_double_quoted_attribute(value)
-            )?;
+            ));
         }
 
         // Check if self-closing tag (void-element).
         if self.children.is_empty() && VOID_ELEMENTS.iter().any(|tag| tag == &self.name) {
-            write!(f, " />")?;
+            s.push_str("/>");
         } else {
-            write!(f, ">")?;
+            s.push('>');
             for child in &self.children {
-                write!(f, "{}", child)?;
+                child.write_to_string(s);
             }
-            write!(f, "</{}>", self.name)?;
+            s.push_str(&format!("</{}>", self.name));
         }
-        Ok(())
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct Comment(String);
 
-impl fmt::Display for Comment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<!--{}-->", self.0.replace("-->", "--&gt;"))
+impl WriteToString for Comment {
+    fn write_to_string(&self, s: &mut String) {
+        s.push_str(&format!("<!--{}-->", self.0.replace("-->", "--&gt;")));
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct Text(String);
 
-impl fmt::Display for Text {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", html_escape::encode_text_minimal(&self.0))
+impl WriteToString for Text {
+    fn write_to_string(&self, s: &mut String) {
+        s.push_str(&html_escape::encode_text_minimal(&self.0));
     }
 }
 
@@ -346,9 +347,9 @@ impl fmt::Display for Text {
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct RawText(String);
 
-impl fmt::Display for RawText {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+impl WriteToString for RawText {
+    fn write_to_string(&self, s: &mut String) {
+        s.push_str(&self.0);
     }
 }
 
@@ -360,7 +361,7 @@ pub fn render_to_string(template: impl FnOnce() -> Template<SsrNode>) -> String 
     let mut ret = String::new();
     let _scope = create_root(|| {
         for node in template().flatten() {
-            ret.push_str(&node.to_string());
+            node.write_to_string(&mut ret);
         }
     });
 
