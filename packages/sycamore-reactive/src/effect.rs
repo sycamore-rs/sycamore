@@ -182,40 +182,42 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 // Push new reactive scope.
                 listeners.borrow_mut().push(Rc::downgrade(&listener));
 
-                let old_dependencies =
-                    mem::take(&mut listener.borrow_mut().as_mut().unwrap().dependencies);
+                let mut listener_mut = listener.borrow_mut();
+                let listener_ref = listener_mut.as_mut().unwrap();
+
+                let old_dependencies = mem::take(&mut listener_ref.dependencies);
 
                 // We want to destroy the old scope before creating the new one, so that
                 // cleanup functions will be run before the effect
                 // closure is called again.
-                mem::take(&mut listener.borrow_mut().as_mut().unwrap().scope);
+                let _ = mem::take(&mut listener_ref.scope);
 
                 // Run effect closure.
+                drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
                 let new_scope = create_root(|| {
                     effect();
                 });
-                listener.borrow_mut().as_mut().unwrap().scope = new_scope;
-
-                let listener = listener.borrow();
-                let listener = listener.as_ref().unwrap();
+                let mut listener_mut = listener.borrow_mut();
+                let listener_ref = listener_mut.as_mut().unwrap();
+                listener_ref.scope = new_scope;
 
                 // Unsubscribe from removed dependencies.
                 // Removed dependencies are those that are in old dependencies but not in new
                 // dependencies.
-                for old_dependency in old_dependencies.difference(&listener.dependencies) {
+                for old_dependency in old_dependencies.difference(&listener_ref.dependencies) {
                     old_dependency
                         .signal()
-                        .unsubscribe(listener.callback.as_ref());
+                        .unsubscribe(listener_ref.callback.as_ref());
                 }
 
                 // Subscribe to new dependencies.
                 // New dependencies are those that are in new dependencies but not in old
                 // dependencies.
-                for new_dependency in listener.dependencies.difference(&old_dependencies) {
+                for new_dependency in listener_ref.dependencies.difference(&old_dependencies) {
                     new_dependency.signal().subscribe(Callback(Rc::downgrade(
                         // Reference the same closure we are in right now.
                         // When the dependency changes, this closure will be called again.
-                        &listener.callback,
+                        &listener_ref.callback,
                     )));
                 }
 
