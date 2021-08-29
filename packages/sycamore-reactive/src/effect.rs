@@ -36,7 +36,7 @@ thread_local! {
 /// contains a [`ReactiveScope`].
 pub(super) struct Listener {
     /// Callback to run when the effect is recreated.
-    pub(super) callback: Rc<RefCell<dyn FnMut()>>,
+    pub(super) callback: Rc<dyn Fn()>,
     /// A list of dependencies which trigger the effect.
     pub(super) dependencies: AHashSet<Dependency>,
     /// The reactive scope owns all effects created within it.
@@ -102,14 +102,14 @@ impl Drop for ReactiveScope {
     }
 }
 
-pub(super) type CallbackPtr = *const RefCell<dyn FnMut()>;
+pub(super) type CallbackPtr = *const dyn Fn();
 
 #[derive(Clone)]
-pub(super) struct Callback(pub(super) Weak<RefCell<dyn FnMut()>>);
+pub(super) struct Callback(pub(super) Weak<dyn Fn()>);
 
 impl Callback {
     #[must_use = "returned value must be manually called"]
-    pub fn try_callback(&self) -> Option<Rc<RefCell<dyn FnMut()>>> {
+    pub fn try_callback(&self) -> Option<Rc<dyn Fn()>> {
         self.0.upgrade()
     }
 
@@ -160,15 +160,15 @@ pub fn create_effect<F>(effect: F)
 where
     F: FnMut() + 'static,
 {
-    _create_effect(Box::new(effect));
+    _create_effect(RefCell::new(Box::new(effect)));
 }
 
 /// Internal implementation: use dynamic dispatch to reduce code bloat.
-fn _create_effect(mut effect: Box<dyn FnMut()>) {
+fn _create_effect(effect: RefCell<Box<dyn FnMut()>>) {
     let listener: Rc<RefCell<Option<Listener>>> = Rc::new(RefCell::new(None));
 
     // Callback for when the effect's dependencies are triggered.
-    let callback: Rc<RefCell<dyn FnMut()>> = Rc::new(RefCell::new({
+    let callback: Rc<dyn Fn()> = Rc::new({
         let listener = Rc::downgrade(&listener);
         move || {
             LISTENERS.with(|listeners| {
@@ -195,7 +195,12 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 // Run effect closure.
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
                 let new_scope = create_root(|| {
-                    effect();
+                    // Do nothing if trigger self in effect callback. This is because the effect
+                    // will already be mutably borrowed somewhere higher in the call stack where the
+                    // effect was originally called.
+                    if let Ok(mut effect) = effect.try_borrow_mut() {
+                        effect()
+                    }
                 });
                 let mut listener_mut = listener.borrow_mut();
                 let listener_ref = listener_mut.as_mut().unwrap();
@@ -231,7 +236,7 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 );
             });
         }
-    }));
+    });
 
     *listener.borrow_mut() = Some(Listener {
         callback: Rc::clone(&callback),
@@ -259,7 +264,7 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
         }
     });
 
-    callback.borrow_mut()();
+    callback();
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".

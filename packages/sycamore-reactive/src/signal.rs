@@ -188,11 +188,7 @@ impl<T: 'static> Signal<T> {
         for subscriber in subscribers.values().rev() {
             // subscriber might have already been destroyed in the case of nested effects
             if let Some(callback) = subscriber.try_callback() {
-                // Might already be inside a callback, if infinite loop.
-                // Do nothing if infinite loop.
-                if let Ok(mut callback) = callback.try_borrow_mut() {
-                    callback()
-                }
+                callback();
             }
         }
     }
