@@ -54,7 +54,7 @@ fn self_closing_tag() {
 
     assert_eq!(
         sycamore::render_to_string(|| node),
-        "<div><input /><input value=\"a\" /></div>"
+        "<div><input/><input value=\"a\"/></div>"
     )
 }
 
