@@ -1,10 +1,9 @@
 //! Reactive utilities for dealing with lists.
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
-
-use ahash::AHashMap;
 
 use super::*;
 
@@ -61,15 +60,14 @@ where
                 let mut temp_scopes = vec![None; new_items.len()];
 
                 // Skip common prefix.
+                let mut start = 0;
                 let min_len = usize::min(items.len(), new_items.len());
-                let start = items
-                    .iter()
-                    .zip(new_items.iter())
-                    .position(|(a, b)| a != b)
-                    .unwrap_or(min_len);
+                while start < min_len && items[start] == new_items[start] {
+                    start += 1;
+                }
+                debug_assert!(start <= min_len);
                 debug_assert!(
-                    (items.get(start).is_none() && new_items.get(start).is_none())
-                        || (items.get(start) != new_items.get(start)),
+                    items.get(start) != new_items.get(start),
                     "start is the first index where items[start] != new_items[start]"
                 );
 
@@ -85,9 +83,8 @@ where
                     temp_scopes[new_end] = scopes[end].clone();
                 }
                 debug_assert!(
-                    if end != 0 && new_end != 0 {
-                        (end == items.len() && new_end == new_items.len())
-                            || (items[end - 1] != new_items[new_end - 1])
+                    if end > 0 && new_end > 0 {
+                        items[end - 1] != new_items[new_end - 1]
                     } else {
                         true
                     },
@@ -96,7 +93,7 @@ where
 
                 // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
                 // natural order.
-                let mut new_indices = AHashMap::with_capacity(new_end - start);
+                let mut new_indices = HashMap::with_capacity(new_end - start);
 
                 // Indexes for new_indices_next are shifted by start because values at 0..start are
                 // always None.

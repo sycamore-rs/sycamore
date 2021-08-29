@@ -1,44 +1,5 @@
 # Changelog
 
-## ✨ **0.5.2** _(2021-07-17)_
-
-#### Changelog
-
-- #### ⚡️ Features
-
-  - Context API: introducing `ContextProvider` and `use_context` [[@lukechu10],
-    [#169](https://github.com/sycamore-rs/sycamore/pull/169)]
-
-- #### 🛠 Fixes
-
-  - Router should not prevent default if meta keys are held down [[@baile320],
-    [#165](https://github.com/sycamore-rs/sycamore/pull/165)]
-  - Remove some `optional` tags on dependencies [[@lukechu10],
-    [#167](https://github.com/sycamore-rs/sycamore/pull/167)]
-  - Explicitly enable `std` feature in `indexmap` to prevent compile error [[@Gearme],
-    [#170](https://github.com/sycamore-rs/sycamore/pull/170)]
-  - Do not panic when `map_keyed` is updated with same data in debug mode [[@lukechu10],
-    [#173](https://github.com/sycamore-rs/sycamore/pull/173)]
-
-- #### 🛠 Internal Fixes and Improvements
-
-  - Add some integration tests for `StaticRouter` [[@lukechu10],
-    [#168](https://github.com/sycamore-rs/sycamore/pull/168)]
-  - Fix intra-doc link [[@tshepang], [#162](https://github.com/sycamore-rs/sycamore/pull/162)]
-  - Refactor `sycamore-macro` static text and splices [[@lukechu10],
-    [#175](https://github.com/sycamore-rs/sycamore/pull/175)]
-
-- #### 📃 Documentation
-
-  - Simplify cargo command in documentation [[@tshepang],
-    [#163](https://github.com/sycamore-rs/sycamore/pull/163)]
-  - Fix link to book in website version selector [[@lukechu10],
-    [#166](https://github.com/sycamore-rs/sycamore/pull/166)]
-
-- #### 🚅 Performance Improvements
-
-  - Performance tweaks [[@lukechu10], [#171](https://github.com/sycamore-rs/sycamore/pull/171)]
-
 ## ✨ **0.5.1** _(2021-07-09)_
 
 #### Changelog
@@ -385,8 +346,6 @@ Release post:
   - Added `template!` macro.
   - Added reactivity primitives.
 
-[@baile320]: https://github.com/baile320
-[@gearme]: https://github.com/Gearme
 [@iwburns]: https://github.com/iwburns
 [@juanmarchetto]: https://github.com/JuanMarchetto
 [@kestrer]: https://github.com/Kestrer

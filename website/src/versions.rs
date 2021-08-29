@@ -8,8 +8,7 @@ enum VersionedDocsLink {
 
 const VERSIONS: &[(&str, VersionedDocsLink)] = &[
     ("Next", VersionedDocsLink::Next),
-    ("v0.5.2", VersionedDocsLink::Some("v0.5")),
-    ("v0.5.1", VersionedDocsLink::None),
+    ("v0.5.1", VersionedDocsLink::Some("v0.5")),
     ("v0.5.0", VersionedDocsLink::None),
     ("v0.5.0-beta.1", VersionedDocsLink::None),
     ("v0.5.0-beta.0", VersionedDocsLink::None),
@@ -23,7 +22,7 @@ fn versioned_docs_link_view(
         VersionedDocsLink::Some(link) => template! {
             a(
                 class="hover:text-yellow-500 transition-colors",
-                href=format!("/docs/{}/getting_started/installation", link),
+                href=format!("/docs/{}/getting_started/hello_world", link),
             ) { "Book" }
             a(
                 class="hover:text-yellow-500 transition-colors",
@@ -47,7 +46,7 @@ fn versioned_docs_link_view(
         VersionedDocsLink::Next => template! {
             a(
                 class="hover:text-yellow-500 transition-colors",
-                href="/docs/getting_started/installation",
+                href="/docs/getting_started/hello_world",
             ) { "Book" }
         },
     }
@@ -55,12 +54,6 @@ fn versioned_docs_link_view(
 
 #[component(Versions<G>)]
 pub fn versions() -> Template<G> {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("Versions - Sycamore");
-
     let versions = VERSIONS
         .iter()
         .map(|(name, versioned_docs_link)| {

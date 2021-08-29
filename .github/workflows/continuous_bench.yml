@@ -13,12 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
       - name: Run cargo bench
         run: cargo bench --bench reactivity --bench ssr -- --output-format bencher | tee -a output.txt
 

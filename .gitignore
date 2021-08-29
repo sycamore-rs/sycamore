@@ -6,6 +6,3 @@ Cargo.lock
 
 # Local Netlify folder
 .netlify
-
-# VS Code folder
-.vscode

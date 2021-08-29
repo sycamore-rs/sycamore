@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use indexmap::IndexMap;
+use indexmap::IndexSet;
 
 use super::*;
 
@@ -17,22 +17,11 @@ pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 impl<T: 'static> StateHandle<T> {
     /// Get the current value of the state. When called inside a reactive scope, calling this will
     /// add itself to the scope's dependencies.
-    ///
-    /// # Example
-    /// ```rust
-    /// use sycamore_reactive::*;
-    ///
-    /// let state = Signal::new(0);
-    /// assert_eq!(*state.get(), 0);
-    ///
-    /// state.set(1);
-    /// assert_eq!(*state.get(), 1);
-    /// ```
     pub fn get(&self) -> Rc<T> {
         // If inside an effect, add this signal to dependency list.
         // If running inside a destructor, do nothing.
-        let _ = LISTENERS.try_with(|listeners| {
-            if let Some(last_context) = listeners.borrow().last() {
+        let _ = CONTEXTS.try_with(|contexts| {
+            if let Some(last_context) = contexts.borrow().last() {
                 let signal = Rc::clone(&self.0);
 
                 last_context
@@ -55,7 +44,7 @@ impl<T: 'static> StateHandle<T> {
     /// # Example
     ///
     /// ```
-    /// use sycamore_reactive::*;
+    /// use sycamore::prelude::*;
     ///
     /// let state = Signal::new(1);
     ///
@@ -70,7 +59,6 @@ impl<T: 'static> StateHandle<T> {
     /// // double value should still be old value because state was untracked
     /// assert_eq!(*double.get(), 2);
     /// ```
-    #[inline]
     pub fn get_untracked(&self) -> Rc<T> {
         Rc::clone(&self.0.borrow().inner)
     }
@@ -114,7 +102,7 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for StateHandle<T>
 ///
 /// # Example
 /// ```
-/// use sycamore_reactive::*;
+/// use sycamore::prelude::*;
 ///
 /// let state = Signal::new(0);
 /// assert_eq!(*state.get(), 0);
@@ -131,11 +119,10 @@ impl<T: 'static> Signal<T> {
     ///
     /// # Example
     /// ```
-    /// # use sycamore_reactive::*;
+    /// # use sycamore::prelude::*;
     /// let state = Signal::new(0);
     /// # assert_eq!(*state.get(), 0);
     /// ```
-    #[inline]
     pub fn new(initial: T) -> Self {
         Self {
             handle: StateHandle(Rc::new(RefCell::new(SignalInner::new(initial)))),
@@ -148,7 +135,7 @@ impl<T: 'static> Signal<T> {
     ///
     /// # Example
     /// ```
-    /// # use sycamore_reactive::*;
+    /// # use sycamore::prelude::*;
     ///
     /// let state = Signal::new(0);
     /// assert_eq!(*state.get(), 0);
@@ -165,13 +152,11 @@ impl<T: 'static> Signal<T> {
     /// Get the [`StateHandle`] associated with this signal.
     ///
     /// This is a shortcut for `(*signal).clone()`.
-    #[inline]
     pub fn handle(&self) -> StateHandle<T> {
         self.handle.clone()
     }
 
     /// Consumes this signal and returns its underlying [`StateHandle`].
-    #[inline]
     pub fn into_handle(self) -> StateHandle<T> {
         self.handle
     }
@@ -185,14 +170,10 @@ impl<T: 'static> Signal<T> {
         let subscribers = self.handle.0.borrow().subscribers.clone();
 
         // Reverse order of subscribers to trigger outer effects before inner effects.
-        for subscriber in subscribers.values().rev() {
+        for subscriber in subscribers.iter().rev() {
             // subscriber might have already been destroyed in the case of nested effects
             if let Some(callback) = subscriber.try_callback() {
-                // Might already be inside a callback, if infinite loop.
-                // Do nothing if infinite loop.
-                if let Ok(mut callback) = callback.try_borrow_mut() {
-                    callback()
-                }
+                callback.borrow_mut()();
             }
         }
     }
@@ -258,26 +239,26 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Signal<T> {
 
 pub(super) struct SignalInner<T> {
     inner: Rc<T>,
-    subscribers: IndexMap<CallbackPtr, Callback>,
+    subscribers: IndexSet<Callback>,
 }
 
 impl<T> SignalInner<T> {
     fn new(value: T) -> Self {
         Self {
             inner: Rc::new(value),
-            subscribers: IndexMap::new(),
+            subscribers: IndexSet::new(),
         }
     }
 
     /// Adds a handler to the subscriber list. If the handler is already a subscriber, does nothing.
     fn subscribe(&mut self, handler: Callback) {
-        self.subscribers.insert(handler.as_ptr(), handler);
+        self.subscribers.insert(handler);
     }
 
     /// Removes a handler from the subscriber list. If the handler is not a subscriber, does
     /// nothing.
-    fn unsubscribe(&mut self, handler: CallbackPtr) {
-        self.subscribers.remove(&handler);
+    fn unsubscribe(&mut self, handler: &Callback) {
+        self.subscribers.remove(handler);
     }
 
     /// Updates the inner value. This does **NOT** call the subscribers.
@@ -292,7 +273,7 @@ pub(super) trait AnySignalInner {
     /// Wrapper around [`SignalInner::subscribe`].
     fn subscribe(&self, handler: Callback);
     /// Wrapper around [`SignalInner::unsubscribe`].
-    fn unsubscribe(&self, handler: CallbackPtr);
+    fn unsubscribe(&self, handler: &Callback);
 }
 
 impl<T> AnySignalInner for RefCell<SignalInner<T>> {
@@ -300,7 +281,7 @@ impl<T> AnySignalInner for RefCell<SignalInner<T>> {
         self.borrow_mut().subscribe(handler);
     }
 
-    fn unsubscribe(&self, handler: CallbackPtr) {
+    fn unsubscribe(&self, handler: &Callback) {
         self.borrow_mut().unsubscribe(handler);
     }
 }

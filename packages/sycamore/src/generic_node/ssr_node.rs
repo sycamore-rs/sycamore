@@ -1,15 +1,15 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
 use std::cell::RefCell;
-use std::fmt;
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
+use std::{fmt, mem};
 
-use ahash::AHashMap;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventHandler, GenericNode};
-use crate::reactive::create_root;
+use crate::rx::create_root;
 use crate::template::Template;
 
 static VOID_ELEMENTS: &[&str] = &[
@@ -23,7 +23,6 @@ enum SsrNodeType {
     Element(RefCell<Element>),
     Comment(RefCell<Comment>),
     Text(RefCell<Text>),
-    RawText(RefCell<RawText>),
 }
 
 #[derive(Debug, Clone)]
@@ -100,23 +99,13 @@ impl SsrNode {
             _ => panic!("node type cannot have children"),
         }
     }
-
-    /// Create a new raw text node.
-    ///
-    /// Do not pass unsanitized user input to this function. When the node is rendered, no escaping
-    /// will be performed which might lead to a XSS (Cross Site Scripting) attack.
-    pub fn raw_text_node(html: &str) -> Self {
-        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(
-            html.to_string(),
-        ))))
-    }
 }
 
 impl GenericNode for SsrNode {
     fn element(tag: &str) -> Self {
         SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
-            attributes: AHashMap::new(),
+            attributes: HashMap::new(),
             children: Default::default(),
         })))
     }
@@ -161,6 +150,14 @@ impl GenericNode for SsrNode {
     }
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
+        if let Some(reference_node) = reference_node {
+            debug_assert_eq!(
+                reference_node.parent_node().as_ref(),
+                Some(self),
+                "reference node is not a child of this node"
+            );
+        }
+
         new_node.set_parent(Rc::downgrade(&self.0));
 
         match reference_node {
@@ -169,12 +166,14 @@ impl GenericNode for SsrNode {
                 match self.0.ty.as_ref() {
                     SsrNodeType::Element(e) => {
                         let children = &mut e.borrow_mut().children;
-                        let index = children
-                            .iter()
-                            .enumerate()
-                            .find_map(|(i, child)| (child == reference).then(|| i))
-                            .expect("reference node is not a child of this node");
-                        children.insert(index, new_node.clone());
+                        children.insert(
+                            children
+                                .iter()
+                                .enumerate()
+                                .find_map(|(i, child)| (child == reference).then(|| i))
+                                .expect("couldn't find reference node"),
+                            new_node.clone(),
+                        );
                     }
                     _ => panic!("node type cannot have children"),
                 };
@@ -183,20 +182,22 @@ impl GenericNode for SsrNode {
     }
 
     fn remove_child(&self, child: &Self) {
-        match self.0.ty.as_ref() {
-            SsrNodeType::Element(e) => {
-                child.set_parent(Weak::new());
-                let index = e
-                    .borrow()
-                    .children
-                    .iter()
-                    .enumerate()
-                    .find_map(|(i, c)| (c == child).then(|| i))
-                    .expect("the node to be removed is not a child of this node");
-                e.borrow_mut().children.remove(index);
-            }
+        let mut children = match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => mem::take(&mut e.borrow_mut().children),
             _ => panic!("node type cannot have children"),
-        }
+        };
+
+        let index = children
+            .iter()
+            .enumerate()
+            .find_map(|(i, c)| (c == child).then(|| i))
+            .expect("couldn't find child");
+        children.remove(index);
+
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(e) => e.borrow_mut().children = children,
+            _ => panic!("node type cannot have children"),
+        };
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
@@ -208,8 +209,7 @@ impl GenericNode for SsrNode {
             .iter()
             .enumerate()
             .find_map(|(i, c)| (c == old).then(|| i))
-            .expect("the node to be replaced is not a child of this node");
-        children[index].set_parent(Weak::new());
+            .expect("Couldn't find child");
         children[index] = new.clone();
     }
 
@@ -259,18 +259,6 @@ impl GenericNode for SsrNode {
             SsrNodeType::Element(el) => el.borrow_mut().children = vec![SsrNode::text_node(text)],
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
             SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
-            SsrNodeType::RawText(_t) => panic!("cannot update inner text on raw text node"),
-        }
-    }
-
-    fn dangerously_set_inner_html(&self, html: &str) {
-        match self.0.ty.as_ref() {
-            SsrNodeType::Element(el) => {
-                el.borrow_mut().children = vec![SsrNode::raw_text_node(html)];
-            }
-            SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
-            SsrNodeType::Text(_t) => panic!("cannot update inner text on text node"),
-            SsrNodeType::RawText(t) => t.borrow_mut().0 = html.to_string(),
         }
     }
 
@@ -289,7 +277,6 @@ impl fmt::Display for SsrNode {
             SsrNodeType::Element(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Comment(x) => write!(f, "{}", x.borrow()),
             SsrNodeType::Text(x) => write!(f, "{}", x.borrow()),
-            SsrNodeType::RawText(x) => write!(f, "{}", x.borrow()),
         }
     }
 }
@@ -297,7 +284,7 @@ impl fmt::Display for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
     name: String,
-    attributes: AHashMap<String, String>,
+    attributes: HashMap<String, String>,
     children: Vec<SsrNode>,
 }
 
@@ -342,16 +329,6 @@ pub struct Text(String);
 impl fmt::Display for Text {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", html_escape::encode_text_minimal(&self.0))
-    }
-}
-
-/// Un-escaped text node.
-#[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct RawText(String);
-
-impl fmt::Display for RawText {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 

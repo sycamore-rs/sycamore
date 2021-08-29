@@ -11,7 +11,7 @@ To add routing to your Sycamore app, install the
 [`sycamore-router`](https://crates.io/crates/sycamore-router) crate from crates.io.
 
 ```toml
-sycamore-router = "0.5.2"
+sycamore-router = "0.5.1"
 ```
 
 ### Compatibility with `sycamore`
@@ -21,12 +21,12 @@ number for `sycamore` (e.g. `sycamore-router v0.5.x` is compatible with `sycamor
 
 ## Creating routes
 
-Start off by adding `use sycamore_router::{Route, Router, RouterProps}` to the top of your source
-code. This imports the symbols needed to define our router.
+Start off by adding `use sycamore_router::{BrowserRouter, Route}` to the top of your source code.
+This imports the symbols needed to define our router.
 
 The heart of the router is an `enum`. Each variant of the `enum` represents a different route. To
-make our `enum` usable with `Router`, we will use the `Route` derive macro to implement the required
-traits for us.
+make our `enum` usable with `BrowserRouter`, we will use the `Route` derive macro to implement the
+required traits for us.
 
 Here is an example:
 
@@ -157,13 +157,13 @@ Likewise, the
 [`FromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromSegments.html)
 trait is the equivalent for dynamic segments.
 
-## Using `Router`
+## Using `BrowserRouter`
 
-To display content based on the route that matches, we can use a `Router`.
+To display content based on the route that matches, we can use a `BrowserRouter`.
 
 ```rust
 template! {
-    Router(RouterProps::new(HistoryIntegration::new(), |route: AppRoutes| {
+    BrowserRouter(|route: AppRoutes| {
         match route {
             AppRoutes::Index => template! {
                 "This is the index page"
@@ -179,31 +179,23 @@ template! {
 }
 ```
 
-`Router` is just a component like any other. The props accept a closure taking the matched route as
-a parameter and an "integration". The integration is for adapting the router to different
-environments (e.g. server-side rendering). The `HistoryIntegration` is a built-in integration that
-uses the [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API).
+`BrowserRouter` is just a component like any other. The props accept a closure taking the matched
+route as a parameter. Any clicks on anchor tags (`<a>`) created inside the `BrowserRouter` will be
+intercepted and handled by the router.
 
-Any clicks on anchor tags (`<a>`) created inside the `Router` will be intercepted and handled by the
-router.
+## Using `StaticRouter`
 
-## Server-side rendering and `StaticRouter`
+Whereas `BrowserRouter` is used inside the context of a browser, `StaticRouter` is used for SSR.
 
-Whereas `Router` is used inside the context of a browser, `StaticRouter` can be used for SSR.
-
-The difference between a `Router` and a `StaticRouter` is that the route is provided to
-`StaticRouter` during the initialization phase. The initial route is provided as an argument to
-`StaticRouterProps::new`.
-
-This is so that `StaticRouter` can return a `Template` immediately without blocking to wait for the
-route preload. The route is expected to be resolved separately using the `Route::match_path`
-function.
+The difference between a `BrowserRouter` and a `StaticRouter` is that the url is provided to
+`StaticRouter` only during the initialization phase. The initial url is provided as an argument to
+`StaticRouter`.
 
 ```rust
-let route = AppRoutes::match_path(path).await;
+use sycamore_router::{Route, StaticRouter};
 
 template! {
-    StaticRouter(StaticRouterProps::new(route, |route: AppRoutes| {
+    StaticRouter(("/about", |route: AppRoutes| {
         match route {
             AppRoutes::Index => template! {
                 "This is the index page"
@@ -219,37 +211,9 @@ template! {
 }
 ```
 
-## Integrations
-
-TODO: docs for creating custom router integrations.
-
 ## Using `navigate`
 
 Calling `navigate` navigates to the specified `url`. The url should have the same origin as the app.
 
 This is useful for imperatively navigating to an url when using an anchor tag (`<a>`) is not
 possible/suitable (e.g. when submitting a form).
-
-## Data fetching and preloading
-
-When data fetching (e.g. from a REST API) is required to load a page, it is recommended to preload
-the data. This will cause the router to wait until the data is loaded before rendering the page,
-removing the need for some "Loading..." indicator.
-
-Preloading can be achieved on a specific route by using the `#[preload(_)]` attribute. The preload
-attribute takes a closure or function that will be run once the route has been matched. This closure
-is expected to return a `Future` (basically an `async` function).
-
-```rust
-#[to("/my_route")]
-#[preload(|path| async { /* fetch some data */ })]
-MyRoute {
-    data: String
-}
-```
-
-When using a `preload` attribute, the `data` field (or the last field in an tuple field) has a
-special meaning. This field has the value of the preloaded data.
-
-The `path` parameter in the `preload` closure is the path that was matched. This currently has type
-`Vec<String>` but might be changed to the concrete type that was matched in the future.

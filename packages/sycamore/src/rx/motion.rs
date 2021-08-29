@@ -3,8 +3,9 @@ use std::rc::Rc;
 
 use chrono::{prelude::*, Duration};
 
-use crate::reactive::Signal;
 use crate::utils::{loop_raf, Task};
+
+use super::*;
 
 /// Describes a trait that can be linearly interpolate between two points.
 pub trait Lerp {

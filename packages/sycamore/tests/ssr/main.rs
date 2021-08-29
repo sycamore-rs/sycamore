@@ -40,17 +40,3 @@ fn self_closing_tag() {
         "<div><input /><input value=\"a\" /></div>"
     )
 }
-
-#[test]
-fn fragments() {
-    let node = template! {
-        p { "1" }
-        p { "2" }
-        p { "3" }
-    };
-
-    assert_eq!(
-        sycamore::render_to_string(|| node),
-        "<p>1</p><p>2</p><p>3</p>"
-    );
-}

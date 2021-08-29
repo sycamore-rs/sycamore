@@ -3,26 +3,29 @@
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
 use crate::generic_node::{EventHandler, GenericNode};
-use crate::reactive::{create_root, on_cleanup, ReactiveScope};
+use crate::rx::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
 use crate::utils::render::insert;
 
-#[wasm_bindgen]
+// TODO: remove js snippet
+#[wasm_bindgen(inline_js = "\
+export function set_node_id(node, id) {\
+    node.$$$nodeId = id\
+}\
+export function get_node_id(node) {\
+    return node.$$$nodeId\
+}\
+")]
 extern "C" {
-    #[wasm_bindgen(extends = Node)]
-    type NodeWithId;
-
-    #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
-    fn node_id(this: &NodeWithId) -> Option<usize>;
-
-    #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
-    fn set_node_id(this: &NodeWithId, id: usize);
+    fn set_node_id(node: &Node, id: usize);
+    fn get_node_id(node: &Node) -> Option<usize>;
 }
 
 /// An unique id for every node.
@@ -44,7 +47,7 @@ impl NodeId {
             x.set(tmp + 1);
             tmp
         });
-        node.unchecked_ref::<NodeWithId>().set_node_id(id);
+        set_node_id(node, id);
         Self(id)
     }
 }
@@ -55,22 +58,22 @@ impl NodeId {
 #[derive(Clone)]
 pub struct DomNode {
     id: Cell<NodeId>,
-    node: Node,
+    node: Rc<Node>,
 }
 
 impl DomNode {
     pub fn inner_element(&self) -> Node {
-        self.node.clone()
+        (*self.node).clone()
     }
 
     pub fn unchecked_into<T: JsCast>(self) -> T {
-        self.node.unchecked_into()
+        (*self.node).clone().unchecked_into()
     }
 
     fn get_node_id(&self) -> NodeId {
         if self.id.get().0 == 0 {
             // self.id not yet initialized.
-            if let Some(id) = self.node.unchecked_ref::<NodeWithId>().node_id() {
+            if let Some(id) = get_node_id(&self.node) {
                 self.id.set(NodeId(id));
             } else {
                 self.id.set(NodeId::new_with_node(&self.node));
@@ -132,11 +135,13 @@ fn document() -> web_sys::Document {
 
 impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
-        let node = document()
-            .create_element(intern(tag))
-            .unwrap()
-            .dyn_into()
-            .unwrap();
+        let node = Rc::new(
+            document()
+                .create_element(intern(tag))
+                .unwrap()
+                .dyn_into()
+                .unwrap(),
+        );
         DomNode {
             id: Default::default(),
             node,
@@ -144,7 +149,7 @@ impl GenericNode for DomNode {
     }
 
     fn text_node(text: &str) -> Self {
-        let node = document().create_text_node(text).into();
+        let node = Rc::new(document().create_text_node(text).into());
         DomNode {
             id: Default::default(),
             node,
@@ -152,7 +157,7 @@ impl GenericNode for DomNode {
     }
 
     fn marker() -> Self {
-        let node = document().create_comment("").into();
+        let node = Rc::new(document().create_comment("").into());
         DomNode {
             id: Default::default(),
             node,
@@ -181,7 +186,7 @@ impl GenericNode for DomNode {
     fn first_child(&self) -> Option<Self> {
         self.node.first_child().map(|node| Self {
             id: Default::default(),
-            node,
+            node: Rc::new(node),
         })
     }
 
@@ -209,14 +214,14 @@ impl GenericNode for DomNode {
     fn parent_node(&self) -> Option<Self> {
         self.node.parent_node().map(|node| Self {
             id: Default::default(),
-            node,
+            node: Rc::new(node),
         })
     }
 
     fn next_sibling(&self) -> Option<Self> {
         self.node.next_sibling().map(|node| Self {
             id: Default::default(),
-            node,
+            node: Rc::new(node),
         })
     }
 
@@ -239,13 +244,9 @@ impl GenericNode for DomNode {
         self.node.set_text_content(Some(text));
     }
 
-    fn dangerously_set_inner_html(&self, html: &str) {
-        self.node.unchecked_ref::<Element>().set_inner_html(html);
-    }
-
     fn clone_node(&self) -> Self {
         Self {
-            node: self.node.clone_node_with_deep(true).unwrap(),
+            node: Rc::new(self.node.clone_node_with_deep(true).unwrap()),
             id: Default::default(),
         }
     }
@@ -271,7 +272,7 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
         insert(
             &DomNode {
                 id: Default::default(),
-                node: parent.clone(),
+                node: Rc::new(parent.clone()),
             },
             template(),
             None,
@@ -336,7 +337,7 @@ pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
         insert(
             &DomNode {
                 id: Default::default(),
-                node: parent.clone(),
+                node: Rc::new(parent.clone()),
             },
             template(),
             None,

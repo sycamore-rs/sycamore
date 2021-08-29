@@ -2,47 +2,15 @@ use sycamore::prelude::*;
 
 #[component(Index<G>)]
 pub fn index() -> Template<G> {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("Sycamore");
-
     template! {
         div(class="flex flex-col items-center w-full mb-10") {
             h1(class="text-5xl font-bold mt-20 mb-5") {
                 "Sycamore"
             }
 
-            p(class="mb-5 text-center") {
-                "A reactive library for creating web apps in Rust and WebAssembly"
+            p(class="mb-10") {
+                "Fast isomorphic web apps in Rust + WASM"
             }
-
-            // region: badges
-            div(class="mb-7 flex flex-row flex-wrap justify-center gap-1") {
-                a(
-                    href="https://github.com/sycamore-rs/sycamore",
-                    target="_blank"
-                ) { img(src="https://img.shields.io/github/stars/sycamore-rs/sycamore?style=social", alt="GitHub Stars") }
-                a(
-                    href="https://crates.io/crates/sycamore",
-                    target="_blank"
-                ) { img(src="https://img.shields.io/crates/v/sycamore", alt="Crates.io") }
-                a(
-                    href="https://docs.rs/sycamore",
-                    target="_blank"
-                ) { img(src="https://img.shields.io/docsrs/sycamore?color=blue&label=docs.rs", alt="docs.rs") }
-                a(
-                    href="https://github.com/sycamore-rs/sycamore/graphs/contributors",
-                    target="_blank"
-                ) { img(src="https://img.shields.io/github/contributors/sycamore-rs/sycamore", alt="Github Contributors") }
-                a(
-                    href="https://discord.gg/vDwFUmm6mU",
-                    target="_blank"
-                ) { img(src="https://img.shields.io/discord/820400041332179004?label=discord", alt="Discord") }
-            }
-            // endregion
-
             a(
                 href="/docs/getting_started/installation",
                 class="py-2 px-3 bg-white hover:bg-yellow-500 border-2 border-yellow-500 \
@@ -67,14 +35,14 @@ pub fn index() -> Template<G> {
                 h1(class="text-lg text-center font-semibold mb-3") { "Ergonomic and intuitive" }
                 p {
                     "Write code that feels natural. Everything is built on "
-                    a(href="/docs/basics/reactivity", class="underline") { "reactive primitives" }
+                    a(href="/basics/reactivity", class="underline") { "reactive primitives" }
                     " without a cumbersome virtual DOM."
                 }
             }
             div(class="bg-yellow-600 md:flex-1 rounded-md p-6") {
                 h1(class="text-lg text-center font-semibold mb-3") { "No JavaScript" }
                 p(class="mb-2") {
-                    "Had enough of JavaScript? So have we."
+                    "Had enough of JavaScript? So do we."
                 }
                 p {
                     "Create apps using Sycamore without touching a single line of JS."

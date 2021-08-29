@@ -1,6 +1,7 @@
 # Hello, World!
 
-Sycamore tries to have as simple of an API as possible.
+Sycamore tries to have as simple of an API as possible. In fact, the Hello World program in Sycamore
+is but slightly longer than the console version!
 
 Here it is:
 
@@ -48,24 +49,9 @@ we want to render the following HTML:
 The `p { ... }` creates a new `<p>` tag. The `"Hello, World!"` creates a new text node that is
 nested within the `<p>` tag.
 
-There it is! Trunk just needs one thing to turn this into a website; a html source file to inject
-the template into. Copy the following code to a file called `index.html` in the root of your crate
-(alongside `Cargo.toml`):
-
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>My first Sycamore app</title>
-  </head>
-  <body></body>
-</html>
-```
-
-To try it out, copy the Hello World code snippet to your `main.rs` file and run `trunk serve` from
-your command prompt. Open up your browser at `localhost:8080` and you should see _"Hello, World!"_
-printed to the screen in all its glory.
+There it is! To try it out, copy the Hello World code snippet to your `main.rs` file and run
+`trunk serve` from your command prompt. Open up your browser at `localhost:8080` and you should see
+_"Hello, World!"_ printed to the screen in all its glory.
 
 If you modify your code, Trunk should automatically rebuild your app. Just refresh your browser tab
 to see the latest changes.

@@ -52,59 +52,33 @@ impl ToTokens for Element {
             let __el = #tag_name;
         };
 
-        let mut has_dangerously_set_inner_html = false;
         if let Some(attributes) = attributes {
             for attribute in &attributes.attributes {
                 attribute.to_tokens(&mut quoted);
-                if attribute.ty == AttributeType::DangerouslySetInnerHtml {
-                    has_dangerously_set_inner_html = true;
-                }
             }
         }
 
         if let Some(children) = children {
-            if has_dangerously_set_inner_html && !children.body.is_empty() {
-                quoted.extend(quote_spanned! { children.body[0].span()=>
-                    compile_error!("children and inner html cannot be both set");
-                });
-            }
-
             let multi = children.body.len() != 1;
             let mut children = children.body.iter().peekable();
             while let Some(child) = children.next() {
-                // Child is dynamic if the child is a component or a splice that is not a simple
-                // path. Example:
+                // True if the child is a component or a splice that is not a simple path.
+                // Example:
                 // template! { MyComponent() } // is_dynamic = true
                 // template! { (state.get()) } // is_dynamic = true
                 // template! { (state) } // is_dynamic = false
+                let is_dynamic = match child {
+                    HtmlTree::Component(_) => true,
+                    HtmlTree::Text(Text::Splice(_, expr))
+                        if !matches!(expr.as_ref(), Expr::Lit(_) | Expr::Path(_)) =>
+                    {
+                        true
+                    }
+                    _ => false,
+                };
+
                 quoted.extend(match child {
-                    HtmlTree::Element(element) => quote_spanned! { element.span()=>
-                        ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
-                    },
-                    HtmlTree::Text(text) => quote_spanned! { text.span()=>
-                        // Since this is static text, intern it as it will likely be constructed many times.
-                        if ::std::cfg!(target_arch = "wasm32") {
-                            ::sycamore::rt::intern(#text);
-                        }
-                        ::sycamore::generic_node::GenericNode::append_child(
-                            &__el,
-                            &::sycamore::generic_node::GenericNode::text_node(#text),
-                        );
-                    },
-                    HtmlTree::Splice(splice @ Splice {
-                        expr: Expr::Lit(_) | Expr::Path(_), ..
-                    }) => {
-                        quote_spanned! { splice.span()=>
-                            ::sycamore::utils::render::insert(
-                                &__el,
-                                ::sycamore::template::IntoTemplate::create(&#splice),
-                                None, None, #multi
-                            );
-                        }
-                    },
-                    // Child is dynamic.
-                    HtmlTree::Component(_)
-                    | HtmlTree::Splice(_) => {
+                    _ if is_dynamic => {
                         let quote_marker =
                         if let Some(HtmlTree::Element(element)) =
                             children.next_if(|x| matches!(x, HtmlTree::Element(_)))
@@ -114,8 +88,8 @@ impl ToTokens for Element {
                                 ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
                                 let __marker = ::std::option::Option::Some(&__marker);
                             }
-                        } else if let Some(HtmlTree::Text(text)) =
-                            children.next_if(|x| matches!(x, HtmlTree::Text(_)))
+                        } else if let Some(HtmlTree::Text(Text::Str(text))) =
+                            children.next_if(|x| matches!(x, HtmlTree::Text(Text::Str(_))))
                         {
                             quote_spanned! { text.span()=>
                                 let __marker = ::sycamore::generic_node::GenericNode::text_node(#text);
@@ -142,12 +116,12 @@ impl ToTokens for Element {
                                     None, __marker, #multi
                                 );
                             },
-                            HtmlTree::Splice(splice) => quote_spanned! { splice.span()=>
+                            HtmlTree::Text(text @ Text::Splice(..)) => quote_spanned! { text.span()=>
                                 #quote_marker
                                 ::sycamore::utils::render::insert(
                                    &__el,
                                    ::sycamore::template::Template::new_dyn(move ||
-                                       ::sycamore::template::IntoTemplate::create(&#splice)
+                                       ::sycamore::template::IntoTemplate::create(&#text)
                                    ),
                                    None, __marker, #multi
                                );
@@ -155,6 +129,26 @@ impl ToTokens for Element {
                             _ => unreachable!()
                         }
                     }
+                    HtmlTree::Element(element) => quote_spanned! { element.span()=>
+                        ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
+                    },
+                    HtmlTree::Text(text @ Text::Str(_)) => quote_spanned! { text.span()=>
+                        ::sycamore::generic_node::GenericNode::append_child(
+                            &__el,
+                            &::sycamore::generic_node::GenericNode::text_node(#text),
+                        );
+                    },
+                    HtmlTree::Text(text @ Text::Splice(..)) => {
+                        assert!(!is_dynamic);
+                        quote_spanned! { text.span()=>
+                            ::sycamore::utils::render::insert(
+                                &__el,
+                                ::sycamore::template::IntoTemplate::create(&#text),
+                                None, None, #multi
+                            );
+                        }
+                    },
+                    _ => unreachable!("all branches covered by match guards"),
                 });
             }
         }

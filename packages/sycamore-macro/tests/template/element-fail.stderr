@@ -27,16 +27,3 @@ error: expected `=`
    |
 10 |     let _: Template<G> = template! { button(a.b.c="123") };
    |                                              ^
-
-error: children and inner html cannot be both set
-  --> $DIR/element-fail.rs:12:26
-   |
-12 |       let _: Template<G> = template! {
-   |  __________________________^
-13 | |         p(dangerously_set_inner_html="<span>Test</span>") {
-14 | |             "Error"
-15 | |         }
-16 | |     };
-   | |_____^
-   |
-   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)

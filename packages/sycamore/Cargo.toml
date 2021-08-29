@@ -9,20 +9,19 @@ license = "MIT"
 name = "sycamore"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.5.2"
+version = "0.5.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ahash = "0.7.4"
-chrono = { version = "0.4.19", features = ["wasmbind"] }
-html-escape = { version = "0.2.9", optional = true }
-indexmap = { version = "1.7.0", features = ["std"] }
-js-sys = "0.3.53"
-smallvec = "1.6.1"
-sycamore-macro = { path = "../sycamore-macro", version = "=0.5.2" }
-sycamore-reactive = { path = "../sycamore-reactive", version = "=0.5.2" }
-wasm-bindgen = { version = "0.2.76", features = ["enable-interning"] }
+chrono = {version = "0.4", features = ["wasmbind"]}
+html-escape = {version = "0.2.7", optional = true}
+indexmap = "1.7"
+js-sys = {version = "0.3", optional = true}
+serde = {version = "1.0", optional = true}
+smallvec = "1.6"
+sycamore-macro = {path = "../sycamore-macro", version = "=0.5.1"}
+wasm-bindgen = {version = "0.2", optional = true, features = ["enable-interning"]}
 
 [dependencies.web-sys]
 features = [
@@ -39,17 +38,17 @@ features = [
   "Text",
   "Window",
 ]
-version = "0.3.53"
+optional = true
+version = "0.3"
 
 [dev-dependencies]
-criterion = { version = "0.3.5", features = ["html_reports"] }
-wasm-bindgen-test = "0.3.26"
+criterion = {version = "0.3", features = ["html_reports"]}
+wasm-bindgen-test = "0.3"
 
 [features]
-default = ["dom"]
+default = ["dom", "wasm-bindgen", "web-sys", "js-sys"]
 dom = []
 ssr = ["html-escape"]
-serde = ["sycamore-reactive/serde"]
 
 [[bench]]
 harness = false

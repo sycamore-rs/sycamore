@@ -85,7 +85,7 @@ We've also added three new templates for getting started with Sycamore.
 - [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template) -
   SvelteKit-like started for creating a Sycamore isomorphic application.
 
-## Conclusion
+### Conclusion
 
 As always, a big thanks to all the
 [contributors](https://github.com/sycamore-rs/sycamore/graphs/contributors) who made this release

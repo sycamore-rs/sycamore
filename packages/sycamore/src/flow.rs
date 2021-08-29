@@ -7,7 +7,7 @@ use std::hash::Hash;
 
 use crate::generic_node::GenericNode;
 use crate::prelude::*;
-use crate::reactive::{map_indexed, map_keyed};
+use crate::rx::{map_indexed, map_keyed};
 
 /// Props for [`Keyed`].
 pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>

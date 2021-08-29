@@ -9,7 +9,7 @@ license = "MIT"
 name = "sycamore-router-macro"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.5.2"
+version = "0.5.1"
 
 [lib]
 proc-macro = true
@@ -17,12 +17,12 @@ proc-macro = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nom = "6.2.1"
-proc-macro2 = "1.0.28"
-quote = "1.0.9"
-syn = { version = "1.0.74", features = ["full"] }
+nom = "6.1"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = {version = "1.0", features = ["full"]}
 
 [dev-dependencies]
-expect-test = "1.1.0"
+expect-test = "1.1"
 sycamore-router = {path = "../sycamore-router"}
-trybuild = "1.0.45"
+trybuild = "1.0"

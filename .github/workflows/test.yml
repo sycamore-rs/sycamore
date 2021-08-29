@@ -1,64 +1,33 @@
 name: Test
 
-on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   test:
-    name: Test on ${{ matrix.os }} (using rustc ${{ matrix.rust }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        rust:
-          - 1.53.0
-          - stable
-          - nightly
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macOS-latest
+    name: Test
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          override: true
-
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-      - name: Cargo generate-lockfile
-        run: cargo generate-lockfile
 
       - name: Cargo cache
         uses: actions/cache@v2
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('Cargo.lock') }}
 
       - name: Run tests
-        if: matrix.rust == '1.53.0'
-        env:
-          RUN_UI_TESTS: true
         run: cargo test
-
-      - name: Run tests (excluding UI)
-        run: cargo test
-        if: matrix.rust != '1.53.0'
+        if: always()
 
       - name: Run headless browser tests
         run: cd packages/sycamore && wasm-pack test --firefox --chrome --headless
@@ -73,25 +42,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Cargo generate-lockfile
-        run: cargo generate-lockfile
-
       - name: Cargo cache
         uses: actions/cache@v2
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('Cargo.lock') }}
 
       - name: Run clippy
         run: cargo clippy
@@ -111,19 +69,14 @@ jobs:
           rustup default "$MIRI_NIGHTLY"
           rustup component add miri
 
-      - name: Cargo generate-lockfile
-        run: cargo generate-lockfile
-
       - name: Cargo cache
         uses: actions/cache@v2
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-miri-${{ hashFiles('Cargo.lock') }}
 
       - name: Run tests
         run: |

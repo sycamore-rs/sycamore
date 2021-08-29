@@ -9,8 +9,8 @@ fn compile_pass<G: GenericNode>() {
         "Third"
     };
 
-    let spliced = 123;
-    let _: Template<G> = template! { (spliced) };
+    // let spliced = 123;
+    // let _: Template<G> = template! { (spliced) };
 }
 
 fn main() {}

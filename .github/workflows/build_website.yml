@@ -1,10 +1,6 @@
 name: Build Website
 
-on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+on: [push, pull_request]
 
 jobs:
   deploy:
@@ -20,34 +16,36 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
 
-      - name: Setup NodeJS
+      - name: Use Node.js 14.x
         uses: actions/setup-node@v2
         with:
           node-version: 14.x
 
       - name: Install trunk
         run: >
-          wget -qO-
-          https://github.com/thedodd/trunk/releases/download/v0.13.1/trunk-x86_64-unknown-linux-gnu.tar.gz
-          | tar -xzf- && sudo mv trunk /usr/bin/
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.11.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- &&
+          sudo mv trunk /usr/bin/
 
-      - name: Cargo generate-lockfile
-        run: cargo generate-lockfile
+      - name: Install wasm-bindgen
+        run: >
+          wget https://github.com/rustwasm/wasm-bindgen/releases/download/0.2.74/wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
+          tar -xf wasm-bindgen-0.2.74-x86_64-unknown-linux-musl.tar.gz &&
+          sudo mv wasm-bindgen-0.2.74-x86_64-unknown-linux-musl/wasm-bindgen /usr/bin/
 
       - name: Cargo cache
         uses: actions/cache@v2
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('Cargo.lock') }}
 
       - name: Build website
         run: >
-          cd website/ && npm ci && npm run prod
+          cd website/ &&
+          npm ci &&
+          npm run prod
 
       - name: Build examples
         run: |

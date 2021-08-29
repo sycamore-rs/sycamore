@@ -3,7 +3,7 @@
 //! Sycamore is a VDOM-less web library with fine-grained reactivity.
 //!
 //! This is the API docs for sycamore. If you are looking for the usage docs, checkout the
-//! [Sycamore Book](https://sycamore-rs.netlify.app/docs/getting_started/installation).
+//! [Sycamore Book](https://sycamore-rs.netlify.app/getting_started/installation).
 //!
 //! ## Features
 //! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on
@@ -21,16 +21,14 @@
 #![deny(clippy::type_repetition_in_bounds)]
 
 pub use sycamore_macro::{component, template};
-pub use sycamore_reactive as reactive;
 
 pub mod component;
-pub mod context;
 pub mod easing;
 pub mod flow;
 pub mod generic_node;
-pub mod motion;
+pub mod macros;
 pub mod noderef;
-pub mod portal;
+pub mod rx;
 pub mod template;
 pub mod utils;
 
@@ -46,6 +44,7 @@ pub use crate::generic_node::{render_to_string, SsrNode};
 pub mod prelude {
     pub use sycamore_macro::{component, template};
 
+    pub use crate::cloned;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;
@@ -53,9 +52,9 @@ pub mod prelude {
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
-    pub use crate::reactive::{
-        cloned, create_effect, create_memo, create_root, create_selector, create_selector_with,
-        on_cleanup, untrack, Signal, StateHandle,
+    pub use crate::rx::{
+        create_effect, create_effect_initial, create_memo, create_root, create_selector,
+        create_selector_with, on_cleanup, untrack, Signal, StateHandle,
     };
     pub use crate::template::{IntoTemplate, Template};
 }

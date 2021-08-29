@@ -7,14 +7,13 @@
 pub mod render;
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::ptr;
 use std::rc::Rc;
 
-use ahash::AHashSet;
-
 thread_local! {
-    static TASKS: RefCell<AHashSet<Task>> = RefCell::new(AHashSet::new());
+    static TASKS: RefCell<HashSet<Task>> = RefCell::new(HashSet::new());
 }
 
 /// A wrapper over a callback. Used with [`loop_raf`].

@@ -9,15 +9,12 @@ use syn::spanned::Spanned;
 use syn::token::Paren;
 use syn::{parenthesized, Expr, ExprLit, Ident, Lit, Result, Token};
 
-#[derive(PartialEq, Eq)]
 pub enum AttributeType {
-    /// Syntax: `<name>`. `name` cannot be `dangerously_set_inner_html`.
+    /// Syntax: `name`.
     DomAttribute { name: AttributeName },
-    /// Syntax: `dangerously_set_inner_html`.
-    DangerouslySetInnerHtml,
-    /// Syntax: `on:<event>`.
+    /// Syntax: `on:event`.
     Event { event: String },
-    /// Syntax: `bind:<prop>`.
+    /// Syntax: `bind:value`.
     Bind { prop: String },
     /// Syntax: `ref`.
     Ref,
@@ -30,8 +27,6 @@ impl Parse for AttributeType {
 
         if ident_str == "ref" {
             Ok(Self::Ref)
-        } else if ident_str == "dangerously_set_inner_html" {
-            Ok(Self::DangerouslySetInnerHtml)
         } else if input.peek(Token![:]) {
             let _colon: Token![:] = input.parse()?;
             match ident_str.as_str() {
@@ -79,19 +74,18 @@ impl ToTokens for Attribute {
         let expr = &self.expr;
         let expr_span = expr.span();
 
-        let is_dynamic = !matches!(
-            expr,
-            Expr::Lit(ExprLit {
-                lit: Lit::Str(_),
-                ..
-            })
-        );
-
         match &self.ty {
             AttributeType::DomAttribute { name } => {
                 let name = name.to_string();
                 // Use `set_class_name` instead of `set_attribute` for better performance.
                 let is_class = name == "class";
+                let is_dynamic = !matches!(
+                    expr,
+                    Expr::Lit(ExprLit {
+                        lit: Lit::Str(_),
+                        ..
+                    })
+                );
                 let quoted_text = if let Expr::Lit(ExprLit {
                     lit: Lit::Str(text),
                     ..
@@ -125,7 +119,7 @@ impl ToTokens for Attribute {
 
                 if is_dynamic {
                     tokens.extend(quote_spanned! { expr_span=>
-                        ::sycamore::reactive::create_effect({
+                        ::sycamore::rx::create_effect({
                             let __el = ::std::clone::Clone::clone(&__el);
                             move || {
                                 #quoted_set_attribute
@@ -137,28 +131,6 @@ impl ToTokens for Attribute {
                     // times.
                     tokens.extend(quote_spanned! { expr_span=>
                         #quoted_set_attribute
-                    });
-                };
-            }
-            AttributeType::DangerouslySetInnerHtml => {
-                if is_dynamic {
-                    tokens.extend(quote_spanned! { expr_span=>
-                        ::sycamore::reactive::create_effect({
-                            let __el = ::std::clone::Clone::clone(&__el);
-                            move || {
-                                ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
-                                    &__el,
-                                    #expr,
-                                );
-                            }
-                        });
-                    });
-                } else {
-                    tokens.extend(quote_spanned! { expr_span=>
-                        ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
-                            &__el,
-                            #expr,
-                        );
                     });
                 };
             }
@@ -229,9 +201,9 @@ impl ToTokens for Attribute {
                 };
 
                 tokens.extend(quote_spanned! { expr_span=> {
-                    let signal: ::sycamore::reactive::Signal<#value_ty> = #expr;
+                    let signal: ::sycamore::rx::Signal<#value_ty> = #expr;
 
-                    ::sycamore::reactive::create_effect({
+                    ::sycamore::rx::create_effect({
                         let signal = ::std::clone::Clone::clone(&signal);
                         let __el = ::std::clone::Clone::clone(&__el);
                         move || {
@@ -313,10 +285,3 @@ impl fmt::Display for AttributeName {
         Ok(())
     }
 }
-
-impl PartialEq for AttributeName {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_string() == other.to_string()
-    }
-}
-impl Eq for AttributeName {}
