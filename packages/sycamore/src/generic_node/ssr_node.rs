@@ -93,7 +93,7 @@ impl SsrNode {
                     .children
                     .clone()
                     .into_iter()
-                    .filter(|node| node == child)
+                    .filter(|node| node != child)
                     .collect();
                 e.borrow_mut().children = children;
             }
@@ -185,15 +185,12 @@ impl GenericNode for SsrNode {
     fn remove_child(&self, child: &Self) {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => {
+                let initial_children_len = e.borrow().children.len();
+                if child.parent_node().as_ref() != Some(self) {
+                    panic!("the node to be removed is not a child of this node");
+                }
                 child.set_parent(Weak::new());
-                let index = e
-                    .borrow()
-                    .children
-                    .iter()
-                    .enumerate()
-                    .find_map(|(i, c)| (c == child).then(|| i))
-                    .expect("the node to be removed is not a child of this node");
-                e.borrow_mut().children.remove(index);
+                debug_assert_eq!(e.borrow().children.len(), initial_children_len - 1);
             }
             _ => panic!("node type cannot have children"),
         }
@@ -209,7 +206,7 @@ impl GenericNode for SsrNode {
             .enumerate()
             .find_map(|(i, c)| (c == old).then(|| i))
             .expect("the node to be replaced is not a child of this node");
-        children[index].set_parent(Weak::new());
+        *children[index].0.parent.borrow_mut() = Weak::new();
         children[index] = new.clone();
     }
 
@@ -368,4 +365,81 @@ pub fn render_to_string(template: impl FnOnce() -> Template<SsrNode>) -> String 
     });
 
     ret
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn render_hello_world() {
+        assert_eq!(
+            render_to_string(|| template! {
+                "Hello World!"
+            }),
+            "Hello World!"
+        );
+    }
+
+    #[test]
+    fn append_child() {
+        let node = SsrNode::element("div");
+        let p = SsrNode::element("p");
+        let p2 = SsrNode::element("p");
+
+        node.append_child(&p);
+        node.append_child(&p2);
+
+        // p and p2 parents should be updated
+        assert_eq!(p.parent_node().as_ref(), Some(&node));
+        assert_eq!(p2.parent_node().as_ref(), Some(&node));
+
+        // node.first_child should be p
+        assert_eq!(node.first_child().as_ref(), Some(&p));
+
+        // p.next_sibling should be p2
+        assert_eq!(p.next_sibling().as_ref(), Some(&p2));
+    }
+
+    #[test]
+    fn remove_child() {
+        let node = SsrNode::element("div");
+        let p = SsrNode::element("p");
+
+        node.append_child(&p);
+        // p parent should be updated
+        assert_eq!(p.parent_node().as_ref(), Some(&node));
+        // node.first_child should be p
+        assert_eq!(node.first_child().as_ref(), Some(&p));
+
+        // remove p from node
+        node.remove_child(&p);
+        // p parent should be updated
+        assert_eq!(p.parent_node().as_ref(), None);
+        // node.first_child should be None
+        assert_eq!(node.first_child().as_ref(), None);
+    }
+
+    #[test]
+    fn remove_child_2() {
+        let node = SsrNode::element("div");
+        let p = SsrNode::element("p");
+        let p2 = SsrNode::element("p");
+        let p3 = SsrNode::element("p");
+
+        node.append_child(&p);
+        node.append_child(&p2);
+        node.append_child(&p3);
+
+        // node.first_child should be p
+        assert_eq!(node.first_child().as_ref(), Some(&p));
+
+        // remove p from node
+        node.remove_child(&p);
+        // p parent should be updated
+        assert_eq!(p.parent_node().as_ref(), None);
+        // node.first_child should be p2
+        assert_eq!(node.first_child().as_ref(), Some(&p2));
+    }
 }
