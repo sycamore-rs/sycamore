@@ -69,7 +69,6 @@ where
                     .find(|(_, (a, b))| a != b)
                     .map(|(i, _)| i)
                     .unwrap_or(min_len);
-                debug_assert!(start <= min_len);
                 debug_assert!(
                     (items.get(start).is_none() && new_items.get(start).is_none())
                         || (items.get(start) != new_items.get(start)),
