@@ -303,13 +303,14 @@ pub struct Element {
 
 impl WriteToString for Element {
     fn write_to_string(&self, s: &mut String) {
-        s.push_str(&format!("<{}", self.name));
+        s.push('<');
+        s.push_str(&self.name);
         for (name, value) in &self.attributes {
-            s.push_str(&format!(
-                r#" {}="{}""#,
-                name,
-                html_escape::encode_double_quoted_attribute(value)
-            ));
+            s.push(' ');
+            s.push_str(name);
+            s.push_str("=\"");
+            s.push_str(&html_escape::encode_double_quoted_attribute(value));
+            s.push('"');
         }
 
         // Check if self-closing tag (void-element).
@@ -320,7 +321,9 @@ impl WriteToString for Element {
             for child in &self.children {
                 child.write_to_string(s);
             }
-            s.push_str(&format!("</{}>", self.name));
+            s.push_str("</");
+            s.push_str(&self.name);
+            s.push('>');
         }
     }
 }
@@ -330,7 +333,11 @@ pub struct Comment(String);
 
 impl WriteToString for Comment {
     fn write_to_string(&self, s: &mut String) {
-        s.push_str(&format!("<!--{}-->", self.0.replace("-->", "--&gt;")));
+        let escaped = self.0.replace("-->", "--&gt;");
+        s.reserve("<!--".len() + escaped.len() + "-->".len());
+        s.push_str("<!--");
+        s.push_str(&escaped);
+        s.push_str("-->");
     }
 }
 
