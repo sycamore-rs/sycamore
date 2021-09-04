@@ -15,9 +15,6 @@ use crate::Route;
 /// A router integration provides the methods for adapting a router to a certain environment (e.g.
 /// history API).
 pub trait Integration {
-    /// Get the initial pathname.
-    fn initial_pathname(&self) -> String;
-
     /// Get the current pathname.
     fn current_pathname(&self) -> String;
 
@@ -51,10 +48,6 @@ impl HistoryIntegration {
 }
 
 impl Integration for HistoryIntegration {
-    fn initial_pathname(&self) -> String {
-        web_sys::window().unwrap().location().pathname().unwrap()
-    }
-
     fn current_pathname(&self) -> String {
         web_sys::window().unwrap().location().pathname().unwrap()
     }
@@ -91,6 +84,7 @@ impl Integration for HistoryIntegration {
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
                             let pathname = pathname.borrow().clone().unwrap();
+                            let path = path.strip_prefix(&base_pathname()).unwrap_or(&path);
                             pathname.set(path.to_string());
 
                             // Update History API.
@@ -116,6 +110,19 @@ impl Integration for HistoryIntegration {
             }
         })
     }
+}
+
+/// Gets the base pathname from `document.baseURI`.
+fn base_pathname() -> String {
+    let base_uri = web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .base_uri()
+        .unwrap()
+        .unwrap();
+    let url = web_sys::Url::new(&base_uri).unwrap();
+    url.pathname()
 }
 
 /// Props for [`Router`].
@@ -161,11 +168,14 @@ where
     } = props;
     let render = Rc::new(render);
     let integration = Rc::new(integration);
+    let base_pathname = base_pathname();
 
     PATHNAME.with(|pathname| {
         assert!(pathname.borrow().is_none());
         // Get initial url from window.location.
-        *pathname.borrow_mut() = Some(Signal::new(integration.initial_pathname()));
+        let path = integration.current_pathname();
+        let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
+        *pathname.borrow_mut() = Some(Signal::new(path.to_string()));
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap());
 
@@ -178,7 +188,9 @@ where
 
     // Listen to popstate event.
     integration.on_popstate(Box::new(cloned!((integration, pathname) => move || {
-        pathname.set(integration.current_pathname());
+        let path = integration.current_pathname();
+        let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
+        pathname.set(path.to_string());
     })));
 
     let path = create_selector(move || {
@@ -276,7 +288,8 @@ pub fn navigate(url: &str) {
         );
 
         let pathname = pathname.borrow().clone().unwrap();
-        pathname.set(url.to_string());
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
 
         // Update History API.
         let window = web_sys::window().unwrap();
