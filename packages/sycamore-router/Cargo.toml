@@ -29,6 +29,7 @@ features = [
   "KeyboardEvent",
   "Location",
   "PopStateEvent",
+  "Url",
   "Window",
 ]
 version = "0.3.53"
