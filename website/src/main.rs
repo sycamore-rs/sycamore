@@ -45,8 +45,8 @@ enum Routes {
     NotFound,
 }
 
-fn switch<G: GenericNode>(route: Routes) -> Template<G> {
-    let template = match route {
+fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
+    let template = create_memo(move || match route.get().as_ref() {
         Routes::Index => template! {
             div(class="container mx-auto") {
                 index::Index()
@@ -55,14 +55,14 @@ fn switch<G: GenericNode>(route: Routes) -> Template<G> {
         Routes::Docs(_, _, data) => {
             template! {
                 content::Content(content::ContentProps {
-                    data,
+                    data: data.clone(),
                     sidebar_version: Some("next".to_string()),
                 })
             }
         }
         Routes::VersionedDocs(version, _, _, data) => template! {
             content::Content(content::ContentProps {
-                data,
+                data: data.clone(),
                 sidebar_version: Some(version.clone()),
             })
         },
@@ -71,7 +71,7 @@ fn switch<G: GenericNode>(route: Routes) -> Template<G> {
         },
         Routes::Post(_, data) => template! {
             content::Content(content::ContentProps {
-                data,
+                data: data.clone(),
                 sidebar_version: None,
             })
         },
@@ -81,12 +81,12 @@ fn switch<G: GenericNode>(route: Routes) -> Template<G> {
         Routes::NotFound => template! {
             "404 Not Found"
         },
-    };
+    });
 
     template! {
         div(class="mt-12") {
             header::Header()
-            (template)
+            (template.get().as_ref().clone())
         }
     }
 }
