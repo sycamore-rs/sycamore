@@ -26,6 +26,7 @@ features = [
   "EventTarget",
   "History",
   "HtmlAnchorElement",
+  "HtmlBaseElement",
   "KeyboardEvent",
   "Location",
   "PopStateEvent",
