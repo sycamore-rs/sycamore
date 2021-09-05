@@ -10,6 +10,7 @@ use reqwasm::http::Request;
 use serde_lite::Deserialize;
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
+use wasm_bindgen_futures::spawn_local;
 
 const LATEST_MAJOR_VERSION: &str = "v0.5";
 const NEXT_VERSION: &str = "next";
@@ -29,16 +30,13 @@ enum Routes {
     #[to("/")]
     Index,
     #[to("/docs/<_>/<_>")]
-    #[preload(|path: Vec<String>| docs_preload(format!("/static/docs/{}.json", path[1..].join("/"))))]
-    Docs(String, String, MarkdownPage),
+    Docs(String, String),
     #[to("/docs/<_>/<_>/<_>")]
-    #[preload(|path: Vec<String>| docs_preload(format!("/static/docs/{}.json", path[1..].join("/"))))]
-    VersionedDocs(String, String, String, MarkdownPage),
+    VersionedDocs(String, String, String),
     #[to("/news")]
     NewsIndex,
     #[to("/news/<_>")]
-    #[preload(|path: Vec<String>| docs_preload(format!("/static/posts/{}.json", path[1..].join("/"))))]
-    Post(String, MarkdownPage),
+    Post(String),
     #[to("/versions")]
     Versions,
     #[not_found]
@@ -46,42 +44,56 @@ enum Routes {
 }
 
 fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
-    let template = create_memo(move || match route.get().as_ref() {
-        Routes::Index => template! {
-            div(class="container mx-auto") {
-                index::Index()
-            }
-        },
-        Routes::Docs(_, _, data) => {
-            template! {
-                content::Content(content::ContentProps {
-                    data: data.clone(),
-                    sidebar_version: Some("next".to_string()),
-                })
-            }
-        }
-        Routes::VersionedDocs(version, _, _, data) => template! {
-            content::Content(content::ContentProps {
-                data: data.clone(),
-                sidebar_version: Some(version.clone()),
-            })
-        },
-        Routes::NewsIndex => template! {
-            news_index::NewsIndex()
-        },
-        Routes::Post(_, data) => template! {
-            content::Content(content::ContentProps {
-                data: data.clone(),
-                sidebar_version: None,
-            })
-        },
-        Routes::Versions => template! {
-            versions::Versions()
-        },
-        Routes::NotFound => template! {
-            "404 Not Found"
-        },
-    });
+    let template = Signal::new(Template::empty());
+    create_effect(cloned!((template) => move || {
+        let route = route.get();
+        spawn_local(cloned!((template) => async move {
+            let t = match route.as_ref() {
+                Routes::Index => template! {
+                    div(class="container mx-auto") {
+                        index::Index()
+                    }
+                },
+                Routes::Docs(a, b) => {
+                    let data = docs_preload(format!("/static/docs/{}/{}.json", a, b)).await;
+                    template! {
+                        content::Content(content::ContentProps {
+                            data,
+                            sidebar_version: Some("next".to_string()),
+                        })
+                    }
+                }
+                Routes::VersionedDocs(version, a, b) => {
+                    let data = docs_preload(format!("/static/docs/{}/{}/{}.json", version, a, b)).await;
+                    template! {
+                        content::Content(content::ContentProps {
+                            data,
+                            sidebar_version: Some(version.clone()),
+                        })
+                    }
+                }
+                Routes::NewsIndex => template! {
+                    news_index::NewsIndex()
+                },
+                Routes::Post(name) => {
+                    let data = docs_preload(format!("/static/posts/{}.json", name)).await;
+                    template! {
+                        content::Content(content::ContentProps {
+                            data,
+                            sidebar_version: None,
+                        })
+                    }
+                }
+                Routes::Versions => template! {
+                    versions::Versions()
+                },
+                Routes::NotFound => template! {
+                    "404 Not Found"
+                },
+            };
+            template.set(t);
+        }));
+    }));
 
     template! {
         div(class="mt-12") {
