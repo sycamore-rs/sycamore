@@ -8,7 +8,7 @@ use sycamore::reactive::ReactiveScope;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{Element, HtmlAnchorElement, KeyboardEvent};
+use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
 
 use crate::Route;
 
@@ -114,15 +114,20 @@ impl Integration for HistoryIntegration {
 
 /// Gets the base pathname from `document.baseURI`.
 fn base_pathname() -> String {
-    let base_uri = web_sys::window()
+    match web_sys::window()
         .unwrap()
         .document()
         .unwrap()
-        .base_uri()
-        .unwrap()
-        .unwrap();
-    let url = web_sys::Url::new(&base_uri).unwrap();
-    url.pathname()
+        .query_selector("base[href]")
+    {
+        Ok(Some(base)) => {
+            let base = base.unchecked_into::<HtmlBaseElement>().href();
+
+            let url = web_sys::Url::new(&base).unwrap();
+            url.pathname()
+        }
+        _ => "".to_string(),
+    }
 }
 
 /// Props for [`Router`].
