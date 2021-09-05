@@ -164,7 +164,6 @@ fn impl_to(
             let mut captures = Vec::new();
 
             for (i, (field, segment)) in f.named.iter().zip(dyn_segments.iter()).enumerate() {
-                let field_ty = &field.ty;
                 match segment {
                     SegmentAst::Param(_) => unreachable!("not a dynamic segment"),
                     SegmentAst::DynParam(param) => {
@@ -176,13 +175,12 @@ fn impl_to(
                         }
                         let param_id: Ident = syn::parse_str(param)?;
                         captures.push(quote! {
-                            let mut #param_id = <#field_ty as ::std::default::Default>::default();
-                            if !::sycamore_router::FromParam::set_value(
-                                &mut #param_id,
+                            let #param_id = match ::sycamore_router::TryFromParam::try_from_param(
                                 __captures[#i].as_dyn_param().unwrap()
                             ) {
-                                break;
-                            }
+                                ::std::option::Option::Some(__value) => __value,
+                                ::std::option::Option::None => break,
+                            };
                         })
                     }
                     SegmentAst::DynSegments(param) => {
@@ -194,13 +192,12 @@ fn impl_to(
                         }
                         let param_id: Ident = syn::parse_str(param)?;
                         captures.push(quote! {
-                            let mut #param_id = <#field_ty as ::std::default::Default>::default();
-                            if !::sycamore_router::FromSegments::set_value(
-                                &mut #param_id,
+                            let #param_id = match ::sycamore_router::TryFromSegments::try_from_segments(
                                 __captures[#i].as_dyn_segments().unwrap()
                             ) {
-                                break;
-                            }
+                                ::std::option::Option::Some(__value) => __value,
+                                ::std::option::Option::None => break,
+                            };
                         })
                     }
                 }
@@ -224,33 +221,26 @@ fn impl_to(
             }
         }
         // For unnamed fields, captures must be in right order.
-        Fields::Unnamed(fu) => {
+        Fields::Unnamed(_) => {
             let mut captures = Vec::new();
 
-            for (i, (field, segment)) in fu.unnamed.iter().zip(dyn_segments.iter()).enumerate() {
-                let field_ty = &field.ty;
+            for (i, segment) in dyn_segments.iter().enumerate() {
                 match segment {
                     SegmentAst::Param(_) => unreachable!("not a dynamic segment"),
                     SegmentAst::DynParam(_) => captures.push(quote! {{
-                        let mut value = <#field_ty as ::std::default::Default>::default();
-                        if ::sycamore_router::FromParam::set_value(
-                            &mut value,
+                        match ::sycamore_router::TryFromParam::try_from_param(
                             __captures[#i].as_dyn_param().unwrap()
                         ) {
-                            value
-                        } else {
-                            break;
+                            ::std::option::Option::Some(__value) => __value,
+                            ::std::option::Option::None => break,
                         }
                     }}),
                     SegmentAst::DynSegments(_) => captures.push(quote! {{
-                        let mut value = <#field_ty as ::std::default::Default>::default();
-                        if ::sycamore_router::FromSegments::set_value(
-                            &mut value,
+                        match ::sycamore_router::TryFromSegments::try_from_segments(
                             __captures[#i].as_dyn_segments().unwrap()
                         ) {
-                            value
-                        } else {
-                            break;
+                            ::std::option::Option::Some(__value) => __value,
+                            ::std::option::Option::None => break,
                         }
                     }}),
                 }

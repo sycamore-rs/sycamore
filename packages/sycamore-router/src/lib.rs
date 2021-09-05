@@ -137,50 +137,41 @@ impl RoutePath {
 /// Fallible conversion between a param capture into a value.
 ///
 /// Implemented for all types that implement [`FromStr`] by default.
-pub trait FromParam {
-    /// Set the value of the capture variable with the value of the `param`. Returns `false` if
-    /// unsuccessful (e.g. parsing error).
+pub trait TryFromParam: Sized {
+    /// Creates a new value of this type from the given param. Returns `None` if the param cannot
+    /// be converted into a value of this type.
     #[must_use]
-    fn set_value(&mut self, param: &str) -> bool;
+    fn try_from_param(param: &str) -> Option<Self>;
 }
 
-impl<T> FromParam for T
+impl<T> TryFromParam for T
 where
     T: FromStr,
 {
-    fn set_value(&mut self, param: &str) -> bool {
-        match param.parse() {
-            Ok(val) => {
-                *self = val;
-                true
-            }
-            Err(_) => false,
-        }
+    fn try_from_param(param: &str) -> Option<Self> {
+        param.parse().ok()
     }
 }
 
 /// Fallible conversion between a list of param captures into a value.
-pub trait FromSegments {
+pub trait TryFromSegments: Sized {
     /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
     /// unsuccessful (e.g. parsing error).
     #[must_use]
-    fn set_value(&mut self, segments: &[&str]) -> bool;
+    fn try_from_segments(segments: &[&str]) -> Option<Self>;
 }
 
-impl<T> FromSegments for Vec<T>
+impl<T> TryFromSegments for Vec<T>
 where
-    T: FromParam + Default,
+    T: TryFromParam,
 {
-    fn set_value(&mut self, segments: &[&str]) -> bool {
-        *self = Vec::with_capacity(segments.len());
+    fn try_from_segments(segments: &[&str]) -> Option<Self> {
+        let mut tmp = Vec::with_capacity(segments.len());
         for segment in segments {
-            let mut value = T::default();
-            if !value.set_value(segment) {
-                return false;
-            }
-            self.push(value);
+            let value = T::try_from_param(segment)?;
+            tmp.push(value);
         }
-        true
+        Some(tmp)
     }
 }
 
