@@ -15,8 +15,8 @@ version = "0.5.2"
 
 [dependencies]
 async-trait = "0.1.51"
-sycamore = {path = "../sycamore", version = "=0.5.2"}
-sycamore-router-macro = {path = "../sycamore-router-macro", version = "=0.5.2"}
+sycamore = { path = "../sycamore", version = "=0.5.2" }
+sycamore-router-macro = { path = "../sycamore-router-macro", version = "=0.5.2" }
 wasm-bindgen = "0.2.76"
 wasm-bindgen-futures = "0.4.26"
 
