@@ -14,11 +14,9 @@ version = "0.5.2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.51"
 sycamore = { path = "../sycamore", version = "=0.5.2" }
 sycamore-router-macro = { path = "../sycamore-router-macro", version = "=0.5.2" }
 wasm-bindgen = "0.2.76"
-wasm-bindgen-futures = "0.4.26"
 
 [dependencies.web-sys]
 features = [
@@ -34,6 +32,3 @@ features = [
   "Window",
 ]
 version = "0.3.53"
-
-[dev-dependencies]
-futures = "0.3.16"

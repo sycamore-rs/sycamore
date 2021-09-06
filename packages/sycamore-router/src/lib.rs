@@ -174,12 +174,6 @@ where
     }
 }
 
-/// Re-exports for use by `sycamore-router-macro`. Not intended for use by end-users.
-#[doc(hidden)]
-pub mod rt {
-    pub use async_trait::async_trait;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
