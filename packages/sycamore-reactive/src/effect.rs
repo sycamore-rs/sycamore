@@ -62,7 +62,8 @@ pub(crate) struct ReactiveScopeInner {
     /// Callbacks to call when the scope is dropped.
     cleanup: Vec<Box<dyn FnOnce()>>,
     /// Contexts created in this scope.
-    pub(super) context: Option<Box<dyn ContextAny>>,
+    pub context: Option<Box<dyn ContextAny>>,
+    pub parent: ReactiveScopeWeak,
 }
 
 /// Owns the effects created in the current reactive scope.
@@ -94,7 +95,7 @@ impl ReactiveScope {
     }
 
     /// Create a new [`ReactiveScopeWeak`] from this [`ReactiveScope`].
-    pub fn downgrade(&self) -> ReactiveScopeWeak {
+    pub(crate) fn downgrade(&self) -> ReactiveScopeWeak {
         ReactiveScopeWeak(Rc::downgrade(&self.0))
     }
 }
@@ -117,15 +118,13 @@ impl Drop for ReactiveScope {
     }
 }
 
-/// A weak reference to a [`ReactiveScope`]. This is created by calling [`ReactiveScope::downgrade`].
-pub struct ReactiveScopeWeak(pub(crate) Weak<RefCell<ReactiveScopeInner>>);
-
-impl ReactiveScopeWeak {
-    /// Try to upgrade to a [`ReactiveScope`] from this [`ReactiveScopeWeak`].
-    pub fn upgrade(&self) -> Option<ReactiveScope> {
-        self.0.upgrade().map(ReactiveScope)
-    }
-}
+/// A weak reference to a [`ReactiveScope`]. This can be created by calling
+/// [`ReactiveScope::downgrade`].
+///
+/// There can only ever be one strong reference (it is impossible to clone a [`ReactiveScope`]).
+/// However, there can be multiple weak references to the same [`ReactiveScope`].
+#[derive(Default)]
+pub(crate) struct ReactiveScopeWeak(pub Weak<RefCell<ReactiveScopeInner>>);
 
 pub(super) type CallbackPtr = *const RefCell<dyn FnMut()>;
 
