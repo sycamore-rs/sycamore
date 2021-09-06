@@ -38,7 +38,7 @@ pub fn use_context<T: Clone + 'static>() -> T {
     SCOPES.with(|scopes| {
         // Walk up the scope stack until we find a context that matches type or `panic!`.
         for scope in scopes.borrow().iter().rev() {
-            if let Some(context) = &scope.context {
+            if let Some(context) = &scope.0.borrow().context {
                 if let Some(value) = context.get_value().downcast_ref::<T>() {
                     return value.clone();
                 }
@@ -53,8 +53,8 @@ pub fn use_context<T: Clone + 'static>() -> T {
 pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) -> Out {
     SCOPES.with(|scopes| {
         // Create a new ReactiveScope with a context.
-        let mut scope = ReactiveScope::default();
-        scope.context = Some(Box::new(Context { value }));
+        let scope = ReactiveScope::default();
+        scope.0.borrow_mut().context = Some(Box::new(Context { value }));
         scopes.borrow_mut().push(scope);
         let out = f();
         let scope = scopes.borrow_mut().pop().unwrap();

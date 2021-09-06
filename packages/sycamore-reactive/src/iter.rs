@@ -12,7 +12,7 @@ use super::*;
 /// computed, meaning that it's value will only be updated when requested. Modifications to the
 /// input `Vec` are diffed using keys to prevent recomputing values that have not changed.
 ///
-/// This function is the underlying utility behind [`Keyed`](crate::flow::Keyed).
+/// This function is the underlying utility behind `Keyed`.
 ///
 /// # Params
 /// * `list` - The list to be mapped. The list must be a [`StateHandle`] (obtained from a
@@ -176,7 +176,7 @@ where
 ///
 /// Generally, it is preferred to use [`map_keyed`] instead when a key function is available.
 ///
-/// This function is the underlying utility behind [`Indexed`](crate::flow::Indexed).
+/// This function is the underlying utility behind `Indexed`.
 ///
 /// # Params
 /// * `list` - The list to be mapped. The list must be a [`StateHandle`] (obtained from a

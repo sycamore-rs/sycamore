@@ -14,7 +14,7 @@ pub use iter::*;
 pub use signal::*;
 
 /// Creates a new reactive root / scope. Generally, you won't need this method as it is called
-/// automatically in [`render`](crate::render).
+/// automatically in `render`.
 ///
 /// # Example
 /// ```

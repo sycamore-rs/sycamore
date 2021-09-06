@@ -16,7 +16,7 @@ where
     pub children: F,
 }
 
-/// Creates a new [`ReactiveScope`] with a context.
+/// Creates a new [`ReactiveScope`](crate::reactive::ReactiveScope) with a context.
 ///
 /// # Example
 /// ```rust
