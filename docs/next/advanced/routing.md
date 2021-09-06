@@ -268,7 +268,7 @@ template! {
 
         template! {
             div(class="app") {
-                (t.get().as_ref().clone())
+                (template.get().as_ref().clone())
             }
         }
     }
