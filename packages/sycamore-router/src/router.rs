@@ -4,10 +4,8 @@ use std::rc::Rc;
 
 use sycamore::generic_node::EventHandler;
 use sycamore::prelude::*;
-use sycamore::reactive::ReactiveScope;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::spawn_local;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
 
 use crate::Route;
@@ -133,8 +131,8 @@ fn base_pathname() -> String {
 /// Props for [`Router`].
 pub struct RouterProps<R, F, G>
 where
-    R: Route,
-    F: Fn(R) -> Template<G>,
+    R: Route + 'static,
+    F: FnOnce(StateHandle<R>) -> Template<G>,
     G: GenericNode,
 {
     render: F,
@@ -144,8 +142,8 @@ where
 
 impl<R, F, G> RouterProps<R, F, G>
 where
-    R: Route,
-    F: Fn(R) -> Template<G> + 'static,
+    R: Route + 'static,
+    F: FnOnce(StateHandle<R>) -> Template<G>,
     G: GenericNode,
 {
     /// Create a new [`RouterProps`].
@@ -164,14 +162,14 @@ where
 pub fn router<R, F>(props: RouterProps<R, F, G>) -> Template<G>
 where
     R: Route + 'static,
-    F: Fn(R) -> Template<G> + 'static,
+    F: FnOnce(StateHandle<R>) -> Template<G> + 'static,
 {
     let RouterProps {
         render,
         integration,
         _phantom,
     } = props;
-    let render = Rc::new(render);
+    let render = Rc::new(RefCell::new(Some(render)));
     let integration = Rc::new(integration);
     let base_pathname = base_pathname();
 
@@ -207,28 +205,25 @@ where
             .collect::<Vec<_>>()
     });
 
-    let template = Signal::new((ReactiveScope::new(), Template::empty()));
-    create_effect(cloned!((template) => move || {
+    let route_signal: Rc<RefCell<Option<Signal<R>>>> = Rc::new(RefCell::new(None));
+    create_effect(cloned!((route_signal) => move || {
         let path = path.get();
-        spawn_local(cloned!((render, integration, path, template) => async move {
-            let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice()).await;
-            // Delegate click events from child <a> tags.
-            let mut t = None;
-            let scope = create_root(|| {
-                let tmp = render(route);
-                if let Some(node) = tmp.as_node() {
-                    node.event("click", integration.click_handler());
-                } else {
-                    // TODO: support fragments and lazy nodes
-                    panic!("render should return a single node");
-                }
-                t = Some(tmp);
-            });
-            template.set((scope, t.unwrap()));
-        }));
+        let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
+        if route_signal.borrow().is_some() {
+            route_signal.borrow().as_ref().unwrap().set(route);
+        } else {
+            *route_signal.borrow_mut() = Some(Signal::new(route));
+        }
     }));
-
-    Template::new_dyn(move || template.get().as_ref().1.clone())
+    // Delegate click events from child <a> tags.
+    let tmp = render.take().unwrap()(route_signal.borrow().as_ref().unwrap().handle());
+    if let Some(node) = tmp.as_node() {
+        node.event("click", integration.click_handler());
+    } else {
+        // TODO: support fragments and lazy nodes
+        panic!("render should return a single node");
+    }
+    tmp
 }
 
 /// Props for [`StaticRouter`].
@@ -330,12 +325,12 @@ mod tests {
 
         #[component(Comp<G>)]
         fn comp(path: String) -> Template<G> {
-            let route = futures::executor::block_on(Routes::match_route(
+            let route = Routes::match_route(
                 &path
                     .split('/')
                     .filter(|s| !s.is_empty())
                     .collect::<Vec<_>>(),
-            ));
+            );
 
             template! {
                 StaticRouter(StaticRouterProps::new(route, |route: Routes| {

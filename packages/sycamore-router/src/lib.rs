@@ -15,21 +15,20 @@ pub use router::*;
 ///
 /// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro
 /// instead.
-#[async_trait::async_trait(?Send)]
 pub trait Route: Sized {
     /// Matches a route with the given path segments. Note that in general, empty segments should be
     /// filtered out before passed as an argument.
     ///
     /// It is likely that you are looking for the [`Route::match_path`] method instead.
-    async fn match_route(segments: &[&str]) -> Self;
+    fn match_route(segments: &[&str]) -> Self;
 
     /// Matches a route with the given path.
-    async fn match_path(path: &str) -> Self {
+    fn match_path(path: &str) -> Self {
         let segments = path
             .split('/')
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>();
-        Self::match_route(&segments).await
+        Self::match_route(&segments)
     }
 }
 
@@ -137,57 +136,42 @@ impl RoutePath {
 /// Fallible conversion between a param capture into a value.
 ///
 /// Implemented for all types that implement [`FromStr`] by default.
-pub trait FromParam {
-    /// Set the value of the capture variable with the value of the `param`. Returns `false` if
-    /// unsuccessful (e.g. parsing error).
+pub trait TryFromParam: Sized {
+    /// Creates a new value of this type from the given param. Returns `None` if the param cannot
+    /// be converted into a value of this type.
     #[must_use]
-    fn set_value(&mut self, param: &str) -> bool;
+    fn try_from_param(param: &str) -> Option<Self>;
 }
 
-impl<T> FromParam for T
+impl<T> TryFromParam for T
 where
     T: FromStr,
 {
-    fn set_value(&mut self, param: &str) -> bool {
-        match param.parse() {
-            Ok(val) => {
-                *self = val;
-                true
-            }
-            Err(_) => false,
-        }
+    fn try_from_param(param: &str) -> Option<Self> {
+        param.parse().ok()
     }
 }
 
 /// Fallible conversion between a list of param captures into a value.
-pub trait FromSegments {
+pub trait TryFromSegments: Sized {
     /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
     /// unsuccessful (e.g. parsing error).
     #[must_use]
-    fn set_value(&mut self, segments: &[&str]) -> bool;
+    fn try_from_segments(segments: &[&str]) -> Option<Self>;
 }
 
-impl<T> FromSegments for Vec<T>
+impl<T> TryFromSegments for Vec<T>
 where
-    T: FromParam + Default,
+    T: TryFromParam,
 {
-    fn set_value(&mut self, segments: &[&str]) -> bool {
-        *self = Vec::with_capacity(segments.len());
+    fn try_from_segments(segments: &[&str]) -> Option<Self> {
+        let mut tmp = Vec::with_capacity(segments.len());
         for segment in segments {
-            let mut value = T::default();
-            if !value.set_value(segment) {
-                return false;
-            }
-            self.push(value);
+            let value = T::try_from_param(segment)?;
+            tmp.push(value);
         }
-        true
+        Some(tmp)
     }
-}
-
-/// Re-exports for use by `sycamore-router-macro`. Not intended for use by end-users.
-#[doc(hidden)]
-pub mod rt {
-    pub use async_trait::async_trait;
 }
 
 #[cfg(test)]
@@ -351,136 +335,120 @@ mod tests {
 
         #[test]
         fn simple_router() {
-            futures::executor::block_on(async {
-                #[derive(Debug, PartialEq, Eq, Route)]
-                enum Routes {
-                    #[to("/")]
-                    Home,
-                    #[to("/about")]
-                    About,
-                    #[not_found]
-                    NotFound,
-                }
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Routes {
+                #[to("/")]
+                Home,
+                #[to("/about")]
+                About,
+                #[not_found]
+                NotFound,
+            }
 
-                assert_eq!(Routes::match_route(&[]).await, Routes::Home);
-                assert_eq!(Routes::match_route(&["about"]).await, Routes::About);
-                assert_eq!(Routes::match_route(&["404"]).await, Routes::NotFound);
-                assert_eq!(
-                    Routes::match_route(&["about", "something"]).await,
-                    Routes::NotFound
-                );
-            });
+            assert_eq!(Routes::match_route(&[]), Routes::Home);
+            assert_eq!(Routes::match_route(&["about"]), Routes::About);
+            assert_eq!(Routes::match_route(&["404"]), Routes::NotFound);
+            assert_eq!(
+                Routes::match_route(&["about", "something"]),
+                Routes::NotFound
+            );
         }
 
         #[test]
         fn router_dyn_params() {
-            futures::executor::block_on(async {
-                #[derive(Debug, PartialEq, Eq, Route)]
-                enum Routes {
-                    #[to("/account/<id>")]
-                    Account { id: u32 },
-                    #[not_found]
-                    NotFound,
-                }
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Routes {
+                #[to("/account/<id>")]
+                Account { id: u32 },
+                #[not_found]
+                NotFound,
+            }
 
-                assert_eq!(
-                    Routes::match_route(&["account", "123"]).await,
-                    Routes::Account { id: 123 }
-                );
-                assert_eq!(
-                    Routes::match_route(&["account", "-1"]).await,
-                    Routes::NotFound
-                );
-                assert_eq!(
-                    Routes::match_route(&["account", "abc"]).await,
-                    Routes::NotFound
-                );
-                assert_eq!(Routes::match_route(&["account"]).await, Routes::NotFound);
-            });
+            assert_eq!(
+                Routes::match_route(&["account", "123"]),
+                Routes::Account { id: 123 }
+            );
+            assert_eq!(Routes::match_route(&["account", "-1"]), Routes::NotFound);
+            assert_eq!(Routes::match_route(&["account", "abc"]), Routes::NotFound);
+            assert_eq!(Routes::match_route(&["account"]), Routes::NotFound);
         }
 
         #[test]
         fn router_multiple_dyn_params() {
-            futures::executor::block_on(async {
-                #[derive(Debug, PartialEq, Eq, Route)]
-                enum Routes {
-                    #[to("/hello/<name>/<age>")]
-                    Hello { name: String, age: u32 },
-                    #[not_found]
-                    NotFound,
-                }
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Routes {
+                #[to("/hello/<name>/<age>")]
+                Hello { name: String, age: u32 },
+                #[not_found]
+                NotFound,
+            }
 
-                assert_eq!(
-                    Routes::match_route(&["hello", "Bob", "21"]).await,
-                    Routes::Hello {
-                        name: "Bob".to_string(),
-                        age: 21
-                    }
-                );
-                assert_eq!(
-                    Routes::match_route(&["hello", "21", "Bob"]).await,
-                    Routes::NotFound
-                );
-                assert_eq!(Routes::match_route(&["hello"]).await, Routes::NotFound);
-            });
+            assert_eq!(
+                Routes::match_route(&["hello", "Bob", "21"]),
+                Routes::Hello {
+                    name: "Bob".to_string(),
+                    age: 21
+                }
+            );
+            assert_eq!(
+                Routes::match_route(&["hello", "21", "Bob"]),
+                Routes::NotFound
+            );
+            assert_eq!(Routes::match_route(&["hello"]), Routes::NotFound);
         }
 
         #[test]
         fn router_multiple_dyn_segments() {
-            futures::executor::block_on(async {
-                #[derive(Debug, PartialEq, Eq, Route)]
-                enum Routes {
-                    #[to("/path/<path..>")]
-                    Path { path: Vec<String> },
-                    #[to("/numbers/<numbers..>")]
-                    Numbers { numbers: Vec<u32> },
-                    #[not_found]
-                    NotFound,
-                }
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Routes {
+                #[to("/path/<path..>")]
+                Path { path: Vec<String> },
+                #[to("/numbers/<numbers..>")]
+                Numbers { numbers: Vec<u32> },
+                #[not_found]
+                NotFound,
+            }
 
-                assert_eq!(
-                    Routes::match_route(&["path", "a", "b", "c"]).await,
-                    Routes::Path {
-                        path: vec!["a".to_string(), "b".to_string(), "c".to_string()]
-                    }
-                );
-                assert_eq!(
-                    Routes::match_route(&["numbers", "1", "2", "3"]).await,
-                    Routes::Numbers {
-                        numbers: vec![1, 2, 3]
-                    }
-                );
-                assert_eq!(
-                    Routes::match_route(&["path"]).await,
-                    Routes::Path { path: Vec::new() }
-                );
-            });
+            assert_eq!(
+                Routes::match_route(&["path", "a", "b", "c"]),
+                Routes::Path {
+                    path: vec!["a".to_string(), "b".to_string(), "c".to_string()]
+                }
+            );
+            assert_eq!(
+                Routes::match_route(&["numbers", "1", "2", "3"]),
+                Routes::Numbers {
+                    numbers: vec![1, 2, 3]
+                }
+            );
+            assert_eq!(
+                Routes::match_route(&["path"]),
+                Routes::Path { path: Vec::new() }
+            );
         }
 
         #[test]
         fn router_multiple_dyn_segments_match_lazy() {
-            futures::executor::block_on(async {
-                #[derive(Debug, PartialEq, Eq, Route)]
-                enum Routes {
-                    #[to("/path/<path..>/end")]
-                    Path { path: Vec<u32> },
-                    #[not_found]
-                    NotFound,
-                }
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Routes {
+                #[to("/path/<path..>/end")]
+                Path { path: Vec<u32> },
+                #[not_found]
+                NotFound,
+            }
 
-                assert_eq!(
-                    Routes::match_route(&["path", "1", "2", "end"]).await,
-                    Routes::Path { path: vec![1, 2] }
-                );
-                assert_eq!(
-                    Routes::match_route(&["path", "end"]).await,
-                    Routes::Path { path: Vec::new() }
-                );
-                assert_eq!(
-                    Routes::match_route(&["path", "1", "end", "2"]).await,
-                    Routes::NotFound
-                );
-            });
+            assert_eq!(
+                Routes::match_route(&["path", "1", "2", "end"]),
+                Routes::Path { path: vec![1, 2] }
+            );
+            assert_eq!(
+                Routes::match_route(&["path", "end"]),
+                Routes::Path { path: Vec::new() }
+            );
+            assert_eq!(
+                Routes::match_route(&["path", "1", "end", "2"]),
+                Routes::NotFound
+            );
         }
     }
 }

@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{DeriveInput, Expr, Fields, Ident, LitStr, Token, Variant};
+use syn::{DeriveInput, Fields, Ident, LitStr, Token, Variant};
 
 use crate::parser::route;
 use crate::parser::RoutePathAst;
@@ -20,13 +20,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
             for variant in &de.variants {
                 let variant_id = &variant.ident;
 
-                let has_preload_handler = variant
-                    .attrs
-                    .iter()
-                    .any(|attr| *attr.path.get_ident().unwrap() == "preload");
-
                 let mut quote_capture_vars = TokenStream::new();
-                let mut quote_preload = TokenStream::new();
                 let mut route_path_ast = None;
 
                 let mut is_to_route = false;
@@ -53,12 +47,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                                 }
                             };
                             // endregion
-                            quote_capture_vars.extend(impl_to(
-                                variant,
-                                variant_id,
-                                &route,
-                                has_preload_handler,
-                            )?);
+                            quote_capture_vars.extend(impl_to(variant, variant_id, &route)?);
                             route_path_ast = Some(route);
                             is_to_route = true;
                         }
@@ -80,16 +69,6 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                             };
                             has_error_handler = true;
                         }
-                        "preload" => {
-                            let preload_fn: Expr = attr.parse_args()?;
-                            quote_preload.extend(quote_spanned! { attr.span()=>
-                                let __segments_vec = __segments.to_vec().iter().map(|__p|
-                                    ::std::string::ToString::to_string(__p)
-                                ).collect::<::std::vec::Vec<::std::string::String>>();
-                                #[allow(clippy::redundant_closure_call)]
-                                let data = (#preload_fn)(__segments_vec).await;
-                            });
-                        }
                         _ => {}
                     }
                 }
@@ -98,8 +77,6 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                     quoted.extend(quote! {
                         let __route = #route_path_ast;
                         if let Some(__captures) = __route.match_path(__segments) {
-                            // Run preload function.
-                            #quote_preload
                             // Try to capture variables.
                             #quote_capture_vars
                         }
@@ -115,9 +92,8 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
             }
 
             Ok(quote! {
-                #[::sycamore_router::rt::async_trait(?Send)]
                 impl ::sycamore_router::Route for #ty_name {
-                    async fn match_route(__segments: &[&str]) -> Self {
+                    fn match_route(__segments: &[&str]) -> Self {
                         #quoted
                         #err_quoted
                     }
@@ -136,26 +112,14 @@ fn impl_to(
     variant: &Variant,
     variant_id: &Ident,
     route: &RoutePathAst,
-    has_preload_handler: bool,
 ) -> Result<TokenStream, syn::Error> {
     let dyn_segments = route.dyn_segments();
-    let expected_fields_len = if has_preload_handler {
-        dyn_segments.len() + 1
-    } else {
-        dyn_segments.len()
-    };
+    let expected_fields_len = dyn_segments.len();
     if expected_fields_len != variant.fields.len() {
-        if has_preload_handler && dyn_segments.len() == variant.fields.len() {
-            return Err(syn::Error::new(
-                variant.span(),
-                "missing field for preload data",
-            ));
-        } else {
-            return Err(syn::Error::new(
-                variant.fields.span(),
-                "mismatch between number of capture fields and variant fields",
-            ));
-        }
+        return Err(syn::Error::new(
+            variant.fields.span(),
+            "mismatch between number of capture fields and variant fields",
+        ));
     }
 
     Ok(match &variant.fields {
@@ -164,7 +128,6 @@ fn impl_to(
             let mut captures = Vec::new();
 
             for (i, (field, segment)) in f.named.iter().zip(dyn_segments.iter()).enumerate() {
-                let field_ty = &field.ty;
                 match segment {
                     SegmentAst::Param(_) => unreachable!("not a dynamic segment"),
                     SegmentAst::DynParam(param) => {
@@ -176,13 +139,12 @@ fn impl_to(
                         }
                         let param_id: Ident = syn::parse_str(param)?;
                         captures.push(quote! {
-                            let mut #param_id = <#field_ty as ::std::default::Default>::default();
-                            if !::sycamore_router::FromParam::set_value(
-                                &mut #param_id,
+                            let #param_id = match ::sycamore_router::TryFromParam::try_from_param(
                                 __captures[#i].as_dyn_param().unwrap()
                             ) {
-                                break;
-                            }
+                                ::std::option::Option::Some(__value) => __value,
+                                ::std::option::Option::None => break,
+                            };
                         })
                     }
                     SegmentAst::DynSegments(param) => {
@@ -194,27 +156,21 @@ fn impl_to(
                         }
                         let param_id: Ident = syn::parse_str(param)?;
                         captures.push(quote! {
-                            let mut #param_id = <#field_ty as ::std::default::Default>::default();
-                            if !::sycamore_router::FromSegments::set_value(
-                                &mut #param_id,
+                            let #param_id = match ::sycamore_router::TryFromSegments::try_from_segments(
                                 __captures[#i].as_dyn_segments().unwrap()
                             ) {
-                                break;
-                            }
+                                ::std::option::Option::Some(__value) => __value,
+                                ::std::option::Option::None => break,
+                            };
                         })
                     }
                 }
             }
             let named: Punctuated<&Option<Ident>, Token![,]> =
                 f.named.iter().map(|x| &x.ident).collect();
-            if has_preload_handler && f.named.last().unwrap().ident.as_ref().unwrap() != "data" {
-                return Err(syn::Error::new(
-                    f.named.last().unwrap().span(),
-                    "preload field must be named `data`",
-                ));
-            }
             quote_spanned! {variant.span()=>
                 #[allow(clippy::never_loop)]
+                #[allow(clippy::while_let_loop)]
                 loop {
                     #(#captures)*
                     return Self::#variant_id {
@@ -224,39 +180,29 @@ fn impl_to(
             }
         }
         // For unnamed fields, captures must be in right order.
-        Fields::Unnamed(fu) => {
+        Fields::Unnamed(_) => {
             let mut captures = Vec::new();
 
-            for (i, (field, segment)) in fu.unnamed.iter().zip(dyn_segments.iter()).enumerate() {
-                let field_ty = &field.ty;
+            for (i, segment) in dyn_segments.iter().enumerate() {
                 match segment {
                     SegmentAst::Param(_) => unreachable!("not a dynamic segment"),
                     SegmentAst::DynParam(_) => captures.push(quote! {{
-                        let mut value = <#field_ty as ::std::default::Default>::default();
-                        if ::sycamore_router::FromParam::set_value(
-                            &mut value,
+                        match ::sycamore_router::TryFromParam::try_from_param(
                             __captures[#i].as_dyn_param().unwrap()
                         ) {
-                            value
-                        } else {
-                            break;
+                            ::std::option::Option::Some(__value) => __value,
+                            ::std::option::Option::None => break,
                         }
                     }}),
                     SegmentAst::DynSegments(_) => captures.push(quote! {{
-                        let mut value = <#field_ty as ::std::default::Default>::default();
-                        if ::sycamore_router::FromSegments::set_value(
-                            &mut value,
+                        match ::sycamore_router::TryFromSegments::try_from_segments(
                             __captures[#i].as_dyn_segments().unwrap()
                         ) {
-                            value
-                        } else {
-                            break;
+                            ::std::option::Option::Some(__value) => __value,
+                            ::std::option::Option::None => break,
                         }
                     }}),
                 }
-            }
-            if has_preload_handler {
-                captures.push(quote! { data });
             }
             quote! {
                 // Run captures inside a loop in order to allow early break inside the expression.

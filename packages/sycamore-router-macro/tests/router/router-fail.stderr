@@ -47,17 +47,3 @@ error: capture field name mismatch
    |
 51 |     Path { a: u32 },
    |            ^
-
-error: missing field for preload data
-  --> $DIR/router-fail.rs:58:5
-   |
-58 |     #[to("/")]
-   |     ^
-
-error[E0618]: expected function, found `impl Future`
-  --> $DIR/router-fail.rs:68:15
-   |
-68 |     #[preload(async { todo!() })] // Should be closure.
-   |     -         ^^^^^^^^^^^^^^^^^
-   |     |
-   |     call expression requires function
