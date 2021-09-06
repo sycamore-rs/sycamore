@@ -53,22 +53,4 @@ enum Routes8 {
     NotFound,
 }
 
-#[derive(Route)]
-enum Routes9 {
-    #[to("/")]
-    #[preload(|_| async { todo!() })]
-    Path, // Missing `data` field.
-    #[not_found]
-    NotFound,
-}
-
-#[derive(Route)]
-enum Routes10 {
-    #[to("/")]
-    #[preload(async { todo!() })] // Should be closure.
-    Path { data: String },
-    #[not_found]
-    NotFound,
-}
-
 fn main() {}
