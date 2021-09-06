@@ -279,7 +279,7 @@ where
 /// possible/suitable (e.g. when submitting a form).
 ///
 /// # Panics
-/// This function will `panic!()` if a [`BrowserRouter`] has not yet been created.
+/// This function will `panic!()` if a [`Router`] has not yet been created.
 pub fn navigate(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(

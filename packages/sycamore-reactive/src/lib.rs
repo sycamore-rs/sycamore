@@ -14,7 +14,7 @@ pub use iter::*;
 pub use signal::*;
 
 /// Creates a new reactive root / scope. Generally, you won't need this method as it is called
-/// automatically in [`render`](crate::render).
+/// automatically in `render`.
 ///
 /// # Example
 /// ```
@@ -48,7 +48,12 @@ pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
 fn _create_root<'a>(callback: Box<dyn FnOnce() + 'a>) -> ReactiveScope {
     SCOPES.with(|scopes| {
         // Push new empty scope on the stack.
-        scopes.borrow_mut().push(ReactiveScope::new());
+        let scope = ReactiveScope::new();
+
+        if let Some(parent) = scopes.borrow().last() {
+            scope.0.borrow_mut().parent = parent.downgrade();
+        }
+        scopes.borrow_mut().push(scope);
         callback();
 
         // Pop the scope from the stack and return it.

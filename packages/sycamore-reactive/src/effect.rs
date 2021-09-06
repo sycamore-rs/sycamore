@@ -54,6 +54,18 @@ impl Listener {
     }
 }
 
+/// Internal representation for [`ReactiveScope`].
+#[derive(Default)]
+pub(crate) struct ReactiveScopeInner {
+    /// Effects created in this scope.
+    effects: SmallVec<[Rc<RefCell<Option<Listener>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
+    /// Callbacks to call when the scope is dropped.
+    cleanup: Vec<Box<dyn FnOnce()>>,
+    /// Contexts created in this scope.
+    pub context: Option<Box<dyn ContextAny>>,
+    pub parent: ReactiveScopeWeak,
+}
+
 /// Owns the effects created in the current reactive scope.
 /// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is
 /// dropped.
@@ -62,14 +74,7 @@ impl Listener {
 /// created when a new effect is created with [`create_effect`] and other reactive utilities that
 /// call it under the hood.
 #[derive(Default)]
-pub struct ReactiveScope {
-    /// Effects created in this scope.
-    effects: SmallVec<[Rc<RefCell<Option<Listener>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
-    /// Callbacks to call when the scope is dropped.
-    cleanup: Vec<Box<dyn FnOnce()>>,
-    /// Contexts created in this scope.
-    pub(super) context: Option<Box<dyn ContextAny>>,
-}
+pub struct ReactiveScope(pub(crate) Rc<RefCell<ReactiveScopeInner>>);
 
 impl ReactiveScope {
     /// Create a new empty [`ReactiveScope`].
@@ -81,26 +86,45 @@ impl ReactiveScope {
 
     /// Add an effect that is owned by this [`ReactiveScope`].
     pub(super) fn add_effect_state(&mut self, effect: Rc<RefCell<Option<Listener>>>) {
-        self.effects.push(effect);
+        self.0.borrow_mut().effects.push(effect);
     }
 
     /// Add a cleanup callback that will be called when the [`ReactiveScope`] is dropped.
     pub(super) fn add_cleanup(&mut self, cleanup: Box<dyn FnOnce()>) {
-        self.cleanup.push(cleanup);
+        self.0.borrow_mut().cleanup.push(cleanup);
+    }
+
+    /// Create a new [`ReactiveScopeWeak`] from this [`ReactiveScope`].
+    pub(crate) fn downgrade(&self) -> ReactiveScopeWeak {
+        ReactiveScopeWeak(Rc::downgrade(&self.0))
     }
 }
 
 impl Drop for ReactiveScope {
     fn drop(&mut self) {
-        for effect in &self.effects {
+        debug_assert_eq!(
+            Rc::strong_count(&self.0),
+            1,
+            "should only have 1 strong link to ReactiveScopeInner"
+        );
+
+        for effect in &self.0.borrow().effects {
             effect.borrow_mut().as_mut().unwrap().clear_dependencies();
         }
 
-        for cleanup in mem::take(&mut self.cleanup) {
+        for cleanup in mem::take(&mut self.0.borrow_mut().cleanup) {
             untrack(cleanup);
         }
     }
 }
+
+/// A weak reference to a [`ReactiveScope`]. This can be created by calling
+/// [`ReactiveScope::downgrade`].
+///
+/// There can only ever be one strong reference (it is impossible to clone a [`ReactiveScope`]).
+/// However, there can be multiple weak references to the same [`ReactiveScope`].
+#[derive(Default)]
+pub(crate) struct ReactiveScopeWeak(pub Weak<RefCell<ReactiveScopeInner>>);
 
 pub(super) type CallbackPtr = *const RefCell<dyn FnMut()>;
 
