@@ -16,7 +16,7 @@ where
     pub children: F,
 }
 
-/// Creates a new [`ReactiveScope`] with a context.
+/// Creates a new [`ReactiveScope`](crate::reactive::ReactiveScope) with a context.
 ///
 /// # Example
 /// ```rust
@@ -73,9 +73,38 @@ mod tests {
                         let ctx = use_context::<i32>();
                         assert_eq!(ctx, 1);
                         template! {}
-                    }
+                    },
                 })
             }
         });
+    }
+
+    #[test]
+    fn context_inside_effect_when_reexecuting() {
+        #[component(ContextConsumer<G>)]
+        fn context_consumer() -> Template<G> {
+            let _ctx = use_context::<i32>();
+            template! {}
+        }
+
+        let trigger = Signal::new(());
+
+        let node = template! {
+            ContextProvider(ContextProviderProps {
+                value: 1i32,
+                children: cloned!((trigger) => move || {
+                    template! {
+                        ({
+                            trigger.get(); // subscribe to trigger
+                            template! { ContextConsumer() }
+                        })
+                    }
+                }),
+            })
+        };
+        trigger.set(());
+        trigger.set(());
+
+        sycamore::render_to_string(|| node);
     }
 }
