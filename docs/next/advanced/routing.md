@@ -184,10 +184,11 @@ template! {
 }
 ```
 
-`Router` is just a component like any other. The props accept a closure taking a `StateHandle` of the matched route as
-a parameter and an "integration". The integration is for adapting the router to different
-environments (e.g. server-side rendering). The `HistoryIntegration` is a built-in integration that
-uses the [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API).
+`Router` is just a component like any other. The props accept a closure taking a `StateHandle` of
+the matched route as a parameter and an "integration". The integration is for adapting the router to
+different environments (e.g. server-side rendering). The `HistoryIntegration` is a built-in
+integration that uses the
+[HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API).
 
 Any clicks on anchor tags (`<a>`) created inside the `Router` will be intercepted and handled by the
 router.
@@ -205,7 +206,7 @@ route preload. The route is expected to be resolved separately using the `Route:
 function.
 
 ```rust
-let route = AppRoutes::match_path(path).await;
+let route = AppRoutes::match_path(path);
 
 template! {
     StaticRouter(StaticRouterProps::new(route, |route: AppRoutes| {
@@ -237,4 +238,39 @@ possible/suitable (e.g. when submitting a form).
 
 ## Data fetching and preloading
 
-TODO: docs for data fetching and preloading.
+When data fetching (e.g. from a REST API) is required to load a page, it is recommended to preload
+the data. This will cause the router to wait until the data is loaded before rendering the page,
+removing the need for some "Loading..." indicator.
+
+```rust
+use wasm_bindgen_futures::spawn_local;
+
+template! {
+    Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
+        let template = Signal::new(Template::empty());
+        create_effect(cloned!((template) => move || {
+            let route = route.get();
+            spawn_local(cloned!((template) => async move {
+                let t = match route.as_ref() {
+                    AppRoutes::Index => template! {
+                        "This is the index page"
+                    },
+                    AppRoutes::About => template! {
+                        "About this website"
+                    },
+                    AppRoutes::NotFound => template! {
+                        "404 Not Found"
+                    },
+                };
+                template.set(t);
+            }));
+        }));
+
+        template! {
+            div(class="app) {
+                (t.get().as_ref().clone())
+            }
+        }
+    }
+}
+```
