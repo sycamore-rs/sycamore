@@ -67,7 +67,7 @@ pub fn versions() -> Template<G> {
             template! {
                 li {
                     h2(class="text-2xl font-light") { (name) }
-                    div(class="flex flex-col divide-y text-gray-600") {
+                    div(class="flex flex-col divide-y dark:divide-gray-500 text-gray-600 dark:text-gray-300") {
                         VersionedDocsLinkView((name, versioned_docs_link))
                     }
                 }

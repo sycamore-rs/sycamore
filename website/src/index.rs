@@ -46,7 +46,7 @@ pub fn index() -> Template<G> {
     
                 a(
                     href="/docs/getting_started/installation",
-                    class="py-2 px-3 text-white bg-yellow-500 rounded font-medium transition",
+                    class="py-2 px-3 text-white bg-yellow-600 rounded font-medium transition",
                 ) {
                     "Read the Book"
                 }
