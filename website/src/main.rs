@@ -129,10 +129,24 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
+    let local_storage = web_sys::window().unwrap().local_storage().unwrap();
+    let dark_mode = if let Some(local_storage) = &local_storage {
+        local_storage.get_item("dark_mode").unwrap().as_deref() == Some("true")
+    } else {
+        false
+    };
+    let dark_mode = DarkMode(Signal::new(dark_mode));
+
+    create_effect(cloned!((dark_mode) => move || {
+        if let Some(local_storage) = &local_storage {
+            local_storage.set_item("dark_mode", &dark_mode.0.get().to_string()).unwrap();
+        }
+    }));
+
     sycamore::render(|| {
         template! {
             ContextProvider(ContextProviderProps {
-                value: DarkMode(Signal::new(true)), // TODO: read from local storage or media query
+                value: dark_mode,
                 children: || template! {
                     App()
                 },
