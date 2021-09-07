@@ -9,8 +9,9 @@ use pulldown_cmark::html::push_html;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag};
 use serde::Serialize;
 use syntect::highlighting::ThemeSet;
-use syntect::html::highlighted_html_for_string;
+use syntect::html::{css_for_theme_with_class_style, ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
+use syntect::util::LinesWithEndings;
 use walkdir::WalkDir;
 
 static HOSTNAME: &str = "https://sycamore-rs.netlify.app";
@@ -34,8 +35,6 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
     let mut builder = SyntaxSet::load_defaults_newlines().into_builder();
     builder.add_from_folder("./syntax", true)?;
     let ps = builder.build();
-    let ts = ThemeSet::load_defaults();
-    let theme = &ts.themes["InspiredGitHub"];
 
     let md = fs::read_to_string(path)?;
 
@@ -91,9 +90,21 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
             let syntax = ps
                 .find_syntax_by_token(&lang)
                 .unwrap_or_else(|| panic!("{} is an invalid language", lang));
-            let highlighted_html = highlighted_html_for_string(&code, &ps, syntax, theme);
 
-            Some(Event::Html(CowStr::from(highlighted_html)))
+            let mut html_generator = ClassedHTMLGenerator::new_with_class_style(
+                syntax,
+                &ps,
+                syntect::html::ClassStyle::SpacedPrefixed { prefix: "s-" },
+            );
+            for line in LinesWithEndings::from(&code) {
+                html_generator.parse_html_for_line_which_includes_newline(line);
+            }
+            let highlighted_html = html_generator.finalize();
+
+            Some(Event::Html(CowStr::from(format!(
+                "<pre>{}</pre>",
+                highlighted_html
+            ))))
         }
         Event::Text(ref text) | Event::Code(ref text) => {
             if inside_code_block {
@@ -247,11 +258,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=versioned_docs");
     println!("cargo:rerun-if-changed=posts");
 
+    // Sitemap.
     generate_sitemap_xml()?;
 
+    // Markdown files.
     build_dir(Path::new("./next"), Path::new("docs"))?;
     build_dir(Path::new("./versioned_docs"), Path::new("docs"))?;
     build_dir(Path::new("./posts"), Path::new("posts"))?;
+
+    // Syntax highlighting CSS files.
+    let ts = ThemeSet::load_defaults();
+    let dark_theme = &ts.themes["base16-ocean.dark"];
+    let light_theme = &ts.themes["InspiredGitHub"];
+
+    let dark_css =
+        css_for_theme_with_class_style(dark_theme, ClassStyle::SpacedPrefixed { prefix: "s-" });
+    let light_css =
+        css_for_theme_with_class_style(light_theme, ClassStyle::SpacedPrefixed { prefix: "s-" });
+    fs::write("../website/static/dark.css", dark_css)?;
+    fs::write("../website/static/light.css", light_css)?;
 
     Ok(())
 }

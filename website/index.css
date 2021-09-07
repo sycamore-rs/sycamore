@@ -3,17 +3,18 @@
 @tailwind utilities;
 
 .content blockquote {
-  @apply bg-gray-300 p-2 rounded;
+  @apply bg-gray-300 dark:bg-gray-700 p-2 rounded;
 }
 
 .content code {
-  @apply bg-gray-200 px-2 rounded;
+  @apply bg-gray-200 dark:bg-gray-600 px-2 rounded;
 }
 
 .content pre {
-  /* Important style */
-  background-color: rgb(244, 244, 245) !important;
-  @apply rounded block p-2 whitespace-pre-wrap;
+  @apply bg-gray-100 rounded block p-2 whitespace-pre-wrap font-mono;
+}
+.dark .content pre {
+  background-color: rgb(50, 50, 60) !important;
 }
 
 .content table {

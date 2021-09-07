@@ -61,7 +61,7 @@ pub fn sidebar(version: String) -> Template<G> {
                         li {
                             a(
                                 href=format!("../{}", page.1),
-                                class="pl-4 hover:bg-gray-300 w-full inline-block rounded transition",
+                                class="pl-4 hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
                             ) {
                                 (page.0)
                             }
@@ -76,7 +76,7 @@ pub fn sidebar(version: String) -> Template<G> {
                     h1(class="text-lg font-bold py-1 pl-2") {
                         (section.0)
                     }
-                    ul(class="text-gray-700") {
+                    ul(class="text-gray-700 dark:text-gray-300") {
                         (pages)
                     }
                 }
@@ -86,12 +86,13 @@ pub fn sidebar(version: String) -> Template<G> {
 
     let sections = Template::new_fragment(sections);
     template! {
-        aside(class="p-3 bg-white w-44") {
-            ul(class="text-black") {
+        aside(class="p-3 w-44") {
+            ul {
                 li {
                     a(
                         href="/versions",
-                        class="pl-4 font-bold text-gray-700 hover:bg-gray-300 w-full inline-block rounded transition",
+                        class="pl-4 font-bold text-gray-700 dark:text-gray-300 \
+                        hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
                     ) {
                         "Version: " (version)
                     }

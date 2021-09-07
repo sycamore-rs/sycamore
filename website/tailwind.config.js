@@ -7,12 +7,13 @@ module.exports = {
       "./src/**/*.rs"
     ],
   },
-  darkMode: false, // or 'media' or 'class'
+  darkMode: "class", // or 'media' or 'class'
   theme: {
     extend: {},
     colors: {
       transparent: 'transparent',
       current: 'currentColor',
+      black: colors.black,
       red: colors.red,
       gray: colors.gray,
       orange: colors.orange,
