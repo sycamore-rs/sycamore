@@ -8,22 +8,13 @@ mod versions;
 use content::MarkdownPage;
 use reqwasm::http::Request;
 use serde_lite::Deserialize;
+use sycamore::context::{use_context, ContextProvider, ContextProviderProps};
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
 use wasm_bindgen_futures::spawn_local;
 
 const LATEST_MAJOR_VERSION: &str = "v0.5";
 const NEXT_VERSION: &str = "next";
-
-async fn docs_preload(path: String) -> MarkdownPage {
-    let text = Request::get(&path).send().await.unwrap().text().await;
-    if let Ok(text) = text {
-        let intermediate = serde_json::from_str(&text).unwrap();
-        MarkdownPage::deserialize(&intermediate).unwrap()
-    } else {
-        todo!("error handling");
-    }
-}
 
 #[derive(Debug, Route)]
 enum Routes {
@@ -41,6 +32,19 @@ enum Routes {
     Versions,
     #[not_found]
     NotFound,
+}
+
+#[derive(Clone)]
+struct DarkMode(Signal<bool>);
+
+async fn docs_preload(path: String) -> MarkdownPage {
+    let text = Request::get(&path).send().await.unwrap().text().await;
+    if let Ok(text) = text {
+        let intermediate = serde_json::from_str(&text).unwrap();
+        MarkdownPage::deserialize(&intermediate).unwrap()
+    } else {
+        todo!("error handling");
+    }
 }
 
 fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
@@ -96,7 +100,8 @@ fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
     }));
 
     template! {
-        div(class="mt-12") {
+        div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
+            min-h-screen transition-colors") {
             header::Header()
             (template.get().as_ref().clone())
         }
@@ -105,8 +110,16 @@ fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
 
 #[component(App<G>)]
 fn app() -> Template<G> {
+    let DarkMode(dark_mode) = use_context::<DarkMode>();
+    let dark_mode2 = dark_mode.clone();
+
     template! {
-        main {
+        main(class=if *dark_mode2.get() { "dark" } else { "" }) {
+            (if *dark_mode.get() {
+                template! { link(rel="stylesheet", href="/static/dark.css") }
+            } else {
+                template! { link(rel="stylesheet", href="/static/light.css") }
+            })
             Router(RouterProps::new(HistoryIntegration::new(), switch))
         }
     }
@@ -116,5 +129,35 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    let local_storage = web_sys::window().unwrap().local_storage().unwrap();
+    // Get dark mode from media query.
+    let dark_mode_mq = web_sys::window()
+        .unwrap()
+        .match_media("(prefers-color-scheme: dark)")
+        .unwrap()
+        .unwrap()
+        .matches();
+    let dark_mode = if let Some(local_storage) = &local_storage {
+        local_storage.get_item("dark_mode").unwrap().as_deref() == Some("true") || dark_mode_mq
+    } else {
+        dark_mode_mq
+    };
+    let dark_mode = DarkMode(Signal::new(dark_mode));
+
+    create_effect(cloned!((dark_mode) => move || {
+        if let Some(local_storage) = &local_storage {
+            local_storage.set_item("dark_mode", &dark_mode.0.get().to_string()).unwrap();
+        }
+    }));
+
+    sycamore::render(|| {
+        template! {
+            ContextProvider(ContextProviderProps {
+                value: dark_mode,
+                children: || template! {
+                    App()
+                },
+            })
+        }
+    });
 }

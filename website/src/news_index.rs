@@ -21,7 +21,7 @@ pub fn news_index() -> Template<G> {
                 li(class="hover:text-yellow-500 transition-colors") {
                     a(href=format!("/news/{}", url)) {
                         h2(class="text-2xl font-light") { (title) }
-                        p(class="text-gray-600") { (subtitle) }
+                        p(class="text-gray-600 dark:text-gray-400") { (subtitle) }
                     }
                 }
             }
