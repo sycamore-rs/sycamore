@@ -12,5 +12,8 @@
     "cross-env": "^7.0.3",
     "tailwindcss": "^2.1.4"
   },
-  "private": true
+  "private": true,
+  "dependencies": {
+    "is-color-stop": "^1.1.0"
+  }
 }

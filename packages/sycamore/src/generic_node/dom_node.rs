@@ -116,7 +116,7 @@ impl fmt::Debug for DomNode {
         } else if let Some(comment) = self.node.dyn_ref::<Comment>() {
             format!("<!--{}-->", comment.text_content().unwrap_or_default())
         } else {
-            self.node.to_string().as_string().unwrap()
+            self.node.to_string().as_string().unwrap_throw()
         };
         f.debug_tuple("DomNode").field(&outer_html).finish()
     }
@@ -125,7 +125,7 @@ impl fmt::Debug for DomNode {
 fn document() -> web_sys::Document {
     thread_local! {
         /// Cache document since it is frequently accessed to prevent going through js-interop.
-        static DOCUMENT: web_sys::Document = web_sys::window().unwrap().document().unwrap();
+        static DOCUMENT: web_sys::Document = web_sys::window().unwrap_throw().document().unwrap_throw();
     };
     DOCUMENT.with(|document| document.clone())
 }
@@ -134,9 +134,9 @@ impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
         let node = document()
             .create_element(intern(tag))
-            .unwrap()
+            .unwrap_throw()
             .dyn_into()
-            .unwrap();
+            .unwrap_throw();
         DomNode {
             id: Default::default(),
             node,
@@ -163,7 +163,7 @@ impl GenericNode for DomNode {
         self.node
             .unchecked_ref::<Element>()
             .set_attribute(intern(name), value)
-            .unwrap();
+            .unwrap_throw();
     }
 
     fn set_class_name(&self, value: &str) {
@@ -171,11 +171,11 @@ impl GenericNode for DomNode {
     }
 
     fn set_property(&self, name: &str, value: &JsValue) {
-        assert!(js_sys::Reflect::set(&self.node, &name.into(), value).unwrap());
+        assert!(js_sys::Reflect::set(&self.node, &name.into(), value).unwrap_throw());
     }
 
     fn append_child(&self, child: &Self) {
-        self.node.append_child(&child.node).unwrap();
+        self.node.append_child(&child.node).unwrap_throw();
     }
 
     fn first_child(&self) -> Option<Self> {
@@ -188,22 +188,22 @@ impl GenericNode for DomNode {
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
             .insert_before(&new_node.node, reference_node.map(|n| n.node.as_ref()))
-            .unwrap();
+            .unwrap_throw();
     }
 
     fn remove_child(&self, child: &Self) {
-        self.node.remove_child(&child.node).unwrap();
+        self.node.remove_child(&child.node).unwrap_throw();
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
-        self.node.replace_child(&new.node, &old.node).unwrap();
+        self.node.replace_child(&new.node, &old.node).unwrap_throw();
     }
 
     fn insert_sibling_before(&self, child: &Self) {
         self.node
             .unchecked_ref::<Element>()
             .before_with_node_1(&child.node)
-            .unwrap();
+            .unwrap_throw();
     }
 
     fn parent_node(&self) -> Option<Self> {
@@ -228,7 +228,7 @@ impl GenericNode for DomNode {
         let closure = Closure::wrap(handler);
         self.node
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
-            .unwrap();
+            .unwrap_throw();
 
         on_cleanup(move || {
             drop(closure);
@@ -245,7 +245,7 @@ impl GenericNode for DomNode {
 
     fn clone_node(&self) -> Self {
         Self {
-            node: self.node.clone_node_with_deep(true).unwrap(),
+            node: self.node.clone_node_with_deep(true).unwrap_throw(),
             id: Default::default(),
         }
     }
@@ -256,10 +256,10 @@ impl GenericNode for DomNode {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn render(template: impl FnOnce() -> Template<DomNode>) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
+    let window = web_sys::window().unwrap_throw();
+    let document = window.document().unwrap_throw();
 
-    render_to(template, &document.body().unwrap());
+    render_to(template, &document.body().unwrap_throw());
 }
 
 /// Render a [`Template`] under a `parent` node.
@@ -297,10 +297,10 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn hydrate(template: impl FnOnce() -> Template<DomNode>) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
+    let window = web_sys::window().unwrap_throw();
+    let document = window.document().unwrap_throw();
 
-    hydrate_to(template, &document.body().unwrap());
+    hydrate_to(template, &document.body().unwrap_throw());
 }
 
 /// Gets the children of an [`Element`] by collecting them into a [`Vec`]. Note that the returned
@@ -312,7 +312,7 @@ fn get_children(parent: &Element) -> Vec<Element> {
     let mut vec = Vec::with_capacity(children_count as usize);
 
     for i in 0..children.length() {
-        vec.push(children.get_with_index(i).unwrap());
+        vec.push(children.get_with_index(i).unwrap_throw());
     }
 
     vec
