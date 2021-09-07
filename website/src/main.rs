@@ -130,10 +130,17 @@ fn main() {
     console_log::init_with_level(log::Level::Debug).unwrap();
 
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
+    // Get dark mode from media query.
+    let dark_mode_mq = web_sys::window()
+        .unwrap()
+        .match_media("(prefers-color-scheme: dark)")
+        .unwrap()
+        .unwrap()
+        .matches();
     let dark_mode = if let Some(local_storage) = &local_storage {
-        local_storage.get_item("dark_mode").unwrap().as_deref() == Some("true")
+        local_storage.get_item("dark_mode").unwrap().as_deref() == Some("true") || dark_mode_mq
     } else {
-        false
+        dark_mode_mq
     };
     let dark_mode = DarkMode(Signal::new(dark_mode));
 
