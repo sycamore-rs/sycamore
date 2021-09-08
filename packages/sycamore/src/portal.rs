@@ -2,6 +2,8 @@
 
 use std::any::{Any, TypeId};
 
+use wasm_bindgen::prelude::*;
+
 use crate::prelude::*;
 
 /// Props for [`Portal`].
@@ -19,11 +21,11 @@ pub fn portal(props: PortalProps<G>) -> Template<G> {
     let PortalProps { children, selector } = props;
 
     if TypeId::of::<G>() == TypeId::of::<DomNode>() {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
+        let window = web_sys::window().unwrap_throw();
+        let document = window.document().unwrap_throw();
         let container = document
             .query_selector(selector)
-            .unwrap()
+            .unwrap_throw()
             .expect("could not find element matching selector");
 
         let children = children.flatten();
@@ -32,10 +34,10 @@ pub fn portal(props: PortalProps<G>) -> Template<G> {
             container
                 .append_child(
                     &<dyn Any>::downcast_ref::<DomNode>(child)
-                        .unwrap()
+                        .unwrap_throw()
                         .inner_element(),
                 )
-                .unwrap();
+                .unwrap_throw();
         }
 
         on_cleanup(move || {
@@ -43,10 +45,10 @@ pub fn portal(props: PortalProps<G>) -> Template<G> {
                 container
                     .remove_child(
                         &<dyn Any>::downcast_ref::<DomNode>(child)
-                            .unwrap()
+                            .unwrap_throw()
                             .inner_element(),
                     )
-                    .unwrap();
+                    .unwrap_throw();
             }
         });
     } else {
