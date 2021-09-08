@@ -24,7 +24,7 @@ pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
         .set_title("Sycamore"); // TODO: get title from markdown file
 
     template! {
-        ul(class="mt-4 text-sm pl-2 border-l border-gray-400") {
+        ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
             Indexed(IndexedProps {
                 iterable: Signal::new(outline).handle(),
                 template: |item| {
@@ -34,7 +34,10 @@ pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
                         let href = format!("#{}", x.name.trim().to_lowercase().replace(" ", "-"));
                         template! {
                             li {
-                                a(href=href) {
+                                a(
+                                    class="hover:text-yellow-400 mb-1 inline-block transition-colors",
+                                    href=href,
+                                ) {
                                     (name)
                                 }
                             }
@@ -46,7 +49,10 @@ pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
 
                     template! {
                         li {
-                            a(href=href) {
+                            a(
+                                class="hover:text-yellow-400 mb-1 inline-block transition-colors",
+                                href=href,
+                            ) {
                                 (name)
                             }
                             ul(class="ml-3") {

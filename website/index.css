@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 .content blockquote {
-  @apply bg-gray-300 dark:bg-gray-700 p-2 rounded;
+  @apply bg-gray-300 dark:bg-gray-700 p-2 mt-2 rounded;
 }
 
 .content code {
@@ -53,8 +53,4 @@
 .content ul {
   padding-inline-start: 30px;
   @apply list-disc;
-}
-
-.outline a {
-  @apply text-gray-600 hover:text-yellow-400 mb-1 inline-block transition-colors;
 }
