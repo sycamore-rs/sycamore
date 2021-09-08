@@ -3,6 +3,7 @@
 use std::rc::Rc;
 
 use ahash::AHashMap;
+use wasm_bindgen::UnwrapThrowExt;
 
 use crate::generic_node::GenericNode;
 use crate::reactive::create_effect;
@@ -274,7 +275,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         } else if b_end == b_start {
             // Remove.
             while a_start < a_end {
-                if map.is_none() || !map.as_ref().unwrap().contains_key(&a[a_start]) {
+                if map.is_none() || !map.as_ref().unwrap_throw().contains_key(&a[a_start]) {
                     parent.remove_child(&a[a_start]);
                 }
                 a_start += 1;
@@ -303,10 +304,10 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
             if map.is_none() {
                 map = Some(AHashMap::with_capacity(b_end - b_start));
                 for (i, item) in b.iter().enumerate().take(b_end).skip(b_start) {
-                    map.as_mut().unwrap().insert(item.clone(), i);
+                    map.as_mut().unwrap_throw().insert(item.clone(), i);
                 }
             }
-            let map = map.as_ref().unwrap();
+            let map = map.as_ref().unwrap_throw();
 
             let index = map.get(&a[a_start]);
             if let Some(index) = index {
@@ -318,7 +319,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
                     while i + 1 < a_end && i + 1 < b_end {
                         i += 1;
                         t = map.get(&a[i]);
-                        if t.is_none() || *t.unwrap() != *index + sequence {
+                        if t.is_none() || *t.unwrap_throw() != *index + sequence {
                             break;
                         }
                         sequence += 1;

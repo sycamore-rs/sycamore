@@ -75,16 +75,18 @@ pub(crate) fn run_tasks() {
                 drop(callback);
             } else {
                 web_sys::window()
-                    .unwrap()
-                    .request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+                    .unwrap_throw()
+                    .request_animation_frame(
+                        f.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
+                    )
                     .expect("could not register requestAnimationFrame");
             }
         });
     })));
 
     web_sys::window()
-        .unwrap()
-        .request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+        .unwrap_throw()
+        .request_animation_frame(g.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref())
         .expect("could not register requestAnimationFrame");
 }
 
