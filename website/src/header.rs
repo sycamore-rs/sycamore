@@ -29,7 +29,7 @@ fn nav() -> Template<G> {
 
     template! {
         nav(class="px-8 backdrop-filter backdrop-blur-sm backdrop-saturate-150 bg-opacity-80 \
-        bg-gray-100 dark:bg-gray-800 border-b border-gray-400 dark:border-gray-600") {
+        bg-gray-100 dark:bg-gray-800 border-b border-gray-400 dark:border-gray-600 transition-colors") {
             div(class="flex flex-row justify-between items-center h-12") {
                 // Brand section
                 div(class="flex-initial") {
