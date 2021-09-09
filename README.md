@@ -11,7 +11,7 @@ Sycamore is a modern VDOM-less web library with fine-grained reactivity in
 [Rust](https://www.rust-lang.org/) and [WebAssembly](https://webassembly.org/).
 
 - **Lightning Speed**: Sycamore harnesses the full power of [Rust](https://www.rust-lang.org/) via
-  WebAssembly(https://webassembly.org/), giving you full control over performance.
+  [WebAssembly](https://webassembly.org/), giving you full control over performance.
 - **Ergonomic and Intuitive**: Write code that feels natural. Everything is built on
   [reactive primitives](https://sycamore-rs.netlify.app/docs/basics/reactivity) without a cumbersome
   virtual DOM.
