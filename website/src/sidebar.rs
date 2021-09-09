@@ -1,69 +1,39 @@
+use serde_lite::Deserialize;
 use sycamore::prelude::*;
 
-static PAGES: &[(&str, &[(&str, &str)])] = &[
-    (
-        "Getting Started",
-        &[
-            ("Installation", "getting_started/installation"),
-            ("Hello World!", "getting_started/hello_world"),
-        ],
-    ),
-    (
-        "Basics",
-        &[
-            ("template!", "basics/template"),
-            ("Reactivity", "basics/reactivity"),
-            ("Components", "basics/components"),
-            ("Control Flow", "basics/control_flow"),
-            ("Iteration", "basics/iteration"),
-            ("Data Binding", "basics/data_binding"),
-        ],
-    ),
-    (
-        "Advanced Guides",
-        &[
-            ("NodeRef", "advanced/noderef"),
-            ("Tweened", "advanced/tweened"),
-            ("Advanced Reactivity", "advanced/advanced_reactivity"),
-            ("CSS", "advanced/css"),
-            ("Testing", "advanced/testing"),
-            ("Routing", "advanced/routing"),
-            ("SSR", "advanced/ssr"),
-            ("JS Interop", "advanced/js_interop"),
-        ],
-    ),
-    (
-        "Optimizations",
-        &[
-            ("Code Size", "optimizations/code_size"),
-            ("Speed", "optimizations/speed"),
-        ],
-    ),
-    (
-        "Contribute",
-        &[
-            ("Architecture", "contribute/architecture"),
-            ("Development", "contribute/development"),
-        ],
-    ),
-];
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SidebarItem {
+    pub name: String,
+    pub href: String,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SidebarSection {
+    pub title: String,
+    pub items: Vec<SidebarItem>,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SidebarData {
+    sections: Vec<SidebarSection>,
+}
 
 #[component(Sidebar<G>)]
-pub fn sidebar(version: String) -> Template<G> {
-    let sections = PAGES
-        .iter()
-        .map(|section| {
-            let pages = section
-                .1
-                .iter()
-                .map(|page| {
+pub fn sidebar((version, data): (String, SidebarData)) -> Template<G> {
+    let sections = data
+        .sections
+        .into_iter()
+        .map(|SidebarSection { title, items }| {
+            let pages = items
+                .into_iter()
+                .map(|SidebarItem { name, href }| {
                     template! {
                         li {
                             a(
-                                href=format!("../{}", page.1),
+                                href=format!("../{}", href),
                                 class="pl-4 hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
                             ) {
-                                (page.0)
+                                (name)
                             }
                         }
                     }
@@ -74,7 +44,7 @@ pub fn sidebar(version: String) -> Template<G> {
             template! {
                 li {
                     h1(class="text-lg font-bold py-1 pl-2") {
-                        (section.0)
+                        (title)
                     }
                     ul(class="text-gray-700 dark:text-gray-300") {
                         (pages)

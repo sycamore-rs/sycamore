@@ -8,6 +8,7 @@ mod versions;
 use content::MarkdownPage;
 use reqwasm::http::Request;
 use serde_lite::Deserialize;
+use sidebar::SidebarData;
 use sycamore::context::{use_context, ContextProvider, ContextProviderProps};
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
@@ -47,11 +48,27 @@ async fn docs_preload(path: String) -> MarkdownPage {
     }
 }
 
+async fn get_sidebar(version: Option<&str>) -> SidebarData {
+    let url = if let Some(version) = version {
+        format!("/static/docs/{}/sidebar.json", version)
+    } else {
+        "/static/docs/sidebar.json".to_string()
+    };
+    let text = Request::get(&url).send().await.unwrap().text().await;
+    if let Ok(text) = text {
+        let intermediate = serde_json::from_str(&text).unwrap();
+        SidebarData::deserialize(&intermediate).unwrap()
+    } else {
+        todo!("error handling");
+    }
+}
+
 fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
     let template = Signal::new(Template::empty());
+    let cached_sidebar_data: Signal<Option<(Option<String>, SidebarData)>> = Signal::new(None);
     create_effect(cloned!((template) => move || {
         let route = route.get();
-        spawn_local(cloned!((template) => async move {
+        spawn_local(cloned!((template, cached_sidebar_data) => async move {
             let t = match route.as_ref() {
                 Routes::Index => template! {
                     div(class="container mx-auto") {
@@ -60,19 +77,35 @@ fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
                 },
                 Routes::Docs(a, b) => {
                     let data = docs_preload(format!("/static/docs/{}/{}.json", a, b)).await;
+                    if cached_sidebar_data.get().is_none()
+                        || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None {
+                        // Update sidebar
+                        cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
+                    }
                     template! {
                         content::Content(content::ContentProps {
                             data,
-                            sidebar_version: Some("next".to_string()),
+                            sidebar: Some((
+                                "next".to_string(),
+                                cached_sidebar_data.get().as_ref().as_ref().unwrap().1.clone(),
+                            )),
                         })
                     }
                 }
                 Routes::VersionedDocs(version, a, b) => {
                     let data = docs_preload(format!("/static/docs/{}/{}/{}.json", version, a, b)).await;
+                    if cached_sidebar_data.get().is_none()
+                        || cached_sidebar_data.get().as_ref().as_ref().unwrap().0.as_deref() != Some(version) {
+                        // Update sidebar
+                        cached_sidebar_data.set(Some((Some(version.clone()), get_sidebar(Some(version)).await)));
+                    }
                     template! {
                         content::Content(content::ContentProps {
                             data,
-                            sidebar_version: Some(version.clone()),
+                            sidebar: Some((
+                                version.clone(),
+                                cached_sidebar_data.get().as_ref().as_ref().unwrap().1.clone(),
+                            )),
                         })
                     }
                 }
@@ -84,7 +117,7 @@ fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
                     template! {
                         content::Content(content::ContentProps {
                             data,
-                            sidebar_version: None,
+                            sidebar: None,
                         })
                     }
                 }
@@ -138,7 +171,8 @@ fn main() {
         .unwrap()
         .matches();
     let dark_mode = if let Some(local_storage) = &local_storage {
-        local_storage.get_item("dark_mode").unwrap().as_deref() == Some("true") || dark_mode_mq
+        let dark_mode_ls = local_storage.get_item("dark_mode").unwrap();
+        dark_mode_ls.as_deref() == Some("true") || (dark_mode_ls.is_none() && dark_mode_mq)
     } else {
         dark_mode_mq
     };
