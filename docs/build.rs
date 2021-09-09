@@ -1,8 +1,7 @@
 use std::error::Error;
-use std::ffi::OsString;
+use std::ffi::OsStr;
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::{fs, mem};
 
 use pulldown_cmark::html::push_html;
@@ -137,7 +136,7 @@ fn build_dir(base: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     for entry in WalkDir::new(base) {
         let entry = entry?;
 
-        if entry.path().extension() == Some(&OsString::from_str("md").unwrap()) {
+        if entry.path().extension() == Some(OsStr::new("md")) {
             // File is markdown.
 
             let page = parse(entry.path())?;
@@ -265,6 +264,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     build_dir(Path::new("./next"), Path::new("docs"))?;
     build_dir(Path::new("./versioned_docs"), Path::new("docs"))?;
     build_dir(Path::new("./posts"), Path::new("posts"))?;
+
+    // Docs sidebars.
+    let next_sidebar = fs::read_to_string("./next/sidebar.json")?;
+    fs::write("../website/static/docs/sidebar.json", next_sidebar)?;
+    for entry in WalkDir::new("./versioned_docs") {
+        let entry = entry?;
+        if entry.path().file_name() == Some(OsStr::new("sidebar.json")) {
+            let sidebar = fs::read_to_string(entry.path())?;
+            fs::write(
+                Path::new("../website/static/docs/")
+                    .join(entry.path().strip_prefix("./versioned_docs")?),
+                sidebar,
+            )?;
+        }
+    }
 
     // Syntax highlighting CSS files.
     let ts = ThemeSet::load_defaults();

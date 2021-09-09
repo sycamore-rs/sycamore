@@ -1,6 +1,8 @@
 use serde_lite::Deserialize;
 use sycamore::prelude::*;
 
+use crate::sidebar::SidebarData;
+
 // Sync definition with docs/build.rs
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct MarkdownPage {
@@ -68,25 +70,26 @@ pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
 
 pub struct ContentProps {
     pub data: MarkdownPage,
-    pub sidebar_version: Option<String>,
+    pub sidebar: Option<(String, SidebarData)>,
 }
 
 #[component(Content<G>)]
 pub fn content(
     ContentProps {
         data: MarkdownPage { html, outline },
-        sidebar_version,
+        sidebar,
     }: ContentProps,
 ) -> Template<G> {
-    let show_sidebar = sidebar_version.is_some();
-    let sidebar_version0 = sidebar_version.clone();
+    let show_sidebar = sidebar.is_some();
+
+    let sidebar_version = sidebar.as_ref().map(|x| x.0.clone());
 
     template! {
         div(class="flex w-full") {
             (if show_sidebar {
                 template! {
                     div(class="flex-none") {
-                        crate::sidebar::Sidebar(sidebar_version.clone().unwrap())
+                        crate::sidebar::Sidebar(sidebar.clone().unwrap())
                     }
                 }
             } else {
@@ -97,7 +100,7 @@ pub fn content(
                     class=format!("content min-w-0 pr-4 mb-2 lg:mr-44 {}",
                     if show_sidebar { "" } else { "container mx-auto pl-4 lg:ml-auto lg:pr-48" }),
                 ) {
-                    (if sidebar_version0.as_deref() == Some(crate::NEXT_VERSION) {
+                    (if sidebar_version.as_deref() == Some(crate::NEXT_VERSION) {
                         template! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is unreleased documentation for Sycamore next version." }
@@ -110,7 +113,7 @@ pub fn content(
                                 }
                             }
                         }
-                    } else if sidebar_version0.is_some() && sidebar_version0.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
+                    } else if sidebar_version.is_some() && sidebar_version.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
                         template! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is outdated documentation for Sycamore." }
