@@ -161,7 +161,6 @@ fn app() -> Template<G> {
         create_selector(cloned!((app_state) => move || app_state.todos.get().len() == 0));
 
     let todos_is_empty2 = todos_is_empty.clone();
-    let app_state2 = app_state.clone();
 
     template! {
         div(class="todomvc-wrapper") {
@@ -171,15 +170,7 @@ fn app() -> Template<G> {
                 (if !*todos_is_empty.get() {
                     template! {
                         list::List(app_state.clone())
-                    }
-                } else {
-                    Template::empty()
-                })
-
-                // FIXME: merge two if/else statements
-                (if !*todos_is_empty2.get() {
-                    template! {
-                        footer::Footer(app_state2.clone())
+                        footer::Footer(app_state.clone())
                     }
                 } else {
                     Template::empty()
