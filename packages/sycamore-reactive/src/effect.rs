@@ -316,7 +316,7 @@ where
 /// To specify a custom comparison function, use [`create_selector_with`].
 ///
 /// # Example
-/// ```rust
+/// ```
 /// use sycamore_reactive::*;
 ///
 /// let state = Signal::new(0);
@@ -370,6 +370,52 @@ where
 
     let memo = memo.borrow();
     memo.as_ref().unwrap().handle()
+}
+
+/// An alternative to [`Signal::new`] that uses a reducer to get the next value.
+///
+/// It uses a reducer function that takes the previous value and a message and returns the next value.
+///
+/// Returns a [`StateHandle`] and a dispatch function to send messages to the reducer.
+///
+/// # Params
+/// * `initial` - The initial value of the state.
+/// * `reducer` - A function that takes the previous value and a message and returns the next value.
+///
+/// # Example
+/// ```
+/// use sycamore_reactive::*;
+///
+/// enum Msg {
+///     Increment,
+///     Decrement,
+/// }
+///
+/// let (state, dispatch) = create_reducer(0, |state, msg: Msg| match msg {
+///     Msg::Increment => *state + 1,
+///     Msg::Decrement => *state - 1,
+/// });
+///
+/// assert_eq!(*state.get(), 0);
+/// dispatch(Msg::Increment);
+/// assert_eq!(*state.get(), 1);
+/// dispatch(Msg::Decrement);
+/// assert_eq!(*state.get(), 0);
+/// ```
+pub fn create_reducer<F, Out, Msg>(initial: Out, reduce: F) -> (StateHandle<Out>, impl Fn(Msg))
+where
+    F: Fn(&Out, Msg) -> Out,
+{
+    let memo = Signal::new(initial);
+
+    let dispatcher = {
+        let memo = memo.clone();
+        move |msg| {
+            memo.set(reduce(&memo.get_untracked(), msg));
+        }
+    };
+
+    (memo.into_handle(), dispatcher)
 }
 
 /// Run the passed closure inside an untracked dependency scope.
@@ -804,6 +850,50 @@ mod tests {
         state.set(2);
         assert_eq!(*double.get(), 4);
         assert_eq!(*counter.get(), 2);
+    }
+
+    #[test]
+    fn reducer() {
+        enum Msg {
+            Increment,
+            Decrement,
+        }
+
+        let (state, dispatch) = create_reducer(0, |state, msg: Msg| match msg {
+            Msg::Increment => *state + 1,
+            Msg::Decrement => *state - 1,
+        });
+
+        assert_eq!(*state.get(), 0);
+        dispatch(Msg::Increment);
+        assert_eq!(*state.get(), 1);
+        dispatch(Msg::Decrement);
+        assert_eq!(*state.get(), 0);
+
+        dispatch(Msg::Increment);
+        dispatch(Msg::Increment);
+        assert_eq!(*state.get(), 2);
+    }
+
+    #[test]
+    fn memo_reducer() {
+        enum Msg {
+            Increment,
+            Decrement,
+        }
+
+        let (state, dispatch) = create_reducer(0, |state, msg: Msg| match msg {
+            Msg::Increment => *state + 1,
+            Msg::Decrement => *state - 1,
+        });
+
+        let doubled = create_memo(cloned!((state) => move || *state.get() * 2));
+
+        assert_eq!(*doubled.get(), 0);
+        dispatch(Msg::Increment);
+        assert_eq!(*doubled.get(), 2);
+        dispatch(Msg::Decrement);
+        assert_eq!(*doubled.get(), 0);
     }
 
     #[test]
