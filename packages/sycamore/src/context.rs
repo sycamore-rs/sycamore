@@ -18,8 +18,13 @@ where
 
 /// Creates a new [`ReactiveScope`](crate::reactive::ReactiveScope) with a context.
 ///
+/// If a context of the given type exists already, the existing context will be _shadowed_ within
+/// the scope. This means that accessing the context inside the scope using [`use_context`] will
+/// return the new value, not the shadowed value. Using [`use_context`] outside of this new context
+/// scope will continue to return the old value.
+///
 /// # Example
-/// ```rust
+/// ```
 /// use sycamore::prelude::*;
 /// use sycamore::context::{ContextProvider, ContextProviderProps, use_context};
 ///
