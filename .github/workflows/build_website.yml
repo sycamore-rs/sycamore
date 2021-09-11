@@ -75,7 +75,7 @@ jobs:
           cd ../sycamore-router && cargo doc --no-deps --all-features
           cd ../sycamore-router-macro && cargo doc --no-deps --all-features
           cd ../../
-          cp -r target/doc website/dist
+          cp -r target/doc website/dist/api
 
       - name: Create .nojekyll file
         run: touch website/dist/.nojekyll

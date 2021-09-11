@@ -1,4 +1,8 @@
 [[redirects]]
+from = "/api"
+to = "/api/doc/sycamore/index.html"
+
+[[redirects]]
 from = "/*"
 status = 200
 to = "/index.html"
@@ -6,14 +10,14 @@ to = "/index.html"
 [[headers]]
 for = "*.css"
 [headers.values]
-cache-control = "public, s-max-age=604800"
+Cache-Control = "public, s-max-age=604800"
 
 [[headers]]
 for = "*.js"
 [headers.values]
-cache-control = "public, s-max-age=604800"
+Cache-Control = "public, s-max-age=604800"
 
 [[headers]]
 for = "*.wasm"
 [headers.values]
-cache-control = "public, s-max-age=604800"
+Cache-Control = "public, s-max-age=604800"
