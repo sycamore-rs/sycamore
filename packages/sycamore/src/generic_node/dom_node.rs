@@ -3,29 +3,26 @@
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
 use crate::generic_node::{EventHandler, GenericNode};
-use crate::rx::{create_root, on_cleanup, ReactiveScope};
+use crate::reactive::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
 use crate::utils::render::insert;
 
-// TODO: remove js snippet
-#[wasm_bindgen(inline_js = "\
-export function set_node_id(node, id) {\
-    node.$$$nodeId = id\
-}\
-export function get_node_id(node) {\
-    return node.$$$nodeId\
-}\
-")]
+#[wasm_bindgen]
 extern "C" {
-    fn set_node_id(node: &Node, id: usize);
-    fn get_node_id(node: &Node) -> Option<usize>;
+    #[wasm_bindgen(extends = Node)]
+    type NodeWithId;
+
+    #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
+    fn node_id(this: &NodeWithId) -> Option<usize>;
+
+    #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
+    fn set_node_id(this: &NodeWithId, id: usize);
 }
 
 /// An unique id for every node.
@@ -47,7 +44,7 @@ impl NodeId {
             x.set(tmp + 1);
             tmp
         });
-        set_node_id(node, id);
+        node.unchecked_ref::<NodeWithId>().set_node_id(id);
         Self(id)
     }
 }
@@ -58,22 +55,22 @@ impl NodeId {
 #[derive(Clone)]
 pub struct DomNode {
     id: Cell<NodeId>,
-    node: Rc<Node>,
+    node: Node,
 }
 
 impl DomNode {
     pub fn inner_element(&self) -> Node {
-        (*self.node).clone()
+        self.node.clone()
     }
 
     pub fn unchecked_into<T: JsCast>(self) -> T {
-        (*self.node).clone().unchecked_into()
+        self.node.unchecked_into()
     }
 
     fn get_node_id(&self) -> NodeId {
         if self.id.get().0 == 0 {
             // self.id not yet initialized.
-            if let Some(id) = get_node_id(&self.node) {
+            if let Some(id) = self.node.unchecked_ref::<NodeWithId>().node_id() {
                 self.id.set(NodeId(id));
             } else {
                 self.id.set(NodeId::new_with_node(&self.node));
@@ -119,7 +116,7 @@ impl fmt::Debug for DomNode {
         } else if let Some(comment) = self.node.dyn_ref::<Comment>() {
             format!("<!--{}-->", comment.text_content().unwrap_or_default())
         } else {
-            self.node.to_string().as_string().unwrap()
+            self.node.to_string().as_string().unwrap_throw()
         };
         f.debug_tuple("DomNode").field(&outer_html).finish()
     }
@@ -128,20 +125,18 @@ impl fmt::Debug for DomNode {
 fn document() -> web_sys::Document {
     thread_local! {
         /// Cache document since it is frequently accessed to prevent going through js-interop.
-        static DOCUMENT: web_sys::Document = web_sys::window().unwrap().document().unwrap();
+        static DOCUMENT: web_sys::Document = web_sys::window().unwrap_throw().document().unwrap_throw();
     };
     DOCUMENT.with(|document| document.clone())
 }
 
 impl GenericNode for DomNode {
     fn element(tag: &str) -> Self {
-        let node = Rc::new(
-            document()
-                .create_element(intern(tag))
-                .unwrap()
-                .dyn_into()
-                .unwrap(),
-        );
+        let node = document()
+            .create_element(intern(tag))
+            .unwrap_throw()
+            .dyn_into()
+            .unwrap_throw();
         DomNode {
             id: Default::default(),
             node,
@@ -149,7 +144,7 @@ impl GenericNode for DomNode {
     }
 
     fn text_node(text: &str) -> Self {
-        let node = Rc::new(document().create_text_node(text).into());
+        let node = document().create_text_node(text).into();
         DomNode {
             id: Default::default(),
             node,
@@ -157,7 +152,7 @@ impl GenericNode for DomNode {
     }
 
     fn marker() -> Self {
-        let node = Rc::new(document().create_comment("").into());
+        let node = document().create_comment("").into();
         DomNode {
             id: Default::default(),
             node,
@@ -168,7 +163,7 @@ impl GenericNode for DomNode {
         self.node
             .unchecked_ref::<Element>()
             .set_attribute(intern(name), value)
-            .unwrap();
+            .unwrap_throw();
     }
 
     fn set_class_name(&self, value: &str) {
@@ -176,52 +171,52 @@ impl GenericNode for DomNode {
     }
 
     fn set_property(&self, name: &str, value: &JsValue) {
-        assert!(js_sys::Reflect::set(&self.node, &name.into(), value).unwrap());
+        assert!(js_sys::Reflect::set(&self.node, &name.into(), value).unwrap_throw());
     }
 
     fn append_child(&self, child: &Self) {
-        self.node.append_child(&child.node).unwrap();
+        self.node.append_child(&child.node).unwrap_throw();
     }
 
     fn first_child(&self) -> Option<Self> {
         self.node.first_child().map(|node| Self {
             id: Default::default(),
-            node: Rc::new(node),
+            node,
         })
     }
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
             .insert_before(&new_node.node, reference_node.map(|n| n.node.as_ref()))
-            .unwrap();
+            .unwrap_throw();
     }
 
     fn remove_child(&self, child: &Self) {
-        self.node.remove_child(&child.node).unwrap();
+        self.node.remove_child(&child.node).unwrap_throw();
     }
 
     fn replace_child(&self, old: &Self, new: &Self) {
-        self.node.replace_child(&new.node, &old.node).unwrap();
+        self.node.replace_child(&new.node, &old.node).unwrap_throw();
     }
 
     fn insert_sibling_before(&self, child: &Self) {
         self.node
             .unchecked_ref::<Element>()
             .before_with_node_1(&child.node)
-            .unwrap();
+            .unwrap_throw();
     }
 
     fn parent_node(&self) -> Option<Self> {
         self.node.parent_node().map(|node| Self {
             id: Default::default(),
-            node: Rc::new(node),
+            node,
         })
     }
 
     fn next_sibling(&self) -> Option<Self> {
         self.node.next_sibling().map(|node| Self {
             id: Default::default(),
-            node: Rc::new(node),
+            node,
         })
     }
 
@@ -233,7 +228,7 @@ impl GenericNode for DomNode {
         let closure = Closure::wrap(handler);
         self.node
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
-            .unwrap();
+            .unwrap_throw();
 
         on_cleanup(move || {
             drop(closure);
@@ -244,9 +239,13 @@ impl GenericNode for DomNode {
         self.node.set_text_content(Some(text));
     }
 
+    fn dangerously_set_inner_html(&self, html: &str) {
+        self.node.unchecked_ref::<Element>().set_inner_html(html);
+    }
+
     fn clone_node(&self) -> Self {
         Self {
-            node: Rc::new(self.node.clone_node_with_deep(true).unwrap()),
+            node: self.node.clone_node_with_deep(true).unwrap_throw(),
             id: Default::default(),
         }
     }
@@ -257,10 +256,10 @@ impl GenericNode for DomNode {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn render(template: impl FnOnce() -> Template<DomNode>) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
+    let window = web_sys::window().unwrap_throw();
+    let document = window.document().unwrap_throw();
 
-    render_to(template, &document.body().unwrap());
+    render_to(template, &document.body().unwrap_throw());
 }
 
 /// Render a [`Template`] under a `parent` node.
@@ -272,7 +271,7 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
         insert(
             &DomNode {
                 id: Default::default(),
-                node: Rc::new(parent.clone()),
+                node: parent.clone(),
             },
             template(),
             None,
@@ -298,10 +297,10 @@ pub fn render_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn hydrate(template: impl FnOnce() -> Template<DomNode>) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
+    let window = web_sys::window().unwrap_throw();
+    let document = window.document().unwrap_throw();
 
-    hydrate_to(template, &document.body().unwrap());
+    hydrate_to(template, &document.body().unwrap_throw());
 }
 
 /// Gets the children of an [`Element`] by collecting them into a [`Vec`]. Note that the returned
@@ -313,7 +312,7 @@ fn get_children(parent: &Element) -> Vec<Element> {
     let mut vec = Vec::with_capacity(children_count as usize);
 
     for i in 0..children.length() {
-        vec.push(children.get_with_index(i).unwrap());
+        vec.push(children.get_with_index(i).unwrap_throw());
     }
 
     vec
@@ -337,7 +336,7 @@ pub fn hydrate_to(template: impl FnOnce() -> Template<DomNode>, parent: &Node) {
         insert(
             &DomNode {
                 id: Default::default(),
-                node: Rc::new(parent.clone()),
+                node: parent.clone(),
             },
             template(),
             None,

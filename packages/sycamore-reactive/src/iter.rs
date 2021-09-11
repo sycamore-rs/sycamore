@@ -1,9 +1,10 @@
 //! Reactive utilities for dealing with lists.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::rc::Rc;
+
+use ahash::AHashMap;
 
 use super::*;
 
@@ -11,7 +12,7 @@ use super::*;
 /// computed, meaning that it's value will only be updated when requested. Modifications to the
 /// input `Vec` are diffed using keys to prevent recomputing values that have not changed.
 ///
-/// This function is the underlying utility behind [`Keyed`](crate::flow::Keyed).
+/// This function is the underlying utility behind `Keyed`.
 ///
 /// # Params
 /// * `list` - The list to be mapped. The list must be a [`StateHandle`] (obtained from a
@@ -60,12 +61,12 @@ where
                 let mut temp_scopes = vec![None; new_items.len()];
 
                 // Skip common prefix.
-                let mut start = 0;
                 let min_len = usize::min(items.len(), new_items.len());
-                while start < min_len && items[start] == new_items[start] {
-                    start += 1;
-                }
-                debug_assert!(start <= min_len);
+                let start = items
+                    .iter()
+                    .zip(new_items.iter())
+                    .position(|(a, b)| a != b)
+                    .unwrap_or(min_len);
                 debug_assert!(
                     (items.get(start).is_none() && new_items.get(start).is_none())
                         || (items.get(start) != new_items.get(start)),
@@ -95,7 +96,7 @@ where
 
                 // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
                 // natural order.
-                let mut new_indices = HashMap::with_capacity(new_end - start);
+                let mut new_indices = AHashMap::with_capacity(new_end - start);
 
                 // Indexes for new_indices_next are shifted by start because values at 0..start are
                 // always None.
@@ -175,7 +176,7 @@ where
 ///
 /// Generally, it is preferred to use [`map_keyed`] instead when a key function is available.
 ///
-/// This function is the underlying utility behind [`Indexed`](crate::flow::Indexed).
+/// This function is the underlying utility behind `Indexed`.
 ///
 /// # Params
 /// * `list` - The list to be mapped. The list must be a [`StateHandle`] (obtained from a

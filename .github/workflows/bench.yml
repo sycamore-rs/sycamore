@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Install stable toolchain
+      - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable

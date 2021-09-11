@@ -8,6 +8,12 @@ static POSTS: &[(&str, &str, &str)] = &[(
 
 #[component(NewsIndex<G>)]
 pub fn news_index() -> Template<G> {
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .set_title("News - Sycamore");
+
     let posts = POSTS
         .iter()
         .map(|(title, subtitle, url)| {
@@ -15,7 +21,7 @@ pub fn news_index() -> Template<G> {
                 li(class="hover:text-yellow-500 transition-colors") {
                     a(href=format!("/news/{}", url)) {
                         h2(class="text-2xl font-light") { (title) }
-                        p(class="text-gray-600") { (subtitle) }
+                        p(class="text-gray-600 dark:text-gray-400") { (subtitle) }
                     }
                 }
             }

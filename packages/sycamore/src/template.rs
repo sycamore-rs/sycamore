@@ -5,7 +5,7 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
-use crate::rx::{create_memo, StateHandle};
+use crate::reactive::{create_memo, StateHandle};
 
 /// Internal type for [`Template`].
 #[derive(Clone)]
@@ -116,6 +116,12 @@ impl<G: GenericNode> Template<G> {
                 .flatten()
                 .collect(),
         }
+    }
+}
+
+impl<G: GenericNode> Default for Template<G> {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 

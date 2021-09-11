@@ -1,15 +1,14 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
-use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
+use ahash::AHashMap;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventHandler, GenericNode};
-use crate::rx::create_root;
+use crate::reactive::create_root;
 use crate::template::Template;
 
 static VOID_ELEMENTS: &[&str] = &[
@@ -23,6 +22,7 @@ enum SsrNodeType {
     Element(RefCell<Element>),
     Comment(RefCell<Comment>),
     Text(RefCell<Text>),
+    RawText(RefCell<RawText>),
 }
 
 #[derive(Debug, Clone)]
@@ -92,12 +92,22 @@ impl SsrNode {
                     .children
                     .clone()
                     .into_iter()
-                    .filter(|node| node == child)
+                    .filter(|node| node != child)
                     .collect();
                 e.borrow_mut().children = children;
             }
             _ => panic!("node type cannot have children"),
         }
+    }
+
+    /// Create a new raw text node.
+    ///
+    /// Do not pass unsanitized user input to this function. When the node is rendered, no escaping
+    /// will be performed which might lead to a XSS (Cross Site Scripting) attack.
+    pub fn raw_text_node(html: &str) -> Self {
+        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(
+            html.to_string(),
+        ))))
     }
 }
 
@@ -105,7 +115,7 @@ impl GenericNode for SsrNode {
     fn element(tag: &str) -> Self {
         SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
-            attributes: HashMap::new(),
+            attributes: AHashMap::new(),
             children: Default::default(),
         })))
     }
@@ -174,15 +184,12 @@ impl GenericNode for SsrNode {
     fn remove_child(&self, child: &Self) {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => {
+                let initial_children_len = e.borrow().children.len();
+                if child.parent_node().as_ref() != Some(self) {
+                    panic!("the node to be removed is not a child of this node");
+                }
                 child.set_parent(Weak::new());
-                let index = e
-                    .borrow()
-                    .children
-                    .iter()
-                    .enumerate()
-                    .find_map(|(i, c)| (c == child).then(|| i))
-                    .expect("the node to be removed is not a child of this node");
-                e.borrow_mut().children.remove(index);
+                debug_assert_eq!(e.borrow().children.len(), initial_children_len - 1);
             }
             _ => panic!("node type cannot have children"),
         }
@@ -198,7 +205,7 @@ impl GenericNode for SsrNode {
             .enumerate()
             .find_map(|(i, c)| (c == old).then(|| i))
             .expect("the node to be replaced is not a child of this node");
-        children[index].set_parent(Weak::new());
+        *children[index].0.parent.borrow_mut() = Weak::new();
         children[index] = new.clone();
     }
 
@@ -248,6 +255,18 @@ impl GenericNode for SsrNode {
             SsrNodeType::Element(el) => el.borrow_mut().children = vec![SsrNode::text_node(text)],
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
             SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
+            SsrNodeType::RawText(_t) => panic!("cannot update inner text on raw text node"),
+        }
+    }
+
+    fn dangerously_set_inner_html(&self, html: &str) {
+        match self.0.ty.as_ref() {
+            SsrNodeType::Element(el) => {
+                el.borrow_mut().children = vec![SsrNode::raw_text_node(html)];
+            }
+            SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
+            SsrNodeType::Text(_t) => panic!("cannot update inner text on text node"),
+            SsrNodeType::RawText(t) => t.borrow_mut().0 = html.to_string(),
         }
     }
 
@@ -260,12 +279,17 @@ impl GenericNode for SsrNode {
     }
 }
 
-impl fmt::Display for SsrNode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+trait WriteToString {
+    fn write_to_string(&self, s: &mut String);
+}
+
+impl WriteToString for SsrNode {
+    fn write_to_string(&self, s: &mut String) {
         match self.0.ty.as_ref() {
-            SsrNodeType::Element(x) => write!(f, "{}", x.borrow()),
-            SsrNodeType::Comment(x) => write!(f, "{}", x.borrow()),
-            SsrNodeType::Text(x) => write!(f, "{}", x.borrow()),
+            SsrNodeType::Element(x) => x.borrow().write_to_string(s),
+            SsrNodeType::Comment(x) => x.borrow().write_to_string(s),
+            SsrNodeType::Text(x) => x.borrow().write_to_string(s),
+            SsrNodeType::RawText(x) => x.borrow().write_to_string(s),
         }
     }
 }
@@ -273,51 +297,70 @@ impl fmt::Display for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
     name: String,
-    attributes: HashMap<String, String>,
+    attributes: AHashMap<String, String>,
     children: Vec<SsrNode>,
 }
 
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<{}", self.name)?;
+impl WriteToString for Element {
+    fn write_to_string(&self, s: &mut String) {
+        s.reserve("<".len() + self.name.len());
+        s.push('<');
+        s.push_str(&self.name);
         for (name, value) in &self.attributes {
-            write!(
-                f,
-                r#" {}="{}""#,
-                name,
-                html_escape::encode_double_quoted_attribute(value)
-            )?;
+            let value_escaped = html_escape::encode_double_quoted_attribute(value);
+            s.reserve(" ".len() + name.len() + "=\"".len() + value_escaped.len() + "\"".len());
+            s.push(' ');
+            s.push_str(name);
+            s.push_str("=\"");
+            s.push_str(&value_escaped);
+            s.push('"');
         }
 
         // Check if self-closing tag (void-element).
         if self.children.is_empty() && VOID_ELEMENTS.iter().any(|tag| tag == &self.name) {
-            write!(f, " />")?;
+            s.push_str("/>");
         } else {
-            write!(f, ">")?;
+            s.push('>');
             for child in &self.children {
-                write!(f, "{}", child)?;
+                child.write_to_string(s);
             }
-            write!(f, "</{}>", self.name)?;
+            s.reserve("</".len() + self.name.len() + ">".len());
+            s.push_str("</");
+            s.push_str(&self.name);
+            s.push('>');
         }
-        Ok(())
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct Comment(String);
 
-impl fmt::Display for Comment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<!--{}-->", self.0.replace("-->", "--&gt;"))
+impl WriteToString for Comment {
+    fn write_to_string(&self, s: &mut String) {
+        let escaped = self.0.replace("-->", "--&gt;");
+        s.reserve("<!--".len() + escaped.len() + "-->".len());
+        s.push_str("<!--");
+        s.push_str(&escaped);
+        s.push_str("-->");
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct Text(String);
 
-impl fmt::Display for Text {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", html_escape::encode_text_minimal(&self.0))
+impl WriteToString for Text {
+    fn write_to_string(&self, s: &mut String) {
+        s.push_str(&html_escape::encode_text_minimal(&self.0));
+    }
+}
+
+/// Un-escaped text node.
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
+pub struct RawText(String);
+
+impl WriteToString for RawText {
+    fn write_to_string(&self, s: &mut String) {
+        s.push_str(&self.0);
     }
 }
 
@@ -329,9 +372,86 @@ pub fn render_to_string(template: impl FnOnce() -> Template<SsrNode>) -> String 
     let mut ret = String::new();
     let _scope = create_root(|| {
         for node in template().flatten() {
-            ret.push_str(&node.to_string());
+            node.write_to_string(&mut ret);
         }
     });
 
     ret
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn render_hello_world() {
+        assert_eq!(
+            render_to_string(|| template! {
+                "Hello World!"
+            }),
+            "Hello World!"
+        );
+    }
+
+    #[test]
+    fn append_child() {
+        let node = SsrNode::element("div");
+        let p = SsrNode::element("p");
+        let p2 = SsrNode::element("p");
+
+        node.append_child(&p);
+        node.append_child(&p2);
+
+        // p and p2 parents should be updated
+        assert_eq!(p.parent_node().as_ref(), Some(&node));
+        assert_eq!(p2.parent_node().as_ref(), Some(&node));
+
+        // node.first_child should be p
+        assert_eq!(node.first_child().as_ref(), Some(&p));
+
+        // p.next_sibling should be p2
+        assert_eq!(p.next_sibling().as_ref(), Some(&p2));
+    }
+
+    #[test]
+    fn remove_child() {
+        let node = SsrNode::element("div");
+        let p = SsrNode::element("p");
+
+        node.append_child(&p);
+        // p parent should be updated
+        assert_eq!(p.parent_node().as_ref(), Some(&node));
+        // node.first_child should be p
+        assert_eq!(node.first_child().as_ref(), Some(&p));
+
+        // remove p from node
+        node.remove_child(&p);
+        // p parent should be updated
+        assert_eq!(p.parent_node().as_ref(), None);
+        // node.first_child should be None
+        assert_eq!(node.first_child().as_ref(), None);
+    }
+
+    #[test]
+    fn remove_child_2() {
+        let node = SsrNode::element("div");
+        let p = SsrNode::element("p");
+        let p2 = SsrNode::element("p");
+        let p3 = SsrNode::element("p");
+
+        node.append_child(&p);
+        node.append_child(&p2);
+        node.append_child(&p3);
+
+        // node.first_child should be p
+        assert_eq!(node.first_child().as_ref(), Some(&p));
+
+        // remove p from node
+        node.remove_child(&p);
+        // p parent should be updated
+        assert_eq!(p.parent_node().as_ref(), None);
+        // node.first_child should be p2
+        assert_eq!(node.first_child().as_ref(), Some(&p2));
+    }
 }

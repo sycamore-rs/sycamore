@@ -27,7 +27,7 @@ pub type EventHandler = dyn Fn(Event);
 ///
 /// Note that components are **NOT** represented by [`GenericNode`]. Instead, components are
 /// _disappearing_, meaning that they are simply functions that generate [`GenericNode`]s inside a
-/// new reactive context. This means that there is no overhead whatsoever when using components.
+/// new reactive context. This means that using components add minimal overhead.
 ///
 /// Sycamore ships with 2 rendering backends out of the box:
 /// * [`DomNode`] - Rendering in the browser (to real DOM nodes).
@@ -60,7 +60,8 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 
     /// Sets the `class` attribute on a node.
     /// This should have the same outcome as calling `set_attribute("class", value)`.
-    /// For [`DomNode`], this sets the `className` property directly which is about 2x faster (on Chrome).
+    /// For [`DomNode`], this sets the `className` property directly which is about 2x faster (on
+    /// Chrome).
     fn set_class_name(&self, value: &str);
 
     /// Sets a property on a node.
@@ -101,6 +102,11 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
     fn update_inner_text(&self, text: &str);
+
+    /// Updates the inner html of the node.
+    /// The html will not be parsed in non-browser environments. This means that accessing methods
+    /// such as [`first_child`](GenericNode::first_child) will return `None`.
+    fn dangerously_set_inner_html(&self, html: &str);
 
     /// Create a deep clone of the node.
     fn clone_node(&self) -> Self;

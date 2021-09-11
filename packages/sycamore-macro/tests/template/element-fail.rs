@@ -8,6 +8,12 @@ fn compile_fail<G: GenericNode>() {
     let _: Template<G> = template! { button(unknown:directive="123") };
 
     let _: Template<G> = template! { button(a.b.c="123") };
+
+    let _: Template<G> = template! {
+        p(dangerously_set_inner_html="<span>Test</span>") {
+            "Error"
+        }
+    };
 }
 
 fn main() {}

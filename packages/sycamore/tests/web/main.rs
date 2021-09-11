@@ -1,5 +1,7 @@
+pub mod cleanup;
 pub mod keyed;
 pub mod non_keyed;
+pub mod portal;
 pub mod reconcile;
 pub mod render;
 

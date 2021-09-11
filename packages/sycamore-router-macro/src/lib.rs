@@ -5,6 +5,8 @@ use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
 /// The `Route` procedural macro.
+///
+/// This macro derives the `Route` trait for the given `enum`.
 #[proc_macro_derive(Route, attributes(to, not_found))]
 pub fn route(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

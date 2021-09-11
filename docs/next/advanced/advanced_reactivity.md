@@ -21,11 +21,12 @@ and a `children` prop which is the child components that have access to the cont
 
 ```rust
 use sycamore::prelude::*;
-use sycamore::rx::{ContextProvider, ContextProviderProps, use_context};
+use sycamore::context::{ContextProvider, ContextProviderProps, use_context};
 
+#[derive(Clone)]
 struct Counter(Signal<i32>);
 
-#[component(CounterView)]
+#[component(CounterView<G>)]
 fn counter_view() -> Template<G> {
     let counter = use_context::<Counter>();
 

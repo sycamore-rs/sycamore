@@ -52,13 +52,23 @@ impl ToTokens for Element {
             let __el = #tag_name;
         };
 
+        let mut has_dangerously_set_inner_html = false;
         if let Some(attributes) = attributes {
             for attribute in &attributes.attributes {
                 attribute.to_tokens(&mut quoted);
+                if attribute.ty == AttributeType::DangerouslySetInnerHtml {
+                    has_dangerously_set_inner_html = true;
+                }
             }
         }
 
         if let Some(children) = children {
+            if has_dangerously_set_inner_html && !children.body.is_empty() {
+                quoted.extend(quote_spanned! { children.body[0].span()=>
+                    compile_error!("children and inner html cannot be both set");
+                });
+            }
+
             let multi = children.body.len() != 1;
             let mut children = children.body.iter().peekable();
             while let Some(child) = children.next() {

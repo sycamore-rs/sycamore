@@ -15,8 +15,21 @@ pub use router::*;
 ///
 /// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro
 /// instead.
-pub trait Route {
-    fn match_route(path: &[&str]) -> Self;
+pub trait Route: Sized {
+    /// Matches a route with the given path segments. Note that in general, empty segments should be
+    /// filtered out before passed as an argument.
+    ///
+    /// It is likely that you are looking for the [`Route::match_path`] method instead.
+    fn match_route(segments: &[&str]) -> Self;
+
+    /// Matches a route with the given path.
+    fn match_path(path: &str) -> Self {
+        let segments = path
+            .split('/')
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>();
+        Self::match_route(&segments)
+    }
 }
 
 /// Represents an URL segment or segments.
@@ -91,7 +104,7 @@ impl RoutePath {
                         match next_segment {
                             Segment::Param(next_param) => {
                                 let mut capture = Vec::new();
-                                while let Some(next_path) = paths.next() {
+                                for next_path in &mut paths {
                                     if next_path == next_param {
                                         captures.push(Capture::DynSegments(capture));
                                         break;
@@ -105,7 +118,7 @@ impl RoutePath {
                     } else {
                         // All remaining segments are captured.
                         let mut capture = Vec::new();
-                        while let Some(next_path) = paths.next() {
+                        for next_path in &mut paths {
                             capture.push(*next_path);
                         }
                         captures.push(Capture::DynSegments(capture));
@@ -125,50 +138,41 @@ impl RoutePath {
 /// Fallible conversion between a param capture into a value.
 ///
 /// Implemented for all types that implement [`FromStr`] by default.
-pub trait FromParam {
-    /// Set the value of the capture variable with the value of the `param`. Returns `false` if
-    /// unsuccessful (e.g. parsing error).
+pub trait TryFromParam: Sized {
+    /// Creates a new value of this type from the given param. Returns `None` if the param cannot
+    /// be converted into a value of this type.
     #[must_use]
-    fn set_value(&mut self, param: &str) -> bool;
+    fn try_from_param(param: &str) -> Option<Self>;
 }
 
-impl<T> FromParam for T
+impl<T> TryFromParam for T
 where
     T: FromStr,
 {
-    fn set_value(&mut self, param: &str) -> bool {
-        match param.parse() {
-            Ok(val) => {
-                *self = val;
-                true
-            }
-            Err(_) => false,
-        }
+    fn try_from_param(param: &str) -> Option<Self> {
+        param.parse().ok()
     }
 }
 
 /// Fallible conversion between a list of param captures into a value.
-pub trait FromSegments {
+pub trait TryFromSegments: Sized {
     /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
     /// unsuccessful (e.g. parsing error).
     #[must_use]
-    fn set_value(&mut self, segments: &[&str]) -> bool;
+    fn try_from_segments(segments: &[&str]) -> Option<Self>;
 }
 
-impl<T> FromSegments for Vec<T>
+impl<T> TryFromSegments for Vec<T>
 where
-    T: FromParam + Default,
+    T: TryFromParam,
 {
-    fn set_value(&mut self, segments: &[&str]) -> bool {
-        *self = Vec::with_capacity(segments.len());
+    fn try_from_segments(segments: &[&str]) -> Option<Self> {
+        let mut tmp = Vec::with_capacity(segments.len());
         for segment in segments {
-            let mut value = T::default();
-            if !value.set_value(segment) {
-                return false;
-            }
-            self.push(value);
+            let value = T::try_from_param(segment)?;
+            tmp.push(value);
         }
-        true
+        Some(tmp)
     }
 }
 

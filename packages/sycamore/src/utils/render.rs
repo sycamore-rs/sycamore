@@ -1,10 +1,12 @@
 //! Utilities for rendering nodes.
 
-use std::collections::HashMap;
 use std::rc::Rc;
 
+use ahash::AHashMap;
+use wasm_bindgen::UnwrapThrowExt;
+
 use crate::generic_node::GenericNode;
-use crate::rx::create_effect;
+use crate::reactive::create_effect;
 use crate::template::{Template, TemplateType};
 
 /// Insert a [`GenericNode`] under `parent` at the specified `marker`. If `initial` is `Some(_)`,
@@ -49,9 +51,9 @@ fn insert_expression<G: GenericNode>(
     match &value.inner {
         TemplateType::Node(node) => {
             if let Some(current) = current {
-                clean_children(parent, current.flatten(), marker, Some(&node), multi);
+                clean_children(parent, current.flatten(), marker, Some(node), multi);
             } else {
-                parent.insert_child_before(&node, marker);
+                parent.insert_child_before(node, marker);
             }
         }
         TemplateType::Dyn(f) => {
@@ -153,9 +155,9 @@ pub fn clean_children<G: GenericNode>(
     }
 
     for node in current {
-        if node.parent_node().as_ref() == Some(&parent) {
+        if node.parent_node().as_ref() == Some(parent) {
             if let Some(replacement) = replacement {
-                parent.replace_child(&node, &replacement);
+                parent.replace_child(&node, replacement);
             } else {
                 parent.remove_child(&node);
             }
@@ -196,7 +198,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
                 }
                 let fragment: Rc<Box<[Template<G>]>> = match &value.inner {
                     TemplateType::Node(_) => Rc::new(Box::new([value])),
-                    TemplateType::Fragment(fragment) => Rc::clone(&fragment),
+                    TemplateType::Fragment(fragment) => Rc::clone(fragment),
                     _ => unreachable!(),
                 };
                 dynamic =
@@ -234,7 +236,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     #[cfg(debug_assertions)]
     {
         for (i, node) in a.iter().enumerate() {
-            if node.parent_node().as_ref() != Some(&parent) {
+            if node.parent_node().as_ref() != Some(parent) {
                 panic!(
                     "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
                     i, node
@@ -248,7 +250,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     let mut b_end = b_len;
     let mut a_start = 0;
     let mut b_start = 0;
-    let mut map = None::<HashMap<G, usize>>;
+    let mut map = None::<AHashMap<G, usize>>;
 
     // Last node in a.
     let after = a[a_end - 1].next_sibling();
@@ -273,7 +275,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         } else if b_end == b_start {
             // Remove.
             while a_start < a_end {
-                if map.is_none() || map.as_ref().unwrap().contains_key(&a[a_start]) {
+                if map.is_none() || !map.as_ref().unwrap_throw().contains_key(&a[a_start]) {
                     parent.remove_child(&a[a_start]);
                 }
                 a_start += 1;
@@ -300,12 +302,12 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         } else {
             // Fallback to map.
             if map.is_none() {
-                map = Some(HashMap::with_capacity(b_end - b_start));
+                map = Some(AHashMap::with_capacity(b_end - b_start));
                 for (i, item) in b.iter().enumerate().take(b_end).skip(b_start) {
-                    map.as_mut().unwrap().insert(item.clone(), i);
+                    map.as_mut().unwrap_throw().insert(item.clone(), i);
                 }
             }
-            let map = map.as_ref().unwrap();
+            let map = map.as_ref().unwrap_throw();
 
             let index = map.get(&a[a_start]);
             if let Some(index) = index {
@@ -317,7 +319,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
                     while i + 1 < a_end && i + 1 < b_end {
                         i += 1;
                         t = map.get(&a[i]);
-                        if t.is_none() || *t.unwrap() != *index + sequence {
+                        if t.is_none() || *t.unwrap_throw() != *index + sequence {
                             break;
                         }
                         sequence += 1;
@@ -348,7 +350,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     #[cfg(debug_assertions)]
     {
         for (i, node) in b.iter().enumerate() {
-            if node.parent_node().as_ref() != Some(&parent) {
+            if node.parent_node().as_ref() != Some(parent) {
                 panic!(
                     "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
                     i, node

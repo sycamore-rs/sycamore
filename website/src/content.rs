@@ -1,12 +1,11 @@
-use reqwasm::http::Request;
 use serde_lite::Deserialize;
 use sycamore::prelude::*;
-use wasm_bindgen::prelude::*;
-use web_sys::HtmlElement;
+
+use crate::sidebar::SidebarData;
 
 // Sync definition with docs/build.rs
-#[derive(Deserialize)]
-struct MarkdownPage {
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct MarkdownPage {
     html: String,
     outline: Vec<Outline>,
 }
@@ -18,17 +17,18 @@ pub struct Outline {
     children: Vec<Outline>,
 }
 
-#[wasm_bindgen(inline_js = "export function highlight_all() { hljs.highlightAll(); }")]
-extern "C" {
-    fn highlight_all();
-}
-
 #[component(OutlineView<G>)]
-pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
+pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .set_title("Sycamore"); // TODO: get title from markdown file
+
     template! {
-        ul(class="mt-4 text-sm pl-2 border-l border-gray-400") {
+        ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
             Indexed(IndexedProps {
-                iterable: outline,
+                iterable: Signal::new(outline).handle(),
                 template: |item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
@@ -36,7 +36,10 @@ pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
                         let href = format!("#{}", x.name.trim().to_lowercase().replace(" ", "-"));
                         template! {
                             li {
-                                a(href=href) {
+                                a(
+                                    class="hover:text-yellow-400 mb-1 inline-block transition-colors",
+                                    href=href,
+                                ) {
                                     (name)
                                 }
                             }
@@ -48,7 +51,10 @@ pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
 
                     template! {
                         li {
-                            a(href=href) {
+                            a(
+                                class="hover:text-yellow-400 mb-1 inline-block transition-colors",
+                                href=href,
+                            ) {
                                 (name)
                             }
                             ul(class="ml-3") {
@@ -63,54 +69,27 @@ pub fn outline_view(outline: StateHandle<Vec<Outline>>) -> Template<G> {
 }
 
 pub struct ContentProps {
-    pub pathname: String,
-    pub sidebar_version: Option<String>,
+    pub data: MarkdownPage,
+    pub sidebar: Option<(String, SidebarData)>,
 }
 
 #[component(Content<G>)]
 pub fn content(
     ContentProps {
-        pathname,
-        sidebar_version,
+        data: MarkdownPage { html, outline },
+        sidebar,
     }: ContentProps,
 ) -> Template<G> {
-    let show_sidebar = sidebar_version.is_some();
+    let show_sidebar = sidebar.is_some();
 
-    let docs_container_ref = NodeRef::<G>::new();
-
-    let html = Signal::new(None::<String>);
-    let outline = Signal::new(Vec::new());
-
-    create_effect(cloned!((html, docs_container_ref) => move || {
-        if let Some(html) = html.get().as_ref() {
-            docs_container_ref
-                .get::<DomNode>()
-                .unchecked_into::<HtmlElement>()
-                .set_inner_html(&html);
-            highlight_all();
-        }
-    }));
-
-    wasm_bindgen_futures::spawn_local(cloned!((html, outline) => async move {
-        let text = Request::get(&pathname).send().await.unwrap().text().await;
-        if let Ok(text) = text{
-            let intermediate = serde_json::from_str(&text).unwrap();
-            let markdown_page = MarkdownPage::deserialize(&intermediate).unwrap();
-            html.set(Some(markdown_page.html));
-            outline.set(markdown_page.outline);
-        } else {
-            // TODO: error handling
-        }
-    }));
-
-    let sidebar_version0 = sidebar_version.clone();
+    let sidebar_version = sidebar.as_ref().map(|x| x.0.clone());
 
     template! {
         div(class="flex w-full") {
             (if show_sidebar {
                 template! {
                     div(class="flex-none") {
-                        crate::sidebar::Sidebar(sidebar_version.clone().unwrap())
+                        crate::sidebar::Sidebar(sidebar.clone().unwrap())
                     }
                 }
             } else {
@@ -119,9 +98,9 @@ pub fn content(
             div(class="flex-1 container mx-auto") {
                 div(
                     class=format!("content min-w-0 pr-4 mb-2 lg:mr-44 {}",
-                    if show_sidebar { "" } else { "container mx-auto lg:ml-auto lg:mr-44" }),
+                    if show_sidebar { "" } else { "container mx-auto pl-4 lg:ml-auto lg:pr-48" }),
                 ) {
-                    (if sidebar_version0.as_deref() == Some(crate::NEXT_VERSION) {
+                    (if sidebar_version.as_deref() == Some(crate::NEXT_VERSION) {
                         template! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is unreleased documentation for Sycamore next version." }
@@ -134,7 +113,7 @@ pub fn content(
                                 }
                             }
                         }
-                    } else if sidebar_version0.is_some() && sidebar_version0.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
+                    } else if sidebar_version.is_some() && sidebar_version.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
                         template! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is outdated documentation for Sycamore." }
@@ -151,10 +130,10 @@ pub fn content(
                     } else {
                         template! {}
                     })
-                    div(ref=docs_container_ref) { "Loading..." }
+                    div(dangerously_set_inner_html=&html)
                 }
                 div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0 top-0 mt-12") {
-                    OutlineView(outline.handle())
+                    OutlineView(outline)
                 }
             }
         }

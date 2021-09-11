@@ -1,0 +1,63 @@
+error: function must return `sycamore::template::Template`
+ --> $DIR/component-fail.rs:5:1
+  |
+5 | fn comp1() {
+  | ^^^^^^^^^^
+
+error: unexpected end of input, expected an identifier for the component
+  --> $DIR/component-fail.rs:10:1
+   |
+10 | #[component]
+   | ^^^^^^^^^^^^
+   |
+   = note: this error originates in an attribute macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: expected a single type param
+  --> $DIR/component-fail.rs:16:1
+   |
+16 | #[component(Comp3)]
+   | ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in an attribute macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: async functions can't be components
+  --> $DIR/component-fail.rs:22:1
+   |
+22 | async fn comp4() -> Template<G> {
+   | ^^^^^
+
+error: const functions can't be components
+  --> $DIR/component-fail.rs:27:1
+   |
+27 | const fn comp5() -> Template<G> {
+   | ^^^^^
+
+error: extern functions can't be components
+  --> $DIR/component-fail.rs:32:1
+   |
+32 | extern fn comp6() -> Template<G> {
+   | ^^^^^^
+
+error: function components can't accept a receiver
+  --> $DIR/component-fail.rs:37:10
+   |
+37 | fn comp7(self) -> Template<G> {
+   |          ^^^^
+
+error: function should accept at most one parameter for the prop
+  --> $DIR/component-fail.rs:42:19
+   |
+42 | fn comp8(one: (), two: ()) -> Template<G> {
+   |                   ^^^^^^^
+
+error: `component` attribute can only be applied to functions
+  --> $DIR/component-fail.rs:47:1
+   |
+47 | struct AStruct;
+   | ^^^^^^^^^^^^^^^
+
+error: the component must not have the same name as the function
+  --> $DIR/component-fail.rs:50:13
+   |
+50 | #[component(Comp10<G>)]
+   |             ^^^^^^

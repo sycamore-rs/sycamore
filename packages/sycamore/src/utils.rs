@@ -7,13 +7,14 @@
 pub mod render;
 
 use std::cell::RefCell;
-use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::ptr;
 use std::rc::Rc;
 
+use ahash::AHashSet;
+
 thread_local! {
-    static TASKS: RefCell<HashSet<Task>> = RefCell::new(HashSet::new());
+    static TASKS: RefCell<AHashSet<Task>> = RefCell::new(AHashSet::new());
 }
 
 /// A wrapper over a callback. Used with [`loop_raf`].
@@ -74,16 +75,18 @@ pub(crate) fn run_tasks() {
                 drop(callback);
             } else {
                 web_sys::window()
-                    .unwrap()
-                    .request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+                    .unwrap_throw()
+                    .request_animation_frame(
+                        f.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
+                    )
                     .expect("could not register requestAnimationFrame");
             }
         });
     })));
 
     web_sys::window()
-        .unwrap()
-        .request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+        .unwrap_throw()
+        .request_animation_frame(g.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref())
         .expect("could not register requestAnimationFrame");
 }
 

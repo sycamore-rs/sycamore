@@ -7,7 +7,7 @@ All non proc-macro related code is in `/packages/sycamore`. Proc-macro related c
 
 - #### Reactivity
 
-  - All the reactivity primitives are defined in `/packages/sycamore/src/rx.rs`.
+  - All the reactivity primitives are defined in live in the `sycamore-reactive` crate.
 
 - #### `GenericNode`
 

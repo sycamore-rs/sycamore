@@ -1,11 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use chrono::{prelude::*, Duration};
+use js_sys::Date;
 
+use crate::reactive::Signal;
 use crate::utils::{loop_raf, Task};
-
-use super::*;
 
 /// Describes a trait that can be linearly interpolate between two points.
 pub trait Lerp {
@@ -68,7 +67,7 @@ pub struct Tweened<T: Lerp + Clone + 'static>(Rc<RefCell<TweenedInner<T>>>);
 struct TweenedInner<T: Lerp + Clone + 'static> {
     signal: Signal<T>,
     current_task: Option<Task>,
-    transition_duration: Duration,
+    transition_duration_ms: f32,
     easing_fn: Rc<dyn Fn(f32) -> f32>,
 }
 
@@ -82,8 +81,7 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         Self(Rc::new(RefCell::new(TweenedInner {
             signal: Signal::new(initial),
             current_task: None,
-            transition_duration: Duration::from_std(transition_duration)
-                .expect("transition_duration is greater than the maximum value"),
+            transition_duration_ms: transition_duration.as_millis() as f32,
             easing_fn: Rc::new(easing_fn),
         })))
     }
@@ -100,18 +98,17 @@ impl<T: Lerp + Clone + 'static> Tweened<T> {
         let start = self.signal().get_untracked().as_ref().clone();
         let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
 
-        let start_time = Utc::now();
+        let start_time = Date::now();
         let signal = self.0.borrow().signal.clone();
-        let transition_duration = self.0.borrow().transition_duration;
+        let transition_duration_ms = self.0.borrow().transition_duration_ms;
 
         let task = Task::new(move || {
-            let now = Utc::now();
+            let now = Date::now();
 
             let since_start = now - start_time;
-            let scalar = since_start.num_milliseconds() as f32
-                / transition_duration.num_milliseconds() as f32;
+            let scalar = since_start as f32 / transition_duration_ms;
 
-            if now < start_time + transition_duration {
+            if now < start_time + transition_duration_ms as f64 {
                 signal.set(start.lerp(&new_value, easing_fn(scalar)));
                 true
             } else {
@@ -156,7 +153,7 @@ impl<T: Lerp + Clone + 'static> Clone for TweenedInner<T> {
         Self {
             signal: self.signal.clone(),
             current_task: self.current_task.clone(),
-            transition_duration: self.transition_duration,
+            transition_duration_ms: self.transition_duration_ms,
             easing_fn: Rc::clone(&self.easing_fn),
         }
     }

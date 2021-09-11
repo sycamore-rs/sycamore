@@ -14,9 +14,9 @@ version = "0.5.2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sycamore = {path = "../sycamore", version = "=0.5.2"}
-sycamore-router-macro = {path = "../sycamore-router-macro", version = "=0.5.2"}
-wasm-bindgen = "0.2"
+sycamore = { path = "../sycamore", version = "=0.5.2" }
+sycamore-router-macro = { path = "../sycamore-router-macro", version = "=0.5.2" }
+wasm-bindgen = "0.2.76"
 
 [dependencies.web-sys]
 features = [
@@ -24,9 +24,11 @@ features = [
   "EventTarget",
   "History",
   "HtmlAnchorElement",
+  "HtmlBaseElement",
   "KeyboardEvent",
   "Location",
   "PopStateEvent",
+  "Url",
   "Window",
 ]
-version = "0.3"
+version = "0.3.53"

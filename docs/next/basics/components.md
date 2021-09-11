@@ -34,3 +34,40 @@ template! {
 
 state.set(1); // automatically updates value in Component
 ```
+
+## Props
+
+Components that don't accept props (same as accepting `()`) can omit the function argument.
+
+```rust
+use sycamore::prelude::*;
+
+#[component(MyComponent<G>)]
+fn my_component() -> Template<G> {
+    ...
+}
+```
+
+## Lifecycle
+
+Component lifecycle is strongly tied to the reactive system. Under the hood, components are simply
+functions that are run inside an untracked scope. Component functions only run once (unlike React
+where functional-components are called on every render). Think of it as a builder-pattern for
+constructing UI.
+
+This means that we can use the same helpers in the reactive system to attach callbacks to the
+component lifecycle.
+
+### `on_cleanup`
+
+```rust
+use sycamore::prelude::*;
+
+#[component(MyComponent<G>)]
+fn my_component() -> Template<G> {
+    on_cleanup(move || {
+        // Perform cleanup.
+    });
+    ...
+}
+```

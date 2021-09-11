@@ -55,13 +55,19 @@ fn versioned_docs_link_view(
 
 #[component(Versions<G>)]
 pub fn versions() -> Template<G> {
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .set_title("Versions - Sycamore");
+
     let versions = VERSIONS
         .iter()
         .map(|(name, versioned_docs_link)| {
             template! {
                 li {
                     h2(class="text-2xl font-light") { (name) }
-                    div(class="flex flex-col divide-y text-gray-600") {
+                    div(class="flex flex-col divide-y dark:divide-gray-500 text-gray-600 dark:text-gray-300") {
                         VersionedDocsLinkView((name, versioned_docs_link))
                     }
                 }
