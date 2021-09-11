@@ -20,6 +20,7 @@ pub trait Route {
 }
 
 /// Represents an URL segment or segments.
+#[derive(Clone)]
 pub enum Segment {
     /// Match a specific segment.
     Param(String),
@@ -30,7 +31,7 @@ pub enum Segment {
 }
 
 /// Represents a capture of an URL segment or segments.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Capture<'a> {
     DynParam(&'a str),
     DynSegments(Vec<&'a str>),
@@ -55,6 +56,7 @@ impl<'a> Capture<'a> {
 }
 
 /// A list of [`Segment`]s.
+#[derive(Clone)]
 pub struct RoutePath {
     segments: Vec<Segment>,
 }
