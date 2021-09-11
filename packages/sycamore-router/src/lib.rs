@@ -452,5 +452,27 @@ mod tests {
                 Routes::NotFound
             );
         }
+
+        #[test]
+        fn router_dyn_param_before_dyn_segment() {
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Routes {
+                #[to("/<param>/<segments..>")]
+                Path {
+                    param: String,
+                    segments: Vec<String>,
+                },
+                #[not_found]
+                NotFound,
+            }
+
+            assert_eq!(
+                Routes::match_route(&["path", "1", "2"]),
+                Routes::Path {
+                    param: "path".to_string(),
+                    segments: vec!["1".to_string(), "2".to_string()]
+                }
+            );
+        }
     }
 }

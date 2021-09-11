@@ -118,7 +118,8 @@ fn impl_to(
     if expected_fields_len != variant.fields.len() {
         return Err(syn::Error::new(
             variant.fields.span(),
-            "mismatch between number of capture fields and variant fields",
+            format!("mismatch between number of capture fields and variant fields (found {} capture field(s) and {} variant field(s))",
+            expected_fields_len, variant.fields.len()),
         ));
     }
 
@@ -134,7 +135,11 @@ fn impl_to(
                         if param != &field.ident.as_ref().unwrap().to_string() {
                             return Err(syn::Error::new(
                                 field.ident.span(),
-                                "capture field name mismatch",
+                                format!(
+                                    "capture field name mismatch (expected `{}`, found `{}`)",
+                                    param,
+                                    field.ident.as_ref().unwrap()
+                                ),
                             ));
                         }
                         let param_id: Ident = syn::parse_str(param)?;
@@ -151,7 +156,11 @@ fn impl_to(
                         if param != &field.ident.as_ref().unwrap().to_string() {
                             return Err(syn::Error::new(
                                 field.ident.span(),
-                                "capture field name mismatch",
+                                format!(
+                                    "capture field name mismatch (expected `{}`, found `{}`)",
+                                    param,
+                                    field.ident.as_ref().unwrap()
+                                ),
                             ));
                         }
                         let param_id: Ident = syn::parse_str(param)?;
