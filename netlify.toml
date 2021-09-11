@@ -1,6 +1,6 @@
 [[redirects]]
 from = "/api"
-to = "/api/doc/sycamore/index.html"
+to = "/api/sycamore/index.html"
 
 [[redirects]]
 from = "/*"
