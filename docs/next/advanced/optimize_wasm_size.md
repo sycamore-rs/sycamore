@@ -1,7 +1,7 @@
 # Reducing binary size
 
 **Note**: More information about reducing binary size can be found in the
-[Rust Wasm Book](https://rustwasm.github.io/book/reference/code-size.html#optimizing-builds-for-code-size)
+[Rust Wasm Book](https://rustwasm.github.io/book/reference/code-size.html#optimizing-builds-for-code-size).
 
 ## Building in release mode
 
