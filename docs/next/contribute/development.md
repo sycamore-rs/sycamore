@@ -19,7 +19,7 @@ cd sycamore
 
 ## Testing
 
-To run unit tests and non WASM integration tests, use:
+To run unit tests and non Wasm integration tests, use:
 
 ```bash
 cargo test

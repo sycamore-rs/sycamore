@@ -72,8 +72,10 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
                     l.children.push(tmp);
                 }
                 Some(Event::Html(CowStr::from(format!(
-                    "<h{} id=\"{}\">{}</h{}>",
-                    level, anchor, name, level
+                    "<h{level} id=\"{anchor}\">{name}</h{level}>",
+                    level = level,
+                    anchor = anchor,
+                    name = name
                 ))))
             }
         }

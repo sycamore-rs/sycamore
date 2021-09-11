@@ -18,7 +18,7 @@ rustup target add wasm32-unknown-unknown
 
 [Trunk](https://trunkrs.dev) is the recommended build tool for Sycamore. If you are from JS land,
 Trunk is like [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but specifically
-tailored to Rust + WASM apps.
+tailored to Rust + Wasm apps.
 
 You can use `cargo` to install Trunk:
 
