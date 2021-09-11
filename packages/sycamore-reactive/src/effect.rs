@@ -403,7 +403,7 @@ where
 /// dispatch(Msg::Decrement);
 /// assert_eq!(*state.get(), 0);
 /// ```
-pub fn create_reducer<F, Out, Msg>(initial: Out, reduce: F) -> (StateHandle<Out>, impl Fn(Msg))
+pub fn create_reducer<F, Out, Msg>(initial: Out, reduce: F) -> (StateHandle<Out>, Rc<impl Fn(Msg)>)
 where
     F: Fn(&Out, Msg) -> Out,
 {
@@ -416,7 +416,7 @@ where
         }
     };
 
-    (memo.into_handle(), dispatcher)
+    (memo.into_handle(), Rc::new(dispatcher))
 }
 
 /// Run the passed closure inside an untracked dependency scope.
