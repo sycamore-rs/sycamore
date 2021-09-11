@@ -65,6 +65,16 @@ jobs:
             )
           done
 
+      - name: Build rustdocs
+        run: |
+          cd packages/sycamore && cargo doc --no-deps --all-features
+          cd ../sycamore-macro && cargo doc --no-deps --all-features
+          cd ../sycamore-reactive && cargo doc --no-deps --all-features
+          cd ../sycamore-router && cargo doc --no-deps --all-features
+          cd ../sycamore-router-macro && cargo doc --no-deps --all-features
+          cd ../../
+          cp -r target/doc website/dist/api
+
       - name: Create .nojekyll file
         run: touch website/dist/.nojekyll
 

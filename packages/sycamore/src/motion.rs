@@ -1,3 +1,5 @@
+//! Utilities for smooth transitions and animations.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
