@@ -160,8 +160,6 @@ fn app() -> Template<G> {
     let todos_is_empty =
         create_selector(cloned!((app_state) => move || app_state.todos.get().len() == 0));
 
-    let todos_is_empty2 = todos_is_empty.clone();
-
     template! {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
