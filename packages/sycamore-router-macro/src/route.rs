@@ -118,7 +118,7 @@ fn impl_to(
     if expected_fields_len != variant.fields.len() {
         return Err(syn::Error::new(
             variant.fields.span(),
-            format!("mismatch between number of capture fields and variant fields (found {} capture field(s) and {} variant field(s)",
+            format!("mismatch between number of capture fields and variant fields (found {} capture field(s) and {} variant field(s))",
             expected_fields_len, variant.fields.len()),
         ));
     }
