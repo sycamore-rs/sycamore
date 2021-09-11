@@ -374,7 +374,8 @@ where
 
 /// An alternative to [`Signal::new`] that uses a reducer to get the next value.
 ///
-/// It uses a reducer function that takes the previous value and a message and returns the next value.
+/// It uses a reducer function that takes the previous value and a message and returns the next
+/// value.
 ///
 /// Returns a [`StateHandle`] and a dispatch function to send messages to the reducer.
 ///

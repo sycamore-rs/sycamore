@@ -1,8 +1,8 @@
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_till, take_until};
-use nom::combinator::map;
-use nom::multi::separated_list0;
-use nom::sequence::delimited;
+use nom::bytes::complete::{tag, take, take_till};
+use nom::combinator::{map, recognize, verify};
+use nom::multi::{many0, separated_list0};
+use nom::sequence::{delimited, pair};
 use nom::IResult;
 
 #[derive(Debug, Clone)]
@@ -31,12 +31,30 @@ fn param(i: &str) -> IResult<&str, &str> {
     take_till(|c| c == '/')(i)
 }
 
+pub fn ident_start(s: &str) -> IResult<&str, &str> {
+    verify(take(1usize), |c: &str| {
+        let c = c.chars().next().unwrap();
+        c == '_' || unicode_xid::UnicodeXID::is_xid_start(c)
+    })(s)
+}
+
+pub fn ident_continue(s: &str) -> IResult<&str, &str> {
+    verify(take(1usize), |c: &str| {
+        unicode_xid::UnicodeXID::is_xid_continue(c.chars().next().unwrap())
+    })(s)
+}
+
+/// Parse a Rust identifier. Reference: https://doc.rust-lang.org/reference/identifiers.html
+fn ident(i: &str) -> IResult<&str, &str> {
+    recognize(pair(ident_start, many0(ident_continue)))(i)
+}
+
 fn dyn_param(i: &str) -> IResult<&str, &str> {
-    delimited(tag("<"), take_until(">"), tag(">"))(i)
+    delimited(tag("<"), ident, tag(">"))(i)
 }
 
 fn dyn_segments(i: &str) -> IResult<&str, &str> {
-    delimited(tag("<"), take_until("..>"), tag("..>"))(i)
+    delimited(tag("<"), ident, tag("..>"))(i)
 }
 
 fn segment(i: &str) -> IResult<&str, SegmentAst> {
@@ -209,6 +227,27 @@ mod tests {
     }
 
     #[test]
+    fn unnamed_dyn_param() {
+        check(
+            "/id/<_>",
+            expect![[r#"
+                (
+                    "",
+                    RoutePathAst {
+                        segments: [
+                            Param(
+                                "id",
+                            ),
+                            DynParam(
+                                "_",
+                            ),
+                        ],
+                    },
+                )"#]],
+        );
+    }
+
+    #[test]
     fn dyn_segments() {
         check(
             "/page/<path..>",
@@ -238,8 +277,32 @@ mod tests {
                     "",
                     RoutePathAst {
                         segments: [
+                            Param(
+                                "<a",
+                            ),
+                            Param(
+                                "b>",
+                            ),
+                        ],
+                    },
+                )"#]],
+        );
+    }
+
+    #[test]
+    fn dyn_param_before_dyn_segment() {
+        check(
+            "/<param>/<segments..>",
+            expect![[r#"
+                (
+                    "",
+                    RoutePathAst {
+                        segments: [
                             DynParam(
-                                "a/b",
+                                "param",
+                            ),
+                            DynSegments(
+                                "segments",
                             ),
                         ],
                     },

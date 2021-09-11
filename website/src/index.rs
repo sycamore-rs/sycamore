@@ -14,11 +14,11 @@ pub fn index() -> Template<G> {
                 h1(class="text-5xl font-bold mt-20 mb-5") {
                     "Sycamore"
                 }
-    
+
                 p(class="mb-5 text-center") {
                     "A reactive library for creating web apps in Rust and WebAssembly"
                 }
-    
+
                 // region: badges
                 div(class="mb-7 flex flex-row flex-wrap justify-center gap-1") {
                     a(
@@ -43,7 +43,7 @@ pub fn index() -> Template<G> {
                     ) { img(src="https://img.shields.io/discord/820400041332179004?label=discord", alt="Discord") }
                 }
                 // endregion
-    
+
                 a(
                     href="/docs/getting_started/installation",
                     class="py-2 px-3 text-white bg-yellow-600 rounded font-medium transition",

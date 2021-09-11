@@ -17,12 +17,13 @@ proc-macro = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nom = "6.2.1"
+nom = "7.0.0"
 proc-macro2 = "1.0.28"
 quote = "1.0.9"
 syn = { version = "1.0.74", features = ["full"] }
+unicode-xid = "0.2.2"
 
 [dev-dependencies]
 expect-test = "1.1.0"
-sycamore-router = {path = "../sycamore-router"}
+sycamore-router = { path = "../sycamore-router" }
 trybuild = "1.0.45"
