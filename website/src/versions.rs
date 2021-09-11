@@ -49,6 +49,10 @@ fn versioned_docs_link_view(
                 class="hover:text-yellow-500 transition-colors",
                 href="/docs/getting_started/installation",
             ) { "Book" }
+            a(
+                class="hover:text-yellow-500 transition-colors",
+                href="/api/sycamore/index.html",
+            ) { "API" }
         },
     }
 }
