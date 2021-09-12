@@ -1,5 +1,7 @@
+use std::collections::HashSet;
 use std::fmt;
 
+use once_cell::sync::Lazy;
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
@@ -9,10 +11,60 @@ use syn::spanned::Spanned;
 use syn::token::Paren;
 use syn::{parenthesized, Expr, ExprLit, Ident, Lit, Result, Token};
 
+static BOOLEAN_ATTRIBUTES_SET: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+    vec![
+        "async",
+        "autocomplete",
+        "autofocus",
+        "autoplay",
+        "border",
+        "challenge",
+        "checked",
+        "compact",
+        "contenteditable",
+        "controls",
+        "default",
+        "defer",
+        "disabled",
+        "formNoValidate",
+        "frameborder",
+        "hidden",
+        "indeterminate",
+        "ismap",
+        "loop",
+        "multiple",
+        "muted",
+        "nohref",
+        "noresize",
+        "noshade",
+        "novalidate",
+        "nowrap",
+        "open",
+        "readonly",
+        "required",
+        "reversed",
+        "scoped",
+        "scrolling",
+        "seamless",
+        "selected",
+        "sortable",
+        "spellcheck",
+        "translate",
+    ]
+    .into_iter()
+    .collect()
+});
+
 #[derive(PartialEq, Eq)]
 pub enum AttributeType {
+    /// An attribute that takes a value of a string.
+    ///
     /// Syntax: `<name>`. `name` cannot be `dangerously_set_inner_html`.
-    DomAttribute { name: AttributeName },
+    Str { name: AttributeName },
+    /// An attribute that takes a value of a boolean.
+    ///
+    /// Syntax: `<name>`. `name` cannot be `dangerously_set_inner_html`.
+    Bool { name: AttributeName },
     /// Syntax: `dangerously_set_inner_html`.
     DangerouslySetInnerHtml,
     /// Syntax: `on:<event>`.
@@ -52,8 +104,10 @@ impl Parse for AttributeType {
                     format!("unknown directive `{}`", ident_str),
                 )),
             }
+        } else if BOOLEAN_ATTRIBUTES_SET.contains(ident_str.as_str()) {
+            Ok(Self::Bool { name: ident })
         } else {
-            Ok(Self::DomAttribute { name: ident })
+            Ok(Self::Str { name: ident })
         }
     }
 }
@@ -88,7 +142,7 @@ impl ToTokens for Attribute {
         );
 
         match &self.ty {
-            AttributeType::DomAttribute { name } => {
+            AttributeType::Str { name } => {
                 let name = name.to_string();
                 // Use `set_class_name` instead of `set_attribute` for better performance.
                 let is_class = name == "class";
@@ -97,6 +151,8 @@ impl ToTokens for Attribute {
                     ..
                 }) = expr
                 {
+                    // Since this is static text, intern it as it will likely be constructed many
+                    // times.
                     quote_spanned! { text.span()=>
                         if ::std::cfg!(target_arch = "wasm32") {
                             ::sycamore::rt::intern(#text)
@@ -133,8 +189,31 @@ impl ToTokens for Attribute {
                         });
                     });
                 } else {
-                    // Since this is static text, intern it as it will likely be constructed many
-                    // times.
+                    tokens.extend(quote_spanned! { expr_span=>
+                        #quoted_set_attribute
+                    });
+                };
+            }
+            AttributeType::Bool { name } => {
+                let name = name.to_string();
+                let quoted_set_attribute = quote! {
+                    if #expr {
+                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, #name, "");
+                    } else {
+                        ::sycamore::generic_node::GenericNode::remove_attribute(&__el, #name);
+                    }
+                };
+
+                if is_dynamic {
+                    tokens.extend(quote_spanned! { expr_span=>
+                        ::sycamore::reactive::create_effect({
+                            let __el = ::std::clone::Clone::clone(&__el);
+                            move || {
+                                #quoted_set_attribute
+                            }
+                        });
+                    });
+                } else {
                     tokens.extend(quote_spanned! { expr_span=>
                         #quoted_set_attribute
                     });
@@ -283,7 +362,7 @@ impl Parse for AttributeList {
     }
 }
 
-/// Represents a html element tag (e.g. `div`, `custom-element` etc...).
+/// Represents an attribute name (e.g. `href`, `data-test` etc...).
 pub struct AttributeName {
     tag: Ident,
     extended: Vec<(Token![-], Ident)>,

@@ -1,5 +1,4 @@
 use sycamore::prelude::*;
-use web_sys::HtmlInputElement;
 
 use crate::{AppState, Filter};
 
@@ -7,17 +6,6 @@ use crate::{AppState, Filter};
 pub fn list(app_state: AppState) -> Template<G> {
     let todos_left = create_selector(cloned!((app_state) => move || {
         app_state.todos_left()
-    }));
-
-    let input_ref = NodeRef::<G>::new();
-
-    // FIXME: bind to boolean attribute
-    create_effect(cloned!((todos_left, input_ref) => move || {
-        let checked = *todos_left.get() == 0;
-
-        if let Some(input_ref) = input_ref.try_get::<DomNode>() {
-            input_ref.unchecked_into::<HtmlInputElement>().set_checked(checked);
-        }
     }));
 
     let filtered_todos = create_memo(cloned!((app_state) => move || {
@@ -28,14 +16,22 @@ pub fn list(app_state: AppState) -> Template<G> {
         }).cloned().collect::<Vec<_>>()
     }));
 
+    // We need a separate signal for checked because clicking the checkbox will detach the binding
+    // between the attribute and the view.
+    let checked = Signal::new(false);
+    create_effect(cloned!((checked) => move || {
+        // Calling checked.set will also update the `checked` property on the input element.
+        checked.set(*todos_left.get() == 0)
+    }));
+
     template! {
         section(class="main") {
             input(
-                ref=input_ref,
                 id="toggle-all",
                 class="toggle-all",
                 type="checkbox",
                 readonly=true,
+                bind:checked=checked,
                 on:input=cloned!((app_state) => move |_| app_state.toggle_complete_all())
             )
             label(for="toggle-all")
