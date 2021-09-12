@@ -90,7 +90,7 @@ Release post: https://sycamore-rs.netlify.app/news/announcing-v0.6.0
     details.
   - [Support boolean attributes.](https://github.com/sycamore-rs/sycamore/pull/239) Some attributes
     now expect a `bool` instead of `impl ToString`. This also fixes an issue where previously,
-    attributes couldn't be removed directly from the `template` macro.
+    attributes couldn't be removed directly from the `template!` macro.
     ```rust
     // Before
     template! {
