@@ -135,6 +135,10 @@ impl GenericNode for SsrNode {
             .insert(name.to_string(), value.to_string());
     }
 
+    fn remove_attribute(&self, name: &str) {
+        self.unwrap_element().borrow_mut().attributes.remove(name);
+    }
+
     fn set_class_name(&self, value: &str) {
         self.set_attribute("class", value);
     }

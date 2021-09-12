@@ -166,6 +166,13 @@ impl GenericNode for DomNode {
             .unwrap_throw();
     }
 
+    fn remove_attribute(&self, name: &str) {
+        self.node
+            .unchecked_ref::<Element>()
+            .remove_attribute(intern(name))
+            .unwrap_throw();
+    }
+
     fn set_class_name(&self, value: &str) {
         self.node.unchecked_ref::<Element>().set_class_name(value);
     }
