@@ -71,14 +71,12 @@ pub fn item(props: ItemProps) -> Template<G> {
         app_state.remove_todo(id);
     });
 
-    let toggle_ref = NodeRef::new();
-
-    // FIXME: bind to boolean attribute
-    create_effect(cloned!((completed, toggle_ref) => move || {
-        let completed = *completed.get();
-        if let Some(toggle_ref) = toggle_ref.try_get::<DomNode>() {
-            toggle_ref.unchecked_into::<HtmlInputElement>().set_checked(completed);
-        }
+    // We need a separate signal for checked because clicking the checkbox will detach the binding
+    // between the attribute and the view.
+    let checked = Signal::new(false);
+    create_effect(cloned!((completed, checked) => move || {
+        // Calling checked.set will also update the `checked` property on the input element.
+        checked.set(*completed.get())
     }));
 
     let class = cloned!((completed, editing) => move || {
@@ -91,7 +89,7 @@ pub fn item(props: ItemProps) -> Template<G> {
     template! {
         li(class=class()) {
             div(class="view") {
-                input(ref=toggle_ref, class="toggle", type="checkbox", on:input=toggle_completed, checked=*completed.get())
+                input(class="toggle", type="checkbox", on:input=toggle_completed, bind:checked=checked)
                 label(on:dblclick=handle_dblclick) {
                     (title())
                 }
