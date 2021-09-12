@@ -2,6 +2,8 @@
 
 ## ✨ **0.6.0** _(2021-09-12)_
 
+Release post: https://sycamore-rs.netlify.app/news/announcing-v0.6.0
+
 - #### ⚡️ Features
 
   - [Add integrations for `sycamore-router`.](https://github.com/sycamore-rs/sycamore/pull/183)
