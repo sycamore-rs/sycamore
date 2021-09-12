@@ -52,6 +52,7 @@ fn versioned_docs_link_view(
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href="/api/sycamore/index.html",
+                rel="external"
             ) { "API" }
         },
     }
