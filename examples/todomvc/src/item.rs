@@ -91,15 +91,7 @@ pub fn item(props: ItemProps) -> Template<G> {
     template! {
         li(class=class()) {
             div(class="view") {
-                (if *completed.get() {
-                    cloned!((toggle_ref, toggle_completed) => template! {
-                        input(ref=toggle_ref, class="toggle", type="checkbox", on:input=toggle_completed, checked="")
-                    })
-                } else {
-                    cloned!((toggle_ref, toggle_completed) => template! {
-                        input(ref=toggle_ref, class="toggle", type="checkbox", on:input=toggle_completed)
-                    })
-                })
+                input(ref=toggle_ref, class="toggle", type="checkbox", on:input=toggle_completed, checked=*completed.get())
                 label(on:dblclick=handle_dblclick) {
                     (title())
                 }
