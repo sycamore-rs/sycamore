@@ -14,7 +14,7 @@ use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
 use wasm_bindgen_futures::spawn_local;
 
-const LATEST_MAJOR_VERSION: &str = "v0.5";
+const LATEST_MAJOR_VERSION: &str = "v0.6";
 const NEXT_VERSION: &str = "next";
 
 #[derive(Debug, Route)]

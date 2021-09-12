@@ -1,10 +1,17 @@
 use sycamore::prelude::*;
 
-static POSTS: &[(&str, &str, &str)] = &[(
-    "Announcing Sycamore v0.5.0",
-    "SSR + Routing",
-    "announcing-v0.5.0",
-)];
+static POSTS: &[(&str, &str, &str)] = &[
+    (
+        "Announcing Sycamore v0.5.0",
+        "SSR + Routing",
+        "announcing-v0.5.0",
+    ),
+    (
+        "Announcing Sycamore v0.6.0",
+        "Faster and faster with plenty of fixes and features...",
+        "announcing-v0.6.0",
+    ),
+];
 
 #[component(NewsIndex<G>)]
 pub fn news_index() -> Template<G> {
@@ -32,7 +39,7 @@ pub fn news_index() -> Template<G> {
     template! {
         div(class="container mx-auto") {
             h1(class="text-4xl font-bold") { "News" }
-            ul(class="mt-5 ml-2") {
+            ul(class="mt-5 ml-2 space-y-2") {
                 (posts)
             }
         }

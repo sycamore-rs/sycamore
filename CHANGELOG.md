@@ -1,5 +1,105 @@
 # Changelog
 
+## ✨ **0.6.0** _(2021-09-12)_
+
+- #### ⚡️ Features
+
+  - [Add integrations for `sycamore-router`.](https://github.com/sycamore-rs/sycamore/pull/183)
+  - [Added `dangerously_set_inner_html` special attribute to html elements.](https://github.com/sycamore-rs/sycamore/pull/190)
+    This allows directly setting an element's inner html without going through a `NodeRef` and
+    manually calling `.set_inner_html()`.
+  - [Implement `Portal`s.](https://github.com/sycamore-rs/sycamore/pull/209) Portals allow adding
+    nodes to elements that are in another tree.
+  - [Allow instantiating components with the `Component` trait.](https://github.com/sycamore-rs/sycamore/pull/213)
+    You can now also create components that are generic over another component. This pattern can be
+    seen in the
+    [`higher-order-components`](https://github.com/sycamore-rs/sycamore/tree/master/examples/higher-order-components)
+    example.
+  - [Respect base html tag in router.](https://github.com/sycamore-rs/sycamore/pull/220)
+  - [Dark mode on website!](https://github.com/sycamore-rs/sycamore/pull/225)
+  - [`create_reducer` hook.](https://github.com/sycamore-rs/sycamore/pull/233) The `create_reducer`
+    hook is an alternative to `Signal::new`. It allows you to use a reducer function to get the next
+    state from the previous state.
+    ```rust
+    enum Msg {
+        Increment,
+        Decrement,
+    }
+    let (state, dispatch) = create_reducer(0, |state, msg: Msg| match msg {
+        Msg::Increment => *state + 1,
+        Msg::Decrement => *state - 1,
+    });
+    ```
+  - [Opt out of router by using `rel="external"` on an anchor tag.](https://github.com/sycamore-rs/sycamore/pull/238)
+    Adding `rel="external"` to an anchor tag will use the browser's default navigation behavior.
+    ```rust
+    template! {
+        a(href="path", rel="external") { "Link" }
+    }
+    ```
+
+- #### 🛠 Fixes
+
+  - [Fix logic error in `reconcile_fragments`.](https://github.com/sycamore-rs/sycamore/pull/180)
+  - [Fix grammar on website index page.](https://github.com/sycamore-rs/sycamore/pull/181)
+  - [Scroll to top when navigating to a page.](https://github.com/sycamore-rs/sycamore/pull/186)
+  - [Use `ahash` instead of default SipHash for better performance.](https://github.com/sycamore-rs/sycamore/pull/193)
+  - [Explicitly define MSRV to 1.53 and run CI in a matrix.](https://github.com/sycamore-rs/sycamore/pull/195)
+  - [Remove inline JS snippet.](https://github.com/sycamore-rs/sycamore/pull/194) This removes the
+    need to load an extra JS file before Sycamore can start.
+  - [Add some UI tests for `#[component]` attribute macro.](https://github.com/sycamore-rs/sycamore/pull/198)
+  - [Generate a `sitemap.xml` for the website.](https://github.com/sycamore-rs/sycamore/pull/201)
+  - [Fix broken link to the reactivity page on the website index page.](https://github.com/sycamore-rs/sycamore/pull/203)
+  - [Explain that Trunk needs a `index.html` file in Hello World docs.](https://github.com/sycamore-rs/sycamore/pull/206)
+  - [Remove internal `Rc` from `DomNode`.](https://github.com/sycamore-rs/sycamore/pull/210) This
+    significantly improves performance and memory usage. See the PR for benchmarks.
+  - [Optimize the website with `wasm-opt` to reduce binary size.](https://github.com/sycamore-rs/sycamore/pull/211)
+  - [Optimize `create_effect`.](https://github.com/sycamore-rs/sycamore/pull/216)
+  - [Fix `SsrNode`'s implementation of `remove_child` removing two children instead of just one.](https://github.com/sycamore-rs/sycamore/pull/218)
+  - [Hold a backlink for each `ReactiveScope` to its parent scope.](https://github.com/sycamore-rs/sycamore/pull/223)
+    This fixes a bug where `use_context` could only access the context on the first render and would
+    panic on subsequent accesses.
+  - [Remove dependency on `chrono`.](https://github.com/sycamore-rs/sycamore/pull/224) This was
+    replaced with direct access to browser APIs to reduce the number of dependencies and thus to
+    improve build times.
+  - [Replace internal usage of `.unwrap()` with `.unwrap_throw()`.](https://github.com/sycamore-rs/sycamore/pull/226)
+    Slightly improves binary sizes.
+  - [Derive `Clone` for `sycamore_router` path types.](https://github.com/sycamore-rs/sycamore/pull/232)
+  - [Update `todomvc` example with latest features.](https://github.com/sycamore-rs/sycamore/pull/229)
+  - [Fix router not actually parsing identifiers.](https://github.com/sycamore-rs/sycamore/pull/234)
+    Fixes a bug where a dynamic parameter followed by a dynamic segment would parse as a single
+    segment.
+  - [Build rustdocs in CI.](https://github.com/sycamore-rs/sycamore/pull/235) The API documentation
+    for the `master` branch is available at
+    [sycamore-rs.netlify.app/api](https://sycamore-rs.netlify.app/api).
+  - [Reorganize documentation a bit.](https://github.com/sycamore-rs/sycamore/pull/236)
+
+- #### 🚨 **BREAKING CHANGES**
+
+  - [Extract reactive primitives into separate crate `sycamore-reactive`.](https://github.com/sycamore-rs/sycamore/pull/204)
+    Reactive primitives are now re-exported in the `sycamore` crate to avoid adding new dependencies
+    to your project. It is also now possible to use reactive primitives without using `sycamore` by
+    directly depending on `sycamore-reactive`.
+  - [Rename sub-module `sycamore::rx` to `sycamore::reactive`.](https://github.com/sycamore-rs/sycamore/pull/205)
+    `rx` might be ambiguous with [Rx family of libraries](http://reactivex.io/). Renaming to
+    `reactive` makes it clear that it works differently from Rx libraries.
+  - [Refactored router with new API.](https://github.com/sycamore-rs/sycamore/pull/222) See the
+    [new documentation](https://sycamore-rs.netlify.app/docs/v0.6/advanced/routing) for more
+    details.
+  - [Support boolean attributes.](https://github.com/sycamore-rs/sycamore/pull/239) Some attributes
+    now expect a `bool` instead of `impl ToString`. This also fixes an issue where previously,
+    attributes couldn't be removed directly from the `template` macro.
+    ```rust
+    // Before
+    template! {
+        input(type="checkbox", checked="") { "Checkbox" }
+    }
+    // After
+    template! {
+        input(type="checkbox", checked=true) { "Checkbox" }
+    }
+    ```
+
 ## ✨ **0.5.2** _(2021-07-17)_
 
 #### Changelog
@@ -171,7 +271,7 @@ Release post:
   - Cache `window.document` since it is frequently used to prevent going through JS interop
     [[@lukechu10], [#142](https://github.com/sycamore-rs/sycamore/pull/142)]
 
-- #### ⚠ **BREAKING CHANGES**
+- #### 🚨 **BREAKING CHANGES**
 
   - Abstraction over rendering backend! This introduces the concept of `GenericNode` which is a
     trait to access the underlying rendering backend. Currently, Sycamore ships with `DomNode` and
@@ -386,6 +486,7 @@ Release post:
   - Added reactivity primitives.
 
 [@baile320]: https://github.com/baile320
+[@dicej]: https://github.com/dicej
 [@gearme]: https://github.com/Gearme
 [@iwburns]: https://github.com/iwburns
 [@juanmarchetto]: https://github.com/JuanMarchetto
