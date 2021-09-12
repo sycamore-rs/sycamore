@@ -274,3 +274,15 @@ template! {
     }
 }
 ```
+
+## `rel="external"`
+
+By default, the router will intercept all `<a>` elements that have the same origin as the current
+page. Sometimes, we just want the browser to handle navigation without being intercepted by the
+router. To bypass the router, we can add the `rel="external"` attribute to the anchor tag.
+
+```rust
+template! {
+    a(href="path", rel="external") { "Path" }
+}
+```
