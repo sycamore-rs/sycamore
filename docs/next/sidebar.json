@@ -58,6 +58,10 @@
                     "href": "advanced/tweened"
                 },
                 {
+                    "name": "Contexts",
+                    "href": "advanced/contexts"
+                },
+                {
                     "name": "Advanced Reactivity",
                     "href": "advanced/advanced_reactivity"
                 },
@@ -80,19 +84,10 @@
                 {
                     "name": "JS Interop",
                     "href": "advanced/js_interop"
-                }
-            ]
-        },
-        {
-            "title": "Optimizations",
-            "items": [
-                {
-                    "name": "Code Size",
-                    "href": "optimizations/code_size"
                 },
                 {
-                    "name": "Speed",
-                    "href": "optimizations/speed"
+                    "name": "Optimize Wasm Size",
+                    "href": "advanced/optimize_wasm_size"
                 }
             ]
         },

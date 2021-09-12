@@ -23,7 +23,7 @@ version of Rust.
 
 [Trunk](https://trunkrs.dev) is the recommended build tool for Sycamore. If you are from JS land,
 Trunk is like [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but specifically
-tailored towards Rust + WASM apps.
+tailored towards Rust + Wasm apps.
 
 You can use the following command to install Trunk:
 
