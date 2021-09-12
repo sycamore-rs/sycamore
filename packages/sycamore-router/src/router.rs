@@ -71,6 +71,13 @@ impl Integration for HistoryIntegration {
                 let location = web_sys::window().unwrap().location();
 
                 let a = a.unchecked_into::<HtmlAnchorElement>();
+
+                // Check if a has `rel="external"`.
+                if a.rel() == "external" {
+                    // Use default browser behaviour.
+                    return;
+                }
+
                 let origin = a.origin();
                 let path = a.pathname();
                 let hash = a.hash();
