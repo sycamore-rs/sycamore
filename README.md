@@ -7,8 +7,7 @@
 
 ## What is Sycamore?
 
-Sycamore is a modern VDOM-less web library with fine-grained reactivity in
-[Rust](https://www.rust-lang.org/) and [WebAssembly](https://webassembly.org/).
+Sycamore is a modern VDOM-less web library with fine-grained reactivity.
 
 - **Lightning Speed**: Sycamore harnesses the full power of [Rust](https://www.rust-lang.org/) via
   [WebAssembly](https://webassembly.org/), giving you full control over performance.
