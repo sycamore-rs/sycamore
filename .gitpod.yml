@@ -6,7 +6,7 @@ ports:
     onOpen: open-preview
 
 tasks:
-  - init: cargo test --no-run && cd docs && trunk build # Prebuild tests and docs website
+  - init: cargo test --no-run && cd website && trunk build # Prebuild tests and docs website
 
 github:
   prebuilds:
