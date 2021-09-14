@@ -159,8 +159,11 @@ fn app() -> Template<G> {
 }
 
 fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
+    #[cfg(debug_assertions)]
+    {
+        console_error_panic_hook::set_once();
+        console_log::init_with_level(log::Level::Debug).unwrap();
+    }
 
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
     // Get dark mode from media query.
