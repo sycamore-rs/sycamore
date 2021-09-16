@@ -5,6 +5,7 @@ use std::hash::Hash;
 use std::rc::Rc;
 
 use ahash::AHashMap;
+use wasm_bindgen::prelude::*;
 
 use super::*;
 
@@ -131,10 +132,10 @@ where
                         // Pull from moved array.
                         if j >= mapped.borrow().len() {
                             debug_assert_eq!(mapped.borrow().len(), j);
-                            mapped.borrow_mut().push(temp[j].clone().unwrap());
+                            mapped.borrow_mut().push(temp[j].clone().unwrap_throw());
                             scopes.push(temp_scopes[j].clone());
                         } else {
-                            mapped.borrow_mut()[j] = temp[j].clone().unwrap();
+                            mapped.borrow_mut()[j] = temp[j].clone().unwrap_throw();
                             scopes[j] = temp_scopes[j].clone();
                         }
                     } else {
@@ -145,10 +146,10 @@ where
                         });
 
                         if mapped.borrow().len() > j {
-                            mapped.borrow_mut()[j] = new_mapped.unwrap();
+                            mapped.borrow_mut()[j] = new_mapped.unwrap_throw();
                             scopes[j] = Some(Rc::new(new_scope));
                         } else {
-                            mapped.borrow_mut().push(new_mapped.unwrap());
+                            mapped.borrow_mut().push(new_mapped.unwrap_throw());
                             scopes.push(Some(Rc::new(new_scope)));
                         }
                     }
