@@ -16,7 +16,7 @@ version = "0.6.0"
 [dependencies]
 sycamore = { path = "../sycamore", version = "=0.6.0" }
 sycamore-router-macro = { path = "../sycamore-router-macro", version = "=0.6.0" }
-wasm-bindgen = "0.2.76"
+wasm-bindgen = "0.2.78"
 
 [dependencies.web-sys]
 features = [
@@ -31,4 +31,4 @@ features = [
   "Url",
   "Window",
 ]
-version = "0.3.53"
+version = "0.3.55"
