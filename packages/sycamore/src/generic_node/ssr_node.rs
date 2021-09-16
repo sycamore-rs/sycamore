@@ -1,20 +1,26 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
 use ahash::AHashMap;
+use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{EventHandler, GenericNode};
 use crate::reactive::create_root;
 use crate::template::Template;
 
-static VOID_ELEMENTS: &[&str] = &[
-    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
-    "track", "wbr", "command", "keygen", "menuitem",
-];
+static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+    vec![
+        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
+        "source", "track", "wbr", "command", "keygen", "menuitem",
+    ]
+    .into_iter()
+    .collect()
+});
 
 /// Inner representation for [`SsrNode`].
 #[derive(Debug, Clone)]
@@ -321,7 +327,7 @@ impl WriteToString for Element {
         }
 
         // Check if self-closing tag (void-element).
-        if self.children.is_empty() && VOID_ELEMENTS.iter().any(|tag| tag == &self.name) {
+        if self.children.is_empty() && VOID_ELEMENTS.contains(self.name.as_str()) {
             s.push_str("/>");
         } else {
             s.push('>');
