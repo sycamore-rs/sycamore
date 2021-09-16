@@ -17,8 +17,8 @@ version = "0.6.0"
 ahash = "0.7.4"
 indexmap = { version = "1.7.0", features = ["std"] }
 smallvec = "1.6.1"
-serde = { version = "1.0.127", optional = true }
+serde = { version = "1.0.130", optional = true }
 
 [dependencies.web-sys]
 features = ["console"]
-version = "0.3.53"
+version = "0.3.55"
