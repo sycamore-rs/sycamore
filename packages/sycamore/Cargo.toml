@@ -18,6 +18,7 @@ ahash = "0.7.4"
 html-escape = { version = "0.2.9", optional = true }
 indexmap = { version = "1.7.0", features = ["std"] }
 js-sys = "0.3.53"
+once_cell = { version = "1.8.0", optional = true }
 smallvec = "1.6.1"
 sycamore-macro = { path = "../sycamore-macro", version = "=0.6.0" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "=0.6.0" }
@@ -47,7 +48,7 @@ wasm-bindgen-test = "0.3.26"
 [features]
 default = ["dom"]
 dom = []
-ssr = ["html-escape"]
+ssr = ["html-escape", "once_cell"]
 serde = ["sycamore-reactive/serde"]
 
 [[bench]]
