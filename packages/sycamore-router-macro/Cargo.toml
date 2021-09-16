@@ -20,7 +20,7 @@ proc-macro = true
 nom = "7.0.0"
 proc-macro2 = "1.0.29"
 quote = "1.0.9"
-syn = { version = "1.0.76", features = ["full"] }
+syn = { version = "1.0.76" }
 unicode-xid = "0.2.2"
 
 [dev-dependencies]
