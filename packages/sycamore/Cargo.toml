@@ -24,6 +24,11 @@ sycamore-macro = { path = "../sycamore-macro", version = "=0.6.0" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "=0.6.0" }
 wasm-bindgen = { version = "0.2.78", features = ["enable-interning"] }
 
+[dependencies.lexical]
+version = "6.0.0"
+default-features = false
+features = ["write-integers", "write-floats", "compact"]
+
 [dependencies.web-sys]
 features = [
   "console",

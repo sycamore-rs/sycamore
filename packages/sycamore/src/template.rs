@@ -150,10 +150,17 @@ impl<G: GenericNode> IntoTemplate<G> for Template<G> {
 
 impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
     fn create(&self) -> Template<G> {
+        // Workaround for specialization.
+        // Inspecting the type is optimized away at compile time.
         if let Some(str) = <dyn Any>::downcast_ref::<&str>(self) {
             Template::new_node(G::text_node(str))
         } else {
-            Template::new_node(G::text_node(&self.to_string()))
+            let t = if let Some(&n) = <dyn Any>::downcast_ref::<i32>(self) {
+                lexical::to_string(n)
+            } else {
+                self.to_string()
+            };
+            Template::new_node(G::text_node(&t))
         }
     }
 }
