@@ -136,7 +136,7 @@ fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
         div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors") {
             header::Header()
-            (template.get().as_ref().clone())
+            (template.get().as_ref())
         }
     }
 }

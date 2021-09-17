@@ -149,6 +149,12 @@ impl<G: GenericNode> IntoTemplate<G> for Template<G> {
     }
 }
 
+impl<G: GenericNode> IntoTemplate<G> for &Template<G> {
+    fn create(&self) -> Template<G> {
+        (*self).clone()
+    }
+}
+
 impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
     fn create(&self) -> Template<G> {
         // Workaround for specialization.
@@ -180,7 +186,7 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
 
         // Strings and string slices.
         specialize_as_ref_to_str!(&str, String, Rc<str>, Rc<String>, Cow<'_, str>);
-        
+
         // Numbers use lexical.
         specialize_num_with_lexical!(
             i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64
