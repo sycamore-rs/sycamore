@@ -1,6 +1,7 @@
 //! Result of the [`template`](crate::template!) macro.
 
 use std::any::Any;
+use std::borrow::Cow;
 use std::fmt;
 use std::rc::Rc;
 
@@ -153,22 +154,33 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
         // Workaround for specialization.
         // Inspecting the type is optimized away at compile time.
 
+        macro_rules! specialize_as_ref_to_str {
+            ($t: ty) => {{
+                if let Some(s) = <dyn Any>::downcast_ref::<$t>(self) {
+                    return Template::new_node(G::text_node(s.as_ref()));
+                }
+            }};
+            ($t: ty, $($rest: ty),*) => {{
+                specialize_as_ref_to_str!($t);
+                specialize_as_ref_to_str!($($rest),*);
+            }};
+        }
+
         macro_rules! specialize_num_with_lexical {
-            ($ty: ident) => {{
-                if let Some(&n) = <dyn Any>::downcast_ref::<$ty>(self) {
+            ($t: ty) => {{
+                if let Some(&n) = <dyn Any>::downcast_ref::<$t>(self) {
                     return Template::new_node(G::text_node(&lexical::to_string(n)));
                 }
             }};
-            ($ty: ident, $($rest: ident),*) => {{
-                specialize_num_with_lexical!($ty);
+            ($t: ty, $($rest: ty),*) => {{
+                specialize_num_with_lexical!($t);
                 specialize_num_with_lexical!($($rest),*);
             }};
         }
 
-        // String slice.
-        if let Some(str) = <dyn Any>::downcast_ref::<&str>(self) {
-            return Template::new_node(G::text_node(str));
-        }
+        // Strings and string slices.
+        specialize_as_ref_to_str!(&str, String, Rc<str>, Rc<String>, Cow<'_, str>);
+        
         // Numbers use lexical.
         specialize_num_with_lexical!(
             i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64
