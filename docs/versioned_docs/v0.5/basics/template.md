@@ -23,7 +23,7 @@ template! {
 }
 
 template! {
-    button(disabled="true") {
+    button(disabled=true) {
        "My button"
     }
 }
