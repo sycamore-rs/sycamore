@@ -152,15 +152,30 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
     fn create(&self) -> Template<G> {
         // Workaround for specialization.
         // Inspecting the type is optimized away at compile time.
-        if let Some(str) = <dyn Any>::downcast_ref::<&str>(self) {
-            Template::new_node(G::text_node(str))
-        } else {
-            let t = if let Some(&n) = <dyn Any>::downcast_ref::<i32>(self) {
-                lexical::to_string(n)
-            } else {
-                self.to_string()
-            };
-            Template::new_node(G::text_node(&t))
+
+        macro_rules! specialize_num_with_lexical {
+            ($ty: ident) => {{
+                if let Some(&n) = <dyn Any>::downcast_ref::<$ty>(self) {
+                    return Template::new_node(G::text_node(&lexical::to_string(n)));
+                }
+            }};
+            ($ty: ident, $($rest: ident),*) => {{
+                specialize_num_with_lexical!($ty);
+                specialize_num_with_lexical!($($rest),*);
+            }};
         }
+
+        // String slice.
+        if let Some(str) = <dyn Any>::downcast_ref::<&str>(self) {
+            return Template::new_node(G::text_node(str));
+        }
+        // Numbers use lexical.
+        specialize_num_with_lexical!(
+            i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64
+        );
+
+        // Generic slow-path.
+        let t = self.to_string();
+        Template::new_node(G::text_node(&t))
     }
 }
