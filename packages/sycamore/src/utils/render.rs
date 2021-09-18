@@ -78,12 +78,16 @@ fn insert_expression<G: GenericNode>(
         }
         TemplateType::Fragment(fragment) => {
             let mut v = Vec::new();
+            // normalize_incoming_fragment will subscribe to all dynamic nodes in the function so as
+            // to trigger the create_effect when the template changes.
             let dynamic = normalize_incoming_fragment(&mut v, fragment.as_ref(), unwrap_fragment);
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
                 create_effect(move || {
                     let value = Template::new_fragment(v.clone());
+                    // This will call normalize_incoming_fragment again, but this time with the
+                    // unwrap_fragment arg set to true.
                     insert_expression(
                         &parent,
                         &value,
@@ -92,9 +96,13 @@ fn insert_expression<G: GenericNode>(
                         true,
                         false,
                     );
-                    current = Some(value); // FIXME: should be return value of
-                                           // normalize_incoming_fragment called in recursive
-                                           // insert_expression
+                    current = Some(Template::new_fragment(
+                        value
+                            .flatten()
+                            .into_iter()
+                            .map(Template::new_node)
+                            .collect(),
+                    )); // TODO: do not perform unnecessary flattening of template
                 });
             } else {
                 let v = v

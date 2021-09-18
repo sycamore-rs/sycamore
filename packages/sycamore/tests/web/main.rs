@@ -191,6 +191,53 @@ fn template_interpolation_if_else() {
 }
 
 #[wasm_bindgen_test]
+fn template_interpolation_if_else_with_sibling() {
+    let show = Signal::new(true);
+    let node = cloned!((show) => template! {
+        div { "Before" }
+        (if *show.get() {
+            template! { p { "Hello Sycamore!" } }
+        } else {
+            template! { p { "" }}
+        })
+    });
+
+    sycamore::render_to(|| node, &test_container());
+
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Sycamore!"
+    );
+
+    show.set(false);
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        ""
+    );
+
+    show.set(true);
+    assert_eq!(
+        document()
+            .query_selector("p")
+            .unwrap()
+            .unwrap()
+            .text_content()
+            .unwrap(),
+        "Hello Sycamore!"
+    );
+}
+
+#[wasm_bindgen_test]
 fn template_interpolation_nested_reactivity() {
     let count = Signal::new(0);
     let text = cloned!((count) => template! { p { (count.get() ) } });
