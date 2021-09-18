@@ -56,7 +56,7 @@ Attributes (including classes and ids) can also be specified.
 ```rust
 template! {
     p(class="my-class", id="my-paragraph", aria-label="My paragraph")
-    button(disabled="true") {
+    button(disabled=true) {
        "My button"
     }
 }
