@@ -5,6 +5,7 @@ use std::{mem, ptr};
 
 use ahash::AHashSet;
 use smallvec::SmallVec;
+use wasm_bindgen::prelude::*;
 
 use super::*;
 
@@ -109,7 +110,11 @@ impl Drop for ReactiveScope {
         );
 
         for effect in &self.0.borrow().effects {
-            effect.borrow_mut().as_mut().unwrap().clear_dependencies();
+            effect
+                .borrow_mut()
+                .as_mut()
+                .unwrap_throw()
+                .clear_dependencies();
         }
 
         for cleanup in mem::take(&mut self.0.borrow_mut().cleanup) {
@@ -201,13 +206,13 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
 
                 // Upgrade running now to make sure running is valid for the whole duration of
                 // the effect.
-                let listener = listener.upgrade().unwrap();
+                let listener = listener.upgrade().unwrap_throw();
 
                 // Push new reactive scope.
                 listeners.borrow_mut().push(Rc::downgrade(&listener));
 
                 let mut listener_mut = listener.borrow_mut();
-                let listener_ref = listener_mut.as_mut().unwrap();
+                let listener_ref = listener_mut.as_mut().unwrap_throw();
 
                 let old_dependencies = mem::take(&mut listener_ref.dependencies);
 
@@ -222,7 +227,7 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                     effect();
                 });
                 let mut listener_mut = listener.borrow_mut();
-                let listener_ref = listener_mut.as_mut().unwrap();
+                let listener_ref = listener_mut.as_mut().unwrap_throw();
                 listener_ref.scope = new_scope;
 
                 // Unsubscribe from removed dependencies.
@@ -273,7 +278,7 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
             scope
                 .borrow_mut()
                 .last_mut()
-                .unwrap()
+                .unwrap_throw()
                 .add_effect_state(listener);
         } else {
             thread_local! {
@@ -357,7 +362,7 @@ where
         move || {
             if memo.borrow().as_ref().is_some() {
                 let memo = memo.borrow();
-                let memo = memo.as_ref().unwrap();
+                let memo = memo.as_ref().unwrap_throw();
                 let new_value = derived();
                 if !comparator(&memo.get_untracked(), &new_value) {
                     memo.set(new_value);
@@ -369,7 +374,7 @@ where
     });
 
     let memo = memo.borrow();
-    memo.as_ref().unwrap().handle()
+    memo.as_ref().unwrap_throw().handle()
 }
 
 /// An alternative to [`Signal::new`] that uses a reducer to get the next value.
@@ -451,7 +456,7 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     if let Ok(ret) = LISTENERS.try_with(|listeners| {
         let tmp = listeners.take();
 
-        let ret = f.take().unwrap()();
+        let ret = f.take().unwrap_throw()();
 
         *listeners.borrow_mut() = tmp;
 
@@ -459,7 +464,7 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     }) {
         ret
     } else {
-        g.take().unwrap()()
+        g.take().unwrap_throw()()
     }
 }
 
@@ -488,7 +493,7 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
             scope
                 .borrow_mut()
                 .last_mut()
-                .unwrap()
+                .unwrap_throw()
                 .add_cleanup(Box::new(f));
         } else {
             #[cfg(all(target_arch = "wasm32", debug_assertions))]
@@ -525,10 +530,10 @@ pub fn dependency_count() -> Option<usize> {
         listeners.borrow().last().map(|last_context| {
             last_context
                 .upgrade()
-                .expect("Running should be valid while inside reactive scope")
+                .expect_throw("Running should be valid while inside reactive scope")
                 .borrow()
                 .as_ref()
-                .unwrap()
+                .unwrap_throw()
                 .dependencies
                 .len()
         })

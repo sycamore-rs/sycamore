@@ -1,6 +1,8 @@
 use std::any::{Any, TypeId};
 use std::rc::Rc;
 
+use wasm_bindgen::prelude::*;
+
 use crate::*;
 
 /// Trait for any type of context.
@@ -47,7 +49,7 @@ pub fn use_context<T: Clone + 'static>() -> T {
                             return value.clone();
                         }
                     }
-                    current = current.unwrap().borrow().parent.0.upgrade();
+                    current = current.unwrap_throw().borrow().parent.0.upgrade();
                 }
                 panic!("context not found for type")
             }
@@ -64,7 +66,7 @@ pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) 
         scope.0.borrow_mut().context = Some(Box::new(Context { value }));
         scopes.borrow_mut().push(scope);
         let out = f();
-        let scope = scopes.borrow_mut().pop().unwrap();
+        let scope = scopes.borrow_mut().pop().unwrap_throw();
         on_cleanup(move || drop(scope));
         out
     })

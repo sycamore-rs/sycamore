@@ -4,6 +4,8 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
+use wasm_bindgen::prelude::*;
+
 use crate::generic_node::GenericNode;
 use std::any::Any;
 
@@ -25,7 +27,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// For a non panicking version, see [`NodeRef::try_get`].
     #[track_caller]
     pub fn get<T: GenericNode>(&self) -> T {
-        self.try_get().expect("NodeRef is not set")
+        self.try_get().expect_throw("NodeRef is not set")
     }
 
     /// Tries to get the T stored inside the [`NodeRef`] or `None` if it is not yet set or
@@ -45,7 +47,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// For a non panicking version, see [`NodeRef::try_get_raw`].
     #[track_caller]
     pub fn get_raw(&self) -> G {
-        self.try_get().expect("NodeRef is not set")
+        self.try_get().expect_throw("NodeRef is not set")
     }
 
     /// Tries to get the raw [`GenericNode`] stored inside the [`NodeRef`] or `None` if it is

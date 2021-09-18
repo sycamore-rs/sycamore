@@ -13,6 +13,8 @@ pub use effect::*;
 pub use iter::*;
 pub use signal::*;
 
+use wasm_bindgen::prelude::*;
+
 /// Creates a new reactive root / scope. Generally, you won't need this method as it is called
 /// automatically in `render`.
 ///
@@ -57,7 +59,7 @@ fn _create_root<'a>(callback: Box<dyn FnOnce() + 'a>) -> ReactiveScope {
         callback();
 
         // Pop the scope from the stack and return it.
-        scopes.borrow_mut().pop().unwrap()
+        scopes.borrow_mut().pop().unwrap_throw()
     })
 }
 

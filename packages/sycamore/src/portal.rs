@@ -26,7 +26,7 @@ pub fn portal(props: PortalProps<G>) -> Template<G> {
         let container = document
             .query_selector(selector)
             .unwrap_throw()
-            .expect("could not find element matching selector");
+            .expect_throw("could not find element matching selector");
 
         let children = children.flatten();
 

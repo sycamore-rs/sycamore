@@ -37,10 +37,10 @@ impl<T: 'static> StateHandle<T> {
 
                 last_context
                     .upgrade()
-                    .expect("Running should be valid while inside reactive scope")
+                    .expect_throw("Running should be valid while inside reactive scope")
                     .borrow_mut()
                     .as_mut()
-                    .unwrap()
+                    .unwrap_throw()
                     .dependencies
                     .insert(Dependency(signal));
             }

@@ -47,15 +47,19 @@ impl HistoryIntegration {
 
 impl Integration for HistoryIntegration {
     fn current_pathname(&self) -> String {
-        web_sys::window().unwrap().location().pathname().unwrap()
+        web_sys::window()
+            .unwrap_throw()
+            .location()
+            .pathname()
+            .unwrap_throw()
     }
 
     fn on_popstate(&self, f: Box<dyn FnMut()>) {
         let closure = Closure::wrap(f);
         web_sys::window()
-            .unwrap()
+            .unwrap_throw()
             .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())
-            .unwrap();
+            .unwrap_throw();
         closure.forget();
     }
 
@@ -63,12 +67,12 @@ impl Integration for HistoryIntegration {
         Box::new(|ev| {
             if let Some(a) = ev
                 .target()
-                .unwrap()
+                .unwrap_throw()
                 .unchecked_into::<Element>()
                 .closest("a[href]")
-                .unwrap()
+                .unwrap_throw()
             {
-                let location = web_sys::window().unwrap().location();
+                let location = web_sys::window().unwrap_throw().location();
 
                 let a = a.unchecked_into::<HtmlAnchorElement>();
 
@@ -88,20 +92,20 @@ impl Integration for HistoryIntegration {
                         // Same origin, different path.
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
-                            let pathname = pathname.borrow().clone().unwrap();
+                            let pathname = pathname.borrow().clone().unwrap_throw();
                             let path = path.strip_prefix(&base_pathname()).unwrap_or(&path);
                             pathname.set(path.to_string());
 
                             // Update History API.
-                            let window = web_sys::window().unwrap();
-                            let history = window.history().unwrap();
+                            let window = web_sys::window().unwrap_throw();
+                            let history = window.history().unwrap_throw();
                             history
                                 .push_state_with_url(
                                     &JsValue::UNDEFINED,
                                     "",
                                     Some(pathname.get().as_str()),
                                 )
-                                .unwrap();
+                                .unwrap_throw();
                             window.scroll_to_with_x_and_y(0.0, 0.0);
                         });
                     } else if Ok(&hash) != location.hash().as_ref() {
@@ -120,15 +124,15 @@ impl Integration for HistoryIntegration {
 /// Gets the base pathname from `document.baseURI`.
 fn base_pathname() -> String {
     match web_sys::window()
-        .unwrap()
+        .unwrap_throw()
         .document()
-        .unwrap()
+        .unwrap_throw()
         .query_selector("base[href]")
     {
         Ok(Some(base)) => {
             let base = base.unchecked_into::<HtmlBaseElement>().href();
 
-            let url = web_sys::Url::new(&base).unwrap();
+            let url = web_sys::Url::new(&base).unwrap_throw();
             url.pathname()
         }
         _ => "".to_string(),
@@ -187,7 +191,7 @@ where
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
         *pathname.borrow_mut() = Some(Signal::new(path.to_string()));
     });
-    let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap());
+    let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
     on_cleanup(|| {
@@ -217,13 +221,13 @@ where
         let path = path.get();
         let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
         if route_signal.borrow().is_some() {
-            route_signal.borrow().as_ref().unwrap().set(route);
+            route_signal.borrow().as_ref().unwrap_throw().set(route);
         } else {
             *route_signal.borrow_mut() = Some(Signal::new(route));
         }
     }));
     // Delegate click events from child <a> tags.
-    let tmp = render.take().unwrap()(route_signal.borrow().as_ref().unwrap().handle());
+    let tmp = render.take().unwrap_throw()(route_signal.borrow().as_ref().unwrap_throw().handle());
     if let Some(node) = tmp.as_node() {
         node.event("click", integration.click_handler());
     } else {
@@ -294,16 +298,16 @@ pub fn navigate(url: &str) {
             "navigate can only be used with a BrowserRouter"
         );
 
-        let pathname = pathname.borrow().clone().unwrap();
+        let pathname = pathname.borrow().clone().unwrap_throw();
         let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
 
         // Update History API.
-        let window = web_sys::window().unwrap();
-        let history = window.history().unwrap();
+        let window = web_sys::window().unwrap_throw();
+        let history = window.history().unwrap_throw();
         history
             .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str()))
-            .unwrap();
+            .unwrap_throw();
         window.scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
