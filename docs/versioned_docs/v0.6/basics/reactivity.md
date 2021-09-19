@@ -147,7 +147,7 @@ We'll find that any `Signal`s we track in the `create_effect` won't be tracked p
 
 ```rust
 create_effect(move || {
-	let _ = signal.get(); // Where `signal` is a reactive dependency
+    let _ = signal.get(); // Where `signal` is a reactive dependency
     wasm_bindgen_futures::spawn_local(async move {
         // This scope is not tracked because spawn_local runs on the next microtask tick (in other words, some time later).
     };
