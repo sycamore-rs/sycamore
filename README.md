@@ -68,4 +68,3 @@ you!
 <a href="https://github.com/sycamore-rs/sycamore/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=sycamore-rs/sycamore" />
 </a>
-```
