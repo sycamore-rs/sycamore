@@ -47,9 +47,10 @@ impl ToTokens for Element {
             attributes,
             children,
         } = self;
-
+        
+        let tag = tag_name.to_string();
         let mut quoted = quote! {
-            let __el = #tag_name;
+            let __el = ::sycamore::generic_node::GenericNode::element(#tag);
         };
 
         let mut has_dangerously_set_inner_html = false;
@@ -183,18 +184,6 @@ impl Parse for TagName {
         }
 
         Ok(Self { tag, extended })
-    }
-}
-
-impl ToTokens for TagName {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let tag_str = self.to_string();
-
-        let quoted = quote! {
-            ::sycamore::generic_node::GenericNode::element(#tag_str)
-        };
-
-        tokens.extend(quoted);
     }
 }
 

@@ -22,8 +22,8 @@ use syn::{Ident, LitStr, Result, Token};
 pub enum HtmlType {
     Component,
     Element,
-    Text,
     Splice,
+    Text,
 }
 
 pub enum HtmlTree {
