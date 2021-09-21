@@ -198,6 +198,15 @@ impl<T: 'static> Signal<T> {
     }
 }
 
+impl<T> Default for Signal<T>
+where
+    T: 'static + Default,
+{
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
 impl<T: 'static> Deref for Signal<T> {
     type Target = StateHandle<T>;
 
