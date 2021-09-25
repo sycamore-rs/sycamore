@@ -1,5 +1,21 @@
 # Changelog
 
+## ✨ **0.6.1** _(2021-09-25)_
+
+- #### 🛠 Fixes
+
+  - [Disable `full` feature on `syn` to reduce compile times.](https://github.com/sycamore-rs/sycamore/pull/245)
+  - [Use a global `HashSet` for void elements lookup in SSR.](https://github.com/sycamore-rs/sycamore/pull/246)
+  - [Remove part of formatting machinery from `sycamore` and `sycamore-reactive` to reduce binary size.](https://github.com/sycamore-rs/sycamore/pull/247)
+  - [Fix panic on updating dynamic node inside a template fragment.](https://github.com/sycamore-rs/sycamore/pull/251)
+  - [Implement `Default` for `Signal`.](https://github.com/sycamore-rs/sycamore/pull/257)
+  - [Implement `Default` for `StateHandle`.](https://github.com/sycamore-rs/sycamore/pull/260)
+
+- #### 📃 Documentation
+
+  - [Update docs to use boolean for disabled attribute on button.](https://github.com/sycamore-rs/sycamore/pull/248)
+  - [Add documentation on topological dependency tracking.](https://github.com/sycamore-rs/sycamore/pull/253)
+
 ## ✨ **0.6.0** _(2021-09-12)_
 
 Release post: https://sycamore-rs.netlify.app/news/announcing-v0.6.0
