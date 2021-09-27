@@ -153,6 +153,10 @@ impl GenericNode for SsrNode {
         // Noop.
     }
 
+    fn remove_property(&self, _name: &str) {
+        // Noop.
+    }
+
     fn append_child(&self, child: &Self) {
         child.set_parent(Rc::downgrade(&self.0));
 
