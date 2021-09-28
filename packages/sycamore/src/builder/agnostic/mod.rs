@@ -1,3 +1,4 @@
+use crate::component::Component;
 use crate::generic_node::GenericNode;
 use crate::noderef::NodeRef;
 use crate::template::Template;
@@ -9,6 +10,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 pub mod prelude {
+    pub use super::component;
     pub use super::node;
 }
 
@@ -19,6 +21,22 @@ where
     NodeBuilder {
         element: G::element(tag),
     }
+}
+
+pub fn component<G, C>(props: C::Props) -> Template<G>
+where
+    G: GenericNode,
+    C: Component<G>,
+{
+    C::__create_component(props)
+}
+
+#[cfg_attr(debug_assertions, derive(Debug))]
+pub struct NodeBuilder<G>
+where
+    G: GenericNode,
+{
+    element: G,
 }
 
 impl<G> NodeBuilder<G>
@@ -37,14 +55,14 @@ where
         self
     }
 
-    pub fn add_dyn_only_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
-        render::insert(&self.element, Template::new_dyn(child), None, None, false);
+    pub fn add_only_child(&self, child: Template<G>) -> &Self {
+        render::insert(&self.element, child, None, None, false);
 
         self
     }
 
-    pub fn add_only_child(&self, child: Template<G>) -> &Self {
-        render::insert(&self.element, child, None, None, false);
+    pub fn add_dyn_only_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
+        render::insert(&self.element, Template::new_dyn(child), None, None, false);
 
         self
     }
@@ -63,6 +81,15 @@ where
         let memo = create_memo(text);
 
         self.add_dyn_child(move || Template::new_node(G::text_node(memo.get().as_ref().as_ref())));
+
+        self
+    }
+
+    pub fn add_component<C>(&self, props: C::Props) -> &Self
+    where
+        C: Component<G>,
+    {
+        self.add_child(C::__create_component(props));
 
         self
     }
@@ -262,12 +289,4 @@ where
     pub fn build(&self) -> Template<G> {
         Template::new_node(self.element.to_owned())
     }
-}
-
-#[cfg_attr(debug_assertions, derive(Debug))]
-pub struct NodeBuilder<G>
-where
-    G: GenericNode,
-{
-    element: G,
 }
