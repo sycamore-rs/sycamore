@@ -31,8 +31,16 @@ where
         self
     }
 
-    pub fn add_dyn_child(&self, _child: StateHandle<Template<G>>) -> &Self {
-        todo!("Implement add_dyn_child")
+    pub fn add_dyn_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
+        render::insert(&self.element, Template::new_dyn(child), None, None, true);
+
+        self
+    }
+
+    pub fn add_dyn_only_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
+        render::insert(&self.element, Template::new_dyn(child), None, None, false);
+
+        self
     }
 
     pub fn add_only_child(&self, child: Template<G>) -> &Self {
