@@ -55,6 +55,18 @@ where
         self
     }
 
+    pub fn add_dyn_text<F, O>(&self, text: F) -> &Self
+    where
+        F: FnMut() -> O + 'static,
+        O: AsRef<str> + 'static,
+    {
+        let memo = create_memo(text);
+
+        self.add_dyn_child(move || Template::new_node(G::text_node(memo.get().as_ref().as_ref())));
+
+        self
+    }
+
     pub fn set_id(&self, id: impl AsRef<str>) -> &Self {
         self.set_attribute("id", id.as_ref())
     }
