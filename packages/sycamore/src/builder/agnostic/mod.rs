@@ -25,29 +25,33 @@ impl<G> NodeBuilder<G>
 where
     G: GenericNode,
 {
-    pub fn add_child(self, child: Template<G>) -> Self {
+    pub fn add_child(&self, child: Template<G>) -> &Self {
         render::insert(&self.element, child, None, None, true);
 
         self
     }
 
-    pub fn add_only_child(self, child: Template<G>) -> Self {
+    pub fn add_dyn_child(&self, _child: StateHandle<Template<G>>) -> &Self {
+        todo!("Implement add_dyn_child")
+    }
+
+    pub fn add_only_child(&self, child: Template<G>) -> &Self {
         render::insert(&self.element, child, None, None, false);
 
         self
     }
 
-    pub fn add_text(self, text: impl AsRef<str>) -> Self {
+    pub fn add_text(&self, text: impl AsRef<str>) -> &Self {
         self.element.append_child(&G::text_node(text.as_ref()));
 
         self
     }
 
-    pub fn set_id(self, id: impl AsRef<str>) -> Self {
+    pub fn set_id(&self, id: impl AsRef<str>) -> &Self {
         self.set_attribute("id", id.as_ref())
     }
 
-    pub fn set_attribute<N, Va>(self, name: N, value: Va) -> Self
+    pub fn set_attribute<N, Va>(&self, name: N, value: Va) -> &Self
     where
         N: AsRef<str>,
         Va: AsRef<str>,
@@ -57,7 +61,7 @@ where
         self
     }
 
-    pub fn set_dyn_attribute<N, T>(self, name: N, value: StateHandle<Option<T>>) -> Self
+    pub fn set_dyn_attribute<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
     where
         N: ToString,
         T: ToString,
@@ -79,7 +83,7 @@ where
         self
     }
 
-    pub fn set_property<N, Va>(self, name: N, property: Va) -> Self
+    pub fn set_property<N, Va>(&self, name: N, property: Va) -> &Self
     where
         N: AsRef<str>,
         Va: Into<JsValue>,
@@ -89,7 +93,7 @@ where
         self
     }
 
-    pub fn set_dyn_property<N, T>(self, name: N, value: StateHandle<Option<T>>) -> Self
+    pub fn set_dyn_property<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
     where
         N: ToString,
         T: ToString,
@@ -111,13 +115,13 @@ where
         self
     }
 
-    pub fn add_class(self, class: impl ToString) -> Self {
+    pub fn add_class(&self, class: impl ToString) -> &Self {
         self.element.add_class(class.to_string().as_ref());
 
         self
     }
 
-    pub fn add_dyn_class(self, class: impl ToString, apply: StateHandle<bool>) -> Self {
+    pub fn add_dyn_class(&self, class: impl ToString, apply: StateHandle<bool>) -> &Self {
         let class = class.to_string();
         let element = self.element.clone();
 
@@ -134,14 +138,14 @@ where
         self
     }
 
-    pub fn set_styles(mut self, styles: HashMap<String, String>) -> Self {
+    pub fn set_styles(&self, styles: HashMap<String, String>) -> &Self {
         let styles = styles
             .iter()
             .map(|(k, v)| format!("{}: {}", k, v))
             .collect::<Vec<_>>()
             .join(";");
 
-        self = self.set_attribute("style", styles);
+        self.set_attribute("style", styles);
 
         self
     }
@@ -149,14 +153,14 @@ where
     // Need the ability to get attributes so one can filter out the
     // applied attribute to add/remove it.
     pub fn set_dyn_style(
-        self,
+        &self,
         _style: (impl ToString, impl ToString),
         _apply: StateHandle<bool>,
-    ) -> Self {
+    ) -> &Self {
         todo!("Implement set_dyn_style");
     }
 
-    pub fn add_event_listener<E, H>(self, event: E, handler: H) -> Self
+    pub fn add_event_listener<E, H>(&self, event: E, handler: H) -> &Self
     where
         E: AsRef<str>,
         H: Fn(web_sys::Event) + 'static,
@@ -170,11 +174,11 @@ where
     // to remove_event_listener which does not drop the closure, hence, can be
     // added again when needed.
     pub fn add_dyn_event_listener<E, H>(
-        self,
+        &self,
         _event: E,
         _handler: H,
         _listen: StateHandle<bool>,
-    ) -> Self
+    ) -> &Self
     where
         E: AsRef<str>,
         H: Fn(web_sys::Event) + 'static,
@@ -182,12 +186,12 @@ where
         todo!("Implement dyn event listener");
     }
 
-    pub fn bind_value(mut self, sub: Signal<String>) -> Self {
+    pub fn bind_value(&self, sub: Signal<String>) -> &Self {
         let sub_handle = create_memo(cloned!((sub) => move || {
             Some((*sub.get()).clone())
         }));
 
-        self = self.set_dyn_property("value", sub_handle);
+        self.set_dyn_property("value", sub_handle);
 
         self.add_event_listener("input", move |e| {
             let value = Reflect::get(
@@ -204,12 +208,12 @@ where
         })
     }
 
-    pub fn bind_checked(mut self, sub: Signal<bool>) -> Self {
+    pub fn bind_checked(&self, sub: Signal<bool>) -> &Self {
         let sub_handle = create_memo(cloned!((sub) => move || {
             Some((*sub.get()).clone())
         }));
 
-        self = self.set_dyn_property("checked", sub_handle);
+        self.set_dyn_property("checked", sub_handle);
 
         self.add_event_listener("change", move |e| {
             let value = Reflect::get(
@@ -229,14 +233,14 @@ where
         })
     }
 
-    pub fn bind_ref(self, node_ref: NodeRef<G>) -> Self {
+    pub fn bind_ref(&self, node_ref: NodeRef<G>) -> &Self {
         node_ref.set(self.element.clone());
 
         self
     }
 
-    pub fn build(self) -> Template<G> {
-        Template::new_node(self.element)
+    pub fn build(&self) -> Template<G> {
+        Template::new_node(self.element.to_owned())
     }
 }
 
