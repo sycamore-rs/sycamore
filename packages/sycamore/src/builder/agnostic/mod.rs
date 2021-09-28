@@ -43,62 +43,62 @@ impl<G> NodeBuilder<G>
 where
     G: GenericNode,
 {
-    pub fn add_child(&self, child: Template<G>) -> &Self {
+    pub fn child(&self, child: Template<G>) -> &Self {
         render::insert(&self.element, child, None, None, true);
 
         self
     }
 
-    pub fn add_dyn_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
+    pub fn dyn_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
         render::insert(&self.element, Template::new_dyn(child), None, None, true);
 
         self
     }
 
-    pub fn add_only_child(&self, child: Template<G>) -> &Self {
+    pub fn only_child(&self, child: Template<G>) -> &Self {
         render::insert(&self.element, child, None, None, false);
 
         self
     }
 
-    pub fn add_dyn_only_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
+    pub fn dyn_only_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
         render::insert(&self.element, Template::new_dyn(child), None, None, false);
 
         self
     }
 
-    pub fn add_text(&self, text: impl AsRef<str>) -> &Self {
+    pub fn text(&self, text: impl AsRef<str>) -> &Self {
         self.element.append_child(&G::text_node(text.as_ref()));
 
         self
     }
 
-    pub fn add_dyn_text<F, O>(&self, text: F) -> &Self
+    pub fn dyn_text<F, O>(&self, text: F) -> &Self
     where
         F: FnMut() -> O + 'static,
         O: AsRef<str> + 'static,
     {
         let memo = create_memo(text);
 
-        self.add_dyn_child(move || Template::new_node(G::text_node(memo.get().as_ref().as_ref())));
+        self.dyn_child(move || Template::new_node(G::text_node(memo.get().as_ref().as_ref())));
 
         self
     }
 
-    pub fn add_component<C>(&self, props: C::Props) -> &Self
+    pub fn component<C>(&self, props: C::Props) -> &Self
     where
         C: Component<G>,
     {
-        self.add_child(C::__create_component(props));
+        self.child(C::__create_component(props));
 
         self
     }
 
-    pub fn set_id(&self, id: impl AsRef<str>) -> &Self {
-        self.set_attribute("id", id.as_ref())
+    pub fn id(&self, id: impl AsRef<str>) -> &Self {
+        self.attr("id", id.as_ref())
     }
 
-    pub fn set_attribute<N, Va>(&self, name: N, value: Va) -> &Self
+    pub fn attr<N, Va>(&self, name: N, value: Va) -> &Self
     where
         N: AsRef<str>,
         Va: AsRef<str>,
@@ -108,7 +108,7 @@ where
         self
     }
 
-    pub fn set_dyn_attribute<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
+    pub fn dyn_attr<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
     where
         N: ToString,
         T: ToString,
@@ -130,7 +130,7 @@ where
         self
     }
 
-    pub fn set_property<N, Va>(&self, name: N, property: Va) -> &Self
+    pub fn prop<N, Va>(&self, name: N, property: Va) -> &Self
     where
         N: AsRef<str>,
         Va: Into<JsValue>,
@@ -140,7 +140,7 @@ where
         self
     }
 
-    pub fn set_dyn_property<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
+    pub fn dyn_prop<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
     where
         N: ToString,
         T: ToString,
@@ -162,7 +162,7 @@ where
         self
     }
 
-    pub fn add_class(&self, class: impl ToString) -> &Self {
+    pub fn class(&self, class: impl ToString) -> &Self {
         self.element.add_class(class.to_string().as_ref());
 
         self
@@ -185,21 +185,21 @@ where
         self
     }
 
-    pub fn set_styles(&self, styles: HashMap<String, String>) -> &Self {
+    pub fn styles(&self, styles: HashMap<String, String>) -> &Self {
         let styles = styles
             .iter()
             .map(|(k, v)| format!("{}: {}", k, v))
             .collect::<Vec<_>>()
             .join(";");
 
-        self.set_attribute("style", styles);
+        self.attr("style", styles);
 
         self
     }
 
     // Need the ability to get attributes so one can filter out the
     // applied attribute to add/remove it.
-    pub fn set_dyn_style(
+    pub fn dyn_style(
         &self,
         _style: (impl ToString, impl ToString),
         _apply: StateHandle<bool>,
@@ -207,7 +207,7 @@ where
         todo!("Implement set_dyn_style");
     }
 
-    pub fn add_event_listener<E, H>(&self, event: E, handler: H) -> &Self
+    pub fn event_listener<E, H>(&self, event: E, handler: H) -> &Self
     where
         E: AsRef<str>,
         H: Fn(web_sys::Event) + 'static,
@@ -220,7 +220,7 @@ where
     // We need to store the closure somewhere we can retrieve so we can pass it
     // to remove_event_listener which does not drop the closure, hence, can be
     // added again when needed.
-    pub fn add_dyn_event_listener<E, H>(
+    pub fn dyn_event_listener<E, H>(
         &self,
         _event: E,
         _handler: H,
@@ -238,9 +238,9 @@ where
             Some((*sub.get()).clone())
         }));
 
-        self.set_dyn_property("value", sub_handle);
+        self.dyn_prop("value", sub_handle);
 
-        self.add_event_listener("input", move |e| {
+        self.event_listener("input", move |e| {
             let value = Reflect::get(
                 &e.target()
                     .expect("Target missing on input event.")
@@ -260,9 +260,9 @@ where
             Some((*sub.get()).clone())
         }));
 
-        self.set_dyn_property("checked", sub_handle);
+        self.dyn_prop("checked", sub_handle);
 
-        self.add_event_listener("change", move |e| {
+        self.event_listener("change", move |e| {
             let value = Reflect::get(
                 &e.target().expect("Target missing on change event."),
                 &"checked".into(),
