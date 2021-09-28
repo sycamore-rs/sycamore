@@ -163,7 +163,7 @@ impl GenericNode for SsrNode {
 
             *classes = class_set.drain().intersperse(" ").collect();
         } else {
-            attributes.insert("class", class);
+            attributes.insert("class".to_string(), class.to_owned());
         }
     }
 
