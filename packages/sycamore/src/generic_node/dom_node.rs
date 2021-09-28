@@ -177,6 +177,22 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().set_class_name(value);
     }
 
+    fn add_class(&self, class: &str) {
+        self.node
+            .unchecked_ref::<Element>()
+            .class_list()
+            .add_1(class)
+            .unwrap_throw();
+    }
+
+    fn remove_class(&self, class: &str) {
+        self.node
+            .unchecked_ref::<Element>()
+            .class_list()
+            .remove_1(class)
+            .unwrap_throw();
+    }
+
     fn set_property(&self, name: &str, value: &JsValue) {
         assert!(js_sys::Reflect::set(&self.node, &name.into(), value).unwrap_throw());
     }

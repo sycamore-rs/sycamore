@@ -3,6 +3,7 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use ahash::AHashMap;
@@ -147,6 +148,38 @@ impl GenericNode for SsrNode {
 
     fn set_class_name(&self, value: &str) {
         self.set_attribute("class", value);
+    }
+
+    fn add_class(&self, class: &str) {
+        let mut attributes = &mut self.unwrap_element().borrow_mut().attributes;
+
+        let classes = attributes.get_mut("class");
+
+        if let Some(classes) = classes {
+            // Make sure classes are unique.
+            let mut class_set = HashSet::<_>::from_iter(classes.split(" "));
+
+            class_set.insert(class);
+
+            *classes = class_set.drain().intersperse(" ").collect();
+        } else {
+            attributes.insert("class", class);
+        }
+    }
+
+    fn remove_class(&self, class: &str) {
+        let mut attributes = &mut self.unwrap_element().borrow_mut().attributes;
+
+        let classes = attributes.get_mut("class");
+
+        if let Some(classes) = classes {
+            // Make sure classes are unique.
+            let mut class_set = HashSet::<_>::from_iter(classes.split(" "));
+
+            class_set.remove(class);
+
+            *classes = class_set.drain().intersperse(" ").collect();
+        }
     }
 
     fn set_property(&self, _name: &str, _value: &JsValue) {
