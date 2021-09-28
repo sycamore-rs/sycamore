@@ -168,7 +168,7 @@ where
         self
     }
 
-    pub fn add_dyn_class(&self, class: impl ToString, apply: StateHandle<bool>) -> &Self {
+    pub fn dyn_class(&self, class: impl ToString, apply: StateHandle<bool>) -> &Self {
         let class = class.to_string();
         let element = self.element.clone();
 
