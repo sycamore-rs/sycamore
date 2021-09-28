@@ -108,6 +108,19 @@ where
         self
     }
 
+    pub fn bool_attr<N>(&self, name: N, value: bool) -> &Self
+    where
+        N: AsRef<str>,
+    {
+        if value {
+            self.attr(name.as_ref(), "");
+        } else {
+            self.element.remove_attribute(name.as_ref());
+        }
+
+        self
+    }
+
     pub fn dyn_attr<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
     where
         N: ToString,
@@ -122,6 +135,27 @@ where
 
             if let Some(v) = &*v {
                 element.set_attribute(name.as_ref(), v.to_string().as_ref());
+            } else {
+                element.remove_attribute(name.as_ref());
+            }
+        }));
+
+        self
+    }
+
+    pub fn dyn_bool_attr<N>(&self, name: N, value: StateHandle<bool>) -> &Self
+    where
+        N: ToString,
+    {
+        let element = self.element.clone();
+
+        let name = name.to_string();
+
+        cloned!((name) => create_effect(move || {
+            let v = value.get();
+
+            if *v {
+                element.set_attribute(name.as_ref(), "");
             } else {
                 element.remove_attribute(name.as_ref());
             }
