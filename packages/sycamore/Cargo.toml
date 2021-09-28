@@ -35,6 +35,7 @@ features = [
   "Comment",
   "Document",
   "DocumentFragment",
+  "DomTokenList",
   "Element",
   "Event",
   "HtmlElement",
@@ -55,6 +56,7 @@ default = ["dom"]
 dom = []
 ssr = ["html-escape", "once_cell"]
 serde = ["sycamore-reactive/serde"]
+experimental-builder-agnostic = []
 
 [[bench]]
 harness = false
