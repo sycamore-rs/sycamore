@@ -151,7 +151,7 @@ impl GenericNode for SsrNode {
     }
 
     fn add_class(&self, class: &str) {
-        let mut attributes = &mut self.unwrap_element().borrow_mut().attributes;
+        let attributes = &mut self.unwrap_element().borrow_mut().attributes;
 
         let classes = attributes.get_mut("class");
 
@@ -168,7 +168,7 @@ impl GenericNode for SsrNode {
     }
 
     fn remove_class(&self, class: &str) {
-        let mut attributes = &mut self.unwrap_element().borrow_mut().attributes;
+        let attributes = &mut self.unwrap_element().borrow_mut().attributes;
 
         let classes = attributes.get_mut("class");
 
@@ -178,7 +178,7 @@ impl GenericNode for SsrNode {
 
             class_set.remove(class);
 
-            *classes = class_set.drain().intersperse(" ").collect();
+            *classes = class_set.drain().collect::<Vec<_>>().join(" ");
         }
     }
 
