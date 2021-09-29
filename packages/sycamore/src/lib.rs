@@ -23,6 +23,7 @@
 pub use sycamore_macro::{component, node, template};
 pub use sycamore_reactive as reactive;
 
+#[cfg(feature = "experimental-builder-agnostic")]
 pub mod builder;
 pub mod component;
 pub mod context;
