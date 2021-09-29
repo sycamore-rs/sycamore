@@ -5,12 +5,14 @@ use crate::template::Template;
 use crate::utils::render;
 use js_sys::Reflect;
 use std::collections::HashMap;
+use std::iter::FromIterator;
 use sycamore_reactive::{cloned, create_effect, create_memo, Signal, StateHandle};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 pub mod prelude {
     pub use super::component;
+    pub use super::fragment;
     pub use super::node;
 }
 
@@ -29,6 +31,13 @@ where
     C: Component<G>,
 {
     C::__create_component(props)
+}
+
+pub fn fragment<G, const N: usize>(parts: [Template<G>; N]) -> Template<G>
+where
+    G: GenericNode,
+{
+    Template::new_fragment(Vec::from_iter(parts.to_vec()))
 }
 
 #[cfg_attr(debug_assertions, derive(Debug))]
