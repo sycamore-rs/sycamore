@@ -1,3 +1,5 @@
+//! HTML-specific builder functions.
+
 use macro_rules_attribute::apply;
 use paste::paste;
 

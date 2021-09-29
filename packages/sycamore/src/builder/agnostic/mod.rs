@@ -1,3 +1,5 @@
+//! The renderer-agnostic API.
+
 use crate::component::Component;
 use crate::generic_node::GenericNode;
 use crate::noderef::NodeRef;
@@ -16,6 +18,13 @@ pub mod prelude {
     pub use super::node;
 }
 
+/// Create [`NodeBuilder`] to create UI elements.
+///
+/// # Example
+/// ```compile_fail
+/// node("div").build();
+/// node("a").build();
+/// ```
 pub fn node<G>(tag: &'static str) -> NodeBuilder<G>
 where
     G: GenericNode,
@@ -25,6 +34,22 @@ where
     }
 }
 
+/// Instantiate a component as a [`Template`].
+///
+/// # Example
+/// ```
+/// use sycamore::prelude::*;
+///
+/// #[component(MyComponent<G>)]
+/// fn my_component() -> Template<G> {
+///     h1().text("I am a component").build()
+/// }
+///
+/// # fn view<G: GenericNode>() -> Template<G> {
+///     component::<_, MyComponent<_>>(())
+/// # }
+/// ```
+
 pub fn component<G, C>(props: C::Props) -> Template<G>
 where
     G: GenericNode,
@@ -33,6 +58,19 @@ where
     C::__create_component(props)
 }
 
+/// Create a [`Template`] from an array of [`Template`].
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+///
+/// # fn _test<G: GenericNode>() -> Template<G> {
+/// fragment([
+///     div().build(),
+///     div().build()
+/// ])
+/// # }
+/// ```
 pub fn fragment<G, const N: usize>(parts: [Template<G>; N]) -> Template<G>
 where
     G: GenericNode,
@@ -40,6 +78,7 @@ where
     Template::new_fragment(Vec::from_iter(parts.to_vec()))
 }
 
+/// The main type powering the builder API.
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub struct NodeBuilder<G>
 where
@@ -52,36 +91,100 @@ impl<G> NodeBuilder<G>
 where
     G: GenericNode,
 {
+    /// Add a child [`Template`]
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    ///  div()
+    ///     .child(h1().text("I am a child").build())
+    ///     .build()
+    /// # }
+    /// ```
     pub fn child(&self, child: Template<G>) -> &Self {
         render::insert(&self.element, child, None, None, true);
 
         self
     }
 
+    /// Add a dynamic child [`Template`]
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let visible = Signal::new(true);
+    ///
+    ///  div()
+    ///     .dyn_child(
+    ///         move || {
+    ///             if *visible.get() {
+    ///                 h1().text("I am a child").build()
+    ///             } else { Template::empty() }
+    ///         }
+    ///     )
+    ///     .build()
+    /// # }
+    /// ```
     pub fn dyn_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
         render::insert(&self.element, Template::new_dyn(child), None, None, true);
 
         self
     }
 
+    /// Same as [`child`](NodeBuilder::child), but promising to only add one, and only
+    /// one child, which enables an optimization.
     pub fn only_child(&self, child: Template<G>) -> &Self {
         render::insert(&self.element, child, None, None, false);
 
         self
     }
 
+    /// Same as [`dyn_child`](NodeBuilder::dyn_child), but promising to only add one, and only
+    /// one child, which enables an optimization.
     pub fn dyn_only_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
         render::insert(&self.element, Template::new_dyn(child), None, None, false);
 
         self
     }
 
+    /// Adds a text node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// h1().text("I am text").build()
+    /// }
+    /// ```
     pub fn text(&self, text: impl AsRef<str>) -> &Self {
         self.element.append_child(&G::text_node(text.as_ref()));
 
         self
     }
 
+    /// Adds a dynamic text node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let required = Signal::new(false);
+    ///
+    /// h1()
+    ///     .text("Email")
+    ///     .dyn_text(
+    ///         move || {
+    ///             if *required.get() { " *" } else { "" }
+    ///         }
+    ///     ).build()
+    /// }
+    /// ```
     pub fn dyn_text<F, O>(&self, text: F) -> &Self
     where
         F: FnMut() -> O + 'static,
@@ -94,6 +197,21 @@ where
         self
     }
 
+    /// Renders a component as a child.
+    ///
+    /// # Example
+    /// ```
+    /// use sycamore::prelude::*;
+    ///
+    /// #[component(MyComponent<G>)]
+    /// fn my_component() -> Template<G> {
+    ///     h1().text("My component").build()
+    /// }
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// div().component::<MyComponent<_>>(()).build()
+    /// }
+    /// ```
     pub fn component<C>(&self, props: C::Props) -> &Self
     where
         C: Component<G>,
@@ -103,10 +221,30 @@ where
         self
     }
 
+    /// Convinience function for adding an `id` to a node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// button().id("my-button").build()
+    /// # }
+    /// ```
     pub fn id(&self, id: impl AsRef<str>) -> &Self {
         self.attr("id", id.as_ref())
     }
 
+    /// Set an attribute on the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// button().attr("type", "submit").build()
+    /// # }
+    /// ```
     pub fn attr<N, Va>(&self, name: N, value: Va) -> &Self
     where
         N: AsRef<str>,
@@ -117,6 +255,16 @@ where
         self
     }
 
+    /// Set a boolean attribute on the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// input().bool_attr("required", true).build()
+    /// # }
+    /// ```
     pub fn bool_attr<N>(&self, name: N, value: bool) -> &Self
     where
         N: AsRef<str>,
@@ -130,6 +278,23 @@ where
         self
     }
 
+    /// Adds a dynamic attribute on the node.
+    ///
+    /// If `value` is `None`, the attribute will be completely removed
+    /// from the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let input_type = Signal::new(Some("text"));
+    ///
+    /// input()
+    ///     .dyn_attr("type", input_type.handle())
+    ///     .build()
+    /// }
+    /// ```
     pub fn dyn_attr<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
     where
         N: ToString,
@@ -152,6 +317,19 @@ where
         self
     }
 
+    /// Adds a dynamic boolean attribute on the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let required = Signal::new(true);
+    ///
+    /// input()
+    ///     .dyn_bool_attr("required", required.handle()).build()
+    /// }
+    /// ```
     pub fn dyn_bool_attr<N>(&self, name: N, value: StateHandle<bool>) -> &Self
     where
         N: ToString,
@@ -173,6 +351,16 @@ where
         self
     }
 
+    /// Set a property on the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// input().prop("value", "I am the value set.").build()
+    /// # }
+    /// ```
     pub fn prop<N, Va>(&self, name: N, property: Va) -> &Self
     where
         N: AsRef<str>,
@@ -183,6 +371,24 @@ where
         self
     }
 
+    /// Adds a dynamic property on the node.
+    ///
+    /// If `value` is `None`, the attribute will be completely removed
+    /// from the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let checked = Signal::new(Some(false));
+    ///
+    /// input()
+    ///     .attr("type", "checkbox")
+    ///     .dyn_prop("checked", checked.handle())
+    ///     .build()
+    /// }
+    /// ```
     pub fn dyn_prop<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
     where
         N: ToString,
@@ -205,12 +411,40 @@ where
         self
     }
 
+    /// Adds a class to the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// button().class("bg-green-500").text("My Button").build()
+    /// # }
+    /// ```
     pub fn class(&self, class: impl ToString) -> &Self {
         self.element.add_class(class.to_string().as_ref());
 
         self
     }
 
+    /// Adds a dynamic class on the node.
+    ///
+    /// If `value` is `None`, the attribute will be completely removed
+    /// from the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let checked_class = Signal::new(false);
+    ///
+    /// input()
+    ///     .attr("type", "checkbox")
+    ///     .dyn_class("bg-red-500", checked_class.handle())
+    ///     .build()
+    /// }
+    /// ```
     pub fn dyn_class(&self, class: impl ToString, apply: StateHandle<bool>) -> &Self {
         let class = class.to_string();
         let element = self.element.clone();
@@ -228,7 +462,8 @@ where
         self
     }
 
-    pub fn styles(&self, styles: HashMap<String, String>) -> &Self {
+    #[doc(hidden)]
+    fn styles(&self, styles: HashMap<String, String>) -> &Self {
         let styles = styles
             .iter()
             .map(|(k, v)| format!("{}: {}", k, v))
@@ -242,7 +477,8 @@ where
 
     // Need the ability to get attributes so one can filter out the
     // applied attribute to add/remove it.
-    pub fn dyn_style(
+    #[doc(hidden)]
+    fn dyn_style(
         &self,
         _style: (impl ToString, impl ToString),
         _apply: StateHandle<bool>,
@@ -250,6 +486,22 @@ where
         todo!("Implement set_dyn_style");
     }
 
+    /// Adds an event listener to the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// button()
+    ///     .text("My Button")
+    ///     .event_listener(
+    ///         "click",
+    ///         |_| { web_sys::console::log_1(&"Clicked".into()) }
+    ///     )
+    ///     .build()
+    /// # }
+    /// ```
     pub fn event_listener<E, H>(&self, event: E, handler: H) -> &Self
     where
         E: AsRef<str>,
@@ -263,12 +515,8 @@ where
     // We need to store the closure somewhere we can retrieve so we can pass it
     // to remove_event_listener which does not drop the closure, hence, can be
     // added again when needed.
-    pub fn dyn_event_listener<E, H>(
-        &self,
-        _event: E,
-        _handler: H,
-        _listen: StateHandle<bool>,
-    ) -> &Self
+    #[doc(hidden)]
+    fn dyn_event_listener<E, H>(&self, _event: E, _handler: H, _listen: StateHandle<bool>) -> &Self
     where
         E: AsRef<str>,
         H: Fn(web_sys::Event) + 'static,
@@ -276,6 +524,22 @@ where
         todo!("Implement dyn event listener");
     }
 
+    /// Binds `sub` to the `value` property of the node.
+    ///
+    /// Note that this is the same as calling `.dyn_prop("value", sub)`.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let value = Signal::new(String::new());
+    ///
+    /// input()
+    ///     .bind_value(value)
+    ///     .build()
+    /// # }
+    /// ```
     pub fn bind_value(&self, sub: Signal<String>) -> &Self {
         let sub_handle = create_memo(cloned!((sub) => move || {
             Some((*sub.get()).clone())
@@ -298,6 +562,23 @@ where
         })
     }
 
+    /// Binds `sub` to the `checked` property of the node.
+    ///
+    /// Note that this is the same as calling `.dyn_prop("checked", sub)`.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let checked = Signal::new(false);
+    ///
+    /// input()
+    ///     .attr("type", "checkbox")
+    ///     .bind_checked(checked)
+    ///     .build()
+    /// # }
+    /// ```
     pub fn bind_checked(&self, sub: Signal<bool>) -> &Self {
         let sub_handle = create_memo(cloned!((sub) => move || {
             Some(*sub.get())
@@ -323,12 +604,41 @@ where
         })
     }
 
+    /// Get a hold of the [`element`](::web_sys::Node).
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let node_ref = NodeRef::new();
+    ///
+    /// input()
+    ///     .bind_ref(node_ref.clone())
+    ///     .build()
+    /// # }
+    /// ```
     pub fn bind_ref(&self, node_ref: NodeRef<G>) -> &Self {
         node_ref.set(self.element.clone());
 
         self
     }
 
+    /// Builds the [`NodeBuilder`] and returns a [`Template`].
+    ///
+    /// This is the function that should be called at the end of the node
+    /// building chain.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    ///
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// input()
+    ///     /* builder stuff */
+    ///     .build()
+    /// # }
+    /// ```
     pub fn build(&self) -> Template<G> {
         Template::new_node(self.element.to_owned())
     }
