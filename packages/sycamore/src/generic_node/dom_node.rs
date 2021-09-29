@@ -26,14 +26,8 @@ extern "C" {
 }
 
 /// An unique id for every node.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
 struct NodeId(usize);
-
-impl Default for NodeId {
-    fn default() -> Self {
-        Self(0)
-    }
-}
 
 impl NodeId {
     fn new_with_node(node: &Node) -> Self {

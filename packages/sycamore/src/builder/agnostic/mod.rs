@@ -300,7 +300,7 @@ where
 
     pub fn bind_checked(&self, sub: Signal<bool>) -> &Self {
         let sub_handle = create_memo(cloned!((sub) => move || {
-            Some((*sub.get()).clone())
+            Some(*sub.get())
         }));
 
         self.dyn_prop("checked", sub_handle);
