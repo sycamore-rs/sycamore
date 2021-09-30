@@ -16,15 +16,13 @@ pub fn template(component: TokenStream) -> TokenStream {
 }
 
 /// ```
-/// use sycamore::{generic_node::EventHandler, prelude::*};
+/// use sycamore::prelude::*;
 ///
 /// #[component(MyComponent<G>)]
-/// pub fn my_component(event_listeners: Vec<(String, Box<EventHandler>)>) -> Template<G> {
+/// pub fn my_component() -> Template<G> {
 ///     let cool_button: G = node! { button { "The coolest 😎" } };
 ///
-///     for listener in event_listeners {
-///         cool_button.event(listener.0.as_ref(), listener.1);
-///     }
+///     cool_button.set_property("myProperty", &"Epic!".into());
 ///
 ///     Template::new_node(cool_button)
 /// }
