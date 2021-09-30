@@ -298,7 +298,6 @@ pub fn navigate(url: &str) {
         );
 
         let pathname = pathname.borrow().clone().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
 
         // Update History API.
