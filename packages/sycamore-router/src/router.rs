@@ -93,7 +93,6 @@ impl Integration for HistoryIntegration {
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
                             let pathname = pathname.borrow().clone().unwrap_throw();
-                            let path = path.strip_prefix(&base_pathname()).unwrap_or(&path);
                             pathname.set(path.to_string());
 
                             // Update History API.
