@@ -298,7 +298,7 @@ pub fn navigate(url: &str) {
         );
 
         let pathname = pathname.borrow().clone().unwrap_throw();
-        pathname.set(path.to_string());
+        pathname.set(url.to_string());
 
         // Update History API.
         let window = web_sys::window().unwrap_throw();
