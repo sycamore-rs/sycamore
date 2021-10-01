@@ -462,6 +462,7 @@ where
         self
     }
 
+    #[allow(dead_code)]
     #[doc(hidden)]
     fn styles(&self, styles: HashMap<String, String>) -> &Self {
         let styles = styles
@@ -477,6 +478,7 @@ where
 
     // Need the ability to get attributes so one can filter out the
     // applied attribute to add/remove it.
+    #[allow(dead_code)]
     #[doc(hidden)]
     fn dyn_style(
         &self,
@@ -515,6 +517,7 @@ where
     // We need to store the closure somewhere we can retrieve so we can pass it
     // to remove_event_listener which does not drop the closure, hence, can be
     // added again when needed.
+    #[allow(dead_code)]
     #[doc(hidden)]
     fn dyn_event_listener<E, H>(&self, _event: E, _handler: H, _listen: StateHandle<bool>) -> &Self
     where
