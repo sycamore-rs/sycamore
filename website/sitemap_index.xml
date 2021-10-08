@@ -11,10 +11,10 @@
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/js_interop</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/noderef</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/optimize_wasm_size</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-<url><loc>https://sycamore-rs.netlify.app/docs/advanced/routing</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/ssr</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/testing</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/tweened</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/docs/advanced/routing</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/basics/components</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/basics/control_flow</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/basics/data_binding</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
