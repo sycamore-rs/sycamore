@@ -126,6 +126,3 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 
 /// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
 pub trait Html: GenericNode {}
-
-impl Html for DomNode {}
-impl Html for SsrNode {}

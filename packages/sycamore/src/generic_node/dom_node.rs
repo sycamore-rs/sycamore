@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
-use crate::generic_node::{EventHandler, GenericNode};
+use crate::generic_node::{EventHandler, GenericNode, Html};
 use crate::reactive::{create_root, on_cleanup, ReactiveScope};
 use crate::template::Template;
 use crate::utils::render::insert;
@@ -263,6 +263,8 @@ impl GenericNode for DomNode {
         }
     }
 }
+
+impl Html for DomNode {}
 
 /// Render a [`Template`] into the DOM.
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
