@@ -65,7 +65,7 @@ Everything from backend to frontend is built with pure Rust!
 
 Don't think Sycamore is for you? Thankfully, there are plenty of alternatives!
 - **[SolidJS](https://github.com/solidjs/solid): A declarative, efficient and flexible JavaScript
-  library for building user interfaces.** <br />
+  library for building user interfaces** <br />
   Solid is a JavaScript library which greatly inspired Sycamore. Many concepts such as fine-grained
   reacitivity and components as factory functions were borrowed from Solid. If you don't mind working
   with JavaScript (or TypeScript), go check it out!
