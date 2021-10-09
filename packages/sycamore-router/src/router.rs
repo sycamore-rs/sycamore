@@ -135,7 +135,7 @@ fn base_pathname() -> String {
             let url = web_sys::Url::new(&base).unwrap_throw();
             let mut pathname = url.pathname();
             // Strip trailing `/` character from the pathname.
-            pathname.ends_with("/");
+            pathname.ends_with('/');
             pathname.pop(); // Pop the `/` character.
             pathname
         }
