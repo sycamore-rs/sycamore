@@ -93,6 +93,7 @@ impl Integration for HistoryIntegration {
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
                             let pathname = pathname.borrow().clone().unwrap_throw();
+                            let path = path.strip_prefix(&base_pathname()).unwrap_or(&path);
                             pathname.set(path.to_string());
 
                             // Update History API.
@@ -132,7 +133,11 @@ fn base_pathname() -> String {
             let base = base.unchecked_into::<HtmlBaseElement>().href();
 
             let url = web_sys::Url::new(&base).unwrap_throw();
-            url.pathname()
+            let mut pathname = url.pathname();
+            // Strip trailing `/` character from the pathname.
+            pathname.ends_with("/");
+            pathname.pop(); // Pop the `/` character.
+            pathname
         }
         _ => "".to_string(),
     }
@@ -298,7 +303,8 @@ pub fn navigate(url: &str) {
         );
 
         let pathname = pathname.borrow().clone().unwrap_throw();
-        pathname.set(url.to_string());
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
 
         // Update History API.
         let window = web_sys::window().unwrap_throw();
