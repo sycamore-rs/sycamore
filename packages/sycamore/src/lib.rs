@@ -50,6 +50,7 @@ pub mod prelude {
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;
     pub use crate::generic_node::GenericNode;
+    pub use crate::generic_node::Html;
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;

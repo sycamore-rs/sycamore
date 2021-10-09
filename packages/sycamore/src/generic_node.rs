@@ -123,3 +123,9 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a deep clone of the node.
     fn clone_node(&self) -> Self;
 }
+
+/// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
+pub trait Html: GenericNode {}
+
+impl Html for DomNode {}
+impl Html for SsrNode {}
