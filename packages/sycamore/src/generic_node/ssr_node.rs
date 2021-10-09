@@ -118,6 +118,8 @@ impl SsrNode {
 }
 
 impl GenericNode for SsrNode {
+    const IS_BROWSER: bool = false;
+
     fn element(tag: &str) -> Self {
         SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),

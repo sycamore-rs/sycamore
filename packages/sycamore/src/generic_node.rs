@@ -42,6 +42,12 @@ pub type EventHandler = dyn Fn(Event);
 /// [`GenericNode`]s should be cheaply cloneable (usually backed by a [`Rc`](std::rc::Rc) or other
 /// reference counted container) and preserve reference equality.
 pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
+    /// A boolean indicating whether this node is rendered in a browser context.
+    ///
+    /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
+    /// in the browser. It only means that it does not create DOM nodes.
+    const IS_BROWSER: bool;
+
     /// Create a new element node.
     fn element(tag: &str) -> Self;
 
