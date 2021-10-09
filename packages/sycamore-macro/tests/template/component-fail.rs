@@ -7,7 +7,7 @@ fn c() -> Template<G> {
     }
 }
 
-fn compile_fail<G: GenericNode>() {
+fn compile_fail<G: Html>() {
     let _: Template<G> = template! { UnknownComponent() };
 
     let _: Template<G> = template! { C };
