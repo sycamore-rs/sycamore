@@ -6,7 +6,8 @@ ports:
     onOpen: open-preview
 
 tasks:
-  - init: cargo test --no-run && cd website && trunk build # Prebuild tests and docs website
+  - init: cargo test --no-run # Prebuild tests
+  - init: cd website && npm install && NODE_ENV=development npx tailwindcss -i index.css -o ./static/tailwind.css --jit && trunk build # Prebuild website
 
 github:
   prebuilds:

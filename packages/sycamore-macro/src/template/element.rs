@@ -48,8 +48,9 @@ impl ToTokens for Element {
             children,
         } = self;
 
+        let tag = tag_name.to_string();
         let mut quoted = quote! {
-            let __el = #tag_name;
+            let __el = ::sycamore::generic_node::GenericNode::element(#tag);
         };
 
         let mut has_dangerously_set_inner_html = false;
@@ -81,15 +82,28 @@ impl ToTokens for Element {
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
                         ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
                     },
-                    HtmlTree::Text(text) => quote_spanned! { text.span()=>
-                        // Since this is static text, intern it as it will likely be constructed many times.
-                        if ::std::cfg!(target_arch = "wasm32") {
-                            ::sycamore::rt::intern(#text);
+                    HtmlTree::Text(text) => {
+                        let intern = quote_spanned! { text.span()=>
+                            // Since this is static text, intern it as it will likely be constructed many times.
+                            if ::std::cfg!(target_arch = "wasm32") {
+                                ::sycamore::rt::intern(#text);
+                            }
+                        };
+                        if multi {
+                            quote_spanned! { text.span()=>
+                                #intern
+                                ::sycamore::generic_node::GenericNode::append_child(
+                                    &__el,
+                                    &::sycamore::generic_node::GenericNode::text_node(#text),
+                                );
+                            }
+                        } else {
+                            // Only one child, directly set innerText instead of creating a text node.
+                            quote_spanned! { text.span()=>
+                                #intern
+                                ::sycamore::generic_node::GenericNode::update_inner_text(&__el, #text);
+                            }
                         }
-                        ::sycamore::generic_node::GenericNode::append_child(
-                            &__el,
-                            &::sycamore::generic_node::GenericNode::text_node(#text),
-                        );
                     },
                     HtmlTree::Splice(splice @ Splice {
                         expr: Expr::Lit(_) | Expr::Path(_), ..
@@ -183,18 +197,6 @@ impl Parse for TagName {
         }
 
         Ok(Self { tag, extended })
-    }
-}
-
-impl ToTokens for TagName {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let tag_str = self.to_string();
-
-        let quoted = quote! {
-            ::sycamore::generic_node::GenericNode::element(#tag_str)
-        };
-
-        tokens.extend(quoted);
     }
 }
 

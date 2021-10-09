@@ -57,7 +57,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 
 ## Perseus
 
-[Perseus](https://github.com/arctic-hen7) is a fullstack framework built with Sycamore. Think
+[Perseus](https://github.com/arctic-hen7/perseus) is a fullstack framework built with Sycamore. Think
 [NextJS](https://nextjs.org) or [SvelteKit](https://kit.svelte.dev) but with no JavaScript.
 Everything from backend to frontend is built with pure Rust!
 
