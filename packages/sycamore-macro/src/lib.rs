@@ -15,6 +15,25 @@ pub fn template(component: TokenStream) -> TokenStream {
     template::template_impl(component).into()
 }
 
+/// ```
+/// use sycamore::prelude::*;
+///
+/// #[component(MyComponent<G>)]
+/// pub fn my_component() -> Template<G> {
+///     let cool_button: G = node! { button { "The coolest 😎" } };
+///
+///     cool_button.set_property("myProperty", &"Epic!".into());
+///
+///     Template::new_node(cool_button)
+/// }
+/// ```
+#[proc_macro]
+pub fn node(input: TokenStream) -> TokenStream {
+    let node = parse_macro_input!(input as template::Element);
+
+    template::node_impl(node).into()
+}
+
 /// A macro for creating components from functions.
 ///
 /// Add this attribute to a `fn` to create a component from that function.

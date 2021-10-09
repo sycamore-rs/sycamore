@@ -133,7 +133,11 @@ fn base_pathname() -> String {
             let base = base.unchecked_into::<HtmlBaseElement>().href();
 
             let url = web_sys::Url::new(&base).unwrap_throw();
-            url.pathname()
+            let mut pathname = url.pathname();
+            // Strip trailing `/` character from the pathname.
+            pathname.ends_with('/');
+            pathname.pop(); // Pop the `/` character.
+            pathname
         }
         _ => "".to_string(),
     }

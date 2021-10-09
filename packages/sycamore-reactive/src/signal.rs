@@ -82,6 +82,12 @@ impl<T: 'static> Clone for StateHandle<T> {
     }
 }
 
+impl<T: Default> Default for StateHandle<T> {
+    fn default() -> Self {
+        Signal::new(T::default()).into_handle()
+    }
+}
+
 impl<T: fmt::Debug> fmt::Debug for StateHandle<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("StateHandle")
@@ -195,6 +201,12 @@ impl<T: 'static> Signal<T> {
                 }
             }
         }
+    }
+}
+
+impl<T: Default> Default for Signal<T> {
+    fn default() -> Self {
+        Self::new(T::default())
     }
 }
 

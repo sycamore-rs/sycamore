@@ -181,6 +181,10 @@ impl GenericNode for DomNode {
         assert!(js_sys::Reflect::set(&self.node, &name.into(), value).unwrap_throw());
     }
 
+    fn remove_property(&self, name: &str) {
+        assert!(js_sys::Reflect::delete_property(&self.node, &name.into()).unwrap_throw());
+    }
+
     fn append_child(&self, child: &Self) {
         self.node.append_child(&child.node).unwrap_throw();
     }

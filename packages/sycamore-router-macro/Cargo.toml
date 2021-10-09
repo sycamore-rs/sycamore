@@ -9,7 +9,7 @@ license = "MIT"
 name = "sycamore-router-macro"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.6.0"
+version = "0.6.1"
 
 [lib]
 proc-macro = true

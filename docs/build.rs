@@ -135,7 +135,7 @@ fn build_dir(base: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     // it anyways so that Trunk can copy it into the dist/ directory.
     let out_dir = Path::new("../website/static");
 
-    for entry in WalkDir::new(base) {
+    for entry in WalkDir::new(base).sort_by_file_name() {
         let entry = entry?;
 
         if entry.path().extension() == Some(OsStr::new("md")) {
