@@ -1,5 +1,11 @@
 # Changelog
 
+## ✨ **0.6.3** _(2021-10-10)_
+
+- #### 🛠 Fixes
+
+  - [Respect basename when navigating using router.](https://github.com/sycamore-rs/sycamore/pull/275)
+
 ## ✨ **0.6.2** _(2021-10-09)_
 
 - #### ⚡️ Features
