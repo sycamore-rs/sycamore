@@ -278,6 +278,7 @@ impl ToTokens for Attribute {
                     JsPropertyType::String => quote! { ::std::string::String },
                 };
 
+                #[cfg(target = "wasm32-unknown-unknown")]
                 let convert_into_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => {
                         quote! { ::sycamore::rt::JsValue::from_bool(*signal.get()) }
@@ -307,6 +308,7 @@ impl ToTokens for Attribute {
                     },
                 };
 
+                #[cfg(target = "wasm32-unknown-unknown")]
                 tokens.extend(quote_spanned! { expr_span=> {
                     let signal: ::sycamore::reactive::Signal<#value_ty> = #expr;
 
@@ -321,6 +323,19 @@ impl ToTokens for Attribute {
                             );
                         }
                     });
+
+                    ::sycamore::generic_node::GenericNode::event(
+                        &__el,
+                        #event_name,
+                        ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
+                            signal.set(#convert_from_jsvalue_fn);
+                        }),
+                    )
+                }});
+
+                #[cfg(not(target = "wasm32-unknown-unknown"))]
+                tokens.extend(quote_spanned! { expr_span=> {
+                    let signal: ::sycamore::reactive::Signal<#value_ty> = #expr;
 
                     ::sycamore::generic_node::GenericNode::event(
                         &__el,
