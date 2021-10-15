@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 use std::{mem, ptr};
@@ -110,6 +111,19 @@ impl ReactiveScope {
             u
         })
     }
+
+    /// Runs the passed future in the reactive scope pointed to by this handle.
+    pub async fn extend_future<U>(&self, f: impl Future<Output = U>) -> U {
+        SCOPES.with(|scopes| {
+            scopes.borrow_mut().push(ReactiveScope(self.0.clone())); // We now have 2 references to the scope.
+        });
+        let u = f.await;
+        SCOPES.with(|scopes| {
+            scopes.borrow_mut().pop().unwrap(); // Rationale: pop the scope we pushed above.
+                                                // Since we have 2 references to the scope, this will not drop the scope.
+        });
+        u
+    }
 }
 
 impl Drop for ReactiveScope {
@@ -153,6 +167,27 @@ impl ReactiveScopeWeak {
             SCOPES.with(|scopes| {
                 scopes.borrow_mut().push(ReactiveScope(this)); // We now have 2 references to the scope.
                 let u = f();
+                scopes.borrow_mut().pop().unwrap(); // Rationale: pop the scope we pushed above.
+                                                    // Since we have 2 references to the scope, this will not drop the scope.
+                Some(u)
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Runs the passed future in the reactive scope pointed to by this handle.
+    ///
+    /// If the scope has already been destroyed, the callback is not run and `None` is returned.
+    pub async fn extend_future<U>(&self, f: impl Future<Output = U>) -> Option<U> {
+        // We only upgrade this temporarily for the duration of this
+        // function call.
+        if let Some(this) = self.0.upgrade() {
+            SCOPES.with(|scopes| {
+                scopes.borrow_mut().push(ReactiveScope(this)); // We now have 2 references to the scope.
+            });
+            let u = f.await;
+            SCOPES.with(|scopes| {
                 scopes.borrow_mut().pop().unwrap(); // Rationale: pop the scope we pushed above.
                                                     // Since we have 2 references to the scope, this will not drop the scope.
                 Some(u)

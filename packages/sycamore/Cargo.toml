@@ -23,6 +23,7 @@ smallvec = "1.6.1"
 sycamore-macro = { path = "../sycamore-macro", version = "=0.6.3" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "=0.6.3" }
 wasm-bindgen = { version = "0.2.78", features = ["enable-interning"] }
+wasm-bindgen-futures = { version = "0.4.28", optional = true }
 
 [dependencies.lexical]
 version = "6.0.0"
@@ -53,6 +54,7 @@ wasm-bindgen-test = "0.3.28"
 [features]
 default = ["dom"]
 dom = []
+futures = ["wasm-bindgen-futures"]
 ssr = ["html-escape", "once_cell"]
 serde = ["sycamore-reactive/serde"]
 
