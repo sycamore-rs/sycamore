@@ -47,7 +47,7 @@ impl ToTokens for Element {
             attributes,
             children,
         } = self;
-      
+
         let tag = tag_name.to_string();
         let mut quoted = quote! {
             let __el = ::sycamore::generic_node::GenericNode::element(#tag);
