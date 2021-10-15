@@ -176,6 +176,12 @@ where
     }
 }
 
+impl<T: Route> TryFromSegments for T {
+    fn try_from_segments(segments: &[&str]) -> Option<Self> {
+        Some(T::match_route(segments))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -473,6 +479,38 @@ mod tests {
                     segments: vec!["1".to_string(), "2".to_string()]
                 }
             );
+        }
+
+        #[test]
+        fn nested_router() {
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Nested {
+                #[to("/nested")]
+                Nested,
+                #[not_found]
+                NotFound,
+            }
+
+            #[derive(Debug, PartialEq, Eq, Route)]
+            enum Routes {
+                #[to("/")]
+                Home,
+                #[to("/route/<_..>")]
+                Route(Nested),
+                #[not_found]
+                NotFound,
+            }
+
+            assert_eq!(Routes::match_route(&[]), Routes::Home);
+            assert_eq!(
+                Routes::match_route(&["route", "nested"]),
+                Routes::Route(Nested::Nested)
+            );
+            assert_eq!(
+                Routes::match_route(&["route", "404"]),
+                Routes::Route(Nested::NotFound)
+            );
+            assert_eq!(Routes::match_route(&["404"]), Routes::NotFound);
         }
     }
 }
