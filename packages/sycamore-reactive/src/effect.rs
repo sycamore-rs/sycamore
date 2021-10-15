@@ -99,26 +99,35 @@ impl ReactiveScope {
     pub(crate) fn downgrade(&self) -> ReactiveScopeWeak {
         ReactiveScopeWeak(Rc::downgrade(&self.0))
     }
+
+    /// Runs the passed callback in the reactive scope pointed to by this handle.
+    pub fn extend<U>(&self, f: impl FnOnce() -> U) -> U {
+        SCOPES.with(|scopes| {
+            scopes.borrow_mut().push(ReactiveScope(self.0.clone())); // We now have 2 references to the scope.
+            let u = f();
+            scopes.borrow_mut().pop().unwrap(); // Rationale: pop the scope we pushed above.
+                                                // Since we have 2 references to the scope, this will not drop the scope.
+            u
+        })
+    }
 }
 
 impl Drop for ReactiveScope {
     fn drop(&mut self) {
-        debug_assert_eq!(
-            Rc::strong_count(&self.0),
-            1,
-            "should only have 1 strong link to ReactiveScopeInner"
-        );
+        if Rc::strong_count(&self.0) == 1 {
+            // This is the last reference to the scope. Drop all effects and call the cleanup
+            // callbacks.
+            for effect in &self.0.borrow().effects {
+                effect
+                    .borrow_mut()
+                    .as_mut()
+                    .unwrap_throw()
+                    .clear_dependencies();
+            }
 
-        for effect in &self.0.borrow().effects {
-            effect
-                .borrow_mut()
-                .as_mut()
-                .unwrap_throw()
-                .clear_dependencies();
-        }
-
-        for cleanup in mem::take(&mut self.0.borrow_mut().cleanup) {
-            untrack(cleanup);
+            for cleanup in mem::take(&mut self.0.borrow_mut().cleanup) {
+                untrack(cleanup);
+            }
         }
     }
 }
@@ -127,9 +136,32 @@ impl Drop for ReactiveScope {
 /// [`ReactiveScope::downgrade`].
 ///
 /// There can only ever be one strong reference (it is impossible to clone a [`ReactiveScope`]).
-/// However, there can be multiple weak references to the same [`ReactiveScope`].
+/// However, there can be multiple weak references to the same [`ReactiveScope`]. As such, it is
+/// impossible to obtain a [`ReactiveScope`] from a [`ReactiveScopeWeak`] because that would allow
+/// creating multiple [`ReactiveScope`]s.
 #[derive(Default)]
-pub(crate) struct ReactiveScopeWeak(pub Weak<RefCell<ReactiveScopeInner>>);
+pub struct ReactiveScopeWeak(pub(crate) Weak<RefCell<ReactiveScopeInner>>);
+
+impl ReactiveScopeWeak {
+    /// Runs the passed callback in the reactive scope pointed to by this handle.
+    ///
+    /// If the scope has already been destroyed, the callback is not run and `None` is returned.
+    pub fn extend<U>(&self, f: impl FnOnce() -> U) -> Option<U> {
+        // We only upgrade this temporarily for the duration of this
+        // function call.
+        if let Some(this) = self.0.upgrade() {
+            SCOPES.with(|scopes| {
+                scopes.borrow_mut().push(ReactiveScope(this)); // We now have 2 references to the scope.
+                let u = f();
+                scopes.borrow_mut().pop().unwrap(); // Rationale: pop the scope we pushed above.
+                                                    // Since we have 2 references to the scope, this will not drop the scope.
+                Some(u)
+            })
+        } else {
+            None
+        }
+    }
+}
 
 pub(super) type CallbackPtr = *const RefCell<dyn FnMut()>;
 
@@ -537,6 +569,17 @@ pub fn dependency_count() -> Option<usize> {
                 .dependencies
                 .len()
         })
+    })
+}
+
+/// Returns a [`ReactiveScopeWeak`] handle to the current reactive scope or `None` if outside of a
+/// reactive scope.
+pub fn current_scope() -> Option<ReactiveScopeWeak> {
+    SCOPES.with(|scope| {
+        scope
+            .borrow()
+            .last()
+            .map(|last_context| last_context.downgrade())
     })
 }
 
@@ -958,5 +1001,30 @@ mod tests {
 
         trigger.set(());
         assert_eq!(*counter.get(), 1);
+    }
+
+    #[test]
+    fn cleanup_in_extended_scope() {
+        let counter = Signal::new(0);
+
+        let root = create_root(cloned!((counter) => move || {
+            on_cleanup(cloned!((counter) => move || {
+                counter.set(*counter.get_untracked() + 1);
+            }));
+        }));
+
+        assert_eq!(*counter.get(), 0);
+
+        // Extend the root and add a new on_cleanup callback that increments counter.
+        root.extend(cloned!((counter) => move || {
+            on_cleanup(cloned!((counter) => move || {
+                counter.set(*counter.get_untracked() + 1);
+            }));
+        }));
+
+        assert_eq!(*counter.get(), 0);
+
+        drop(root);
+        assert_eq!(*counter.get(), 2);
     }
 }
