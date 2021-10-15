@@ -15,15 +15,15 @@ use wasm_bindgen_futures::spawn_local;
 ///
 /// # Example
 /// ```
-/// use sycamore::futures::spawn_local_in_reactive_scope;
+/// use sycamore::futures::spawn_local_in_scope;
 /// use sycamore::prelude::*;
 ///
 /// create_root(|| {
 ///     // Inside reactive scope.
-///     spawn_local_in_reactive_scope(|| {
+///     spawn_local_in_scope(|| {
 ///         // Still inside reactive scope.
 ///     });
-/// })
+/// });
 /// ```
 pub fn spawn_local_in_scope<F>(future: F)
 where
