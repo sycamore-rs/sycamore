@@ -242,15 +242,19 @@ When data fetching (e.g. from a REST API) is required to load a page, it is reco
 the data. This will cause the router to wait until the data is loaded before rendering the page,
 removing the need for some "Loading..." indicator.
 
+`spawn_local_in_scope` is a simple wrapper around `wasm_bindgen_futures::spawn_local` that extends
+the current scope into inside the `async` block. Make sure you enable the `"futures"` feature on
+`sycamore`.
+
 ```rust
-use wasm_bindgen_futures::spawn_local;
+use sycamore::futures::spawn_local_in_scope;
 
 template! {
     Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
         let template = Signal::new(Template::empty());
         create_effect(cloned!((template) => move || {
             let route = route.get();
-            spawn_local(cloned!((template) => async move {
+            spawn_local_in_scope(cloned!((template) => async move {
                 let t = match route.as_ref() {
                     AppRoutes::Index => template! {
                         "This is the index page"
