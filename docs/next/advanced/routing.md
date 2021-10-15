@@ -60,7 +60,7 @@ example which are both static.
 
 Static routes can also be nested, e.g. `"/my/nested/path"`.
 
-#### Dynamic parameters
+### Dynamic parameters
 
 Path parameters can be dynamic by using angle brackets around a variable name in the route's path.
 This will allow any segment to match the route in that position.
@@ -121,10 +121,11 @@ be completed. For example, the following route will **not** capture the final `e
 #[to("/start/<path..>/<end>")]
 Path {
     path: Vec<String>,
+    end: String,
 }
 ```
 
-#### Unit variants
+### Unit variants
 
 Enum unit variants are also supported. The following route has the same behavior as the hello
 example from before.
@@ -134,17 +135,17 @@ example from before.
 Hello(String)
 ```
 
-#### Capture types
+### Capture types
 
 Capture variables are not limited to `String`. In fact, any type that implements the
-[`FromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromParam.html) trait can
-be used as a capture.
+[`TryFromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.TryFromParam.html)
+trait can be used as a capture.
 
 This trait is automatically implemented for types that already implement `FromStr`, which includes
 many standard library types.
 
-Because `FromParam` is fallible, the route will only match if the parameter can be parsed into the
-corresponding type.
+Because `TryFromParam` is fallible, the route will only match if the parameter can be parsed into
+the corresponding type.
 
 For example, `/account/123` will match the following route but `/account/abc` will not.
 
@@ -154,8 +155,32 @@ Account { id: u32 }
 ```
 
 Likewise, the
-[`FromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromSegments.html)
+[`TryFromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.TryFromSegments.html)
 trait is the equivalent for dynamic segments.
+
+### Nested routes
+
+Routes can also be nested! The following code will route any url to `/route/..` to `Nested`.
+
+```rust
+#[derive(Route)]
+enum Nested {
+    #[to("/nested")]
+    Nested,
+    #[not_found]
+    NotFound,
+}
+
+#[derive(Route)]
+enum Routes {
+    #[to("/")]
+    Home,
+    #[to("/route/<_..>")]
+    Route(Nested),
+    #[not_found]
+    NotFound,
+}
+```
 
 ## Using `Router`
 
