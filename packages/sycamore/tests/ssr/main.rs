@@ -98,3 +98,15 @@ fn indexed() {
     let actual = sycamore::render_to_string(|| node.clone());
     assert_eq!(actual, "<ul><li>2</li><li>3</li></ul>");
 }
+
+#[test]
+fn bind() {
+    let signal = Signal::new(String::new());
+
+    let node = template! {
+        input(bind:value=signal)
+    };
+
+    let actual = sycamore::render_to_string(|| node);
+    assert_eq!(actual, "<input/>");
+}
