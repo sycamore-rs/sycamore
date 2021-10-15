@@ -20,7 +20,7 @@ use wasm_bindgen_futures::spawn_local;
 ///
 /// create_root(|| {
 ///     // Inside reactive scope.
-///     spawn_local_in_scope(|| {
+///     spawn_local_in_scope(async {
 ///         // Still inside reactive scope.
 ///     });
 /// });
