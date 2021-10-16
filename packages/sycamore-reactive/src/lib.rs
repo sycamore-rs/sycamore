@@ -88,6 +88,9 @@ macro_rules! cloned {
 
         $e
     }};
+    ($($arg:ident),* => $e:expr) => {
+        cloned!(($($arg),*) => $e)
+    };
 }
 
 #[cfg(test)]
