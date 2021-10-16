@@ -36,9 +36,9 @@ pub fn controls() -> Template<G> {
 fn app() -> Template<G> {
     let counter = Signal::new(0);
 
-    create_effect(cloned!((counter) => move || {
+    create_effect!(counter => move || {
         log::info!("Counter value: {}", *counter.get());
-    }));
+    });
 
     template! {
         ContextProvider(ContextProviderProps {

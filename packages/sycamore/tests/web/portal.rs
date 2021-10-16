@@ -21,14 +21,14 @@ fn test_portal() {
 
     sycamore::render_to(
         cloned!((portal, portal_root) => move || {
-            let root = create_root(cloned!((portal) => move || {
+            let root = create_root!(portal => move || {
                 portal.set(Some(template! {
                     Portal(PortalProps {
                         children: template! { "Hello World!" },
                         selector: "#portal-target",
                     })
                 }));
-            }));
+            });
             *portal_root.borrow_mut() = Some(root);
             template! {
                 (portal.get().as_ref().clone().unwrap_or_default())

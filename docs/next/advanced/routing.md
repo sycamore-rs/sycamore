@@ -277,7 +277,7 @@ use sycamore::futures::spawn_local_in_scope;
 template! {
     Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
         let template = Signal::new(Template::empty());
-        create_effect(cloned!((template) => move || {
+        create_effect!(template => move || {
             let route = route.get();
             spawn_local_in_scope(cloned!((template) => async move {
                 let t = match route.as_ref() {
@@ -293,7 +293,7 @@ template! {
                 };
                 template.set(t);
             }));
-        }));
+        });
 
         template! {
             div(class="app") {

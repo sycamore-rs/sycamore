@@ -72,9 +72,9 @@ pub(crate) struct ReactiveScopeInner {
 /// The effects are dropped and the cleanup callbacks are called when the [`ReactiveScope`] is
 /// dropped.
 ///
-/// A new [`ReactiveScope`] is usually created with [`create_root`]. A new [`ReactiveScope`] is also
-/// created when a new effect is created with [`create_effect`] and other reactive utilities that
-/// call it under the hood.
+/// A new [`ReactiveScope`] is usually created with [`fn@create_root`]. A new [`ReactiveScope`] is
+/// also created when a new effect is created with [`fn@create_effect`] and other reactive utilities
+/// that call it under the hood.
 #[derive(Default)]
 pub struct ReactiveScope(pub(crate) Rc<RefCell<ReactiveScopeInner>>);
 
@@ -115,12 +115,14 @@ impl ReactiveScope {
     /// Runs the passed future in the reactive scope pointed to by this handle.
     pub async fn extend_future<U>(&self, f: impl Future<Output = U>) -> U {
         SCOPES.with(|scopes| {
-            scopes.borrow_mut().push(ReactiveScope(self.0.clone())); // We now have 2 references to the scope.
+            scopes.borrow_mut().push(ReactiveScope(self.0.clone())); // We now have 2 references to
+                                                                     // the scope.
         });
         let u = f.await;
         SCOPES.with(|scopes| {
             scopes.borrow_mut().pop().unwrap(); // Rationale: pop the scope we pushed above.
-                                                // Since we have 2 references to the scope, this will not drop the scope.
+                                                // Since we have 2 references to the scope, this
+                                                // will not drop the scope.
         });
         u
     }
@@ -184,7 +186,8 @@ impl ReactiveScopeWeak {
         // function call.
         if let Some(this) = self.0.upgrade() {
             SCOPES.with(|scopes| {
-                scopes.borrow_mut().push(ReactiveScope(this)); // We now have 2 references to the scope.
+                scopes.borrow_mut().push(ReactiveScope(this)); // We now have 2 references to the
+                                                               // scope.
             });
             let u = f.await;
             SCOPES.with(|scopes| {
@@ -251,6 +254,8 @@ impl Eq for Dependency {}
 ///
 /// state.set(1); // Prints "State changed. New state value = 1"
 /// ```
+///
+/// See also: [`create_effect!`](macro@crate::create_effect)
 #[inline]
 pub fn create_effect<F>(effect: F)
 where
@@ -372,6 +377,8 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
 /// state.set(1);
 /// assert_eq!(*double.get(), 2);
 /// ```
+///
+/// See also: [`create_memo!`](macro@crate::create_memo)
 #[inline]
 pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
 where
@@ -382,7 +389,7 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
-/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is
+/// Unlike [`fn@create_memo`], this function will not notify dependents of a change if the output is
 /// the same. That is why the output of the function must implement [`PartialEq`].
 ///
 /// To specify a custom comparison function, use [`create_selector_with`].
@@ -398,6 +405,8 @@ where
 /// state.set(1);
 /// assert_eq!(*double.get(), 2);
 /// ```
+///
+/// See also: [`create_selector!`](macro@crate::create_selector)
 #[inline]
 pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
 where
@@ -408,14 +417,14 @@ where
 }
 
 /// Creates a memoized value from some signals. Also know as "derived stores".
-/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is
+/// Unlike [`fn@create_memo`], this function will not notify dependents of a change if the output is
 /// the same.
 ///
 /// It takes a comparison function to compare the old and new value, which returns `true` if they
 /// are the same and `false` otherwise.
 ///
 /// To use the type's [`PartialEq`] implementation instead of a custom function, use
-/// [`create_selector`].
+/// [`fn@create_selector`].
 pub fn create_selector_with<F, Out, C>(mut derived: F, comparator: C) -> StateHandle<Out>
 where
     F: FnMut() -> Out + 'static,
@@ -629,9 +638,9 @@ mod tests {
 
         let double = Signal::new(-1);
 
-        create_effect(cloned!((state, double) => move || {
+        create_effect!(state, double => move || {
             double.set(*state.get() * 2);
-        }));
+        });
         assert_eq!(*double.get(), 0); // calling create_effect should call the effect at least once
 
         state.set(1);
@@ -643,10 +652,10 @@ mod tests {
     #[test]
     fn effect_do_not_create_infinite_loop() {
         let state = Signal::new(0);
-        create_effect(cloned!((state) => move || {
+        create_effect!(state => move || {
             state.get();
             state.set(0);
-        }));
+        });
         state.set(0);
     }
 
@@ -655,13 +664,13 @@ mod tests {
         let state = Signal::new(0);
 
         let counter = Signal::new(0);
-        create_effect(cloned!((state, counter) => move || {
+        create_effect!(state, counter => move || {
             counter.set(*counter.get_untracked() + 1);
 
             // call state.get() twice but should subscribe once
             state.get();
             state.get();
-        }));
+        });
 
         assert_eq!(*counter.get(), 1);
 
@@ -677,7 +686,7 @@ mod tests {
         let state2 = Signal::new(1);
 
         let counter = Signal::new(0);
-        create_effect(cloned!((condition, state1, state2, counter) => move || {
+        create_effect!(condition, state1, state2, counter => move || {
             counter.set(*counter.get_untracked() + 1);
 
             if *condition.get() {
@@ -685,7 +694,7 @@ mod tests {
             } else {
                 state2.get();
             }
-        }));
+        });
 
         assert_eq!(*counter.get(), 1);
 
@@ -711,13 +720,13 @@ mod tests {
 
         let trigger = Signal::new(());
 
-        create_effect(cloned!((trigger, counter) => move || {
+        create_effect!(trigger, counter => move || {
             trigger.get(); // subscribe to trigger
 
-            create_effect(cloned!((counter) => move || {
+            create_effect!(counter => move || {
                 counter.set(*counter.get_untracked() + 1);
-            }));
-        }));
+            });
+        });
 
         assert_eq!(*counter.get(), 1);
 
@@ -733,20 +742,20 @@ mod tests {
         let inner_counter = Signal::new(0);
         let inner_cleanup_counter = Signal::new(0);
 
-        create_effect(
-            cloned!((trigger, outer_counter, inner_counter, inner_cleanup_counter) => move || {
+        create_effect!(
+            trigger, outer_counter, inner_counter, inner_cleanup_counter => move || {
                 trigger.get(); // subscribe to trigger
                 outer_counter.set(*outer_counter.get_untracked() + 1);
 
-                create_effect(cloned!((trigger, inner_counter, inner_cleanup_counter) => move || {
+                create_effect!(trigger, inner_counter, inner_cleanup_counter => move || {
                     trigger.set(()); // update trigger which should recreate the outer effect
                     inner_counter.set(*inner_counter.get_untracked() + 1);
 
                     on_cleanup(cloned!((inner_cleanup_counter) => move || {
                         inner_cleanup_counter.set(*inner_cleanup_counter.get_untracked() + 1);
                     }));
-                }));
-            }),
+                });
+            }
         );
 
         assert_eq!(*outer_counter.get(), 1);
@@ -798,15 +807,15 @@ mod tests {
         let outer_counter = Signal::new(0);
         let inner_counter = Signal::new(0);
 
-        create_effect(cloned!((trigger, outer_counter, inner_counter) => move || {
+        create_effect!(trigger, outer_counter, inner_counter => move || {
             trigger.get(); // subscribe to trigger
             outer_counter.set(*outer_counter.get_untracked() + 1);
 
-            create_effect(cloned!((trigger, inner_counter) => move || {
+            create_effect!(trigger, inner_counter => move || {
                 trigger.get(); // subscribe to trigger
                 inner_counter.set(*inner_counter.get_untracked() + 1);
-            }));
-        }));
+            });
+        });
 
         assert_eq!(*outer_counter.get(), 1);
         assert_eq!(*inner_counter.get(), 1);
@@ -835,12 +844,12 @@ mod tests {
 
         let trigger = Signal::new(());
 
-        let scope = create_root(cloned!((trigger, counter) => move || {
+        let scope = create_root!(trigger, counter => move || {
             create_effect(move || {
                 trigger.get(); // subscribe to trigger
                 counter.set(*counter.get_untracked() + 1);
             });
-        }));
+        });
 
         assert_eq!(*counter.get(), 1);
 
@@ -856,7 +865,7 @@ mod tests {
     fn memo() {
         let state = Signal::new(0);
 
-        let double = create_memo(cloned!((state) => move || *state.get() * 2));
+        let double = create_memo!(state => move || *state.get() * 2);
         assert_eq!(*double.get(), 0);
 
         state.set(1);
@@ -872,11 +881,11 @@ mod tests {
         let state = Signal::new(0);
 
         let counter = Signal::new(0);
-        let double = create_memo(cloned!((state, counter) => move || {
+        let double = create_memo!(state, counter => move || {
             counter.set(*counter.get_untracked() + 1);
 
             *state.get() * 2
-        }));
+        });
         assert_eq!(*counter.get(), 1); // once for calculating initial derived state
 
         state.set(2);
@@ -889,7 +898,7 @@ mod tests {
     fn dependency_on_memo() {
         let state = Signal::new(0);
 
-        let double = create_memo(cloned!((state) => move || *state.get() * 2));
+        let double = create_memo!(state => move || *state.get() * 2);
 
         let quadruple = create_memo(move || *double.get() * 2);
 
@@ -903,7 +912,7 @@ mod tests {
     fn untracked_memo() {
         let state = Signal::new(1);
 
-        let double = create_memo(cloned!((state) => move || *state.get_untracked() * 2));
+        let double = create_memo!(state => move || *state.get_untracked() * 2);
 
         assert_eq!(*double.get(), 2);
 
@@ -916,14 +925,14 @@ mod tests {
     fn selector() {
         let state = Signal::new(0);
 
-        let double = create_selector(cloned!((state) => move || *state.get() * 2));
+        let double = create_selector!(state => move || *state.get() * 2);
 
         let counter = Signal::new(0);
-        create_effect(cloned!((counter, double) => move || {
+        create_effect!(counter, double => move || {
             counter.set(*counter.get_untracked() + 1);
 
             double.get();
-        }));
+        });
         assert_eq!(*double.get(), 0);
         assert_eq!(*counter.get(), 1);
 
@@ -971,7 +980,7 @@ mod tests {
             Msg::Decrement => *state - 1,
         });
 
-        let doubled = create_memo(cloned!((state) => move || *state.get() * 2));
+        let doubled = create_memo!(state => move || *state.get() * 2);
 
         assert_eq!(*doubled.get(), 0);
         dispatch(Msg::Increment);
@@ -983,11 +992,11 @@ mod tests {
     #[test]
     fn cleanup() {
         let cleanup_called = Signal::new(false);
-        let scope = create_root(cloned!((cleanup_called) => move || {
+        let scope = create_root!(cleanup_called => move || {
             on_cleanup(move || {
                 cleanup_called.set(true);
             });
-        }));
+        });
 
         assert!(!*cleanup_called.get());
 
@@ -1001,13 +1010,13 @@ mod tests {
 
         let counter = Signal::new(0);
 
-        create_effect(cloned!((trigger, counter) => move || {
+        create_effect!(trigger, counter => move || {
             trigger.get(); // subscribe to trigger
 
             on_cleanup(cloned!((counter) => move || {
                 counter.set(*counter.get() + 1);
             }));
-        }));
+        });
 
         assert_eq!(*counter.get(), 0);
 
@@ -1024,13 +1033,13 @@ mod tests {
 
         let counter = Signal::new(0);
 
-        create_effect(cloned!((trigger, counter) => move || {
+        create_effect!(trigger, counter => move || {
             counter.set(*counter.get_untracked() + 1);
 
             on_cleanup(cloned!((trigger) => move || {
                 trigger.get(); // do not subscribe to trigger
             }));
-        }));
+        });
 
         assert_eq!(*counter.get(), 1);
 
@@ -1042,11 +1051,11 @@ mod tests {
     fn cleanup_in_extended_scope() {
         let counter = Signal::new(0);
 
-        let root = create_root(cloned!((counter) => move || {
+        let root = create_root!(counter => move || {
             on_cleanup(cloned!((counter) => move || {
                 counter.set(*counter.get_untracked() + 1);
             }));
-        }));
+        });
 
         assert_eq!(*counter.get(), 0);
 

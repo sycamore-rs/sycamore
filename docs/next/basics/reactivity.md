@@ -67,15 +67,17 @@ all its _dependents_, in this case, `state` as it was called inside the closure.
 >
 > This is ultimately just a workaround until something happens in
 > [Rust RFC #2407](https://github.com/rust-lang/rfcs/issues/2407).
+>
+> You can also use `create_effect!` and friends which are wrappers around `cloned!` and their respective functions
 
 ## Memos
 
-We can also easily create a derived state using `create_memo(...)` which is really just an ergonomic
+We can also easily create a derived state using `create_memo(...)` (or `create_memo!`) which is really just an ergonomic
 wrapper around `create_effect`:
 
 ```rust
 let state = Signal::new(0);
-let double = create_memo(cloned!((state) => move || *state.get() * 2));
+let double = create_memo!(state => move || *state.get() * 2);
 
 assert_eq!(*double.get(), 0);
 

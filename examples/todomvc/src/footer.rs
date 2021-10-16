@@ -11,9 +11,9 @@ pub fn footer(app_state: AppState) -> Template<G> {
         }
     });
 
-    let has_completed_todos = create_selector(cloned!((app_state) => move || {
+    let has_completed_todos = create_selector!(app_state => move || {
         app_state.todos_left() < app_state.todos.get().len()
-    }));
+    });
 
     let app_state2 = app_state.clone();
     let app_state3 = app_state.clone();

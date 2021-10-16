@@ -41,6 +41,8 @@ use wasm_bindgen::prelude::*;
 /// trigger.set(());
 /// assert_eq!(*counter.get(), 2); // should not be updated because scope was dropped
 /// ```
+///
+/// See also: [`create_root!`](macro@create_root)
 #[must_use = "create_root returns the reactive scope of the effects created inside this scope"]
 pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
     _create_root(Box::new(callback))
@@ -80,6 +82,9 @@ fn _create_root<'a>(callback: Box<dyn FnOnce() + 'a>) -> ReactiveScope {
 /// // state still accessible outside of the effect
 /// let _ = state.get();
 /// ```
+///
+/// See also [create_effect!](crate::create_effect!), [create_memo!](crate::create_memo!),
+/// [create_selector!](crate::create_selector!), [create_root](crate::create_root!)
 #[macro_export]
 macro_rules! cloned {
     (($($arg:ident),*) => $e:expr) => {{
@@ -89,6 +94,41 @@ macro_rules! cloned {
         $e
     }};
 }
+
+macro_rules! create_cloned_wrapper {
+    // We need to pass the dollar token to escape it from the outer macro and be able to use it in the expanded macros.
+    ($S:tt $($name:ident),+) => {
+        $(
+            #[doc = concat!("Wrapper around [", stringify!($name), "](fn@crate::", stringify!($name) ,") that allows cloning the arguments passed to it for use in the closure.")]
+            /// # Example:
+            ///
+            /// ```
+            #[doc = concat!("use sycamore_reactive::{Signal, ", stringify!($name), "};")]
+            /// let age = Signal::new(10);
+            /// let name = Signal::new(String::new());
+            #[doc = concat!(stringify!($name), "!(age, name => move || {")]
+            ///     println!("age: {}", age.get());
+            ///     println!("name: {}", name.get());
+            /// });
+            /// let _ = age.clone(); // we still can use it
+            /// let _ = name.clone(); // we still can use it
+            /// ```
+            #[macro_export]
+            macro_rules! $name {
+                ($closure:expr) => {
+                    $crate::$name($closure)
+                };
+
+                ($S($arg:ident),+ => $closure:expr) => {{
+                    $S( let $arg = ::std::clone::Clone::clone(&$arg); )*
+                    $crate::$name($closure)
+                }};
+            }
+        )+
+    }
+}
+
+create_cloned_wrapper!($ create_effect, create_memo, create_root, create_selector);
 
 #[cfg(test)]
 mod tests {
@@ -130,5 +170,32 @@ mod tests {
 
         // state still accessible outside of the effect
         let _ = state.get();
+    }
+
+    #[test]
+    fn create_macros() {
+        let state = Signal::new(0);
+        let state2 = Signal::new(true);
+
+        create_effect!(state => move || {
+            state.get();
+        });
+
+        let _memo: StateHandle<bool> = create_memo!(state, state2 => move || {
+            state.get();
+            !(*state2.get())
+        });
+
+        let _scope: ReactiveScope = create_root!(state => move || {
+            state.get();
+        });
+
+        let _selector: StateHandle<_> = create_selector!(state => move || {
+            state.get();
+        });
+
+        // state still accessible outside of the effect
+        let _ = state.get();
+        let _ = state2.get();
     }
 }

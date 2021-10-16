@@ -14,7 +14,7 @@ pub fn item(props: ItemProps) -> Template<G> {
     let ItemProps { todo, app_state } = props;
 
     let title = cloned!((todo) => move || todo.get().title.clone());
-    let completed = create_selector(cloned!((todo) => move || todo.get().completed));
+    let completed = create_selector!(todo => move || todo.get().completed);
     let id = todo.get().id;
 
     let editing = Signal::new(false);
@@ -74,10 +74,10 @@ pub fn item(props: ItemProps) -> Template<G> {
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
     let checked = Signal::new(false);
-    create_effect(cloned!((completed, checked) => move || {
+    create_effect!(completed, checked => move || {
         // Calling checked.set will also update the `checked` property on the input element.
         checked.set(*completed.get())
-    }));
+    });
 
     let class = cloned!((completed, editing) => move || {
         format!("{} {}",

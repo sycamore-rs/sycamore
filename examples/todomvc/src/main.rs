@@ -149,16 +149,15 @@ fn app() -> Template<G> {
         filter: Signal::new(Filter::get_filter_from_hash()),
     };
 
-    create_effect(cloned!((local_storage, app_state) => move || {
+    create_effect!(local_storage, app_state => move || {
         for todo in app_state.todos.get().iter() {
             todo.get(); // subscribe to changes in all todos
         }
 
         local_storage.set_item(KEY, &serde_json::to_string(app_state.todos.get().as_ref()).unwrap()).unwrap();
-    }));
+    });
 
-    let todos_is_empty =
-        create_selector(cloned!((app_state) => move || app_state.todos.get().len() == 0));
+    let todos_is_empty = create_selector!(app_state => move || app_state.todos.get().len() == 0);
 
     template! {
         div(class="todomvc-wrapper") {

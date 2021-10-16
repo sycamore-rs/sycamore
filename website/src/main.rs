@@ -66,7 +66,7 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
 fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
     let template = Signal::new(Template::empty());
     let cached_sidebar_data: Signal<Option<(Option<String>, SidebarData)>> = Signal::new(None);
-    create_effect(cloned!((template) => move || {
+    create_effect!(template => move || {
         let route = route.get();
         spawn_local_in_scope(cloned!((template, cached_sidebar_data) => async move {
             let t = match route.as_ref() {
@@ -130,7 +130,7 @@ fn switch<G: GenericNode>(route: StateHandle<Routes>) -> Template<G> {
             };
             template.set(t);
         }));
-    }));
+    });
 
     template! {
         div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
@@ -181,11 +181,11 @@ fn main() {
     };
     let dark_mode = DarkMode(Signal::new(dark_mode));
 
-    create_effect(cloned!((dark_mode) => move || {
+    create_effect!(dark_mode => move || {
         if let Some(local_storage) = &local_storage {
             local_storage.set_item("dark_mode", &dark_mode.0.get().to_string()).unwrap();
         }
-    }));
+    });
 
     sycamore::render(|| {
         template! {

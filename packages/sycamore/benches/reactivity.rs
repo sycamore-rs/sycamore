@@ -16,10 +16,10 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity_effects", |b| {
         b.iter(|| {
             let state = Signal::new(black_box(0));
-            create_effect(cloned!((state) => move || {
+            create_effect!(state => move || {
                 let double = *state.get() * 2;
                 black_box(double);
-            }));
+            });
 
             for _i in 0..1000 {
                 state.set(*state.get() + 1);

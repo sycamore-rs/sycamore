@@ -219,7 +219,7 @@ where
     });
 
     let route_signal: Rc<RefCell<Option<Signal<R>>>> = Rc::new(RefCell::new(None));
-    create_effect(cloned!((route_signal) => move || {
+    create_effect!(route_signal => move || {
         let path = path.get();
         let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
         if route_signal.borrow().is_some() {
@@ -227,7 +227,7 @@ where
         } else {
             *route_signal.borrow_mut() = Some(Signal::new(route));
         }
-    }));
+    });
     // Delegate click events from child <a> tags.
     let tmp = render.take().unwrap_throw()(route_signal.borrow().as_ref().unwrap_throw().handle());
     if let Some(node) = tmp.as_node() {

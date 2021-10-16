@@ -34,10 +34,10 @@ pub fn test_cleanup_in_root() {
 pub fn test_cleanup_in_effect() {
     let trigger = Signal::new(());
 
-    create_effect(cloned!((trigger) => move || {
+    create_effect!(trigger => move || {
         trigger.get();
         on_cleanup(on_cleanup_callback);
-    }));
+    });
 
     assert_cleanup_called(|| {
         trigger.set(());
