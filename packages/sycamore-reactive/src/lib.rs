@@ -128,7 +128,7 @@ macro_rules! create_cloned_wrapper {
     }
 }
 
-create_cloned_wrapper!($ create_effect, create_memo, create_root, create_selector);
+create_cloned_wrapper!($ create_effect, create_memo, create_root, create_selector, on_cleanup, untrack);
 
 #[cfg(test)]
 mod tests {
