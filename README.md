@@ -67,7 +67,7 @@ Don't think Sycamore is for you? Thankfully, there are plenty of alternatives!
 - **[SolidJS](https://github.com/solidjs/solid): A declarative, efficient and flexible JavaScript
   library for building user interfaces** <br />
   Solid is a JavaScript library which greatly inspired Sycamore. Many concepts such as fine-grained
-  reacitivity and components as factory functions were borrowed from Solid. If you don't mind working
+  reactivity and components as factory functions were borrowed from Solid. If you don't mind working
   with JavaScript (or TypeScript), go check it out!
   
 - **[Yew](https://github.com/yewstack/yew): Rust / Wasm framework for building client web apps** <br />
