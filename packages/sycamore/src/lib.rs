@@ -8,6 +8,8 @@
 //! ## Features
 //! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on
 //!   `wasm32-unknown-unknown` target.
+//! - `futures` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
+//!   reactive scope into an `async` function.
 //! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering /
 //!   Pre-rendering).
 //! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
@@ -35,6 +37,9 @@ pub mod noderef;
 pub mod portal;
 pub mod template;
 pub mod utils;
+
+#[cfg(feature = "futures")]
+pub mod futures;
 
 /// Alias self to sycamore for proc-macros.
 extern crate self as sycamore;

@@ -57,7 +57,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 
 ## Perseus
 
-[Perseus](https://github.com/arctic-hen7) is a fullstack framework built with Sycamore. Think
+[Perseus](https://github.com/arctic-hen7/perseus) is a fullstack framework built with Sycamore. Think
 [NextJS](https://nextjs.org) or [SvelteKit](https://kit.svelte.dev) but with no JavaScript.
 Everything from backend to frontend is built with pure Rust!
 
@@ -65,9 +65,9 @@ Everything from backend to frontend is built with pure Rust!
 
 Don't think Sycamore is for you? Thankfully, there are plenty of alternatives!
 - **[SolidJS](https://github.com/solidjs/solid): A declarative, efficient and flexible JavaScript
-  library for building user interfaces.** <br />
+  library for building user interfaces** <br />
   Solid is a JavaScript library which greatly inspired Sycamore. Many concepts such as fine-grained
-  reacitivity and components as factory functions were borrowed from Solid. If you don't mind working
+  reactivity and components as factory functions were borrowed from Solid. If you don't mind working
   with JavaScript (or TypeScript), go check it out!
   
 - **[Yew](https://github.com/yewstack/yew): Rust / Wasm framework for building client web apps** <br />

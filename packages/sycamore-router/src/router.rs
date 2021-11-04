@@ -83,28 +83,26 @@ impl Integration for HistoryIntegration {
                 }
 
                 let origin = a.origin();
-                let path = a.pathname();
+                let a_pathname = a.pathname();
                 let hash = a.hash();
 
                 let meta_keys_pressed = meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
-                if !meta_keys_pressed && Ok(origin) == location.origin() {
-                    if Ok(&path) != location.pathname().as_ref() {
+                if !meta_keys_pressed && location.origin() == Ok(origin) {
+                    if location.pathname().as_ref() != Ok(&a_pathname) {
                         // Same origin, different path.
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
                             let pathname = pathname.borrow().clone().unwrap_throw();
-                            let path = path.strip_prefix(&base_pathname()).unwrap_or(&path);
+                            let path = a_pathname
+                                .strip_prefix(&base_pathname())
+                                .unwrap_or(&a_pathname);
                             pathname.set(path.to_string());
 
                             // Update History API.
                             let window = web_sys::window().unwrap_throw();
                             let history = window.history().unwrap_throw();
                             history
-                                .push_state_with_url(
-                                    &JsValue::UNDEFINED,
-                                    "",
-                                    Some(pathname.get().as_str()),
-                                )
+                                .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a_pathname))
                                 .unwrap_throw();
                             window.scroll_to_with_x_and_y(0.0, 0.0);
                         });
@@ -133,7 +131,11 @@ fn base_pathname() -> String {
             let base = base.unchecked_into::<HtmlBaseElement>().href();
 
             let url = web_sys::Url::new(&base).unwrap_throw();
-            url.pathname()
+            let mut pathname = url.pathname();
+            // Strip trailing `/` character from the pathname.
+            pathname.ends_with('/');
+            pathname.pop(); // Pop the `/` character.
+            pathname
         }
         _ => "".to_string(),
     }
@@ -306,7 +308,7 @@ pub fn navigate(url: &str) {
         let window = web_sys::window().unwrap_throw();
         let history = window.history().unwrap_throw();
         history
-            .push_state_with_url(&JsValue::UNDEFINED, "", Some(pathname.get().as_str()))
+            .push_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
         window.scroll_to_with_x_and_y(0.0, 0.0);
     });
