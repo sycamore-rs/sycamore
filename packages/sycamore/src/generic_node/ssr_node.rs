@@ -157,7 +157,7 @@ impl GenericNode for SsrNode {
 
         if let Some(classes) = classes {
             // Make sure classes are unique.
-            let mut class_set = HashSet::<_>::from_iter(classes.split(" "));
+            let mut class_set = HashSet::<_>::from_iter(classes.split(' '));
 
             class_set.insert(class);
 
@@ -174,7 +174,7 @@ impl GenericNode for SsrNode {
 
         if let Some(classes) = classes {
             // Make sure classes are unique.
-            let mut class_set = HashSet::<_>::from_iter(classes.split(" "));
+            let mut class_set = HashSet::<_>::from_iter(classes.split(' '));
 
             class_set.remove(class);
 
