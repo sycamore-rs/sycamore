@@ -49,7 +49,6 @@ where
 ///     component::<_, MyComponent<_>>(())
 /// # }
 /// ```
-
 pub fn component<G, C>(props: C::Props) -> Template<G>
 where
     G: GenericNode,
