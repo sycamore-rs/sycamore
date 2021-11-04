@@ -161,7 +161,7 @@ impl GenericNode for SsrNode {
 
             class_set.insert(class);
 
-            *classes = class_set.drain().intersperse(" ").collect();
+            *classes = class_set.drain().collect::<Vec<_>>().join(" ");
         } else {
             attributes.insert("class".to_string(), class.to_owned());
         }
