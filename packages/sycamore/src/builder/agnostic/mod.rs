@@ -21,7 +21,7 @@ pub mod prelude {
 /// Create [`NodeBuilder`] to create UI elements.
 ///
 /// # Example
-/// ```compile_fail
+/// ```no_run
 /// node("div").build();
 /// node("a").build();
 /// ```
@@ -130,22 +130,6 @@ where
     /// ```
     pub fn dyn_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
         render::insert(&self.element, Template::new_dyn(child), None, None, true);
-
-        self
-    }
-
-    /// Same as [`child`](NodeBuilder::child), but promising to only add one, and only
-    /// one child, which enables an optimization.
-    pub fn only_child(&self, child: Template<G>) -> &Self {
-        render::insert(&self.element, child, None, None, false);
-
-        self
-    }
-
-    /// Same as [`dyn_child`](NodeBuilder::dyn_child), but promising to only add one, and only
-    /// one child, which enables an optimization.
-    pub fn dyn_only_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
-        render::insert(&self.element, Template::new_dyn(child), None, None, false);
 
         self
     }
@@ -492,18 +476,17 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// button()
     ///     .text("My Button")
-    ///     .event_listener(
+    ///     .on(
     ///         "click",
     ///         |_| { web_sys::console::log_1(&"Clicked".into()) }
     ///     )
     ///     .build()
     /// # }
     /// ```
-    pub fn event_listener<E, H>(&self, event: E, handler: H) -> &Self
+    pub fn on<E, H>(&self, event: E, handler: H) -> &Self
     where
         E: AsRef<str>,
         H: Fn(web_sys::Event) + 'static,
@@ -513,22 +496,9 @@ where
         self
     }
 
-    // We need to store the closure somewhere we can retrieve so we can pass it
-    // to remove_event_listener which does not drop the closure, hence, can be
-    // added again when needed.
-    #[allow(dead_code)]
-    #[doc(hidden)]
-    fn dyn_event_listener<E, H>(&self, _event: E, _handler: H, _listen: StateHandle<bool>) -> &Self
-    where
-        E: AsRef<str>,
-        H: Fn(web_sys::Event) + 'static,
-    {
-        todo!("Implement dyn event listener");
-    }
-
     /// Binds `sub` to the `value` property of the node.
     ///
-    /// Note that this is the same as calling `.dyn_prop("value", sub)`.
+    /// `sub` will be automatically updated when the value is updated.
     ///
     /// # Example
     /// ```
@@ -549,7 +519,7 @@ where
 
         self.dyn_prop("value", sub_handle);
 
-        self.event_listener("input", move |e| {
+        self.on("input", move |e| {
             let value = Reflect::get(
                 &e.target()
                     .expect("Target missing on input event.")
@@ -566,7 +536,7 @@ where
 
     /// Binds `sub` to the `checked` property of the node.
     ///
-    /// Note that this is the same as calling `.dyn_prop("checked", sub)`.
+    /// `sub` will be automatically updated when the value is updated.
     ///
     /// # Example
     /// ```
@@ -588,7 +558,7 @@ where
 
         self.dyn_prop("checked", sub_handle);
 
-        self.event_listener("change", move |e| {
+        self.on("change", move |e| {
             let value = Reflect::get(
                 &e.target().expect("Target missing on change event."),
                 &"checked".into(),
@@ -606,7 +576,7 @@ where
         })
     }
 
-    /// Get a hold of the [`element`](::web_sys::Node).
+    /// Get a hold of the [`element`](::web_sys::Node) by using a [`NodeRef`].
     ///
     /// # Example
     /// ```

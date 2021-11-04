@@ -50,8 +50,6 @@ pub mod prelude {
 
     #[cfg(feature = "experimental-builder-agnostic")]
     pub use crate::builder::agnostic::prelude::*;
-    #[cfg(feature = "experimental-builder-html")]
-    pub use crate::builder::html::*;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;
