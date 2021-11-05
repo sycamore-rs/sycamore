@@ -114,13 +114,13 @@ pub fn expo_in(t: f32) -> f32 {
     if t.abs() <= f32::EPSILON {
         0.0
     } else {
-        EXP_BASE.powf(10. * t - 10.0)
+        EXP_BASE.powf(10.0 * t - 10.0)
     }
 }
 
 pub fn expo_out(t: f32) -> f32 {
     if (t - 1.0).abs() <= f32::EPSILON {
-        0.0
+        1.0
     } else {
         1.0 - EXP_BASE.powf(-10.0 * t)
     }
@@ -141,7 +141,7 @@ pub fn expo_inout(t: f32) -> f32 {
 // Sine
 
 pub fn sine_in(t: f32) -> f32 {
-    f32::cos(1.0 - (t * PI / 2.0))
+    1.0 - f32::cos(t * PI / 2.0)
 }
 
 pub fn sine_out(t: f32) -> f32 {
@@ -185,3 +185,90 @@ pub fn bounce_inout(t: f32) -> f32 {
 }
 
 // TODO: add more easing functions
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! test_start_at_0 {
+        ($($ease_fn:ident),*) => {
+            paste::paste! {
+                $(
+                    #[test]
+                    fn [<test_ease_ $ease_fn _starts_at_0>]() {
+                        assert!(f32::abs($ease_fn(0.0) - 0.0) < f32::EPSILON);
+                    }
+                )*
+            }
+        }
+    }
+
+    macro_rules! test_end_at_1 {
+        ($($ease_fn:ident),*) => {
+            paste::paste! {
+                $(
+                    #[test]
+                    fn [<test_ease_ $ease_fn _ends_at_1>]() {
+                        assert!(f32::abs($ease_fn(1.0) - 1.0) < f32::EPSILON);
+                    }
+                )*
+            }
+        }
+    }
+
+    test_start_at_0![
+        linear,
+        quad_in,
+        quad_out,
+        quad_inout,
+        cubic_in,
+        cubic_out,
+        cubic_inout,
+        quart_in,
+        quart_out,
+        quart_inout,
+        quint_in,
+        quint_out,
+        quint_inout,
+        circ_in,
+        circ_out,
+        circ_inout,
+        expo_in,
+        expo_out,
+        expo_inout,
+        sine_in,
+        sine_out,
+        sine_inout,
+        bounce_in,
+        bounce_out,
+        bounce_inout
+    ];
+
+    test_end_at_1![
+        linear,
+        quad_in,
+        quad_out,
+        quad_inout,
+        cubic_in,
+        cubic_out,
+        cubic_inout,
+        quart_in,
+        quart_out,
+        quart_inout,
+        quint_in,
+        quint_out,
+        quint_inout,
+        circ_in,
+        circ_out,
+        circ_inout,
+        expo_in,
+        expo_out,
+        expo_inout,
+        sine_in,
+        sine_out,
+        sine_inout,
+        bounce_in,
+        bounce_out,
+        bounce_inout
+    ];
+}
