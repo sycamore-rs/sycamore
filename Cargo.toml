@@ -9,6 +9,7 @@ members = [
   "examples/context",
   "examples/counter",
   "examples/hello",
+  "examples/hello-builder",
   "examples/higher-order-components",
   "examples/iteration",
   "examples/ssr",

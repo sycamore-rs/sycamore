@@ -115,12 +115,14 @@ impl ReactiveScope {
     /// Runs the passed future in the reactive scope pointed to by this handle.
     pub async fn extend_future<U>(&self, f: impl Future<Output = U>) -> U {
         SCOPES.with(|scopes| {
-            scopes.borrow_mut().push(ReactiveScope(self.0.clone())); // We now have 2 references to the scope.
+            scopes.borrow_mut().push(ReactiveScope(self.0.clone())); // We now have 2 references to
+                                                                     // the scope.
         });
         let u = f.await;
         SCOPES.with(|scopes| {
             scopes.borrow_mut().pop().unwrap(); // Rationale: pop the scope we pushed above.
-                                                // Since we have 2 references to the scope, this will not drop the scope.
+                                                // Since we have 2 references to the scope, this
+                                                // will not drop the scope.
         });
         u
     }
@@ -184,7 +186,8 @@ impl ReactiveScopeWeak {
         // function call.
         if let Some(this) = self.0.upgrade() {
             SCOPES.with(|scopes| {
-                scopes.borrow_mut().push(ReactiveScope(this)); // We now have 2 references to the scope.
+                scopes.borrow_mut().push(ReactiveScope(this)); // We now have 2 references to the
+                                                               // scope.
             });
             let u = f.await;
             SCOPES.with(|scopes| {
