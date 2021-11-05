@@ -112,4 +112,18 @@ mod tests {
 
         sycamore::render_to_string(|| node);
     }
+
+    #[test]
+    #[should_panic = "context not found for type"]
+    fn should_panic_with_unknown_context_type() {
+        let _ = use_context::<u32>();
+    }
+
+    #[test]
+    #[should_panic = "context not found for type"]
+    fn should_panic_with_unknown_context_type_inside_scope() {
+        let _ = create_root(move || {
+            let _ = use_context::<u32>();
+        });
+    }
 }

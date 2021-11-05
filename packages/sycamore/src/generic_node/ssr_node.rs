@@ -442,6 +442,26 @@ mod tests {
     }
 
     #[test]
+    fn render_escaped_text() {
+        assert_eq!(
+            render_to_string(|| template! {
+                "<script>Dangerous!</script>"
+            }),
+            "&lt;script>Dangerous!&lt;/script>"
+        );
+    }
+
+    #[test]
+    fn render_unescaped_html() {
+        assert_eq!(
+            render_to_string(|| template! {
+                div(dangerously_set_inner_html="<a>Html!</a>")
+            }),
+            "<div><a>Html!</a></div>"
+        );
+    }
+
+    #[test]
     fn append_child() {
         let node = SsrNode::element("div");
         let p = SsrNode::element("p");
