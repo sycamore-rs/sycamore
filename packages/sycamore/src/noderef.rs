@@ -75,3 +75,35 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
         f.debug_tuple("NodeRef").field(&self.0.borrow()).finish()
     }
 }
+
+#[cfg(all(test, feature = "ssr"))]
+mod tests {
+    use crate::{DomNode, SsrNode};
+
+    use super::*;
+
+    #[test]
+    fn empty_noderef() {
+        let noderef = NodeRef::<SsrNode>::new();
+        assert!(noderef.try_get_raw().is_none());
+        assert!(noderef.try_get::<SsrNode>().is_none());
+    }
+
+    #[test]
+    fn set_noderef() {
+        let noderef = NodeRef::<SsrNode>::new();
+        let node = SsrNode::element("div");
+        noderef.set(node.clone());
+        assert_eq!(noderef.try_get_raw(), Some(node.clone()));
+        assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
+    }
+
+    #[test]
+    fn cast_noderef() {
+        let noderef = NodeRef::<SsrNode>::new();
+        let node = SsrNode::element("div");
+        noderef.set(node.clone());
+        assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
+        assert!(noderef.try_get::<DomNode>().is_none());
+    }
+}
