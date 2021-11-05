@@ -155,7 +155,7 @@ impl Drop for ReactiveScope {
 /// However, there can be multiple weak references to the same [`ReactiveScope`]. As such, it is
 /// impossible to obtain a [`ReactiveScope`] from a [`ReactiveScopeWeak`] because that would allow
 /// creating multiple [`ReactiveScope`]s.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ReactiveScopeWeak(pub(crate) Weak<RefCell<ReactiveScopeInner>>);
 
 impl ReactiveScopeWeak {

@@ -21,9 +21,14 @@ pub mod prelude {
 /// Create [`NodeBuilder`] to create UI elements.
 ///
 /// # Example
-/// ```no_run
-/// node("div").build();
-/// node("a").build();
+/// ```
+/// # use sycamore::prelude::*;
+/// # fn _test<G: GenericNode>() -> Template<G> {
+/// node("div").build()
+/// # }
+/// # fn _test2<G: GenericNode>() -> Template<G> {
+/// node("a").build()
+/// # }
 /// ```
 pub fn node<G>(tag: &'static str) -> NodeBuilder<G>
 where
@@ -39,14 +44,15 @@ where
 /// # Example
 /// ```
 /// use sycamore::prelude::*;
-///
+/// # use sycamore::builder::html::*;
 /// #[component(MyComponent<G>)]
 /// fn my_component() -> Template<G> {
 ///     h1().text("I am a component").build()
 /// }
 ///
+/// // Elsewhere in another component.
 /// # fn view<G: GenericNode>() -> Template<G> {
-///     component::<_, MyComponent<_>>(())
+/// component::<_, MyComponent<_>>(())
 /// # }
 /// ```
 pub fn component<G, C>(props: C::Props) -> Template<G>
@@ -62,7 +68,7 @@ where
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
-///
+/// # use sycamore::builder::html::*;
 /// # fn _test<G: GenericNode>() -> Template<G> {
 /// fragment([
 ///     div().build(),
@@ -78,7 +84,7 @@ where
 }
 
 /// The main type powering the builder API.
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Debug)]
 pub struct NodeBuilder<G>
 where
     G: GenericNode,
@@ -90,12 +96,12 @@ impl<G> NodeBuilder<G>
 where
     G: GenericNode,
 {
-    /// Add a child [`Template`]
+    /// Add a child [`Template`].
     ///
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     ///  div()
     ///     .child(h1().text("I am a child").build())
@@ -113,11 +119,11 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let visible = Signal::new(true);
     ///
-    ///  div()
+    /// div()
     ///     .dyn_child(
     ///         move || {
     ///             if *visible.get() {
@@ -139,7 +145,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// h1().text("I am text").build()
     /// }
@@ -155,7 +161,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let required = Signal::new(false);
     ///
@@ -185,7 +191,7 @@ where
     /// # Example
     /// ```
     /// use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// #[component(MyComponent<G>)]
     /// fn my_component() -> Template<G> {
     ///     h1().text("My component").build()
@@ -204,12 +210,12 @@ where
         self
     }
 
-    /// Convinience function for adding an `id` to a node.
+    /// Convenience function for adding an `id` to a node.
     ///
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// button().id("my-button").build()
     /// # }
@@ -223,7 +229,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// button().attr("type", "submit").build()
     /// # }
@@ -243,7 +249,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// input().bool_attr("required", true).build()
     /// # }
@@ -269,7 +275,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let input_type = Signal::new(Some("text"));
     ///
@@ -305,7 +311,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let required = Signal::new(true);
     ///
@@ -339,7 +345,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// input().prop("value", "I am the value set.").build()
     /// # }
@@ -362,7 +368,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let checked = Signal::new(Some(false));
     ///
@@ -399,7 +405,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// button().class("bg-green-500").text("My Button").build()
     /// # }
@@ -418,7 +424,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let checked_class = Signal::new(false);
     ///
@@ -459,23 +465,12 @@ where
         self
     }
 
-    // Need the ability to get attributes so one can filter out the
-    // applied attribute to add/remove it.
-    #[allow(dead_code)]
-    #[doc(hidden)]
-    fn dyn_style(
-        &self,
-        _style: (impl ToString, impl ToString),
-        _apply: StateHandle<bool>,
-    ) -> &Self {
-        todo!("Implement set_dyn_style");
-    }
-
     /// Adds an event listener to the node.
     ///
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// button()
     ///     .text("My Button")
@@ -503,7 +498,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let value = Signal::new(String::new());
     ///
@@ -541,7 +536,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let checked = Signal::new(false);
     ///
@@ -581,7 +576,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// let node_ref = NodeRef::new();
     ///
@@ -604,7 +599,7 @@ where
     /// # Example
     /// ```
     /// # use sycamore::prelude::*;
-    ///
+    /// # use sycamore::builder::html::*;
     /// # fn _test<G: GenericNode>() -> Template<G> {
     /// input()
     ///     /* builder stuff */
