@@ -25,6 +25,8 @@
 pub use sycamore_macro::{component, node, template};
 pub use sycamore_reactive as reactive;
 
+#[cfg(feature = "experimental-builder-agnostic")]
+pub mod builder;
 pub mod component;
 pub mod context;
 pub mod easing;
@@ -51,6 +53,8 @@ pub use crate::generic_node::{render_to_string, SsrNode};
 pub mod prelude {
     pub use sycamore_macro::{component, node, template};
 
+    #[cfg(feature = "experimental-builder-agnostic")]
+    pub use crate::builder::agnostic::prelude::*;
     pub use crate::flow::{Indexed, IndexedProps, Keyed, KeyedProps};
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;
