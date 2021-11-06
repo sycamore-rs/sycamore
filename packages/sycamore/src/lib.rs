@@ -11,6 +11,7 @@
 //! - `experimental-builder-agnostic` - Enables the agnostic backend builder API.
 //! - `experimental-builder-html` - Enables the HTML specific backend builder API. Also enables
 //!   `experimental-builder-agnostic`.
+//! - `hydrate` - Enables client-side hydration support.
 //! - `futures` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
 //!   reactive scope into an `async` function.
 //! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering /
@@ -31,8 +32,6 @@
 pub use sycamore_macro::{component, node, view};
 pub use sycamore_reactive as reactive;
 
-#[cfg(feature = "experimental-builder-agnostic")]
-pub mod builder;
 pub mod component;
 pub mod context;
 pub mod easing;
@@ -43,6 +42,12 @@ pub mod noderef;
 pub mod portal;
 pub mod utils;
 pub mod view;
+
+#[cfg(feature = "experimental-builder-agnostic")]
+pub mod builder;
+
+#[cfg(feature = "hydrate")]
+pub mod hydrate;
 
 #[cfg(feature = "futures")]
 pub mod futures;
