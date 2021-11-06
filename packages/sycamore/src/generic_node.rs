@@ -121,3 +121,12 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a deep clone of the node.
     fn clone_node(&self) -> Self;
 }
+
+/// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
+pub trait Html: GenericNode {
+    /// A boolean indicating whether this node is rendered in a browser context.
+    ///
+    /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
+    /// in the browser. It only means that it does not create DOM nodes.
+    const IS_BROWSER: bool;
+}

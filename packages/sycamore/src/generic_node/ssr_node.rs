@@ -10,7 +10,7 @@ use ahash::AHashMap;
 use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
-use crate::generic_node::{EventHandler, GenericNode};
+use crate::generic_node::{EventHandler, GenericNode, Html};
 use crate::reactive::create_root;
 use crate::template::Template;
 
@@ -324,6 +324,10 @@ impl GenericNode for SsrNode {
         };
         Self(Rc::new(inner))
     }
+}
+
+impl Html for SsrNode {
+    const IS_BROWSER: bool = false;
 }
 
 trait WriteToString {

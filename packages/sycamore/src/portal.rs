@@ -1,6 +1,6 @@
 //! Portal API.
 
-use std::any::{Any, TypeId};
+use std::any::{Any};
 
 use wasm_bindgen::prelude::*;
 
@@ -20,7 +20,7 @@ where
 pub fn portal(props: PortalProps<G>) -> Template<G> {
     let PortalProps { children, selector } = props;
 
-    if TypeId::of::<G>() == TypeId::of::<DomNode>() {
+    if G::IS_BROWSER {
         let window = web_sys::window().unwrap_throw();
         let document = window.document().unwrap_throw();
         let container = document

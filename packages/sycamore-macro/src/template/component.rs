@@ -37,7 +37,7 @@ impl ToTokens for Component {
             syn::PathArguments::None => quote! {},
             syn::PathArguments::AngleBracketed(mut generics) => {
                 if !generics.args.is_empty() {
-                    // Add the GenericNode type param to generics.
+                    // Add the Html type param to generics.
                     let first_generic_param_index = generics
                         .args
                         .iter()

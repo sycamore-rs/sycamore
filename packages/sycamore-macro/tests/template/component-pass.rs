@@ -7,7 +7,7 @@ pub fn component() -> Template<G> {
     }
 }
 
-fn compile_pass<G: GenericNode>() {
+fn compile_pass<G: Html>() {
     let _: Template<G> = template! { Component() };
 }
 

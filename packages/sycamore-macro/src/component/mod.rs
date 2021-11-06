@@ -168,7 +168,7 @@ pub fn component_impl(
     let component_name_str = component_name.to_string();
     let generic_node_ty = generic_node_ty.type_params().next().unwrap();
     let generic_node: GenericParam = syn::parse_quote! {
-        #generic_node_ty: ::sycamore::generic_node::GenericNode
+        #generic_node_ty: ::sycamore::generic_node::Html
     };
 
     let ComponentFunction {
@@ -187,7 +187,7 @@ pub fn component_impl(
         FnArg::Typed(pat_ty) => &pat_ty.ty,
     };
 
-    // Add the GenericNode type param to generics.
+    // Add the Html type param to generics.
     let first_generic_param_index = generics
         .params
         .iter()

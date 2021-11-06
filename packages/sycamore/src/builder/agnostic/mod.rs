@@ -1,7 +1,7 @@
 //! The renderer-agnostic API.
 
 use crate::component::Component;
-use crate::generic_node::GenericNode;
+use crate::generic_node::{GenericNode, Html};
 use crate::noderef::NodeRef;
 use crate::template::Template;
 use crate::utils::render;
@@ -51,13 +51,13 @@ where
 /// }
 ///
 /// // Elsewhere in another component.
-/// # fn view<G: GenericNode>() -> Template<G> {
+/// # fn view<G: Html>() -> Template<G> {
 /// component::<_, MyComponent<_>>(())
 /// # }
 /// ```
 pub fn component<G, C>(props: C::Props) -> Template<G>
 where
-    G: GenericNode,
+    G: GenericNode + Html,
     C: Component<G>,
 {
     C::__create_component(props)
@@ -197,7 +197,7 @@ where
     ///     h1().text("My component").build()
     /// }
     ///
-    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// # fn _test<G: Html>() -> Template<G> {
     /// div().component::<MyComponent<_>>(()).build()
     /// }
     /// ```
