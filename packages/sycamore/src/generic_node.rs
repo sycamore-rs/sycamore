@@ -42,6 +42,9 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// The type of the event that is passed to the event handler.
     type EventType;
 
+    /// Whether this rendering backend needs the hydration registry.
+    const USE_HYDRATION_CONTEXT: bool = false;
+
     /// Create a new element node.
     fn element(tag: &str) -> Self;
 
