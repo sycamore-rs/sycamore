@@ -1,7 +1,4 @@
-use sycamore::{
-    context::use_context,
-    prelude::*,
-};
+use sycamore::{context::use_context, prelude::*};
 use wasm_bindgen::JsCast;
 use web_sys::{Event, KeyboardEvent};
 

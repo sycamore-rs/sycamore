@@ -1,11 +1,7 @@
 use sycamore::context::use_context;
 use sycamore::prelude::*;
 
-use crate::{
-    AppState,
-    Filter,
-    filter::TodoFilter,
-};
+use crate::{filter::TodoFilter, AppState, Filter};
 
 #[component(Footer<G>)]
 pub fn footer() -> Template<G> {

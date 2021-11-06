@@ -1,11 +1,7 @@
-use sycamore::prelude::*;
 use sycamore::context::use_context;
+use sycamore::prelude::*;
 
-use crate::{
-    AppState,
-    Filter,
-    item::Item,
-};
+use crate::{item::Item, AppState, Filter};
 
 #[component(List<G>)]
 pub fn list() -> Template<G> {
@@ -54,4 +50,3 @@ pub fn list() -> Template<G> {
         }
     }
 }
-

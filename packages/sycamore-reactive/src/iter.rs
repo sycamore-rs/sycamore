@@ -225,7 +225,7 @@ where
                         });
                         scopes.push(new_scope);
                     } else if item != Some(new_item) {
-                        let new_scope = create_child_scope_in(parent_scope.as_ref(),|| {
+                        let new_scope = create_child_scope_in(parent_scope.as_ref(), || {
                             mapped.borrow_mut()[i] = map_fn(new_item);
                         });
                         scopes[i] = new_scope;
