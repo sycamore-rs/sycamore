@@ -484,13 +484,57 @@ where
     pub fn on<E, H>(&self, event: E, handler: H) -> &Self
     where
         E: AsRef<str>,
-        H: Fn(web_sys::Event) + 'static,
+        H: Fn(G::EventType) + 'static,
     {
         self.element.event(event.as_ref(), Box::new(handler));
 
         self
     }
 
+    /// Get a hold of the raw element by using a [`NodeRef`].
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    /// # use sycamore::builder::html::*;
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// let node_ref = NodeRef::new();
+    ///
+    /// input()
+    ///     .bind_ref(node_ref.clone())
+    ///     .build()
+    /// # }
+    /// ```
+    pub fn bind_ref(&self, node_ref: NodeRef<G>) -> &Self {
+        node_ref.set(self.element.clone());
+
+        self
+    }
+
+    /// Builds the [`NodeBuilder`] and returns a [`Template`].
+    ///
+    /// This is the function that should be called at the end of the node
+    /// building chain.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::prelude::*;
+    /// # use sycamore::builder::html::*;
+    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// input()
+    ///     /* builder stuff */
+    ///     .build()
+    /// # }
+    /// ```
+    pub fn build(&self) -> Template<G> {
+        Template::new_node(self.element.to_owned())
+    }
+}
+
+impl<G> NodeBuilder<G>
+where
+    G: GenericNode + Html,
+{
     /// Binds `sub` to the `value` property of the node.
     ///
     /// `sub` will be automatically updated when the value is updated.
@@ -499,7 +543,7 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// # fn _test<G: Html>() -> Template<G> {
     /// let value = Signal::new(String::new());
     ///
     /// input()
@@ -537,7 +581,7 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// # fn _test<G: Html>() -> Template<G> {
     /// let checked = Signal::new(false);
     ///
     /// input()
@@ -569,44 +613,5 @@ where
                 );
             }
         })
-    }
-
-    /// Get a hold of the [`element`](::web_sys::Node) by using a [`NodeRef`].
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore::prelude::*;
-    /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> Template<G> {
-    /// let node_ref = NodeRef::new();
-    ///
-    /// input()
-    ///     .bind_ref(node_ref.clone())
-    ///     .build()
-    /// # }
-    /// ```
-    pub fn bind_ref(&self, node_ref: NodeRef<G>) -> &Self {
-        node_ref.set(self.element.clone());
-
-        self
-    }
-
-    /// Builds the [`NodeBuilder`] and returns a [`Template`].
-    ///
-    /// This is the function that should be called at the end of the node
-    /// building chain.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore::prelude::*;
-    /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> Template<G> {
-    /// input()
-    ///     /* builder stuff */
-    ///     .build()
-    /// # }
-    /// ```
-    pub fn build(&self) -> Template<G> {
-        Template::new_node(self.element.to_owned())
     }
 }

@@ -10,7 +10,7 @@ use ahash::AHashMap;
 use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
-use crate::generic_node::{EventHandler, GenericNode, Html};
+use crate::generic_node::{GenericNode, Html};
 use crate::reactive::create_root;
 use crate::template::Template;
 
@@ -119,6 +119,12 @@ impl SsrNode {
 }
 
 impl GenericNode for SsrNode {
+    /// Although [`SsrNode`] is intended to be used on the server-side instead of in the browser,
+    /// the event type is still [`web_sys::Event`] because it must support the same API as
+    /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
+    /// anyways, it's okay to do this.
+    type EventType = web_sys::Event;
+
     fn element(tag: &str) -> Self {
         SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
@@ -293,7 +299,7 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event(&self, _name: &str, _handler: Box<EventHandler>) {
+    fn event(&self, _name: &str, _handler: Box<dyn Fn(Self::EventType)>) {
         // Noop. Events are attached on client side.
     }
 

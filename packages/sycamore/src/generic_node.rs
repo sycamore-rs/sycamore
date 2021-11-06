@@ -16,9 +16,6 @@ pub use dom_node::*;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
 
-/// Type of event handlers.
-pub type EventHandler = dyn Fn(Event);
-
 /// Abstraction over a rendering backend.
 ///
 /// You would probably use this trait as a trait bound when you want to accept any rendering
@@ -42,6 +39,9 @@ pub type EventHandler = dyn Fn(Event);
 /// [`GenericNode`]s should be cheaply cloneable (usually backed by a [`Rc`](std::rc::Rc) or other
 /// reference counted container) and preserve reference equality.
 pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
+    /// The type of the event that is passed to the event handler.
+    type EventType;
+
     /// Create a new element node.
     fn element(tag: &str) -> Self;
 
@@ -107,7 +107,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn remove_self(&self);
 
     /// Add a [`EventHandler`] to the event `name`.
-    fn event(&self, name: &str, handler: Box<EventHandler>);
+    fn event(&self, name: &str, handler: Box<dyn Fn(Self::EventType)>);
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
@@ -123,7 +123,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 }
 
 /// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
-pub trait Html: GenericNode {
+pub trait Html: GenericNode<EventType = Event> {
     /// A boolean indicating whether this node is rendered in a browser context.
     ///
     /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
