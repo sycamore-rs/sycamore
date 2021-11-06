@@ -23,7 +23,7 @@ generate_tag_functions! {
         Html,
 
         // Document markup
-        Mase,
+        Base,
         Head,
         Link,
         Meta,
