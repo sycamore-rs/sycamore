@@ -543,7 +543,7 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// # fn _test<G: Html>() -> Template<G> {
     /// let value = Signal::new(String::new());
     ///
     /// input()
@@ -581,7 +581,7 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> Template<G> {
+    /// # fn _test<G: Html>() -> Template<G> {
     /// let checked = Signal::new(false);
     ///
     /// input()
