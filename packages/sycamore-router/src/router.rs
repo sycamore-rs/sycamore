@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use sycamore::generic_node::EventHandler;
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -21,7 +20,7 @@ pub trait Integration {
 
     /// Get the click handler that is run when links are clicked.
 
-    fn click_handler(&self) -> Box<EventHandler>;
+    fn click_handler(&self) -> Box<dyn Fn(web_sys::Event)>;
 }
 
 thread_local! {
@@ -63,7 +62,7 @@ impl Integration for HistoryIntegration {
         closure.forget();
     }
 
-    fn click_handler(&self) -> Box<EventHandler> {
+    fn click_handler(&self) -> Box<dyn Fn(web_sys::Event)> {
         Box::new(|ev| {
             if let Some(a) = ev
                 .target()
