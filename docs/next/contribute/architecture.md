@@ -20,12 +20,12 @@ All non proc-macro related code is in `/packages/sycamore`. Proc-macro related c
 
 - #### `Template`
 
-  - `Template` is a wrapper type around a `GenericNode` that is produced by the `template!` macro. A
+  - `Template` is a wrapper type around a `GenericNode` that is produced by the `view!` macro. A
     `Template` can be rendered using the utilities in `sycamore::utils::render`.
 
-- #### `template!`
+- #### `view!`
 
-  - The template macro is defined in `/packages/sycamore-macro/src/lib.rs`.
+  - The view macro is defined in `/packages/sycamore-macro/src/lib.rs`.
 
   - [`trybuild`](https://github.com/dtolnay/trybuild) is used for testing proc-macros.
 

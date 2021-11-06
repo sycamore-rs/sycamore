@@ -90,14 +90,14 @@ DOM.
 
 ## Using reactivity with DOM updates
 
-Reactivity is automatically built-in into the `template!` macro. Say we have the following code:
+Reactivity is automatically built-in into the `view!` macro. Say we have the following code:
 
 ```rust
 use sycamore::prelude::*;
 
 let state = Signal::new(0);
 
-let root = template! {
+let root = view! {
     p {
         (state.get())
     }

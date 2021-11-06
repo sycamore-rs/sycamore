@@ -1,17 +1,17 @@
-# `template!`
+# `view!`
 
-Sycamore uses the `template!` macro as an ergonomic way to create complex user interfaces. You might
+Sycamore uses the `view!` macro as an ergonomic way to create complex user interfaces. You might
 have already seen it in the _"Hello, World!"_ example.
 
 ## Syntax
 
 ### Elements
 
-Creating HTML elements is easy as pie with the `template!` macro. Since you'll likely want to create
+Creating HTML elements is easy as pie with the `view!` macro. Since you'll likely want to create
 a lot of elements in your app, there is a special terse syntax.
 
 ```rust
-template! {
+view! {
     // A simple div
     div
     // A div with a class
@@ -29,7 +29,7 @@ Of course, in your app, you probably want to display some text. To create a text
 string literal (using `"`).
 
 ```rust
-template! {
+view! {
     "Hello World!"
 }
 ```
@@ -39,7 +39,7 @@ template! {
 Creating all these top-level nodes is not very useful. You can create nested nodes like so.
 
 ```rust
-template! {
+view! {
     div(class="foo") {
         p {
             span { "Hello " }
@@ -54,7 +54,7 @@ template! {
 Attributes (including classes and ids) can also be specified.
 
 ```rust
-template! {
+view! {
     p(class="my-class", id="my-paragraph", aria-label="My paragraph")
     button(disabled=true) {
        "My button"
@@ -69,7 +69,7 @@ element. This should generally be avoided because it is a possible security risk
 input to this attribute as that will create an XSS (Cross-Site Scripting) vulnerability.
 
 ```rust
-template! {
+view! {
     div(dangerously_set_inner_html="<span>Inner HTML!</span>")
 
     // DO NOT DO THIS!!!
@@ -85,7 +85,7 @@ Instead, when displaying user input, use interpolation syntax instead.
 Events are attached using the `on:*` directive.
 
 ```rust
-template! {
+view! {
     button(on:click=|_| { /* do something */ }) {
         "Click me"
     }
@@ -94,11 +94,11 @@ template! {
 
 ### Fragments
 
-As seen in previous examples, templates can also be fragments. You can create as many nodes as you
+As seen in previous examples, views can also be fragments. You can create as many nodes as you
 want at the top-level.
 
 ```rust
-template! {
+view! {
     p { "First child" }
     p { "Second child" }
 }
@@ -107,7 +107,7 @@ template! {
 Fragments can also be empty.
 
 ```rust
-template! {}
+view! {}
 ```
 
 ## Interpolation
@@ -118,7 +118,7 @@ automatically be inserted as text into the DOM tree. For example:
 ```rust
 let my_number = 123;
 
-template! {
+view! {
     p {
         // Automatically display my_number as a string using std::fmt::Display
         "This is my number: " (my_number)
@@ -126,18 +126,18 @@ template! {
 }
 ```
 
-Other templates created using the `template!` macro can also be interpolated using the same syntax.
+Other views created using the `view!` macro can also be interpolated using the same syntax.
 For example:
 
 ```rust
-let inner_template = template! {
+let inner_view = view! {
     "Inside"
 };
 
-let outer_template = template! {
+let outer_view = view! {
     "Outside"
     div {
-        (inner_template)
+        (inner_view)
     }
 };
 ```

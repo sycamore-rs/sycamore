@@ -8,7 +8,7 @@ use sycamore::prelude::*;
 
 let value = Signal::new(String::new());
 
-template! {
+view! {
     input(bind:value=value)
 }
 ```

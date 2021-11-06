@@ -28,15 +28,15 @@ struct Counter(Signal<i32>);
 fn counter_view() -> Template<G> {
     let counter = use_context::<Counter>();
 
-    template! {
+    view! {
         (counter.0.get())
     }
 }
 
-template! {
+view! {
     ContextProvider(ContextProviderProps {
         value: Counter(Signal::new(0)),
-        children: || template! {
+        children: || view! {
             CounterView()
         }
     })

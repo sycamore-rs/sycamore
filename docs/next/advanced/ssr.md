@@ -13,7 +13,7 @@ DOM. When rendering on the server, however, we don't have a DOM accessible to us
 browser using your favorite web server.
 
 ```rust
-let node = template! {
+let node = view! {
     div(class="my-class") {
         button { "Click me" }
     }
@@ -39,7 +39,7 @@ Once proper hydration is implemented, time to interactive will be improved.
 
 ## Quick Start Templates
 
-- [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template): A quick
-  start template for using Sycamore with Rocket. Batteries included with `sycamore-router`.
-- [`sycamore-rocket-minimal-template`](https://github.com/sycamore-rs/sycamore-rocket-minimal-template):
-  A minimal template for using Sycamore with Rocket.
+- [`sycamore-rocket-view`](https://github.com/sycamore-rs/sycamore-rocket-view): A quick
+  start view for using Sycamore with Rocket. Batteries included with `sycamore-router`.
+- [`sycamore-rocket-minimal-view`](https://github.com/sycamore-rs/sycamore-rocket-minimal-view):
+  A minimal view for using Sycamore with Rocket.
