@@ -314,6 +314,35 @@ pub fn navigate(url: &str) {
     });
 }
 
+/// Navigates to the specified `url` without adding a new history entry. Instead, this replaces the
+/// current location with the new `url`. The url should have the same origin as the app.
+///
+/// This is useful for imperatively navigating to an url when using an anchor tag (`<a>`) is not
+/// possible/suitable (e.g. when submitting a form).
+///
+/// # Panics
+/// This function will `panic!()` if a [`Router`] has not yet been created.
+pub fn navigate_replace(url: &str) {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.borrow().is_some(),
+            "navigate_replace can only be used with a BrowserRouter"
+        );
+
+        let pathname = pathname.borrow().clone().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
+
+        // Update History API.
+        let window = web_sys::window().unwrap_throw();
+        let history = window.history().unwrap_throw();
+        history
+            .replace_state_with_url(&JsValue::UNDEFINED, "", Some(url))
+            .unwrap_throw();
+        window.scroll_to_with_x_and_y(0.0, 0.0);
+    });
+}
+
 fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {
     kb_event.meta_key() || kb_event.ctrl_key() || kb_event.shift_key() || kb_event.alt_key()
 }
