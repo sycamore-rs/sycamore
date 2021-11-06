@@ -28,7 +28,7 @@
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]
 
-pub use sycamore_macro::{component, node, template};
+pub use sycamore_macro::{component, node, view};
 pub use sycamore_reactive as reactive;
 
 #[cfg(feature = "experimental-builder-agnostic")]
@@ -41,8 +41,8 @@ pub mod generic_node;
 pub mod motion;
 pub mod noderef;
 pub mod portal;
-pub mod template;
 pub mod utils;
+pub mod view;
 
 #[cfg(feature = "futures")]
 pub mod futures;
@@ -57,7 +57,7 @@ pub use crate::generic_node::{render_to_string, SsrNode};
 
 /// The sycamore prelude.
 pub mod prelude {
-    pub use sycamore_macro::{component, node, template};
+    pub use sycamore_macro::{component, node, view};
 
     #[cfg(feature = "experimental-builder-agnostic")]
     pub use crate::builder::agnostic::prelude::*;
@@ -73,7 +73,7 @@ pub mod prelude {
         cloned, create_effect, create_memo, create_root, create_selector, create_selector_with,
         on_cleanup, untrack, Signal, StateHandle,
     };
-    pub use crate::template::{IntoTemplate, Template};
+    pub use crate::view::{IntoView, View};
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

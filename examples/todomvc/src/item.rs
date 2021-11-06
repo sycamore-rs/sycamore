@@ -5,7 +5,7 @@ use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 use crate::{AppState, Todo};
 
 #[component(Item<G>)]
-pub fn item(todo: Signal<Todo>) -> Template<G> {
+pub fn item(todo: Signal<Todo>) -> View<G> {
     let app_state = use_context::<AppState>();
 
     let title = cloned!((todo) => move || todo.get().title.clone());
@@ -81,7 +81,7 @@ pub fn item(todo: Signal<Todo>) -> Template<G> {
         )
     });
 
-    template! {
+    view! {
         li(class=class()) {
             div(class="view") {
                 input(class="toggle", type="checkbox", on:input=toggle_completed, bind:checked=checked)
@@ -92,7 +92,7 @@ pub fn item(todo: Signal<Todo>) -> Template<G> {
             }
 
             (if *editing.get() {
-                cloned!((todo, input_ref, handle_blur, handle_submit, handle_input) => template! {
+                cloned!((todo, input_ref, handle_blur, handle_submit, handle_input) => view! {
                     input(ref=input_ref,
                         class="edit",
                         value=todo.get().title.clone(),
@@ -102,7 +102,7 @@ pub fn item(todo: Signal<Todo>) -> Template<G> {
                     )
                 })
             } else {
-                Template::empty()
+                View::empty()
             })
         }
     }

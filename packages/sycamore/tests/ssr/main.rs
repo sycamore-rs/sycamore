@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 
 #[test]
 fn hello_world() {
-    let node = template! {
+    let node = view! {
         p { "Hello World!" }
     };
 
@@ -13,7 +13,7 @@ fn hello_world() {
 fn reactive_text() {
     let count = Signal::new(0);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         p { (count.get()) }
     });
 
@@ -30,7 +30,7 @@ fn reactive_text() {
 fn reactive_text_with_siblings() {
     let count = Signal::new(0);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         p { "before" (count.get()) "after" }
     });
 
@@ -45,7 +45,7 @@ fn reactive_text_with_siblings() {
 
 #[test]
 fn self_closing_tag() {
-    let node = template! {
+    let node = view! {
         div {
             input
             input(value="a")
@@ -60,7 +60,7 @@ fn self_closing_tag() {
 
 #[test]
 fn fragments() {
-    let node = template! {
+    let node = view! {
         p { "1" }
         p { "2" }
         p { "3" }
@@ -76,11 +76,11 @@ fn fragments() {
 fn indexed() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -103,7 +103,7 @@ fn indexed() {
 fn bind() {
     let signal = Signal::new(String::new());
 
-    let node = template! {
+    let node = view! {
         input(bind:value=signal)
     };
 

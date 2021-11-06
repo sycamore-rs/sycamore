@@ -1,8 +1,8 @@
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component(num: StateHandle<i32>) -> Template<G> {
-    template! {
+fn my_component(num: StateHandle<i32>) -> View<G> {
+    view! {
         div(class="my-component") {
             "My component"
             p {
@@ -14,14 +14,14 @@ fn my_component(num: StateHandle<i32>) -> Template<G> {
 }
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let state = Signal::new(1);
 
     let increment = cloned!((state) => move |_| {
         state.set(*state.get() + 1);
     });
 
-    template! {
+    view! {
         div {
             h1 {
                 "Component demo"
@@ -41,5 +41,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

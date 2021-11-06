@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 use crate::{filter::TodoFilter, AppState, Filter};
 
 #[component(Footer<G>)]
-pub fn footer() -> Template<G> {
+pub fn footer() -> View<G> {
     let app_state = use_context::<AppState>();
 
     let items_text = cloned!((app_state) => move || {
@@ -22,7 +22,7 @@ pub fn footer() -> Template<G> {
         app_state.clear_completed()
     });
 
-    template! {
+    view! {
         footer(class="footer") {
             span(class="todo-count") {
                 strong { (app_state.todos_left()) }
@@ -35,13 +35,13 @@ pub fn footer() -> Template<G> {
             }
 
             (if *has_completed_todos.get() {
-                cloned!((handle_clear_completed) => template! {
+                cloned!((handle_clear_completed) => view! {
                     button(class="clear-completed", on:click=handle_clear_completed) {
                         "Clear completed"
                     }
                 })
             } else {
-                Template::empty()
+                View::empty()
             })
         }
     }

@@ -1,0 +1,42 @@
+error: expected a valid HTML node
+ --> $DIR/element-fail.rs:4:31
+  |
+4 |     let _: View<G> = view! { p.my-class#id };
+  |                               ^
+
+error: expected `=`
+ --> $DIR/element-fail.rs:6:36
+  |
+6 |     let _: View<G> = view! { button(disabled) };
+  |                                    ^^^^^^^^^^
+
+error: expected `=`
+ --> $DIR/element-fail.rs:7:36
+  |
+7 |     let _: View<G> = view! { button(on:click) };
+  |                                    ^^^^^^^^^^
+
+error: unknown directive `unknown`
+ --> $DIR/element-fail.rs:8:37
+  |
+8 |     let _: View<G> = view! { button(unknown:directive="123") };
+  |                                     ^^^^^^^
+
+error: expected `=`
+  --> $DIR/element-fail.rs:10:38
+   |
+10 |     let _: View<G> = view! { button(a.b.c="123") };
+   |                                      ^
+
+error: children and inner html cannot be both set
+  --> $DIR/element-fail.rs:12:22
+   |
+12 |       let _: View<G> = view! {
+   |  ______________________^
+13 | |         p(dangerously_set_inner_html="<span>Test</span>") {
+14 | |             "Error"
+15 | |         }
+16 | |     };
+   | |_____^
+   |
+   = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)

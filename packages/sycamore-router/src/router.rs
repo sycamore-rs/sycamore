@@ -144,7 +144,7 @@ fn base_pathname() -> String {
 pub struct RouterProps<R, F, G>
 where
     R: Route + 'static,
-    F: FnOnce(StateHandle<R>) -> Template<G>,
+    F: FnOnce(StateHandle<R>) -> View<G>,
     G: GenericNode,
 {
     render: F,
@@ -155,7 +155,7 @@ where
 impl<R, F, G> RouterProps<R, F, G>
 where
     R: Route + 'static,
-    F: FnOnce(StateHandle<R>) -> Template<G>,
+    F: FnOnce(StateHandle<R>) -> View<G>,
     G: GenericNode,
 {
     /// Create a new [`RouterProps`].
@@ -171,10 +171,10 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component(Router<G>)]
-pub fn router<R, F>(props: RouterProps<R, F, G>) -> Template<G>
+pub fn router<R, F>(props: RouterProps<R, F, G>) -> View<G>
 where
     R: Route + 'static,
-    F: FnOnce(StateHandle<R>) -> Template<G> + 'static,
+    F: FnOnce(StateHandle<R>) -> View<G> + 'static,
 {
     let RouterProps {
         render,
@@ -242,7 +242,7 @@ where
 pub struct StaticRouterProps<R, F, G>
 where
     R: Route,
-    F: Fn(R) -> Template<G>,
+    F: Fn(R) -> View<G>,
     G: GenericNode,
 {
     render: F,
@@ -253,7 +253,7 @@ where
 impl<R, F, G> StaticRouterProps<R, F, G>
 where
     R: Route,
-    F: Fn(R) -> Template<G>,
+    F: Fn(R) -> View<G>,
     G: GenericNode,
 {
     /// Create a new [`StaticRouterProps`].
@@ -271,10 +271,10 @@ where
 /// This is useful for SSR where we want the HTML to be rendered instantly instead of waiting for
 /// the route preload to finish loading.
 #[component(StaticRouter<G>)]
-pub fn static_router<R, F>(props: StaticRouterProps<R, F, G>) -> Template<G>
+pub fn static_router<R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
 where
     R: Route + 'static,
-    F: Fn(R) -> Template<G> + 'static,
+    F: Fn(R) -> View<G> + 'static,
 {
     let StaticRouterProps {
         render,
@@ -365,7 +365,7 @@ mod tests {
         }
 
         #[component(Comp<G>)]
-        fn comp(path: String) -> Template<G> {
+        fn comp(path: String) -> View<G> {
             let route = Routes::match_route(
                 &path
                     .split('/')
@@ -373,16 +373,16 @@ mod tests {
                     .collect::<Vec<_>>(),
             );
 
-            template! {
+            view! {
                 StaticRouter(StaticRouterProps::new(route, |route: Routes| {
                     match route {
-                        Routes::Home => template! {
+                        Routes::Home => view! {
                             "Home"
                         },
-                        Routes::About => template! {
+                        Routes::About => view! {
                             "About"
                         },
-                        Routes::NotFound => template! {
+                        Routes::NotFound => view! {
                             "Not Found"
                         }
                     }
@@ -391,17 +391,17 @@ mod tests {
         }
 
         assert_eq!(
-            sycamore::render_to_string(|| template! { Comp("/".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp("/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|| template! { Comp("/about".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp("/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|| template! { Comp("/404".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp("/404".to_string()) }),
             "Not Found"
         );
     }

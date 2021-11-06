@@ -6,7 +6,7 @@ created with the `#[component(ComponentName<G>)]` attribute on a function.
 Components receive their props through function arguments.
 
 For components to automatically react to prop changes, they should accept a prop with type
-`StateHandle<T>` and call the function in the `template!` to subscribe to the state. A
+`StateHandle<T>` and call the function in the `view!` to subscribe to the state. A
 `StateHandle<T>` is just a readonly `Signal<T>`.
 
 Getting a `StateHandle<T>` from a `Signal<T>` is easy. Just call the `.handle()` method.
@@ -17,8 +17,8 @@ Here is an example of a simple component that displays the value of its prop:
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component(value: StateHandle<i32>) -> Template<G> {
-    template! {
+fn my_component(value: StateHandle<i32>) -> View<G> {
+    view! {
         div(class="my-component") {
             "Value: " (value.get())
         }
@@ -28,7 +28,7 @@ fn my_component(value: StateHandle<i32>) -> Template<G> {
 // ...
 let state = Signal::new(0);
 
-template! {
+view! {
     MyComponent(state.handle())
 }
 
@@ -43,7 +43,7 @@ Components that don't accept props (same as accepting `()`) can omit the functio
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component() -> Template<G> {
+fn my_component() -> View<G> {
     ...
 }
 ```
@@ -64,7 +64,7 @@ component lifecycle.
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component() -> Template<G> {
+fn my_component() -> View<G> {
     on_cleanup(move || {
         // Perform cleanup.
     });

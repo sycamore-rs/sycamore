@@ -187,20 +187,20 @@ enum Routes {
 To display content based on the route that matches, we can use a `Router`.
 
 ```rust
-template! {
+view! {
     Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
         let t = create_memo(move || match route.get().as_ref() {
-            AppRoutes::Index => template! {
+            AppRoutes::Index => view! {
                 "This is the index page"
             },
-            AppRoutes::About => template! {
+            AppRoutes::About => view! {
                 "About this website"
             },
-            AppRoutes::NotFound => template! {
+            AppRoutes::NotFound => view! {
                 "404 Not Found"
             },
         });
-        template! {
+        view! {
             div(class="app) {
                 (t.get().as_ref().clone())
             }
@@ -226,23 +226,23 @@ The difference between a `Router` and a `StaticRouter` is that the route is prov
 `StaticRouter` during the initialization phase. The initial route is provided as an argument to
 `StaticRouterProps::new`.
 
-This is so that `StaticRouter` can return a `Template` immediately without blocking to wait for the
+This is so that `StaticRouter` can return a `View` immediately without blocking to wait for the
 route preload. The route is expected to be resolved separately using the `Route::match_path`
 function.
 
 ```rust
 let route = AppRoutes::match_path(path);
 
-template! {
+view! {
     StaticRouter(StaticRouterProps::new(route, |route: AppRoutes| {
         match route {
-            AppRoutes::Index => template! {
+            AppRoutes::Index => view! {
                 "This is the index page"
             },
-            AppRoutes::About => template! {
+            AppRoutes::About => view! {
                 "About this website"
             },
-            AppRoutes::NotFound => template! {
+            AppRoutes::NotFound => view! {
                 "404 Not Found"
             },
         }
@@ -274,30 +274,30 @@ the current scope into inside the `async` block. Make sure you enable the `"futu
 ```rust
 use sycamore::futures::spawn_local_in_scope;
 
-template! {
+view! {
     Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
-        let template = Signal::new(Template::empty());
-        create_effect(cloned!((template) => move || {
+        let view = Signal::new(View::empty());
+        create_effect(cloned!((view) => move || {
             let route = route.get();
-            spawn_local_in_scope(cloned!((template) => async move {
+            spawn_local_in_scope(cloned!((view) => async move {
                 let t = match route.as_ref() {
-                    AppRoutes::Index => template! {
+                    AppRoutes::Index => view! {
                         "This is the index page"
                     },
-                    AppRoutes::About => template! {
+                    AppRoutes::About => view! {
                         "About this website"
                     },
-                    AppRoutes::NotFound => template! {
+                    AppRoutes::NotFound => view! {
                         "404 Not Found"
                     },
                 };
-                template.set(t);
+                view.set(t);
             }));
         }));
 
-        template! {
+        view! {
             div(class="app") {
-                (template.get().as_ref().clone())
+                (view.get().as_ref().clone())
             }
         }
     }
@@ -311,7 +311,7 @@ page. Sometimes, we just want the browser to handle navigation without being int
 router. To bypass the router, we can add the `rel="external"` attribute to the anchor tag.
 
 ```rust
-template! {
+view! {
     a(href="path", rel="external") { "Path" }
 }
 ```

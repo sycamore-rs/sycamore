@@ -11,13 +11,13 @@ pub struct PortalProps<G>
 where
     G: GenericNode,
 {
-    pub children: Template<G>,
+    pub children: View<G>,
     pub selector: &'static str,
 }
 
 /// A portal into another part of the DOM.
 #[component(Portal<G>)]
-pub fn portal(props: PortalProps<G>) -> Template<G> {
+pub fn portal(props: PortalProps<G>) -> View<G> {
     let PortalProps { children, selector } = props;
 
     if G::IS_BROWSER {
@@ -55,5 +55,5 @@ pub fn portal(props: PortalProps<G>) -> Template<G> {
         // TODO: Support for other types of nodes.
     }
 
-    template! {}
+    view! {}
 }

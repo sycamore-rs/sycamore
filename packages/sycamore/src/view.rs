@@ -1,4 +1,4 @@
-//! Result of the [`template`](crate::template!) macro.
+//! Result of the [view!](crate::view!) macro.
 
 use std::any::Any;
 use std::borrow::Cow;
@@ -8,62 +8,62 @@ use std::rc::Rc;
 use crate::generic_node::GenericNode;
 use crate::reactive::{create_memo, StateHandle};
 
-/// Internal type for [`Template`].
+/// Internal type for [`View`].
 #[derive(Clone)]
-pub(crate) enum TemplateType<G: GenericNode> {
+pub(crate) enum ViewType<G: GenericNode> {
     /// A DOM node.
     Node(G),
-    /// A dynamic [`Template`].
-    Dyn(StateHandle<Template<G>>),
-    /// A fragment of [`Template`]s.
+    /// A dynamic [`View`].
+    Dyn(StateHandle<View<G>>),
+    /// A fragment of [`View`]s.
     #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
-    Fragment(Rc<Box<[Template<G>]>>),
+    Fragment(Rc<Box<[View<G>]>>),
 }
 
-/// Result of the [`template`](crate::template!) macro. Should not be constructed manually.
+/// Result of the [view!](crate::view!) macro.
 #[derive(Clone)]
-pub struct Template<G: GenericNode> {
-    pub(crate) inner: TemplateType<G>,
+pub struct View<G: GenericNode> {
+    pub(crate) inner: ViewType<G>,
 }
 
-impl<G: GenericNode> Template<G> {
-    /// Create a new [`Template`] from a [`GenericNode`].
+impl<G: GenericNode> View<G> {
+    /// Create a new [`View`] from a [`GenericNode`].
     pub fn new_node(node: G) -> Self {
         Self {
-            inner: TemplateType::Node(node),
+            inner: ViewType::Node(node),
         }
     }
 
-    /// Create a new [`Template`] from a [`FnMut`].
-    pub fn new_dyn(f: impl FnMut() -> Template<G> + 'static) -> Self {
+    /// Create a new [`View`] from a [`FnMut`].
+    pub fn new_dyn(f: impl FnMut() -> View<G> + 'static) -> Self {
         let memo = create_memo(f);
         Self {
-            inner: TemplateType::Dyn(memo),
+            inner: ViewType::Dyn(memo),
         }
     }
 
-    /// Create a new [`Template`] from a `Vec` of [`GenericNode`]s.
-    pub fn new_fragment(fragment: Vec<Template<G>>) -> Self {
+    /// Create a new [`View`] from a `Vec` of [`GenericNode`]s.
+    pub fn new_fragment(fragment: Vec<View<G>>) -> Self {
         Self {
-            inner: TemplateType::Fragment(Rc::from(fragment.into_boxed_slice())),
+            inner: ViewType::Fragment(Rc::from(fragment.into_boxed_slice())),
         }
     }
 
-    /// Create a new [`Template`] with a blank comment node
+    /// Create a new [`View`] with a blank comment node
     pub fn empty() -> Self {
         Self::new_node(G::marker())
     }
 
     pub fn as_node(&self) -> Option<&G> {
-        if let TemplateType::Node(v) = &self.inner {
+        if let ViewType::Node(v) = &self.inner {
             Some(v)
         } else {
             None
         }
     }
 
-    pub fn as_fragment(&self) -> Option<&[Template<G>]> {
-        if let TemplateType::Fragment(v) = &self.inner {
+    pub fn as_fragment(&self) -> Option<&[View<G>]> {
+        if let ViewType::Fragment(v) = &self.inner {
             Some(v)
         } else {
             None
@@ -71,8 +71,8 @@ impl<G: GenericNode> Template<G> {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn as_dyn(&self) -> Option<&StateHandle<Template<G>>> {
-        if let TemplateType::Dyn(v) = &self.inner {
+    pub fn as_dyn(&self) -> Option<&StateHandle<View<G>>> {
+        if let ViewType::Dyn(v) = &self.inner {
             Some(v)
         } else {
             None
@@ -82,8 +82,8 @@ impl<G: GenericNode> Template<G> {
     pub fn is_node(&self) -> bool {
         matches!(
             self,
-            Template {
-                inner: TemplateType::Node(_)
+            View {
+                inner: ViewType::Node(_)
             }
         )
     }
@@ -91,8 +91,8 @@ impl<G: GenericNode> Template<G> {
     pub fn is_fragment(&self) -> bool {
         matches!(
             self,
-            Template {
-                inner: TemplateType::Fragment(_)
+            View {
+                inner: ViewType::Fragment(_)
             }
         )
     }
@@ -100,8 +100,8 @@ impl<G: GenericNode> Template<G> {
     pub fn is_dyn(&self) -> bool {
         matches!(
             self,
-            Template {
-                inner: TemplateType::Dyn(_)
+            View {
+                inner: ViewType::Dyn(_)
             }
         )
     }
@@ -109,9 +109,9 @@ impl<G: GenericNode> Template<G> {
     /// Returns a `Vec` of nodes.
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
-            TemplateType::Node(node) => vec![node],
-            TemplateType::Dyn(lazy) => lazy.get().as_ref().clone().flatten(),
-            TemplateType::Fragment(fragment) => fragment
+            ViewType::Node(node) => vec![node],
+            ViewType::Dyn(lazy) => lazy.get().as_ref().clone().flatten(),
+            ViewType::Fragment(fragment) => fragment
                 .iter()
                 .map(|x| x.clone().flatten())
                 .flatten()
@@ -120,50 +120,50 @@ impl<G: GenericNode> Template<G> {
     }
 }
 
-impl<G: GenericNode> Default for Template<G> {
+impl<G: GenericNode> Default for View<G> {
     fn default() -> Self {
         Self::empty()
     }
 }
 
-impl<G: GenericNode> fmt::Debug for Template<G> {
+impl<G: GenericNode> fmt::Debug for View<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.inner {
-            TemplateType::Node(node) => node.fmt(f),
-            TemplateType::Dyn(lazy) => lazy.get().fmt(f),
-            TemplateType::Fragment(fragment) => fragment.fmt(f),
+            ViewType::Node(node) => node.fmt(f),
+            ViewType::Dyn(lazy) => lazy.get().fmt(f),
+            ViewType::Fragment(fragment) => fragment.fmt(f),
         }
     }
 }
 
 /// Trait for describing how something should be rendered into DOM nodes.
-pub trait IntoTemplate<G: GenericNode> {
+pub trait IntoView<G: GenericNode> {
     /// Called during the initial render when creating the DOM nodes. Should return a
     /// `Vec` of [`GenericNode`]s.
-    fn create(&self) -> Template<G>;
+    fn create(&self) -> View<G>;
 }
 
-impl<G: GenericNode> IntoTemplate<G> for Template<G> {
-    fn create(&self) -> Template<G> {
+impl<G: GenericNode> IntoView<G> for View<G> {
+    fn create(&self) -> View<G> {
         self.clone()
     }
 }
 
-impl<G: GenericNode> IntoTemplate<G> for &Template<G> {
-    fn create(&self) -> Template<G> {
+impl<G: GenericNode> IntoView<G> for &View<G> {
+    fn create(&self) -> View<G> {
         (*self).clone()
     }
 }
 
-impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
-    fn create(&self) -> Template<G> {
+impl<T: fmt::Display + 'static, G: GenericNode> IntoView<G> for T {
+    fn create(&self) -> View<G> {
         // Workaround for specialization.
         // Inspecting the type is optimized away at compile time.
 
         macro_rules! specialize_as_ref_to_str {
             ($t: ty) => {{
                 if let Some(s) = <dyn Any>::downcast_ref::<$t>(self) {
-                    return Template::new_node(G::text_node(s.as_ref()));
+                    return View::new_node(G::text_node(s.as_ref()));
                 }
             }};
             ($t: ty, $($rest: ty),*) => {{
@@ -175,7 +175,7 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
         macro_rules! specialize_num_with_lexical {
             ($t: ty) => {{
                 if let Some(&n) = <dyn Any>::downcast_ref::<$t>(self) {
-                    return Template::new_node(G::text_node(&lexical::to_string(n)));
+                    return View::new_node(G::text_node(&lexical::to_string(n)));
                 }
             }};
             ($t: ty, $($rest: ty),*) => {{
@@ -194,6 +194,6 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoTemplate<G> for T {
 
         // Generic slow-path.
         let t = self.to_string();
-        Template::new_node(G::text_node(&t))
+        View::new_node(G::text_node(&t))
     }
 }

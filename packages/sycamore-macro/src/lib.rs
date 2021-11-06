@@ -2,36 +2,36 @@ use proc_macro::TokenStream;
 use syn::parse_macro_input;
 
 mod component;
-mod template;
+mod view;
 
 /// A macro for ergonomically creating complex UI structures.
 ///
 /// To learn more about the template syntax, see the chapter on
-/// [the `template!` macro](https://sycamore-rs.netlify.app/docs/basics/template) in the Sycamore Book.
+/// [the `view!` macro](https://sycamore-rs.netlify.app/docs/basics/template) in the Sycamore Book.
 #[proc_macro]
-pub fn template(component: TokenStream) -> TokenStream {
-    let component = parse_macro_input!(component as template::HtmlRoot);
+pub fn view(component: TokenStream) -> TokenStream {
+    let component = parse_macro_input!(component as view::HtmlRoot);
 
-    template::template_impl(component).into()
+    view::view_impl(component).into()
 }
 
 /// ```
 /// use sycamore::prelude::*;
 ///
 /// #[component(MyComponent<G>)]
-/// pub fn my_component() -> Template<G> {
+/// pub fn my_component() -> View<G> {
 ///     let cool_button: G = node! { button { "The coolest 😎" } };
 ///
 ///     cool_button.set_property("myProperty", &"Epic!".into());
 ///
-///     Template::new_node(cool_button)
+///     View::new_node(cool_button)
 /// }
 /// ```
 #[proc_macro]
 pub fn node(input: TokenStream) -> TokenStream {
-    let node = parse_macro_input!(input as template::Element);
+    let node = parse_macro_input!(input as view::Element);
 
-    template::node_impl(node).into()
+    view::node_impl(node).into()
 }
 
 /// A macro for creating components from functions.

@@ -1,21 +1,21 @@
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let name = Signal::new(String::new());
 
     let handle_change = move |_| unreachable!();
 
-    template! {
+    view! {
         div {
             h1 {
                 "Hello "
                 ({if !name.get().is_empty() {
-                    cloned!((name) => template! {
+                    cloned!((name) => view! {
                         span { (name.get()) }
                     })
                 } else {
-                    template! { span { "World" } }
+                    view! { span { "World" } }
                 }})
                 "!"
             }
@@ -26,6 +26,6 @@ fn app() -> Template<G> {
 }
 
 fn main() {
-    let s = sycamore::render_to_string(|| template! { App() });
+    let s = sycamore::render_to_string(|| view! { App() });
     println!("{}", s);
 }

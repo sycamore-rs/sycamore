@@ -10,7 +10,7 @@ Here it is:
 use sycamore::prelude::*;
 
 fn main() {
-    sycamore::render(|| template! {
+    sycamore::render(|| view! {
         p { "Hello, World!" }
     });
 }
@@ -30,15 +30,15 @@ sycamore::render(...)
 ```
 
 This function is provided by Sycamore and is used to render your app to the DOM (browser window).
-`render` accepts a closure (aka. lambda function) which should return a template to be rendered.
+`render` accepts a closure (aka. lambda function) which should return a view to be rendered.
 
 ```rust
-template! {
+view! {
     p { "Hello, World!" }
 }
 ```
 
-The `template!` macro allows creating complex user interfaces ergonomically in HTML. In this case,
+The `view!` macro allows creating complex user interfaces ergonomically in HTML. In this case,
 we want to render the following HTML:
 
 ```html
@@ -49,7 +49,7 @@ The `p { ... }` creates a new `<p>` tag. The `"Hello, World!"` creates a new tex
 nested within the `<p>` tag.
 
 There it is! Trunk just needs one thing to turn this into a website; a html source file to inject
-the template into. Copy the following code to a file called `index.html` in the root of your crate
+the view into. Copy the following code to a file called `index.html` in the root of your crate
 (alongside `Cargo.toml`):
 
 ```html
@@ -72,6 +72,6 @@ to see the latest changes.
 
 ## Quick Start Templates
 
-- [`sycamore-trunk-gitpod-template`](https://github.com/sycamore-rs/sycamore-trunk-gitpod-template):
-  A quick start template for building a Sycamore single-page app. Comes with support for using
+- [`sycamore-trunk-gitpod-view`](https://github.com/sycamore-rs/sycamore-trunk-gitpod-view):
+  A quick start view for building a Sycamore single-page app. Comes with support for using
   [gitpod.io](https://www.gitpod.io).

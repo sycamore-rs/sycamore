@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let counter = Signal::new(0);
 
     create_effect(cloned!((counter) => move || {
@@ -12,7 +12,7 @@ fn app() -> Template<G> {
 
     let reset = cloned!((counter) => move |_| counter.set(0));
 
-    template! {
+    view! {
         div {
             "Counter demo"
             p(class="value") {
@@ -33,5 +33,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

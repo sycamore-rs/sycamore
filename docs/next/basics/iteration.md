@@ -6,17 +6,17 @@ list changes. The components serve as wrappers to make rendering lists more ergo
 ## `Keyed`
 
 The `Keyed` component is used to render a list of items with a key. A key for each item is used to
-identify the item to prevent re-rendering templates twice. Every time the list changes, a diffing
+identify the item to prevent re-rendering views twice. Every time the list changes, a diffing
 algorithm is used to determine which items need to be re-rendered according to the associated key.
 
 ```rust
 let count = Signal::new(vec![1, 2]);
 
-template! {
+view! {
     ul {
         Keyed(KeyedProps {
             iterable: count.handle(),
-            template: |x| template! {
+            view: |x| view! {
                 li { (x) }
             },
             key: |x| *x,
@@ -33,11 +33,11 @@ generally preferred over `Indexed` because it is more efficient in most scenario
 ```rust
 let count = Signal::new(vec![1, 2]);
 
-template! {
+view! {
     ul {
         Indexed(IndexedProps {
             iterable: count.handle(),
-            template: |x| template! {
+            view: |x| view! {
                 li { (x) }
             },
         })
@@ -54,13 +54,13 @@ single node will be re-rendered every time the list changes.
 ```rust
 let count = vec![1, 2];
 
-let templates = Template::new_fragment(
-    count.iter().map(|&x| template! { li (x) }).collect()
+let views = View::new_fragment(
+    count.iter().map(|&x| view! { li (x) }).collect()
 );
 
-template! {
+view! {
     ul {
-        (templates)
+        (views)
     }
 }
 ```

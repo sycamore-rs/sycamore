@@ -132,8 +132,8 @@ impl Filter {
 }
 
 #[component(App<G>)]
-fn app() -> Template<G> {
-    template! {
+fn app() -> View<G> {
+    view! {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 header::Header()
@@ -183,10 +183,10 @@ fn main() {
     level in the view tree.
     */
     sycamore::render(|| {
-        template! {
+        view! {
             ContextProvider(ContextProviderProps {
                 value: app_state,
-                children: || template! {
+                children: || view! {
                     App()
                 }
             })

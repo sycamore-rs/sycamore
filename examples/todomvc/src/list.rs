@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 use crate::{item::Item, AppState, Filter};
 
 #[component(List<G>)]
-pub fn list() -> Template<G> {
+pub fn list() -> View<G> {
     let app_state = use_context::<AppState>();
     let todos_left = create_selector(cloned!((app_state) => move || {
         app_state.todos_left()
@@ -26,7 +26,7 @@ pub fn list() -> Template<G> {
         checked.set(*todos_left.get() == 0)
     }));
 
-    template! {
+    view! {
         section(class="main") {
             input(
                 id="toggle-all",
@@ -41,7 +41,7 @@ pub fn list() -> Template<G> {
             ul(class="todo-list") {
                 Keyed(KeyedProps {
                     iterable: filtered_todos,
-                    template: move |todo| template! {
+                    template: move |todo| view! {
                         Item(todo)
                     },
                     key: |todo| todo.get().id,

@@ -21,8 +21,8 @@
             "title": "Basics",
             "items": [
                 {
-                    "name": "template!",
-                    "href": "basics/template"
+                    "name": "view!",
+                    "href": "basics/view"
                 },
                 {
                     "name": "Reactivity",

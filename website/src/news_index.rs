@@ -14,7 +14,7 @@ static POSTS: &[(&str, &str, &str)] = &[
 ];
 
 #[component(NewsIndex<G>)]
-pub fn news_index() -> Template<G> {
+pub fn news_index() -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -24,7 +24,7 @@ pub fn news_index() -> Template<G> {
     let posts = POSTS
         .iter()
         .map(|(title, subtitle, url)| {
-            template! {
+            view! {
                 li(class="hover:text-yellow-500 transition-colors") {
                     a(href=format!("/news/{}", url)) {
                         h2(class="text-2xl font-light") { (title) }
@@ -34,9 +34,9 @@ pub fn news_index() -> Template<G> {
             }
         })
         .collect();
-    let posts = Template::new_fragment(posts);
+    let posts = View::new_fragment(posts);
 
-    template! {
+    view! {
         div(class="container mx-auto") {
             h1(class="text-4xl font-bold") { "News" }
             ul(class="mt-5 ml-2 space-y-2") {

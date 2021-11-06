@@ -9,7 +9,7 @@ use crate::prelude::*;
 pub struct ContextProviderProps<T, F, G>
 where
     T: 'static,
-    F: FnOnce() -> Template<G>,
+    F: FnOnce() -> View<G>,
     G: GenericNode,
 {
     pub value: T,
@@ -32,20 +32,20 @@ where
 /// struct Counter(Signal<i32>);
 ///
 /// #[component(CounterView<G>)]
-/// fn counter_view() -> Template<G> {
+/// fn counter_view() -> View<G> {
 ///     let counter = use_context::<Counter>();
 ///
-///     template! {
+///     view! {
 ///         (counter.0.get())
 ///     }
 /// }
 ///
 /// # #[component(App<G>)]
-/// # fn app() -> Template<G> {
-/// template! {
+/// # fn app() -> View<G> {
+/// view! {
 ///     ContextProvider(ContextProviderProps {
 ///         value: Counter(Signal::new(0)),
-///         children: || template! {
+///         children: || view! {
 ///             CounterView()
 ///         }
 ///     })
@@ -53,10 +53,10 @@ where
 /// # }
 /// ```
 #[component(ContextProvider<G>)]
-pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> Template<G>
+pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> View<G>
 where
     T: 'static,
-    F: FnOnce() -> Template<G>,
+    F: FnOnce() -> View<G>,
 {
     let ContextProviderProps { value, children } = props;
 
@@ -71,13 +71,13 @@ mod tests {
     #[test]
     fn basic_context() {
         sycamore::render_to_string(|| {
-            template! {
+            view! {
                 ContextProvider(ContextProviderProps {
                     value: 1i32,
                     children: || {
                         let ctx = use_context::<i32>();
                         assert_eq!(ctx, 1);
-                        template! {}
+                        view! {}
                     },
                 })
             }
@@ -87,21 +87,21 @@ mod tests {
     #[test]
     fn context_inside_effect_when_reexecuting() {
         #[component(ContextConsumer<G>)]
-        fn context_consumer() -> Template<G> {
+        fn context_consumer() -> View<G> {
             let _ctx = use_context::<i32>();
-            template! {}
+            view! {}
         }
 
         let trigger = Signal::new(());
 
-        let node = template! {
+        let node = view! {
             ContextProvider(ContextProviderProps {
                 value: 1i32,
                 children: cloned!((trigger) => move || {
-                    template! {
+                    view! {
                         ({
                             trigger.get(); // subscribe to trigger
-                            template! { ContextConsumer() }
+                            view! { ContextConsumer() }
                         })
                     }
                 }),

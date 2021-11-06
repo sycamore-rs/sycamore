@@ -4,7 +4,7 @@ use sycamore::motion::Tweened;
 use sycamore::{easing, prelude::*};
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let progress = Tweened::new([0.0, 1.0], Duration::from_millis(250), easing::quad_out);
     let progress0 = progress.clone();
     let progress1 = progress.clone();
@@ -13,7 +13,7 @@ fn app() -> Template<G> {
     let progress4 = progress.clone();
     let progress5 = progress.clone();
 
-    template! {
+    view! {
         div {
             style {
                 r#"
@@ -39,5 +39,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

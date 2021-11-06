@@ -1,14 +1,14 @@
 use sycamore::prelude::*;
 
 #[component(Component<G>)]
-pub fn component() -> Template<G> {
-    template! {
+pub fn component() -> View<G> {
+    view! {
         div
     }
 }
 
 fn compile_pass<G: Html>() {
-    let _: Template<G> = template! { Component() };
+    let _: View<G> = view! { Component() };
 }
 
 fn main() {}

@@ -5,12 +5,12 @@ Control flow in Sycamore can be achieved using the interpolation syntax. For exa
 ```rust
 let visible = Signal::new(false);
 
-template! {
+view! {
     div {
         (if *visible.get() {
-            template! { "Now you see me" }
+            view! { "Now you see me" }
         } else {
-            template! {} // Now you don't
+            view! {} // Now you don't
         })
     }
 }
@@ -23,20 +23,20 @@ The conditions for displaying content can also be more complex. For example, the
 will display the value of `name` when it is non-empty, other wise displaying `"World"`.
 
 Note the usage of `create_selector` here. The reason for this is to memoize the value of
-`name.get().is_empty()`. We don't want the inner `template!` (inside the `if` block) to be recreated
+`name.get().is_empty()`. We don't want the inner `view!` (inside the `if` block) to be recreated
 every time `name` is changed. Rather, we only want it to be created when `name` becomes non-empty.
 
 ```rust
 let name = Signal::new(String::new());
 
-template! {
+view! {
     h1 {
         (if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
-            cloned!((name) => template! {
+            cloned!((name) => view! {
                 span { (name.get()) }
             })
         } else {
-            template! { span { "World" } }
+            view! { span { "World" } }
         })
     }
 }

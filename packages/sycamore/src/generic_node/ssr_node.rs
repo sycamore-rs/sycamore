@@ -12,7 +12,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{GenericNode, Html};
 use crate::reactive::create_root;
-use crate::template::Template;
+use crate::view::View;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
@@ -421,11 +421,11 @@ impl WriteToString for RawText {
     }
 }
 
-/// Render a [`Template`] into a static [`String`]. Useful
+/// Render a [`View`] into a static [`String`]. Useful
 /// for rendering to a string on the server side.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
-pub fn render_to_string(template: impl FnOnce() -> Template<SsrNode>) -> String {
+pub fn render_to_string(template: impl FnOnce() -> View<SsrNode>) -> String {
     let mut ret = String::new();
     let _scope = create_root(|| {
         for node in template().flatten() {
@@ -444,7 +444,7 @@ mod tests {
     #[test]
     fn render_hello_world() {
         assert_eq!(
-            render_to_string(|| template! {
+            render_to_string(|| view! {
                 "Hello World!"
             }),
             "Hello World!"
@@ -454,7 +454,7 @@ mod tests {
     #[test]
     fn render_escaped_text() {
         assert_eq!(
-            render_to_string(|| template! {
+            render_to_string(|| view! {
                 "<script>Dangerous!</script>"
             }),
             "&lt;script>Dangerous!&lt;/script>"
@@ -464,7 +464,7 @@ mod tests {
     #[test]
     fn render_unescaped_html() {
         assert_eq!(
-            render_to_string(|| template! {
+            render_to_string(|| view! {
                 div(dangerously_set_inner_html="<a>Html!</a>")
             }),
             "<div><a>Html!</a></div>"

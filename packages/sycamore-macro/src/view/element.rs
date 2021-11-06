@@ -75,9 +75,9 @@ impl ToTokens for Element {
             while let Some(child) = children.next() {
                 // Child is dynamic if the child is a component or a splice that is not a simple
                 // path. Example:
-                // template! { MyComponent() } // is_dynamic = true
-                // template! { (state.get()) } // is_dynamic = true
-                // template! { (state) } // is_dynamic = false
+                // view! { MyComponent() } // is_dynamic = true
+                // view! { (state.get()) } // is_dynamic = true
+                // view! { (state) } // is_dynamic = false
                 quoted.extend(match child {
                     HtmlTree::Element(element) => quote_spanned! { element.span()=>
                         ::sycamore::generic_node::GenericNode::append_child(&__el, &#element);
@@ -111,7 +111,7 @@ impl ToTokens for Element {
                         quote_spanned! { splice.span()=>
                             ::sycamore::utils::render::insert(
                                 &__el,
-                                ::sycamore::template::IntoTemplate::create(&#splice),
+                                ::sycamore::view::IntoView::create(&#splice),
                                 None, None, #multi
                             );
                         }
@@ -160,8 +160,8 @@ impl ToTokens for Element {
                                 #quote_marker
                                 ::sycamore::utils::render::insert(
                                    &__el,
-                                   ::sycamore::template::Template::new_dyn(move ||
-                                       ::sycamore::template::IntoTemplate::create(&#splice)
+                                   ::sycamore::view::View::new_dyn(move ||
+                                       ::sycamore::view::IntoView::create(&#splice)
                                    ),
                                    None, __marker, #multi
                                );

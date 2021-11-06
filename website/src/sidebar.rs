@@ -19,7 +19,7 @@ pub struct SidebarData {
 }
 
 #[component(Sidebar<G>)]
-pub fn sidebar((version, data): (String, SidebarData)) -> Template<G> {
+pub fn sidebar((version, data): (String, SidebarData)) -> View<G> {
     let sections = data
         .sections
         .into_iter()
@@ -27,7 +27,7 @@ pub fn sidebar((version, data): (String, SidebarData)) -> Template<G> {
             let pages = items
                 .into_iter()
                 .map(|SidebarItem { name, href }| {
-                    template! {
+                    view! {
                         li {
                             a(
                                 href=format!("../{}", href),
@@ -40,8 +40,8 @@ pub fn sidebar((version, data): (String, SidebarData)) -> Template<G> {
                 })
                 .collect();
 
-            let pages = Template::new_fragment(pages);
-            template! {
+            let pages = View::new_fragment(pages);
+            view! {
                 li {
                     h1(class="text-lg font-bold py-1 pl-2") {
                         (title)
@@ -54,8 +54,8 @@ pub fn sidebar((version, data): (String, SidebarData)) -> Template<G> {
         })
         .collect();
 
-    let sections = Template::new_fragment(sections);
-    template! {
+    let sections = View::new_fragment(sections);
+    view! {
         aside(class="p-3 w-44") {
             ul {
                 li {

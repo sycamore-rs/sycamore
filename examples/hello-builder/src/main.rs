@@ -2,7 +2,7 @@ use sycamore::builder::html::*;
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let name = Signal::new(String::new());
 
     div()
@@ -28,5 +28,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }
