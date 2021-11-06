@@ -54,7 +54,7 @@ single node will be re-rendered every time the list changes.
 ```rust
 let count = vec![1, 2];
 
-let views = Template::new_fragment(
+let views = View::new_fragment(
     count.iter().map(|&x| view! { li (x) }).collect()
 );
 

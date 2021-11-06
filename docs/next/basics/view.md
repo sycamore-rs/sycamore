@@ -112,7 +112,7 @@ view! {}
 
 ## Interpolation
 
-Templates can contain interpolated values. Anything that implements `std::fmt::Display` will
+Views can contain interpolated values. Anything that implements `std::fmt::Display` will
 automatically be inserted as text into the DOM tree. For example:
 
 ```rust

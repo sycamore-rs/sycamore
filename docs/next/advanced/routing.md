@@ -226,7 +226,7 @@ The difference between a `Router` and a `StaticRouter` is that the route is prov
 `StaticRouter` during the initialization phase. The initial route is provided as an argument to
 `StaticRouterProps::new`.
 
-This is so that `StaticRouter` can return a `Template` immediately without blocking to wait for the
+This is so that `StaticRouter` can return a `View` immediately without blocking to wait for the
 route preload. The route is expected to be resolved separately using the `Route::match_path`
 function.
 
@@ -276,7 +276,7 @@ use sycamore::futures::spawn_local_in_scope;
 
 view! {
     Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
-        let view = Signal::new(Template::empty());
+        let view = Signal::new(View::empty());
         create_effect(cloned!((view) => move || {
             let route = route.get();
             spawn_local_in_scope(cloned!((view) => async move {

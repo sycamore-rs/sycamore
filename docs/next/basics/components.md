@@ -17,7 +17,7 @@ Here is an example of a simple component that displays the value of its prop:
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component(value: StateHandle<i32>) -> Template<G> {
+fn my_component(value: StateHandle<i32>) -> View<G> {
     view! {
         div(class="my-component") {
             "Value: " (value.get())
@@ -43,7 +43,7 @@ Components that don't accept props (same as accepting `()`) can omit the functio
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component() -> Template<G> {
+fn my_component() -> View<G> {
     ...
 }
 ```
@@ -64,7 +64,7 @@ component lifecycle.
 use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
-fn my_component() -> Template<G> {
+fn my_component() -> View<G> {
     on_cleanup(move || {
         // Perform cleanup.
     });

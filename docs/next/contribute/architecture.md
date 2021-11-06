@@ -18,10 +18,10 @@ All non proc-macro related code is in `/packages/sycamore`. Proc-macro related c
   - The `sycamore::utils::render` module contains backend agnostic utilities for rendering
     nodes.
 
-- #### `Template`
+- #### `View`
 
-  - `Template` is a wrapper type around a `GenericNode` that is produced by the `view!` macro. A
-    `Template` can be rendered using the utilities in `sycamore::utils::render`.
+  - `View` is a wrapper type around a `GenericNode` that is produced by the `view!` macro. A
+    `View` can be rendered using the utilities in `sycamore::utils::render`.
 
 - #### `view!`
 
@@ -31,7 +31,7 @@ All non proc-macro related code is in `/packages/sycamore`. Proc-macro related c
 
 ## Fragment diffing
 
-`Template` fragments are diffed in the `sycamore::utils::render::reconcile_fragments(_)`
+`View` fragments are diffed in the `sycamore::utils::render::reconcile_fragments(_)`
 method.
 
 The diffing done by `Keyed` and `Indexed` is independent of the diffing done when rendering

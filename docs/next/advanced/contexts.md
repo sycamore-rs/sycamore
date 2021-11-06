@@ -25,7 +25,7 @@ use sycamore::context::{ContextProvider, ContextProviderProps, use_context};
 struct Counter(Signal<i32>);
 
 #[component(CounterView<G>)]
-fn counter_view() -> Template<G> {
+fn counter_view() -> View<G> {
     let counter = use_context::<Counter>();
 
     view! {
