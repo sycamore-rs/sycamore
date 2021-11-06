@@ -48,13 +48,13 @@ pub fn test_cleanup_in_effect() {
 fn comp() -> View<G> {
     on_cleanup(on_cleanup_callback);
 
-    template! {}
+    view! {}
 }
 
 #[wasm_bindgen_test]
 fn component_cleanup_on_root_destroyed() {
     let root = create_root(|| {
-        let _: View<DomNode> = template! {
+        let _: View<DomNode> = view! {
             CleanupComp()
         };
     });

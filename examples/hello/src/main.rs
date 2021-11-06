@@ -5,16 +5,16 @@ fn app() -> View<G> {
     let name = Signal::new(String::new());
     let name2 = name.clone();
 
-    template! {
+    view! {
         div {
             h1 {
                 "Hello "
                 (if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
-                    cloned!((name) => template! {
+                    cloned!((name) => view! {
                         span { (name.get()) }
                     })
                 } else {
-                    template! { span { "World" } }
+                    view! { span { "World" } }
                 })
                 "!"
             }
@@ -28,5 +28,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

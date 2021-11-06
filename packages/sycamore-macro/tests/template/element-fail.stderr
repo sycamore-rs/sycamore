@@ -1,37 +1,37 @@
 error: expected a valid HTML node
  --> $DIR/element-fail.rs:4:39
   |
-4 |     let _: Template<G> = template! { p.my-class#id };
+4 |     let _: Template<G> = view! { p.my-class#id };
   |                                       ^
 
 error: expected `=`
  --> $DIR/element-fail.rs:6:44
   |
-6 |     let _: Template<G> = template! { button(disabled) };
+6 |     let _: Template<G> = view! { button(disabled) };
   |                                            ^^^^^^^^^^
 
 error: expected `=`
  --> $DIR/element-fail.rs:7:44
   |
-7 |     let _: Template<G> = template! { button(on:click) };
+7 |     let _: Template<G> = view! { button(on:click) };
   |                                            ^^^^^^^^^^
 
 error: unknown directive `unknown`
  --> $DIR/element-fail.rs:8:45
   |
-8 |     let _: Template<G> = template! { button(unknown:directive="123") };
+8 |     let _: Template<G> = view! { button(unknown:directive="123") };
   |                                             ^^^^^^^
 
 error: expected `=`
   --> $DIR/element-fail.rs:10:46
    |
-10 |     let _: Template<G> = template! { button(a.b.c="123") };
+10 |     let _: Template<G> = view! { button(a.b.c="123") };
    |                                              ^
 
 error: children and inner html cannot be both set
   --> $DIR/element-fail.rs:12:26
    |
-12 |       let _: Template<G> = template! {
+12 |       let _: Template<G> = view! {
    |  __________________________^
 13 | |         p(dangerously_set_inner_html="<span>Test</span>") {
 14 | |             "Error"

@@ -49,7 +49,7 @@ fn test_container() -> Node {
 
 #[wasm_bindgen_test]
 fn empty_template() {
-    let node = template! {};
+    let node = view! {};
 
     sycamore::render_to(|| node, &test_container());
 
@@ -65,7 +65,7 @@ fn empty_template() {
 
 #[wasm_bindgen_test]
 fn hello_world() {
-    let node = template! {
+    let node = view! {
         p { "Hello World!" }
     };
 
@@ -85,7 +85,7 @@ fn hello_world() {
 fn hello_world_noderef() {
     let p_ref = NodeRef::new();
 
-    let node = template! {
+    let node = view! {
         p(ref=p_ref) { "Hello World!" }
     };
 
@@ -103,7 +103,7 @@ fn hello_world_noderef() {
 #[wasm_bindgen_test]
 fn interpolation() {
     let text = "Hello Sycamore!";
-    let node = template! {
+    let node = view! {
         p { (text) }
     };
 
@@ -122,8 +122,8 @@ fn interpolation() {
 
 #[wasm_bindgen_test]
 fn template_interpolation() {
-    let text = template! { "Hello Sycamore!" };
-    let node = template! {
+    let text = view! { "Hello Sycamore!" };
+    let node = view! {
         p {
             (text)
         }
@@ -145,12 +145,12 @@ fn template_interpolation() {
 #[wasm_bindgen_test]
 fn template_interpolation_if_else() {
     let show = Signal::new(true);
-    let node = cloned!((show) => template! {
+    let node = cloned!((show) => view! {
         p {
             (if *show.get() {
-                template! { "Hello Sycamore!" }
+                view! { "Hello Sycamore!" }
             } else {
-                template! {}
+                view! {}
             })
         }
     });
@@ -193,12 +193,12 @@ fn template_interpolation_if_else() {
 #[wasm_bindgen_test]
 fn template_interpolation_if_else_with_sibling() {
     let show = Signal::new(true);
-    let node = cloned!((show) => template! {
+    let node = cloned!((show) => view! {
         div { "Before" }
         (if *show.get() {
-            template! { p { "Hello Sycamore!" } }
+            view! { p { "Hello Sycamore!" } }
         } else {
-            template! { p { "" }}
+            view! { p { "" }}
         })
     });
 
@@ -240,8 +240,8 @@ fn template_interpolation_if_else_with_sibling() {
 #[wasm_bindgen_test]
 fn template_interpolation_nested_reactivity() {
     let count = Signal::new(0);
-    let text = cloned!((count) => template! { p { (count.get() ) } });
-    let node = template! {
+    let text = cloned!((count) => view! { p { (count.get() ) } });
+    let node = view! {
         p {
             (text)
         }
@@ -260,7 +260,7 @@ fn template_interpolation_nested_reactivity() {
 fn reactive_text() {
     let count = Signal::new(0);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         p { (count.get()) }
     });
 
@@ -278,7 +278,7 @@ fn reactive_text() {
 fn reactive_text_do_not_destroy_previous_children() {
     let count = Signal::new(0);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         p { "Value: " (count.get()) }
     });
 
@@ -296,7 +296,7 @@ fn reactive_text_do_not_destroy_previous_children() {
 fn reactive_attribute() {
     let count = Signal::new(0);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         span(attribute=count.get())
     });
 
@@ -317,7 +317,7 @@ fn two_way_bind_to_props() {
 
     sycamore::render_to(
         || {
-            cloned!((value) => template! {
+            cloned!((value) => view! {
                 input(bind:value=value)
                 p { (value2.get()) }
             })
@@ -346,7 +346,7 @@ fn two_way_bind_to_props() {
 fn noderefs() {
     let noderef = NodeRef::new();
 
-    let node = template! {
+    let node = view! {
         div {
             input(ref=noderef)
         }
@@ -364,7 +364,7 @@ fn noderefs() {
 
 #[wasm_bindgen_test]
 fn fragments() {
-    let node = template! {
+    let node = view! {
         p { "1" }
         p { "2" }
         p { "3" }
@@ -382,7 +382,7 @@ fn fragments() {
 
 #[wasm_bindgen_test]
 fn fragments_text_nodes() {
-    let node = template! {
+    let node = view! {
         "1"
         "2"
         "3"
@@ -400,7 +400,7 @@ fn fragments_text_nodes() {
 
 #[wasm_bindgen_test]
 fn dyn_fragment_reuse_nodes() {
-    let nodes = vec![template! { "1" }, template! { "2" }, template! { "3" }];
+    let nodes = vec![view! { "1" }, view! { "2" }, view! { "3" }];
 
     sycamore::render_to(
         cloned!((nodes) =>

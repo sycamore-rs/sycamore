@@ -81,7 +81,7 @@ pub fn item(todo: Signal<Todo>) -> View<G> {
         )
     });
 
-    template! {
+    view! {
         li(class=class()) {
             div(class="view") {
                 input(class="toggle", type="checkbox", on:input=toggle_completed, bind:checked=checked)
@@ -92,7 +92,7 @@ pub fn item(todo: Signal<Todo>) -> View<G> {
             }
 
             (if *editing.get() {
-                cloned!((todo, input_ref, handle_blur, handle_submit, handle_input) => template! {
+                cloned!((todo, input_ref, handle_blur, handle_submit, handle_input) => view! {
                     input(ref=input_ref,
                         class="edit",
                         value=todo.get().title.clone(),

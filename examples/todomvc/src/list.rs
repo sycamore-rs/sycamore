@@ -26,7 +26,7 @@ pub fn list() -> View<G> {
         checked.set(*todos_left.get() == 0)
     }));
 
-    template! {
+    view! {
         section(class="main") {
             input(
                 id="toggle-all",
@@ -41,7 +41,7 @@ pub fn list() -> View<G> {
             ul(class="todo-list") {
                 Keyed(KeyedProps {
                     iterable: filtered_todos,
-                    template: move |todo| template! {
+                    template: move |todo| view! {
                         Item(todo)
                     },
                     key: |todo| todo.get().id,

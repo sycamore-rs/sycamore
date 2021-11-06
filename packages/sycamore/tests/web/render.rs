@@ -3,7 +3,7 @@ use super::*;
 #[wasm_bindgen_test]
 fn lazy() {
     let node: View<DomNode> = View::new_dyn(|| {
-        template! {
+        view! {
             div {
                 "Test"
             }
@@ -25,7 +25,7 @@ fn lazy() {
 
 #[wasm_bindgen_test]
 fn lazy_reactive() {
-    let template = Signal::new(template! {
+    let template = Signal::new(view! {
         "1"
     });
 
@@ -40,7 +40,7 @@ fn lazy_reactive() {
 
     assert_eq!(test_container.text_content().unwrap(), "1");
 
-    template.set(template! {
+    template.set(view! {
         "2"
     });
 
@@ -51,7 +51,7 @@ fn lazy_reactive() {
 fn lazy_in_fragment() {
     let num = Signal::new(0);
 
-    let node = cloned!((num) => template! {
+    let node = cloned!((num) => view! {
         "before"
         p { (num.get()) }
         "after"

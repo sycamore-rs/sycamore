@@ -2,16 +2,16 @@ use sycamore::prelude::*;
 
 #[component(C<G>)]
 fn c() -> Template<G> {
-    template! {
+    view! {
         div
     }
 }
 
 fn compile_fail<G: Html>() {
-    let _: Template<G> = template! { UnknownComponent() };
+    let _: Template<G> = view! { UnknownComponent() };
 
-    let _: Template<G> = template! { C };
-    let _: Template<G> = template! { C(1) };
+    let _: Template<G> = view! { C };
+    let _: Template<G> = view! { C(1) };
 }
 
 fn main() {}

@@ -25,7 +25,7 @@ pub fn outline_view(outline: Vec<Outline>) -> View<G> {
         .unwrap()
         .set_title("Sycamore"); // TODO: get title from markdown file
 
-    template! {
+    view! {
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
             Indexed(IndexedProps {
                 iterable: Signal::new(outline).handle(),
@@ -34,7 +34,7 @@ pub fn outline_view(outline: Vec<Outline>) -> View<G> {
                     let nested = children.iter().map(|x| {
                         let name = x.name.clone();
                         let href = format!("#{}", x.name.trim().to_lowercase().replace(" ", "-"));
-                        template! {
+                        view! {
                             li {
                                 a(
                                     class="hover:text-yellow-400 mb-1 inline-block transition-colors",
@@ -49,7 +49,7 @@ pub fn outline_view(outline: Vec<Outline>) -> View<G> {
 
                     let href = format!("#{}", name.trim().to_lowercase().replace(" ", "-"));
 
-                    template! {
+                    view! {
                         li {
                             a(
                                 class="hover:text-yellow-400 mb-1 inline-block transition-colors",
@@ -84,16 +84,16 @@ pub fn content(
 
     let sidebar_version = sidebar.as_ref().map(|x| x.0.clone());
 
-    template! {
+    view! {
         div(class="flex w-full") {
             (if show_sidebar {
-                template! {
+                view! {
                     div(class="flex-none") {
                         crate::sidebar::Sidebar(sidebar.clone().unwrap())
                     }
                 }
             } else {
-                template! {}
+                view! {}
             })
             div(class="flex-1 container mx-auto") {
                 div(
@@ -101,7 +101,7 @@ pub fn content(
                     if show_sidebar { "" } else { "container mx-auto pl-4 lg:ml-auto lg:pr-48" }),
                 ) {
                     (if sidebar_version.as_deref() == Some(crate::NEXT_VERSION) {
-                        template! {
+                        view! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is unreleased documentation for Sycamore next version." }
                                 p {
@@ -114,7 +114,7 @@ pub fn content(
                             }
                         }
                     } else if sidebar_version.is_some() && sidebar_version.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
-                        template! {
+                        view! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is outdated documentation for Sycamore." }
                                 p {
@@ -128,7 +128,7 @@ pub fn content(
                             }
                         }
                     } else {
-                        template! {}
+                        view! {}
                     })
                     div(dangerously_set_inner_html=&html)
                 }

@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 
 #[component(Copyright<G>)]
 pub fn copyright() -> View<G> {
-    template! {
+    view! {
         footer(class="info") {
             p { "Double click to edit a todo" }
             p {

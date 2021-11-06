@@ -6,11 +6,11 @@ use super::*;
 fn append() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -38,11 +38,11 @@ fn append() {
 fn swap_rows() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -73,11 +73,11 @@ fn swap_rows() {
 fn update_row() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -97,11 +97,11 @@ fn update_row() {
 fn trigger_with_same_data() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -121,11 +121,11 @@ fn trigger_with_same_data() {
 fn delete_row() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -149,11 +149,11 @@ fn delete_row() {
 fn delete_row_from_start() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -173,11 +173,11 @@ fn delete_row_from_start() {
 fn delete_row_from_end() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -197,11 +197,11 @@ fn delete_row_from_end() {
 fn clear() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -221,11 +221,11 @@ fn clear() {
 fn insert_front() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
@@ -249,11 +249,11 @@ fn insert_front() {
 fn nested_reactivity() {
     let count = Signal::new(vec![1, 2, 3].into_iter().map(Signal::new).collect());
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: move |item| template! {
+                template: move |item| view! {
                     li { (item.get()) }
                 }
             })
@@ -280,11 +280,11 @@ fn nested_reactivity() {
 fn fragment_template() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         div {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     span { "The value is: " }
                     strong { (item) }
                 },
@@ -329,10 +329,10 @@ The value is: 3"
 fn template_top_level() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         Indexed(IndexedProps {
             iterable: count.handle(),
-            template: |item| template! {
+            template: |item| view! {
                 li { (item) }
             },
         })
@@ -362,11 +362,11 @@ fn template_top_level() {
 fn template_dyn_top_level() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         div {
             Indexed(IndexedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     (item)
                 },
             })
@@ -398,18 +398,18 @@ fn template_with_other_nodes_at_same_level() {
     let vec1 = Signal::new(vec![1, 2]);
     let vec2 = Signal::new(vec![4, 5]);
 
-    let node = cloned!((vec1, vec2) => template! {
+    let node = cloned!((vec1, vec2) => view! {
         ul {
             li { "before" }
             Indexed(IndexedProps {
                 iterable: vec1.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })
             Indexed(IndexedProps {
                 iterable: vec2.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
             })

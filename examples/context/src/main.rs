@@ -6,7 +6,7 @@ use sycamore::reactive::use_context;
 fn counter() -> View<G> {
     let counter = use_context::<Signal<i32>>();
 
-    template! {
+    view! {
         p(class="value") {
             "Value: "
             (counter.get())
@@ -22,7 +22,7 @@ pub fn controls() -> View<G> {
 
     let reset = cloned!((counter) => move |_| counter.set(0));
 
-    template! {
+    view! {
         button(class="increment", on:click=increment) {
             "Increment"
         }
@@ -40,11 +40,11 @@ fn app() -> View<G> {
         log::info!("Counter value: {}", *counter.get());
     }));
 
-    template! {
+    view! {
         ContextProvider(ContextProviderProps {
             value: counter,
             children: move || {
-                template! {
+                view! {
                     div {
                         "Counter demo"
                         Counter()
@@ -60,5 +60,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

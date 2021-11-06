@@ -55,5 +55,5 @@ pub fn portal(props: PortalProps<G>) -> View<G> {
         // TODO: Support for other types of nodes.
     }
 
-    template! {}
+    view! {}
 }

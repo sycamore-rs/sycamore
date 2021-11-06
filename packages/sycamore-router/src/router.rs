@@ -373,16 +373,16 @@ mod tests {
                     .collect::<Vec<_>>(),
             );
 
-            template! {
+            view! {
                 StaticRouter(StaticRouterProps::new(route, |route: Routes| {
                     match route {
-                        Routes::Home => template! {
+                        Routes::Home => view! {
                             "Home"
                         },
-                        Routes::About => template! {
+                        Routes::About => view! {
                             "About"
                         },
-                        Routes::NotFound => template! {
+                        Routes::NotFound => view! {
                             "Not Found"
                         }
                     }
@@ -391,17 +391,17 @@ mod tests {
         }
 
         assert_eq!(
-            sycamore::render_to_string(|| template! { Comp("/".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp("/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|| template! { Comp("/about".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp("/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|| template! { Comp("/404".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp("/404".to_string()) }),
             "Not Found"
         );
     }

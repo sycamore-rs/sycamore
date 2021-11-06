@@ -28,7 +28,7 @@
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]
 
-pub use sycamore_macro::{component, node, template};
+pub use sycamore_macro::{component, node, view};
 pub use sycamore_reactive as reactive;
 
 #[cfg(feature = "experimental-builder-agnostic")]
@@ -57,7 +57,7 @@ pub use crate::generic_node::{render_to_string, SsrNode};
 
 /// The sycamore prelude.
 pub mod prelude {
-    pub use sycamore_macro::{component, node, template};
+    pub use sycamore_macro::{component, node, view};
 
     #[cfg(feature = "experimental-builder-agnostic")]
     pub use crate::builder::agnostic::prelude::*;

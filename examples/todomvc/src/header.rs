@@ -23,7 +23,7 @@ pub fn header() -> View<G> {
         }
     });
 
-    template! {
+    view! {
         header(class="header") {
             h1 { "todos" }
             input(class="new-todo",

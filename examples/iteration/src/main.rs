@@ -3,8 +3,8 @@ use sycamore::prelude::*;
 #[component(App<G>)]
 fn app() -> View<G> {
     let items = Signal::new(vec![
-        template! { "Hello!" },
-        template! { "I am an item in a fragment"},
+        view! { "Hello!" },
+        view! { "I am an item in a fragment"},
     ]);
 
     let add_item = cloned!((items) => move |_| {
@@ -12,12 +12,12 @@ fn app() -> View<G> {
             (*items.get())
                 .clone()
                 .into_iter()
-                .chain(Some(template! { "New item" }))
+                .chain(Some(view! { "New item" }))
                 .collect(),
         );
     });
 
-    template! {
+    view! {
         div {
             button(on:click=add_item) { "Add item" }
             div(class="items") {
@@ -31,5 +31,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

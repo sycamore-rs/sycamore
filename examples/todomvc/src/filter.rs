@@ -11,7 +11,7 @@ pub fn todo_filter(filter: Filter) -> View<G> {
         app_state.filter.set(filter)
     });
 
-    template! {
+    view! {
         li {
             a(
                 class=if selected() { "selected" } else { "" },

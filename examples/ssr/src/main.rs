@@ -6,16 +6,16 @@ fn app() -> View<G> {
 
     let handle_change = move |_| unreachable!();
 
-    template! {
+    view! {
         div {
             h1 {
                 "Hello "
                 ({if !name.get().is_empty() {
-                    cloned!((name) => template! {
+                    cloned!((name) => view! {
                         span { (name.get()) }
                     })
                 } else {
-                    template! { span { "World" } }
+                    view! { span { "World" } }
                 }})
                 "!"
             }
@@ -26,6 +26,6 @@ fn app() -> View<G> {
 }
 
 fn main() {
-    let s = sycamore::render_to_string(|| template! { App() });
+    let s = sycamore::render_to_string(|| view! { App() });
     println!("{}", s);
 }

@@ -6,11 +6,11 @@ use super::*;
 fn append() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -39,11 +39,11 @@ fn append() {
 fn swap_rows() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -75,11 +75,11 @@ fn swap_rows() {
 fn update_row() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -100,11 +100,11 @@ fn update_row() {
 fn trigger_with_same_data() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -125,11 +125,11 @@ fn trigger_with_same_data() {
 fn delete_row() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -154,11 +154,11 @@ fn delete_row() {
 fn delete_row_from_start() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -179,11 +179,11 @@ fn delete_row_from_start() {
 fn delete_row_from_end() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -204,11 +204,11 @@ fn delete_row_from_end() {
 fn clear() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -229,11 +229,11 @@ fn clear() {
 fn insert_front() {
     let count = Signal::new(vec![1, 2, 3]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |item| *item,
@@ -258,11 +258,11 @@ fn insert_front() {
 fn nested_reactivity() {
     let count = Signal::new(vec![1, 2, 3].into_iter().map(Signal::new).collect());
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         ul {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item.get()) }
                 },
                 key: |item| *item.get(),
@@ -290,11 +290,11 @@ fn nested_reactivity() {
 fn fragment_template() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         div {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     span { "The value is: " }
                     strong { (item) }
                 },
@@ -340,10 +340,10 @@ The value is: 3"
 fn template_top_level() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         Keyed(KeyedProps {
             iterable: count.handle(),
-            template: |item| template! {
+            template: |item| view! {
                 li { (item) }
             },
             key: |item| *item,
@@ -374,11 +374,11 @@ fn template_top_level() {
 fn template_dyn_top_level() {
     let count = Signal::new(vec![1, 2]);
 
-    let node = cloned!((count) => template! {
+    let node = cloned!((count) => view! {
         div {
             Keyed(KeyedProps {
                 iterable: count.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     (item)
                 },
                 key: |item| *item,
@@ -411,19 +411,19 @@ fn template_with_other_nodes_at_same_level() {
     let vec1 = Signal::new(vec![1, 2]);
     let vec2 = Signal::new(vec![4, 5]);
 
-    let node = cloned!((vec1, vec2) => template! {
+    let node = cloned!((vec1, vec2) => view! {
         ul {
             li { "before" }
             Keyed(KeyedProps {
                 iterable: vec1.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |x| *x
             })
             Keyed(KeyedProps {
                 iterable: vec2.handle(),
-                template: |item| template! {
+                template: |item| view! {
                     li { (item) }
                 },
                 key: |x| *x

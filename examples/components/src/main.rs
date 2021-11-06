@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 
 #[component(MyComponent<G>)]
 fn my_component(num: StateHandle<i32>) -> View<G> {
-    template! {
+    view! {
         div(class="my-component") {
             "My component"
             p {
@@ -21,7 +21,7 @@ fn app() -> View<G> {
         state.set(*state.get() + 1);
     });
 
-    template! {
+    view! {
         div {
             h1 {
                 "Component demo"
@@ -41,5 +41,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

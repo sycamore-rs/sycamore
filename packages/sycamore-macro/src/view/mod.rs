@@ -137,7 +137,7 @@ impl ToTokens for HtmlRoot {
     }
 }
 
-pub fn template_impl(component: HtmlRoot) -> TokenStream {
+pub fn view_impl(component: HtmlRoot) -> TokenStream {
     component.to_token_stream()
 }
 

@@ -22,7 +22,7 @@ pub fn footer() -> View<G> {
         app_state.clear_completed()
     });
 
-    template! {
+    view! {
         footer(class="footer") {
             span(class="todo-count") {
                 strong { (app_state.todos_left()) }
@@ -35,7 +35,7 @@ pub fn footer() -> View<G> {
             }
 
             (if *has_completed_todos.get() {
-                cloned!((handle_clear_completed) => template! {
+                cloned!((handle_clear_completed) => view! {
                     button(class="clear-completed", on:click=handle_clear_completed) {
                         "Clear completed"
                     }

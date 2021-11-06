@@ -11,12 +11,12 @@ fn dark_mode_toggle() -> View<G> {
     let dark_mode = use_context::<DarkMode>();
     let toggle = cloned!((dark_mode) => move |_| dark_mode.0.set(!*dark_mode.0.get()));
 
-    template! {
+    view! {
         button(
             title="Toggle dark mode",
             class="w-3",
             on:click=toggle,
-            // Use dangerously_set_inner_html because SVG is not supported yet in template! macro.
+            // Use dangerously_set_inner_html because SVG is not supported yet in view! macro.
             dangerously_set_inner_html=if *dark_mode.0.get() { LIGHT_BULB_SVG } else { CLOUD_MOON_SVG },
         )
     }
@@ -27,7 +27,7 @@ fn nav() -> View<G> {
     static LINK_CLASS: &str =
         "py-2 px-3 text-sm hover:text-gray-800 dark:hover:text-gray-100 hover:underline";
 
-    template! {
+    view! {
         nav(class="px-8 backdrop-filter backdrop-blur-sm backdrop-saturate-150 bg-opacity-80 \
         bg-gray-100 dark:bg-gray-800 border-b border-gray-400 dark:border-gray-600 transition-colors") {
             div(class="flex flex-row justify-between items-center h-12") {
@@ -71,7 +71,7 @@ fn nav() -> View<G> {
 
 #[component(Header<G>)]
 pub fn header() -> View<G> {
-    template! {
+    view! {
         header(class="fixed top-0 z-50 w-full") {
             Nav()
         }

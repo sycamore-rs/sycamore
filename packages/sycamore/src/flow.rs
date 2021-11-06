@@ -1,4 +1,4 @@
-//! Iteration utility components for [`template`](crate::template!).
+//! Iteration utility components for [view!](crate::view!).
 //!
 //! Iteration can be either _"keyed"_ or _"non keyed"_.
 //! Use the [`Keyed`] and [`Indexed`] utility components respectively.
@@ -34,10 +34,10 @@ where
 ///
 /// let count = Signal::new(vec![1, 2]);
 ///
-/// let node = template! {
+/// let node = view! {
 ///     Keyed(KeyedProps {
 ///         iterable: count.handle(),
-///         template: |item| template! {
+///         template: |item| view! {
 ///             li { (item) }
 ///         },
 ///         key: |item| *item,
@@ -86,10 +86,10 @@ where
 ///
 /// let count = Signal::new(vec![1, 2]);
 ///
-/// let node = template! {
+/// let node = view! {
 ///     Indexed(IndexedProps {
 ///         iterable: count.handle(),
-///         template: |item| template! {
+///         template: |item| view! {
 ///             li { (item) }
 ///         },
 ///     })

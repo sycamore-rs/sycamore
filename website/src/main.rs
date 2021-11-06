@@ -70,7 +70,7 @@ fn switch<G: Html>(route: StateHandle<Routes>) -> View<G> {
         let route = route.get();
         spawn_local_in_scope(cloned!((template, cached_sidebar_data) => async move {
             let t = match route.as_ref() {
-                Routes::Index => template! {
+                Routes::Index => view! {
                     div(class="container mx-auto") {
                         index::Index()
                     }
@@ -82,7 +82,7 @@ fn switch<G: Html>(route: StateHandle<Routes>) -> View<G> {
                         // Update sidebar
                         cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
                     }
-                    template! {
+                    view! {
                         content::Content(content::ContentProps {
                             data,
                             sidebar: Some((
@@ -99,7 +99,7 @@ fn switch<G: Html>(route: StateHandle<Routes>) -> View<G> {
                         // Update sidebar
                         cached_sidebar_data.set(Some((Some(version.clone()), get_sidebar(Some(version)).await)));
                     }
-                    template! {
+                    view! {
                         content::Content(content::ContentProps {
                             data,
                             sidebar: Some((
@@ -109,22 +109,22 @@ fn switch<G: Html>(route: StateHandle<Routes>) -> View<G> {
                         })
                     }
                 }
-                Routes::NewsIndex => template! {
+                Routes::NewsIndex => view! {
                     news_index::NewsIndex()
                 },
                 Routes::Post(name) => {
                     let data = docs_preload(format!("/static/posts/{}.json", name)).await;
-                    template! {
+                    view! {
                         content::Content(content::ContentProps {
                             data,
                             sidebar: None,
                         })
                     }
                 }
-                Routes::Versions => template! {
+                Routes::Versions => view! {
                     versions::Versions()
                 },
-                Routes::NotFound => template! {
+                Routes::NotFound => view! {
                     "404 Not Found"
                 },
             };
@@ -132,7 +132,7 @@ fn switch<G: Html>(route: StateHandle<Routes>) -> View<G> {
         }));
     }));
 
-    template! {
+    view! {
         div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors") {
             header::Header()
@@ -146,12 +146,12 @@ fn app() -> View<G> {
     let DarkMode(dark_mode) = use_context::<DarkMode>();
     let dark_mode2 = dark_mode.clone();
 
-    template! {
+    view! {
         main(class=if *dark_mode2.get() { "dark" } else { "" }) {
             (if *dark_mode.get() {
-                template! { link(rel="stylesheet", href="/static/dark.css") }
+                view! { link(rel="stylesheet", href="/static/dark.css") }
             } else {
-                template! { link(rel="stylesheet", href="/static/light.css") }
+                view! { link(rel="stylesheet", href="/static/light.css") }
             })
             Router(RouterProps::new(HistoryIntegration::new(), switch))
         }
@@ -188,10 +188,10 @@ fn main() {
     }));
 
     sycamore::render(|| {
-        template! {
+        view! {
             ContextProvider(ContextProviderProps {
                 value: dark_mode,
-                children: || template! {
+                children: || view! {
                     App()
                 },
             })

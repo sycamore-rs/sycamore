@@ -1,4 +1,4 @@
-//! Result of the [`template`](crate::template!) macro.
+//! Result of the [view!](crate::view!) macro.
 
 use std::any::Any;
 use std::borrow::Cow;
@@ -20,7 +20,7 @@ pub(crate) enum ViewType<G: GenericNode> {
     Fragment(Rc<Box<[View<G>]>>),
 }
 
-/// Result of the [`template`](crate::template!) macro.
+/// Result of the [view!](crate::view!) macro.
 #[derive(Clone)]
 pub struct View<G: GenericNode> {
     pub(crate) inner: ViewType<G>,

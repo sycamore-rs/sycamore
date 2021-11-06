@@ -13,7 +13,7 @@ fn app() -> View<G> {
     let progress4 = progress.clone();
     let progress5 = progress.clone();
 
-    template! {
+    view! {
         div {
             style {
                 r#"
@@ -39,5 +39,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|| template! { App() });
+    sycamore::render(|| view! { App() });
 }

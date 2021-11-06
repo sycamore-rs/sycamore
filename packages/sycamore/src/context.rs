@@ -35,17 +35,17 @@ where
 /// fn counter_view() -> Template<G> {
 ///     let counter = use_context::<Counter>();
 ///
-///     template! {
+///     view! {
 ///         (counter.0.get())
 ///     }
 /// }
 ///
 /// # #[component(App<G>)]
 /// # fn app() -> Template<G> {
-/// template! {
+/// view! {
 ///     ContextProvider(ContextProviderProps {
 ///         value: Counter(Signal::new(0)),
-///         children: || template! {
+///         children: || view! {
 ///             CounterView()
 ///         }
 ///     })
@@ -71,13 +71,13 @@ mod tests {
     #[test]
     fn basic_context() {
         sycamore::render_to_string(|| {
-            template! {
+            view! {
                 ContextProvider(ContextProviderProps {
                     value: 1i32,
                     children: || {
                         let ctx = use_context::<i32>();
                         assert_eq!(ctx, 1);
-                        template! {}
+                        view! {}
                     },
                 })
             }
@@ -89,19 +89,19 @@ mod tests {
         #[component(ContextConsumer<G>)]
         fn context_consumer() -> View<G> {
             let _ctx = use_context::<i32>();
-            template! {}
+            view! {}
         }
 
         let trigger = Signal::new(());
 
-        let node = template! {
+        let node = view! {
             ContextProvider(ContextProviderProps {
                 value: 1i32,
                 children: cloned!((trigger) => move || {
-                    template! {
+                    view! {
                         ({
                             trigger.get(); // subscribe to trigger
-                            template! { ContextConsumer() }
+                            view! { ContextConsumer() }
                         })
                     }
                 }),

@@ -8,7 +8,7 @@ pub fn index() -> View<G> {
         .unwrap()
         .set_title("Sycamore");
 
-    template! {
+    view! {
         div(class="pb-10") {
             div(class="flex flex-col items-center w-full mb-10") {
                 h1(class="text-5xl font-bold mt-20 mb-5") {
