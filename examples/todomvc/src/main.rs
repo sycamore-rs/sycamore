@@ -1,10 +1,13 @@
 mod copyright;
+mod filter;
 mod footer;
 mod header;
 mod item;
 mod list;
 
+use log::Level::Debug;
 use serde::{Deserialize, Serialize};
+use sycamore::context::{ContextProvider, ContextProviderProps};
 use sycamore::prelude::*;
 use uuid::Uuid;
 
@@ -128,10 +131,27 @@ impl Filter {
     }
 }
 
-const KEY: &str = "todos-sycamore";
-
 #[component(App<G>)]
 fn app() -> Template<G> {
+    template! {
+        div(class="todomvc-wrapper") {
+            section(class="todoapp") {
+                header::Header()
+                list::List()
+                footer::Footer()
+            }
+            copyright::Copyright()
+        }
+    }
+}
+
+const KEY: &str = "todos-sycamore";
+
+fn main() {
+    console_error_panic_hook::set_once();
+    console_log::init_with_level(Debug).unwrap();
+
+    // Initialize application state
     let local_storage = web_sys::window()
         .unwrap()
         .local_storage()
@@ -149,40 +169,27 @@ fn app() -> Template<G> {
         filter: Signal::new(Filter::get_filter_from_hash()),
     };
 
+    // Set up an effect that runs a function anytime app_state.todos changes
     create_effect(cloned!((local_storage, app_state) => move || {
         for todo in app_state.todos.get().iter() {
             todo.get(); // subscribe to changes in all todos
         }
-
         local_storage.set_item(KEY, &serde_json::to_string(app_state.todos.get().as_ref()).unwrap()).unwrap();
     }));
 
-    let todos_is_empty =
-        create_selector(cloned!((app_state) => move || app_state.todos.get().len() == 0));
-
-    template! {
-        div(class="todomvc-wrapper") {
-            section(class="todoapp") {
-                header::Header(app_state.clone())
-
-                (if !*todos_is_empty.get() {
-                    template! {
-                        list::List(app_state.clone())
-                        footer::Footer(app_state.clone())
-                    }
-                } else {
-                    Template::empty()
-                })
-            }
-
-            copyright::Copyright()
+    /*
+    The application's root component. We use a provider to 'provide' access
+    to our app_state via the `use_context` API, which can be used from any
+    level in the view tree.
+    */
+    sycamore::render(|| {
+        template! {
+            ContextProvider(ContextProviderProps {
+                value: app_state,
+                children: || template! {
+                    App()
+                }
+            })
         }
-    }
-}
-
-fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
-    sycamore::render(|| template! { App() });
+    });
 }

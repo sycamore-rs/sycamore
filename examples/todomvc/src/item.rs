@@ -1,17 +1,15 @@
-use sycamore::prelude::*;
+use sycamore::{
+    prelude::*,
+    context::use_context,
+};
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 
 use crate::{AppState, Todo};
 
-pub struct ItemProps {
-    pub todo: Signal<Todo>,
-    pub app_state: AppState,
-}
-
 #[component(Item<G>)]
-pub fn item(props: ItemProps) -> Template<G> {
-    let ItemProps { todo, app_state } = props;
+pub fn item(todo: Signal<Todo>) -> Template<G> {
+    let app_state = use_context::<AppState>();
 
     let title = cloned!((todo) => move || todo.get().title.clone());
     let completed = create_selector(cloned!((todo) => move || todo.get().completed));
