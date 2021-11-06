@@ -1,3 +1,5 @@
+//! Utilities for working with [`Future`]s and `async/await` code.
+
 use std::future::Future;
 
 use sycamore_reactive::current_scope;
