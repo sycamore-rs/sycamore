@@ -119,8 +119,6 @@ impl SsrNode {
 }
 
 impl GenericNode for SsrNode {
-    const IS_BROWSER: bool = false;
-
     fn element(tag: &str) -> Self {
         SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
@@ -328,7 +326,9 @@ impl GenericNode for SsrNode {
     }
 }
 
-impl Html for SsrNode {}
+impl Html for SsrNode {
+    const IS_BROWSER: bool = false;
+}
 
 trait WriteToString {
     fn write_to_string(&self, s: &mut String);

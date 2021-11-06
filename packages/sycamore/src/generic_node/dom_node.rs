@@ -125,8 +125,6 @@ fn document() -> web_sys::Document {
 }
 
 impl GenericNode for DomNode {
-    const IS_BROWSER: bool = true;
-
     fn element(tag: &str) -> Self {
         let node = document()
             .create_element(intern(tag))
@@ -274,7 +272,9 @@ impl GenericNode for DomNode {
     }
 }
 
-impl Html for DomNode {}
+impl Html for DomNode {
+    const IS_BROWSER: bool = true;
+}
 
 /// Render a [`Template`] into the DOM.
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
