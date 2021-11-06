@@ -20,7 +20,7 @@ fn insert_create_nodes() {
 
     insert(
         &parent,
-        Template::new_fragment(nodes.to_vec().into_iter().map(Template::new_node).collect()),
+        View::new_fragment(nodes.to_vec().into_iter().map(View::new_node).collect()),
         None,
         None,
         true,

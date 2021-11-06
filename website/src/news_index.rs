@@ -14,7 +14,7 @@ static POSTS: &[(&str, &str, &str)] = &[
 ];
 
 #[component(NewsIndex<G>)]
-pub fn news_index() -> Template<G> {
+pub fn news_index() -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -34,7 +34,7 @@ pub fn news_index() -> Template<G> {
             }
         })
         .collect();
-    let posts = Template::new_fragment(posts);
+    let posts = View::new_fragment(posts);
 
     template! {
         div(class="container mx-auto") {

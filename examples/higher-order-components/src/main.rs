@@ -2,7 +2,7 @@ use sycamore::component::Component;
 use sycamore::prelude::*;
 
 #[component(EnhancedComponent<G>)]
-fn enhanced_component<C: Component<G, Props = i32>>() -> Template<G> {
+fn enhanced_component<C: Component<G, Props = i32>>() -> View<G> {
     template! {
         div(class="enhanced-container") {
             p { "Enhanced container start" }
@@ -13,7 +13,7 @@ fn enhanced_component<C: Component<G, Props = i32>>() -> Template<G> {
 }
 
 #[component(NumberDisplayer<G>)]
-fn number_displayer(prop: i32) -> Template<G> {
+fn number_displayer(prop: i32) -> View<G> {
     template! {
         p { "My number is: " (prop) }
     }

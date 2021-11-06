@@ -63,8 +63,8 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
     }
 }
 
-fn switch<G: Html>(route: StateHandle<Routes>) -> Template<G> {
-    let template = Signal::new(Template::empty());
+fn switch<G: Html>(route: StateHandle<Routes>) -> View<G> {
+    let template = Signal::new(View::empty());
     let cached_sidebar_data: Signal<Option<(Option<String>, SidebarData)>> = Signal::new(None);
     create_effect(cloned!((template) => move || {
         let route = route.get();
@@ -142,7 +142,7 @@ fn switch<G: Html>(route: StateHandle<Routes>) -> Template<G> {
 }
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let DarkMode(dark_mode) = use_context::<DarkMode>();
     let dark_mode2 = dark_mode.clone();
 

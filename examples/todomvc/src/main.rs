@@ -132,7 +132,7 @@ impl Filter {
 }
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     template! {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {

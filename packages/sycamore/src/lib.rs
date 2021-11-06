@@ -41,8 +41,8 @@ pub mod generic_node;
 pub mod motion;
 pub mod noderef;
 pub mod portal;
-pub mod template;
 pub mod utils;
+pub mod view;
 
 #[cfg(feature = "futures")]
 pub mod futures;
@@ -73,7 +73,7 @@ pub mod prelude {
         cloned, create_effect, create_memo, create_root, create_selector, create_selector_with,
         on_cleanup, untrack, Signal, StateHandle,
     };
-    pub use crate::template::{IntoTemplate, Template};
+    pub use crate::view::{IntoView, View};
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

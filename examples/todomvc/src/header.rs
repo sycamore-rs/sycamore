@@ -5,7 +5,7 @@ use web_sys::{Event, KeyboardEvent};
 use crate::AppState;
 
 #[component(Header<G>)]
-pub fn header() -> Template<G> {
+pub fn header() -> View<G> {
     let app_state = use_context::<AppState>();
     let value = Signal::new(String::new());
 

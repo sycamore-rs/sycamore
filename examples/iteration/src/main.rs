@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let items = Signal::new(vec![
         template! { "Hello!" },
         template! { "I am an item in a fragment"},
@@ -21,7 +21,7 @@ fn app() -> Template<G> {
         div {
             button(on:click=add_item) { "Add item" }
             div(class="items") {
-                (Template::new_fragment((*items.get()).clone()))
+                (View::new_fragment((*items.get()).clone()))
             }
         }
     }

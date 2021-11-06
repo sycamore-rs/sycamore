@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(Index<G>)]
-pub fn index() -> Template<G> {
+pub fn index() -> View<G> {
     web_sys::window()
         .unwrap()
         .document()

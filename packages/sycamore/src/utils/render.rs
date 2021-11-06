@@ -7,14 +7,14 @@ use wasm_bindgen::UnwrapThrowExt;
 
 use crate::generic_node::GenericNode;
 use crate::reactive::create_effect;
-use crate::template::{Template, TemplateType};
+use crate::view::{View, ViewType};
 
 /// Insert a [`GenericNode`] under `parent` at the specified `marker`. If `initial` is `Some(_)`,
 /// `initial` will be replaced with the new inserted node.
 ///
 /// # Params
 /// * `parent` - The parent node to insert `accessor` under.
-/// * `accessor` - The [`Template`] to be inserted.
+/// * `accessor` - The [`View`] to be inserted.
 /// * `initial` - An optional initial node that is already inserted into the DOM.
 /// * `marker` - An optional marker node. If `marker` is `Some(_)`, `accessor` will be inserted
 ///   directly before `marker`. If `marker` is `None`, `accessor` will be appended at the end of
@@ -25,8 +25,8 @@ use crate::template::{Template, TemplateType};
 ///   `false` but forgoes the optimizations.
 pub fn insert<G: GenericNode>(
     parent: &G,
-    accessor: Template<G>,
-    initial: Option<Template<G>>,
+    accessor: View<G>,
+    initial: Option<View<G>>,
     marker: Option<&G>,
     multi: bool,
 ) {
@@ -35,34 +35,34 @@ pub fn insert<G: GenericNode>(
 
 fn insert_expression<G: GenericNode>(
     parent: &G,
-    value: &Template<G>,
-    mut current: Option<Template<G>>,
+    value: &View<G>,
+    mut current: Option<View<G>>,
     marker: Option<&G>,
     unwrap_fragment: bool,
     multi: bool,
 ) {
-    while let Some(Template {
-        inner: TemplateType::Dyn(f),
+    while let Some(View {
+        inner: ViewType::Dyn(f),
     }) = current
     {
         current = Some(f.get().as_ref().clone());
     }
 
     match &value.inner {
-        TemplateType::Node(node) => {
+        ViewType::Node(node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), marker, Some(node), multi);
             } else {
                 parent.insert_child_before(node, marker);
             }
         }
-        TemplateType::Dyn(f) => {
+        ViewType::Dyn(f) => {
             let parent = parent.clone();
             let marker = marker.cloned();
             let f = f.clone();
             create_effect(move || {
                 let mut value = f.get();
-                while let TemplateType::Dyn(f) = &value.inner {
+                while let ViewType::Dyn(f) = &value.inner {
                     value = f.get();
                 }
                 insert_expression(
@@ -76,7 +76,7 @@ fn insert_expression<G: GenericNode>(
                 current = Some(value.as_ref().clone());
             });
         }
-        TemplateType::Fragment(fragment) => {
+        ViewType::Fragment(fragment) => {
             let mut v = Vec::new();
             // normalize_incoming_fragment will subscribe to all dynamic nodes in the function so as
             // to trigger the create_effect when the template changes.
@@ -85,7 +85,7 @@ fn insert_expression<G: GenericNode>(
                 let parent = parent.clone();
                 let marker = marker.cloned();
                 create_effect(move || {
-                    let value = Template::new_fragment(v.clone());
+                    let value = View::new_fragment(v.clone());
                     // This will call normalize_incoming_fragment again, but this time with the
                     // unwrap_fragment arg set to true.
                     insert_expression(
@@ -96,19 +96,15 @@ fn insert_expression<G: GenericNode>(
                         true,
                         false,
                     );
-                    current = Some(Template::new_fragment(
-                        value
-                            .flatten()
-                            .into_iter()
-                            .map(Template::new_node)
-                            .collect(),
+                    current = Some(View::new_fragment(
+                        value.flatten().into_iter().map(View::new_node).collect(),
                     )); // TODO: do not perform unnecessary flattening of template
                 });
             } else {
                 let v = v
                     .into_iter()
                     .map(|x| match x.inner {
-                        TemplateType::Node(node) => node,
+                        ViewType::Node(node) => node,
                         _ => unreachable!(),
                     })
                     .collect::<Vec<_>>();
@@ -119,11 +115,11 @@ fn insert_expression<G: GenericNode>(
                 } else {
                     match current {
                         Some(current) => match current.inner {
-                            TemplateType::Node(node) => {
+                            ViewType::Node(node) => {
                                 reconcile_fragments(parent, &mut [node], &v);
                             }
-                            TemplateType::Dyn(_) => unreachable!(),
-                            TemplateType::Fragment(ref fragment) => {
+                            ViewType::Dyn(_) => unreachable!(),
+                            ViewType::Fragment(ref fragment) => {
                                 if fragment.is_empty() {
                                     append_nodes(parent, v, marker);
                                 } else {
@@ -190,34 +186,34 @@ pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option
 /// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
 ///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
-    v: &mut Vec<Template<G>>,
-    fragment: &[Template<G>],
+    v: &mut Vec<View<G>>,
+    fragment: &[View<G>],
     unwrap: bool,
 ) -> bool {
     let mut dynamic = false;
 
     for template in fragment {
         match &template.inner {
-            TemplateType::Node(_) => v.push(template.clone()),
-            TemplateType::Dyn(f) if unwrap => {
+            ViewType::Node(_) => v.push(template.clone()),
+            ViewType::Dyn(f) if unwrap => {
                 let mut value = f.get().as_ref().clone();
-                while let TemplateType::Dyn(f) = &value.inner {
+                while let ViewType::Dyn(f) = &value.inner {
                     value = f.get().as_ref().clone();
                 }
-                let fragment: Rc<Box<[Template<G>]>> = match &value.inner {
-                    TemplateType::Node(_) => Rc::new(Box::new([value])),
-                    TemplateType::Fragment(fragment) => Rc::clone(fragment),
+                let fragment: Rc<Box<[View<G>]>> = match &value.inner {
+                    ViewType::Node(_) => Rc::new(Box::new([value])),
+                    ViewType::Fragment(fragment) => Rc::clone(fragment),
                     _ => unreachable!(),
                 };
                 dynamic =
                     normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
             }
-            TemplateType::Dyn(_) => {
+            ViewType::Dyn(_) => {
                 // Not unwrap
                 v.push(template.clone());
                 dynamic = true;
             }
-            TemplateType::Fragment(fragment) => {
+            ViewType::Fragment(fragment) => {
                 dynamic =
                     normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
             }

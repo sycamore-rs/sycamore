@@ -404,7 +404,7 @@ fn dyn_fragment_reuse_nodes() {
 
     sycamore::render_to(
         cloned!((nodes) =>
-            move || Template::new_dyn(move || Template::new_fragment(nodes.clone()))
+            move || View::new_dyn(move || View::new_fragment(nodes.clone()))
         ),
         &test_container(),
     );

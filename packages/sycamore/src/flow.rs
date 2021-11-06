@@ -12,7 +12,7 @@ use crate::reactive::{map_indexed, map_keyed};
 /// Props for [`Keyed`].
 pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>
 where
-    F: Fn(T) -> Template<G>,
+    F: Fn(T) -> View<G>,
     K: Fn(&T) -> Key,
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
@@ -22,7 +22,7 @@ where
     pub key: K,
 }
 
-/// Keyed iteration. Use this instead of directly rendering an array of [`Template`]s.
+/// Keyed iteration. Use this instead of directly rendering an array of [`View`]s.
 /// Using this will minimize re-renders instead of re-rendering every single node on every state
 /// change.
 ///
@@ -48,9 +48,9 @@ where
 #[component(Keyed<G>)]
 pub fn keyed<T: 'static, F: 'static, K: 'static, Key: 'static>(
     props: KeyedProps<T, F, G, K, Key>,
-) -> Template<G>
+) -> View<G>
 where
-    F: Fn(T) -> Template<G>,
+    F: Fn(T) -> View<G>,
     K: Fn(&T) -> Key,
     Key: Clone + Hash + Eq,
     T: Clone + Eq,
@@ -62,20 +62,20 @@ where
     } = props;
 
     let mut mapped = map_keyed(iterable, move |x| template(x.clone()), key);
-    Template::new_dyn(move || Template::new_fragment(mapped()))
+    View::new_dyn(move || View::new_fragment(mapped()))
 }
 
 /// Props for [`Indexed`].
 pub struct IndexedProps<T: 'static, F, G: GenericNode>
 where
-    F: Fn(T) -> Template<G>,
+    F: Fn(T) -> View<G>,
 {
     pub iterable: StateHandle<Vec<T>>,
     pub template: F,
 }
 
 /// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of
-/// [`Template`]s. Using this will minimize re-renders instead of re-rendering every single
+/// [`View`]s. Using this will minimize re-renders instead of re-rendering every single
 /// node on every state change.
 ///
 /// For keyed iteration, see [`Keyed`].
@@ -97,13 +97,13 @@ where
 /// # let _ : Template<DomNode> = node;
 /// ```
 #[component(Indexed<G>)]
-pub fn indexed<T: 'static, F: 'static>(props: IndexedProps<T, F, G>) -> Template<G>
+pub fn indexed<T: 'static, F: 'static>(props: IndexedProps<T, F, G>) -> View<G>
 where
     T: Clone + PartialEq,
-    F: Fn(T) -> Template<G>,
+    F: Fn(T) -> View<G>,
 {
     let IndexedProps { iterable, template } = props;
 
     let mut mapped = map_indexed(iterable, move |x| template(x.clone()));
-    Template::new_dyn(move || Template::new_fragment(mapped()))
+    View::new_dyn(move || View::new_fragment(mapped()))
 }

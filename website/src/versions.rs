@@ -24,7 +24,7 @@ const VERSIONS: &[(&str, VersionedDocsLink)] = &[
 #[component(VersionedDocsLinkView<G>)]
 fn versioned_docs_link_view(
     (name, versioned_docs_link): (&'static str, &'static VersionedDocsLink),
-) -> Template<G> {
+) -> View<G> {
     match versioned_docs_link {
         VersionedDocsLink::Some(link) => template! {
             a(
@@ -65,7 +65,7 @@ fn versioned_docs_link_view(
 }
 
 #[component(Versions<G>)]
-pub fn versions() -> Template<G> {
+pub fn versions() -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -85,7 +85,7 @@ pub fn versions() -> Template<G> {
             }
         })
         .collect();
-    let versions = Template::new_fragment(versions);
+    let versions = View::new_fragment(versions);
 
     template! {
         div(class="container mx-auto") {

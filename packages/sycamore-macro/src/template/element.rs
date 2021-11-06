@@ -111,7 +111,7 @@ impl ToTokens for Element {
                         quote_spanned! { splice.span()=>
                             ::sycamore::utils::render::insert(
                                 &__el,
-                                ::sycamore::template::IntoTemplate::create(&#splice),
+                                ::sycamore::view::IntoView::create(&#splice),
                                 None, None, #multi
                             );
                         }
@@ -160,8 +160,8 @@ impl ToTokens for Element {
                                 #quote_marker
                                 ::sycamore::utils::render::insert(
                                    &__el,
-                                   ::sycamore::template::Template::new_dyn(move ||
-                                       ::sycamore::template::IntoTemplate::create(&#splice)
+                                   ::sycamore::view::View::new_dyn(move ||
+                                       ::sycamore::view::IntoView::create(&#splice)
                                    ),
                                    None, __marker, #multi
                                );

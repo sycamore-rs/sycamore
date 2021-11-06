@@ -3,7 +3,7 @@ use sycamore::prelude::*;
 use sycamore::reactive::use_context;
 
 #[component(Counter<G>)]
-fn counter() -> Template<G> {
+fn counter() -> View<G> {
     let counter = use_context::<Signal<i32>>();
 
     template! {
@@ -15,7 +15,7 @@ fn counter() -> Template<G> {
 }
 
 #[component(Controls<G>)]
-pub fn controls() -> Template<G> {
+pub fn controls() -> View<G> {
     let counter = use_context::<Signal<i32>>();
 
     let increment = cloned!((counter) => move |_| counter.set(*counter.get() + 1));
@@ -33,7 +33,7 @@ pub fn controls() -> Template<G> {
 }
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let counter = Signal::new(0);
 
     create_effect(cloned!((counter) => move || {

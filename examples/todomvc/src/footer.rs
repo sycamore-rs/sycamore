@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 use crate::{filter::TodoFilter, AppState, Filter};
 
 #[component(Footer<G>)]
-pub fn footer() -> Template<G> {
+pub fn footer() -> View<G> {
     let app_state = use_context::<AppState>();
 
     let items_text = cloned!((app_state) => move || {
@@ -41,7 +41,7 @@ pub fn footer() -> Template<G> {
                     }
                 })
             } else {
-                Template::empty()
+                View::empty()
             })
         }
     }

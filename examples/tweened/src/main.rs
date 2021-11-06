@@ -4,7 +4,7 @@ use sycamore::motion::Tweened;
 use sycamore::{easing, prelude::*};
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let progress = Tweened::new([0.0, 1.0], Duration::from_millis(250), easing::quad_out);
     let progress0 = progress.clone();
     let progress1 = progress.clone();

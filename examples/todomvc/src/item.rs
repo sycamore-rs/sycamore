@@ -5,7 +5,7 @@ use web_sys::{Event, HtmlInputElement, KeyboardEvent};
 use crate::{AppState, Todo};
 
 #[component(Item<G>)]
-pub fn item(todo: Signal<Todo>) -> Template<G> {
+pub fn item(todo: Signal<Todo>) -> View<G> {
     let app_state = use_context::<AppState>();
 
     let title = cloned!((todo) => move || todo.get().title.clone());
@@ -102,7 +102,7 @@ pub fn item(todo: Signal<Todo>) -> Template<G> {
                     )
                 })
             } else {
-                Template::empty()
+                View::empty()
             })
         }
     }

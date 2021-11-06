@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(App<G>)]
-fn app() -> Template<G> {
+fn app() -> View<G> {
     let name = Signal::new(String::new());
     let name2 = name.clone();
 

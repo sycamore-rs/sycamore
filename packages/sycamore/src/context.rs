@@ -9,7 +9,7 @@ use crate::prelude::*;
 pub struct ContextProviderProps<T, F, G>
 where
     T: 'static,
-    F: FnOnce() -> Template<G>,
+    F: FnOnce() -> View<G>,
     G: GenericNode,
 {
     pub value: T,
@@ -53,10 +53,10 @@ where
 /// # }
 /// ```
 #[component(ContextProvider<G>)]
-pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> Template<G>
+pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> View<G>
 where
     T: 'static,
-    F: FnOnce() -> Template<G>,
+    F: FnOnce() -> View<G>,
 {
     let ContextProviderProps { value, children } = props;
 
@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn context_inside_effect_when_reexecuting() {
         #[component(ContextConsumer<G>)]
-        fn context_consumer() -> Template<G> {
+        fn context_consumer() -> View<G> {
             let _ctx = use_context::<i32>();
             template! {}
         }

@@ -3,8 +3,8 @@
 use crate::component::Component;
 use crate::generic_node::{GenericNode, Html};
 use crate::noderef::NodeRef;
-use crate::template::Template;
 use crate::utils::render;
+use crate::view::View;
 use js_sys::Reflect;
 use std::collections::HashMap;
 use std::iter::FromIterator;
@@ -39,7 +39,7 @@ where
     }
 }
 
-/// Instantiate a component as a [`Template`].
+/// Instantiate a component as a [`View`].
 ///
 /// # Example
 /// ```
@@ -55,7 +55,7 @@ where
 /// component::<_, MyComponent<_>>(())
 /// # }
 /// ```
-pub fn component<G, C>(props: C::Props) -> Template<G>
+pub fn component<G, C>(props: C::Props) -> View<G>
 where
     G: GenericNode + Html,
     C: Component<G>,
@@ -63,7 +63,7 @@ where
     C::__create_component(props)
 }
 
-/// Create a [`Template`] from an array of [`Template`].
+/// Create a [`View`] from an array of [`View`].
 ///
 /// # Example
 /// ```
@@ -76,11 +76,11 @@ where
 /// ])
 /// # }
 /// ```
-pub fn fragment<G, const N: usize>(parts: [Template<G>; N]) -> Template<G>
+pub fn fragment<G, const N: usize>(parts: [View<G>; N]) -> View<G>
 where
     G: GenericNode,
 {
-    Template::new_fragment(Vec::from_iter(parts.to_vec()))
+    View::new_fragment(Vec::from_iter(parts.to_vec()))
 }
 
 /// The main type powering the builder API.
@@ -96,7 +96,7 @@ impl<G> NodeBuilder<G>
 where
     G: GenericNode,
 {
-    /// Add a child [`Template`].
+    /// Add a child [`View`].
     ///
     /// # Example
     /// ```
@@ -108,13 +108,13 @@ where
     ///     .build()
     /// # }
     /// ```
-    pub fn child(&self, child: Template<G>) -> &Self {
+    pub fn child(&self, child: View<G>) -> &Self {
         render::insert(&self.element, child, None, None, true);
 
         self
     }
 
-    /// Add a dynamic child [`Template`]
+    /// Add a dynamic child [`View`]
     ///
     /// # Example
     /// ```
@@ -134,8 +134,8 @@ where
     ///     .build()
     /// # }
     /// ```
-    pub fn dyn_child(&self, child: impl FnMut() -> Template<G> + 'static) -> &Self {
-        render::insert(&self.element, Template::new_dyn(child), None, None, true);
+    pub fn dyn_child(&self, child: impl FnMut() -> View<G> + 'static) -> &Self {
+        render::insert(&self.element, View::new_dyn(child), None, None, true);
 
         self
     }
@@ -181,7 +181,7 @@ where
     {
         let memo = create_memo(text);
 
-        self.dyn_child(move || Template::new_node(G::text_node(memo.get().as_ref().as_ref())));
+        self.dyn_child(move || View::new_node(G::text_node(memo.get().as_ref().as_ref())));
 
         self
     }
@@ -511,7 +511,7 @@ where
         self
     }
 
-    /// Builds the [`NodeBuilder`] and returns a [`Template`].
+    /// Builds the [`NodeBuilder`] and returns a [`View`].
     ///
     /// This is the function that should be called at the end of the node
     /// building chain.
@@ -526,8 +526,8 @@ where
     ///     .build()
     /// # }
     /// ```
-    pub fn build(&self) -> Template<G> {
-        Template::new_node(self.element.to_owned())
+    pub fn build(&self) -> View<G> {
+        View::new_node(self.element.to_owned())
     }
 }
 

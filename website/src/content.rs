@@ -18,7 +18,7 @@ pub struct Outline {
 }
 
 #[component(OutlineView<G>)]
-pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
+pub fn outline_view(outline: Vec<Outline>) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -45,7 +45,7 @@ pub fn outline_view(outline: Vec<Outline>) -> Template<G> {
                             }
                         }
                     }).collect();
-                    let nested = Template::new_fragment(nested);
+                    let nested = View::new_fragment(nested);
 
                     let href = format!("#{}", name.trim().to_lowercase().replace(" ", "-"));
 
@@ -79,7 +79,7 @@ pub fn content(
         data: MarkdownPage { html, outline },
         sidebar,
     }: ContentProps,
-) -> Template<G> {
+) -> View<G> {
     let show_sidebar = sidebar.is_some();
 
     let sidebar_version = sidebar.as_ref().map(|x| x.0.clone());

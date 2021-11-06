@@ -5,7 +5,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
             #[component(App<G>)]
-            fn app() -> Template<G> {
+            fn app() -> View<G> {
                 template! {
                     div(class="my-container") {
                         p { "Hello World!" }
@@ -20,7 +20,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
             #[component(ListItem<G>)]
-            fn list_item(value: i32) -> Template<G> {
+            fn list_item(value: i32) -> View<G> {
                 template! {
                     p {
                         span(class="placeholder")
@@ -33,7 +33,7 @@ pub fn bench(c: &mut Criterion) {
             }
 
             #[component(App<G>)]
-            fn app() -> Template<G> {
+            fn app() -> View<G> {
                 let values = Signal::new((0i32..=10).collect::<Vec<_>>());
 
                 template! {
