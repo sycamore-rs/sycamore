@@ -19,12 +19,12 @@ pub fn view(component: TokenStream) -> TokenStream {
 /// use sycamore::prelude::*;
 ///
 /// #[component(MyComponent<G>)]
-/// pub fn my_component() -> Template<G> {
+/// pub fn my_component() -> View<G> {
 ///     let cool_button: G = node! { button { "The coolest 😎" } };
 ///
 ///     cool_button.set_property("myProperty", &"Epic!".into());
 ///
-///     Template::new_node(cool_button)
+///     View::new_node(cool_button)
 /// }
 /// ```
 #[proc_macro]
