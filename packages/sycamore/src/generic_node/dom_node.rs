@@ -26,14 +26,8 @@ extern "C" {
 }
 
 /// An unique id for every node.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
 struct NodeId(usize);
-
-impl Default for NodeId {
-    fn default() -> Self {
-        Self(0)
-    }
-}
 
 impl NodeId {
     fn new_with_node(node: &Node) -> Self {
@@ -177,6 +171,22 @@ impl GenericNode for DomNode {
 
     fn set_class_name(&self, value: &str) {
         self.node.unchecked_ref::<Element>().set_class_name(value);
+    }
+
+    fn add_class(&self, class: &str) {
+        self.node
+            .unchecked_ref::<Element>()
+            .class_list()
+            .add_1(class)
+            .unwrap_throw();
+    }
+
+    fn remove_class(&self, class: &str) {
+        self.node
+            .unchecked_ref::<Element>()
+            .class_list()
+            .remove_1(class)
+            .unwrap_throw();
     }
 
     fn set_property(&self, name: &str, value: &JsValue) {

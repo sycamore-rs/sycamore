@@ -310,6 +310,7 @@ impl ToTokens for Attribute {
                 tokens.extend(quote_spanned! { expr_span=> {
                     let signal: ::sycamore::reactive::Signal<#value_ty> = #expr;
 
+                    #[cfg(target_arch = "wasm32")]
                     ::sycamore::reactive::create_effect({
                         let signal = ::std::clone::Clone::clone(&signal);
                         let __el = ::std::clone::Clone::clone(&__el);

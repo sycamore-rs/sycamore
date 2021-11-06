@@ -25,6 +25,44 @@ use wasm_bindgen::prelude::*;
 /// let trigger = Signal::new(());
 /// let counter = Signal::new(0);
 ///
+/// let scope = create_scope(cloned!((trigger, counter) => move || {
+///     create_effect(move || {
+///         trigger.get(); // subscribe to trigger
+///         counter.set(*counter.get_untracked() + 1);
+///     });
+/// }));
+///
+/// assert_eq!(*counter.get(), 1);
+///
+/// trigger.set(());
+/// assert_eq!(*counter.get(), 2);
+///
+/// drop(scope);
+/// trigger.set(());
+/// assert_eq!(*counter.get(), 2); // should not be updated because scope was dropped
+/// ```
+#[must_use = "create_scope returns the reactive scope of the effects created inside this scope"]
+pub fn create_scope<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
+    _create_child_scope_in(None, Box::new(callback))
+}
+
+pub fn create_child_scope_in<'a>(
+    parent: Option<&ReactiveScopeWeak>,
+    callback: impl FnOnce() + 'a,
+) -> ReactiveScope {
+    _create_child_scope_in(parent, Box::new(callback))
+}
+
+/// Creates a new reactive root / scope. Generally, you won't need this method as it is called
+/// automatically in `render`.
+///
+/// # Example
+/// ```
+/// use sycamore_reactive::*;
+///
+/// let trigger = Signal::new(());
+/// let counter = Signal::new(0);
+///
 /// let scope = create_root(cloned!((trigger, counter) => move || {
 ///     create_effect(move || {
 ///         trigger.get(); // subscribe to trigger
@@ -41,18 +79,26 @@ use wasm_bindgen::prelude::*;
 /// trigger.set(());
 /// assert_eq!(*counter.get(), 2); // should not be updated because scope was dropped
 /// ```
+/// TODO: deprecate this method in favor of [`create_scope`].
 #[must_use = "create_root returns the reactive scope of the effects created inside this scope"]
 pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
-    _create_root(Box::new(callback))
+    _create_child_scope_in(None, Box::new(callback))
 }
 
 /// Internal implementation: use dynamic dispatch to reduce code bloat.
-fn _create_root<'a>(callback: Box<dyn FnOnce() + 'a>) -> ReactiveScope {
+fn _create_child_scope_in<'a>(
+    parent: Option<&ReactiveScopeWeak>,
+    callback: Box<dyn FnOnce() + 'a>,
+) -> ReactiveScope {
     SCOPES.with(|scopes| {
         // Push new empty scope on the stack.
         let scope = ReactiveScope::new();
 
-        if let Some(parent) = scopes.borrow().last() {
+        // If `parent` was specified, use it as the parent of the new scope. Else use the parent of
+        // the scope this function is called in.
+        if let Some(parent) = parent {
+            scope.0.borrow_mut().parent = parent.clone();
+        } else if let Some(parent) = scopes.borrow().last() {
             scope.0.borrow_mut().parent = parent.downgrade();
         }
         scopes.borrow_mut().push(scope);
@@ -88,6 +134,9 @@ macro_rules! cloned {
 
         $e
     }};
+    ($($arg:ident),* => $e:expr) => {
+        cloned!(($($arg),*) => $e)
+    };
 }
 
 #[cfg(test)]

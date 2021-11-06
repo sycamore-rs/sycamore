@@ -10,9 +10,9 @@ use reqwasm::http::Request;
 use serde_lite::Deserialize;
 use sidebar::SidebarData;
 use sycamore::context::{use_context, ContextProvider, ContextProviderProps};
+use sycamore::futures::spawn_local_in_scope;
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
-use wasm_bindgen_futures::spawn_local;
 
 const LATEST_MAJOR_VERSION: &str = "v0.6";
 const NEXT_VERSION: &str = "next";
@@ -68,7 +68,7 @@ fn switch<G: Html>(route: StateHandle<Routes>) -> Template<G> {
     let cached_sidebar_data: Signal<Option<(Option<String>, SidebarData)>> = Signal::new(None);
     create_effect(cloned!((template) => move || {
         let route = route.get();
-        spawn_local(cloned!((template, cached_sidebar_data) => async move {
+        spawn_local_in_scope(cloned!((template, cached_sidebar_data) => async move {
             let t = match route.as_ref() {
                 Routes::Index => template! {
                     div(class="container mx-auto") {

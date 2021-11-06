@@ -11,7 +11,7 @@ To add routing to your Sycamore app, install the
 [`sycamore-router`](https://crates.io/crates/sycamore-router) crate from crates.io.
 
 ```toml
-sycamore-router = "0.6.1"
+sycamore-router = "0.6.3"
 ```
 
 ### Compatibility with `sycamore`
@@ -60,7 +60,7 @@ example which are both static.
 
 Static routes can also be nested, e.g. `"/my/nested/path"`.
 
-#### Dynamic parameters
+### Dynamic parameters
 
 Path parameters can be dynamic by using angle brackets around a variable name in the route's path.
 This will allow any segment to match the route in that position.
@@ -121,10 +121,11 @@ be completed. For example, the following route will **not** capture the final `e
 #[to("/start/<path..>/<end>")]
 Path {
     path: Vec<String>,
+    end: String,
 }
 ```
 
-#### Unit variants
+### Unit variants
 
 Enum unit variants are also supported. The following route has the same behavior as the hello
 example from before.
@@ -134,17 +135,17 @@ example from before.
 Hello(String)
 ```
 
-#### Capture types
+### Capture types
 
 Capture variables are not limited to `String`. In fact, any type that implements the
-[`FromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromParam.html) trait can
-be used as a capture.
+[`TryFromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.TryFromParam.html)
+trait can be used as a capture.
 
 This trait is automatically implemented for types that already implement `FromStr`, which includes
 many standard library types.
 
-Because `FromParam` is fallible, the route will only match if the parameter can be parsed into the
-corresponding type.
+Because `TryFromParam` is fallible, the route will only match if the parameter can be parsed into
+the corresponding type.
 
 For example, `/account/123` will match the following route but `/account/abc` will not.
 
@@ -154,8 +155,32 @@ Account { id: u32 }
 ```
 
 Likewise, the
-[`FromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.FromSegments.html)
+[`TryFromSegments`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.TryFromSegments.html)
 trait is the equivalent for dynamic segments.
+
+### Nested routes
+
+Routes can also be nested! The following code will route any url to `/route/..` to `Nested`.
+
+```rust
+#[derive(Route)]
+enum Nested {
+    #[to("/nested")]
+    Nested,
+    #[not_found]
+    NotFound,
+}
+
+#[derive(Route)]
+enum Routes {
+    #[to("/")]
+    Home,
+    #[to("/route/<_..>")]
+    Route(Nested),
+    #[not_found]
+    NotFound,
+}
+```
 
 ## Using `Router`
 
@@ -242,15 +267,19 @@ When data fetching (e.g. from a REST API) is required to load a page, it is reco
 the data. This will cause the router to wait until the data is loaded before rendering the page,
 removing the need for some "Loading..." indicator.
 
+`spawn_local_in_scope` is a simple wrapper around `wasm_bindgen_futures::spawn_local` that extends
+the current scope into inside the `async` block. Make sure you enable the `"futures"` feature on
+`sycamore`.
+
 ```rust
-use wasm_bindgen_futures::spawn_local;
+use sycamore::futures::spawn_local_in_scope;
 
 template! {
     Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
         let template = Signal::new(Template::empty());
         create_effect(cloned!((template) => move || {
             let route = route.get();
-            spawn_local(cloned!((template) => async move {
+            spawn_local_in_scope(cloned!((template) => async move {
                 let t = match route.as_ref() {
                     AppRoutes::Index => template! {
                         "This is the index page"

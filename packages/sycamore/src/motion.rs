@@ -33,7 +33,7 @@ macro_rules! impl_lerp_for_int {
     ($i: path) => {
         impl Lerp for $i {
             fn lerp(&self, other: &Self, scalar: f32) -> Self {
-                ((self + (other - self)) as f32 * scalar).round() as $i
+                (*self as f32 + (other - self) as f32 * scalar).round() as $i
             }
         }
     };
@@ -44,12 +44,14 @@ impl_lerp_for_int!(i16);
 impl_lerp_for_int!(i32);
 impl_lerp_for_int!(i64);
 impl_lerp_for_int!(i128);
+impl_lerp_for_int!(isize);
 
 impl_lerp_for_int!(u8);
 impl_lerp_for_int!(u16);
 impl_lerp_for_int!(u32);
 impl_lerp_for_int!(u64);
 impl_lerp_for_int!(u128);
+impl_lerp_for_int!(usize);
 
 impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
     fn lerp(&self, other: &Self, scalar: f32) -> Self {

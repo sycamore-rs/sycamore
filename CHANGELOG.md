@@ -1,5 +1,27 @@
 # Changelog
 
+## ✨ **0.6.3** _(2021-10-10)_
+
+- #### 🛠 Fixes
+
+  - [Respect basename when navigating using router.](https://github.com/sycamore-rs/sycamore/pull/275)
+
+## ✨ **0.6.2** _(2021-10-09)_
+
+- #### ⚡️ Features
+
+  - [Add `GenericNode::remove_property` method.](https://github.com/sycamore-rs/sycamore/pull/267)
+  - [Add `node!` macro for creating a single node.](https://github.com/sycamore-rs/sycamore/pull/265)
+
+- #### 🛠 Fixes
+
+  - [Do not strip leading `/` from pathname.](https://github.com/sycamore-rs/sycamore/pull/271) This
+    fixes an issue with the router on Firefox when navigating to the index page.
+
+- #### Internal
+
+  - [Remove `ToTokens` impl for `TagName`.](https://github.com/sycamore-rs/sycamore/pull/273)
+
 ## ✨ **0.6.1** _(2021-09-25)_
 
 - #### 🛠 Fixes
