@@ -1,9 +1,9 @@
 #[test]
-fn template_ui() {
+fn view_ui() {
     let t = trybuild::TestCases::new();
-    t.pass("tests/template/*-pass.rs");
+    t.pass("tests/view/*-pass.rs");
     if std::env::var("RUN_UI_TESTS").is_ok() {
-        t.compile_fail("tests/template/*-fail.rs");
+        t.compile_fail("tests/view/*-fail.rs");
     }
 }
 

@@ -8,38 +8,38 @@ fn comp1() {
 
 /// Missing component name.
 #[component]
-fn comp2() -> Template<G> {
+fn comp2() -> View<G> {
     todo!();
 }
 
 /// Missing generic param.
 #[component(Comp3)]
-fn comp3() -> Template<G> {
+fn comp3() -> View<G> {
     todo!();
 }
 
 #[component(Comp4<G>)]
-async fn comp4() -> Template<G> {
+async fn comp4() -> View<G> {
     todo!();
 }
 
 #[component(Comp5<G>)]
-const fn comp5() -> Template<G> {
+const fn comp5() -> View<G> {
     todo!();
 }
 
 #[component(Comp6<G>)]
-extern fn comp6() -> Template<G> {
+extern fn comp6() -> View<G> {
     todo!();
 }
 
 #[component(Comp7<G>)]
-fn comp7(self) -> Template<G> {
+fn comp7(self) -> View<G> {
     todo!();
 }
 
 #[component(Comp8<G>)]
-fn comp8(one: (), two: ()) -> Template<G> {
+fn comp8(one: (), two: ()) -> View<G> {
     todo!();
 }
 
@@ -48,7 +48,7 @@ struct AStruct;
 
 #[allow(non_snake_case)]
 #[component(Comp10<G>)]
-fn Comp10() -> Template<G> {
+fn Comp10() -> View<G> {
     todo!();
 }
 

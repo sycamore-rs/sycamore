@@ -32,7 +32,7 @@ where
 /// struct Counter(Signal<i32>);
 ///
 /// #[component(CounterView<G>)]
-/// fn counter_view() -> Template<G> {
+/// fn counter_view() -> View<G> {
 ///     let counter = use_context::<Counter>();
 ///
 ///     view! {
@@ -41,7 +41,7 @@ where
 /// }
 ///
 /// # #[component(App<G>)]
-/// # fn app() -> Template<G> {
+/// # fn app() -> View<G> {
 /// view! {
 ///     ContextProvider(ContextProviderProps {
 ///         value: Counter(Signal::new(0)),

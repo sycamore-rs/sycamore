@@ -43,7 +43,7 @@ where
 ///         key: |item| *item,
 ///     })
 /// };
-/// # let _ : Template<DomNode> = node;
+/// # let _ : View<DomNode> = node;
 /// ```
 #[component(Keyed<G>)]
 pub fn keyed<T: 'static, F: 'static, K: 'static, Key: 'static>(
@@ -94,7 +94,7 @@ where
 ///         },
 ///     })
 /// };
-/// # let _ : Template<DomNode> = node;
+/// # let _ : View<DomNode> = node;
 /// ```
 #[component(Indexed<G>)]
 pub fn indexed<T: 'static, F: 'static>(props: IndexedProps<T, F, G>) -> View<G>
