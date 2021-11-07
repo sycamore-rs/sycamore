@@ -24,9 +24,9 @@ pub trait Component<G: GenericNode> {
 pub fn instantiate_component<G: GenericNode, C: Component<G>>(props: C::Props) -> View<G> {
     if G::USE_HYDRATION_CONTEXT {
         #[cfg(feature = "hydrate")]
-        hydrate_component(|| untrack(|| C::create_component(props)));
+        return hydrate_component(|| untrack(|| C::create_component(props)));
         #[cfg(not(feature = "hydrate"))]
-        untrack(|| C::create_component(props));
+        return untrack(|| C::create_component(props));
     } else {
         untrack(|| C::create_component(props))
     }
