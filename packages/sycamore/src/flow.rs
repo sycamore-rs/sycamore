@@ -17,7 +17,7 @@ where
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
 {
-    pub iterable: StateHandle<Vec<T>>,
+    pub iterable: ReadSignal<Vec<T>>,
     pub template: F,
     pub key: K,
 }
@@ -70,7 +70,7 @@ pub struct IndexedProps<T: 'static, F, G: GenericNode>
 where
     F: Fn(T) -> View<G>,
 {
-    pub iterable: StateHandle<Vec<T>>,
+    pub iterable: ReadSignal<Vec<T>>,
     pub template: F,
 }
 
