@@ -164,6 +164,7 @@ fn generate_sitemap_for_dir(
     priority: &str,
 ) -> Result<(), Box<dyn Error>> {
     for entry in WalkDir::new(dir)
+        .sort_by_file_name()
         .into_iter()
         .map(|e| e.unwrap())
         .filter(|e| e.path().is_file())
