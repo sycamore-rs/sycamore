@@ -6,7 +6,7 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
-use crate::reactive::{create_memo, StateHandle};
+use crate::reactive::{create_memo, ReadSignal};
 
 /// Internal type for [`View`].
 #[derive(Clone)]
@@ -14,7 +14,7 @@ pub(crate) enum ViewType<G: GenericNode> {
     /// A DOM node.
     Node(G),
     /// A dynamic [`View`].
-    Dyn(StateHandle<View<G>>),
+    Dyn(ReadSignal<View<G>>),
     /// A fragment of [`View`]s.
     #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
     Fragment(Rc<Box<[View<G>]>>),
@@ -71,7 +71,7 @@ impl<G: GenericNode> View<G> {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn as_dyn(&self) -> Option<&StateHandle<View<G>>> {
+    pub fn as_dyn(&self) -> Option<&ReadSignal<View<G>>> {
         if let ViewType::Dyn(v) = &self.inner {
             Some(v)
         } else {

@@ -144,7 +144,7 @@ fn base_pathname() -> String {
 pub struct RouterProps<R, F, G>
 where
     R: Route + 'static,
-    F: FnOnce(StateHandle<R>) -> View<G>,
+    F: FnOnce(ReadSignal<R>) -> View<G>,
     G: GenericNode,
 {
     render: F,
@@ -155,7 +155,7 @@ where
 impl<R, F, G> RouterProps<R, F, G>
 where
     R: Route + 'static,
-    F: FnOnce(StateHandle<R>) -> View<G>,
+    F: FnOnce(ReadSignal<R>) -> View<G>,
     G: GenericNode,
 {
     /// Create a new [`RouterProps`].
@@ -174,7 +174,7 @@ where
 pub fn router<R, F>(props: RouterProps<R, F, G>) -> View<G>
 where
     R: Route + 'static,
-    F: FnOnce(StateHandle<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
 {
     let RouterProps {
         render,

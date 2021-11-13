@@ -376,7 +376,7 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
 /// assert_eq!(*double.get(), 2);
 /// ```
 #[inline]
-pub fn create_memo<F, Out>(derived: F) -> StateHandle<Out>
+pub fn create_memo<F, Out>(derived: F) -> ReadSignal<Out>
 where
     F: FnMut() -> Out + 'static,
     Out: 'static,
@@ -402,7 +402,7 @@ where
 /// assert_eq!(*double.get(), 2);
 /// ```
 #[inline]
-pub fn create_selector<F, Out>(derived: F) -> StateHandle<Out>
+pub fn create_selector<F, Out>(derived: F) -> ReadSignal<Out>
 where
     F: FnMut() -> Out + 'static,
     Out: PartialEq + 'static,
@@ -419,7 +419,7 @@ where
 ///
 /// To use the type's [`PartialEq`] implementation instead of a custom function, use
 /// [`create_selector`].
-pub fn create_selector_with<F, Out, C>(mut derived: F, comparator: C) -> StateHandle<Out>
+pub fn create_selector_with<F, Out, C>(mut derived: F, comparator: C) -> ReadSignal<Out>
 where
     F: FnMut() -> Out + 'static,
     Out: 'static,
@@ -452,7 +452,7 @@ where
 /// It uses a reducer function that takes the previous value and a message and returns the next
 /// value.
 ///
-/// Returns a [`StateHandle`] and a dispatch function to send messages to the reducer.
+/// Returns a [`ReadSignal`] and a dispatch function to send messages to the reducer.
 ///
 /// # Params
 /// * `initial` - The initial value of the state.
@@ -478,7 +478,7 @@ where
 /// dispatch(Msg::Decrement);
 /// assert_eq!(*state.get(), 0);
 /// ```
-pub fn create_reducer<F, Out, Msg>(initial: Out, reduce: F) -> (StateHandle<Out>, Rc<impl Fn(Msg)>)
+pub fn create_reducer<F, Out, Msg>(initial: Out, reduce: F) -> (ReadSignal<Out>, Rc<impl Fn(Msg)>)
 where
     F: Fn(&Out, Msg) -> Out,
 {
