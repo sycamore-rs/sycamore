@@ -188,7 +188,7 @@ To display content based on the route that matches, we can use a `Router`.
 
 ```rust
 view! {
-    Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
+    Router(RouterProps::new(HistoryIntegration::new(), |route: ReadSignal<AppRoutes>| {
         let t = create_memo(move || match route.get().as_ref() {
             AppRoutes::Index => view! {
                 "This is the index page"
@@ -209,7 +209,7 @@ view! {
 }
 ```
 
-`Router` is just a component like any other. The props accept a closure taking a `StateHandle` of
+`Router` is just a component like any other. The props accept a closure taking a `ReadSignal` of
 the matched route as a parameter and an "integration". The integration is for adapting the router to
 different environments (e.g. server-side rendering). The `HistoryIntegration` is a built-in
 integration that uses the
@@ -275,7 +275,7 @@ the current scope into inside the `async` block. Make sure you enable the `"futu
 use sycamore::futures::spawn_local_in_scope;
 
 view! {
-    Router(RouterProps::new(HistoryIntegration::new(), |route: StateHandle<AppRoutes>| {
+    Router(RouterProps::new(HistoryIntegration::new(), |route: ReadSignal<AppRoutes>| {
         let view = Signal::new(View::empty());
         create_effect(cloned!((view) => move || {
             let route = route.get();
