@@ -8,7 +8,7 @@ use crate::view::View;
 use js_sys::Reflect;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use sycamore_reactive::{cloned, create_effect, create_memo, Signal, StateHandle};
+use sycamore_reactive::{cloned, create_effect, create_memo, ReadSignal, Signal};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -284,7 +284,7 @@ where
     ///     .build()
     /// }
     /// ```
-    pub fn dyn_attr<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
+    pub fn dyn_attr<N, T>(&self, name: N, value: ReadSignal<Option<T>>) -> &Self
     where
         N: ToString,
         T: ToString,
@@ -319,7 +319,7 @@ where
     ///     .dyn_bool_attr("required", required.handle()).build()
     /// }
     /// ```
-    pub fn dyn_bool_attr<N>(&self, name: N, value: StateHandle<bool>) -> &Self
+    pub fn dyn_bool_attr<N>(&self, name: N, value: ReadSignal<bool>) -> &Self
     where
         N: ToString,
     {
@@ -378,7 +378,7 @@ where
     ///     .build()
     /// }
     /// ```
-    pub fn dyn_prop<N, T>(&self, name: N, value: StateHandle<Option<T>>) -> &Self
+    pub fn dyn_prop<N, T>(&self, name: N, value: ReadSignal<Option<T>>) -> &Self
     where
         N: ToString,
         T: ToString,
@@ -434,7 +434,7 @@ where
     ///     .build()
     /// }
     /// ```
-    pub fn dyn_class(&self, class: impl ToString, apply: StateHandle<bool>) -> &Self {
+    pub fn dyn_class(&self, class: impl ToString, apply: ReadSignal<bool>) -> &Self {
         let class = class.to_string();
         let element = self.element.clone();
 

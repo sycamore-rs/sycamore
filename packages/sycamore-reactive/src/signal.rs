@@ -12,9 +12,9 @@ use super::*;
 ///
 /// Returned by functions that provide a handle to access state.
 /// Use [`Signal::handle`] or [`Signal::into_handle`] to retrieve a handle from a [`Signal`].
-pub struct StateHandle<T: 'static>(Rc<RefCell<SignalInner<T>>>);
+pub struct ReadSignal<T: 'static>(Rc<RefCell<SignalInner<T>>>);
 
-impl<T: 'static> StateHandle<T> {
+impl<T: 'static> ReadSignal<T> {
     /// Get the current value of the state. When called inside a reactive scope, calling this will
     /// add itself to the scope's dependencies.
     ///
@@ -76,19 +76,19 @@ impl<T: 'static> StateHandle<T> {
     }
 }
 
-impl<T: 'static> Clone for StateHandle<T> {
+impl<T: 'static> Clone for ReadSignal<T> {
     fn clone(&self) -> Self {
         Self(Rc::clone(&self.0))
     }
 }
 
-impl<T: Default> Default for StateHandle<T> {
+impl<T: Default> Default for ReadSignal<T> {
     fn default() -> Self {
         Signal::new(T::default()).into_handle()
     }
 }
 
-impl<T: fmt::Debug> fmt::Debug for StateHandle<T> {
+impl<T: fmt::Debug> fmt::Debug for ReadSignal<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("StateHandle")
             .field(&self.get_untracked())
@@ -97,7 +97,7 @@ impl<T: fmt::Debug> fmt::Debug for StateHandle<T> {
 }
 
 #[cfg(feature = "serde")]
-impl<T: serde::Serialize> serde::Serialize for StateHandle<T> {
+impl<T: serde::Serialize> serde::Serialize for ReadSignal<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -107,7 +107,7 @@ impl<T: serde::Serialize> serde::Serialize for StateHandle<T> {
 }
 
 #[cfg(feature = "serde")]
-impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for StateHandle<T> {
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for ReadSignal<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -129,7 +129,7 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for StateHandle<T>
 /// assert_eq!(*state.get(), 1);
 /// ```
 pub struct Signal<T: 'static> {
-    handle: StateHandle<T>,
+    handle: ReadSignal<T>,
 }
 
 impl<T: 'static> Signal<T> {
@@ -144,7 +144,7 @@ impl<T: 'static> Signal<T> {
     #[inline]
     pub fn new(initial: T) -> Self {
         Self {
-            handle: StateHandle(Rc::new(RefCell::new(SignalInner::new(initial)))),
+            handle: ReadSignal(Rc::new(RefCell::new(SignalInner::new(initial)))),
         }
     }
 
@@ -168,17 +168,17 @@ impl<T: 'static> Signal<T> {
         self.trigger_subscribers();
     }
 
-    /// Get the [`StateHandle`] associated with this signal.
+    /// Get the [`ReadSignal`] associated with this signal.
     ///
     /// This is a shortcut for `(*signal).clone()`.
     #[inline]
-    pub fn handle(&self) -> StateHandle<T> {
+    pub fn handle(&self) -> ReadSignal<T> {
         self.handle.clone()
     }
 
-    /// Consumes this signal and returns its underlying [`StateHandle`].
+    /// Consumes this signal and returns its underlying [`ReadSignal`].
     #[inline]
-    pub fn into_handle(self) -> StateHandle<T> {
+    pub fn into_handle(self) -> ReadSignal<T> {
         self.handle
     }
 
@@ -211,7 +211,7 @@ impl<T: Default> Default for Signal<T> {
 }
 
 impl<T: 'static> Deref for Signal<T> {
-    type Target = StateHandle<T>;
+    type Target = ReadSignal<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.handle

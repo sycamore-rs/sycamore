@@ -63,7 +63,7 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
     }
 }
 
-fn switch<G: Html>(route: StateHandle<Routes>) -> View<G> {
+fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
     let template = Signal::new(View::empty());
     let cached_sidebar_data: Signal<Option<(Option<String>, SidebarData)>> = Signal::new(None);
     create_effect(cloned!((template) => move || {
