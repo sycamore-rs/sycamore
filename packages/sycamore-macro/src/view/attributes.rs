@@ -14,7 +14,6 @@ use syn::{parenthesized, Expr, ExprLit, Ident, Lit, Result, Token};
 static BOOLEAN_ATTRIBUTES_SET: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
         "async",
-        "autocomplete",
         "autofocus",
         "autoplay",
         "border",
