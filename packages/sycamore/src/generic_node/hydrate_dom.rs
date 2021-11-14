@@ -1,4 +1,4 @@
-//! Rendering backend for the DOM.
+//! Rendering backend for the DOM with hydration support.
 
 use std::cell::Cell;
 use std::fmt;
@@ -13,46 +13,18 @@ use crate::reactive::{create_root, on_cleanup, ReactiveScope};
 use crate::utils::render::insert;
 use crate::view::View;
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(extends = Node)]
-    pub(super) type NodeWithId;
+use super::dom_node::{NodeId, NodeWithId};
 
-    #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
-    pub fn node_id(this: &NodeWithId) -> Option<usize>;
-
-    #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
-    pub fn set_node_id(this: &NodeWithId, id: usize);
-}
-
-/// An unique id for every node.
-#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
-pub(super) struct NodeId(pub usize);
-
-impl NodeId {
-    pub fn new_with_node(node: &Node) -> Self {
-        thread_local!(static NODE_ID_COUNTER: Cell<usize> = Cell::new(1)); // 0 is reserved for default value.
-
-        let id = NODE_ID_COUNTER.with(|x| {
-            let tmp = x.get();
-            x.set(tmp + 1);
-            tmp
-        });
-        node.unchecked_ref::<NodeWithId>().set_node_id(id);
-        Self(id)
-    }
-}
-
-/// Rendering backend for the DOM.
+/// Rendering backend for the DOM with hydration support.
 ///
-/// _This API requires the following crate features to be activated: `dom`_
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 #[derive(Clone)]
-pub struct DomNode {
+pub struct HydrateNode {
     id: Cell<NodeId>,
     node: Node,
 }
 
-impl DomNode {
+impl HydrateNode {
     pub fn inner_element(&self) -> Node {
         self.node.clone()
     }
@@ -74,33 +46,33 @@ impl DomNode {
     }
 }
 
-impl PartialEq for DomNode {
+impl PartialEq for HydrateNode {
     fn eq(&self, other: &Self) -> bool {
         self.node == other.node
     }
 }
 
-impl Eq for DomNode {}
+impl Eq for HydrateNode {}
 
-impl Hash for DomNode {
+impl Hash for HydrateNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.get_node_id().hash(state);
     }
 }
 
-impl AsRef<JsValue> for DomNode {
+impl AsRef<JsValue> for HydrateNode {
     fn as_ref(&self) -> &JsValue {
         self.node.as_ref()
     }
 }
 
-impl From<DomNode> for JsValue {
-    fn from(node: DomNode) -> Self {
+impl From<HydrateNode> for JsValue {
+    fn from(node: HydrateNode) -> Self {
         (*node.node).clone().into()
     }
 }
 
-impl fmt::Debug for DomNode {
+impl fmt::Debug for HydrateNode {
     /// Prints outerHtml of [`Node`].
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let outer_html = if let Some(element) = self.node.dyn_ref::<Element>() {
@@ -124,7 +96,7 @@ fn document() -> web_sys::Document {
     DOCUMENT.with(|document| document.clone())
 }
 
-impl GenericNode for DomNode {
+impl GenericNode for HydrateNode {
     type EventType = web_sys::Event;
 
     fn element(tag: &str) -> Self {
@@ -133,7 +105,7 @@ impl GenericNode for DomNode {
             .unwrap_throw()
             .dyn_into()
             .unwrap_throw();
-        DomNode {
+        HydrateNode {
             id: Default::default(),
             node,
         }
@@ -141,7 +113,7 @@ impl GenericNode for DomNode {
 
     fn text_node(text: &str) -> Self {
         let node = document().create_text_node(text).into();
-        DomNode {
+        HydrateNode {
             id: Default::default(),
             node,
         }
@@ -149,7 +121,7 @@ impl GenericNode for DomNode {
 
     fn marker() -> Self {
         let node = document().create_comment("").into();
-        DomNode {
+        HydrateNode {
             id: Default::default(),
             node,
         }
@@ -274,35 +246,64 @@ impl GenericNode for DomNode {
     }
 }
 
-impl Html for DomNode {
+impl Html for HydrateNode {
     const IS_BROWSER: bool = true;
 }
 
-/// Render a [`View`] into the DOM.
-/// Alias for [`render_to`] with `parent` being the `<body>` tag.
+/// Render a [`View`] under a `parent` node by reusing existing nodes (client side
+/// hydration). Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
 ///
-/// _This API requires the following crate features to be activated: `dom`_
-pub fn render(template: impl FnOnce() -> View<DomNode>) {
+/// For rendering without hydration, use [`render`] instead.
+///
+/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
+/// created nodes. This will be fixed in a later release.
+///
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
+pub fn hydrate(template: impl FnOnce() -> View<HydrateNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
-    render_to(template, &document.body().unwrap_throw());
+    hydrate_to(template, &document.body().unwrap_throw());
 }
 
-/// Render a [`View`] under a `parent` node.
-/// For rendering under the `<body>` tag, use [`render`] instead.
+/// Gets the children of an [`Element`] by collecting them into a [`Vec`]. Note that the returned
+/// value is **NOT** live.
+fn get_children(parent: &Element) -> Vec<Element> {
+    let children = parent.children();
+    let children_count = children.length();
+
+    let mut vec = Vec::with_capacity(children_count as usize);
+
+    for i in 0..children.length() {
+        vec.push(children.get_with_index(i).unwrap_throw());
+    }
+
+    vec
+}
+
+/// Render a [`View`] under a `parent` node by reusing existing nodes (client side
+/// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
 ///
-/// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
+/// For rendering without hydration, use [`render`] instead.
+///
+/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
+/// created nodes. This will be fixed in a later release.
+///
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
+pub fn hydrate_to(template: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
+    for child in get_children(parent.unchecked_ref()) {
+        child.remove();
+    }
+
     let scope = create_root(|| {
         insert(
-            &DomNode {
+            &HydrateNode {
                 id: Default::default(),
                 node: parent.clone(),
             },
             template(),
             None,
-            None,
+            None, // TODO
             false,
         );
     });
