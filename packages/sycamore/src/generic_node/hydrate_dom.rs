@@ -9,6 +9,7 @@ use web_sys::{Element, Node};
 
 use crate::generic_node::{DomNode, GenericNode, Html};
 use crate::hydrate::web::get_next_element;
+use crate::hydrate::with_hydration_context;
 use crate::reactive::{create_root, ReactiveScope};
 use crate::utils::render::insert;
 use crate::view::View;
@@ -262,7 +263,7 @@ pub fn hydrate_to(template: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
             &HydrateNode {
                 node: DomNode::from_web_sys(parent.clone()),
             },
-            template(),
+            with_hydration_context(template),
             None,
             None, // TODO
             false,

@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{GenericNode, Html};
-use crate::hydrate::with_hydration_context;
+use crate::hydrate::{get_next_id, with_hydration_context};
 use crate::reactive::create_root;
 use crate::view::View;
 
@@ -127,9 +127,12 @@ impl GenericNode for SsrNode {
     type EventType = web_sys::Event;
 
     fn element(tag: &str) -> Self {
+        let hk = get_next_id();
+        let mut attributes = AHashMap::new();
+        attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
         SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
-            attributes: AHashMap::new(),
+            attributes,
             children: Default::default(),
         })))
     }
