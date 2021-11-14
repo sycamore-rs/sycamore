@@ -54,7 +54,8 @@ pub fn hydration_completed() -> bool {
     HYDRATION_CONTEXT.with(|context| context.borrow().is_none())
 }
 
-/// Increments the hydration component id, calls the callback, and resets the component id to previous value.
+/// Increments the hydration component id, calls the callback, and resets the component id to
+/// previous value.
 pub fn hydrate_component<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,

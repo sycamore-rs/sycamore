@@ -55,8 +55,10 @@ pub mod futures;
 /// Alias self to sycamore for proc-macros.
 extern crate self as sycamore;
 
+#[cfg(all(feature = "dom", feature = "hydrate"))]
+pub use crate::generic_node::{hydrate, hydrate_to, HydrateNode};
 #[cfg(feature = "dom")]
-pub use crate::generic_node::{hydrate, hydrate_to, render, render_to, DomNode};
+pub use crate::generic_node::{render, render_to, DomNode};
 #[cfg(feature = "ssr")]
 pub use crate::generic_node::{render_to_string, SsrNode};
 

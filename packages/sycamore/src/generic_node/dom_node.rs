@@ -61,7 +61,7 @@ impl DomNode {
         self.node.unchecked_into()
     }
 
-    fn get_node_id(&self) -> NodeId {
+    pub(super) fn get_node_id(&self) -> NodeId {
         if self.id.get().0 == 0 {
             // self.id not yet initialized.
             if let Some(id) = self.node.unchecked_ref::<NodeWithId>().node_id() {
@@ -71,6 +71,13 @@ impl DomNode {
             }
         }
         self.id.get()
+    }
+
+    pub(crate) fn from_web_sys(node: Node) -> Self {
+        Self {
+            id: Default::default(),
+            node,
+        }
     }
 }
 

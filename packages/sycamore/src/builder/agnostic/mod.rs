@@ -1,6 +1,6 @@
 //! The renderer-agnostic API.
 
-use crate::component::{Component, instantiate_component};
+use crate::component::{instantiate_component, Component};
 use crate::generic_node::{GenericNode, Html};
 use crate::noderef::NodeRef;
 use crate::utils::render;
