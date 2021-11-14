@@ -1,5 +1,7 @@
 //! Hydration support for Sycamore.
 
+pub mod web;
+
 use std::cell::RefCell;
 
 thread_local! {
@@ -22,15 +24,34 @@ where
     })
 }
 
-pub fn get_next_id() -> usize {
+/// Returns a tuple of the current component id and the current hydration key.
+/// Increments the hydration key.
+pub fn get_next_id() -> (usize, usize) {
     HYDRATION_CONTEXT.with(|context| {
         let mut context = context.borrow_mut();
         if let Some(context) = context.as_mut() {
-            context.get_next_id()
+            (context.current_component_id, context.get_next_id())
         } else {
             panic!("hydration context does not exist");
         }
     })
+}
+
+/// Returns a tuple of the current component id and the current hydration key.
+pub fn get_current_id() -> (usize, usize) {
+    HYDRATION_CONTEXT.with(|context| {
+        let mut context = context.borrow_mut();
+        if let Some(context) = context.as_mut() {
+            (context.current_component_id, context.current_component_id)
+        } else {
+            panic!("hydration context does not exist");
+        }
+    })
+}
+
+/// Returns `true` if hydration has completed.
+pub fn hydration_completed() -> bool {
+    HYDRATION_CONTEXT.with(|context| context.borrow().is_none())
 }
 
 /// Increments the hydration component id, calls the callback, and resets the component id to previous value.
@@ -52,15 +73,19 @@ where
 }
 
 /// A manager for the current hydration state.
-#[derive(Default)]
 pub struct HydrationRegistry {
+    pub completed: bool,
     pub current_id: usize,
     pub current_component_id: usize,
 }
 
 impl HydrationRegistry {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            completed: false,
+            current_id: 0,
+            current_component_id: 0,
+        }
     }
 
     /// Gets the next id.
@@ -68,5 +93,11 @@ impl HydrationRegistry {
         let id = self.current_id;
         self.current_id += 1;
         id
+    }
+}
+
+impl Default for HydrationRegistry {
+    fn default() -> Self {
+        Self::new()
     }
 }

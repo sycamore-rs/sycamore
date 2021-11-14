@@ -3,7 +3,6 @@
 use sycamore_reactive::untrack;
 
 use crate::generic_node::GenericNode;
-use crate::hydrate::hydrate_component;
 use crate::prelude::View;
 
 /// Trait that is implemented by components. Should not be implemented manually. Use the
@@ -24,7 +23,7 @@ pub trait Component<G: GenericNode> {
 pub fn instantiate_component<G: GenericNode, C: Component<G>>(props: C::Props) -> View<G> {
     if G::USE_HYDRATION_CONTEXT {
         #[cfg(feature = "hydrate")]
-        return hydrate_component(|| untrack(|| C::create_component(props)));
+        return crate::hydrate::hydrate_component(|| untrack(|| C::create_component(props)));
         #[cfg(not(feature = "hydrate"))]
         return untrack(|| C::create_component(props));
     } else {
