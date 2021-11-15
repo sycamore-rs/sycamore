@@ -384,7 +384,7 @@ impl fmt::Display for AttributeName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let AttributeName { tag, extended } = self;
 
-        write!(f, "{}", tag.to_string())?;
+        write!(f, "{}", tag)?;
         for (_, ident) in extended {
             write!(f, "-{}", ident)?;
         }

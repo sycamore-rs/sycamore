@@ -107,42 +107,42 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn set_attribute(&self, name: &str, value: &str) {
-        self.node.set_attribute(name, value)
+        self.node.set_attribute(name, value);
     }
 
     #[inline]
     fn remove_attribute(&self, name: &str) {
-        self.node.remove_attribute(name)
+        self.node.remove_attribute(name);
     }
 
     #[inline]
     fn set_class_name(&self, value: &str) {
-        self.node.set_class_name(value)
+        self.node.set_class_name(value);
     }
 
     #[inline]
     fn add_class(&self, class: &str) {
-        self.node.add_class(class)
+        self.node.add_class(class);
     }
 
     #[inline]
     fn remove_class(&self, class: &str) {
-        self.node.remove_class(class)
+        self.node.remove_class(class);
     }
 
     #[inline]
     fn set_property(&self, name: &str, value: &JsValue) {
-        self.node.set_property(name, value)
+        self.node.set_property(name, value);
     }
 
     #[inline]
     fn remove_property(&self, name: &str) {
-        self.node.remove_property(name)
+        self.node.remove_property(name);
     }
 
     #[inline]
     fn append_child(&self, child: &Self) {
-        self.node.append_child(&child.node)
+        self.node.append_child(&child.node);
     }
 
     #[inline]
@@ -153,22 +153,22 @@ impl GenericNode for HydrateNode {
     #[inline]
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
-            .insert_child_before(&new_node.node, reference_node.map(|node| &node.node))
+            .insert_child_before(&new_node.node, reference_node.map(|node| &node.node));
     }
 
     #[inline]
     fn remove_child(&self, child: &Self) {
-        self.node.remove_child(&child.node)
+        self.node.remove_child(&child.node);
     }
 
     #[inline]
     fn replace_child(&self, old: &Self, new: &Self) {
-        self.node.replace_child(&old.node, &new.node)
+        self.node.replace_child(&old.node, &new.node);
     }
 
     #[inline]
     fn insert_sibling_before(&self, child: &Self) {
-        self.node.insert_sibling_before(&child.node)
+        self.node.insert_sibling_before(&child.node);
     }
 
     #[inline]
@@ -183,22 +183,22 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn remove_self(&self) {
-        self.node.remove_self()
+        self.node.remove_self();
     }
 
     #[inline]
     fn event(&self, name: &str, handler: Box<dyn Fn(Self::EventType)>) {
-        self.node.event(name, handler)
+        self.node.event(name, handler);
     }
 
     #[inline]
     fn update_inner_text(&self, text: &str) {
-        self.node.update_inner_text(text)
+        self.node.update_inner_text(text);
     }
 
     #[inline]
     fn dangerously_set_inner_html(&self, html: &str) {
-        self.node.dangerously_set_inner_html(html)
+        self.node.dangerously_set_inner_html(html);
     }
 
     #[inline]

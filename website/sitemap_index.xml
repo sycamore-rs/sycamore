@@ -80,4 +80,5 @@
 <url><loc>https://sycamore-rs.netlify.app/examples/ssr</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/todomvc</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/tweened</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/examples/hello-hydrate</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>
