@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, Node};
+use web_sys::Node;
 
 use crate::generic_node::{DomNode, GenericNode, Html};
 use crate::hydrate::web::get_next_element;
@@ -229,21 +229,6 @@ pub fn hydrate(template: impl FnOnce() -> View<HydrateNode>) {
     hydrate_to(template, &document.body().unwrap_throw());
 }
 
-/// Gets the children of an [`Element`] by collecting them into a [`Vec`]. Note that the returned
-/// value is **NOT** live.
-fn get_children(parent: &Element) -> Vec<Element> {
-    let children = parent.children();
-    let children_count = children.length();
-
-    let mut vec = Vec::with_capacity(children_count as usize);
-
-    for i in 0..children.length() {
-        vec.push(children.get_with_index(i).unwrap_throw());
-    }
-
-    vec
-}
-
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
 /// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
 ///
@@ -254,10 +239,6 @@ fn get_children(parent: &Element) -> Vec<Element> {
 ///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 pub fn hydrate_to(template: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
-    for child in get_children(parent.unchecked_ref()) {
-        child.remove();
-    }
-
     let scope = create_root(|| {
         insert(
             &HydrateNode {
