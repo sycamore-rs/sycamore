@@ -73,6 +73,7 @@ impl fmt::Debug for HydrateNode {
 
 impl GenericNode for HydrateNode {
     type EventType = web_sys::Event;
+    const USE_HYDRATION_CONTEXT: bool = true;
 
     /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
     /// node.

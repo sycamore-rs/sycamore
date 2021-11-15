@@ -125,6 +125,7 @@ impl GenericNode for SsrNode {
     /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
     /// anyways, it's okay to do this.
     type EventType = web_sys::Event;
+    const USE_HYDRATION_CONTEXT: bool = true;
 
     fn element(tag: &str) -> Self {
         let hk = get_next_id();
