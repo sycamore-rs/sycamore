@@ -129,8 +129,10 @@ impl GenericNode for SsrNode {
     fn element(tag: &str) -> Self {
         let hk = get_next_id();
         let mut attributes = AHashMap::new();
-        attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
-        SsrNode::new(SsrNodeType::Element(RefCell::new(Element {
+        if let Some(hk) = hk {
+            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
+        }
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag.to_string(),
             attributes,
             children: Default::default(),
@@ -138,11 +140,11 @@ impl GenericNode for SsrNode {
     }
 
     fn text_node(text: &str) -> Self {
-        SsrNode::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
+        Self::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
     }
 
     fn marker() -> Self {
-        SsrNode::new(SsrNodeType::Comment(Default::default()))
+        Self::new(SsrNodeType::Comment(Default::default()))
     }
 
     fn set_attribute(&self, name: &str, value: &str) {
@@ -473,7 +475,7 @@ mod tests {
             render_to_string(|| view! {
                 div(dangerously_set_inner_html="<a>Html!</a>")
             }),
-            "<div><a>Html!</a></div>"
+            "<div data-hk=\"0.0\"><a>Html!</a></div>"
         );
     }
 

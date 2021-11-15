@@ -26,14 +26,12 @@ where
 
 /// Returns a tuple of the current component id and the current hydration key.
 /// Increments the hydration key.
-pub fn get_next_id() -> (usize, usize) {
+/// 
+/// If hydration context does not exist, returns `None`.
+pub fn get_next_id() -> Option<(usize, usize)> {
     HYDRATION_CONTEXT.with(|context| {
         let mut context = context.borrow_mut();
-        if let Some(context) = context.as_mut() {
-            (context.current_component_id, context.get_next_id())
-        } else {
-            panic!("hydration context does not exist");
-        }
+        context.as_mut().map(|reg| (reg.current_component_id, reg.get_next_id()))
     })
 }
 
@@ -75,7 +73,6 @@ where
 
 /// A manager for the current hydration state.
 pub struct HydrationRegistry {
-    pub completed: bool,
     pub current_id: usize,
     pub current_component_id: usize,
 }
@@ -83,7 +80,6 @@ pub struct HydrationRegistry {
 impl HydrationRegistry {
     pub fn new() -> Self {
         Self {
-            completed: false,
             current_id: 0,
             current_component_id: 0,
         }

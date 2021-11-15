@@ -9,16 +9,15 @@ const COMMENT_NODE_TYPE: u16 = 8;
 /// Gets the element with the next hydration-key or `None` if not found.
 /// This method basically queries elements with the `data-hk` attribute.
 pub fn get_next_element() -> Option<Element> {
-    if hydration_completed() {
-        None
-    } else {
-        let id = get_next_id();
+    if let Some(hk) = get_next_id() {
         window()
             .unwrap()
             .document()
             .unwrap()
-            .query_selector(&format!("[data-hk=\"{}.{}\"]", id.0, id.1))
+            .query_selector(&format!("[data-hk=\"{}.{}\"]", hk.0, hk.1))
             .unwrap()
+    } else {
+        None
     }
 }
 
