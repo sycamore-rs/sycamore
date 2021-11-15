@@ -26,24 +26,24 @@ where
 
 /// Returns a tuple of the current component id and the current hydration key.
 /// Increments the hydration key.
-/// 
+///
 /// If hydration context does not exist, returns `None`.
 pub fn get_next_id() -> Option<(usize, usize)> {
     HYDRATION_CONTEXT.with(|context| {
         let mut context = context.borrow_mut();
-        context.as_mut().map(|reg| (reg.current_component_id, reg.get_next_id()))
+        context
+            .as_mut()
+            .map(|reg| (reg.current_component_id, reg.get_next_id()))
     })
 }
 
 /// Returns a tuple of the current component id and the current hydration key.
-pub fn get_current_id() -> (usize, usize) {
+pub fn get_current_id() -> Option<(usize, usize)> {
     HYDRATION_CONTEXT.with(|context| {
         let mut context = context.borrow_mut();
-        if let Some(context) = context.as_mut() {
-            (context.current_component_id, context.current_component_id)
-        } else {
-            panic!("hydration context does not exist");
-        }
+        context
+            .as_mut()
+            .map(|reg| (reg.current_component_id, reg.current_id))
     })
 }
 
@@ -54,6 +54,8 @@ pub fn hydration_completed() -> bool {
 
 /// Increments the hydration component id, calls the callback, and resets the component id to
 /// previous value.
+///
+/// If outside of a hydration context, does nothing.
 pub fn hydrate_component<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
@@ -66,7 +68,7 @@ where
             context.borrow_mut().as_mut().unwrap().current_component_id = current_component_id;
             r
         } else {
-            panic!("hydration context does not exist");
+            f()
         }
     })
 }
