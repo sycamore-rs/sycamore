@@ -55,7 +55,7 @@ extern crate self as sycamore;
 #[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
 pub use crate::generic_node::{hydrate, hydrate_to, HydrateNode};
 #[cfg(feature = "dom")]
-pub use crate::generic_node::{render, render_to, DomNode};
+pub use crate::generic_node::{render, render_get_scope, render_to, DomNode};
 #[cfg(feature = "ssr")]
 pub use crate::generic_node::{render_to_string, SsrNode};
 
