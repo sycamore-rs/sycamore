@@ -48,6 +48,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 
     /// Whether this rendering backend needs the hydration registry.
     const USE_HYDRATION_CONTEXT: bool = false;
+    const CLIENT_SIDE_HYDRATION: bool = false;
 
     /// Create a new element node.
     fn element(tag: &str) -> Self;

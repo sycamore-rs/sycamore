@@ -2,6 +2,9 @@
 
 use web_sys::{window, Element, Node};
 
+use crate::view::View;
+use crate::HydrateNode;
+
 use super::*;
 
 const COMMENT_NODE_TYPE: u16 = 8;
@@ -21,7 +24,7 @@ pub fn get_next_element() -> Option<Element> {
     }
 }
 
-pub fn get_next_marker(parent: &Node) -> Option<Vec<Node>> {
+pub fn get_next_marker(parent: &Node) -> Option<View<HydrateNode>> {
     if hydration_completed() {
         None
     } else {
@@ -36,13 +39,14 @@ pub fn get_next_marker(parent: &Node) -> Option<Vec<Node>> {
                     start = true; // Start of hydration marker.
                 } else if v.as_deref() == Some("/") {
                     if start {
-                        return Some(buf); // End of hydration marker.
+                        return Some(View::new_fragment(buf)); // End of hydration marker.
                     } else {
-                        buf.push(child); // Not a hydration marker.
+                        // Not a hydration marker.
+                        buf.push(View::new_node(HydrateNode::from_web_sys(child)));
                     }
                 }
             } else {
-                buf.push(child);
+                buf.push(View::new_node(HydrateNode::from_web_sys(child)));
             }
         }
 

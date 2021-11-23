@@ -36,6 +36,12 @@ impl HydrateNode {
     pub(super) fn get_node_id(&self) -> NodeId {
         self.node.get_node_id()
     }
+
+    pub(crate) fn from_web_sys(node: Node) -> Self {
+        Self {
+            node: DomNode::from_web_sys(node),
+        }
+    }
 }
 
 impl PartialEq for HydrateNode {
@@ -74,6 +80,7 @@ impl fmt::Debug for HydrateNode {
 impl GenericNode for HydrateNode {
     type EventType = web_sys::Event;
     const USE_HYDRATION_CONTEXT: bool = true;
+    const CLIENT_SIDE_HYDRATION: bool = true;
 
     /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
     /// node.
