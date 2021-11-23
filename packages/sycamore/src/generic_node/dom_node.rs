@@ -289,6 +289,20 @@ pub fn render(template: impl FnOnce() -> View<DomNode>) {
     render_to(template, &document.body().unwrap_throw());
 }
 
+/// Render a [`View`] under a `parent` node.
+/// For rendering under the `<body>` tag, use [`render`] instead.
+///
+/// _This API requires the following crate features to be activated: `dom`_
+pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
+    let scope = render_get_scope(template, parent);
+
+    thread_local! {
+        static GLOBAL_SCOPES: std::cell::RefCell<Vec<ReactiveScope>> = std::cell::RefCell::new(Vec::new());
+    }
+
+    GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
+}
+
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
 /// This function is intended to be used for injecting an ephemeral sycamore view into a non-sycamore app
 /// (for example, a file upload modal where you want to cancel the upload if the modal is closed).
@@ -299,10 +313,7 @@ pub fn render(template: impl FnOnce() -> View<DomNode>) {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
-pub fn render_temporarily_to(
-    template: impl FnOnce() -> View<DomNode>,
-    parent: &Node,
-) -> ReactiveScope {
+pub fn render_get_scope(template: impl FnOnce() -> View<DomNode>, parent: &Node) -> ReactiveScope {
     create_root(|| {
         insert(
             &DomNode {
@@ -315,31 +326,6 @@ pub fn render_temporarily_to(
             false,
         );
     })
-}
-
-/// Render a [`View`] under a `parent` node.
-/// For rendering under the `<body>` tag, use [`render`] instead.
-///
-/// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
-    let scope = create_root(|| {
-        insert(
-            &DomNode {
-                id: Default::default(),
-                node: parent.clone(),
-            },
-            template(),
-            None,
-            None,
-            false,
-        );
-    });
-
-    thread_local! {
-        static GLOBAL_SCOPES: std::cell::RefCell<Vec<ReactiveScope>> = std::cell::RefCell::new(Vec::new());
-    }
-
-    GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
