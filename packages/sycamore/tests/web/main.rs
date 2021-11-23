@@ -1,4 +1,5 @@
 pub mod cleanup;
+pub mod hydrate;
 pub mod keyed;
 pub mod non_keyed;
 pub mod portal;
