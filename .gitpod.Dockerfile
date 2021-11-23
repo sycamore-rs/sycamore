@@ -9,6 +9,3 @@ RUN bash -cl "sudo mv ./trunk /usr/bin/"
 
 # Install wasm32-unknown-unknown target
 RUN rustup target add wasm32-unknown-unknown
-# Install rust nightly
-RUN rustup toolchain add nightly
-RUN rustup component add rustfmt --toolchain nightly
