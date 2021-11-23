@@ -86,13 +86,4 @@ pub mod rt {
     pub use js_sys::Reflect;
     pub use wasm_bindgen::{intern, JsCast, JsValue};
     pub use web_sys::Event;
-
-    use crate::generic_node::GenericNode;
-
-    /// Returns whether the passed node has `CLIENT_SIDE_HYDRATION` enabled.
-    /// This function exists only to allow type-inference to work in macro-generated code.
-    #[inline(always)]
-    pub fn client_side_hydration<T: GenericNode>(_: T) -> bool {
-        T::CLIENT_SIDE_HYDRATION
-    }
 }

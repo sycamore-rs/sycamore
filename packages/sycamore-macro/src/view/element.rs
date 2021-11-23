@@ -147,13 +147,32 @@ impl ToTokens for Element {
                                 let __marker = ::std::option::Option::Some(&__marker);
                             }
                         };
+                        let initial = if cfg!(feature = "hydrate") {
+                            quote! {
+                                if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::HydrateNode>() {
+                                    let __el = ::std::any::Any::downcast_ref::<::sycamore::HydrateNode>(&__el).unwrap();
+                                    let __initial = ::sycamore::utils::hydrate::web::get_next_marker(&__el.inner_element());
+                                    // Do not drop the HydrateNode because it will be cast into a GenericNode.
+                                    let __initial = ::std::mem::ManuallyDrop::new(__initial);
+                                    // SAFETY: This is safe because we already checked that the type is HydrateNode.
+                                    // __initial is wrapped inside ManuallyDrop to prevent double drop.
+                                    unsafe { ::std::ptr::read(&__initial as *const _ as *const _) }
+                                } else {
+                                    None
+                                }
+                            }
+                        } else {
+                            quote! {
+                                None
+                            }
+                        };
                         match child {
                             HtmlTree::Component(component) => quote_spanned! { component.span()=>
                                 #quote_marker
                                 ::sycamore::utils::render::insert(
                                     &__el,
                                     #component,
-                                    None, __marker, #multi
+                                    #initial, __marker, #multi
                                 );
                             },
                             HtmlTree::Splice(splice) => quote_spanned! { splice.span()=>
@@ -163,7 +182,7 @@ impl ToTokens for Element {
                                    ::sycamore::view::View::new_dyn(move ||
                                        ::sycamore::view::IntoView::create(&#splice)
                                    ),
-                                   None, __marker, #multi
+                                   #initial, __marker, #multi
                                );
                             },
                             _ => unreachable!()

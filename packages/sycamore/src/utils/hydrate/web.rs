@@ -1,6 +1,7 @@
 //! Utilities for client-side hydration in the browser.
 
-use web_sys::{window, Element, Node};
+use wasm_bindgen::JsCast;
+use web_sys::{window, Comment, Element, Node};
 
 use crate::view::View;
 use crate::HydrateNode;
@@ -37,6 +38,9 @@ pub fn get_next_marker(parent: &Node) -> Option<View<HydrateNode>> {
                 let v = child.node_value();
                 if v.as_deref() == Some("#") {
                     start = true; // Start of hydration marker.
+
+                    // Delete start marker.
+                    child.unchecked_into::<Comment>().remove();
                 } else if v.as_deref() == Some("/") {
                     if start {
                         return Some(View::new_fragment(buf)); // End of hydration marker.
