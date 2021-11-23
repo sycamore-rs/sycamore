@@ -2,7 +2,7 @@
 
 #[cfg(feature = "dom")]
 pub mod dom_node;
-#[cfg(all(feature = "dom", feature = "hydrate"))]
+#[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
 pub mod hydrate_dom;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
@@ -15,7 +15,7 @@ use web_sys::Event;
 
 #[cfg(feature = "dom")]
 pub use dom_node::*;
-#[cfg(all(feature = "dom", feature = "hydrate"))]
+#[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
 pub use hydrate_dom::*;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;

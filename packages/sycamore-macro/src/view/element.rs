@@ -147,7 +147,7 @@ impl ToTokens for Element {
                                 let __marker = ::std::option::Option::Some(&__marker);
                             }
                         };
-                        let initial = if cfg!(feature = "hydrate") {
+                        let initial = if cfg!(feature = "experimental-hydrate") {
                             quote! {
                                 if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::HydrateNode>() {
                                     let __el = ::std::any::Any::downcast_ref::<::sycamore::HydrateNode>(&__el).unwrap();

@@ -28,4 +28,4 @@ trybuild = "1.0.45"
 
 [features]
 default = []
-hydrate = []
+experimental-hydrate = []

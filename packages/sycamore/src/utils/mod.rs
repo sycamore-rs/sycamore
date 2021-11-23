@@ -4,7 +4,7 @@
 //! This API is currently unstable and can have breaking changed without a semver release.
 //! This might be stabilized in the future but it is use-at-your-own-risk for now.
 
-#[cfg(feature = "hydrate")]
+#[cfg(feature = "experimental-hydrate")]
 pub mod hydrate;
 pub mod render;
 
