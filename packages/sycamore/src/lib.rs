@@ -46,9 +46,6 @@ pub mod view;
 #[cfg(feature = "experimental-builder-agnostic")]
 pub mod builder;
 
-#[cfg(feature = "hydrate")]
-pub mod hydrate;
-
 #[cfg(feature = "futures")]
 pub mod futures;
 

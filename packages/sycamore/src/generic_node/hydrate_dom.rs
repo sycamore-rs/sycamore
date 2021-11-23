@@ -8,9 +8,9 @@ use wasm_bindgen::JsCast;
 use web_sys::Node;
 
 use crate::generic_node::{DomNode, GenericNode, Html};
-use crate::hydrate::web::get_next_element;
-use crate::hydrate::{hydration_completed, with_hydration_context};
 use crate::reactive::{create_root, ReactiveScope};
+use crate::utils::hydrate::web::get_next_element;
+use crate::utils::hydrate::{hydration_completed, with_hydration_context};
 use crate::utils::render::insert;
 use crate::view::View;
 

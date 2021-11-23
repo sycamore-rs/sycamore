@@ -11,8 +11,8 @@ use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{GenericNode, Html};
-use crate::hydrate::{get_next_id, with_hydration_context};
 use crate::reactive::create_root;
+use crate::utils::hydrate::{get_next_id, with_hydration_context};
 use crate::view::View;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
