@@ -22,7 +22,7 @@ mod hello_world {
     fn test() {
         let html = sycamore::render_to_string(v);
         let c = test_container();
-        c.clone().set_inner_html(&html);
+        c.set_inner_html(&html);
 
         sycamore::hydrate_to(v, &c);
 
@@ -47,7 +47,7 @@ mod hydrate_recursive {
     fn test() {
         let html = sycamore::render_to_string(v);
         let c = test_container();
-        c.clone().set_inner_html(&html);
+        c.set_inner_html(&html);
 
         sycamore::hydrate_to(v, &c);
 
@@ -74,7 +74,7 @@ mod multiple_nodes_at_same_depth {
     fn test() {
         let html = sycamore::render_to_string(v);
         let c = test_container();
-        c.clone().set_inner_html(&html);
+        c.set_inner_html(&html);
 
         sycamore::hydrate_to(v, &c);
 
@@ -99,7 +99,7 @@ mod top_level_fragment {
     fn test() {
         let html = sycamore::render_to_string(v);
         let c = test_container();
-        c.clone().set_inner_html(&html);
+        c.set_inner_html(&html);
 
         sycamore::hydrate_to(v, &c);
 
@@ -124,7 +124,7 @@ mod dynamic {
     fn test() {
         let html = sycamore::render_to_string(|| v(Signal::new(0).handle()));
         let c = test_container();
-        c.clone().set_inner_html(&html);
+        c.set_inner_html(&html);
 
         let state = Signal::new(0);
 
@@ -172,7 +172,7 @@ mod dynamic_with_siblings {
     fn test() {
         let html = sycamore::render_to_string(|| v(Signal::new(0).handle()));
         let c = test_container();
-        c.clone().set_inner_html(&html);
+        c.set_inner_html(&html);
 
         let state = Signal::new(0);
 
