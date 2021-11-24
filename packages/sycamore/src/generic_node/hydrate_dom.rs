@@ -250,9 +250,6 @@ impl Html for HydrateNode {
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
-/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
-/// created nodes. This will be fixed in a later release.
-///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 pub fn hydrate(template: impl FnOnce() -> View<HydrateNode>) {
     let window = web_sys::window().unwrap_throw();
@@ -265,9 +262,6 @@ pub fn hydrate(template: impl FnOnce() -> View<HydrateNode>) {
 /// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
 ///
 /// For rendering without hydration, use [`render`] instead.
-///
-/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
-/// created nodes. This will be fixed in a later release.
 ///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 pub fn hydrate_to(template: impl FnOnce() -> View<HydrateNode>, parent: &Node) {

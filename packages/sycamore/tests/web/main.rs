@@ -10,7 +10,7 @@ pub mod render;
 use sycamore::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
-use web_sys::{Document, Event, HtmlElement, HtmlInputElement, Node, Window};
+use web_sys::{Document, Element, Event, HtmlElement, HtmlInputElement, Node, Window};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -22,8 +22,8 @@ fn document() -> Document {
     window().document().unwrap()
 }
 
-/// Returns a [`Node`] referencing the test container with the contents cleared.
-fn test_container() -> Node {
+/// Returns a [`Element`] referencing the test container with the contents cleared.
+fn test_container() -> Element {
     if document()
         .query_selector("test-container#test-container")
         .unwrap()
@@ -46,7 +46,7 @@ fn test_container() -> Node {
 
     container.set_inner_html(""); // erase contents from previous test runs
 
-    container.into()
+    container
 }
 
 #[wasm_bindgen_test]
