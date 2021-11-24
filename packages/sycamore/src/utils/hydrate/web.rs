@@ -25,6 +25,8 @@ pub fn get_next_element() -> Option<Element> {
     }
 }
 
+/// Gets the next node surrounded by `<!#>` and `<!/>`. Removes the start node so that next call
+/// will return next marked nodes.
 pub fn get_next_marker(parent: &Node) -> Option<View<HydrateNode>> {
     if hydration_completed() {
         None

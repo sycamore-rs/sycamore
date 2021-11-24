@@ -113,6 +113,13 @@ impl GenericNode for HydrateNode {
         }
     }
 
+    fn marker_with_text(text: &str) -> Self {
+        // TODO
+        Self {
+            node: DomNode::marker_with_text(text),
+        }
+    }
+
     #[inline]
     fn set_attribute(&self, name: &str, value: &str) {
         self.node.set_attribute(name, value);

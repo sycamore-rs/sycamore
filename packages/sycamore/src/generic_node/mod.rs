@@ -61,7 +61,13 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// [`Indexed`](crate::flow::Indexed) for scenarios where you want to push a new item to the
     /// end of the list. If the list is empty, a dummy node is needed to store the position of
     /// the component.
-    fn marker() -> Self;
+    fn marker() -> Self {
+        Self::marker_with_text("")
+    }
+
+    /// Create a marker (dummy) node with text content. For empty marker, prefer
+    /// [`GenericNode::marker`] instead.
+    fn marker_with_text(text: &str) -> Self;
 
     /// Sets an attribute on a node.
     fn set_attribute(&self, name: &str, value: &str);

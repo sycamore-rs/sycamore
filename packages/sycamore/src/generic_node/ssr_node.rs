@@ -144,8 +144,10 @@ impl GenericNode for SsrNode {
         Self::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
     }
 
-    fn marker() -> Self {
-        Self::new(SsrNodeType::Comment(Default::default()))
+    fn marker_with_text(text: &str) -> Self {
+        Self::new(SsrNodeType::Comment(RefCell::new(Comment(
+            text.to_string(),
+        ))))
     }
 
     fn set_attribute(&self, name: &str, value: &str) {
