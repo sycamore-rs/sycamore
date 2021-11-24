@@ -1,4 +1,5 @@
 pub mod cleanup;
+#[cfg(feature = "experimental-hydrate")]
 pub mod hydrate;
 pub mod keyed;
 pub mod non_keyed;
