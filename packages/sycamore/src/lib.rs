@@ -11,7 +11,7 @@
 //! - `experimental-builder-agnostic` - Enables the agnostic backend builder API.
 //! - `experimental-builder-html` - Enables the HTML specific backend builder API. Also enables
 //!   `experimental-builder-agnostic`.
-//! - `hydrate` - Enables client-side hydration support.
+//! - `experimental-hydrate` - Enables client-side hydration support.
 //! - `futures` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
 //!   reactive scope into an `async` function.
 //! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering /
@@ -70,6 +70,8 @@ pub mod prelude {
     pub use crate::generic_node::DomNode;
     pub use crate::generic_node::GenericNode;
     pub use crate::generic_node::Html;
+    #[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
+    pub use crate::generic_node::HydrateNode;
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
