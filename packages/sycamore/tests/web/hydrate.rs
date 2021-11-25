@@ -130,9 +130,6 @@ mod dynamic {
 
         sycamore::hydrate_to(cloned!(state => move || v(state.handle())), &c);
 
-        // Hydration should not change inner html.
-        assert_eq!(c.inner_html(), html);
-
         // Reactivity should work normally.
         state.set(1);
         assert_eq!(
@@ -165,7 +162,7 @@ mod dynamic_with_siblings {
     fn ssr() {
         check(
             &sycamore::render_to_string(|| v(Signal::new(0).handle())),
-            expect![[r#"<p data-hk="0.0">Value: 0!</p>"#]],
+            expect![[r##"<p data-hk="0.0">Value: 0!<!--#--><!--/--></p>"##]],
         );
     }
     #[wasm_bindgen_test]
@@ -177,9 +174,6 @@ mod dynamic_with_siblings {
         let state = Signal::new(0);
 
         sycamore::hydrate_to(cloned!(state => move || v(state.handle())), &c);
-
-        // Hydration should not change inner html.
-        assert_eq!(c.inner_html(), html);
 
         // Reactivity should work normally.
         state.set(1);

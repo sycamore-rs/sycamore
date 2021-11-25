@@ -119,6 +119,7 @@ impl ToTokens for Element {
                     // Child is dynamic.
                     HtmlTree::Component(_)
                     | HtmlTree::Splice(_) => {
+                        let mut quote_marker_is_some = true;
                         let quote_marker =
                         if let Some(HtmlTree::Element(element)) =
                             children.next_if(|x| matches!(x, HtmlTree::Element(_)))
@@ -137,6 +138,7 @@ impl ToTokens for Element {
                                 let __marker = ::std::option::Option::Some(&__marker);
                             }
                         } else if children.peek().is_none() {
+                            quote_marker_is_some = false;
                             quote! {
                                 let __marker = ::std::option::Option::None;
                             }
@@ -147,6 +149,11 @@ impl ToTokens for Element {
                                 let __marker = ::std::option::Option::Some(&__marker);
                             }
                         };
+                        let quote_marker_or_none = match quote_marker_is_some {
+                            true => quote_marker.clone(),
+                            false => quote! {},
+                        };
+                        // If __el is a HydrateNode, use hydrate::web::get_next_marker as initial node value.
                         let initial = if cfg!(feature = "experimental-hydrate") {
                             quote! {
                                 if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::HydrateNode>() {
@@ -166,26 +173,86 @@ impl ToTokens for Element {
                                 None
                             }
                         };
-                        match child {
-                            HtmlTree::Component(component) => quote_spanned! { component.span()=>
-                                #quote_marker
-                                ::sycamore::utils::render::insert(
-                                    &__el,
-                                    #component,
-                                    #initial, __marker, #multi
-                                );
-                            },
-                            HtmlTree::Splice(splice) => quote_spanned! { splice.span()=>
-                                #quote_marker
-                                ::sycamore::utils::render::insert(
-                                   &__el,
-                                   ::sycamore::view::View::new_dyn(move ||
-                                       ::sycamore::view::IntoView::create(&#splice)
-                                   ),
-                                   #initial, __marker, #multi
-                               );
-                            },
-                            _ => unreachable!()
+                        if cfg!(feature = "ssr") && multi {
+                            // If ssr feature is enabled, perform ssr specific codegen.
+                            // If __el is an SsrNode and splice is dynamic, insert start and end markers for hydration.
+                            //
+                            // In addition, if there is only 1 child, there is no need for start and end markers.
+                            match child {
+                                HtmlTree::Component(component) => quote_spanned! { component.span()=>
+                                    if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::SsrNode>() {
+                                        ::sycamore::generic_node::GenericNode::append_child(
+                                            &__el,
+                                            &::sycamore::generic_node::GenericNode::marker_with_text("#"),
+                                        );
+                                        let __end_marker = ::sycamore::generic_node::GenericNode::marker_with_text("/");
+                                        ::sycamore::generic_node::GenericNode::append_child(&__el, &__end_marker);
+                                        ::sycamore::utils::render::insert(
+                                            &__el,
+                                            #component,
+                                            #initial, Some(&__end_marker), #multi
+                                        );
+                                        #quote_marker_or_none
+                                    } else {
+                                        #quote_marker
+                                        ::sycamore::utils::render::insert(
+                                            &__el,
+                                            #component,
+                                            #initial, __marker, #multi
+                                        );
+                                    }
+                                },
+                                HtmlTree::Splice(splice) => quote_spanned! { splice.span()=>
+                                    if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::SsrNode>() {
+                                        ::sycamore::generic_node::GenericNode::append_child(
+                                            &__el,
+                                            &::sycamore::generic_node::GenericNode::marker_with_text("#"),
+                                        );
+                                        let __end_marker = ::sycamore::generic_node::GenericNode::marker_with_text("/");
+                                        ::sycamore::generic_node::GenericNode::append_child(&__el, &__end_marker);
+                                        ::sycamore::utils::render::insert(
+                                            &__el,
+                                            ::sycamore::view::View::new_dyn(move ||
+                                                ::sycamore::view::IntoView::create(&#splice)
+                                            ),
+                                            #initial, Some(&__end_marker), #multi
+                                        );
+                                        #quote_marker_or_none
+                                    } else {
+                                        #quote_marker
+                                        ::sycamore::utils::render::insert(
+                                            &__el,
+                                            ::sycamore::view::View::new_dyn(move ||
+                                                ::sycamore::view::IntoView::create(&#splice)
+                                            ),
+                                            #initial, __marker, #multi
+                                        );
+                                    }
+                                },
+                                _ => unreachable!()
+                            }
+                        } else {
+                            match child {
+                                HtmlTree::Component(component) => quote_spanned! { component.span()=>
+                                    #quote_marker
+                                    ::sycamore::utils::render::insert(
+                                        &__el,
+                                        #component,
+                                        #initial, __marker, #multi
+                                    );
+                                },
+                                HtmlTree::Splice(splice) => quote_spanned! { splice.span()=>
+                                    #quote_marker
+                                    ::sycamore::utils::render::insert(
+                                        &__el,
+                                        ::sycamore::view::View::new_dyn(move ||
+                                            ::sycamore::view::IntoView::create(&#splice)
+                                        ),
+                                        #initial, __marker, #multi
+                                    );
+                                },
+                                _ => unreachable!()
+                            }
                         }
                     }
                 });

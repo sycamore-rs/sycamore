@@ -62,7 +62,7 @@ experimental-builder-agnostic = []
 experimental-builder-html = ["experimental-builder-agnostic"]
 experimental-hydrate = ["sycamore-macro/experimental-hydrate"]
 futures = ["wasm-bindgen-futures"]
-ssr = ["html-escape", "once_cell", "experimental-hydrate"]
+ssr = ["html-escape", "once_cell", "experimental-hydrate", "sycamore-macro/ssr"]
 serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 
