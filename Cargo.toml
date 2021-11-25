@@ -10,7 +10,7 @@ members = [
   "examples/counter",
   "examples/hello",
   "examples/hello-builder",
-  "examples/hello-hydrate",
+  "examples/hydrate",
   "examples/higher-order-components",
   "examples/iteration",
   "examples/ssr",
