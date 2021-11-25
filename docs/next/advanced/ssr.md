@@ -20,26 +20,26 @@ let node = view! {
 }
 let html = render_to_string(|| node);
 
-// Prints: <div class="my-class"><button>Click me</button></div>
-println!("{}", html);
+// Respond to the client with the rendered html.
 ```
 
 Note that you will need to enable the `"ssr"` feature on `sycamore` in your `Cargo.toml` file.
 
 ## Hydration
 
-Sycamore currently implements a very "naive" method of hydration. The current `hydrate` and
-`hydrate_to` methods merely recreate the entire DOM tree and replaces the old one sent from the
-server.
+<div class="badge">Experimental</div>
 
-This still retains many benefits of SSR. The initial load time will still be faster and crawlers
-will be able to see markup without executing anything.
+Now that your app is rendered on the server and sent to the client as HTML, you don't want the
+client to recreate all the DOM nodes when they are already there. To _"hydrate"_ the app, use
+`hydrate` and `hydrate_to` instead of `render` and `render_to` functions to mount your app. These
+functions do what they say on the tin: render your app by reusing existing DOM nodes.
 
-Once proper hydration is implemented, time to interactive will be improved.
+In your client-side app, enable the `"experimental-hydrate"` feature on `sycamore` in your
+`Cargo.toml` file.
 
 ## Quick Start Templates
 
-- [`sycamore-rocket-view`](https://github.com/sycamore-rs/sycamore-rocket-view): A quick
-  start view for using Sycamore with Rocket. Batteries included with `sycamore-router`.
-- [`sycamore-rocket-minimal-view`](https://github.com/sycamore-rs/sycamore-rocket-minimal-view):
-  A minimal view for using Sycamore with Rocket.
+- [`sycamore-rocket-view`](https://github.com/sycamore-rs/sycamore-rocket-view): A quick start view
+  for using Sycamore with Rocket. Batteries included with `sycamore-router`.
+- [`sycamore-rocket-minimal-view`](https://github.com/sycamore-rs/sycamore-rocket-minimal-view): A
+  minimal view for using Sycamore with Rocket.

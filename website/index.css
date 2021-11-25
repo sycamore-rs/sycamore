@@ -22,22 +22,22 @@
 }
 
 .content h1 {
-  @apply text-2xl font-bold;
+  @apply text-2xl font-bold inline-block;
   padding-top: 48px;
   margin-top: -48px;
 }
 .content h2 {
-  @apply text-xl font-bold;
+  @apply text-xl font-bold inline-block;
   padding-top: 48px;
   margin-top: -48px;
 }
 .content h3 {
-  @apply text-lg font-bold;
+  @apply text-lg font-bold inline-block;
   padding-top: 48px;
   margin-top: -48px;
 }
 .content h4 {
-  @apply text-base font-bold;
+  @apply text-base font-bold inline-block;
   padding-top: 48px;
   margin-top: -48px;
 }
@@ -53,4 +53,8 @@
 .content ul {
   padding-inline-start: 30px;
   @apply list-disc;
+}
+
+.content .badge {
+  @apply bg-red-400 text-white rounded px-2 py-1 ml-2 my-1 inline-block;
 }
