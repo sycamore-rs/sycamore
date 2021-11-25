@@ -162,7 +162,7 @@ mod dynamic_with_siblings {
     fn ssr() {
         check(
             &sycamore::render_to_string(|| v(Signal::new(0).handle())),
-            expect![[r##"<p data-hk="0.0">Value: 0!<!--#--><!--/--></p>"##]],
+            expect![[r##"<p data-hk="0.0">Value: <!--#-->0<!--/-->!</p>"##]],
         );
     }
     #[wasm_bindgen_test]
