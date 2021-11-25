@@ -73,7 +73,7 @@ impl DomNode {
         self.id.get()
     }
 
-    pub(crate) fn from_web_sys(node: Node) -> Self {
+    pub fn from_web_sys(node: Node) -> Self {
         Self {
             id: Default::default(),
             node,

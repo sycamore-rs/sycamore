@@ -1,6 +1,5 @@
 use sycamore::prelude::*;
 
-
 #[component(Counter<G>)]
 fn counter() -> View<G> {
     let counter = Signal::new(0);

@@ -37,7 +37,7 @@ impl HydrateNode {
         self.node.get_node_id()
     }
 
-    pub(crate) fn from_web_sys(node: Node) -> Self {
+    pub fn from_web_sys(node: Node) -> Self {
         Self {
             node: DomNode::from_web_sys(node),
         }
