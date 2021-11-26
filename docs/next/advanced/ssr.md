@@ -27,8 +27,6 @@ Note that you will need to enable the `"ssr"` feature on `sycamore` in your `Car
 
 ## Hydration
 
-<div class="badge">Experimental</div>
-
 Now that your app is rendered on the server and sent to the client as HTML, you don't want the
 client to recreate all the DOM nodes when they are already there. To _"hydrate"_ the app, use
 `hydrate` and `hydrate_to` instead of `render` and `render_to` functions to mount your app. These
