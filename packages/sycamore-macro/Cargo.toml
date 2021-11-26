@@ -18,13 +18,13 @@ proc-macro = true
 
 [dependencies]
 once_cell = "1.8.0"
-proc-macro2 = "1.0.29"
-quote = "1.0.9"
-syn = { version = "1.0.76" }
+proc-macro2 = "1.0.32"
+quote = "1.0.10"
+syn = "1.0.81"
 
 [dev-dependencies]
 sycamore = { path = "../sycamore" }
-trybuild = "1.0.45"
+trybuild = "1.0.52"
 
 [features]
 default = []
