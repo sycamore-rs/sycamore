@@ -1,6 +1,6 @@
 //! The renderer-agnostic API.
 
-use crate::component::Component;
+use crate::component::{instantiate_component, Component};
 use crate::generic_node::{GenericNode, Html};
 use crate::noderef::NodeRef;
 use crate::utils::render;
@@ -60,7 +60,7 @@ where
     G: GenericNode + Html,
     C: Component<G>,
 {
-    C::__create_component(props)
+    instantiate_component::<G, C>(props)
 }
 
 /// Create a [`View`] from an array of [`View`].
@@ -205,7 +205,7 @@ where
     where
         C: Component<G>,
     {
-        self.child(C::__create_component(props));
+        self.child(instantiate_component::<G, C>(props));
 
         self
     }

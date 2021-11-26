@@ -14,7 +14,7 @@ fn app() -> View<G> {
 
     view! {
         div {
-            "Counter demo"
+            h1 { "Counter demo" }
             p(class="value") {
                 "Value: "
                 (counter.get())

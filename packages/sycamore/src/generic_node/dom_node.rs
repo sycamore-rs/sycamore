@@ -16,21 +16,21 @@ use crate::view::View;
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(extends = Node)]
-    type NodeWithId;
+    pub(super) type NodeWithId;
 
     #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
-    fn node_id(this: &NodeWithId) -> Option<usize>;
+    pub fn node_id(this: &NodeWithId) -> Option<usize>;
 
     #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
-    fn set_node_id(this: &NodeWithId, id: usize);
+    pub fn set_node_id(this: &NodeWithId, id: usize);
 }
 
 /// An unique id for every node.
 #[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
-struct NodeId(usize);
+pub(super) struct NodeId(pub usize);
 
 impl NodeId {
-    fn new_with_node(node: &Node) -> Self {
+    pub fn new_with_node(node: &Node) -> Self {
         thread_local!(static NODE_ID_COUNTER: Cell<usize> = Cell::new(1)); // 0 is reserved for default value.
 
         let id = NODE_ID_COUNTER.with(|x| {
@@ -61,7 +61,7 @@ impl DomNode {
         self.node.unchecked_into()
     }
 
-    fn get_node_id(&self) -> NodeId {
+    pub(super) fn get_node_id(&self) -> NodeId {
         if self.id.get().0 == 0 {
             // self.id not yet initialized.
             if let Some(id) = self.node.unchecked_ref::<NodeWithId>().node_id() {
@@ -71,6 +71,13 @@ impl DomNode {
             }
         }
         self.id.get()
+    }
+
+    pub fn from_web_sys(node: Node) -> Self {
+        Self {
+            id: Default::default(),
+            node,
+        }
     }
 }
 
@@ -147,8 +154,8 @@ impl GenericNode for DomNode {
         }
     }
 
-    fn marker() -> Self {
-        let node = document().create_comment("").into();
+    fn marker_with_text(text: &str) -> Self {
+        let node = document().create_comment(text).into();
         DomNode {
             id: Default::default(),
             node,
@@ -304,91 +311,24 @@ pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
-/// This function is intended to be used for injecting an ephemeral sycamore view into a non-sycamore app
-/// (for example, a file upload modal where you want to cancel the upload if the modal is closed).
-/// You should only use this function while refactoring your app, and you should aim to have a single
-/// call to [`render`] or [`render_to`] at the top level of your app long-term.
-/// For rendering a view that will never be unmounted from the dom, use [`render_to`] instead.
-/// For rendering under the `<body>` tag, use [`render`] instead.
+/// This function is intended to be used for injecting an ephemeral sycamore view into a
+/// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
+/// modal is closed).
+///
+/// It is, however, preferable to have a single call to [`render`] or [`render_to`] at the top level
+/// of your app long-term. For rendering a view that will never be unmounted from the dom, use
+/// [`render_to`] instead. For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
 pub fn render_get_scope(template: impl FnOnce() -> View<DomNode>, parent: &Node) -> ReactiveScope {
     create_root(|| {
         insert(
-            &DomNode {
-                id: Default::default(),
-                node: parent.clone(),
-            },
+            &DomNode::from_web_sys(parent.clone()),
             template(),
             None,
             None,
             false,
         );
     })
-}
-
-/// Render a [`View`] under a `parent` node by reusing existing nodes (client side
-/// hydration). Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
-///
-/// For rendering without hydration, use [`render`] instead.
-///
-/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
-/// created nodes. This will be fixed in a later release.
-///
-/// _This API requires the following crate features to be activated: `dom`_
-pub fn hydrate(template: impl FnOnce() -> View<DomNode>) {
-    let window = web_sys::window().unwrap_throw();
-    let document = window.document().unwrap_throw();
-
-    hydrate_to(template, &document.body().unwrap_throw());
-}
-
-/// Gets the children of an [`Element`] by collecting them into a [`Vec`]. Note that the returned
-/// value is **NOT** live.
-fn get_children(parent: &Element) -> Vec<Element> {
-    let children = parent.children();
-    let children_count = children.length();
-
-    let mut vec = Vec::with_capacity(children_count as usize);
-
-    for i in 0..children.length() {
-        vec.push(children.get_with_index(i).unwrap_throw());
-    }
-
-    vec
-}
-
-/// Render a [`View`] under a `parent` node by reusing existing nodes (client side
-/// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
-///
-/// For rendering without hydration, use [`render`] instead.
-///
-/// **TODO**: This method currently deletes existing nodes from DOM and reinserts new
-/// created nodes. This will be fixed in a later release.
-///
-/// _This API requires the following crate features to be activated: `dom`_
-pub fn hydrate_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
-    for child in get_children(parent.unchecked_ref()) {
-        child.remove();
-    }
-
-    let scope = create_root(|| {
-        insert(
-            &DomNode {
-                id: Default::default(),
-                node: parent.clone(),
-            },
-            template(),
-            None,
-            None, // TODO
-            false,
-        );
-    });
-
-    thread_local! {
-        static GLOBAL_SCOPES: std::cell::RefCell<Vec<ReactiveScope>> = std::cell::RefCell::new(Vec::new());
-    }
-
-    GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
 }

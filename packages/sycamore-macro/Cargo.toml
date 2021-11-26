@@ -25,3 +25,8 @@ syn = { version = "1.0.76" }
 [dev-dependencies]
 sycamore = { path = "../sycamore" }
 trybuild = "1.0.45"
+
+[features]
+default = []
+experimental-hydrate = []
+ssr = []

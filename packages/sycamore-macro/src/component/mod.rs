@@ -239,7 +239,7 @@ pub fn component_impl(
             const NAME: &'static ::std::primitive::str = #component_name_str;
             type Props = #prop_ty;
 
-            fn __create_component(#arg) -> #return_type{
+            fn create_component(#arg) -> #return_type{
                 #block
             }
         }

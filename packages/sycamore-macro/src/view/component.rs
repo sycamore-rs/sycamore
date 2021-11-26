@@ -59,19 +59,19 @@ impl ToTokens for Component {
 
         let quoted = if args.empty_or_trailing() {
             quote_spanned! { paren.span=>
-                ::sycamore::reactive::untrack(|| {
+                {
                     #[allow(unused_imports)]
-                    use ::sycamore::component::Component as __Component;
-                    #path#generics::__create_component(())
-                })
+                    use ::sycamore::component::__InstantiateComponent;
+                    #path#generics::__instantiate_component(())
+                }
             }
         } else {
             quote_spanned! { path.span()=>
-                ::sycamore::reactive::untrack(|| {
+                {
                     #[allow(unused_imports)]
-                    use ::sycamore::component::Component as __Component;
-                    #path#generics::__create_component(#args)
-                })
+                    use ::sycamore::component::__InstantiateComponent;
+                    #path#generics::__instantiate_component(#args)
+                }
             }
         };
 

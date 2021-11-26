@@ -1,5 +1,7 @@
 //! The definition of the [`Component`] trait.
 
+use sycamore_reactive::untrack;
+
 use crate::generic_node::GenericNode;
 use crate::prelude::View;
 
@@ -13,8 +15,43 @@ pub trait Component<G: GenericNode> {
     type Props;
 
     /// Create a new component with an instance of the properties.
+    fn create_component(props: Self::Props) -> View<G>;
+}
+
+/// Instantiates a component.
+#[inline(always)]
+pub fn instantiate_component<G: GenericNode, C: Component<G>>(props: C::Props) -> View<G> {
+    if G::USE_HYDRATION_CONTEXT {
+        #[cfg(feature = "experimental-hydrate")]
+        return crate::utils::hydrate::hydrate_component(|| untrack(|| C::create_component(props)));
+        #[cfg(not(feature = "experimental-hydrate"))]
+        return untrack(|| C::create_component(props));
+    } else {
+        untrack(|| C::create_component(props))
+    }
+}
+
+/// Alias to [`instantiate_component`]. For use in proc-macro output.
+///
+/// The double underscores (`__`) are to prevent conflicts with other trait methods. This is
+/// because we cannot use fully qualified syntax here because it prevents type inference.
+#[doc(hidden)]
+pub trait __InstantiateComponent<G: GenericNode>: Component<G> {
+    /// Alias to [`instantiate_component`]. For use in proc-macro output.
     ///
     /// The double underscores (`__`) are to prevent conflicts with other trait methods. This is
     /// because we cannot use fully qualified syntax here because it prevents type inference.
-    fn __create_component(props: Self::Props) -> View<G>;
+    #[doc(hidden)]
+    fn __instantiate_component(props: Self::Props) -> View<G>;
+}
+
+impl<C, G> __InstantiateComponent<G> for C
+where
+    C: Component<G>,
+    G: GenericNode,
+{
+    #[inline(always)]
+    fn __instantiate_component(props: Self::Props) -> View<G> {
+        instantiate_component::<G, C>(props)
+    }
 }

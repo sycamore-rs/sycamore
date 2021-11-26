@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Hello World!</title>
+
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SSR-ed HTML can be found in dev console when running the app. -->
+    <h1 data-hk="1.0">Hydration example</h1>
+    <div data-hk="2.1">
+      <h2 data-hk="2.2">
+        Hello
+        <!--#--><span data-hk="2.3">World</span
+        ><!--/-->!
+      </h2>
+      <input data-hk="2.4" />
+    </div>
+    <div data-hk="2.5">
+      <h2 data-hk="2.6">Counter demo</h2>
+      <p class="value" data-hk="2.7">
+        Value:
+        <!--#-->0<!--/-->
+      </p>
+      <button data-hk="2.8" class="increment">Increment</button
+      ><button class="reset" data-hk="2.9">Reset</button>
+    </div>
+  </body>
+</html>

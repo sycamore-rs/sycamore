@@ -44,6 +44,7 @@ features = [
   "HtmlInputElement",
   "HtmlCollection",
   "Node",
+  "NodeList",
   "Text",
   "Window",
 ]
@@ -51,6 +52,7 @@ version = "0.3.55"
 
 [dev-dependencies]
 criterion = { version = "0.3.5", features = ["html_reports"] }
+expect-test = "1.1.0"
 wasm-bindgen-test = "0.3.28"
 
 [features]
@@ -58,8 +60,9 @@ default = ["dom", "wasm-bindgen-interning"]
 dom = []
 experimental-builder-agnostic = []
 experimental-builder-html = ["experimental-builder-agnostic"]
+experimental-hydrate = ["sycamore-macro/experimental-hydrate"]
 futures = ["wasm-bindgen-futures"]
-ssr = ["html-escape", "once_cell"]
+ssr = ["html-escape", "once_cell", "experimental-hydrate", "sycamore-macro/ssr"]
 serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 

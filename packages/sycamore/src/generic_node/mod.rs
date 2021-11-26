@@ -2,6 +2,8 @@
 
 #[cfg(feature = "dom")]
 pub mod dom_node;
+#[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
+pub mod hydrate_dom;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
 
@@ -13,6 +15,8 @@ use web_sys::Event;
 
 #[cfg(feature = "dom")]
 pub use dom_node::*;
+#[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
+pub use hydrate_dom::*;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
 
@@ -42,6 +46,10 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// The type of the event that is passed to the event handler.
     type EventType;
 
+    /// Whether this rendering backend needs the hydration registry.
+    const USE_HYDRATION_CONTEXT: bool = false;
+    const CLIENT_SIDE_HYDRATION: bool = false;
+
     /// Create a new element node.
     fn element(tag: &str) -> Self;
 
@@ -53,7 +61,13 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// [`Indexed`](crate::flow::Indexed) for scenarios where you want to push a new item to the
     /// end of the list. If the list is empty, a dummy node is needed to store the position of
     /// the component.
-    fn marker() -> Self;
+    fn marker() -> Self {
+        Self::marker_with_text("")
+    }
+
+    /// Create a marker (dummy) node with text content. For empty marker, prefer
+    /// [`GenericNode::marker`] instead.
+    fn marker_with_text(text: &str) -> Self;
 
     /// Sets an attribute on a node.
     fn set_attribute(&self, name: &str, value: &str);
