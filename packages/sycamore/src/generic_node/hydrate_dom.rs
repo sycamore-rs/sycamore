@@ -10,7 +10,7 @@ use web_sys::Node;
 use crate::generic_node::{DomNode, GenericNode, Html};
 use crate::reactive::{create_root, ReactiveScope};
 use crate::utils::hydrate::web::get_next_element;
-use crate::utils::hydrate::with_hydration_context;
+use crate::utils::hydrate::{hydration_completed, with_hydration_context};
 use crate::utils::render::insert;
 use crate::view::View;
 
@@ -157,7 +157,10 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn append_child(&self, child: &Self) {
-        self.node.append_child(&child.node);
+        if hydration_completed() {
+            // Do not append nodes during hydration as that will result in duplicate text nodes.
+            self.node.append_child(&child.node);
+        }
     }
 
     #[inline]
