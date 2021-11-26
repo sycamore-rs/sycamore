@@ -197,3 +197,48 @@ mod dynamic_with_siblings {
         );
     }
 }
+
+mod dynamic_template {
+    use super::*;
+    fn v<G: Html>(state: ReadSignal<View<G>>) -> View<G> {
+        view! { p { "before" (*state.get()) "after" } }
+    }
+    #[test]
+    fn ssr() {
+        check(
+            &sycamore::render_to_string(|| v(Signal::new(view! { "text" }).into_handle())),
+            expect![[r##"<p data-hk="0.0">before<!--#-->text<!--/-->after</p>"##]],
+        );
+    }
+    #[wasm_bindgen_test]
+    fn test() {
+        let html = sycamore::render_to_string(|| v(Signal::new(view! { "text" }).into_handle()));
+        let c = test_container();
+        c.set_inner_html(&html);
+
+        let state = Signal::new(view! { "text" });
+
+        sycamore::hydrate_to(cloned!(state => move || v(state.handle())), &c);
+
+        // Reactivity should work normally.
+        state.set(view! { span { "nested node" } });
+        assert_eq!(
+            c.query_selector("p")
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .unwrap(),
+            "beforenested nodeafter"
+        );
+
+        // P tag should still be the SSR-ed node, not a new node.
+        assert_eq!(
+            c.query_selector("p")
+                .unwrap()
+                .unwrap()
+                .get_attribute("data-hk")
+                .as_deref(),
+            Some("0.0")
+        );
+    }
+}
