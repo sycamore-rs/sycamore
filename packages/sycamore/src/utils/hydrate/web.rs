@@ -32,7 +32,7 @@ pub fn get_next_marker(parent: &Node) -> Option<View<HydrateNode>> {
         None
     } else {
         // A Vec of nodes that are between the start and end markers.
-        let mut buf = Vec::new();
+        let mut buf: Vec<View<HydrateNode>> = Vec::new();
         // `true` if between start and end markers. Nodes that are visited when start is true are
         // added to buf.
         let mut start = false;

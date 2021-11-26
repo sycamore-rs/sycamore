@@ -10,7 +10,7 @@ use web_sys::Node;
 use crate::generic_node::{DomNode, GenericNode, Html};
 use crate::reactive::{create_root, ReactiveScope};
 use crate::utils::hydrate::web::get_next_element;
-use crate::utils::hydrate::{hydration_completed, with_hydration_context};
+use crate::utils::hydrate::with_hydration_context;
 use crate::utils::render::insert;
 use crate::view::View;
 
@@ -157,10 +157,7 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn append_child(&self, child: &Self) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node.append_child(&child.node);
-        }
+        self.node.append_child(&child.node);
     }
 
     #[inline]
@@ -170,35 +167,23 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node
-                .insert_child_before(&new_node.node, reference_node.map(|node| &node.node));
-        }
+        self.node
+            .insert_child_before(&new_node.node, reference_node.map(|node| &node.node));
     }
 
     #[inline]
     fn remove_child(&self, child: &Self) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node.remove_child(&child.node);
-        }
+        self.node.remove_child(&child.node);
     }
 
     #[inline]
     fn replace_child(&self, old: &Self, new: &Self) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node.replace_child(&old.node, &new.node);
-        }
+        self.node.replace_child(&old.node, &new.node);
     }
 
     #[inline]
     fn insert_sibling_before(&self, child: &Self) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node.insert_sibling_before(&child.node);
-        }
+        self.node.insert_sibling_before(&child.node);
     }
 
     #[inline]
@@ -213,10 +198,7 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn remove_self(&self) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node.remove_self();
-        }
+        self.node.remove_self();
     }
 
     #[inline]
@@ -226,18 +208,12 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn update_inner_text(&self, text: &str) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node.update_inner_text(text);
-        }
+        self.node.update_inner_text(text);
     }
 
     #[inline]
     fn dangerously_set_inner_html(&self, html: &str) {
-        if hydration_completed() {
-            // If hydrating, do nothing.
-            self.node.dangerously_set_inner_html(html);
-        }
+        self.node.dangerously_set_inner_html(html);
     }
 
     #[inline]
