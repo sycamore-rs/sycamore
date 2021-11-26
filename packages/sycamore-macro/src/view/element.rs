@@ -111,7 +111,7 @@ impl ToTokens for Element {
                         quote_spanned! { splice.span()=>
                             ::sycamore::utils::render::insert(
                                 &__el,
-                                ::sycamore::view::IntoView::create(&#splice),
+                                ::sycamore::view::IntoView::create(&(#splice)),
                                 None, None, #multi
                             );
                         }
@@ -215,7 +215,7 @@ impl ToTokens for Element {
                                         ::sycamore::utils::render::insert(
                                             &__el,
                                             ::sycamore::view::View::new_dyn(move ||
-                                                ::sycamore::view::IntoView::create(&#splice)
+                                                ::sycamore::view::IntoView::create(&(#splice))
                                             ),
                                             #initial, Some(&__end_marker), #multi
                                         );
@@ -225,7 +225,7 @@ impl ToTokens for Element {
                                         ::sycamore::utils::render::insert(
                                             &__el,
                                             ::sycamore::view::View::new_dyn(move ||
-                                                ::sycamore::view::IntoView::create(&#splice)
+                                                ::sycamore::view::IntoView::create(&(#splice))
                                             ),
                                             #initial, __marker, #multi
                                         );
@@ -248,7 +248,7 @@ impl ToTokens for Element {
                                     ::sycamore::utils::render::insert(
                                         &__el,
                                         ::sycamore::view::View::new_dyn(move ||
-                                            ::sycamore::view::IntoView::create(&#splice)
+                                            ::sycamore::view::IntoView::create(&(#splice))
                                         ),
                                         #initial, __marker, #multi
                                     );

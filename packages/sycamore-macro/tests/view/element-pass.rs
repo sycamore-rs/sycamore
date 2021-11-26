@@ -14,6 +14,9 @@ fn compile_pass<G: GenericNode>() {
     let _: View<G> = view! { button(class="my-btn", aria-hidden="true") };
 
     let _: View<G> = view! { p(dangerously_set_inner_html="<span>Test</span>") };
+
+    // view! should correctly parenthesize the (1 + 2) when borrowing.
+    let _: View<G> = view! { p { (1 + 2) } };
 }
 
 fn main() {}
