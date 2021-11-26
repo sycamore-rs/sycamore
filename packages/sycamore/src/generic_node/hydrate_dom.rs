@@ -251,21 +251,33 @@ pub fn hydrate(template: impl FnOnce() -> View<HydrateNode>) {
 ///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 pub fn hydrate_to(template: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
-    let scope = create_root(|| {
-        insert(
-            &HydrateNode {
-                node: DomNode::from_web_sys(parent.clone()),
-            },
-            with_hydration_context(template),
-            None,
-            None, // TODO
-            false,
-        );
-    });
+    let scope = hydrate_get_scope(template, parent);
 
     thread_local! {
         static GLOBAL_SCOPES: std::cell::RefCell<Vec<ReactiveScope>> = std::cell::RefCell::new(Vec::new());
     }
 
     GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
+}
+
+/// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
+/// This function is intended to be used for injecting an ephemeral sycamore view into a
+/// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
+/// modal is closed).
+///
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
+#[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
+pub fn hydrate_get_scope(
+    template: impl FnOnce() -> View<HydrateNode>,
+    parent: &Node,
+) -> ReactiveScope {
+    create_root(|| {
+        insert(
+            &HydrateNode::from_web_sys(parent.clone()),
+            with_hydration_context(template),
+            None,
+            None,
+            false,
+        );
+    })
 }

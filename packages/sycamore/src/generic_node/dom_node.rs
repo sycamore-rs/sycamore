@@ -313,20 +313,18 @@ pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
 /// This function is intended to be used for injecting an ephemeral sycamore view into a
 /// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
-/// modal is closed). You should only use this function while refactoring your app, and you should
-/// aim to have a single call to [`render`] or [`render_to`] at the top level of your app long-term.
-/// For rendering a view that will never be unmounted from the dom, use [`render_to`] instead.
-/// For rendering under the `<body>` tag, use [`render`] instead.
+/// modal is closed).
+///
+/// It is, however, preferable to have a single call to [`render`] or [`render_to`] at the top level
+/// of your app long-term. For rendering a view that will never be unmounted from the dom, use
+/// [`render_to`] instead. For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
 pub fn render_get_scope(template: impl FnOnce() -> View<DomNode>, parent: &Node) -> ReactiveScope {
     create_root(|| {
         insert(
-            &DomNode {
-                id: Default::default(),
-                node: parent.clone(),
-            },
+            &DomNode::from_web_sys(parent.clone()),
             template(),
             None,
             None,

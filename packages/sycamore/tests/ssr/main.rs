@@ -40,7 +40,10 @@ fn reactive_text_with_siblings() {
     );
 
     count.set(1);
-    assert_eq!(sycamore::render_to_string(|| node), "<p>before<!--#-->1<!--/-->after</p>");
+    assert_eq!(
+        sycamore::render_to_string(|| node),
+        "<p>before<!--#-->1<!--/-->after</p>"
+    );
 }
 
 #[test]
