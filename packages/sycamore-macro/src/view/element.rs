@@ -203,6 +203,8 @@ impl ToTokens for Element {
                                     }
                                 },
                                 HtmlTree::Splice(splice) => quote_spanned! { splice.span()=>
+                                    // TODO: clippy bug that is not yet fixed on stable.
+                                    #[allow(clippy::suspicious_else_formatting)]
                                     if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::SsrNode>() {
                                         ::sycamore::generic_node::GenericNode::append_child(
                                             &__el,
