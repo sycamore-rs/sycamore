@@ -36,11 +36,11 @@ fn reactive_text_with_siblings() {
 
     assert_eq!(
         sycamore::render_to_string(cloned!((node) => move || node)),
-        "<p>before0after</p>"
+        "<p>before<!--#-->0<!--/-->after</p>"
     );
 
     count.set(1);
-    assert_eq!(sycamore::render_to_string(|| node), "<p>before1after</p>");
+    assert_eq!(sycamore::render_to_string(|| node), "<p>before<!--#-->1<!--/-->after</p>");
 }
 
 #[test]
