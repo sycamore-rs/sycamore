@@ -23,7 +23,7 @@ quote = "1.0.10"
 syn = "1.0.81"
 
 [dev-dependencies]
-sycamore = { path = "../sycamore" }
+sycamore = { path = "../sycamore", features = ["experimental-hydrate"] }
 trybuild = "1.0.52"
 
 [features]
