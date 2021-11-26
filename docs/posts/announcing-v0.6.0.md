@@ -87,10 +87,7 @@ sycamore primitives outside of the main `sycamore` crate.
 
 A lot of performance improvements have been made to Sycamore.
 
-<img src="https://user-images.githubusercontent.com/37006668/132999004-31269471-c4f0-4aa2-8517-3a945de3eed0.png" alt="js-framework-benchmark screenshot" style="max-width: 500px" />
-
-_(These are the results for Sycamore v0.5. Results for Sycamore v0.6 will be posted once the
-benchmarks are updated on the official repository.)_
+<img src="https://user-images.githubusercontent.com/37006668/143656692-df777e44-a7fa-4cb2-ae8b-62e15c75968e.png" alt="js-framework-benchmark screenshot" style="max-width: 500px" />
 
 Sycamore is now faster than most major JavaScript frameworks!
 
