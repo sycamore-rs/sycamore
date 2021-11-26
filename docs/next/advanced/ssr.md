@@ -39,7 +39,7 @@ In your client-side app, enable the `"experimental-hydrate"` feature on `sycamor
 
 ## Quick Start Templates
 
-- [`sycamore-rocket-view`](https://github.com/sycamore-rs/sycamore-rocket-view): A quick start view
+- [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template): A quick start template
   for using Sycamore with Rocket. Batteries included with `sycamore-router`.
-- [`sycamore-rocket-minimal-view`](https://github.com/sycamore-rs/sycamore-rocket-minimal-view): A
-  minimal view for using Sycamore with Rocket.
+- [`sycamore-rocket-minimal-template`](https://github.com/sycamore-rs/sycamore-rocket-minimal-template): A
+  minimal template for using Sycamore with Rocket.
