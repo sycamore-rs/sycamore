@@ -18,7 +18,7 @@ use super::dom_node::NodeId;
 
 /// Rendering backend for the DOM with hydration support.
 ///
-/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
 #[derive(Clone)]
 pub struct HydrateNode {
     node: DomNode,
@@ -236,7 +236,7 @@ impl Html for HydrateNode {
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
-/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
 pub fn hydrate(template: impl FnOnce() -> View<HydrateNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
@@ -249,7 +249,7 @@ pub fn hydrate(template: impl FnOnce() -> View<HydrateNode>) {
 ///
 /// For rendering without hydration, use [`render`] instead.
 ///
-/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
 pub fn hydrate_to(template: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
     let scope = hydrate_get_scope(template, parent);
 
@@ -265,7 +265,7 @@ pub fn hydrate_to(template: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
 /// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
 /// modal is closed).
 ///
-/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
 pub fn hydrate_get_scope(
     template: impl FnOnce() -> View<HydrateNode>,
