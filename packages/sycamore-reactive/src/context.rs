@@ -33,11 +33,10 @@ impl<T: 'static> ContextAny for Context<T> {
     }
 }
 
-/// Get the value of a context in the current [`ReactiveScope`].
+/// Get the value of a context in the current [`ReactiveScope`] or `None` if not found.
 ///
-/// # Panics
-/// This function will `panic!` if the context is not found in the current scope or a parent scope.
-pub fn use_context<T: Clone + 'static>() -> T {
+/// For a panicking version of this function, see [`use_context`].
+pub fn try_use_context<T: Clone + 'static>() -> Option<T> {
     SCOPES.with(|scopes| {
         let scopes = scopes.borrow();
         let mut current = scopes.last().map(|s| Rc::clone(&s.0));
@@ -46,16 +45,26 @@ pub fn use_context<T: Clone + 'static>() -> T {
                 while let Some(scope) = &current {
                     if let Some(context) = &scope.borrow().context {
                         if let Some(value) = context.get_value().downcast_ref::<T>() {
-                            return value.clone();
+                            return Some(value.clone());
                         }
                     }
                     current = current.unwrap_throw().borrow().parent.0.upgrade();
                 }
-                panic!("context not found for type")
+                None
             }
-            None => panic!("context not found for type"),
+            None => None,
         }
     })
+}
+
+/// Get the value of a context in the current [`ReactiveScope`].
+///
+/// # Panics
+/// This function will `panic!` if the context is not found in the current scope or a parent scope.
+/// For a non-panicking version of this function, see [`try_use_context`].
+#[track_caller]
+pub fn use_context<T: Clone + 'static>() -> T {
+    try_use_context().expect("context not found for type")
 }
 
 /// Creates a new [`ReactiveScope`] with a context and runs the supplied callback function.
