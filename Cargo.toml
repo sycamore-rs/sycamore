@@ -8,6 +8,7 @@ members = [
   "examples/components",
   "examples/context",
   "examples/counter",
+  "examples/page-visit-counter",
   "examples/hello",
   "examples/hello-builder",
   "examples/hydrate",
