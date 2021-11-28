@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::future::Future;
 use std::hash::{Hash, Hasher};
+use std::panic::Location;
 use std::rc::{Rc, Weak};
 use std::{mem, ptr};
 
@@ -57,7 +58,6 @@ impl Listener {
 }
 
 /// Internal representation for [`ReactiveScope`].
-#[derive(Default)]
 pub(crate) struct ReactiveScopeInner {
     /// Effects created in this scope.
     effects: SmallVec<[Rc<RefCell<Option<Listener>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
@@ -66,6 +66,31 @@ pub(crate) struct ReactiveScopeInner {
     /// Contexts created in this scope.
     pub context: Option<Box<dyn ContextAny>>,
     pub parent: ReactiveScopeWeak,
+    /// The source location where this scope was created.
+    /// Only available when in debug mode.
+    #[cfg(debug_assertions)]
+    pub loc: &'static Location<'static>,
+}
+
+impl ReactiveScopeInner {
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn new() -> Self {
+        Self {
+            effects: SmallVec::new(),
+            cleanup: Vec::new(),
+            context: None,
+            parent: ReactiveScopeWeak::default(),
+            #[cfg(debug_assertions)]
+            loc: Location::caller(),
+        }
+    }
+}
+
+impl Default for ReactiveScopeInner {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Owns the effects created in the current reactive scope.
@@ -75,15 +100,17 @@ pub(crate) struct ReactiveScopeInner {
 /// A new [`ReactiveScope`] is usually created with [`create_root`]. A new [`ReactiveScope`] is also
 /// created when a new effect is created with [`create_effect`] and other reactive utilities that
 /// call it under the hood.
-#[derive(Default)]
 pub struct ReactiveScope(pub(crate) Rc<RefCell<ReactiveScopeInner>>);
 
 impl ReactiveScope {
     /// Create a new empty [`ReactiveScope`].
     ///
     /// This should be rarely used and only serve as a placeholder.
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn new() -> Self {
-        Self::default()
+        // We call this first to make sure that track_caller can do its thing.
+        let inner = ReactiveScopeInner::new();
+        Self(Rc::new(RefCell::new(inner)))
     }
 
     /// Add an effect that is owned by this [`ReactiveScope`].
@@ -125,6 +152,21 @@ impl ReactiveScope {
                                                 // will not drop the scope.
         });
         u
+    }
+
+    /// Returns the source code [`Location`] where this [`ReactiveScope`] was created.
+    pub fn creation_loc(&self) -> Option<&'static Location<'static>> {
+        #[cfg(debug_assertions)]
+        return Some(self.0.borrow().loc);
+        #[cfg(not(debug_assertions))]
+        return None;
+    }
+}
+
+impl Default for ReactiveScope {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn default() -> Self {
+        Self::new()
     }
 }
 

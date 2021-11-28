@@ -7,7 +7,7 @@ mod view;
 /// A macro for ergonomically creating complex UI structures.
 ///
 /// To learn more about the template syntax, see the chapter on
-/// [the `view!` macro](https://sycamore-rs.netlify.app/docs/basics/template) in the Sycamore Book.
+/// [the `view!` macro](https://sycamore-rs.netlify.app/docs/basics/view) in the Sycamore Book.
 #[proc_macro]
 pub fn view(component: TokenStream) -> TokenStream {
     let component = parse_macro_input!(component as view::HtmlRoot);
