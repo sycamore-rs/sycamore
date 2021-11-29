@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::fmt::{Debug, Formatter};
 use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::panic::Location;
@@ -661,6 +662,55 @@ pub fn current_scope() -> Option<ReactiveScopeWeak> {
             .last()
             .map(|last_context| last_context.downgrade())
     })
+}
+
+/// A struct that can be debug-printed to view the scope hierarchy at the location it was created.
+pub struct DebugScopeHierarchy {
+    scope: Option<Rc<RefCell<ReactiveScopeInner>>>,
+    loc: &'static Location<'static>,
+}
+
+/// Returns a [`DebugScopeHierarchy`] which can be printed using [`std::fmt::Debug`] to debug the
+/// scope hierarchy at the current level.
+#[track_caller]
+pub fn debug_scope_hierarchy() -> DebugScopeHierarchy {
+    let loc = Location::caller();
+    SCOPES.with(|scope| DebugScopeHierarchy {
+        scope: scope.borrow().last().map(|x| x.0.clone()),
+        loc,
+    })
+}
+
+impl Debug for DebugScopeHierarchy {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reactive scope hierarchy at {}:", self.loc)?;
+        if let Some(scope) = &self.scope {
+            let mut s = Some(scope.clone());
+            while let Some(x) = s {
+                // Print scope.
+                if let Some(loc) = ReactiveScope(x.clone()).creation_loc() {
+                    write!(f, "\tScope created at {}", loc)?;
+                } else {
+                    write!(f, "\tScope")?;
+                }
+                // Print context.
+                if let Some(context) = &x.borrow().context {
+                    let type_name = context.get_type_name();
+                    if let Some(type_name) = type_name {
+                        write!(f, " with context (type = {})", type_name)?;
+                    } else {
+                        write!(f, " with context")?;
+                    }
+                }
+                writeln!(f)?;
+                // Set next iteration with scope parent.
+                s = x.borrow().parent.0.upgrade();
+            }
+        } else {
+            writeln!(f, "Not inside a reactive scope")?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

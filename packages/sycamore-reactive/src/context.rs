@@ -16,11 +16,17 @@ pub(super) trait ContextAny {
     /// Get the value stored in the context. The concrete type of the returned value is guaranteed
     /// to match the type when calling [`get_type_id`](ContextAny::get_type_id).
     fn get_value(&self) -> &dyn Any;
+
+    /// Get the name of type of context or `None` if not available.
+    fn get_type_name(&self) -> Option<&'static str>;
 }
 
 /// Inner representation of a context.
 struct Context<T: 'static> {
     value: T,
+    /// The type name of the context. Only available in debug mode.
+    #[cfg(debug_assertions)]
+    type_name: &'static str,
 }
 
 impl<T: 'static> ContextAny for Context<T> {
@@ -30,6 +36,13 @@ impl<T: 'static> ContextAny for Context<T> {
 
     fn get_value(&self) -> &dyn Any {
         &self.value
+    }
+
+    fn get_type_name(&self) -> Option<&'static str> {
+        #[cfg(debug_assertions)]
+        return Some(self.type_name);
+        #[cfg(not(debug_assertions))]
+        return None;
     }
 }
 
@@ -72,7 +85,11 @@ pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) 
     SCOPES.with(|scopes| {
         // Create a new ReactiveScope with a context.
         let scope = ReactiveScope::new();
-        scope.0.borrow_mut().context = Some(Box::new(Context { value }));
+        scope.0.borrow_mut().context = Some(Box::new(Context {
+            value,
+            #[cfg(debug_assertions)]
+            type_name: std::any::type_name::<T>(),
+        }));
         scopes.borrow_mut().push(scope);
         let out = f();
         let scope = scopes.borrow_mut().pop().unwrap_throw();
