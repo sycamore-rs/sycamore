@@ -81,10 +81,14 @@ pub fn use_context<T: Clone + 'static>() -> T {
 }
 
 /// Creates a new [`ReactiveScope`] with a context and runs the supplied callback function.
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) -> Out {
+    // Create a new ReactiveScope.
+    // We make sure to create the ReactiveScope outside of the closure so that track_caller can do
+    // its thing.
+    let scope = ReactiveScope::new();
     SCOPES.with(|scopes| {
-        // Create a new ReactiveScope with a context.
-        let scope = ReactiveScope::new();
+        // Attach the context to the scope.
         scope.0.borrow_mut().context = Some(Box::new(Context {
             value,
             #[cfg(debug_assertions)]
