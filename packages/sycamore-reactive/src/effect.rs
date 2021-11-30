@@ -1,6 +1,8 @@
 use std::cell::RefCell;
+use std::fmt::{Debug, Formatter};
 use std::future::Future;
 use std::hash::{Hash, Hasher};
+use std::panic::Location;
 use std::rc::{Rc, Weak};
 use std::{mem, ptr};
 
@@ -57,7 +59,6 @@ impl Listener {
 }
 
 /// Internal representation for [`ReactiveScope`].
-#[derive(Default)]
 pub(crate) struct ReactiveScopeInner {
     /// Effects created in this scope.
     effects: SmallVec<[Rc<RefCell<Option<Listener>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
@@ -66,6 +67,31 @@ pub(crate) struct ReactiveScopeInner {
     /// Contexts created in this scope.
     pub context: Option<Box<dyn ContextAny>>,
     pub parent: ReactiveScopeWeak,
+    /// The source location where this scope was created.
+    /// Only available when in debug mode.
+    #[cfg(debug_assertions)]
+    pub loc: &'static Location<'static>,
+}
+
+impl ReactiveScopeInner {
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn new() -> Self {
+        Self {
+            effects: SmallVec::new(),
+            cleanup: Vec::new(),
+            context: None,
+            parent: ReactiveScopeWeak::default(),
+            #[cfg(debug_assertions)]
+            loc: Location::caller(),
+        }
+    }
+}
+
+impl Default for ReactiveScopeInner {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Owns the effects created in the current reactive scope.
@@ -75,15 +101,17 @@ pub(crate) struct ReactiveScopeInner {
 /// A new [`ReactiveScope`] is usually created with [`create_root`]. A new [`ReactiveScope`] is also
 /// created when a new effect is created with [`create_effect`] and other reactive utilities that
 /// call it under the hood.
-#[derive(Default)]
 pub struct ReactiveScope(pub(crate) Rc<RefCell<ReactiveScopeInner>>);
 
 impl ReactiveScope {
     /// Create a new empty [`ReactiveScope`].
     ///
     /// This should be rarely used and only serve as a placeholder.
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn new() -> Self {
-        Self::default()
+        // We call this first to make sure that track_caller can do its thing.
+        let inner = ReactiveScopeInner::new();
+        Self(Rc::new(RefCell::new(inner)))
     }
 
     /// Add an effect that is owned by this [`ReactiveScope`].
@@ -125,6 +153,21 @@ impl ReactiveScope {
                                                 // will not drop the scope.
         });
         u
+    }
+
+    /// Returns the source code [`Location`] where this [`ReactiveScope`] was created.
+    pub fn creation_loc(&self) -> Option<&'static Location<'static>> {
+        #[cfg(debug_assertions)]
+        return Some(self.0.borrow().loc);
+        #[cfg(not(debug_assertions))]
+        return None;
+    }
+}
+
+impl Default for ReactiveScope {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -619,6 +662,55 @@ pub fn current_scope() -> Option<ReactiveScopeWeak> {
             .last()
             .map(|last_context| last_context.downgrade())
     })
+}
+
+/// A struct that can be debug-printed to view the scope hierarchy at the location it was created.
+pub struct DebugScopeHierarchy {
+    scope: Option<Rc<RefCell<ReactiveScopeInner>>>,
+    loc: &'static Location<'static>,
+}
+
+/// Returns a [`DebugScopeHierarchy`] which can be printed using [`std::fmt::Debug`] to debug the
+/// scope hierarchy at the current level.
+#[track_caller]
+pub fn debug_scope_hierarchy() -> DebugScopeHierarchy {
+    let loc = Location::caller();
+    SCOPES.with(|scope| DebugScopeHierarchy {
+        scope: scope.borrow().last().map(|x| x.0.clone()),
+        loc,
+    })
+}
+
+impl Debug for DebugScopeHierarchy {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reactive scope hierarchy at {}:", self.loc)?;
+        if let Some(scope) = &self.scope {
+            let mut s = Some(scope.clone());
+            while let Some(x) = s {
+                // Print scope.
+                if let Some(loc) = ReactiveScope(x.clone()).creation_loc() {
+                    write!(f, "\tScope created at {}", loc)?;
+                } else {
+                    write!(f, "\tScope")?;
+                }
+                // Print context.
+                if let Some(context) = &x.borrow().context {
+                    let type_name = context.get_type_name();
+                    if let Some(type_name) = type_name {
+                        write!(f, " with context (type = {})", type_name)?;
+                    } else {
+                        write!(f, " with context")?;
+                    }
+                }
+                writeln!(f)?;
+                // Set next iteration with scope parent.
+                s = x.borrow().parent.0.upgrade();
+            }
+        } else {
+            writeln!(f, "Not inside a reactive scope")?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

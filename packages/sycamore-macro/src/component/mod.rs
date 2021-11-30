@@ -177,10 +177,22 @@ pub fn component_impl(
         arg,
         mut generics,
         vis,
-        attrs,
+        mut attrs,
         name,
         return_type,
     } = component;
+
+    let mut doc_attrs = Vec::new();
+    let mut i = 0;
+    while i < attrs.len() {
+        if attrs[i].path.is_ident("doc") {
+            // Attribute is a doc attribute. Remove from attrs and add to doc_attrs.
+            let at = attrs.remove(i);
+            doc_attrs.push(at);
+        } else {
+            i += 1;
+        }
+    }
 
     let prop_ty = match &arg {
         FnArg::Receiver(_) => unreachable!(),
@@ -226,7 +238,7 @@ pub fn component_impl(
     }
 
     let quoted = quote! {
-        #(#attrs)*
+        #(#doc_attrs)*
         #vis struct #component_name#generics {
             #[doc(hidden)]
             _marker: ::std::marker::PhantomData<(#phantom_generics)>,
@@ -239,6 +251,7 @@ pub fn component_impl(
             const NAME: &'static ::std::primitive::str = #component_name_str;
             type Props = #prop_ty;
 
+            #(#attrs)*
             fn create_component(#arg) -> #return_type{
                 #block
             }

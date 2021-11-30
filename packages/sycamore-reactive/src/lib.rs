@@ -81,19 +81,23 @@ pub fn create_child_scope_in<'a>(
 /// ```
 /// TODO: deprecate this method in favor of [`create_scope`].
 #[must_use = "create_root returns the reactive scope of the effects created inside this scope"]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
     _create_child_scope_in(None, Box::new(callback))
 }
 
 /// Internal implementation: use dynamic dispatch to reduce code bloat.
+#[cfg_attr(debug_assertions, track_caller)]
 fn _create_child_scope_in<'a>(
     parent: Option<&ReactiveScopeWeak>,
     callback: Box<dyn FnOnce() + 'a>,
 ) -> ReactiveScope {
-    SCOPES.with(|scopes| {
-        // Push new empty scope on the stack.
-        let scope = ReactiveScope::new();
+    // Push new empty scope on the stack.
+    // We make sure to create the ReactiveScope outside of the closure so that track_caller can do
+    // its thing.
+    let scope = ReactiveScope::new();
 
+    SCOPES.with(|scopes| {
         // If `parent` was specified, use it as the parent of the new scope. Else use the parent of
         // the scope this function is called in.
         if let Some(parent) = parent {
