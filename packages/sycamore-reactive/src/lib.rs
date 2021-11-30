@@ -79,8 +79,8 @@ pub fn create_child_scope_in<'a>(
 /// trigger.set(());
 /// assert_eq!(*counter.get(), 2); // should not be updated because scope was dropped
 /// ```
-/// TODO: deprecate this method in favor of [`create_scope`].
 #[must_use = "create_root returns the reactive scope of the effects created inside this scope"]
+#[deprecated(note = "use create_scope instead", since = "0.7.0")]
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
     _create_child_scope_in(None, Box::new(callback))
@@ -154,7 +154,7 @@ mod tests {
     fn drop_scope_inside_effect() {
         let scope = Rc::new(RefCell::new(None));
 
-        *scope.borrow_mut() = Some(create_root({
+        *scope.borrow_mut() = Some(create_scope({
             let scope = Rc::clone(&scope);
             move || {
                 let scope = scope.take();

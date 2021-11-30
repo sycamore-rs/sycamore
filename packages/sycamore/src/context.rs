@@ -67,7 +67,7 @@ where
 #[cfg(all(test, feature = "ssr"))]
 mod tests {
     use super::*;
-    use sycamore_reactive::use_context;
+    use sycamore_reactive::{create_scope, use_context};
 
     #[test]
     fn basic_context() {
@@ -123,7 +123,7 @@ mod tests {
     #[test]
     #[should_panic = "context not found for type"]
     fn should_panic_with_unknown_context_type_inside_scope() {
-        let _ = create_root(move || {
+        let _ = create_scope(move || {
             let _ = use_context::<u32>();
         });
     }

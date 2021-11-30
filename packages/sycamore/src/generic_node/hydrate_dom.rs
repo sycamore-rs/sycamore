@@ -8,7 +8,7 @@ use wasm_bindgen::JsCast;
 use web_sys::Node;
 
 use crate::generic_node::{DomNode, GenericNode, Html};
-use crate::reactive::{create_root, ReactiveScope};
+use crate::reactive::{create_scope, ReactiveScope};
 use crate::utils::hydrate::web::get_next_element;
 use crate::utils::hydrate::{hydration_completed, with_hydration_context};
 use crate::utils::render::insert;
@@ -271,7 +271,7 @@ pub fn hydrate_get_scope(
     template: impl FnOnce() -> View<HydrateNode>,
     parent: &Node,
 ) -> ReactiveScope {
-    create_root(|| {
+    create_scope(|| {
         insert(
             &HydrateNode::from_web_sys(parent.clone()),
             with_hydration_context(template),

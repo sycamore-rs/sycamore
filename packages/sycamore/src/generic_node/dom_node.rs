@@ -9,7 +9,7 @@ use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
 use crate::generic_node::{GenericNode, Html};
-use crate::reactive::{create_root, on_cleanup, ReactiveScope};
+use crate::reactive::{create_scope, on_cleanup, ReactiveScope};
 use crate::utils::render::insert;
 use crate::view::View;
 
@@ -322,7 +322,7 @@ pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
 pub fn render_get_scope(template: impl FnOnce() -> View<DomNode>, parent: &Node) -> ReactiveScope {
-    create_root(|| {
+    create_scope(|| {
         insert(
             &DomNode::from_web_sys(parent.clone()),
             template(),
