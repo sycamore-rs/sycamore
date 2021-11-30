@@ -47,7 +47,7 @@ use wasm_bindgen::prelude::*;
 #[must_use = "create_scope returns the reactive scope of the effects created inside this scope"]
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_scope<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
-    _create_child_scope_in(None, Box::new(callback))
+    _create_child_scope_in(&ReactiveScopeWeak::default(), Box::new(callback))
 }
 
 /// Creates a [`ReactiveScope`] with the specified parent scope. The parent scope does not
@@ -59,7 +59,7 @@ pub fn create_scope<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
 #[must_use = "create_child_scope_in returns the reactive scope of the effects created inside this scope"]
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_child_scope_in<'a>(
-    parent: Option<&ReactiveScopeWeak>,
+    parent: &ReactiveScopeWeak,
     callback: impl FnOnce() + 'a,
 ) -> ReactiveScope {
     _create_child_scope_in(parent, Box::new(callback))
@@ -95,13 +95,13 @@ pub fn create_child_scope_in<'a>(
 #[deprecated(note = "use create_scope instead", since = "0.7.0")]
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_root<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
-    _create_child_scope_in(None, Box::new(callback))
+    _create_child_scope_in(&ReactiveScopeWeak::default(), Box::new(callback))
 }
 
 /// Internal implementation: use dynamic dispatch to reduce code bloat.
 #[cfg_attr(debug_assertions, track_caller)]
 fn _create_child_scope_in<'a>(
-    parent: Option<&ReactiveScopeWeak>,
+    parent: &ReactiveScopeWeak,
     callback: Box<dyn FnOnce() + 'a>,
 ) -> ReactiveScope {
     // Push new empty scope on the stack.
@@ -112,7 +112,9 @@ fn _create_child_scope_in<'a>(
     SCOPES.with(|scopes| {
         // If `parent` was specified, use it as the parent of the new scope. Else use the parent of
         // the scope this function is called in.
-        if let Some(parent) = parent {
+
+        // If the ReactiveScopeWeak points to nowhere, strong_count is 0.
+        if parent.0.strong_count() != 0 {
             scope.0.borrow_mut().parent = parent.clone();
         } else if let Some(parent) = scopes.borrow().last() {
             scope.0.borrow_mut().parent = parent.downgrade();

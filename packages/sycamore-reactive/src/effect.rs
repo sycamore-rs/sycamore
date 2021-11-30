@@ -197,6 +197,9 @@ impl Drop for ReactiveScope {
 
 /// A weak reference to a [`ReactiveScope`]. This can be created by calling
 /// [`ReactiveScope::downgrade`].
+///
+/// It is also possible to have a [`ReactiveScopeWeak`] that points to nowhere. This can be created
+/// by using [`Default::default`].
 #[derive(Default, Clone)]
 pub struct ReactiveScopeWeak(pub(crate) Weak<RefCell<ReactiveScopeInner>>);
 
@@ -336,18 +339,10 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 // Get old scope's parent so that new scope does not change scope hierarchy.
                 let parent = listener_ref.scope.0.borrow().parent.clone();
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
-                let new_scope = if parent.0.upgrade().is_some() {
-                    create_child_scope_in(Some(&parent), || {
-                        // Run effect closure.
-                        effect();
-                    })
-                } else {
-                    // Parent is invalid. Use current scope.
-                    create_scope(|| {
-                        // Run effect closure.
-                        effect();
-                    })
-                };
+                let new_scope = create_child_scope_in(&parent, || {
+                    // Run effect closure.
+                    effect();
+                });
                 let mut listener_mut = listener.borrow_mut();
                 let listener_ref = listener_mut.as_mut().unwrap_throw();
                 listener_ref.scope = new_scope;
@@ -387,7 +382,8 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
     *listener.borrow_mut() = Some(Listener {
         callback: Rc::clone(&callback),
         dependencies: AHashSet::new(),
-        scope: ReactiveScope::new(), // This is a placeholder and will be replaced when callback is called.
+        scope: ReactiveScope::new(), /* This is a placeholder and will be replaced when callback
+                                      * is called. */
     });
     debug_assert_eq!(
         Rc::strong_count(&listener),
@@ -662,14 +658,15 @@ pub fn dependency_count() -> Option<usize> {
     })
 }
 
-/// Returns a [`ReactiveScopeWeak`] handle to the current reactive scope or `None` if outside of a
-/// reactive scope.
-pub fn current_scope() -> Option<ReactiveScopeWeak> {
+/// Returns a [`ReactiveScopeWeak`] handle to the current reactive scope. If outside a scope,
+/// returns a [`ReactiveScopeWeak`] that points to nothing.
+pub fn current_scope() -> ReactiveScopeWeak {
     SCOPES.with(|scope| {
         scope
             .borrow()
             .last()
             .map(|last_context| last_context.downgrade())
+            .unwrap_or_default()
     })
 }
 
