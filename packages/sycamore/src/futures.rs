@@ -32,7 +32,8 @@ where
     F: Future<Output = ()> + 'static,
 {
     if cfg!(target_arch = "wasm32") {
-        if let Some(scope) = current_scope() {
+        let scope = current_scope();
+        if scope.is_valid() {
             spawn_local(async move {
                 scope.extend_future(future).await;
             });

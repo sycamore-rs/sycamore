@@ -244,6 +244,12 @@ impl ReactiveScopeWeak {
             None
         }
     }
+
+    /// Returns `true` if the [`ReactiveScope`] pointed to by the weak reference is still valid.
+    /// Returns `false` otherwise.
+    pub fn is_valid(&self) -> bool {
+        self.0.strong_count() != 0
+    }
 }
 
 pub(super) type CallbackPtr = *const RefCell<dyn FnMut()>;
