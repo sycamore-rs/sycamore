@@ -42,10 +42,13 @@ use wasm_bindgen::prelude::*;
 /// assert_eq!(*counter.get(), 2); // should not be updated because scope was dropped
 /// ```
 #[must_use = "create_scope returns the reactive scope of the effects created inside this scope"]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_scope<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
     _create_child_scope_in(None, Box::new(callback))
 }
 
+#[must_use = "create_child_scope_in returns the reactive scope of the effects created inside this scope"]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_child_scope_in<'a>(
     parent: Option<&ReactiveScopeWeak>,
     callback: impl FnOnce() + 'a,
