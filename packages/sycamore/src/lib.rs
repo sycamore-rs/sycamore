@@ -75,9 +75,10 @@ pub mod prelude {
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
     pub use crate::noderef::NodeRef;
+    #[allow(deprecated)] // Just for re-exporting.
     pub use crate::reactive::{
-        cloned, create_effect, create_memo, create_root, create_selector, create_selector_with,
-        on_cleanup, untrack, ReadSignal, Signal,
+        cloned, create_effect, create_memo, create_root, create_scope, create_selector,
+        create_selector_with, on_cleanup, untrack, ReadSignal, Signal,
     };
     pub use crate::view::{IntoView, View};
 }

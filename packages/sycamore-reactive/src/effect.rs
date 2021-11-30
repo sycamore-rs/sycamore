@@ -336,7 +336,7 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
 
                 // Run effect closure.
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
-                let new_scope = create_root(|| {
+                let new_scope = create_scope(|| {
                     effect();
                 });
                 let mut listener_mut = listener.borrow_mut();
@@ -930,7 +930,7 @@ mod tests {
 
         let trigger = Signal::new(());
 
-        let scope = create_root(cloned!((trigger, counter) => move || {
+        let scope = create_scope(cloned!((trigger, counter) => move || {
             create_effect(move || {
                 trigger.get(); // subscribe to trigger
                 counter.set(*counter.get_untracked() + 1);
@@ -1078,7 +1078,7 @@ mod tests {
     #[test]
     fn cleanup() {
         let cleanup_called = Signal::new(false);
-        let scope = create_root(cloned!((cleanup_called) => move || {
+        let scope = create_scope(cloned!((cleanup_called) => move || {
             on_cleanup(move || {
                 cleanup_called.set(true);
             });
@@ -1137,7 +1137,7 @@ mod tests {
     fn cleanup_in_extended_scope() {
         let counter = Signal::new(0);
 
-        let root = create_root(cloned!((counter) => move || {
+        let root = create_scope(cloned!((counter) => move || {
             on_cleanup(cloned!((counter) => move || {
                 counter.set(*counter.get_untracked() + 1);
             }));
