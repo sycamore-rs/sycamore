@@ -7,7 +7,7 @@ use sycamore::prelude::*;
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://api.countapi.xyz/hit";
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 struct Visits {
     value: u64,
 }
@@ -44,7 +44,7 @@ fn app() -> View<G> {
     create_effect(cloned!((counter) => move || {
         spawn_local_in_scope(cloned!((counter) => async move {
             let website_id = "page-visit-counter-tailwindcss.tyz";
-            let visits = fetch_visits(website_id).await.unwrap();
+            let visits = fetch_visits(website_id).await.unwrap_or_default();
 
             counter.set(visits.value);
         }))

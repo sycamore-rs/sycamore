@@ -5,5 +5,5 @@ dist = "dist"
 [[hooks]]
 stage = "build"
 command = "sh"
-command_arguments = ["-c", "npx -y tailwindcss -o ./dist/.stage/tailwind.css"]
+command_arguments = ["-c", "npx -y -c tailwindcss -o ./dist/.stage/tailwind.css"]
 
