@@ -197,11 +197,6 @@ impl Drop for ReactiveScope {
 
 /// A weak reference to a [`ReactiveScope`]. This can be created by calling
 /// [`ReactiveScope::downgrade`].
-///
-/// There can only ever be one strong reference (it is impossible to clone a [`ReactiveScope`]).
-/// However, there can be multiple weak references to the same [`ReactiveScope`]. As such, it is
-/// impossible to obtain a [`ReactiveScope`] from a [`ReactiveScopeWeak`] because that would allow
-/// creating multiple [`ReactiveScope`]s.
 #[derive(Default, Clone)]
 pub struct ReactiveScopeWeak(pub(crate) Weak<RefCell<ReactiveScopeInner>>);
 
@@ -341,10 +336,18 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 // Get old scope's parent so that new scope does not change scope hierarchy.
                 let parent = listener_ref.scope.0.borrow().parent.clone();
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
-                let new_scope = create_child_scope_in(Some(&parent), || {
-                    // Run effect closure.
-                    effect();
-                });
+                let new_scope = if parent.0.upgrade().is_some() {
+                    create_child_scope_in(Some(&parent), || {
+                        // Run effect closure.
+                        effect();
+                    })
+                } else {
+                    // Parent is invalid. Use current scope.
+                    create_scope(|| {
+                        // Run effect closure.
+                        effect();
+                    })
+                };
                 let mut listener_mut = listener.borrow_mut();
                 let listener_ref = listener_mut.as_mut().unwrap_throw();
                 listener_ref.scope = new_scope;
