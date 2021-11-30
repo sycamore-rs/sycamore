@@ -53,6 +53,7 @@ where
 /// # }
 /// ```
 #[component(ContextProvider<G>)]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn context_provider<T, F>(props: ContextProviderProps<T, F, G>) -> View<G>
 where
     T: 'static,
