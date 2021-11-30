@@ -18,6 +18,9 @@ use wasm_bindgen::prelude::*;
 /// Creates a new reactive root / scope. Generally, you won't need this method as it is called
 /// automatically in `render`.
 ///
+/// The parent of the created [`ReactiveScope`] is automatically set to the current scope.
+/// If this behavior is not intended, see [`create_child_scope_in`].
+///
 /// # Example
 /// ```
 /// use sycamore_reactive::*;
@@ -47,6 +50,12 @@ pub fn create_scope<'a>(callback: impl FnOnce() + 'a) -> ReactiveScope {
     _create_child_scope_in(None, Box::new(callback))
 }
 
+/// Creates a [`ReactiveScope`] with the specified parent scope. The parent scope does not
+/// necessarily need to be the current scope.
+///
+/// In general, prefer [`create_scope`]. This method is useful when scopes can be created outside of
+/// the initial code path (e.g. inside a spawned future) and the scope hierarchy needs to be
+/// conserved (e.g. to be able to access contexts).
 #[must_use = "create_child_scope_in returns the reactive scope of the effects created inside this scope"]
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_child_scope_in<'a>(

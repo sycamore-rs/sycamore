@@ -106,7 +106,11 @@ pub struct ReactiveScope(pub(crate) Rc<RefCell<ReactiveScopeInner>>);
 impl ReactiveScope {
     /// Create a new empty [`ReactiveScope`].
     ///
-    /// This should be rarely used and only serve as a placeholder.
+    /// This should be rarely used and only serve as a placeholder. The scope created by this method
+    /// is detached from the scope hierarchy, meaning that functionality such as contexts would not
+    /// work through this scope.
+    /// 
+    /// In general, prefer [`create_scope`] instead.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn new() -> Self {
         // We call this first to make sure that track_caller can do its thing.

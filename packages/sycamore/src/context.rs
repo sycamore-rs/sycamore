@@ -86,6 +86,32 @@ mod tests {
     }
 
     #[test]
+    fn nested_contexts() {
+        sycamore::render_to_string(|| {
+            view! {
+                ContextProvider(ContextProviderProps {
+                    value: 1i32,
+                    children: || {
+                        view! {
+                            ContextProvider(ContextProviderProps {
+                                value: 2i64,
+                                children: || {
+                                    // Both the i32 and i64 contexts should be accessible here.
+                                    let ctx_i32 = use_context::<i32>();
+                                    assert_eq!(ctx_i32, 1);
+                                    let ctx_i64 = use_context::<i64>();
+                                    assert_eq!(ctx_i64, 2);
+                                    view! {}
+                                }
+                            })
+                        }
+                    },
+                })
+            }
+        });
+    }
+
+    #[test]
     fn context_inside_effect_when_reexecuting() {
         #[component(ContextConsumer<G>)]
         fn context_consumer() -> View<G> {
