@@ -1,9 +1,0 @@
-[build]
-target = "index.html"
-dist = "dist"
-
-[[hooks]]
-stage = "build"
-command = "sh"
-command_arguments = ["-c", "npx tailwindcss -o ./dist/.stage/tailwind.css"]
-

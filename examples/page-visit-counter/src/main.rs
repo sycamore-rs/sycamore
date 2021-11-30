@@ -25,15 +25,11 @@ async fn fetch_visits(id: &str) -> Result<Visits> {
 #[component(RenderVisits<G>)]
 fn render_visits(counter: ReadSignal<u64>) -> View<G> {
     view! {
-        div(class="flex h-screen") {
-            div(class="m-auto") {
-            h1(class="text-3xl text-blue-700 mb-2 p-1") { "Page Visit Counter" }
-            p(class="text-xl p-2") {
-                "Total visits: "
-                    span(class="text-green-500"){
-                        (counter.get())
-                    }
-                }
+            div {
+                h1 { "Page Visit Counter" }
+                p {
+                    "Total visits: "
+                    (counter.get())
             }
         }
     }
