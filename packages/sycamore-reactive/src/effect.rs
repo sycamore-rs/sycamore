@@ -109,7 +109,7 @@ impl ReactiveScope {
     /// This should be rarely used and only serve as a placeholder. The scope created by this method
     /// is detached from the scope hierarchy, meaning that functionality such as contexts would not
     /// work through this scope.
-    /// 
+    ///
     /// In general, prefer [`create_scope`] instead.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn new() -> Self {
@@ -338,9 +338,11 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
                 // closure is called again.
                 let _ = mem::take(&mut listener_ref.scope);
 
-                // Run effect closure.
+                // Get old scope's parent so that new scope does not change scope hierarchy.
+                let parent = listener_ref.scope.0.borrow().parent.clone();
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
-                let new_scope = create_scope(|| {
+                let new_scope = create_child_scope_in(Some(&parent), || {
+                    // Run effect closure.
                     effect();
                 });
                 let mut listener_mut = listener.borrow_mut();
@@ -382,7 +384,7 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
     *listener.borrow_mut() = Some(Listener {
         callback: Rc::clone(&callback),
         dependencies: AHashSet::new(),
-        scope: ReactiveScope::new(),
+        scope: ReactiveScope::new(), // This is a placeholder and will be replaced when callback is called.
     });
     debug_assert_eq!(
         Rc::strong_count(&listener),
