@@ -116,8 +116,8 @@ fn _create_child_scope_in<'a>(
         // If the ReactiveScopeWeak points to nowhere, strong_count is 0.
         if parent.0.strong_count() != 0 {
             scope.0.borrow_mut().parent = parent.clone();
-        } else if let Some(parent) = scopes.borrow().last() {
-            scope.0.borrow_mut().parent = parent.downgrade();
+        } else if let Some(current_scope) = scopes.borrow().last() {
+            scope.0.borrow_mut().parent = current_scope.downgrade();
         }
         scopes.borrow_mut().push(scope);
         callback();

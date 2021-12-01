@@ -337,13 +337,13 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
 
                 let old_dependencies = mem::take(&mut listener_ref.dependencies);
 
-                // We want to destroy the old scope before creating the new one, so that
-                // cleanup functions will be run before the effect
-                // closure is called again.
-                let _ = mem::take(&mut listener_ref.scope);
-
                 // Get old scope's parent so that new scope does not change scope hierarchy.
                 let parent = listener_ref.scope.0.borrow().parent.clone();
+
+                // We want to destroy the old scope before creating the new one, so that cleanup
+                // functions will be run before the effect closure is called again.
+                let _ = mem::take(&mut listener_ref.scope);
+
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
                 let new_scope = create_child_scope_in(&parent, || {
                     // Run effect closure.
@@ -957,6 +957,31 @@ mod tests {
         drop(scope);
         trigger.set(());
         assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
+    }
+
+    #[test]
+    fn effect_preserves_scope_hierarchy() {
+        let trigger = Signal::new(());
+        let parent = Signal::new(None);
+        let scope = create_scope(cloned!((trigger, parent) => move || {
+            create_effect(cloned!((trigger, parent) => move || {
+                dbg!(debug_scope_hierarchy());
+                trigger.get(); // subscribe to trigger
+                let p = current_scope().0.upgrade().unwrap().borrow().parent.clone();
+                parent.set(Some(p));
+            }));
+        }));
+        assert_eq!(
+            Weak::as_ptr(&parent.get().as_ref().clone().unwrap().0) as *const _,
+            Rc::as_ptr(&scope.0),
+            "parent should be `scope`"
+        );
+        trigger.set(());
+        assert_eq!(
+            Weak::as_ptr(&parent.get().as_ref().clone().unwrap().0) as *const _,
+            Rc::as_ptr(&scope.0),
+            "parent should still be `scope` after effect is re-executed"
+        );
     }
 
     #[test]
