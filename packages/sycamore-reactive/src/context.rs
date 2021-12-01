@@ -86,7 +86,7 @@ pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) 
     // Create a new ReactiveScope.
     // We make sure to create the ReactiveScope outside of the closure so that track_caller can do
     // its thing.
-    let scope = ReactiveScope::new();
+    let scope = create_scope(|| {});
     SCOPES.with(|scopes| {
         // Attach the context to the scope.
         scope.0.borrow_mut().context = Some(Box::new(Context {

@@ -106,7 +106,11 @@ pub struct ReactiveScope(pub(crate) Rc<RefCell<ReactiveScopeInner>>);
 impl ReactiveScope {
     /// Create a new empty [`ReactiveScope`].
     ///
-    /// This should be rarely used and only serve as a placeholder.
+    /// This should be rarely used and only serve as a placeholder. The scope created by this method
+    /// is detached from the scope hierarchy, meaning that functionality such as contexts would not
+    /// work through this scope.
+    ///
+    /// In general, prefer [`create_scope`] instead.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn new() -> Self {
         // We call this first to make sure that track_caller can do its thing.
@@ -194,10 +198,8 @@ impl Drop for ReactiveScope {
 /// A weak reference to a [`ReactiveScope`]. This can be created by calling
 /// [`ReactiveScope::downgrade`].
 ///
-/// There can only ever be one strong reference (it is impossible to clone a [`ReactiveScope`]).
-/// However, there can be multiple weak references to the same [`ReactiveScope`]. As such, it is
-/// impossible to obtain a [`ReactiveScope`] from a [`ReactiveScopeWeak`] because that would allow
-/// creating multiple [`ReactiveScope`]s.
+/// It is also possible to have a [`ReactiveScopeWeak`] that points to nowhere. This can be created
+/// by using [`Default::default`].
 #[derive(Default, Clone)]
 pub struct ReactiveScopeWeak(pub(crate) Weak<RefCell<ReactiveScopeInner>>);
 
@@ -241,6 +243,12 @@ impl ReactiveScopeWeak {
         } else {
             None
         }
+    }
+
+    /// Returns `true` if the [`ReactiveScope`] pointed to by the weak reference is still valid.
+    /// Returns `false` otherwise.
+    pub fn is_valid(&self) -> bool {
+        self.0.strong_count() != 0
     }
 }
 
@@ -329,14 +337,16 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
 
                 let old_dependencies = mem::take(&mut listener_ref.dependencies);
 
-                // We want to destroy the old scope before creating the new one, so that
-                // cleanup functions will be run before the effect
-                // closure is called again.
+                // Get old scope's parent so that new scope does not change scope hierarchy.
+                let parent = listener_ref.scope.0.borrow().parent.clone();
+
+                // We want to destroy the old scope before creating the new one, so that cleanup
+                // functions will be run before the effect closure is called again.
                 let _ = mem::take(&mut listener_ref.scope);
 
-                // Run effect closure.
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
-                let new_scope = create_scope(|| {
+                let new_scope = create_child_scope_in(&parent, || {
+                    // Run effect closure.
                     effect();
                 });
                 let mut listener_mut = listener.borrow_mut();
@@ -378,7 +388,8 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
     *listener.borrow_mut() = Some(Listener {
         callback: Rc::clone(&callback),
         dependencies: AHashSet::new(),
-        scope: ReactiveScope::new(),
+        scope: ReactiveScope::new(), /* This is a placeholder and will be replaced when callback
+                                      * is called. */
     });
     debug_assert_eq!(
         Rc::strong_count(&listener),
@@ -653,14 +664,15 @@ pub fn dependency_count() -> Option<usize> {
     })
 }
 
-/// Returns a [`ReactiveScopeWeak`] handle to the current reactive scope or `None` if outside of a
-/// reactive scope.
-pub fn current_scope() -> Option<ReactiveScopeWeak> {
+/// Returns a [`ReactiveScopeWeak`] handle to the current reactive scope. If outside a scope,
+/// returns a [`ReactiveScopeWeak`] that points to nothing.
+pub fn current_scope() -> ReactiveScopeWeak {
     SCOPES.with(|scope| {
         scope
             .borrow()
             .last()
             .map(|last_context| last_context.downgrade())
+            .unwrap_or_default()
     })
 }
 
@@ -945,6 +957,31 @@ mod tests {
         drop(scope);
         trigger.set(());
         assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
+    }
+
+    #[test]
+    fn effect_preserves_scope_hierarchy() {
+        let trigger = Signal::new(());
+        let parent = Signal::new(None);
+        let scope = create_scope(cloned!((trigger, parent) => move || {
+            create_effect(cloned!((trigger, parent) => move || {
+                dbg!(debug_scope_hierarchy());
+                trigger.get(); // subscribe to trigger
+                let p = current_scope().0.upgrade().unwrap().borrow().parent.clone();
+                parent.set(Some(p));
+            }));
+        }));
+        assert_eq!(
+            Weak::as_ptr(&parent.get().as_ref().clone().unwrap().0) as *const _,
+            Rc::as_ptr(&scope.0),
+            "parent should be `scope`"
+        );
+        trigger.set(());
+        assert_eq!(
+            Weak::as_ptr(&parent.get().as_ref().clone().unwrap().0) as *const _,
+            Rc::as_ptr(&scope.0),
+            "parent should still be `scope` after effect is re-executed"
+        );
     }
 
     #[test]

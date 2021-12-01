@@ -70,7 +70,6 @@ impl<G: GenericNode> View<G> {
         }
     }
 
-    #[allow(clippy::type_complexity)]
     pub fn as_dyn(&self) -> Option<&ReadSignal<View<G>>> {
         if let ViewType::Dyn(v) = &self.inner {
             Some(v)

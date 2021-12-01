@@ -49,7 +49,7 @@ where
             } else if items.is_empty() {
                 // Fast path for new create.
                 for new_item in new_items.iter() {
-                    let new_scope = create_child_scope_in(parent_scope.as_ref(), || {
+                    let new_scope = create_child_scope_in(&parent_scope, || {
                         mapped.borrow_mut().push(map_fn(new_item));
                     });
                     scopes.push(Some(Rc::new(new_scope)));
@@ -143,7 +143,7 @@ where
                     } else {
                         // Create new value.
                         let mut new_mapped = None;
-                        let new_scope = create_child_scope_in(parent_scope.as_ref(), || {
+                        let new_scope = create_child_scope_in(&parent_scope, || {
                             new_mapped = Some(map_fn(&new_items[j]));
                         });
 
@@ -220,12 +220,12 @@ where
                     let item = items.get(i);
 
                     if item.is_none() {
-                        let new_scope = create_child_scope_in(parent_scope.as_ref(), || {
+                        let new_scope = create_child_scope_in(&parent_scope, || {
                             mapped.borrow_mut().push(map_fn(new_item));
                         });
                         scopes.push(new_scope);
                     } else if item != Some(new_item) {
-                        let new_scope = create_child_scope_in(parent_scope.as_ref(), || {
+                        let new_scope = create_child_scope_in(&parent_scope, || {
                             mapped.borrow_mut()[i] = map_fn(new_item);
                         });
                         scopes[i] = new_scope;
