@@ -1,0 +1,12 @@
+[[hooks]]
+stage = "build"
+command = "node"
+command_arguments = [
+    "node_modules/tailwindcss/lib/cli",
+    "build",
+    "-i",
+    "index.css",
+    "-o",
+    "dist/.stage/tailwind.css",
+    "--jit"
+]
