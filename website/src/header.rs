@@ -25,11 +25,12 @@ fn dark_mode_toggle() -> View<G> {
 #[component(Nav<G>)]
 fn nav() -> View<G> {
     view! {
-        nav(class="px-8 backdrop-filter backdrop-blur-sm backdrop-saturate-150 bg-opacity-80 \
+        nav(class="px-8 h-12 backdrop-filter backdrop-blur-sm backdrop-saturate-150 bg-opacity-80 \
         bg-gray-100 dark:bg-gray-800 border-b border-gray-400 dark:border-gray-600 transition-colors") {
-            div(class="flex flex-row justify-between items-center h-12") {
+            // Only show nav links in desktop view.
+            div(class="hidden sm:flex flex-row justify-between items-center h-12") {
                 // Brand section
-                div(class="flex-initial") {
+                div(class="inline-block flex-initial") {
                     div(class="flex space-x-4") {
                         a(href="/#", class="py-2 px-3 text-sm text-white font-medium \
                         bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
@@ -38,10 +39,14 @@ fn nav() -> View<G> {
                     }
                 }
                 // Links section
-                div(class="flex flex-row ml-2 space-x-4 text-gray-600 dark:text-gray-300") {
+                div(class="inline-flex flex-row ml-2 space-x-4 text-gray-600 dark:text-gray-300") {
                     NavLinks()
                     DarkModeToggle()
                 }
+            }
+            // In mobile, collapse into hamburger menu.
+            div(class="flex sm:hidden h-12") {
+                HamburgerMenu()
             }
         }
     }
@@ -57,6 +62,27 @@ pub fn nav_links() -> View<G> {
         a(class=LINK_CLASS, href="/news") { "News" }
         a(class=LINK_CLASS, href="https://github.com/sycamore-rs/sycamore") { "GitHub" }
         a(class=LINK_CLASS, href="https://discord.gg/vDwFUmm6mU") { "Discord" }
+    }
+}
+
+#[component(HamburgerMenu<G>)]
+pub fn hamburger_menu() -> View<G> {
+    static HAMBURGER_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="bars" class="svg-inline--fa fa-bars fa-w-14" role="img" viewBox="0 0 448 512"><path fill="currentColor" d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"/></svg>"#;
+    static CLOSE_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"/></svg>"#;
+
+    let is_open = Signal::new(false);
+
+    let toggle = cloned!(is_open => move |_| is_open.set(!*is_open.get()));
+
+    view! {
+        // Menu navbar, hamburger button.
+        button(
+            title="Menu",
+            class="inline-block w-5",
+            on:click=toggle,
+            // Use dangerously_set_inner_html because SVG is not supported yet in view! macro.
+            dangerously_set_inner_html=if *is_open.get() { CLOSE_SVG } else { HAMBURGER_SVG },
+        )
     }
 }
 

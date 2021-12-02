@@ -2,55 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-.content blockquote {
-  @apply bg-gray-300 dark:bg-gray-700 p-2 mt-2 rounded;
-}
+@layer base {
+  .content blockquote {
+    @apply bg-gray-300 dark:bg-gray-700 p-2 mt-2 rounded;
+  }
 
-.content code {
-  @apply bg-gray-200 dark:bg-gray-600 px-2 rounded;
-}
+  .content code {
+    @apply bg-gray-200 dark:bg-gray-600 px-2 rounded;
+  }
 
-.content pre {
-  @apply bg-gray-100 rounded block p-2 whitespace-pre-wrap font-mono;
-}
-.dark .content pre {
-  background-color: rgb(50, 50, 60) !important;
-}
+  .content pre {
+    @apply bg-gray-100 rounded block p-2 whitespace-pre-wrap font-mono;
+  }
+  .dark .content pre {
+    background-color: rgb(50, 50, 60) !important;
+  }
 
-.content table {
-  @apply w-full;
-}
+  .content table {
+    @apply w-full;
+  }
 
-.content h1 {
-  @apply text-2xl font-bold;
-  padding-top: 48px;
-  margin-top: -48px;
-}
-.content h2 {
-  @apply text-xl font-bold;
-  padding-top: 48px;
-  margin-top: -48px;
-}
-.content h3 {
-  @apply text-lg font-bold;
-  padding-top: 48px;
-  margin-top: -48px;
-}
-.content h4 {
-  @apply text-base font-bold;
-  padding-top: 48px;
-  margin-top: -48px;
-}
+  .content h1 {
+    @apply text-2xl font-bold;
+    padding-top: 48px;
+    margin-top: -48px;
+  }
+  .content h2 {
+    @apply text-xl font-bold;
+    padding-top: 48px;
+    margin-top: -48px;
+  }
+  .content h3 {
+    @apply text-lg font-bold;
+    padding-top: 48px;
+    margin-top: -48px;
+  }
+  .content h4 {
+    @apply text-base font-bold;
+    padding-top: 48px;
+    margin-top: -48px;
+  }
 
-.content a {
-  @apply underline;
-}
+  .content a {
+    @apply underline;
+  }
 
-.content p {
-  @apply my-3;
-}
+  .content p {
+    @apply my-3;
+  }
 
-.content ul {
-  padding-inline-start: 30px;
-  @apply list-disc;
+  .content ul {
+    padding-inline-start: 30px;
+    @apply list-disc;
+  }
 }
