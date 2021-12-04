@@ -1,6 +1,8 @@
 use std::cell::RefCell;
+use std::fmt::{Debug, Formatter};
 use std::future::Future;
 use std::hash::{Hash, Hasher};
+use std::panic::Location;
 use std::rc::{Rc, Weak};
 use std::{mem, ptr};
 
@@ -57,7 +59,6 @@ impl Listener {
 }
 
 /// Internal representation for [`ReactiveScope`].
-#[derive(Default)]
 pub(crate) struct ReactiveScopeInner {
     /// Effects created in this scope.
     effects: SmallVec<[Rc<RefCell<Option<Listener>>>; REACTIVE_SCOPE_EFFECTS_STACK_CAPACITY]>,
@@ -66,6 +67,31 @@ pub(crate) struct ReactiveScopeInner {
     /// Contexts created in this scope.
     pub context: Option<Box<dyn ContextAny>>,
     pub parent: ReactiveScopeWeak,
+    /// The source location where this scope was created.
+    /// Only available when in debug mode.
+    #[cfg(debug_assertions)]
+    pub loc: &'static Location<'static>,
+}
+
+impl ReactiveScopeInner {
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn new() -> Self {
+        Self {
+            effects: SmallVec::new(),
+            cleanup: Vec::new(),
+            context: None,
+            parent: ReactiveScopeWeak::default(),
+            #[cfg(debug_assertions)]
+            loc: Location::caller(),
+        }
+    }
+}
+
+impl Default for ReactiveScopeInner {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Owns the effects created in the current reactive scope.
@@ -75,15 +101,21 @@ pub(crate) struct ReactiveScopeInner {
 /// A new [`ReactiveScope`] is usually created with [`create_root`]. A new [`ReactiveScope`] is also
 /// created when a new effect is created with [`create_effect`] and other reactive utilities that
 /// call it under the hood.
-#[derive(Default)]
 pub struct ReactiveScope(pub(crate) Rc<RefCell<ReactiveScopeInner>>);
 
 impl ReactiveScope {
     /// Create a new empty [`ReactiveScope`].
     ///
-    /// This should be rarely used and only serve as a placeholder.
+    /// This should be rarely used and only serve as a placeholder. The scope created by this method
+    /// is detached from the scope hierarchy, meaning that functionality such as contexts would not
+    /// work through this scope.
+    ///
+    /// In general, prefer [`create_scope`] instead.
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn new() -> Self {
-        Self::default()
+        // We call this first to make sure that track_caller can do its thing.
+        let inner = ReactiveScopeInner::new();
+        Self(Rc::new(RefCell::new(inner)))
     }
 
     /// Add an effect that is owned by this [`ReactiveScope`].
@@ -126,6 +158,21 @@ impl ReactiveScope {
         });
         u
     }
+
+    /// Returns the source code [`Location`] where this [`ReactiveScope`] was created.
+    pub fn creation_loc(&self) -> Option<&'static Location<'static>> {
+        #[cfg(debug_assertions)]
+        return Some(self.0.borrow().loc);
+        #[cfg(not(debug_assertions))]
+        return None;
+    }
+}
+
+impl Default for ReactiveScope {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Drop for ReactiveScope {
@@ -151,10 +198,8 @@ impl Drop for ReactiveScope {
 /// A weak reference to a [`ReactiveScope`]. This can be created by calling
 /// [`ReactiveScope::downgrade`].
 ///
-/// There can only ever be one strong reference (it is impossible to clone a [`ReactiveScope`]).
-/// However, there can be multiple weak references to the same [`ReactiveScope`]. As such, it is
-/// impossible to obtain a [`ReactiveScope`] from a [`ReactiveScopeWeak`] because that would allow
-/// creating multiple [`ReactiveScope`]s.
+/// It is also possible to have a [`ReactiveScopeWeak`] that points to nowhere. This can be created
+/// by using [`Default::default`].
 #[derive(Default, Clone)]
 pub struct ReactiveScopeWeak(pub(crate) Weak<RefCell<ReactiveScopeInner>>);
 
@@ -198,6 +243,12 @@ impl ReactiveScopeWeak {
         } else {
             None
         }
+    }
+
+    /// Returns `true` if the [`ReactiveScope`] pointed to by the weak reference is still valid.
+    /// Returns `false` otherwise.
+    pub fn is_valid(&self) -> bool {
+        self.0.strong_count() != 0
     }
 }
 
@@ -286,14 +337,16 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
 
                 let old_dependencies = mem::take(&mut listener_ref.dependencies);
 
-                // We want to destroy the old scope before creating the new one, so that
-                // cleanup functions will be run before the effect
-                // closure is called again.
+                // Get old scope's parent so that new scope does not change scope hierarchy.
+                let parent = listener_ref.scope.0.borrow().parent.clone();
+
+                // We want to destroy the old scope before creating the new one, so that cleanup
+                // functions will be run before the effect closure is called again.
                 let _ = mem::take(&mut listener_ref.scope);
 
-                // Run effect closure.
                 drop(listener_mut); // Drop the RefMut because Signals will access it inside the effect callback.
-                let new_scope = create_root(|| {
+                let new_scope = create_child_scope_in(&parent, || {
+                    // Run effect closure.
                     effect();
                 });
                 let mut listener_mut = listener.borrow_mut();
@@ -335,7 +388,8 @@ fn _create_effect(mut effect: Box<dyn FnMut()>) {
     *listener.borrow_mut() = Some(Listener {
         callback: Rc::clone(&callback),
         dependencies: AHashSet::new(),
-        scope: ReactiveScope::new(),
+        scope: ReactiveScope::new(), /* This is a placeholder and will be replaced when callback
+                                      * is called. */
     });
     debug_assert_eq!(
         Rc::strong_count(&listener),
@@ -610,15 +664,65 @@ pub fn dependency_count() -> Option<usize> {
     })
 }
 
-/// Returns a [`ReactiveScopeWeak`] handle to the current reactive scope or `None` if outside of a
-/// reactive scope.
-pub fn current_scope() -> Option<ReactiveScopeWeak> {
+/// Returns a [`ReactiveScopeWeak`] handle to the current reactive scope. If outside a scope,
+/// returns a [`ReactiveScopeWeak`] that points to nothing.
+pub fn current_scope() -> ReactiveScopeWeak {
     SCOPES.with(|scope| {
         scope
             .borrow()
             .last()
             .map(|last_context| last_context.downgrade())
+            .unwrap_or_default()
     })
+}
+
+/// A struct that can be debug-printed to view the scope hierarchy at the location it was created.
+pub struct DebugScopeHierarchy {
+    scope: Option<Rc<RefCell<ReactiveScopeInner>>>,
+    loc: &'static Location<'static>,
+}
+
+/// Returns a [`DebugScopeHierarchy`] which can be printed using [`std::fmt::Debug`] to debug the
+/// scope hierarchy at the current level.
+#[track_caller]
+pub fn debug_scope_hierarchy() -> DebugScopeHierarchy {
+    let loc = Location::caller();
+    SCOPES.with(|scope| DebugScopeHierarchy {
+        scope: scope.borrow().last().map(|x| x.0.clone()),
+        loc,
+    })
+}
+
+impl Debug for DebugScopeHierarchy {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Reactive scope hierarchy at {}:", self.loc)?;
+        if let Some(scope) = &self.scope {
+            let mut s = Some(scope.clone());
+            while let Some(x) = s {
+                // Print scope.
+                if let Some(loc) = ReactiveScope(x.clone()).creation_loc() {
+                    write!(f, "\tScope created at {}", loc)?;
+                } else {
+                    write!(f, "\tScope")?;
+                }
+                // Print context.
+                if let Some(context) = &x.borrow().context {
+                    let type_name = context.get_type_name();
+                    if let Some(type_name) = type_name {
+                        write!(f, " with context (type = {})", type_name)?;
+                    } else {
+                        write!(f, " with context")?;
+                    }
+                }
+                writeln!(f)?;
+                // Set next iteration with scope parent.
+                s = x.borrow().parent.0.upgrade();
+            }
+        } else {
+            writeln!(f, "Not inside a reactive scope")?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -838,7 +942,7 @@ mod tests {
 
         let trigger = Signal::new(());
 
-        let scope = create_root(cloned!((trigger, counter) => move || {
+        let scope = create_scope(cloned!((trigger, counter) => move || {
             create_effect(move || {
                 trigger.get(); // subscribe to trigger
                 counter.set(*counter.get_untracked() + 1);
@@ -853,6 +957,31 @@ mod tests {
         drop(scope);
         trigger.set(());
         assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
+    }
+
+    #[test]
+    fn effect_preserves_scope_hierarchy() {
+        let trigger = Signal::new(());
+        let parent = Signal::new(None);
+        let scope = create_scope(cloned!((trigger, parent) => move || {
+            create_effect(cloned!((trigger, parent) => move || {
+                dbg!(debug_scope_hierarchy());
+                trigger.get(); // subscribe to trigger
+                let p = current_scope().0.upgrade().unwrap().borrow().parent.clone();
+                parent.set(Some(p));
+            }));
+        }));
+        assert_eq!(
+            Weak::as_ptr(&parent.get().as_ref().clone().unwrap().0) as *const _,
+            Rc::as_ptr(&scope.0),
+            "parent should be `scope`"
+        );
+        trigger.set(());
+        assert_eq!(
+            Weak::as_ptr(&parent.get().as_ref().clone().unwrap().0) as *const _,
+            Rc::as_ptr(&scope.0),
+            "parent should still be `scope` after effect is re-executed"
+        );
     }
 
     #[test]
@@ -986,7 +1115,7 @@ mod tests {
     #[test]
     fn cleanup() {
         let cleanup_called = Signal::new(false);
-        let scope = create_root(cloned!((cleanup_called) => move || {
+        let scope = create_scope(cloned!((cleanup_called) => move || {
             on_cleanup(move || {
                 cleanup_called.set(true);
             });
@@ -1045,7 +1174,7 @@ mod tests {
     fn cleanup_in_extended_scope() {
         let counter = Signal::new(0);
 
-        let root = create_root(cloned!((counter) => move || {
+        let root = create_scope(cloned!((counter) => move || {
             on_cleanup(cloned!((counter) => move || {
                 counter.set(*counter.get_untracked() + 1);
             }));

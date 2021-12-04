@@ -3,17 +3,11 @@
   "version": "1.0.0",
   "description": "Source code for the docs website hosted at [sycamore-rs.netlify.app](https://sycamore-rs.netlify.app)",
   "scripts": {
-    "dev": "concurrently \"cross-env TAILWIND_MODE=watch NODE_ENV=development tailwindcss -i index.css -o ./static/tailwind.css --watch --jit\" \"trunk serve\"",
-    "prod": "cross-env TAILWIND_MODE=build NODE_ENV=production tailwindcss -i index.css -o ./static/tailwind.css --minify && cd ../docs && cargo build && cd ../website && trunk build --release"
+    "dev": "trunk serve",
+    "prod": "trunk build --release && tailwindcss build -i index.css -o dist/tailwind.css --jit --minify"
   },
   "devDependencies": {
-    "autoprefixer": "^10.2.6",
-    "concurrently": "^6.2.0",
-    "cross-env": "^7.0.3",
-    "tailwindcss": "^2.1.4"
+    "tailwindcss": "^2.2.19"
   },
-  "private": true,
-  "dependencies": {
-    "is-color-stop": "^1.1.0"
-  }
+  "private": true
 }

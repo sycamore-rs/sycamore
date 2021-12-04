@@ -21,7 +21,7 @@ fn test_portal() {
 
     sycamore::render_to(
         cloned!((portal, portal_root) => move || {
-            let root = create_root(cloned!((portal) => move || {
+            let root = create_scope(cloned!((portal) => move || {
                 portal.set(Some(view! {
                     Portal(PortalProps {
                         children: view! { "Hello World!" },

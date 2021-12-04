@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{GenericNode, Html};
-use crate::reactive::create_root;
+use crate::reactive::create_scope;
 use crate::utils::hydrate::{get_next_id, with_hydration_context};
 use crate::view::View;
 
@@ -436,7 +436,7 @@ impl WriteToString for RawText {
 /// _This API requires the following crate features to be activated: `ssr`_
 pub fn render_to_string(view: impl FnOnce() -> View<SsrNode>) -> String {
     let mut ret = String::new();
-    let _scope = create_root(|| {
+    let _scope = create_scope(|| {
         let v = with_hydration_context(view);
 
         for node in v.flatten() {
