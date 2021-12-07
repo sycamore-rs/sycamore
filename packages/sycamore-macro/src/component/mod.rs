@@ -217,11 +217,18 @@ pub fn component_impl(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     // Generics for the PhantomData.
-    let phantom_generics = ty_generics
-        .clone()
-        .into_token_stream()
-        .into_iter()
-        .collect::<Vec<_>>();
+    let phantom_generics = {
+        // Filter out generics which are not types
+        let mut generics = generics.clone();
+        generics.params = generics
+            .params
+            .into_iter()
+            .filter(|x| matches!(x, GenericParam::Type(_)))
+            .collect();
+
+        let (_, generics, _) = generics.split_for_impl();
+        generics.into_token_stream().into_iter().collect::<Vec<_>>()
+    };
     // Throw away first and last TokenTree to get rid of angle brackets.
     let phantom_generics_len = phantom_generics.len();
     let phantom_generics = phantom_generics
