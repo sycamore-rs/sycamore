@@ -39,10 +39,7 @@ fn nav() -> View<G> {
                 }
                 // Links section
                 div(class="flex flex-row ml-2 space-x-4 text-gray-600 dark:text-gray-300") {
-                    // Only show nav links in desktop view. In mobile, collapse into hamburger menu.
-                    div(class="hidden sm:inline-block") {
-                        NavLinks()
-                    }
+                    NavLinks()
                     DarkModeToggle()
                 }
             }
