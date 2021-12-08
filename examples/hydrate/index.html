@@ -14,22 +14,23 @@
   <body>
     <!-- SSR-ed HTML can be found in dev console when running the app. -->
     <h1 data-hk="1.0">Hydration example</h1>
-    <div data-hk="2.1">
-      <h2 data-hk="2.2">
+    <div data-hk="2.0">
+      <h2 data-hk="2.1">
         Hello
-        <!--#--><span data-hk="2.3">World</span
+        <!--#--><span data-hk="2.2">World</span
         ><!--/-->!
       </h2>
-      <input data-hk="2.4" />
+      <input data-hk="2.3" />
     </div>
-    <div data-hk="2.5">
-      <h2 data-hk="2.6">Counter demo</h2>
-      <p class="value" data-hk="2.7">
+    <div data-hk="3.0">
+      <h2 data-hk="3.1">Counter demo</h2>
+      <p class="value" data-hk="3.2">
         Value:
         <!--#-->0<!--/-->
       </p>
-      <button data-hk="2.8" class="increment">Increment</button
-      ><button class="reset" data-hk="2.9">Reset</button>
+      <button class="increment" data-hk="3.3">Increment</button
+      ><button class="reset" data-hk="3.4">Reset</button>
     </div>
+    <!-- End SSR-ed HTML. -->
   </body>
 </html>

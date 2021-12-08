@@ -61,8 +61,9 @@ fn app() -> View<G> {
 fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
-
-    sycamore::hydrate(|| view! { App() });
+    
     let s = sycamore::render_to_string(|| view! { App() });
     log::info!("{}", s);
+
+    sycamore::hydrate(|| view! { App() });
 }

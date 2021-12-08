@@ -62,10 +62,22 @@ where
 {
     HYDRATION_CONTEXT.with(|context| {
         if context.borrow().is_some() {
-            let current_component_id = context.borrow().as_ref().unwrap().current_component_id;
-            context.borrow_mut().as_mut().unwrap().current_component_id += 1;
+            let prev_id;
+            let prev_component_id;
+            {
+                let mut context = context.borrow_mut();
+                let context = context.as_mut().unwrap();
+                // Store previous state to restore after component.
+                prev_component_id = context.current_component_id;
+                prev_id = context.current_id;
+
+                context.current_component_id = context.next_component_id;
+                context.next_component_id += 1;
+                context.current_id = 0; // Reset current_id to 0.
+            }
             let r = f();
-            context.borrow_mut().as_mut().unwrap().current_component_id = current_component_id;
+            context.borrow_mut().as_mut().unwrap().current_component_id = prev_component_id;
+            context.borrow_mut().as_mut().unwrap().current_id = prev_id;
             r
         } else {
             f()
@@ -77,6 +89,7 @@ where
 pub struct HydrationRegistry {
     pub current_id: usize,
     pub current_component_id: usize,
+    pub next_component_id: usize,
 }
 
 impl HydrationRegistry {
@@ -84,6 +97,7 @@ impl HydrationRegistry {
         Self {
             current_id: 0,
             current_component_id: 0,
+            next_component_id: 1,
         }
     }
 
