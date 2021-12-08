@@ -24,9 +24,6 @@ fn dark_mode_toggle() -> View<G> {
 
 #[component(Nav<G>)]
 fn nav() -> View<G> {
-    static LINK_CLASS: &str =
-        "py-2 px-3 text-sm hover:text-gray-800 dark:hover:text-gray-100 hover:underline";
-
     view! {
         nav(class="px-8 backdrop-filter backdrop-blur-sm backdrop-saturate-150 bg-opacity-80 \
         bg-gray-100 dark:bg-gray-800 border-b border-gray-400 dark:border-gray-600 transition-colors") {
@@ -42,30 +39,24 @@ fn nav() -> View<G> {
                 }
                 // Links section
                 div(class="flex flex-row ml-2 space-x-4 text-gray-600 dark:text-gray-300") {
-                    a(class=LINK_CLASS, href="/docs/getting_started/installation",
-                    ) {
-                        "Book"
-                    }
-                    a(class=LINK_CLASS, href="https://docs.rs/sycamore",
-                    ) {
-                        "API"
-                    }
-                    a(class=LINK_CLASS, href="/news",
-                    ) {
-                        "News"
-                    }
-                    a(class=LINK_CLASS, href="https://github.com/sycamore-rs/sycamore",
-                    ) {
-                        "GitHub"
-                    }
-                    a(class=LINK_CLASS, href="https://discord.gg/vDwFUmm6mU",
-                    ) {
-                        "Discord"
-                    }
+                    NavLinks()
                     DarkModeToggle()
                 }
             }
         }
+    }
+}
+
+#[component(NavLinks<G>)]
+pub fn nav_links() -> View<G> {
+    static LINK_CLASS: &str =
+        "py-2 px-3 text-sm hover:text-gray-800 dark:hover:text-gray-100 hover:underline";
+    view! {
+        a(class=LINK_CLASS, href="/docs/getting_started/installation") { "Book" }
+        a(class=LINK_CLASS, href="https://docs.rs/sycamore") { "API" }
+        a(class=LINK_CLASS, href="/news") { "News" }
+        a(class=LINK_CLASS, href="https://github.com/sycamore-rs/sycamore") { "GitHub" }
+        a(class=LINK_CLASS, href="https://discord.gg/vDwFUmm6mU") { "Discord" }
     }
 }
 
