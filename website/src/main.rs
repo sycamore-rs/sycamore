@@ -14,7 +14,7 @@ use sycamore::futures::spawn_local_in_scope;
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
 
-const LATEST_MAJOR_VERSION: &str = "v0.6";
+const LATEST_MAJOR_VERSION: &str = "v0.7";
 const NEXT_VERSION: &str = "next";
 
 #[derive(Debug, Route)]
