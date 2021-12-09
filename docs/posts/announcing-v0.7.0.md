@@ -55,6 +55,33 @@ Note that the builder API is still experimental and does not play very well with
 you have ideas on how to make the builder API more ergonomic, don't hesitate to create an issue on
 our [issue tracker](https://github.com/sycamore-rs/sycamore/issues).
 
+## `Template` -> `View`
+
+We renamed `Template` to `View` and `template!` to `view!` to make the name slightly shorter to type
+and also to prevent conflict with Perseus' notion of
+[templates](https://arctic-hen7.github.io/perseus/en-US/docs/next/templates/intro).
+
+Migrating should be a pretty simple matter for most. Just perform a find-and-replace in your IDE or
+using `grep` to replace all instances of `Template` to `View` and all instances of `template!` to
+`view!`.
+
+## `IS_BROWSER`
+
+Checking whether some code was executing in the browser or on the server required an ugly hack:
+
+```rust
+if TypeId::of::<G>() == TypeId::of::<DomNode>() { ... }
+```
+
+What this did was basically check whether the generic parameter `G` (the rendering backend) was
+`DomNode`. It wasn't very clear what this meant at a first glance.
+
+Now the intention is much clearer (and also looks much nicer):
+
+```rust
+if G::IS_BROWSER { ... }
+```
+
 ## Conclusion
 
 A big thank you to all the
