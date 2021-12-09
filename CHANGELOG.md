@@ -8,7 +8,7 @@ Release post: https://sycamore-rs.netlify.app/news/announcing-v0.7.0
 
   - [Implement `TryFromSegments` for `T: Route`.](https://github.com/sycamore-rs/sycamore/pull/281)
     This allows the creation of nested routers. See the
-    [docs](https://sycamore-rs.netlify.app/docs/v0.7/advanced/routing#capture-types) for more
+    [docs](https://sycamore-rs.netlify.app/docs/advanced/routing#nested-routes) for more
     information about usage.
   - [Make parenthesis optional in `cloned!` macro.](https://github.com/sycamore-rs/sycamore/pull/283)
     The following syntax is now accepted, in addition to the old syntax:
