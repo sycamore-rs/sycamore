@@ -1,5 +1,79 @@
 # Changelog
 
+## ✨ **0.7.0** _(2021-12-08)_
+
+Release post: https://sycamore-rs.netlify.app/news/announcing-v0.7.0
+
+- #### ⚡️ Features
+
+  - [Implement `TryFromSegments` for `T: Route`.](https://github.com/sycamore-rs/sycamore/pull/281)
+    This allows the creation of nested routers. See the
+    [docs](https://sycamore-rs.netlify.app/docs/v0.7/advanced/routing#capture-types) for more
+    information about usage.
+  - [Make parenthesis optional in `cloned!` macro.](https://github.com/sycamore-rs/sycamore/pull/283)
+    The following syntax is now accepted, in addition to the old syntax:
+    ```rust
+    // Before
+    cloned!((my, variables, to, clone) => move || { ... })
+    // After
+    cloned!(my, variables, to, clone => move || { ... })
+    ```
+  - [Builder API.](https://github.com/sycamore-rs/sycamore/pull/269) Check out the
+    [`hello-builder`](https://github.com/sycamore-rs/sycamore/tree/0.7.0/examples/hello-builder)
+    example for more usage details.
+  - [Make `wasm-bindgen-interning` a feature.](https://github.com/sycamore-rs/sycamore/pull/296)
+    This feature is enabled by default but can be opted-out which would disable
+    `wasm-bindgen/enable-interning`. Opting-out can lead to a slight decrease in binary size at the
+    cost of performance.
+  - [Introduce `render_get_scope` function.](https://github.com/sycamore-rs/sycamore/pull/303) This
+    allows accessing (and disposing of) the `ReactiveScope` created by the render function.
+  - [Hydration support.](https://github.com/sycamore-rs/sycamore/pull/240) To enable hydration,
+    replace calls to `render` and `render_to` with `hydrate` and `hydrate_to`.
+  - [Add `#[track_caller]` to `use_context`.](https://github.com/sycamore-rs/sycamore/pull/306) This
+    makes it much easier to debug the `"context not found for type"` error.
+  - [Better debugging utilities for inspecting the `ReactiveScope` hierarchy.](https://github.com/sycamore-rs/sycamore/pull/307)
+
+- #### 🛠 Fixes
+
+  - [Prevent data binding from panicking when not in browser.](https://github.com/sycamore-rs/sycamore/pull/278)
+  - [Extend `ReactiveScope` into scopes that are siblings.](https://github.com/sycamore-rs/sycamore/pull/280)
+  - [Fix `Lerp` implementation for integers.](https://github.com/sycamore-rs/sycamore/pull/289)
+  - [Fix context API not working through `Indexed` and `Keyed`.](https://github.com/sycamore-rs/sycamore/pull/293)
+  - [Update TodoMVC example to use context API.](https://github.com/sycamore-rs/sycamore/pull/295)
+  - [Remove `autocomplete` from the list of boolean attributes for codegen.](https://github.com/sycamore-rs/sycamore/pull/301)
+  - [Fix parenthesizing of expressions in `view!` macro interpolation syntax.](https://github.com/sycamore-rs/sycamore/pull/304)
+  - [Fix context API when effects are re-executed.](https://github.com/sycamore-rs/sycamore/pull/310)
+  - [Allow constant generics to be used with `#[component]` macro.](https://github.com/sycamore-rs/sycamore/pull/312)
+
+- #### 📃 Documentation
+
+  - [Add a note in the docs about Trunk CSS support.](https://github.com/sycamore-rs/sycamore/pull/286)
+  - [Fix typo in `README.md`.](https://github.com/sycamore-rs/sycamore/pull/287)
+
+- #### Internal
+
+  - [Collect code coverage in CI.](https://github.com/sycamore-rs/sycamore/pull/294)
+  - [Deprecate `create_root` in favor of `create_scope`.](https://github.com/sycamore-rs/sycamore/pull/309)
+  - [Fix website npm build script.](https://github.com/sycamore-rs/sycamore/pull/313)
+
+- #### 🚨 **BREAKING CHANGES**
+
+  - [Refactor `GenericNode` and introduce `Html` trait. Add `IS_BROWSER` constant to `Html`.](https://github.com/sycamore-rs/sycamore/pull/274).
+    For projects that target HTML, it is recommended to use the `Html` trait instead of
+    `GenericNode`. This will ensure that it cannot be used on rendering backends that are not for
+    HTML. To check if code is executing on the browser, access the `Html::IS_BROWSER` constant on
+    the generic rendering backend. This also slightly changes the `GenericNode` interface which is
+    why it is a breaking change but would most likely not influence you.
+  - [Make `GenericNode` generic over the event type.](https://github.com/sycamore-rs/sycamore/pull/297)
+    The event type is now an associated type to allow rendering backends to use another type from
+    `web_sys::Event`.
+  - [Rename `Template` to `View` and `template!` to `view!`.](https://github.com/sycamore-rs/sycamore/pull/298)
+    For most cases, a simple search-and-replace will suffice, replacing all instances of `Template`
+    to `View` and all instances of `template!` to `view!`.
+  - [Rename `StateHandle` to `ReadSignal`.](https://github.com/sycamore-rs/sycamore/pull/300) The
+    old name was somewhat confusing and did not reflect that `StateHandle` was just a read-only
+    signal.
+
 ## ✨ **0.6.3** _(2021-10-10)_
 
 - #### 🛠 Fixes
