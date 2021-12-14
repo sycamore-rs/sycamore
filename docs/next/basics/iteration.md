@@ -16,7 +16,7 @@ view! {
     ul {
         Keyed(KeyedProps {
             iterable: count.handle(),
-            view: |x| view! {
+            template: |x| view! {
                 li { (x) }
             },
             key: |x| *x,
@@ -37,7 +37,7 @@ view! {
     ul {
         Indexed(IndexedProps {
             iterable: count.handle(),
-            view: |x| view! {
+            template: |x| view! {
                 li { (x) }
             },
         })
