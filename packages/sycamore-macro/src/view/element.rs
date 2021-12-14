@@ -157,7 +157,7 @@ impl ToTokens for Element {
                         let initial = if cfg!(feature = "experimental-hydrate") {
                             quote! {
                                 if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::HydrateNode>() {
-                                    let __el = ::std::any::Any::downcast_ref::<::sycamore::HydrateNode>(&__el).unwrap();
+                                    let __el = <dyn ::std::any::Any>::downcast_ref::<::sycamore::HydrateNode>(&__el).unwrap();
                                     let __initial = ::sycamore::utils::hydrate::web::get_next_marker(&__el.inner_element());
                                     // Do not drop the HydrateNode because it will be cast into a GenericNode.
                                     let __initial = ::std::mem::ManuallyDrop::new(__initial);
