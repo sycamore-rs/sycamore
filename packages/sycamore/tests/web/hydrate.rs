@@ -130,6 +130,15 @@ mod dynamic {
 
         sycamore::hydrate_to(cloned!(state => move || v(state.handle())), &c);
 
+        assert_eq!(
+            c.query_selector("p")
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .unwrap(),
+            "0"
+        );
+
         // Reactivity should work normally.
         state.set(1);
         assert_eq!(
