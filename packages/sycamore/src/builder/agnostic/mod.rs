@@ -135,8 +135,58 @@ where
     /// # }
     /// ```
     pub fn dyn_child(&self, child: impl FnMut() -> View<G> + 'static) -> &Self {
-        render::insert(&self.element, View::new_dyn(child), None, None, true);
+        #[allow(unused_imports)]
+        use std::any::{Any, TypeId};
 
+        #[cfg(feature = "ssr")]
+        if TypeId::of::<G>() == TypeId::of::<crate::SsrNode>() {
+            // If Server Side Rendering, insert beginning tag for hydration purposes.
+            self.element.append_child(&G::marker_with_text("#"));
+            // Create end marker. This is needed to make sure that the node is inserted into the right
+            // place.
+            let end_marker = G::marker_with_text("/");
+            self.element.append_child(&end_marker);
+            render::insert(
+                &self.element,
+                View::new_dyn(child),
+                None,
+                Some(&end_marker),
+                true, /* We don't know if this is the only child or not so we pessimistically set
+                       * this to true. */
+            );
+            return self;
+        }
+        #[cfg(feature = "experimental-hydrate")]
+        if TypeId::of::<G>() == TypeId::of::<crate::HydrateNode>() {
+            use crate::utils::hydrate::web::*;
+            // Get start and end markers.
+            let el = <dyn Any>::downcast_ref::<crate::HydrateNode>(&self.element).unwrap();
+            let initial = get_next_marker(&el.inner_element());
+            // Do not drop the HydrateNode because it will be cast into a GenericNode.
+            let initial = ::std::mem::ManuallyDrop::new(initial);
+            // SAFETY: This is safe because we already checked that the type is HydrateNode.
+            // __initial is wrapped inside ManuallyDrop to prevent double drop.
+            let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
+            render::insert(
+                &self.element,
+                View::new_dyn(child),
+                initial,
+                None,
+                true, /* We don't know if this is the only child or not so we pessimistically set
+                       * this to true. */
+            );
+            return self;
+        }
+        // G is neither SsrNode nor HydrateNode. Proceed normally.
+        let marker = G::marker();
+        self.element.append_child(&marker);
+        render::insert(
+            &self.element,
+            View::new_dyn(child),
+            None,
+            Some(&marker),
+            true,
+        );
         self
     }
 

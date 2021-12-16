@@ -1,3 +1,8 @@
+#[cfg(all(
+    feature = "experimental-hydrate",
+    feature = "experimental-builder-html"
+))]
+pub mod builder_hydrate;
 pub mod cleanup;
 #[cfg(feature = "experimental-hydrate")]
 pub mod hydrate;

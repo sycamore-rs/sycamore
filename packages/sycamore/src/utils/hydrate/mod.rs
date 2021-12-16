@@ -8,19 +8,18 @@ thread_local! {
     static HYDRATION_CONTEXT: RefCell<Option<HydrationRegistry>> = RefCell::new(None);
 }
 
+/// Run the closure inside a hydration context. If already inside a hydration context, creates a nested context.
 pub fn with_hydration_context<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
     HYDRATION_CONTEXT.with(|context| {
-        if context.borrow().is_some() {
-            panic!("hydration context already exists");
-        } else {
-            *context.borrow_mut() = Some(HydrationRegistry::new());
-            let r = f();
-            *context.borrow_mut() = None;
-            r
-        }
+        // Save previous context to restore later.
+        let prev = *context.borrow();
+        *context.borrow_mut() = Some(HydrationRegistry::new());
+        let r = f();
+        *context.borrow_mut() = prev;
+        r
     })
 }
 
@@ -86,6 +85,7 @@ where
 }
 
 /// A manager for the current hydration state.
+#[derive(Debug, Clone, Copy)]
 pub struct HydrationRegistry {
     pub current_id: usize,
     pub current_component_id: usize,
