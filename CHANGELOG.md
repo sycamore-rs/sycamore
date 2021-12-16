@@ -1,5 +1,14 @@
 # Changelog
 
+## ✨ **0.7.0** _(2021-15-08)_
+
+- #### 🛠 Fixes
+
+  - [Support Rust 2021 edition in macro codegen when using hydration.](https://github.com/sycamore-rs/sycamore/pull/316)
+  - [Fix typo in iteration docs.](https://github.com/sycamore-rs/sycamore/pull/317)
+  - [Fix duplicated text when hydrating a dynamic text node.](https://github.com/sycamore-rs/sycamore/pull/321)
+  - [Make builder API play well with hydration support.](https://github.com/sycamore-rs/sycamore/pull/322)
+
 ## ✨ **0.7.0** _(2021-12-08)_
 
 Release post: https://sycamore-rs.netlify.app/news/announcing-v0.7.0
@@ -8,8 +17,8 @@ Release post: https://sycamore-rs.netlify.app/news/announcing-v0.7.0
 
   - [Implement `TryFromSegments` for `T: Route`.](https://github.com/sycamore-rs/sycamore/pull/281)
     This allows the creation of nested routers. See the
-    [docs](https://sycamore-rs.netlify.app/docs/advanced/routing#nested-routes) for more
-    information about usage.
+    [docs](https://sycamore-rs.netlify.app/docs/advanced/routing#nested-routes) for more information
+    about usage.
   - [Make parenthesis optional in `cloned!` macro.](https://github.com/sycamore-rs/sycamore/pull/283)
     The following syntax is now accepted, in addition to the old syntax:
     ```rust
