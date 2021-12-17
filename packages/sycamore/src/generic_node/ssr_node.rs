@@ -1,18 +1,19 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
-use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
+
+use indexmap::map::IndexMap;
+use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{GenericNode, Html};
 use crate::reactive::create_scope;
 use crate::utils::hydrate::{get_next_id, with_hydration_context};
 use crate::view::View;
-use indexmap::map::IndexMap;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
