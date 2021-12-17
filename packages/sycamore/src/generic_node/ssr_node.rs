@@ -1,7 +1,7 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{HashSet, BTreeMap};
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
@@ -363,6 +363,9 @@ impl WriteToString for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
     name: String,
+    #[cfg(feature = "stable")]
+    attributes: BTreeMap<String, String>,
+    #[cfg(not(feature = "stable"))]
     attributes: AHashMap<String, String>,
     children: Vec<SsrNode>,
 }
