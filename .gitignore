@@ -9,3 +9,7 @@ Cargo.lock
 
 # VS Code folder
 .vscode
+
+# Jetbrain IDE
+.idea/
+*.iml

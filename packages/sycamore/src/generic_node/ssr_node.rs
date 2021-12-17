@@ -1,11 +1,7 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
-#[cfg(not(feature = "stable"))]
-use ahash::AHashMap;
 use once_cell::sync::Lazy;
 use std::cell::RefCell;
-#[cfg(feature = "stable")]
-use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
@@ -16,6 +12,7 @@ use crate::generic_node::{GenericNode, Html};
 use crate::reactive::create_scope;
 use crate::utils::hydrate::{get_next_id, with_hydration_context};
 use crate::view::View;
+use indexmap::map::IndexMap;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
@@ -131,11 +128,7 @@ impl GenericNode for SsrNode {
 
     fn element(tag: &str) -> Self {
         let hk = get_next_id();
-
-        #[cfg(not(feature = "stable"))]
-        let mut attributes = AHashMap::new();
-        #[cfg(feature = "stable")]
-        let mut attributes = BTreeMap::new();
+        let mut attributes = IndexMap::new();
         if let Some(hk) = hk {
             attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
         }
@@ -369,10 +362,7 @@ impl WriteToString for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
     name: String,
-    #[cfg(feature = "stable")]
-    attributes: BTreeMap<String, String>,
-    #[cfg(not(feature = "stable"))]
-    attributes: AHashMap<String, String>,
+    attributes: IndexMap<String, String>,
     children: Vec<SsrNode>,
 }
 
