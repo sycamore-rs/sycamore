@@ -1,13 +1,15 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
+#[cfg(not(feature = "stable"))]
+use ahash::AHashMap;
+use once_cell::sync::Lazy;
 use std::cell::RefCell;
-use std::collections::{HashSet, BTreeMap};
+#[cfg(feature = "stable")]
+use std::collections::BTreeMap;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
-
-use ahash::AHashMap;
-use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{GenericNode, Html};
@@ -129,7 +131,11 @@ impl GenericNode for SsrNode {
 
     fn element(tag: &str) -> Self {
         let hk = get_next_id();
+
+        #[cfg(not(feature = "stable"))]
         let mut attributes = AHashMap::new();
+        #[cfg(feature = "stable")]
+        let mut attributes = BTreeMap::new();
         if let Some(hk) = hk {
             attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
         }
