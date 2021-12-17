@@ -8,7 +8,8 @@ thread_local! {
     static HYDRATION_CONTEXT: RefCell<Option<HydrationRegistry>> = RefCell::new(None);
 }
 
-/// Run the closure inside a hydration context. If already inside a hydration context, creates a nested context.
+/// Run the closure inside a hydration context. If already inside a hydration context, creates a
+/// nested context.
 pub fn with_hydration_context<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,

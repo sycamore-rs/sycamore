@@ -6,7 +6,7 @@ use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
-use ahash::AHashMap;
+use indexmap::map::IndexMap;
 use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
@@ -129,7 +129,7 @@ impl GenericNode for SsrNode {
 
     fn element(tag: &str) -> Self {
         let hk = get_next_id();
-        let mut attributes = AHashMap::new();
+        let mut attributes = IndexMap::new();
         if let Some(hk) = hk {
             attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
         }
@@ -363,7 +363,7 @@ impl WriteToString for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
     name: String,
-    attributes: AHashMap<String, String>,
+    attributes: IndexMap<String, String>,
     children: Vec<SsrNode>,
 }
 
