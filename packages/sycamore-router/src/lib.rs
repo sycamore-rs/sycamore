@@ -9,7 +9,7 @@ pub use sycamore_router_macro::Route;
 
 use std::str::FromStr;
 
-pub use router::*;
+pub use router::{HistoryIntegration, Router, RouterProps};
 
 /// Trait that is implemented for `enum`s that can match routes.
 ///
