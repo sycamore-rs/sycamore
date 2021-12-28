@@ -78,6 +78,7 @@
 <url><loc>https://sycamore-rs.netlify.app/examples/higher-order-components</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/hydrate</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/iteration</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/examples/page-visit-counter-tailwindcss</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/ssr</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/todomvc</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/tweened</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>

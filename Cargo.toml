@@ -8,7 +8,6 @@ members = [
   "examples/components",
   "examples/context",
   "examples/counter",
-  "examples/page-visit-counter",
   "examples/page-visit-counter-tailwindcss",
   "examples/hello",
   "examples/hello-builder",
