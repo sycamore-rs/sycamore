@@ -74,6 +74,11 @@ impl<T: 'static> ReadSignal<T> {
     pub fn get_untracked(&self) -> Rc<T> {
         Rc::clone(&self.0.borrow().inner)
     }
+
+    pub fn map<U>(&self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
+        let this = self.clone();
+        create_memo(move || f(&this.get()))
+    }
 }
 
 impl<T: 'static> Clone for ReadSignal<T> {
