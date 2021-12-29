@@ -74,6 +74,24 @@ impl<T: 'static> ReadSignal<T> {
     pub fn get_untracked(&self) -> Rc<T> {
         Rc::clone(&self.0.borrow().inner)
     }
+
+    /// Creates a mapped [`ReadSignal`]. This is equivalent to using [`create_memo`].
+    /// 
+    /// # Example
+    /// ```rust
+    /// use sycamore_reactive::*;
+    /// 
+    /// let state = Signal::new(1);
+    /// let double = state.map(|&x| x * 2);
+    /// assert_eq!(*double.get(), 2);
+    /// 
+    /// state.set(2);
+    /// assert_eq!(*double.get(), 4);
+    /// ```
+    pub fn map<U>(&self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
+        let this = self.clone();
+        create_memo(move || f(&this.get()))
+    }
 }
 
 impl<T: 'static> Clone for ReadSignal<T> {
