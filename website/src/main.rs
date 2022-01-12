@@ -66,9 +66,11 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
 fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
     let template = Signal::new(View::empty());
     let cached_sidebar_data: Signal<Option<(Option<String>, SidebarData)>> = Signal::new(None);
-    create_effect(cloned!((template) => move || {
+    create_effect(cloned!((template, cached_sidebar_data) => move || {
         let route = route.get();
         spawn_local_in_scope(cloned!((template, cached_sidebar_data) => async move {
+            // clear data to avoid invalid sidebar links in the hamburger menu
+            cached_sidebar_data.set(None);
             let t = match route.as_ref() {
                 Routes::Index => view! {
                     div(class="container mx-auto") {
@@ -133,11 +135,17 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
     }));
 
     view! {
-        div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
-            min-h-screen transition-colors") {
-            header::Header()
-            (template.get().as_ref())
-        }
+        ContextProvider(ContextProviderProps {
+            value: cached_sidebar_data,
+            children: || view! {
+                div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
+                        min-h-screen transition-colors"
+                ) {
+                    header::Header()
+                    (template.get().as_ref())
+                }
+            },
+        })
     }
 }
 

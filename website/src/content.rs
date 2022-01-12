@@ -89,7 +89,9 @@ pub fn content(
             (if show_sidebar {
                 view! {
                     div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
-                        crate::sidebar::Sidebar(sidebar.clone().unwrap())
+                        div(class="p-3"){
+                            crate::sidebar::Sidebar(sidebar.clone().unwrap())
+                        }
                     }
                 }
             } else {

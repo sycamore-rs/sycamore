@@ -1,6 +1,7 @@
 use sycamore::context::use_context;
 use sycamore::prelude::*;
 
+use crate::sidebar::SidebarData;
 use crate::DarkMode;
 
 #[component(DarkModeToggle<G>)]
@@ -25,28 +26,35 @@ fn dark_mode_toggle() -> View<G> {
 #[component(Nav<G>)]
 fn nav() -> View<G> {
     view! {
-        nav(class="px-8 h-12 backdrop-filter backdrop-blur-sm backdrop-saturate-150 bg-opacity-80 \
-        bg-gray-100 dark:bg-gray-800 border-b border-gray-400 dark:border-gray-600 transition-colors") {
-            // Only show nav links in desktop view.
-            div(class="hidden sm:flex flex-row justify-between items-center h-12") {
-                // Brand section
-                div(class="inline-block flex-initial") {
-                    div(class="flex space-x-4") {
-                        a(href="/#", class="py-2 px-3 text-sm text-white font-medium \
-                        bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
-                            "Sycamore"
+        // css hack: use pseudo elements to make nested backdrop filters work
+        nav(class="after:absolute after:z-neg after:top-0 after:left-0 after:right-0 after:bottom-0 \
+                after:backdrop-filter after:backdrop-blur-lg after:backdrop-saturate-150 \
+                bg-opacity-80 dark:bg-opacity-80 bg-gray-100 dark:bg-gray-800 border-b border-gray-400 dark:border-gray-600 transition-colors \
+                px-4"
+        ) {
+            div(class="flex flex-row justify-between items-center h-12") {
+                div(class="inline-flex flex-initial items-center") {
+                    // In mobile, show a hamburger menu.
+                    div(class="flex sm:hidden mr-2 flex-row items-center h-12") {
+                        HamburgerMenu()
+                    }
+                    // Brand section
+                    div(class="ml-0 sm:ml-3 inline-block flex-initial") {
+                        div(class="flex space-x-4") {
+                            a(href="/#", class="py-2 px-3 text-sm text-white font-medium \
+                            bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
+                                "Sycamore"
+                            }
                         }
                     }
                 }
-                // Links section
-                div(class="inline-flex flex-row ml-2 space-x-4 text-gray-600 dark:text-gray-300") {
-                    NavLinks()
+                div(class="flex flex-row mr-4 space-x-4 items-center text-gray-600 dark:text-gray-300") {
+                    // Links section, only show in desktop view.
+                    div(class="hidden sm:inline-flex items-center") {
+                        NavLinks()
+                    }
                     DarkModeToggle()
                 }
-            }
-            // In mobile, collapse into hamburger menu.
-            div(class="flex sm:hidden h-12") {
-                HamburgerMenu()
             }
         }
     }
@@ -55,7 +63,7 @@ fn nav() -> View<G> {
 #[component(NavLinks<G>)]
 pub fn nav_links() -> View<G> {
     static LINK_CLASS: &str =
-        "py-2 px-3 text-sm hover:text-gray-800 dark:hover:text-gray-100 hover:underline";
+        "py-2 px-4 text-sm hover:text-gray-800 dark:hover:text-gray-100 hover:underline";
     view! {
         a(class=LINK_CLASS, href="/docs/getting_started/installation") { "Book" }
         a(class=LINK_CLASS, href="https://docs.rs/sycamore") { "API" }
@@ -71,18 +79,48 @@ pub fn hamburger_menu() -> View<G> {
     static CLOSE_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11" role="img" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"/></svg>"#;
 
     let is_open = Signal::new(false);
+    let is_open_1 = is_open.clone();
 
     let toggle = cloned!(is_open => move |_| is_open.set(!*is_open.get()));
+    let toggle_1 = toggle.clone();
+
+    let sidebar = use_context::<Signal<Option<(Option<String>, SidebarData)>>>();
 
     view! {
         // Menu navbar, hamburger button.
         button(
             title="Menu",
-            class="inline-block w-5",
+            class="inline-block w-8 p-2",
             on:click=toggle,
             // Use dangerously_set_inner_html because SVG is not supported yet in view! macro.
             dangerously_set_inner_html=if *is_open.get() { CLOSE_SVG } else { HAMBURGER_SVG },
         )
+        div(class=format!("backdrop-filter backdrop-blur-lg backdrop-saturate-150 \
+                bg-opacity-80 dark:bg-opacity-80 bg-gray-100 dark:bg-gray-800 \
+                border-r border-t border-gray-400 dark:border-gray-600 transition-all \
+                p-2 fixed top-0 left-0 h-screen w-8/12 mt-12 pb-16 flex flex-col overflow-y-auto {}",
+                if *is_open_1.get() {
+                    "duration-200 ease-out"
+                } else {
+                    "invisible transform -translate-x-full opacity-0 duration-150 ease-in"
+                }
+            ),
+            on:click=toggle_1
+        ) {
+            NavLinks()
+            (if let Some(sidebar) = sidebar.clone().get().as_ref().clone() {
+                view! {
+                    div(class="opacity-25 mx-2 p-px my-2 bg-current") { }
+                    div(class="w-full"){
+                        crate::sidebar::Sidebar({
+                            (sidebar.0.unwrap_or_else(||"next".to_string()), sidebar.1)
+                        })
+                    }
+                }
+            } else {
+                View::empty()
+            })
+        }
     }
 }
 

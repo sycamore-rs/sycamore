@@ -9,7 +9,7 @@ pub fn index() -> View<G> {
         .set_title("Sycamore");
 
     view! {
-        div(class="pb-10") {
+        div(class="pb-10 mx-4") {
             div(class="flex flex-col items-center w-full mb-10") {
                 h1(class="text-5xl font-bold mt-20 mb-5") {
                     "Sycamore"
@@ -46,7 +46,7 @@ pub fn index() -> View<G> {
 
                 a(
                     href="/docs/getting_started/installation",
-                    class="py-2 px-3 text-white bg-yellow-600 rounded font-medium transition",
+                    class="py-2 px-3 text-white bg-yellow-600 rounded font-medium transition whitespace-nowrap",
                 ) {
                     "Read the Book"
                 }
