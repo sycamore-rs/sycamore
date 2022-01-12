@@ -12,7 +12,7 @@
   }
 
   .content pre {
-    @apply bg-gray-100 rounded block p-2 whitespace-pre-wrap font-mono;
+    @apply bg-gray-100 rounded block p-2 whitespace-pre font-mono overflow-auto;
   }
   .dark .content pre {
     background-color: rgb(50, 50, 60) !important;

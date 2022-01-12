@@ -88,17 +88,17 @@ pub fn content(
         div(class="flex w-full") {
             (if show_sidebar {
                 view! {
-                    div(class="flex-none") {
+                    div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
                         crate::sidebar::Sidebar(sidebar.clone().unwrap())
                     }
                 }
             } else {
                 view! {}
             })
-            div(class="flex-1 container mx-auto") {
+            div(class="flex-1 overflow-hidden max-w-screen-xl mx-auto") {
                 div(
-                    class=format!("content min-w-0 pr-4 mb-2 lg:mr-44 {}",
-                    if show_sidebar { "" } else { "container mx-auto pl-4 lg:ml-auto lg:pr-48" }),
+                    class=format!("content min-w-0 px-4 mb-2 sm:ml-44 lg:mr-44 {}",
+                    if show_sidebar { "" } else { "container mx-auto lg:ml-auto lg:pr-48" }),
                 ) {
                     (if sidebar_version.as_deref() == Some(crate::NEXT_VERSION) {
                         view! {
@@ -132,9 +132,9 @@ pub fn content(
                     })
                     div(dangerously_set_inner_html=&html)
                 }
-                div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0 top-0 mt-12") {
-                    OutlineView(outline)
-                }
+            }
+            div(class="outline flex-none hidden lg:block lg:w-44 fixed right-0 top-0 pt-12 max-h-full overflow-y-auto") {
+                OutlineView(outline)
             }
         }
     }
