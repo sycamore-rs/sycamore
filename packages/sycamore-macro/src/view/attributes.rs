@@ -47,8 +47,6 @@ static BOOLEAN_ATTRIBUTES_SET: Lazy<HashSet<&'static str>> = Lazy::new(|| {
         "seamless",
         "selected",
         "sortable",
-        "spellcheck",
-        "translate",
     ]
     .into_iter()
     .collect()
