@@ -31,7 +31,7 @@ pub fn sidebar((version, data): (String, SidebarData)) -> View<G> {
                         li {
                             a(
                                 href=format!("../{}", href),
-                                class="pl-4 hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
+                                class="py-2 sm:py-0 text-sm pl-4 hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
                             ) {
                                 (name)
                             }
@@ -56,19 +56,17 @@ pub fn sidebar((version, data): (String, SidebarData)) -> View<G> {
 
     let sections = View::new_fragment(sections);
     view! {
-        aside(class="p-3 w-44") {
-            ul {
-                li {
-                    a(
-                        href="/versions",
-                        class="pl-4 font-bold text-gray-700 dark:text-gray-300 \
-                        hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
-                    ) {
-                        "Version: " (version)
-                    }
+        ul {
+            li {
+                a(
+                    href="/versions",
+                    class="py-2 sm:py-0 text-sm pl-4 font-bold text-gray-700 dark:text-gray-300 \
+                    hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
+                ) {
+                    "Version: " (version)
                 }
-                (sections)
             }
+            (sections)
         }
     }
 }

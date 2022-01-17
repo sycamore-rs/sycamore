@@ -1,4 +1,4 @@
-const colors = require('tailwindcss/colors')
+const colors = require('tailwindcss/colors');
 
 module.exports = {
   jit: true,
@@ -9,7 +9,11 @@ module.exports = {
   },
   darkMode: "class", // or 'media' or 'class'
   theme: {
-    extend: {},
+    extend: {
+      zIndex: {
+        'neg': -1
+      }
+    },
     colors: {
       transparent: 'transparent',
       current: 'currentColor',
@@ -26,4 +30,4 @@ module.exports = {
     extend: {},
   },
   plugins: [],
-}
+};
