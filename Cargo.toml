@@ -1,28 +1,26 @@
 [workspace]
 members = [
+  # Packages
   "packages/sycamore",
   "packages/sycamore-macro",
   "packages/sycamore-reactive",
   "packages/sycamore-router",
   "packages/sycamore-router-macro",
+
+  # Examples
   "examples/components",
   "examples/context",
   "examples/counter",
-  "examples/page-visit-counter-tailwindcss",
-  "examples/hello",
-  "examples/hello-builder",
+  "examples/http-request",
   "examples/hydrate",
-  "examples/higher-order-components",
   "examples/iteration",
+  "examples/js-framework-benchmark",
+  "examples/hello-world",
+  "examples/higher-order-components",
   "examples/ssr",
   "examples/todomvc",
-  "examples/tweened",
+
+  # Website
   "docs",
   "website",
 ]
-
-[profile.release]
-lto = true
-opt-level = "z"
-# Enable only for debugging release builds only
-# debug = true

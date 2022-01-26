@@ -1,103 +1,92 @@
-use std::any::{Any, TypeId};
-use std::rc::Rc;
-
-use wasm_bindgen::prelude::*;
+//! Context state management.
 
 use crate::*;
 
-/// Trait for any type of context.
-///
-/// # Equality
-/// A `ContextAny` is equal to another `ContextAny` if they are of the same type.
-pub(super) trait ContextAny {
-    /// Get the [`TypeId`] of the type of the value stored in the context.
-    fn get_type_id(&self) -> TypeId;
-
-    /// Get the value stored in the context. The concrete type of the returned value is guaranteed
-    /// to match the type when calling [`get_type_id`](ContextAny::get_type_id).
-    fn get_value(&self) -> &dyn Any;
-
-    /// Get the name of type of context or `None` if not available.
-    fn get_type_name(&self) -> Option<&'static str>;
-}
-
-/// Inner representation of a context.
-struct Context<T: 'static> {
-    value: T,
-    /// The type name of the context. Only available in debug mode.
-    #[cfg(debug_assertions)]
-    type_name: &'static str,
-}
-
-impl<T: 'static> ContextAny for Context<T> {
-    fn get_type_id(&self) -> TypeId {
-        self.value.type_id()
-    }
-
-    fn get_value(&self) -> &dyn Any {
-        &self.value
-    }
-
-    fn get_type_name(&self) -> Option<&'static str> {
-        #[cfg(debug_assertions)]
-        return Some(self.type_name);
-        #[cfg(not(debug_assertions))]
-        return None;
-    }
-}
-
-/// Get the value of a context in the current [`ReactiveScope`] or `None` if not found.
-///
-/// For a panicking version of this function, see [`use_context`].
-pub fn try_use_context<T: Clone + 'static>() -> Option<T> {
-    SCOPES.with(|scopes| {
-        let scopes = scopes.borrow();
-        let mut current = scopes.last().map(|s| Rc::clone(&s.0));
-        match current {
-            Some(_) => {
-                while let Some(scope) = &current {
-                    if let Some(context) = &scope.borrow().context {
-                        if let Some(value) = context.get_value().downcast_ref::<T>() {
-                            return Some(value.clone());
-                        }
-                    }
-                    current = current.unwrap_throw().borrow().parent.0.upgrade();
-                }
-                None
-            }
-            None => None,
+impl<'a> Scope<'a> {
+    /// Provides a context in the current [`Scope`]. The context can later be accessed by using
+    /// [`use_context`](Self::use_context) lower in the scope hierarchy.
+    ///
+    /// The context can also be accessed in the same scope in which it is provided.
+    ///
+    /// # Panics
+    /// This method panics if a context with the same type exists already in this scope.
+    /// Note that if a context with the same type exists in a parent scope, the new context will
+    /// shadow the old context.
+    pub fn provide_context<T: 'static>(&'a self, value: T) {
+        let type_id = TypeId::of::<T>();
+        let boxed = Box::new(value);
+        let ptr = Box::into_raw(boxed);
+        if self.contexts.borrow_mut().insert(type_id, ptr).is_some() {
+            panic!("existing context with type exists already");
         }
-    })
+    }
+
+    /// Tries to get a context value of the given type. If no context with the right type found,
+    /// returns `None`. For a panicking version, see [`use_context`](Self::use_context).
+    pub fn try_use_context<T: 'static>(&'a self) -> Option<&'a T> {
+        let type_id = TypeId::of::<T>();
+        let mut this = Some(self);
+        while let Some(current) = this {
+            if let Some(value) = current.contexts.borrow_mut().get(&type_id) {
+                // SAFETY: value lives at least as long as 'a:
+                // - Lifetime of value is 'a if it is allocated on the current scope.
+                // - Lifetime of value is longer than 'a if it is allocated on a parent scope.
+                // - 'a is variant because it is an immutable reference.
+                let value = unsafe { &**value };
+                let value = value.downcast_ref::<T>().unwrap();
+                return Some(value);
+            } else {
+                // SAFETY: `current.parent` necessarily lives longer than `current`.
+                this = current.parent.map(|x| unsafe { &*x });
+            }
+        }
+        None
+    }
+
+    /// Gets a context value of the given type.
+    ///
+    /// # Panics
+    /// This method panics if the context cannot be found in the current scope hierarchy.
+    /// For a non-panicking version, see [`try_use_context`](Self::try_use_context).
+    #[track_caller]
+    pub fn use_context<T: 'static>(&'a self) -> &'a T {
+        self.try_use_context().expect("context not found for type")
+    }
+
+    /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
+    pub fn scope_depth(&self) -> u32 {
+        let mut depth = 0;
+        let mut this = Some(self);
+        while let Some(current) = this {
+            // SAFETY: `current.parent` necessarily lives longer than `current`.
+            this = current.parent.map(|x| unsafe { &*x });
+            depth += 1;
+        }
+        depth
+    }
 }
 
-/// Get the value of a context in the current [`ReactiveScope`].
-///
-/// # Panics
-/// This function will `panic!` if the context is not found in the current scope or a parent scope.
-/// For a non-panicking version of this function, see [`try_use_context`].
-#[track_caller]
-pub fn use_context<T: Clone + 'static>() -> T {
-    try_use_context().expect("context not found for type")
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-/// Creates a new [`ReactiveScope`] with a context and runs the supplied callback function.
-#[cfg_attr(debug_assertions, track_caller)]
-pub fn create_context_scope<T: 'static, Out>(value: T, f: impl FnOnce() -> Out) -> Out {
-    // Create a new ReactiveScope.
-    // We make sure to create the ReactiveScope outside of the closure so that track_caller can do
-    // its thing.
-    let scope = create_scope(|| {});
-    SCOPES.with(|scopes| {
-        // Attach the context to the scope.
-        scope.0.borrow_mut().context = Some(Box::new(Context {
-            value,
-            #[cfg(debug_assertions)]
-            type_name: std::any::type_name::<T>(),
-        }));
-        scopes.borrow_mut().push(scope);
-        let out = f();
-        let scope = scopes.borrow_mut().pop().unwrap_throw();
-        on_cleanup(move || drop(scope));
-        out
-    })
+    #[test]
+    fn context() {
+        create_scope_immediate(|ctx| {
+            ctx.provide_context(42i32);
+            let x = ctx.use_context::<i32>();
+            assert_eq!(*x, 42);
+        });
+    }
+
+    #[test]
+    fn context_in_nested_scope() {
+        create_scope_immediate(|ctx| {
+            ctx.provide_context(42i32);
+            let _ = ctx.create_child_scope(|ctx| {
+                let x = ctx.use_context::<i32>();
+                assert_eq!(*x, 42);
+            });
+        });
+    }
 }

@@ -1,44 +1,31 @@
-//! Utilities for working with [`Future`]s and `async/await` code.
-
 use std::future::Future;
 
-use sycamore_reactive::current_scope;
 use wasm_bindgen_futures::spawn_local;
 
-/// A wrapper around [`wasm_bindgen_futures::spawn_local`] that extends the current reactive scope
-/// that it is called in.
-///
-/// If the scope is dropped by the time the future is spawned, the callback will not be called.
-///
-/// If not on `wasm32` target arch, this function is a no-op.
-///
-/// # Panics
-/// This function panics if called outside of a reactive scope.
-///
-/// # Example
-/// ```
-/// use sycamore::futures::spawn_local_in_scope;
-/// use sycamore::prelude::*;
-///
-/// create_root(|| {
-///     // Inside reactive scope.
-///     spawn_local_in_scope(async {
-///         // Still inside reactive scope.
-///     });
-/// });
-/// ```
-pub fn spawn_local_in_scope<F>(future: F)
-where
-    F: Future<Output = ()> + 'static,
-{
-    if cfg!(target_arch = "wasm32") {
-        let scope = current_scope();
-        if scope.is_valid() {
-            spawn_local(async move {
-                scope.extend_future(future).await;
-            });
-        } else {
-            panic!("spawn_local_in_scope called outside of reactive scope");
-        }
+use crate::prelude::*;
+
+pub trait ScopeFuturesExt<'a> {
+    fn create_resource<U, F>(&'a self, f: F) -> RcSignal<Option<U>>
+    where
+        U: 'static,
+        F: Future<Output = U> + 'static;
+}
+
+impl<'a> ScopeFuturesExt<'a> for Scope<'a> {
+    fn create_resource<U, F>(&'a self, f: F) -> RcSignal<Option<U>>
+    where
+        U: 'static,
+        F: Future<Output = U> + 'static,
+    {
+        let signal = create_rc_signal(None);
+
+        spawn_local({
+            let signal = signal.clone();
+            async move {
+                signal.set(Some(f.await));
+            }
+        });
+
+        signal
     }
 }

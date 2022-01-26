@@ -1,5 +1,7 @@
 //! HTML-specific builder functions.
 
+use crate::prelude::*;
+
 macro_rules! generate_tag_functions {
     (
         $vis:vis enum $name:ident {
@@ -8,8 +10,8 @@ macro_rules! generate_tag_functions {
     ) => {
         paste::paste! {
             $(
-                pub fn [<$tag:lower>]<G: crate::generic_node::GenericNode>() -> crate::builder::agnostic::NodeBuilder<G> {
-                    crate::builder::agnostic::node(stringify!([<$tag:lower>]))
+                pub fn [<$tag:lower>]<'a, G: GenericNode>(ctx: ScopeRef<'a>) -> crate::builder::agnostic::NodeBuilder<'a, G> {
+                    crate::builder::agnostic::node(ctx, stringify!([<$tag:lower>]))
                 }
             )*
         }

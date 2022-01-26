@@ -1,35 +1,45 @@
 use sycamore::prelude::*;
 
-#[component(App<G>)]
-fn app() -> View<G> {
-    let items = Signal::new(vec![
-        view! { "Hello!" },
-        view! { "I am an item in a fragment"},
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Cat {
+    id: &'static str,
+    name: &'static str,
+}
+
+#[component]
+fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    let items = ctx.create_signal(vec![
+        Cat {
+            id: "J---aiyznGQ",
+            name: "Keyboard Cat",
+        },
+        Cat {
+            id: "z_AbfPXTKms",
+            name: "Maru",
+        },
+        Cat {
+            id: "OUtn3pvWmpg",
+            name: "Henri The Existential Cat",
+        },
     ]);
 
-    let add_item = cloned!((items) => move |_| {
-        items.set(
-            (*items.get())
-                .clone()
-                .into_iter()
-                .chain(Some(view! { "New item" }))
-                .collect(),
-        );
-    });
-
-    view! {
-        div {
-            button(on:click=add_item) { "Add item" }
-            div(class="items") {
-                (View::new_fragment((*items.get()).clone()))
+    view! { ctx,
+        p { "The famous cats of YouTube" }
+        ul {
+            Indexed {
+                iterable: items,
+                view: |ctx, Cat { id, name }| view! { ctx,
+                    li {
+                        a(href=format!("https://www.youtube.com/watch?v={id}")) {
+                            (name)
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
-    sycamore::render(|| view! { App() });
+    sycamore::render(|ctx| view! { ctx, App() });
 }

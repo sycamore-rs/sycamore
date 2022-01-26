@@ -6,7 +6,7 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::generic_node::GenericNode;
-use crate::reactive::{create_memo, ReadSignal};
+use crate::reactive::*;
 
 /// Internal type for [`View`].
 #[derive(Clone)]
@@ -14,7 +14,7 @@ pub(crate) enum ViewType<G: GenericNode> {
     /// A DOM node.
     Node(G),
     /// A dynamic [`View`].
-    Dyn(ReadSignal<View<G>>),
+    Dyn(RcSignal<View<G>>),
     /// A fragment of [`View`]s.
     #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
     Fragment(Rc<Box<[View<G>]>>),
@@ -35,10 +35,15 @@ impl<G: GenericNode> View<G> {
     }
 
     /// Create a new [`View`] from a [`FnMut`].
-    pub fn new_dyn(f: impl FnMut() -> View<G> + 'static) -> Self {
-        let memo = create_memo(f);
+    pub fn new_dyn<'a>(ctx: ScopeRef<'a>, f: impl FnMut() -> View<G> + 'a) -> Self {
+        let memo = ctx.create_memo(f);
+        let signal = create_rc_signal(memo.get().as_ref().clone());
+        ctx.create_effect({
+            let signal = signal.clone();
+            move || signal.set(memo.get().as_ref().clone()) // TODO: get rid of double clone
+        });
         Self {
-            inner: ViewType::Dyn(memo),
+            inner: ViewType::Dyn(signal),
         }
     }
 
@@ -70,7 +75,7 @@ impl<G: GenericNode> View<G> {
         }
     }
 
-    pub fn as_dyn(&self) -> Option<&ReadSignal<View<G>>> {
+    pub fn as_dyn(&self) -> Option<&RcSignal<View<G>>> {
         if let ViewType::Dyn(v) = &self.inner {
             Some(v)
         } else {
@@ -110,11 +115,9 @@ impl<G: GenericNode> View<G> {
         match self.inner {
             ViewType::Node(node) => vec![node],
             ViewType::Dyn(lazy) => lazy.get().as_ref().clone().flatten(),
-            ViewType::Fragment(fragment) => fragment
-                .iter()
-                .map(|x| x.clone().flatten())
-                .flatten()
-                .collect(),
+            ViewType::Fragment(fragment) => {
+                fragment.iter().flat_map(|x| x.clone().flatten()).collect()
+            }
         }
     }
 }

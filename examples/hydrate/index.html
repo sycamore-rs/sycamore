@@ -3,33 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Hello World!</title>
-
-    <style>
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      }
-    </style>
+    <title>Hydration | Sycamore</title>
   </head>
   <body>
     <!-- SSR-ed HTML can be found in dev console when running the app. -->
-    <h1 data-hk="1.0">Hydration example</h1>
+    <p data-hk="1.0">Hydration</p>
+    <br data-hk="1.1" />
     <div data-hk="2.0">
-      <h2 data-hk="2.1">
-        Hello
-        <!--#--><span data-hk="2.2">World</span
-        ><!--/-->!
-      </h2>
-      <input data-hk="2.3" />
-    </div>
-    <div data-hk="3.0">
-      <h2 data-hk="3.1">Counter demo</h2>
-      <p class="value" data-hk="3.2">
+      <p data-hk="2.1">
         Value:
         <!--#-->0<!--/-->
       </p>
-      <button class="increment" data-hk="3.3">Increment</button
-      ><button class="reset" data-hk="3.4">Reset</button>
+      <button data-hk="2.2">+</button><button data-hk="2.3">-</button
+      ><button data-hk="2.4">Reset</button>
     </div>
     <!-- End SSR-ed HTML. -->
   </body>

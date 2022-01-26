@@ -1,45 +1,36 @@
 use sycamore::prelude::*;
 
-#[component(MyComponent<G>)]
-fn my_component(num: ReadSignal<i32>) -> View<G> {
-    view! {
+#[component]
+fn MyComponent<'a, G: Html>(ctx: ScopeRef<'a>, props: &'a Signal<i32>) -> View<G> {
+    view! { ctx,
         div(class="my-component") {
             "My component"
             p {
                 "Value: "
-                (num.get())
+                (props.get())
             }
         }
     }
 }
 
-#[component(App<G>)]
-fn app() -> View<G> {
-    let state = Signal::new(1);
+#[component]
+fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    let state = ctx.create_signal(0);
 
-    let increment = cloned!((state) => move |_| {
-        state.set(*state.get() + 1);
-    });
+    let increment = |_| state.set(*state.get() + 1);
 
-    view! {
+    view! { ctx,
         div {
-            h1 {
-                "Component demo"
-            }
+            "Component demo"
 
-            MyComponent(state.handle())
-            MyComponent(state.handle())
+            MyComponent(state)
+            MyComponent(state)
 
-            button(on:click=increment) {
-                "Increment"
-            }
+            button(on:click=increment) { "+" }
         }
     }
 }
 
 fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
-    sycamore::render(|| view! { App() });
+    sycamore::render(|ctx| view! { ctx, App() });
 }

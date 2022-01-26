@@ -13,6 +13,8 @@ use std::hash::Hash;
 use wasm_bindgen::prelude::*;
 use web_sys::Event;
 
+use crate::reactive::ScopeRef;
+
 #[cfg(feature = "dom")]
 pub use dom_node::*;
 #[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
@@ -120,8 +122,8 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Remove this node from the tree.
     fn remove_self(&self);
 
-    /// Add a [`EventHandler`] to the event `name`.
-    fn event(&self, name: &str, handler: Box<dyn Fn(Self::EventType)>);
+    /// Add a event handler to the event `name`.
+    fn event<'a>(&self, ctx: ScopeRef<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>);
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
@@ -133,6 +135,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn dangerously_set_inner_html(&self, html: &str);
 
     /// Create a deep clone of the node.
+    #[must_use = "clone_node returns a new node"]
     fn clone_node(&self) -> Self;
 }
 

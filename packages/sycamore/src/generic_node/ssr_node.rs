@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::{GenericNode, Html};
-use crate::reactive::create_scope;
+use crate::reactive::*;
 use crate::utils::hydrate::{get_next_id, with_hydration_context};
 use crate::view::View;
 
@@ -308,7 +308,12 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event(&self, _name: &str, _handler: Box<dyn Fn(Self::EventType)>) {
+    fn event<'a>(
+        &self,
+        _ctx: ScopeRef<'a>,
+        _name: &str,
+        _handler: Box<dyn Fn(Self::EventType) + 'a>,
+    ) {
         // Noop. Events are attached on client side.
     }
 
@@ -434,10 +439,10 @@ impl WriteToString for RawText {
 /// for rendering to a string on the server side.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
-pub fn render_to_string(view: impl FnOnce() -> View<SsrNode>) -> String {
+pub fn render_to_string(view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode>) -> String {
     let mut ret = String::new();
-    let _scope = create_scope(|| {
-        let v = with_hydration_context(view);
+    create_scope_immediate(|ctx| {
+        let v = with_hydration_context(|| view(ctx));
 
         for node in v.flatten() {
             node.write_to_string(&mut ret);
@@ -455,7 +460,7 @@ mod tests {
     #[test]
     fn render_hello_world() {
         assert_eq!(
-            render_to_string(|| view! {
+            render_to_string(|ctx| view! { ctx,
                 "Hello World!"
             }),
             "Hello World!"
@@ -465,7 +470,7 @@ mod tests {
     #[test]
     fn render_escaped_text() {
         assert_eq!(
-            render_to_string(|| view! {
+            render_to_string(|ctx| view! { ctx,
                 "<script>Dangerous!</script>"
             }),
             "&lt;script>Dangerous!&lt;/script>"
@@ -475,7 +480,7 @@ mod tests {
     #[test]
     fn render_unescaped_html() {
         assert_eq!(
-            render_to_string(|| view! {
+            render_to_string(|ctx| view! { ctx,
                 div(dangerously_set_inner_html="<a>Html!</a>")
             }),
             "<div data-hk=\"0.0\"><a>Html!</a></div>"

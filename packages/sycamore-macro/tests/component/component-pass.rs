@@ -1,12 +1,12 @@
 use sycamore::prelude::*;
 
-#[component(Comp1<G>)]
-fn comp1() -> View<G> {
+#[component]
+fn comp1<G: Html>(_ctx: ScopeRef) -> View<G> {
     todo!();
 }
 
-#[component(Comp2<G>)]
-fn comp2(_props: ()) -> View<G> {
+#[component]
+fn comp2<G: Html>(_ctx: ScopeRef, _: ()) -> View<G> {
     todo!();
 }
 

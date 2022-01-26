@@ -1,12 +1,11 @@
 [package]
-authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
+name = "sycamore"
 categories = ["gui", "wasm", "web-programming"]
 description = "A VDOM-less web library with fine grained reactivity"
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive"]
 license = "MIT"
-name = "sycamore"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
 version = "0.7.1"
@@ -16,15 +15,14 @@ version = "0.7.1"
 [dependencies]
 ahash = "0.7.6"
 html-escape = { version = "0.2.9", optional = true }
-indexmap = { version = "1.7.0", features = ["std"] }
-js-sys = "0.3.55"
-once_cell = { version = "1.8.0", optional = true }
-paste = "1.0.6"
-smallvec = "1.7.0"
+indexmap = { version = "1.8.0", features = ["std"] }
+js-sys = "0.3.56"
+once_cell = { version = "1.9.0", optional = true }
 sycamore-macro = { path = "../sycamore-macro", version = "0.7.1" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.7.1" }
-wasm-bindgen = "0.2.78"
-wasm-bindgen-futures = { version = "0.4.28", optional = true }
+wasm-bindgen = "0.2.79"
+wasm-bindgen-futures = { version = "0.4.29", optional = true }
+paste = "1.0.6"
 
 [dependencies.lexical]
 version = "6.0.1"
@@ -33,27 +31,27 @@ features = ["write-integers", "write-floats", "compact"]
 
 [dependencies.web-sys]
 features = [
-  "console",
-  "Comment",
-  "Document",
-  "DocumentFragment",
-  "DomTokenList",
-  "Element",
-  "Event",
-  "HtmlElement",
-  "HtmlInputElement",
-  "HtmlCollection",
-  "Node",
-  "NodeList",
-  "Text",
-  "Window",
+    "console",
+    "Comment",
+    "Document",
+    "DocumentFragment",
+    "DomTokenList",
+    "Element",
+    "Event",
+    "HtmlElement",
+    "HtmlInputElement",
+    "HtmlCollection",
+    "Node",
+    "NodeList",
+    "Text",
+    "Window",
 ]
-version = "0.3.55"
+version = "0.3.56"
 
 [dev-dependencies]
-criterion = { version = "0.3.5", features = ["html_reports"] }
-expect-test = "1.1.0"
-wasm-bindgen-test = "0.3.28"
+criterion = "0.3.5"
+expect-test = "1.2.2"
+wasm-bindgen-test = "0.3.29"
 
 [features]
 default = ["dom", "wasm-bindgen-interning"]
@@ -69,10 +67,6 @@ wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 [[bench]]
 harness = false
 name = "reactivity"
-
-[[bench]]
-harness = false
-name = "ssr"
 
 [[test]]
 name = "ssr"
