@@ -13,6 +13,7 @@ use crate::reactive::*;
 use crate::utils::render::insert;
 use crate::view::View;
 
+#[allow(clippy::unused_unit)] // TODO: wasm-bindgen bug
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(extends = Node)]
