@@ -70,8 +70,11 @@ impl<'a> Scope<'a> {
     /// # });
     /// ```
     pub fn create_effect(&self, f: impl FnMut() + 'a) {
-        let f = Rc::new(RefCell::new(f));
+        self._create_effect(Box::new(f))
+    }
 
+    /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
+    fn _create_effect(&self, mut f: Box<dyn FnMut() + 'a>) {
         let effect = Rc::new(RefCell::new(None::<EffectState<'a>>));
         let cb = Rc::new(RefCell::new({
             let effect = Rc::downgrade(&effect);
@@ -95,7 +98,7 @@ impl<'a> Scope<'a> {
                         .borrow_mut()
                         .push(ptr as *mut () as *mut EffectState<'static>);
                     // Now we can call the user-provided function.
-                    f.borrow_mut()();
+                    f();
                     // Pop the effect from the effect stack.
                     effects.borrow_mut().pop().unwrap();
 
@@ -107,7 +110,8 @@ impl<'a> Scope<'a> {
                     // we need to add backlinks from the signal to the effect, so that
                     // updating the signal will trigger the effect.
                     for emitter in &boxed.dependencies {
-                        // SAFETY: TODO
+                        // SAFETY: When the effect is destroyed or when the emitter is dropped, this
+                        // link will be destroyed to prevent dangling references.
                         emitter
                             .0
                             .subscribe(unsafe { std::mem::transmute(Rc::downgrade(&boxed.cb)) });
