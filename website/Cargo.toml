@@ -1,8 +1,7 @@
 [package]
-authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
-edition = "2018"
 name = "website"
 version = "0.1.0"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,8 +10,7 @@ console_error_panic_hook = "0.1.7"
 console_log = "0.2.0"
 js-sys = "0.3.55"
 log = "0.4.14"
-pulldown-cmark = "0.8.0"
-reqwasm = "0.2.1"
+reqwasm = "0.4.0"
 serde-lite = { version = "0.2.0", features = ["derive"] }
 serde_json = "1.0.71"
 sycamore = { path = "../packages/sycamore", features = ["futures"] }

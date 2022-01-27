@@ -18,8 +18,8 @@ pub struct SidebarData {
     sections: Vec<SidebarSection>,
 }
 
-#[component(Sidebar<G>)]
-pub fn sidebar((version, data): (String, SidebarData)) -> View<G> {
+#[component]
+pub fn Sidebar<G: Html>(ctx: ScopeRef, (version, data): (String, SidebarData)) -> View<G> {
     let sections = data
         .sections
         .into_iter()
@@ -27,7 +27,7 @@ pub fn sidebar((version, data): (String, SidebarData)) -> View<G> {
             let pages = items
                 .into_iter()
                 .map(|SidebarItem { name, href }| {
-                    view! {
+                    view! { ctx,
                         li {
                             a(
                                 href=format!("../{}", href),
@@ -41,7 +41,7 @@ pub fn sidebar((version, data): (String, SidebarData)) -> View<G> {
                 .collect();
 
             let pages = View::new_fragment(pages);
-            view! {
+            view! { ctx,
                 li {
                     h1(class="text-lg font-bold py-1 pl-2") {
                         (title)
@@ -55,7 +55,7 @@ pub fn sidebar((version, data): (String, SidebarData)) -> View<G> {
         .collect();
 
     let sections = View::new_fragment(sections);
-    view! {
+    view! { ctx,
         ul {
             li {
                 a(

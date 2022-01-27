@@ -8,15 +8,33 @@ impl<'a> Scope<'a> {
     ///
     /// The context can also be accessed in the same scope in which it is provided.
     ///
+    /// This method is simply a wrapper around [`create_ref`](Self::create_ref) and
+    /// [`provide_context_ref`](Self::provide_context_ref).
+    ///
     /// # Panics
     /// This method panics if a context with the same type exists already in this scope.
     /// Note that if a context with the same type exists in a parent scope, the new context will
     /// shadow the old context.
     pub fn provide_context<T: 'static>(&'a self, value: T) {
+        let value = self.create_ref(value);
+        self.provide_context_ref(value);
+    }
+
+    /// Provides a context in the current [`Scope`]. The context can later be accessed by using
+    /// [`use_context`](Self::use_context) lower in the scope hierarchy.
+    ///
+    /// The context can also be accessed in the same scope in which it is provided.
+    ///
+    /// Unlike [`provide_context`](Self::provide_context), this method accepts a reference that
+    /// lives at least as long as the scope.
+    ///
+    /// # Panics
+    /// This method panics if a context with the same type exists already in this scope.
+    /// Note that if a context with the same type exists in a parent scope, the new context will
+    /// shadow the old context.
+    pub fn provide_context_ref<T: 'static>(&'a self, value: &'a T) {
         let type_id = TypeId::of::<T>();
-        let boxed = Box::new(value);
-        let ptr = Box::into_raw(boxed);
-        if self.contexts.borrow_mut().insert(type_id, ptr).is_some() {
+        if self.contexts.borrow_mut().insert(type_id, value).is_some() {
             panic!("existing context with type exists already");
         }
     }
@@ -28,11 +46,6 @@ impl<'a> Scope<'a> {
         let mut this = Some(self);
         while let Some(current) = this {
             if let Some(value) = current.contexts.borrow_mut().get(&type_id) {
-                // SAFETY: value lives at least as long as 'a:
-                // - Lifetime of value is 'a if it is allocated on the current scope.
-                // - Lifetime of value is longer than 'a if it is allocated on a parent scope.
-                // - 'a is variant because it is an immutable reference.
-                let value = unsafe { &**value };
                 let value = value.downcast_ref::<T>().unwrap();
                 return Some(value);
             } else {

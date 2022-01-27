@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
 use syn::punctuated::Punctuated;
-use syn::{Expr, Ident, LitStr, Token};
+use syn::{Expr, Ident, LitStr, Token, Path};
 
 pub struct ViewRoot(pub Vec<ViewNode>);
 
@@ -130,12 +130,12 @@ pub enum Component {
 }
 
 pub struct FnLikeComponent {
-    pub ident: Ident,
+    pub ident: Path,
     pub args: Punctuated<Expr, Token![,]>,
 }
 
 pub struct ElementLikeComponent {
-    pub ident: Ident,
+    pub ident: Path,
     pub props: Vec<(Ident, Expr)>,
     pub children: Option<ViewRoot>,
 }

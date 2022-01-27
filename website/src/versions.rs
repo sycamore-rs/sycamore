@@ -24,12 +24,13 @@ const VERSIONS: &[(&str, VersionedDocsLink)] = &[
     ("v0.5.0-beta.0", VersionedDocsLink::None),
 ];
 
-#[component(VersionedDocsLinkView<G>)]
-fn versioned_docs_link_view(
+#[component]
+fn VersionedDocsLink<G: Html>(
+    ctx: ScopeRef,
     (name, versioned_docs_link): (&'static str, &'static VersionedDocsLink),
 ) -> View<G> {
     match versioned_docs_link {
-        VersionedDocsLink::Some(link) => view! {
+        VersionedDocsLink::Some(link) => view! { ctx,
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("/docs/{}/getting_started/installation", link),
@@ -43,7 +44,7 @@ fn versioned_docs_link_view(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::None => view! {
+        VersionedDocsLink::None => view! { ctx,
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("https://docs.rs/sycamore/{}", &name[1..]),
@@ -53,7 +54,7 @@ fn versioned_docs_link_view(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::Next => view! {
+        VersionedDocsLink::Next => view! { ctx,
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href="/docs/getting_started/installation",
@@ -67,8 +68,8 @@ fn versioned_docs_link_view(
     }
 }
 
-#[component(Versions<G>)]
-pub fn versions() -> View<G> {
+#[component]
+pub fn Versions<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -78,11 +79,11 @@ pub fn versions() -> View<G> {
     let versions = VERSIONS
         .iter()
         .map(|(name, versioned_docs_link)| {
-            view! {
+            view! { ctx,
                 li {
                     h2(class="text-2xl font-light") { (name) }
                     div(class="flex flex-col divide-y dark:divide-gray-500 text-gray-600 dark:text-gray-300") {
-                        VersionedDocsLinkView((name, versioned_docs_link))
+                        VersionedDocsLink((name, versioned_docs_link))
                     }
                 }
             }
@@ -90,7 +91,7 @@ pub fn versions() -> View<G> {
         .collect();
     let versions = View::new_fragment(versions);
 
-    view! {
+    view! { ctx,
         div(class="container mx-auto") {
             h1(class="text-4xl font-bold") { "Versions" }
             ul(class="mt-5 ml-2 flex flex-col space-y-4") {

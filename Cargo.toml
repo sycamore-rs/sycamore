@@ -22,5 +22,5 @@ members = [
 
   # Website
   "docs",
-  # "website",
+  "website",
 ]

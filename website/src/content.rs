@@ -17,24 +17,24 @@ pub struct Outline {
     children: Vec<Outline>,
 }
 
-#[component(OutlineView<G>)]
-pub fn outline_view(outline: Vec<Outline>) -> View<G> {
+#[component]
+pub fn OutlineView<G: Html>(ctx: ScopeRef, outline: Vec<Outline>) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
         .unwrap()
         .set_title("Sycamore"); // TODO: get title from markdown file
 
-    view! {
+    view! { ctx,
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
-            Indexed(IndexedProps {
-                iterable: Signal::new(outline).handle(),
-                template: |item| {
+            Indexed {
+                iterable: ctx.create_signal(outline),
+                view: |ctx, item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
                         let name = x.name.clone();
                         let href = format!("#{}", x.name.trim().to_lowercase().replace(" ", "-"));
-                        view! {
+                        view! { ctx,
                             li {
                                 a(
                                     class="hover:text-yellow-400 mb-1 inline-block transition-colors",
@@ -49,7 +49,7 @@ pub fn outline_view(outline: Vec<Outline>) -> View<G> {
 
                     let href = format!("#{}", name.trim().to_lowercase().replace(" ", "-"));
 
-                    view! {
+                    view! { ctx,
                         li {
                             a(
                                 class="hover:text-yellow-400 mb-1 inline-block transition-colors",
@@ -63,7 +63,7 @@ pub fn outline_view(outline: Vec<Outline>) -> View<G> {
                         }
                     }
                 }
-            })
+            }
         }
     }
 }
@@ -73,21 +73,23 @@ pub struct ContentProps {
     pub sidebar: Option<(String, SidebarData)>,
 }
 
-#[component(Content<G>)]
-pub fn content(
+// #[component]
+pub fn Content<G: Html>(
+    ctx: ScopeRef,
     ContentProps {
         data: MarkdownPage { html, outline },
         sidebar,
     }: ContentProps,
 ) -> View<G> {
+    let sidebar = ctx.create_ref(sidebar);
     let show_sidebar = sidebar.is_some();
 
     let sidebar_version = sidebar.as_ref().map(|x| x.0.clone());
 
-    view! {
+    view! { ctx,
         div(class="flex w-full") {
             (if show_sidebar {
-                view! {
+                view! { ctx,
                     div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
                         div(class="p-3"){
                             crate::sidebar::Sidebar(sidebar.clone().unwrap())
@@ -95,7 +97,7 @@ pub fn content(
                     }
                 }
             } else {
-                view! {}
+                view! { ctx, }
             })
             div(class="flex-1 overflow-hidden max-w-screen-xl mx-auto") {
                 div(
@@ -103,7 +105,7 @@ pub fn content(
                     if show_sidebar { "" } else { "container mx-auto lg:ml-auto lg:pr-48" }),
                 ) {
                     (if sidebar_version.as_deref() == Some(crate::NEXT_VERSION) {
-                        view! {
+                        view! { ctx,
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is unreleased documentation for Sycamore next version." }
                                 p {
@@ -116,7 +118,7 @@ pub fn content(
                             }
                         }
                     } else if sidebar_version.is_some() && sidebar_version.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
-                        view! {
+                        view! { ctx,
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is outdated documentation for Sycamore." }
                                 p {
@@ -130,7 +132,7 @@ pub fn content(
                             }
                         }
                     } else {
-                        view! {}
+                        view! { ctx, }
                     })
                     div(dangerously_set_inner_html=&html)
                 }

@@ -142,29 +142,31 @@ fn base_pathname() -> String {
 
 /// Props for [`Router`].
 #[derive(Prop)]
-pub struct RouterProps<'a, R, F, G>
+pub struct RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
     F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration,
     G: GenericNode,
 {
     view: F,
-    integration: Box<dyn Integration>,
+    integration: I,
     #[builder(default, setter(skip))]
     _phantom: PhantomData<&'a (R, G)>,
 }
 
-impl<'a, R, F, G> RouterProps<'a, R, F, G>
+impl<'a, R, F, I, G> RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
     F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration,
     G: GenericNode,
 {
     /// Create a new [`RouterProps`].
-    pub fn new(integration: impl Integration + 'static, render: F) -> Self {
+    pub fn new(integration: I, view: F) -> Self {
         Self {
-            view: render,
-            integration: Box::new(integration),
+            view,
+            integration,
             _phantom: PhantomData,
         }
     }
@@ -173,10 +175,14 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<'a, G: Html, R, F>(ctx: ScopeRef<'a>, props: RouterProps<'a, R, F, G>) -> View<G>
+pub fn Router<'a, G: Html, R, F, I>(
+    ctx: ScopeRef<'a>,
+    props: RouterProps<'a, R, F, I, G>,
+) -> View<G>
 where
     R: Route + 'a,
     F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration + 'static,
 {
     let RouterProps {
         view,

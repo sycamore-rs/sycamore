@@ -1,14 +1,14 @@
 use sycamore::prelude::*;
 
-#[component(Index<G>)]
-pub fn index() -> View<G> {
+#[component]
+pub fn Index<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
         .unwrap()
         .set_title("Sycamore");
 
-    view! {
+    view! { ctx,
         div(class="pb-10 mx-4") {
             div(class="flex flex-col items-center w-full mb-10") {
                 h1(class="text-5xl font-bold mt-20 mb-5") {

@@ -56,7 +56,7 @@ pub struct Scope<'a> {
     /// See the [`mod@context`] module.
     ///
     /// The raw pointer is owned by this field.
-    contexts: RefCell<HashMap<TypeId, *mut (dyn Any)>>,
+    contexts: RefCell<HashMap<TypeId, &'a dyn Any>>,
     /// A pointer to the parent scope.
     /// # Safety
     /// The parent scope does not actually have the right lifetime.
@@ -347,11 +347,6 @@ impl<'a> Scope<'a> {
                 cb();
             }
         });
-        // Cleanup context values.
-        for &i in self.contexts.take().values() {
-            // SAFETY: These pointers were allocated in Self::provide_context.
-            drop(Box::from_raw(i));
-        }
         // Cleanup signals and refs allocated on the arena.
         self.arena.dispose();
     }
