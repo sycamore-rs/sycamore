@@ -148,8 +148,9 @@ where
     F: FnOnce(RcSignal<R>) -> View<G>,
     G: GenericNode,
 {
-    render: F,
+    view: F,
     integration: Box<dyn Integration>,
+    #[builder(default, setter(skip))]
     _phantom: PhantomData<*const (R, G)>,
 }
 
@@ -162,7 +163,7 @@ where
     /// Create a new [`RouterProps`].
     pub fn new(integration: impl Integration + 'static, render: F) -> Self {
         Self {
-            render,
+            view: render,
             integration: Box::new(integration),
             _phantom: PhantomData,
         }
@@ -178,11 +179,11 @@ where
     F: FnOnce(RcSignal<R>) -> View<G> + 'static,
 {
     let RouterProps {
-        render,
+        view,
         integration,
         _phantom,
     } = props;
-    let render = Rc::new(RefCell::new(Some(render)));
+    let view = Rc::new(RefCell::new(Some(view)));
     let integration = Rc::new(integration);
     let base_pathname = base_pathname();
 
@@ -241,7 +242,7 @@ where
         }
     });
     // Delegate click events from child <a> tags.
-    let tmp = render.take().unwrap_throw()(route_signal.borrow().clone().unwrap_throw());
+    let tmp = view.take().unwrap_throw()(route_signal.borrow().clone().unwrap_throw());
     if let Some(node) = tmp.as_node() {
         node.event(ctx, "click", integration.click_handler());
     } else {
@@ -259,7 +260,7 @@ where
     F: Fn(R) -> View<G> + 'a,
     G: GenericNode,
 {
-    render: F,
+    view: F,
     route: R,
     #[builder(default, setter(skip))]
     _phantom: PhantomData<&'a (R, G)>,
@@ -274,7 +275,7 @@ where
     /// Create a new [`StaticRouterProps`].
     pub fn new(route: R, render: F) -> Self {
         Self {
-            render,
+            view: render,
             route,
             _phantom: PhantomData,
         }
@@ -295,12 +296,12 @@ where
     F: Fn(R) -> View<G> + 'a,
 {
     let StaticRouterProps {
-        render,
+        view,
         route,
         _phantom,
     } = props;
 
-    render(route)
+    view(route)
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -394,7 +395,7 @@ mod tests {
             view! { ctx,
                 StaticRouter {
                     route: route,
-                    render: move |route: Routes| {
+                    view: move |route: Routes| {
                         match route {
                             Routes::Home => view! { ctx,
                                 "Home"
