@@ -68,6 +68,11 @@ wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 harness = false
 name = "reactivity"
 
+[[bench]]
+harness = false
+name = "ssr"
+required-features = ["ssr"]
+
 [[test]]
 name = "ssr"
 required-features = ["ssr"]
