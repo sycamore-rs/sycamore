@@ -93,10 +93,10 @@ fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View
                         view! { ctx,
                             content::Content {
                                 data: data.clone(),
-                                sidebar: Some((
+                                sidebar: (
                                     "next".to_string(),
                                     cached_sidebar_data.1.clone(),
-                                )),
+                                ),
                             }
                         }
                     } else {
@@ -108,17 +108,19 @@ fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View
             }
         }
         Routes::VersionedDocs(version, a, b) => {
+            let version = version.clone();
             let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
             view! { ctx,
                 (if let Some(data) = data.get().as_ref() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+                        let version = version.clone();
                         view! { ctx,
                             content::Content {
                                 data: data.clone(),
-                                sidebar: Some((
-                                    "next".to_string(),
+                                sidebar: (
+                                    version,
                                     cached_sidebar_data.1.clone(),
-                                )),
+                                ),
                             }
                         }
                     } else {
@@ -139,7 +141,6 @@ fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View
                     view! { ctx,
                         content::Content {
                             data: data.clone(),
-                            sidebar: None,
                         }
                     }
                 } else {

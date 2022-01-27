@@ -44,7 +44,7 @@ impl Prop for () {
 /// Get the builder for the component function.
 #[doc(hidden)]
 pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
-    _f: &impl Fn(ScopeRef<'a>, T) -> View<G>,
+    _f: &impl FnOnce(ScopeRef<'a>, T) -> View<G>,
 ) -> T::Builder {
     T::builder()
 }
