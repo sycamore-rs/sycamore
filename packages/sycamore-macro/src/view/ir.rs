@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
 use syn::punctuated::Punctuated;
-use syn::{Expr, Ident, LitStr, Token, Path};
+use syn::{Expr, Ident, LitStr, Path, Token};
 
 pub struct ViewRoot(pub Vec<ViewNode>);
 

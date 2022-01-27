@@ -68,12 +68,13 @@ pub fn OutlineView<G: Html>(ctx: ScopeRef, outline: Vec<Outline>) -> View<G> {
     }
 }
 
+#[derive(Prop)]
 pub struct ContentProps {
     pub data: MarkdownPage,
     pub sidebar: Option<(String, SidebarData)>,
 }
 
-// #[component]
+#[component]
 pub fn Content<G: Html>(
     ctx: ScopeRef,
     ContentProps {
@@ -101,8 +102,8 @@ pub fn Content<G: Html>(
             })
             div(class="flex-1 overflow-hidden max-w-screen-xl mx-auto") {
                 div(
-                    class=format!("content min-w-0 px-4 mb-2 sm:ml-44 lg:mr-44 {}",
-                    if show_sidebar { "" } else { "container mx-auto lg:ml-auto lg:pr-48" }),
+                    class=format!("content min-w-0 px-4 mb-2 lg:mr-44 {}",
+                    if show_sidebar { "sm:ml-44" } else { "container mx-auto lg:ml-auto lg:pr-48" }),
                 ) {
                     (if sidebar_version.as_deref() == Some(crate::NEXT_VERSION) {
                         view! { ctx,

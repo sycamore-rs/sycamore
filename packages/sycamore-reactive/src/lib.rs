@@ -389,10 +389,10 @@ impl Drop for Scope<'_> {
 /// state.set(1); // Prints "State changed. New state value = 1"
 /// # });
 /// ```
-pub fn on<'a, const N: usize>(
+pub fn on<'a, U, const N: usize>(
     dependencies: [&'a (dyn AnyReadSignal<'a> + 'a); N],
-    mut f: impl FnMut() + 'a,
-) -> impl FnMut() + 'a {
+    mut f: impl FnMut() -> U + 'a,
+) -> impl FnMut() -> U + 'a {
     move || {
         for i in dependencies {
             i.track();

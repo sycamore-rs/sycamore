@@ -9,9 +9,9 @@ use content::MarkdownPage;
 use reqwasm::http::Request;
 use serde_lite::Deserialize;
 use sidebar::SidebarData;
+use sycamore::futures::{spawn_local, ScopeFuturesExt};
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router};
-
 const LATEST_MAJOR_VERSION: &str = "v0.7";
 const NEXT_VERSION: &str = "next";
 
@@ -62,86 +62,105 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
 }
 
 fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
-    let cached_sidebar_data: &Signal<Option<(Option<String>, SidebarData)>> =
-        ctx.create_signal(None);
+    let cached_sidebar_data =
+        ctx.create_ref(create_rc_signal(None::<(Option<String>, SidebarData)>));
     ctx.provide_context_ref(cached_sidebar_data);
+
+    let fetch_docs_data = |url| {
+        let data = ctx.create_resource(docs_preload(url));
+        if cached_sidebar_data.get().is_none()
+            || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None
+        {
+            // Update sidebar
+            let cached_sidebar_data = cached_sidebar_data.clone();
+            spawn_local(async move {
+                cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
+            });
+        }
+        data
+    };
+    let view = ctx.create_memo(on([route], move || match route.get().as_ref() {
+        Routes::Index => view! { ctx,
+            div(class="container mx-auto") {
+                index::Index {}
+            }
+        },
+        Routes::Docs(a, b) => {
+            let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
+            view! { ctx,
+                (if let Some(data) = data.get().as_ref() {
+                    if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+                        view! { ctx,
+                            content::Content {
+                                data: data.clone(),
+                                sidebar: Some((
+                                    "next".to_string(),
+                                    cached_sidebar_data.1.clone(),
+                                )),
+                            }
+                        }
+                    } else {
+                        view! { ctx, }
+                    }
+                } else {
+                    view! { ctx, }
+                })
+            }
+        }
+        Routes::VersionedDocs(version, a, b) => {
+            let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
+            view! { ctx,
+                (if let Some(data) = data.get().as_ref() {
+                    if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+                        view! { ctx,
+                            content::Content {
+                                data: data.clone(),
+                                sidebar: Some((
+                                    "next".to_string(),
+                                    cached_sidebar_data.1.clone(),
+                                )),
+                            }
+                        }
+                    } else {
+                        view! { ctx, }
+                    }
+                } else {
+                    view! { ctx, }
+                })
+            }
+        }
+        Routes::NewsIndex => view! { ctx,
+            news_index::NewsIndex {}
+        },
+        Routes::Post(name) => {
+            let data = ctx.create_resource(docs_preload(format!("/static/posts/{}.json", name)));
+            view! { ctx,
+                (if let Some(data) = data.get().as_ref() {
+                    view! { ctx,
+                        content::Content {
+                            data: data.clone(),
+                            sidebar: None,
+                        }
+                    }
+                } else {
+                    view! { ctx, }
+                })
+            }
+        }
+        Routes::Versions => view! { ctx,
+            versions::Versions {}
+        },
+        Routes::NotFound => view! { ctx,
+            "404 Not Found"
+        },
+    }));
+
     view! { ctx,
         div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors"
         ) {
             header::Header {}
-            // (match route.get().as_ref() {
-            //     Routes::Index => view! { ctx,
-            //         div(class="container mx-auto") {
-            //             index::Index {}
-            //         }
-            //     },
-            //     Routes::Docs(a, b) => {
-            //         let data = docs_preload(format!("/static/docs/{}/{}.json", a, b)).await;
-            //         if cached_sidebar_data.get().is_none()
-            //             || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None
-            //         {
-            //             // Update sidebar
-            //             cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
-            //         }
-            //         view! { ctx,
-            //             content::Content(content::ContentProps {
-            //                 data,
-            //                 sidebar: Some((
-            //                     "next".to_string(),
-            //                     cached_sidebar_data.get().as_ref().as_ref().unwrap().1.clone(),
-            //                 )),
-            //             })
-            //         }
-            //     }
-            //     Routes::VersionedDocs(version, a, b) => {
-            //         let data =
-            //             docs_preload(format!("/static/docs/{}/{}/{}.json", version, a, b)).await;
-            //         if cached_sidebar_data.get().is_none()
-            //             || cached_sidebar_data
-            //                 .get()
-            //                 .as_ref()
-            //                 .as_ref()
-            //                 .unwrap()
-            //                 .0
-            //                 .as_deref()
-            //                 != Some(version)
-            //         {
-            //             // Update sidebar
-            //             cached_sidebar_data.set(Some((
-            //                 Some(version.clone()),
-            //                 get_sidebar(Some(version)).await,
-            //             )));
-            //         }
-            //         view! { ctx,
-            //             content::Content(content::ContentProps {
-            //                 data,
-            //                 sidebar: Some((
-            //                     version.clone(),
-            //                     cached_sidebar_data.get().as_ref().as_ref().unwrap().1.clone(),
-            //                 )),
-            //             })
-            //         }
-            //     }
-            //     Routes::NewsIndex => view! { ctx,
-            //         news_index::NewsIndex {}
-            //     },
-            //     Routes::Post(name) => {
-            //         let data = docs_preload(format!("/static/posts/{}.json", name)).await;
-            //         view! { ctx,
-            //             content::Content(content::ContentProps {
-            //                 data,
-            //                 sidebar: None,
-            //             })
-            //         }
-            //     }
-            //     Routes::Versions => view! { ctx,
-            //         versions::Versions {}
-            //     },
-            //     Routes::NotFound => view! { ctx,
-            //         "404 Not Found"
-            //     },
-            // })
+            ((*view.get()).clone())
         }
     }
 }

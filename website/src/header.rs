@@ -79,7 +79,7 @@ pub fn HamburgerMenu<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
 
     let is_open = ctx.create_signal(false);
     let toggle = |_| is_open.set(!*is_open.get());
-    let sidebar = ctx.use_context::<Signal<Option<(Option<String>, SidebarData)>>>();
+    let sidebar = ctx.use_context::<RcSignal<Option<(Option<String>, SidebarData)>>>();
 
     view! { ctx,
         // Menu navbar, hamburger button.

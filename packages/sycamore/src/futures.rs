@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use wasm_bindgen_futures::spawn_local;
+pub use wasm_bindgen_futures::*;
 
 use crate::prelude::*;
 
