@@ -142,22 +142,22 @@ fn base_pathname() -> String {
 
 /// Props for [`Router`].
 #[derive(Prop)]
-pub struct RouterProps<R, F, G>
+pub struct RouterProps<'a, R, F, G>
 where
-    R: Route + 'static,
-    F: FnOnce(RcSignal<R>) -> View<G>,
+    R: Route + 'a,
+    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     view: F,
     integration: Box<dyn Integration>,
     #[builder(default, setter(skip))]
-    _phantom: PhantomData<*const (R, G)>,
+    _phantom: PhantomData<&'a (R, G)>,
 }
 
-impl<R, F, G> RouterProps<R, F, G>
+impl<'a, R, F, G> RouterProps<'a, R, F, G>
 where
-    R: Route + 'static,
-    F: FnOnce(RcSignal<R>) -> View<G>,
+    R: Route + 'a,
+    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     /// Create a new [`RouterProps`].
@@ -173,10 +173,10 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<G: Html, R, F>(ctx: ScopeRef, props: RouterProps<R, F, G>) -> View<G>
+pub fn Router<'a, G: Html, R, F>(ctx: ScopeRef<'a>, props: RouterProps<'a, R, F, G>) -> View<G>
 where
-    R: Route + 'static,
-    F: FnOnce(RcSignal<R>) -> View<G> + 'static,
+    R: Route + 'a,
+    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
     let RouterProps {
         view,
@@ -222,27 +222,17 @@ where
             .map(|s| s.to_string())
             .collect::<Vec<_>>()
     });
-
-    let route_signal: Rc<RefCell<Option<RcSignal<R>>>> = Rc::new(RefCell::new(None));
-    ctx.create_effect({
-        let route_signal = route_signal.clone();
-        move || {
-            let path = path.get();
-            let route = R::match_route(
-                path.iter()
-                    .map(|s| s.as_str())
-                    .collect::<Vec<_>>()
-                    .as_slice(),
-            );
-            if route_signal.borrow().is_some() {
-                route_signal.borrow().as_ref().unwrap_throw().set(route);
-            } else {
-                *route_signal.borrow_mut() = Some(create_rc_signal(route));
-            }
-        }
+    let route_signal = ctx.create_memo(move || {
+        R::match_route(
+            path.get()
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .as_slice(),
+        )
     });
     // Delegate click events from child <a> tags.
-    let tmp = view.take().unwrap_throw()(route_signal.borrow().clone().unwrap_throw());
+    let tmp = view.take().unwrap_throw()(ctx, route_signal);
     if let Some(node) = tmp.as_node() {
         node.event(ctx, "click", integration.click_handler());
     } else {
@@ -256,8 +246,8 @@ where
 #[derive(Prop)]
 pub struct StaticRouterProps<'a, R, F, G>
 where
-    R: Route,
-    F: Fn(R) -> View<G> + 'a,
+    R: Route + 'a,
+    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     view: F,
@@ -269,7 +259,7 @@ where
 impl<'a, R, F, G> StaticRouterProps<'a, R, F, G>
 where
     R: Route,
-    F: Fn(R) -> View<G>,
+    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     /// Create a new [`StaticRouterProps`].
@@ -288,12 +278,12 @@ where
 /// the route preload to finish loading.
 #[component]
 pub fn StaticRouter<'a, G: Html, R, F>(
-    _ctx: ScopeRef<'a>,
+    ctx: ScopeRef<'a>,
     props: StaticRouterProps<'a, R, F, G>,
 ) -> View<G>
 where
     R: Route + 'static,
-    F: Fn(R) -> View<G> + 'a,
+    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
     let StaticRouterProps {
         view,
@@ -301,7 +291,7 @@ where
         _phantom,
     } = props;
 
-    view(route)
+    view(ctx, ctx.create_signal(route))
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -395,8 +385,8 @@ mod tests {
             view! { ctx,
                 StaticRouter {
                     route: route,
-                    view: move |route: Routes| {
-                        match route {
+                    view: |ctx, route: &ReadSignal<Routes>| {
+                        match route.get().as_ref() {
                             Routes::Home => view! { ctx,
                                 "Home"
                             },
