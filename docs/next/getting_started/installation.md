@@ -16,7 +16,7 @@ rustup target add wasm32-unknown-unknown
 
 ### Minimum Supported Rust Version (MSRV)
 
-The minimum supported Rust toolchain is `v1.53.0`. Sycamore is not guaranteed to compile on an older
+The minimum supported Rust toolchain is `v1.57.0`. Sycamore is not guaranteed to compile on an older
 version of Rust.
 
 ## Install Trunk
