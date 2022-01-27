@@ -1,42 +1,36 @@
-error: expected a valid node
- --> tests/view/element-fail.rs:5:40
-  |
-5 |         let _: View<G> = view! { ctx, p.my-class#id };
-  |                                        ^
-
 error: expected `=`
- --> tests/view/element-fail.rs:7:54
+ --> tests/view/element-fail.rs:5:54
   |
-7 |         let _: View<G> = view! { ctx, button(disabled) };
+5 |         let _: View<G> = view! { ctx, button(disabled) };
   |                                                      ^
 
 error: expected `=`
- --> tests/view/element-fail.rs:8:54
+ --> tests/view/element-fail.rs:6:54
   |
-8 |         let _: View<G> = view! { ctx, button(on:click) };
+6 |         let _: View<G> = view! { ctx, button(on:click) };
   |                                                      ^
 
 error: unknown directive `unknown`
- --> tests/view/element-fail.rs:9:46
+ --> tests/view/element-fail.rs:7:46
   |
-9 |         let _: View<G> = view! { ctx, button(unknown:directive="123") };
+7 |         let _: View<G> = view! { ctx, button(unknown:directive="123") };
   |                                              ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:11:47
-   |
-11 |         let _: View<G> = view! { ctx, button(a.b.c="123") };
-   |                                               ^
+ --> tests/view/element-fail.rs:9:47
+  |
+9 |         let _: View<G> = view! { ctx, button(a.b.c="123") };
+  |                                               ^
 
 error: unexpected end of input, children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:13:26
+  --> tests/view/element-fail.rs:11:26
    |
-13 |           let _: View<G> = view! { ctx,
+11 |           let _: View<G> = view! { ctx,
    |  __________________________^
-14 | |             p(dangerously_set_inner_html="<span>Test</span>") {
-15 | |                 "Error"
-16 | |             }
-17 | |         };
+12 | |             p(dangerously_set_inner_html="<span>Test</span>") {
+13 | |                 "Error"
+14 | |             }
+15 | |         };
    | |_________^
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
