@@ -137,6 +137,7 @@ pub struct FnLikeComponent {
 pub struct ElementLikeComponent {
     pub ident: Ident,
     pub props: Vec<(Ident, Expr)>,
+    pub children: Option<ViewRoot>,
 }
 
 pub struct Text {

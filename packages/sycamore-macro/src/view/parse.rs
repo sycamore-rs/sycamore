@@ -207,6 +207,16 @@ impl Parse for Component {
             braced!(content in input);
             let props: Punctuated<FieldValue, Comma> =
                 content.parse_terminated(FieldValue::parse)?;
+            let children = if content.peek(Brace) {
+                // Parse view fragment as children
+                let children;
+                braced!(children in content);
+                Some(ViewRoot::parse(&children)?)
+            } else if ViewNode::peek_type(&content).is_some() {
+                Some(ViewRoot(vec![ViewNode::parse(&content)?]))
+            } else {
+                None
+            };
             Ok(Self::ElementLike(ElementLikeComponent {
                 ident,
                 props: props
@@ -216,6 +226,7 @@ impl Parse for Component {
                         syn::Member::Unnamed(_) => todo!("implement error handling"),
                     })
                     .collect(),
+                children,
             }))
         } else {
             Err(input.error("expected either `(` or `{`"))

@@ -449,12 +449,24 @@ impl Codegen {
                 }
             }
             Component::ElementLike(comp) => {
-                let ElementLikeComponent { ident, props } = comp;
+                let ElementLikeComponent {
+                    ident,
+                    props,
+                    children,
+                } = comp;
                 let mut props_quoted = quote! {
                     ::sycamore::component::element_like_component_builder(__component)
                 };
                 for (field, expr) in props {
                     props_quoted.extend(quote! { .#field(#expr) });
+                }
+                if let Some(children) = children {
+                    let view_root = self.view_root(children);
+                    props_quoted.extend(quote! {
+                        .children(
+                            <::sycamore::component::Children as ::std::convert::From>::from(move |__ctx| #view_root)
+                        )
+                    });
                 }
                 props_quoted.extend(quote! { .build() });
 

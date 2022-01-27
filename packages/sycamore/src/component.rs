@@ -30,14 +30,14 @@ pub trait Prop {
 
 /// A builder for `()`.
 #[doc(hidden)]
-pub struct EmptyBuilder;
-impl EmptyBuilder {
+pub struct UnitBuilder;
+impl UnitBuilder {
     pub fn build(self) {}
 }
 impl Prop for () {
-    type Builder = EmptyBuilder;
+    type Builder = UnitBuilder;
     fn builder() -> Self::Builder {
-        EmptyBuilder
+        UnitBuilder
     }
 }
 
@@ -47,4 +47,30 @@ pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
     _f: &impl Fn(ScopeRef<'a>, T) -> View<G>,
 ) -> T::Builder {
     T::builder()
+}
+
+/// Component children.
+pub struct Children<'a, G: GenericNode> {
+    f: Box<dyn FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a>,
+}
+
+impl<'a, F, G: GenericNode> From<F> for Children<'a, G>
+where
+    F: FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
+{
+    fn from(f: F) -> Self {
+        Self { f: Box::new(f) }
+    }
+}
+
+impl<'a, G: GenericNode> Children<'a, G> {
+    pub fn call(self, ctx: ScopeRef<'a>) -> View<G> {
+        let mut view = None;
+        let _ = ctx.create_child_scope(|ctx| {
+            // SAFETY: `self.f` takes the same parameter as ctx.create_child_scope
+            let tmp = (self.f)(unsafe { std::mem::transmute(ctx) });
+            view = Some(tmp);
+        });
+        view.unwrap()
+    }
 }
