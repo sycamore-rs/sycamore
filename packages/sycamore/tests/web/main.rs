@@ -8,7 +8,7 @@ pub mod cleanup;
 pub mod hydrate;
 pub mod indexed;
 pub mod keyed;
-// pub mod portal;
+pub mod portal;
 pub mod reconcile;
 pub mod render;
 

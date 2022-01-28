@@ -25,8 +25,9 @@ pub trait ScopeMotionExt<'a> {
     /// Schedule a callback to be called on each animation frame.
     /// Does nothing if not on `wasm32` target.
     ///
-    /// Instead of using `start` and `stop` functions, the callback is kept on looping until it returns `false`.
-    /// `start` and `stop` are returned regardless to allow controlling the looping from outside the function.
+    /// Instead of using `start` and `stop` functions, the callback is kept on looping until it
+    /// returns `false`. `start` and `stop` are returned regardless to allow controlling the
+    /// looping from outside the function.
     ///
     /// The raf is not started by default. Call the `start` function to initiate the raf.
     fn create_raf_loop(&'a self, f: impl FnMut() -> bool + 'a) -> RafState<'a>;

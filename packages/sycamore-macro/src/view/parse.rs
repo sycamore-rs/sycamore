@@ -5,7 +5,7 @@ use std::fmt;
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::token::{Brace, Comma, Paren};
+use syn::token::{Brace, Paren};
 use syn::{braced, parenthesized, token, Expr, FieldValue, Ident, LitStr, Result, Token};
 
 use super::ir::*;
@@ -200,13 +200,32 @@ impl Parse for Component {
         let ident = input.parse()?;
         let content;
         if input.peek(Paren) {
+            // Parse fn-like component.
             parenthesized!(content in input);
             let args = content.parse_terminated(Expr::parse)?;
             Ok(Self::FnLike(FnLikeComponent { ident, args }))
         } else if input.peek(Brace) {
+            // Parse element link component.
             braced!(content in input);
-            let props: Punctuated<FieldValue, Comma> =
-                content.parse_terminated(FieldValue::parse)?;
+            let mut props = Punctuated::<FieldValue, Token![,]>::new();
+            while !content.is_empty() {
+                if content.peek(Ident) && content.peek2(Token![:]) && !content.peek3(Token![:]) {
+                    // Parse component prop field.
+                    let field_value = content.parse()?;
+                    let comma_parsed = if content.peek(Token![,]) {
+                        let _comma: Token![,] = content.parse()?;
+                        true
+                    } else {
+                        false
+                    };
+                    if !content.is_empty() && !comma_parsed {
+                        content.parse::<Token![,]>()?; // Emit an error if there is no comma and not eof.
+                    }
+                    props.push(field_value);
+                } else {
+                    break;
+                }
+            }
             let children = if content.peek(Brace) {
                 // Parse view fragment as children
                 let children;
