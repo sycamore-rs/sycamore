@@ -43,6 +43,7 @@ pub mod futures;
 pub mod generic_node;
 pub mod motion;
 pub mod noderef;
+pub mod portal;
 pub mod utils;
 pub mod view;
 
