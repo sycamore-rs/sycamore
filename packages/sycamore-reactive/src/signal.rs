@@ -514,4 +514,28 @@ mod tests {
         });
         assert_eq!(*outer.unwrap().get(), 1);
     }
+
+    #[test]
+    fn signal_display() {
+        create_scope_immediate(|ctx| {
+            let signal = ctx.create_signal(0);
+            assert_eq!(format!("{signal}"), "0");
+            let read_signal: &ReadSignal<_> = signal;
+            assert_eq!(format!("{read_signal}"), "0");
+            let rcsignal = create_rc_signal(0);
+            assert_eq!(format!("{rcsignal}"), "0");
+        });
+    }
+
+    #[test]
+    fn signal_debug() {
+        create_scope_immediate(|ctx| {
+            let signal = ctx.create_signal(0);
+            assert_eq!(format!("{signal:?}"), "Signal(0)");
+            let read_signal: &ReadSignal<_> = signal;
+            assert_eq!(format!("{read_signal:?}"), "ReadSignal(0)");
+            let rcsignal = create_rc_signal(0);
+            assert_eq!(format!("{rcsignal:?}"), "RcSignal(0)");
+        });
+    }
 }
