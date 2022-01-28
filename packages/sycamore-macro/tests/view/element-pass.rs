@@ -3,10 +3,10 @@ use sycamore::prelude::*;
 fn compile_pass<G: GenericNode>() {
     create_scope_immediate(|ctx| {
         let _: View<G> = view! { ctx, p };
-        // let _: View<G> = view! { ctx, custom-element };
+        let _: View<G> = view! { ctx, custom-element };
 
         let _: View<G> = view! { ctx, p() };
-        // let _: View<G> = view! { ctx, custom-element() };
+        let _: View<G> = view! { ctx, custom-element() };
 
         let _: View<G> = view! { ctx, p(class="my-class") };
         let _: View<G> = view! { ctx, p(class="my-class", id="my-id") };

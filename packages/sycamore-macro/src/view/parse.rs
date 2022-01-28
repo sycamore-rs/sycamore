@@ -105,16 +105,23 @@ impl Parse for Element {
 
 impl Parse for ElementTag {
     fn parse(input: ParseStream) -> Result<Self> {
-        if input.peek(Ident::peek_any) {
-            // Builtin element.
-            let ident: Ident = input.call(Ident::parse_any)?;
-            Ok(Self::Builtin(ident))
-        } else if input.peek(LitStr) {
-            // Custom element.
-            let name: LitStr = input.parse()?;
-            Ok(Self::Custom(name.value()))
+        let tag = input.call(Ident::parse_any)?;
+        let mut extended = Vec::<(Token![-], Ident)>::new();
+        while input.peek(Token![-]) {
+            extended.push((input.parse()?, input.parse()?));
+        }
+        if extended.is_empty() {
+            Ok(Self::Builtin(tag))
         } else {
-            Err(input.error("expected an element"))
+            let tag = format!(
+                "{tag}-{extended}",
+                extended = extended
+                    .into_iter()
+                    .map(|x| x.1.to_string())
+                    .collect::<Vec<_>>()
+                    .join("-")
+            );
+            Ok(Self::Custom(tag))
         }
     }
 }
