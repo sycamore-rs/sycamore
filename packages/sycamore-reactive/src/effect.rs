@@ -164,19 +164,24 @@ impl<'a> Scope<'a> {
     {
         let mut disposer: Option<Box<dyn FnOnce()>> = None;
         self.create_effect(move || {
+            // We run the disposer inside the effect, after effect dependencies have been cleared.
+            // This is to make sure that if the effect subscribes to its own signal, there is no
+            // use-after-free during the clear dependencies phase.
             if let Some(disposer) = disposer.take() {
                 disposer();
             }
             // Create a new nested scope and save the disposer.
-
-            // This is a bug with clippy because f cannot be moved out of the closure.
-            #[allow(clippy::redundant_closure)]
-            let new_disposer: Option<Box<dyn FnOnce()>> =
-                Some(Box::new(self.create_child_scope(|ctx| {
+            // SAFETY: The whole point. We want the scope to be tracked so that signals accessed
+            // from within are picked-up by the effect. This is safe because `disposer` is only
+            // called at the beginning of this `create_effect` call after clear dependencies phase
+            // and not before closure returns with new scope.
+            let new_disposer: Option<Box<dyn FnOnce()>> = Some(Box::new(unsafe {
+                self.create_child_scope_tracked(|ctx| {
                     // SAFETY: f takes the same parameter as the argument to
                     // self.create_child_scope(_).
-                    f(unsafe { std::mem::transmute(ctx) })
-                })));
+                    f(std::mem::transmute(ctx))
+                })
+            }));
             // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
             // effect which is necessarily within the lifetime of self (the Scope).
             disposer = unsafe { std::mem::transmute(new_disposer) };
@@ -399,6 +404,20 @@ mod tests {
                 ctx as *const _ as *const (),
                 "the parent should still be `ctx` after effect is re-executed"
             );
+        });
+    }
+
+    #[test]
+    fn effect_scoped_subscribing_to_own_signal() {
+        create_scope_immediate(|ctx| {
+            let trigger = ctx.create_signal(());
+            ctx.create_effect_scoped(|ctx| {
+                trigger.track();
+                let signal = ctx.create_signal(());
+                // Track own signal:
+                signal.track();
+            });
+            trigger.set(());
         });
     }
 }
