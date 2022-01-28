@@ -17,6 +17,7 @@ members = [
   "examples/js-framework-benchmark",
   "examples/hello-world",
   "examples/higher-order-components",
+  "examples/motion",
   "examples/ssr",
   "examples/todomvc",
 
