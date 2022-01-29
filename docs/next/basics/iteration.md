@@ -53,10 +53,10 @@ single node will be re-rendered every time the list changes.
 let count = vec![1, 2];
 
 let views = View::new_fragment(
-    count.iter().map(|&x| view! { li (x) }).collect()
+    count.iter().map(|&x| view! { ctx, li (x) }).collect()
 );
 
-view! {
+view! { ctx,
     ul {
         (views)
     }
