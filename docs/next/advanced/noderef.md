@@ -3,13 +3,13 @@
 Sometimes we want to be able to reference a node in the DOM directly. We can do so by using
 `NodeRef`.
 
-A `NodeRef` can be created by using `NodeRef::new()`. This can be assigned, in turn, to a node using
-the `ref` property in the `view!` macro.
+A `NodeRef` can be created by using `create_node_ref`. This can be assigned, in turn, to a node
+using the `ref` property in the `view!` macro.
 
 ```rust
-let node_ref = NodeRef::new();
+let node_ref = ctx.create_node_ref();
 
-view! {
+view! { ctx,
     p(ref=node_ref) { "Hello World!" }
 }
 ```

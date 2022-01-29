@@ -1,7 +1,8 @@
 use std::time::Duration;
 
+use sycamore::easing;
 use sycamore::motion::ScopeMotionExt;
-use sycamore::{easing, prelude::*};
+use sycamore::prelude::*;
 
 #[component]
 fn CreateRAF<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
