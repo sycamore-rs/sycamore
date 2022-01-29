@@ -10,17 +10,16 @@ identify the item to prevent re-rendering views twice. Every time the list chang
 algorithm is used to determine which items need to be re-rendered according to the associated key.
 
 ```rust
-let count = Signal::new(vec![1, 2]);
-
+let count = ctx.create_signal(vec![1, 2]);
 view! {
     ul {
-        Keyed(KeyedProps {
+        Keyed {
             iterable: count.handle(),
-            template: |x| view! {
+            view: |ctx, x| view! { ctx,
                 li { (x) }
             },
             key: |x| *x,
-        })
+        }
     }
 }
 ```
@@ -31,16 +30,15 @@ The `Indexed` component is used to render a list of items that is keyed by index
 generally preferred over `Indexed` because it is more efficient in most scenarios.
 
 ```rust
-let count = Signal::new(vec![1, 2]);
-
+let count = ctx.create_signal(vec![1, 2]);
 view! {
     ul {
-        Indexed(IndexedProps {
+        Indexed {
             iterable: count.handle(),
-            template: |x| view! {
+            view: |ctx, x| view! { ctx,
                 li { (x) }
             },
-        })
+        }
     }
 }
 ```
