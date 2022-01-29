@@ -10,11 +10,26 @@ use crate::*;
 type WeakEffectCallback = Weak<RefCell<dyn FnMut()>>;
 type EffectCallbackPtr = *const RefCell<dyn FnMut()>;
 
+pub(crate) type SignalEmitterInner = RefCell<IndexMap<EffectCallbackPtr, WeakEffectCallback>>;
+
 /// A struct for managing subscriptions to signals.
-#[derive(Default)]
-pub struct SignalEmitter(RefCell<IndexMap<EffectCallbackPtr, WeakEffectCallback>>);
+#[derive(Default, Clone)]
+pub struct SignalEmitter(pub(crate) Rc<SignalEmitterInner>);
+
+#[derive(Default, Clone)]
+pub(crate) struct WeakSignalEmitter(pub Weak<SignalEmitterInner>);
+
+impl WeakSignalEmitter {
+    pub fn upgrade(&self) -> Option<SignalEmitter> {
+        self.0.upgrade().map(SignalEmitter)
+    }
+}
 
 impl SignalEmitter {
+    pub(crate) fn downgrade(&self) -> WeakSignalEmitter {
+        WeakSignalEmitter(Rc::downgrade(&self.0))
+    }
+
     /// Adds a callback to the subscriber list. If the callback is already a subscriber, does
     /// nothing.
     pub(crate) fn subscribe(&self, cb: WeakEffectCallback) {
@@ -33,8 +48,7 @@ impl SignalEmitter {
             if let Some(last) = effects.borrow().last() {
                 // SAFETY: See guarantee on EffectState within EFFECTS.
                 let last = unsafe { &mut **last };
-                // SAFETY: `last` necessarily lasts longer than self.
-                last.add_dependency(unsafe { std::mem::transmute(self) });
+                last.add_dependency(self.downgrade());
             }
         });
     }

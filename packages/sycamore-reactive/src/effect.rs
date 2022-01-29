@@ -17,20 +17,20 @@ pub(crate) struct EffectState<'a> {
     /// The callback when the effect is re-executed.
     cb: Rc<RefCell<dyn FnMut() + 'a>>,
     /// A list of dependencies that can trigger this effect.
-    dependencies: HashSet<EffectDependency<'a>>,
+    dependencies: HashSet<EffectDependency>,
 }
 
-/// Implements reference equality for [`AnySignal`]s.
-pub(crate) struct EffectDependency<'a>(&'a SignalEmitter);
-impl<'a> std::cmp::PartialEq for EffectDependency<'a> {
+/// Implements reference equality for [`WeakSignalEmitter`]s.
+pub(crate) struct EffectDependency(WeakSignalEmitter);
+impl std::cmp::PartialEq for EffectDependency {
     fn eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self.0, other.0)
+        Weak::as_ptr(&self.0 .0) == Weak::as_ptr(&other.0 .0)
     }
 }
-impl<'a> std::cmp::Eq for EffectDependency<'a> {}
-impl<'a> std::hash::Hash for EffectDependency<'a> {
+impl std::cmp::Eq for EffectDependency {}
+impl std::hash::Hash for EffectDependency {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        (self.0 as *const SignalEmitter).hash(state);
+        Weak::as_ptr(&self.0 .0).hash(state);
     }
 }
 
@@ -39,16 +39,16 @@ impl<'a> EffectState<'a> {
     /// Should be called when re-executing an effect to recreate all dependencies.
     pub fn clear_dependencies(&mut self) {
         for dependency in &self.dependencies {
-            // SAFETY: TODO
-            dependency
-                .0
-                .unsubscribe(unsafe { std::mem::transmute(Rc::as_ptr(&self.cb)) });
+            if let Some(dep) = dependency.0.upgrade() {
+                // SAFETY: We only access the pointer, not the pointed data.
+                dep.unsubscribe(unsafe { std::mem::transmute(Rc::as_ptr(&self.cb)) })
+            };
         }
         self.dependencies.clear();
     }
 
     /// Add a dependency to the effect.
-    pub fn add_dependency(&mut self, signal: &'a SignalEmitter) {
+    pub fn add_dependency(&mut self, signal: WeakSignalEmitter) {
         self.dependencies.insert(EffectDependency(signal));
     }
 }
@@ -110,11 +110,14 @@ impl<'a> Scope<'a> {
                     // we need to add backlinks from the signal to the effect, so that
                     // updating the signal will trigger the effect.
                     for emitter in &boxed.dependencies {
-                        // SAFETY: When the effect is destroyed or when the emitter is dropped, this
-                        // link will be destroyed to prevent dangling references.
-                        emitter
-                            .0
-                            .subscribe(unsafe { std::mem::transmute(Rc::downgrade(&boxed.cb)) });
+                        // The SignalEmitter might have been destroyed between when the signal was accessed and now.
+                        if let Some(emitter) = emitter.0.upgrade() {
+                            // SAFETY: When the effect is destroyed or when the emitter is dropped, this
+                            // link will be destroyed to prevent dangling references.
+                            emitter.subscribe(Rc::downgrade(unsafe {
+                                std::mem::transmute(&boxed.cb)
+                            }));
+                        }
                     }
 
                     // Get the effect state back into the Rc
@@ -416,6 +419,22 @@ mod tests {
                 let signal = ctx.create_signal(());
                 // Track own signal:
                 signal.track();
+            });
+            trigger.set(());
+        });
+    }
+
+    #[test]
+    fn effect_do_not_subscribe_to_destroyed_signal() {
+        create_scope_immediate(|ctx| {
+            let trigger = ctx.create_signal(());
+            let mut signal = Some(create_rc_signal(()));
+            ctx.create_effect(move || {
+                trigger.track();
+                if let Some(signal) = signal.take() {
+                    signal.track();
+                    drop(signal);
+                }
             });
             trigger.set(());
         });
