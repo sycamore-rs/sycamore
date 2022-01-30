@@ -174,17 +174,12 @@ impl<'a> Scope<'a> {
                 disposer();
             }
             // Create a new nested scope and save the disposer.
-            // SAFETY: The whole point. We want the scope to be tracked so that signals accessed
-            // from within are picked-up by the effect. This is safe because `disposer` is only
-            // called at the beginning of this `create_effect` call after clear dependencies phase
-            // and not before closure returns with new scope.
-            let new_disposer: Option<Box<dyn FnOnce()>> = Some(Box::new(unsafe {
-                self.create_child_scope_tracked(|ctx| {
+            let new_disposer: Option<Box<dyn FnOnce()>> =
+                Some(Box::new(self.create_child_scope(|ctx| {
                     // SAFETY: f takes the same parameter as the argument to
                     // self.create_child_scope(_).
-                    f(std::mem::transmute(ctx))
-                })
-            }));
+                    f(unsafe { std::mem::transmute(ctx) })
+                })));
             // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
             // effect which is necessarily within the lifetime of self (the Scope).
             disposer = unsafe { std::mem::transmute(new_disposer) };

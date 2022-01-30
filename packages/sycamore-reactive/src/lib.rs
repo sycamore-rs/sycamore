@@ -295,51 +295,8 @@ impl<'a> Scope<'a> {
         // - It is allocated on the heap and therefore has a stable address.
         // - self.child_ctx is append only. That means that the Box<Ctx> will not be dropped until
         //   Self is dropped.
-        untrack(|| f(BoundedScopeRef::new(unsafe { &*ptr })));
-        //                                               ^^^ -> `ptr` is still accessible here after
-        // the call to f.
-        move || unsafe {
-            let ctx = self.child_scopes.borrow_mut().remove(key).unwrap();
-            // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
-            // than 'a.
-            let ctx = Box::from_raw(ctx);
-            // SAFETY: Outside of call to f.
-            ctx.dispose();
-        }
-    }
-
-    /// Create a child scope that is not run inside an untracked scope.
-    ///
-    /// You will almost always want to use [`create_child_scope`](Self::create_child_scope) instead.
-    ///
-    /// # Safety
-    /// This method is unsafe because an outer effect could listen to a signal created within this
-    /// scope. If the scope is disposed before the effect closure returns or before an effect is
-    /// re-run, this will cause an use-after-free.
-    pub unsafe fn create_child_scope_tracked<F>(&'a self, f: F) -> impl FnOnce() + 'a
-    where
-        F: for<'child_lifetime> FnOnce(BoundedScopeRef<'child_lifetime, 'a>),
-    {
-        let mut child: Scope = Scope::new();
-        // SAFETY: The only fields that are accessed on self from child is `context` which does not
-        // have any lifetime annotations.
-        child.parent = Some(std::mem::transmute(self as *const _));
-        let boxed = Box::new(child);
-        let ptr = Box::into_raw(boxed);
-
-        let key = self
-            .child_scopes
-            .borrow_mut()
-            // SAFETY: None of the fields of ptr are accessed through child_scopes therefore we can
-            // safely transmute the lifetime.
-            .insert(std::mem::transmute(ptr));
-
-        // SAFETY: the address of the Ctx lives as long as 'a because:
-        // - It is allocated on the heap and therefore has a stable address.
-        // - self.child_ctx is append only. That means that the Box<Ctx> will not be dropped until
-        //   Self is dropped.
-        f(BoundedScopeRef::new(&*ptr));
-        //                           ^^^ -> `ptr` is still accessible here after
+        f(BoundedScopeRef::new(unsafe { &*ptr }));
+        //                                    ^^^ -> `ptr` is still accessible here after
         // the call to f.
         move || unsafe {
             let ctx = self.child_scopes.borrow_mut().remove(key).unwrap();
