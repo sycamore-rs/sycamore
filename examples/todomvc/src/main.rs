@@ -226,12 +226,8 @@ pub fn Header<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
             input(ref=input_ref,
                 class="new-todo",
                 placeholder="What needs to be done?",
-                // FIXME: find out why macro causes an error but manually expanding it doesn't.
-                // bind:value=value
+                bind:value=value,
                 on:keyup=handle_submit,
-                on:change=|ev: Event| {
-                    value.set(ev.target().unwrap().unchecked_into::<HtmlInputElement>().value())
-                },
             )
         }
     }
@@ -330,10 +326,8 @@ pub fn Item<G: Html>(ctx: ScopeRef, todo: RcSignal<Todo>) -> View<G> {
                 input(
                     class="toggle",
                     type="checkbox",
-                    checked=*checked.get(),
                     on:input=toggle_completed,
-                    // TODO: use `bind:value` syntax instead
-                    /* bind:checked=checked, */
+                    bind:checked=checked
                 )
                 label(on:dblclick=handle_dblclick) {
                     (title())
@@ -392,9 +386,7 @@ pub fn List<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
                 class="toggle-all",
                 type="checkbox",
                 readonly=true,
-                // TODO: fix this
-                // bind:checked=checked,
-                checked=*checked.get(),
+                bind:checked=checked,
                 on:input=|_| app_state.toggle_complete_all()
             )
             label(for="toggle-all")

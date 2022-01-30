@@ -40,7 +40,7 @@ impl<G: GenericNode> View<G> {
         let signal = create_rc_signal(memo.get().as_ref().clone());
         ctx.create_effect({
             let signal = signal.clone();
-            move || signal.set(memo.get().as_ref().clone()) // TODO: get rid of double clone
+            move || signal.set(memo.get().as_ref().clone())
         });
         Self {
             inner: ViewType::Dyn(signal),

@@ -16,34 +16,34 @@ fn Counter<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     }
 }
 
-// #[component]
-// fn Hello<G: Html>(ctx: ScopeRef) -> View<G> {
-//     let name = ctx.create_signal(String::new());
+#[component]
+fn Hello<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    let name = ctx.create_signal(String::new());
 
-//     view! {
-//         div {
-//             p {
-//                 "Hello "
-//                 (if *create_selector(|| !name.get().is_empty()).get() {
-//                     view! { ctx,
-//                         span { (name.get()) }
-//                     }
-//                 } else {
-//                     view! { ctx, span { "World" } }
-//                 })
-//                 "!"
-//             }
-//             input(bind:value=name)
-//         }
-//     }
-// }
+    view! { ctx,
+        div {
+            p {
+                "Hello "
+                (if *ctx.create_selector(|| !name.get().is_empty()).get() {
+                    view! { ctx,
+                        span { (name.get()) }
+                    }
+                } else {
+                    view! { ctx, span { "World" } }
+                })
+                "!"
+            }
+            input(bind:value=name)
+        }
+    }
+}
 
 #[component]
 fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     view! { ctx,
         p { "Hydration" }
         br
-        // Hello {}
+        Hello {}
         Counter {}
     }
 }
