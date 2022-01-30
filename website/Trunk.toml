@@ -8,5 +8,4 @@ command_arguments = [
     "index.css",
     "-o",
     "dist/.stage/tailwind.css",
-    "--jit"
 ]
