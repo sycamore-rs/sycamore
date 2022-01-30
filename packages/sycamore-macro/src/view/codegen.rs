@@ -454,26 +454,32 @@ impl Codegen {
                     props,
                     children,
                 } = comp;
-                let mut props_quoted = quote! {
-                    ::sycamore::component::element_like_component_builder(__component)
-                };
-                for (field, expr) in props {
-                    props_quoted.extend(quote! { .#field(#expr) });
+                if props.is_empty() && children.is_none() {
+                    // If no props, just generate a `()` for props.
+                    quote! {
+                       ::sycamore::component::component_scope(move || #ident(#ctx, ()))
+                    }
+                } else {
+                    let mut props_quoted = quote! {
+                        ::sycamore::component::element_like_component_builder(__component)
+                    };
+                    for (field, expr) in props {
+                        props_quoted.extend(quote! { .#field(#expr) });
+                    }
+                    if let Some(children) = children {
+                        let view_root = self.view_root(children);
+                        props_quoted.extend(quote! {
+                            .children(
+                                ::sycamore::component::Children::new(move |__ctx| #view_root)
+                            )
+                        });
+                    }
+                    props_quoted.extend(quote! { .build() });
+                    quote! {{
+                        let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
+                        ::sycamore::component::component_scope(move || __component(#ctx, #props_quoted))
+                    }}
                 }
-                if let Some(children) = children {
-                    let view_root = self.view_root(children);
-                    props_quoted.extend(quote! {
-                        .children(
-                            ::sycamore::component::Children::new(move |__ctx| #view_root)
-                        )
-                    });
-                }
-                props_quoted.extend(quote! { .build() });
-
-                quote! {{
-                    let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
-                    ::sycamore::component::component_scope(move || __component(#ctx, #props_quoted))
-                }}
             }
         }
     }
