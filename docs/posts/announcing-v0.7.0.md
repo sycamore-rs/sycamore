@@ -55,7 +55,7 @@ Note that the builder API is still experimental and does not play very well with
 you have ideas on how to make the builder API more ergonomic, don't hesitate to create an issue on
 our [issue tracker](https://github.com/sycamore-rs/sycamore/issues).
 
-## `Template` -> `View`
+### `Template` -> `View`
 
 We renamed `Template` to `View` and `template!` to `view!` to make the name slightly shorter to type
 and also to prevent conflict with Perseus' notion of
@@ -65,7 +65,7 @@ Migrating should be a pretty simple matter for most. Just perform a find-and-rep
 using `grep` to replace all instances of `Template` to `View` and all instances of `template!` to
 `view!`.
 
-## `IS_BROWSER`
+### `IS_BROWSER`
 
 Checking whether some code was executing in the browser or on the server required an ugly hack:
 

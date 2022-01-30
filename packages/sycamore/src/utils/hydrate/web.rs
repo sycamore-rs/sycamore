@@ -3,8 +3,8 @@
 use wasm_bindgen::JsCast;
 use web_sys::{window, Comment, Element, Node};
 
+use crate::generic_node::HydrateNode;
 use crate::view::View;
-use crate::HydrateNode;
 
 use super::*;
 
@@ -39,7 +39,7 @@ pub fn get_next_marker(parent: &Node) -> Option<View<HydrateNode>> {
         let mut start_marker = None;
         // Iterate through the children of parent.
         let children = parent.child_nodes();
-        for child in (0..children.length()).map(|i| children.get(i)).flatten() {
+        for child in (0..children.length()).filter_map(|i| children.get(i)) {
             if child.node_type() == COMMENT_NODE_TYPE {
                 let v = child.node_value();
                 if v.as_deref() == Some("#") {

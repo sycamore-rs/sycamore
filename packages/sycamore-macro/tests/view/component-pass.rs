@@ -1,14 +1,16 @@
 use sycamore::prelude::*;
 
-#[component(Component<G>)]
-pub fn component() -> View<G> {
-    view! {
+#[component]
+pub fn Component<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    view! { ctx,
         div
     }
 }
 
 fn compile_pass<G: Html>() {
-    let _: View<G> = view! { Component() };
+    create_scope_immediate(|ctx| {
+        let _: View<G> = view! { ctx, Component() };
+    });
 }
 
 fn main() {}

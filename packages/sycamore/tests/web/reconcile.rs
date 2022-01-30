@@ -11,21 +11,24 @@ use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test]
 fn insert_create_nodes() {
-    let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
-    ];
-    let parent = DomNode::element("div");
+    create_scope_immediate(|ctx| {
+        let nodes = [
+            DomNode::text_node("1"),
+            DomNode::text_node("2"),
+            DomNode::text_node("3"),
+        ];
+        let parent = DomNode::element("div");
 
-    insert(
-        &parent,
-        View::new_fragment(nodes.to_vec().into_iter().map(View::new_node).collect()),
-        None,
-        None,
-        true,
-    );
-    assert_eq!(parent.inner_element().text_content().unwrap(), "123");
+        insert(
+            ctx,
+            &parent,
+            View::new_fragment(nodes.iter().cloned().map(View::new_node).collect()),
+            None,
+            None,
+            true,
+        );
+        assert_eq!(parent.inner_element().text_content().unwrap(), "123");
+    });
 }
 
 #[wasm_bindgen_test]

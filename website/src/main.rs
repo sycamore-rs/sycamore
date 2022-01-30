@@ -9,11 +9,9 @@ use content::MarkdownPage;
 use reqwasm::http::Request;
 use serde_lite::Deserialize;
 use sidebar::SidebarData;
-use sycamore::context::{use_context, ContextProvider, ContextProviderProps};
-use sycamore::futures::spawn_local_in_scope;
+use sycamore::futures::{spawn_local, ScopeFuturesExt};
 use sycamore::prelude::*;
-use sycamore_router::{HistoryIntegration, Route, Router, RouterProps};
-
+use sycamore_router::{HistoryIntegration, Route, Router};
 const LATEST_MAJOR_VERSION: &str = "v0.7";
 const NEXT_VERSION: &str = "next";
 
@@ -36,7 +34,7 @@ enum Routes {
 }
 
 #[derive(Clone)]
-struct DarkMode(Signal<bool>);
+struct DarkMode(RcSignal<bool>);
 
 async fn docs_preload(path: String) -> MarkdownPage {
     let text = Request::get(&path).send().await.unwrap().text().await;
@@ -63,116 +61,113 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
     }
 }
 
-fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
-    let template = Signal::new(View::empty());
-    let cached_sidebar_data: Signal<Option<(Option<String>, SidebarData)>> = Signal::new(None);
-    create_effect(cloned!((template, cached_sidebar_data) => move || {
-        let route = route.get();
-        spawn_local_in_scope(cloned!((template, cached_sidebar_data) => async move {
-            // clear data to avoid invalid sidebar links in the hamburger menu
-            cached_sidebar_data.set(None);
-            let t = match route.as_ref() {
-                Routes::Index => view! {
-                    div(class="container mx-auto") {
-                        index::Index()
+fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
+    let cached_sidebar_data =
+        ctx.create_ref(create_rc_signal(None::<(Option<String>, SidebarData)>));
+    ctx.provide_context_ref(cached_sidebar_data);
+
+    let fetch_docs_data = |url| {
+        let data = ctx.create_resource(docs_preload(url));
+        if cached_sidebar_data.get().is_none()
+            || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None
+        {
+            // Update sidebar
+            let cached_sidebar_data = cached_sidebar_data.clone();
+            spawn_local(async move {
+                cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
+            });
+        }
+        data
+    };
+    let view = ctx.create_memo(on([route], move || match route.get().as_ref() {
+        Routes::Index => view! { ctx,
+            div(class="container mx-auto") {
+                index::Index {}
+            }
+        },
+        Routes::Docs(a, b) => {
+            let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
+            view! { ctx,
+                (if let Some(data) = data.get().as_ref() {
+                    if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+                        view! { ctx,
+                            content::Content {
+                                data: data.clone(),
+                                sidebar: (
+                                    "next".to_string(),
+                                    cached_sidebar_data.1.clone(),
+                                ),
+                            }
+                        }
+                    } else {
+                        view! { ctx, }
                     }
-                },
-                Routes::Docs(a, b) => {
-                    let data = docs_preload(format!("/static/docs/{}/{}.json", a, b)).await;
-                    if cached_sidebar_data.get().is_none()
-                        || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None {
-                        // Update sidebar
-                        cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
+                } else {
+                    view! { ctx, }
+                })
+            }
+        }
+        Routes::VersionedDocs(version, a, b) => {
+            let version = version.clone();
+            let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
+            view! { ctx,
+                (if let Some(data) = data.get().as_ref() {
+                    if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+                        let version = version.clone();
+                        view! { ctx,
+                            content::Content {
+                                data: data.clone(),
+                                sidebar: (
+                                    version,
+                                    cached_sidebar_data.1.clone(),
+                                ),
+                            }
+                        }
+                    } else {
+                        view! { ctx, }
                     }
-                    view! {
-                        content::Content(content::ContentProps {
-                            data,
-                            sidebar: Some((
-                                "next".to_string(),
-                                cached_sidebar_data.get().as_ref().as_ref().unwrap().1.clone(),
-                            )),
-                        })
+                } else {
+                    view! { ctx, }
+                })
+            }
+        }
+        Routes::NewsIndex => view! { ctx,
+            news_index::NewsIndex {}
+        },
+        Routes::Post(name) => {
+            let data = ctx.create_resource(docs_preload(format!("/static/posts/{}.json", name)));
+            view! { ctx,
+                (if let Some(data) = data.get().as_ref() {
+                    view! { ctx,
+                        content::Content {
+                            data: data.clone(),
+                        }
                     }
-                }
-                Routes::VersionedDocs(version, a, b) => {
-                    let data = docs_preload(format!("/static/docs/{}/{}/{}.json", version, a, b)).await;
-                    if cached_sidebar_data.get().is_none()
-                        || cached_sidebar_data.get().as_ref().as_ref().unwrap().0.as_deref() != Some(version) {
-                        // Update sidebar
-                        cached_sidebar_data.set(Some((Some(version.clone()), get_sidebar(Some(version)).await)));
-                    }
-                    view! {
-                        content::Content(content::ContentProps {
-                            data,
-                            sidebar: Some((
-                                version.clone(),
-                                cached_sidebar_data.get().as_ref().as_ref().unwrap().1.clone(),
-                            )),
-                        })
-                    }
-                }
-                Routes::NewsIndex => view! {
-                    news_index::NewsIndex()
-                },
-                Routes::Post(name) => {
-                    let data = docs_preload(format!("/static/posts/{}.json", name)).await;
-                    view! {
-                        content::Content(content::ContentProps {
-                            data,
-                            sidebar: None,
-                        })
-                    }
-                }
-                Routes::Versions => view! {
-                    versions::Versions()
-                },
-                Routes::NotFound => view! {
-                    "404 Not Found"
-                },
-            };
-            template.set(t);
-        }));
+                } else {
+                    view! { ctx, }
+                })
+            }
+        }
+        Routes::Versions => view! { ctx,
+            versions::Versions {}
+        },
+        Routes::NotFound => view! { ctx,
+            "404 Not Found"
+        },
     }));
 
-    view! {
-        ContextProvider(ContextProviderProps {
-            value: cached_sidebar_data,
-            children: || view! {
-                div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
-                        min-h-screen transition-colors"
-                ) {
-                    header::Header()
-                    (template.get().as_ref())
-                }
-            },
-        })
-    }
-}
-
-#[component(App<G>)]
-fn app() -> View<G> {
-    let DarkMode(dark_mode) = use_context::<DarkMode>();
-    let dark_mode2 = dark_mode.clone();
-
-    view! {
-        main(class=if *dark_mode2.get() { "dark" } else { "" }) {
-            (if *dark_mode.get() {
-                view! { link(rel="stylesheet", href="/static/dark.css") }
-            } else {
-                view! { link(rel="stylesheet", href="/static/light.css") }
-            })
-            Router(RouterProps::new(HistoryIntegration::new(), switch))
+    view! { ctx,
+        div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
+            min-h-screen transition-colors"
+        ) {
+            header::Header {}
+            ((*view.get()).clone())
         }
     }
 }
 
-fn main() {
-    #[cfg(debug_assertions)]
-    {
-        console_error_panic_hook::set_once();
-        console_log::init_with_level(log::Level::Debug).unwrap();
-    }
-
+#[component]
+fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
     // Get dark mode from media query.
     let dark_mode_mq = web_sys::window()
@@ -187,22 +182,41 @@ fn main() {
     } else {
         dark_mode_mq
     };
-    let dark_mode = DarkMode(Signal::new(dark_mode));
+    let dark_mode = DarkMode(create_rc_signal(dark_mode));
+    ctx.provide_context(dark_mode);
+    let DarkMode(dark_mode) = ctx.use_context::<DarkMode>();
 
-    create_effect(cloned!((dark_mode) => move || {
+    ctx.create_effect(move || {
         if let Some(local_storage) = &local_storage {
-            local_storage.set_item("dark_mode", &dark_mode.0.get().to_string()).unwrap();
+            local_storage
+                .set_item("dark_mode", &dark_mode.get().to_string())
+                .unwrap();
         }
-    }));
+    });
 
-    sycamore::render(|| {
-        view! {
-            ContextProvider(ContextProviderProps {
-                value: dark_mode,
-                children: || view! {
-                    App()
-                },
+    view! { ctx,
+        main(class=if *dark_mode.get() { "dark" } else { "" }) {
+            (if *dark_mode.get() {
+                view! { ctx, link(rel="stylesheet", href="/static/dark.css") }
+            } else {
+                view! { ctx, link(rel="stylesheet", href="/static/light.css") }
             })
+            Router {
+                integration: HistoryIntegration::new(),
+                view: switch,
+            }
         }
+    }
+}
+
+fn main() {
+    #[cfg(debug_assertions)]
+    {
+        console_error_panic_hook::set_once();
+        console_log::init_with_level(log::Level::Debug).unwrap();
+    }
+
+    sycamore::render(|ctx| {
+        view! { ctx, App {} }
     });
 }

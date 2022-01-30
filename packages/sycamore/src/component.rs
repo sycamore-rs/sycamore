@@ -1,57 +1,81 @@
-//! The definition of the [`Component`] trait.
-
-use sycamore_reactive::untrack;
+//! Utilities for components and component properties.
 
 use crate::generic_node::GenericNode;
-use crate::prelude::View;
+use crate::reactive::*;
+use crate::view::View;
 
-/// Trait that is implemented by components. Should not be implemented manually. Use the
-/// [`component`](sycamore_macro::component) macro instead.
-pub trait Component<G: GenericNode> {
-    /// The name of the component (for use in debug mode). In release mode, this will default to
-    /// `"UnnamedComponent"`
-    const NAME: &'static str = "UnnamedComponent";
-    /// The type of the properties passed to the component.
-    type Props;
-
-    /// Create a new component with an instance of the properties.
-    fn create_component(props: Self::Props) -> View<G>;
-}
-
-/// Instantiates a component.
-#[inline(always)]
-pub fn instantiate_component<G: GenericNode, C: Component<G>>(props: C::Props) -> View<G> {
+/// Runs the given closure inside a new component scope. In other words, this does the following:
+/// * If hydration is enabled, create a new hydration context.
+/// * Create a new untracked scope (see [`untrack`]).
+/// * Call the closure `f` passed to this function.
+#[doc(hidden)]
+pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
     if G::USE_HYDRATION_CONTEXT {
         #[cfg(feature = "experimental-hydrate")]
-        return crate::utils::hydrate::hydrate_component(|| untrack(|| C::create_component(props)));
+        return crate::utils::hydrate::hydrate_component(|| untrack(f));
         #[cfg(not(feature = "experimental-hydrate"))]
-        return untrack(|| C::create_component(props));
+        return untrack(f);
     } else {
-        untrack(|| C::create_component(props))
+        untrack(f)
     }
 }
 
-/// Alias to [`instantiate_component`]. For use in proc-macro output.
-///
-/// The double underscores (`__`) are to prevent conflicts with other trait methods. This is
-/// because we cannot use fully qualified syntax here because it prevents type inference.
-#[doc(hidden)]
-pub trait __InstantiateComponent<G: GenericNode>: Component<G> {
-    /// Alias to [`instantiate_component`]. For use in proc-macro output.
-    ///
-    /// The double underscores (`__`) are to prevent conflicts with other trait methods. This is
-    /// because we cannot use fully qualified syntax here because it prevents type inference.
-    #[doc(hidden)]
-    fn __instantiate_component(props: Self::Props) -> View<G>;
+/// A trait that is implemented automatically by the [`Prop`](crate::Prop) derive macro.
+pub trait Prop {
+    type Builder;
+    fn builder() -> Self::Builder;
 }
 
-impl<C, G> __InstantiateComponent<G> for C
+/* Implement Prop for () */
+
+/// A builder for `()`.
+#[doc(hidden)]
+pub struct UnitBuilder;
+impl UnitBuilder {
+    pub fn build(self) {}
+}
+impl Prop for () {
+    type Builder = UnitBuilder;
+    fn builder() -> Self::Builder {
+        UnitBuilder
+    }
+}
+
+/// Get the builder for the component function.
+#[doc(hidden)]
+pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
+    _f: &impl FnOnce(ScopeRef<'a>, T) -> View<G>,
+) -> T::Builder {
+    T::builder()
+}
+
+/// Component children.
+pub struct Children<'a, G: GenericNode> {
+    f: Box<dyn FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a>,
+}
+
+impl<'a, F, G: GenericNode> From<F> for Children<'a, G>
 where
-    C: Component<G>,
-    G: GenericNode,
+    F: FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
 {
-    #[inline(always)]
-    fn __instantiate_component(props: Self::Props) -> View<G> {
-        instantiate_component::<G, C>(props)
+    fn from(f: F) -> Self {
+        Self { f: Box::new(f) }
+    }
+}
+
+impl<'a, G: GenericNode> Children<'a, G> {
+    pub fn call(self, ctx: ScopeRef<'a>) -> View<G> {
+        let mut view = None;
+        let _ = ctx.create_child_scope(|ctx| {
+            // SAFETY: `self.f` takes the same parameter as ctx.create_child_scope
+            let tmp = (self.f)(unsafe { std::mem::transmute(ctx) });
+            view = Some(tmp);
+        });
+        view.unwrap()
+    }
+
+    /// Create a new [`Children`] from a closure.
+    pub fn new(f: impl FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a) -> Self {
+        Self { f: Box::new(f) }
     }
 }

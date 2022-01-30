@@ -188,24 +188,26 @@ To display content based on the route that matches, we can use a `Router`.
 
 ```rust
 view! {
-    Router(RouterProps::new(HistoryIntegration::new(), |route: ReadSignal<AppRoutes>| {
-        let t = create_memo(move || match route.get().as_ref() {
-            AppRoutes::Index => view! {
-                "This is the index page"
-            },
-            AppRoutes::About => view! {
-                "About this website"
-            },
-            AppRoutes::NotFound => view! {
-                "404 Not Found"
-            },
-        });
-        view! {
-            div(class="app) {
-                (t.get().as_ref().clone())
+    Router {
+        integration: HistoryIntegration::new(),
+        view: |ctx, route: &ReadSignal<AppRoutes>| {
+            view! {
+                div(class="app") {
+                    (match route.get().as_ref() {
+                        AppRoutes::Index => view! { ctx,
+                            "This is the index page"
+                        },
+                        AppRoutes::About => view! { ctx,
+                            "About this website"
+                        },
+                        AppRoutes::NotFound => view! { ctx,
+                            "404 Not Found"
+                        },
+                    })
+                }
             }
         }
-    })
+    }
 }
 ```
 
@@ -234,19 +236,26 @@ function.
 let route = AppRoutes::match_path(path);
 
 view! {
-    StaticRouter(StaticRouterProps::new(route, |route: AppRoutes| {
-        match route {
-            AppRoutes::Index => view! {
-                "This is the index page"
-            },
-            AppRoutes::About => view! {
-                "About this website"
-            },
-            AppRoutes::NotFound => view! {
-                "404 Not Found"
-            },
+    StaticRouter {
+        route: route,
+        view: |ctx, route: &ReadSignal<AppRoutes>| {
+            view! {
+                div(class="app") {
+                    (match route.get().as_ref() {
+                        AppRoutes::Index => view! { ctx,
+                            "This is the index page"
+                        },
+                        AppRoutes::About => view! { ctx,
+                            "About this website"
+                        },
+                        AppRoutes::NotFound => view! { ctx,
+                            "404 Not Found"
+                        },
+                    })
+                }
+            }
         }
-    }))
+    }
 }
 ```
 
@@ -267,42 +276,7 @@ When data fetching (e.g. from a REST API) is required to load a page, it is reco
 the data. This will cause the router to wait until the data is loaded before rendering the page,
 removing the need for some "Loading..." indicator.
 
-`spawn_local_in_scope` is a simple wrapper around `wasm_bindgen_futures::spawn_local` that extends
-the current scope into inside the `async` block. Make sure you enable the `"futures"` feature on
-`sycamore`.
-
-```rust
-use sycamore::futures::spawn_local_in_scope;
-
-view! {
-    Router(RouterProps::new(HistoryIntegration::new(), |route: ReadSignal<AppRoutes>| {
-        let view = Signal::new(View::empty());
-        create_effect(cloned!((view) => move || {
-            let route = route.get();
-            spawn_local_in_scope(cloned!((view) => async move {
-                let t = match route.as_ref() {
-                    AppRoutes::Index => view! {
-                        "This is the index page"
-                    },
-                    AppRoutes::About => view! {
-                        "About this website"
-                    },
-                    AppRoutes::NotFound => view! {
-                        "404 Not Found"
-                    },
-                };
-                view.set(t);
-            }));
-        }));
-
-        view! {
-            div(class="app") {
-                (view.get().as_ref().clone())
-            }
-        }
-    }
-}
-```
+TODO: this section is not yet complete
 
 ## `rel="external"`
 

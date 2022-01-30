@@ -1,29 +1,31 @@
-use sycamore::component::Component;
+#![allow(non_snake_case)]
+
 use sycamore::prelude::*;
 
-#[component(EnhancedComponent<G>)]
-fn enhanced_component<C: Component<G, Props = i32>>() -> View<G> {
-    view! {
-        div(class="enhanced-container") {
-            p { "Enhanced container start" }
-            C(42)
-            p { "Enhanced container end" }
+#[component]
+fn MyComponent<G: Html>(ctx: ScopeRef, props: i32) -> View<G> {
+    view! { ctx,
+        (props)
+    }
+}
+
+fn higher_order_component<G: Html>(
+    Comp: &dyn Fn(ScopeRef, i32) -> View<G>,
+) -> impl Fn(ScopeRef, ()) -> View<G> + '_ {
+    move |ctx, _| {
+        view! { ctx,
+            div {
+                Comp(42)
+            }
         }
     }
 }
 
-#[component(NumberDisplayer<G>)]
-fn number_displayer(prop: i32) -> View<G> {
-    view! {
-        p { "My number is: " (prop) }
-    }
-}
-
-type EnhancedNumberDisplayer<G> = EnhancedComponent<G, NumberDisplayer<G>>;
-
 fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
-    sycamore::render(|| view! { EnhancedNumberDisplayer() });
+    sycamore::render(|ctx| {
+        let EnhancedComponent = higher_order_component(&MyComponent);
+        view! { ctx,
+            EnhancedComponent()
+        }
+    });
 }

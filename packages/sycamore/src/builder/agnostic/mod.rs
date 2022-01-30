@@ -1,16 +1,17 @@
 //! The renderer-agnostic API.
 
-use crate::component::{instantiate_component, Component};
-use crate::generic_node::{GenericNode, Html};
-use crate::noderef::NodeRef;
-use crate::utils::render;
-use crate::view::View;
 use js_sys::Reflect;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use sycamore_reactive::{cloned, create_effect, create_memo, ReadSignal, Signal};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+
+use crate::component::component_scope;
+use crate::generic_node::{GenericNode, Html};
+use crate::noderef::NodeRef;
+use crate::reactive::*;
+use crate::utils::render;
+use crate::view::View;
 
 pub mod prelude {
     pub use super::component;
@@ -30,11 +31,12 @@ pub mod prelude {
 /// node("a").build()
 /// # }
 /// ```
-pub fn node<G>(tag: &'static str) -> NodeBuilder<G>
+pub fn node<'a, G>(ctx: ScopeRef<'a>, tag: &'static str) -> NodeBuilder<'a, G>
 where
     G: GenericNode,
 {
     NodeBuilder {
+        ctx,
         element: G::element(tag),
     }
 }
@@ -55,12 +57,11 @@ where
 /// component::<_, MyComponent<_>>(())
 /// # }
 /// ```
-pub fn component<G, C>(props: C::Props) -> View<G>
+pub fn component<G>(f: impl FnOnce() -> View<G>) -> View<G>
 where
     G: GenericNode + Html,
-    C: Component<G>,
 {
-    instantiate_component::<G, C>(props)
+    component_scope(f)
 }
 
 /// Create a [`View`] from an array of [`View`].
@@ -84,15 +85,16 @@ where
 }
 
 /// The main type powering the builder API.
-#[derive(Debug)]
-pub struct NodeBuilder<G>
+#[derive(Clone)]
+pub struct NodeBuilder<'a, G>
 where
     G: GenericNode,
 {
+    ctx: ScopeRef<'a>,
     element: G,
 }
 
-impl<G> NodeBuilder<G>
+impl<'a, G> NodeBuilder<'a, G>
 where
     G: GenericNode,
 {
@@ -109,7 +111,7 @@ where
     /// # }
     /// ```
     pub fn child(&self, child: View<G>) -> &Self {
-        render::insert(&self.element, child, None, None, true);
+        render::insert(self.ctx, &self.element, child, None, None, true);
 
         self
     }
@@ -134,12 +136,12 @@ where
     ///     .build()
     /// # }
     /// ```
-    pub fn dyn_child(&self, child: impl FnMut() -> View<G> + 'static) -> &Self {
+    pub fn dyn_child(&self, child: impl FnMut() -> View<G> + 'a) -> &Self {
         #[allow(unused_imports)]
         use std::any::{Any, TypeId};
 
         #[cfg(feature = "ssr")]
-        if TypeId::of::<G>() == TypeId::of::<crate::SsrNode>() {
+        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::SsrNode>() {
             // If Server Side Rendering, insert beginning tag for hydration purposes.
             self.element.append_child(&G::marker_with_text("#"));
             // Create end marker. This is needed to make sure that the node is inserted into the
@@ -147,8 +149,9 @@ where
             let end_marker = G::marker_with_text("/");
             self.element.append_child(&end_marker);
             render::insert(
+                self.ctx,
                 &self.element,
-                View::new_dyn(child),
+                View::new_dyn(self.ctx, child),
                 None,
                 Some(&end_marker),
                 true, /* We don't know if this is the only child or not so we pessimistically
@@ -157,10 +160,11 @@ where
             return self;
         }
         #[cfg(feature = "experimental-hydrate")]
-        if TypeId::of::<G>() == TypeId::of::<crate::HydrateNode>() {
+        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
             use crate::utils::hydrate::web::*;
             // Get start and end markers.
-            let el = <dyn Any>::downcast_ref::<crate::HydrateNode>(&self.element).unwrap();
+            let el =
+                <dyn Any>::downcast_ref::<crate::generic_node::HydrateNode>(&self.element).unwrap();
             let initial = get_next_marker(&el.inner_element());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
             let initial = ::std::mem::ManuallyDrop::new(initial);
@@ -168,8 +172,9 @@ where
             // __initial is wrapped inside ManuallyDrop to prevent double drop.
             let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
             render::insert(
+                self.ctx,
                 &self.element,
-                View::new_dyn(child),
+                View::new_dyn(self.ctx, child),
                 initial,
                 None,
                 true, /* We don't know if this is the only child or not so we pessimistically
@@ -181,8 +186,9 @@ where
         let marker = G::marker();
         self.element.append_child(&marker);
         render::insert(
+            self.ctx,
             &self.element,
-            View::new_dyn(child),
+            View::new_dyn(self.ctx, child),
             None,
             Some(&marker),
             true,
@@ -226,10 +232,10 @@ where
     /// ```
     pub fn dyn_text<F, O>(&self, text: F) -> &Self
     where
-        F: FnMut() -> O + 'static,
+        F: FnMut() -> O + 'a,
         O: AsRef<str> + 'static,
     {
-        let memo = create_memo(text);
+        let memo = self.ctx.create_memo(text);
 
         self.dyn_child(move || View::new_node(G::text_node(memo.get().as_ref().as_ref())));
 
@@ -251,11 +257,8 @@ where
     /// div().component::<MyComponent<_>>(()).build()
     /// }
     /// ```
-    pub fn component<C>(&self, props: C::Props) -> &Self
-    where
-        C: Component<G>,
-    {
-        self.child(instantiate_component::<G, C>(props));
+    pub fn component(&self, f: impl FnOnce() -> View<G>) -> &Self {
+        self.child(component_scope(f));
 
         self
     }
@@ -337,13 +340,13 @@ where
     pub fn dyn_attr<N, T>(&self, name: N, value: ReadSignal<Option<T>>) -> &Self
     where
         N: ToString,
-        T: ToString,
+        T: ToString + 'a,
     {
         let element = self.element.clone();
 
         let name = name.to_string();
 
-        cloned!((name) => create_effect(move || {
+        self.ctx.create_effect(move || {
             let v = value.get();
 
             if let Some(v) = &*v {
@@ -351,7 +354,7 @@ where
             } else {
                 element.remove_attribute(name.as_ref());
             }
-        }));
+        });
 
         self
     }
@@ -377,7 +380,7 @@ where
 
         let name = name.to_string();
 
-        cloned!((name) => create_effect(move || {
+        self.ctx.create_effect(move || {
             let v = value.get();
 
             if *v {
@@ -385,7 +388,7 @@ where
             } else {
                 element.remove_attribute(name.as_ref());
             }
-        }));
+        });
 
         self
     }
@@ -428,16 +431,16 @@ where
     ///     .build()
     /// }
     /// ```
-    pub fn dyn_prop<N, T>(&self, name: N, value: ReadSignal<Option<T>>) -> &Self
+    pub fn dyn_prop<N, T>(&self, name: N, value: &'a ReadSignal<Option<T>>) -> &Self
     where
         N: ToString,
-        T: ToString,
+        T: ToString + 'a,
     {
         let element = self.element.clone();
 
         let name = name.to_string();
 
-        create_effect(move || {
+        self.ctx.create_effect(move || {
             let v = value.get();
 
             if let Some(v) = &*v {
@@ -488,7 +491,7 @@ where
         let class = class.to_string();
         let element = self.element.clone();
 
-        create_effect(move || {
+        self.ctx.create_effect(move || {
             let apply = apply.get();
 
             if *apply {
@@ -534,9 +537,10 @@ where
     pub fn on<E, H>(&self, event: E, handler: H) -> &Self
     where
         E: AsRef<str>,
-        H: Fn(G::EventType) + 'static,
+        H: Fn(G::EventType) + 'a,
     {
-        self.element.event(event.as_ref(), Box::new(handler));
+        self.element
+            .event(self.ctx, event.as_ref(), Box::new(handler));
 
         self
     }
@@ -581,7 +585,7 @@ where
     }
 }
 
-impl<G> NodeBuilder<G>
+impl<'a, G> NodeBuilder<'a, G>
 where
     G: GenericNode + Html,
 {
@@ -601,10 +605,8 @@ where
     ///     .build()
     /// # }
     /// ```
-    pub fn bind_value(&self, sub: Signal<String>) -> &Self {
-        let sub_handle = create_memo(cloned!((sub) => move || {
-            Some((*sub.get()).clone())
-        }));
+    pub fn bind_value(&self, sub: &'a Signal<String>) -> &Self {
+        let sub_handle = self.ctx.create_memo(|| Some((*sub.get()).clone()));
 
         self.dyn_prop("value", sub_handle);
 
@@ -640,10 +642,8 @@ where
     ///     .build()
     /// # }
     /// ```
-    pub fn bind_checked(&self, sub: Signal<bool>) -> &Self {
-        let sub_handle = create_memo(cloned!((sub) => move || {
-            Some(*sub.get())
-        }));
+    pub fn bind_checked(&self, sub: &'a Signal<bool>) -> &Self {
+        let sub_handle = self.ctx.create_memo(|| Some(*sub.get()));
 
         self.dyn_prop("checked", sub_handle);
 

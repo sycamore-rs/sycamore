@@ -24,7 +24,7 @@ pub trait Integration {
 }
 
 thread_local! {
-    static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
+    static PATHNAME: RefCell<Option<RcSignal<String>>> = RefCell::new(None);
 }
 
 /// A router integration that uses the
@@ -141,28 +141,32 @@ fn base_pathname() -> String {
 }
 
 /// Props for [`Router`].
-pub struct RouterProps<R, F, G>
+#[derive(Prop)]
+pub struct RouterProps<'a, R, F, I, G>
 where
-    R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G>,
+    R: Route + 'a,
+    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration,
     G: GenericNode,
 {
-    render: F,
-    integration: Box<dyn Integration>,
-    _phantom: PhantomData<*const (R, G)>,
+    view: F,
+    integration: I,
+    #[builder(default, setter(skip))]
+    _phantom: PhantomData<&'a (R, G)>,
 }
 
-impl<R, F, G> RouterProps<R, F, G>
+impl<'a, R, F, I, G> RouterProps<'a, R, F, I, G>
 where
-    R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G>,
+    R: Route + 'a,
+    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration,
     G: GenericNode,
 {
     /// Create a new [`RouterProps`].
-    pub fn new(integration: impl Integration + 'static, render: F) -> Self {
+    pub fn new(integration: I, view: F) -> Self {
         Self {
-            render,
-            integration: Box::new(integration),
+            view,
+            integration,
             _phantom: PhantomData,
         }
     }
@@ -170,18 +174,22 @@ where
 
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
-#[component(Router<G>)]
-pub fn router<R, F>(props: RouterProps<R, F, G>) -> View<G>
+#[component]
+pub fn Router<'a, G: Html, R, F, I>(
+    ctx: ScopeRef<'a>,
+    props: RouterProps<'a, R, F, I, G>,
+) -> View<G>
 where
-    R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    R: Route + 'a,
+    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration + 'static,
 {
     let RouterProps {
-        render,
+        view,
         integration,
         _phantom,
     } = props;
-    let render = Rc::new(RefCell::new(Some(render)));
+    let view = Rc::new(RefCell::new(Some(view)));
     let integration = Rc::new(integration);
     let base_pathname = base_pathname();
 
@@ -190,25 +198,29 @@ where
         // Get initial url from window.location.
         let path = integration.current_pathname();
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
-        *pathname.borrow_mut() = Some(Signal::new(path.to_string()));
+        *pathname.borrow_mut() = Some(create_rc_signal(path.to_string()));
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    on_cleanup(|| {
+    ctx.on_cleanup(|| {
         PATHNAME.with(|pathname| {
             *pathname.borrow_mut() = None;
         });
     });
 
     // Listen to popstate event.
-    integration.on_popstate(Box::new(cloned!((integration, pathname) => move || {
-        let path = integration.current_pathname();
-        let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
-        pathname.set(path.to_string());
-    })));
+    integration.on_popstate(Box::new({
+        let integration = integration.clone();
+        let pathname = pathname.clone();
+        move || {
+            let path = integration.current_pathname();
+            let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
+            pathname.set(path.to_string());
+        }
+    }));
 
-    let path = create_selector(move || {
+    let path = ctx.create_selector(move || {
         pathname
             .get()
             .split('/')
@@ -216,21 +228,19 @@ where
             .map(|s| s.to_string())
             .collect::<Vec<_>>()
     });
-
-    let route_signal: Rc<RefCell<Option<Signal<R>>>> = Rc::new(RefCell::new(None));
-    create_effect(cloned!((route_signal) => move || {
-        let path = path.get();
-        let route = R::match_route(path.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
-        if route_signal.borrow().is_some() {
-            route_signal.borrow().as_ref().unwrap_throw().set(route);
-        } else {
-            *route_signal.borrow_mut() = Some(Signal::new(route));
-        }
-    }));
+    let route_signal = ctx.create_memo(move || {
+        R::match_route(
+            path.get()
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .as_slice(),
+        )
+    });
     // Delegate click events from child <a> tags.
-    let tmp = render.take().unwrap_throw()(route_signal.borrow().as_ref().unwrap_throw().handle());
+    let tmp = view.take().unwrap_throw()(ctx, route_signal);
     if let Some(node) = tmp.as_node() {
-        node.event("click", integration.click_handler());
+        node.event(ctx, "click", integration.click_handler());
     } else {
         // TODO: support fragments and lazy nodes
         panic!("render should return a single node");
@@ -239,27 +249,29 @@ where
 }
 
 /// Props for [`StaticRouter`].
-pub struct StaticRouterProps<R, F, G>
+#[derive(Prop)]
+pub struct StaticRouterProps<'a, R, F, G>
 where
-    R: Route,
-    F: Fn(R) -> View<G>,
+    R: Route + 'a,
+    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
-    render: F,
+    view: F,
     route: R,
-    _phantom: PhantomData<*const (R, G)>,
+    #[builder(default, setter(skip))]
+    _phantom: PhantomData<&'a (R, G)>,
 }
 
-impl<R, F, G> StaticRouterProps<R, F, G>
+impl<'a, R, F, G> StaticRouterProps<'a, R, F, G>
 where
     R: Route,
-    F: Fn(R) -> View<G>,
+    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     /// Create a new [`StaticRouterProps`].
     pub fn new(route: R, render: F) -> Self {
         Self {
-            render,
+            view: render,
             route,
             _phantom: PhantomData,
         }
@@ -270,19 +282,22 @@ where
 ///
 /// This is useful for SSR where we want the HTML to be rendered instantly instead of waiting for
 /// the route preload to finish loading.
-#[component(StaticRouter<G>)]
-pub fn static_router<R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
+#[component]
+pub fn StaticRouter<'a, G: Html, R, F>(
+    ctx: ScopeRef<'a>,
+    props: StaticRouterProps<'a, R, F, G>,
+) -> View<G>
 where
     R: Route + 'static,
-    F: Fn(R) -> View<G> + 'static,
+    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
     let StaticRouterProps {
-        render,
+        view,
         route,
         _phantom,
     } = props;
 
-    render(route)
+    view(ctx, ctx.create_signal(route))
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -364,8 +379,8 @@ mod tests {
             NotFound,
         }
 
-        #[component(Comp<G>)]
-        fn comp(path: String) -> View<G> {
+        #[component]
+        fn Comp<G: Html>(ctx: ScopeRef, path: String) -> View<G> {
             let route = Routes::match_route(
                 &path
                     .split('/')
@@ -373,35 +388,38 @@ mod tests {
                     .collect::<Vec<_>>(),
             );
 
-            view! {
-                StaticRouter(StaticRouterProps::new(route, |route: Routes| {
-                    match route {
-                        Routes::Home => view! {
-                            "Home"
-                        },
-                        Routes::About => view! {
-                            "About"
-                        },
-                        Routes::NotFound => view! {
-                            "Not Found"
+            view! { ctx,
+                StaticRouter {
+                    route: route,
+                    view: |ctx, route: &ReadSignal<Routes>| {
+                        match route.get().as_ref() {
+                            Routes::Home => view! { ctx,
+                                "Home"
+                            },
+                            Routes::About => view! { ctx,
+                                "About"
+                            },
+                            Routes::NotFound => view! { ctx,
+                                "Not Found"
+                            }
                         }
-                    }
-                }))
+                    },
+                }
             }
         }
 
         assert_eq!(
-            sycamore::render_to_string(|| view! { Comp("/".to_string()) }),
+            sycamore::render_to_string(|ctx| view! { ctx, Comp("/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|| view! { Comp("/about".to_string()) }),
+            sycamore::render_to_string(|ctx| view! { ctx, Comp("/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|| view! { Comp("/404".to_string()) }),
+            sycamore::render_to_string(|ctx| view! { ctx, Comp("/404".to_string()) }),
             "Not Found"
         );
     }

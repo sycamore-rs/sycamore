@@ -7,11 +7,11 @@ have already seen it in the _"Hello, World!"_ example.
 
 ### Elements
 
-Creating HTML elements is easy as pie with the `view!` macro. Since you'll likely want to create
-a lot of elements in your app, there is a special terse syntax.
+Creating HTML elements is easy as pie with the `view!` macro. Since you'll likely want to create a
+lot of elements in your app, there is a special terse syntax.
 
 ```rust
-view! {
+view! { ctx,
     // A simple div
     div
     // A div with a class
@@ -26,10 +26,10 @@ view! {
 ### Text nodes
 
 Of course, in your app, you probably want to display some text. To create a text node, simply add a
-string literal (using `"`).
+string literal.
 
 ```rust
-view! {
+view! { ctx,
     "Hello World!"
 }
 ```
@@ -39,7 +39,7 @@ view! {
 Creating all these top-level nodes is not very useful. You can create nested nodes like so.
 
 ```rust
-view! {
+view! { ctx,
     div(class="foo") {
         p {
             span { "Hello " }
@@ -49,12 +49,46 @@ view! {
 }
 ```
 
+## Interpolation
+
+Views can contain interpolated values. Anything that implements `std::fmt::Display` will
+automatically be inserted as text into the DOM tree. For example:
+
+```rust
+let my_number = 123;
+
+view! { ctx,
+    p {
+        "This is my number: " (my_number)
+    }
+}
+```
+
+Other views created using the `view!` macro can also be interpolated using the same syntax. For
+example:
+
+```rust
+let inner_view = view! { ctx,
+    "Inside"
+};
+
+let outer_view = view! { ctx,
+    "Outside"
+    div {
+        (inner_view)
+    }
+};
+```
+
+The cool thing about interpolation in Sycamore is that it is automatically kept up to date with the
+value of the expression. Learn more about this in [Reactivity](./reactivity).
+
 ### Attributes
 
 Attributes (including classes and ids) can also be specified.
 
 ```rust
-view! {
+view! { ctx,
     p(class="my-class", id="my-paragraph", aria-label="My paragraph")
     button(disabled=true) {
        "My button"
@@ -69,7 +103,7 @@ element. This should generally be avoided because it is a possible security risk
 input to this attribute as that will create an XSS (Cross-Site Scripting) vulnerability.
 
 ```rust
-view! {
+view! { ctx,
     div(dangerously_set_inner_html="<span>Inner HTML!</span>")
 
     // DO NOT DO THIS!!!
@@ -85,7 +119,7 @@ Instead, when displaying user input, use interpolation syntax instead.
 Events are attached using the `on:*` directive.
 
 ```rust
-view! {
+view! { ctx,
     button(on:click=|_| { /* do something */ }) {
         "Click me"
     }
@@ -94,53 +128,19 @@ view! {
 
 ### Fragments
 
-As seen in previous examples, views can also be fragments. You can create as many nodes as you
-want at the top-level.
+As seen in previous examples, views can also be fragments. You can create as many nodes as you want
+at the top-level.
 
 ```rust
-view! {
+view! { ctx,
     p { "First child" }
     p { "Second child" }
 }
 ```
 
-Fragments can also be empty.
+Fragments can also be empty. (Note that passing the `ctx` variable is still required. This
+restriction will be lifted in the future.)
 
 ```rust
-view! {}
+view! { ctx, }
 ```
-
-## Interpolation
-
-Views can contain interpolated values. Anything that implements `std::fmt::Display` will
-automatically be inserted as text into the DOM tree. For example:
-
-```rust
-let my_number = 123;
-
-view! {
-    p {
-        // Automatically display my_number as a string using std::fmt::Display
-        "This is my number: " (my_number)
-    }
-}
-```
-
-Other views created using the `view!` macro can also be interpolated using the same syntax.
-For example:
-
-```rust
-let inner_view = view! {
-    "Inside"
-};
-
-let outer_view = view! {
-    "Outside"
-    div {
-        (inner_view)
-    }
-};
-```
-
-The cool thing about interpolation in Sycamore is that it is automatically kept up to date with the
-value of the expression. Learn more about this in [Reactivity](./reactivity).

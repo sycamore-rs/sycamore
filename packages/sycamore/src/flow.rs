@@ -1,77 +1,55 @@
-//! Iteration utility components for [view!](crate::view!).
-//!
-//! Iteration can be either _"keyed"_ or _"non keyed"_.
-//! Use the [`Keyed`] and [`Indexed`] utility components respectively.
-
 use std::hash::Hash;
 
-use crate::generic_node::GenericNode;
 use crate::prelude::*;
-use crate::reactive::{map_indexed, map_keyed};
 
 /// Props for [`Keyed`].
-pub struct KeyedProps<T: 'static, F, G: GenericNode, K, Key>
+#[derive(Prop)]
+pub struct KeyedProps<'a, T, F, G: GenericNode, K, Key>
 where
-    F: Fn(T) -> View<G>,
-    K: Fn(&T) -> Key,
+    F: Fn(BoundedScopeRef<'_, 'a>, T) -> View<G> + 'a,
+    K: Fn(&T) -> Key + 'a,
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
 {
-    pub iterable: ReadSignal<Vec<T>>,
-    pub template: F,
+    pub iterable: &'a ReadSignal<Vec<T>>,
+    pub view: F,
     pub key: K,
 }
 
 /// Keyed iteration. Use this instead of directly rendering an array of [`View`]s.
-/// Using this will minimize re-renders instead of re-rendering every single node on every state
-/// change.
+/// Using this will minimize re-renders instead of re-rendering evertemplate: view node on every
+/// state change.
 ///
 /// For non keyed iteration, see [`Indexed`].
-///
-/// # Example
-/// ```no_run
-/// use sycamore::prelude::*;
-///
-/// let count = Signal::new(vec![1, 2]);
-///
-/// let node = view! {
-///     Keyed(KeyedProps {
-///         iterable: count.handle(),
-///         template: |item| view! {
-///             li { (item) }
-///         },
-///         key: |item| *item,
-///     })
-/// };
-/// # let _ : View<DomNode> = node;
-/// ```
-#[component(Keyed<G>)]
-pub fn keyed<T: 'static, F: 'static, K: 'static, Key: 'static>(
-    props: KeyedProps<T, F, G, K, Key>,
+#[component]
+pub fn Keyed<'a, G: GenericNode, T, F, K, Key>(
+    ctx: ScopeRef<'a>,
+    props: KeyedProps<'a, T, F, G, K, Key>,
 ) -> View<G>
 where
-    F: Fn(T) -> View<G>,
-    K: Fn(&T) -> Key,
+    F: Fn(BoundedScopeRef<'_, 'a>, T) -> View<G> + 'a,
+    K: Fn(&T) -> Key + 'a,
     Key: Clone + Hash + Eq,
     T: Clone + Eq,
 {
     let KeyedProps {
         iterable,
-        template,
+        view,
         key,
     } = props;
 
-    let mut mapped = map_keyed(iterable, move |x| template(x.clone()), key);
-    View::new_dyn(move || View::new_fragment(mapped()))
+    let mapped = ctx.map_keyed(iterable, view, key);
+    View::new_dyn(ctx, || View::new_fragment(mapped.get().as_ref().clone()))
 }
 
 /// Props for [`Indexed`].
-pub struct IndexedProps<T: 'static, F, G: GenericNode>
+#[derive(Prop)]
+pub struct IndexedProps<'a, G: GenericNode, T, F>
 where
-    F: Fn(T) -> View<G>,
+    F: Fn(BoundedScopeRef<'_, 'a>, T) -> View<G> + 'a,
 {
-    pub iterable: ReadSignal<Vec<T>>,
-    pub template: F,
+    pub iterable: &'a ReadSignal<Vec<T>>,
+    pub view: F,
 }
 
 /// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of
@@ -79,31 +57,17 @@ where
 /// node on every state change.
 ///
 /// For keyed iteration, see [`Keyed`].
-///
-/// # Example
-/// ```no_run
-/// use sycamore::prelude::*;
-///
-/// let count = Signal::new(vec![1, 2]);
-///
-/// let node = view! {
-///     Indexed(IndexedProps {
-///         iterable: count.handle(),
-///         template: |item| view! {
-///             li { (item) }
-///         },
-///     })
-/// };
-/// # let _ : View<DomNode> = node;
-/// ```
-#[component(Indexed<G>)]
-pub fn indexed<T: 'static, F: 'static>(props: IndexedProps<T, F, G>) -> View<G>
+#[component]
+pub fn Indexed<'a, G: GenericNode, T, F>(
+    ctx: ScopeRef<'a>,
+    props: IndexedProps<'a, G, T, F>,
+) -> View<G>
 where
     T: Clone + PartialEq,
-    F: Fn(T) -> View<G>,
+    F: Fn(BoundedScopeRef<'_, 'a>, T) -> View<G> + 'a,
 {
-    let IndexedProps { iterable, template } = props;
+    let IndexedProps { iterable, view } = props;
 
-    let mut mapped = map_indexed(iterable, move |x| template(x.clone()));
-    View::new_dyn(move || View::new_fragment(mapped()))
+    let mapped = ctx.map_indexed(iterable, view);
+    View::new_dyn(ctx, || View::new_fragment(mapped.get().as_ref().clone()))
 }

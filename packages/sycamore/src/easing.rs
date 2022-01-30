@@ -159,9 +159,6 @@ pub fn bounce_in(t: f32) -> f32 {
 }
 
 pub fn bounce_out(t: f32) -> f32 {
-    // TODO: Refactor? Code seems like a repetition.
-    // Further, it is unclear why the numbers here are
-    // picked.
     if t < 1.0 / BOUNCE_GRAVITY {
         BOUNCE_AMPLITUDE * t * t
     } else if t < 2.0 / BOUNCE_GRAVITY {
@@ -183,8 +180,6 @@ pub fn bounce_inout(t: f32) -> f32 {
         (1.0 + bounce_out(-1.0 + 2.0 * t)) / 2.0
     }
 }
-
-// TODO: add more easing functions
 
 #[cfg(test)]
 mod tests {

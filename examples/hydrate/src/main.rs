@@ -1,69 +1,58 @@
 use sycamore::prelude::*;
 
-#[component(Counter<G>)]
-fn counter() -> View<G> {
-    let counter = Signal::new(0);
-
-    let increment = cloned!((counter) => move |_| counter.set(*counter.get() + 1));
-
-    let reset = cloned!((counter) => move |_| counter.set(0));
-
-    view! {
+#[component]
+fn Counter<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    let state = ctx.create_signal(0i32);
+    let increment = |_| state.set(*state.get() + 1);
+    let decrement = |_| state.set(*state.get() - 1);
+    let reset = |_| state.set(0);
+    view! { ctx,
         div {
-            h2 { "Counter demo" }
-            p(class="value") {
-                "Value: "
-                (counter.get())
-            }
-            button(class="increment", on:click=increment) {
-                "Increment"
-            }
-            button(class="reset", on:click=reset) {
-                "Reset"
-            }
+            p { "Value: " (state.get()) }
+            button(on:click=increment) { "+" }
+            button(on:click=decrement) { "-" }
+            button(on:click=reset) { "Reset" }
         }
     }
 }
 
-#[component(Hello<G>)]
-fn hello() -> View<G> {
-    let name = Signal::new(String::new());
-    let name2 = name.clone();
+#[component]
+fn Hello<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    let name = ctx.create_signal(String::new());
 
-    view! {
+    view! { ctx,
         div {
-            h2 {
+            p {
                 "Hello "
-                (if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
-                    cloned!((name) => view! {
+                (if *ctx.create_selector(|| !name.get().is_empty()).get() {
+                    view! { ctx,
                         span { (name.get()) }
-                    })
+                    }
                 } else {
-                    view! { span { "World" } }
+                    view! { ctx, span { "World" } }
                 })
                 "!"
             }
-
-            input(bind:value=name2)
+            input(bind:value=name)
         }
     }
 }
 
-#[component(App<G>)]
-fn app() -> View<G> {
-    view! {
-        h1 { "Hydration example" }
-        Hello()
-        Counter()
+#[component]
+fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    view! { ctx,
+        p { "Hydration" }
+        br
+        Hello {}
+        Counter {}
     }
 }
-
 fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    let s = sycamore::render_to_string(|| view! { App() });
+    let s = sycamore::render_to_string(|ctx| view! { ctx, App {} });
     log::info!("{}", s);
 
-    sycamore::hydrate(|| view! { App() });
+    sycamore::hydrate(|ctx| view! { ctx, App {} });
 }

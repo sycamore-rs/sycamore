@@ -13,12 +13,11 @@ DOM. When rendering on the server, however, we don't have a DOM accessible to us
 browser using your favorite web server.
 
 ```rust
-let node = view! {
+let html = render_to_string(|ctx| view! { ctx,
     div(class="my-class") {
         button { "Click me" }
     }
-}
-let html = render_to_string(|| node);
+});
 
 // Respond to the client with the rendered html.
 ```
@@ -37,7 +36,7 @@ In your client-side app, enable the `"experimental-hydrate"` feature on `sycamor
 
 ## Quick Start Templates
 
-- [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template): A quick start template
-  for using Sycamore with Rocket. Batteries included with `sycamore-router`.
-- [`sycamore-rocket-minimal-template`](https://github.com/sycamore-rs/sycamore-rocket-minimal-template): A
-  minimal template for using Sycamore with Rocket.
+- [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template): A quick
+  start template for using Sycamore with Rocket. Batteries included with `sycamore-router`.
+- [`sycamore-rocket-minimal-template`](https://github.com/sycamore-rs/sycamore-rocket-minimal-template):
+  A minimal template for using Sycamore with Rocket.

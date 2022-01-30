@@ -8,24 +8,31 @@ about Rust, check out the [Rust Book](https://doc.rust-lang.org/stable/book/).
 First, you'll need to install Rust. Follow the
 [official instructions](https://www.rust-lang.org/tools/install) to get started.
 
-You will also need the `wasm32-unknown-unknown` target installed:
+You will also need the `wasm32-unknown-unknown` target installed. This installs the necessary tools
+to compile your code to [WebAssembly](https://webassembly.org).
 
 ```bash
 rustup target add wasm32-unknown-unknown
 ```
 
-### Minimum Supported Rust Version (MSRV)
+### Minimum Supported Rust Version (MSRV) and Rust edition
 
-The minimum supported Rust toolchain is `v1.53.0`. Sycamore is not guaranteed to compile on an older
+The minimum supported Rust toolchain is `v1.58.0`. Sycamore is not guaranteed to compile on an older
 version of Rust.
+
+Sycamore only works on Rust edition 2021. Even though most crates written in edition 2021 are
+backward compatible with older editions, this is not the case for Sycamore because Sycamore's
+proc-macro generates code that is only compatible with edition 2021. Furthermore, the
+[disjoint capture in closures](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html#disjoint-capture-in-closures)
+feature greatly improves the ergonomics when working with Sycamore's reactivity.
 
 ## Install Trunk
 
 [Trunk](https://trunkrs.dev) is the recommended build tool for Sycamore. If you are from JS land,
 Trunk is like [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but specifically
-tailored towards Rust + Wasm apps.
+tailored towards Rust + WASM apps.
 
-You can use the following command to install Trunk:
+You can use one of the following command to install Trunk on your system:
 
 ```bash
 # Install via homebrew on Mac, Linux or Windows (WSL).
@@ -57,7 +64,7 @@ You now need to add Sycamore to your new project's dependencies. Add the followi
 sycamore = "0.7.1"
 ```
 
-> Note: Sycamore is currently being developed at a rapid pace. To have access to the latest
+> **Note**: Sycamore is currently being developed at a rapid pace. To have access to the latest
 > features, consider using a
 > [git dependency](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-git-repositories)
 > instead.

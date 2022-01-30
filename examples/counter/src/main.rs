@@ -1,37 +1,25 @@
 use sycamore::prelude::*;
 
-#[component(App<G>)]
-fn app() -> View<G> {
-    let counter = Signal::new(0);
-
-    create_effect(cloned!((counter) => move || {
-        log::info!("Counter value: {}", *counter.get());
-    }));
-
-    let increment = cloned!((counter) => move |_| counter.set(*counter.get() + 1));
-
-    let reset = cloned!((counter) => move |_| counter.set(0));
-
-    view! {
+#[component]
+fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    let state = ctx.create_signal(0i32);
+    let increment = |_| state.set(*state.get() + 1);
+    let decrement = |_| state.set(*state.get() - 1);
+    let reset = |_| state.set(0);
+    view! { ctx,
         div {
-            h1 { "Counter demo" }
-            p(class="value") {
-                "Value: "
-                (counter.get())
-            }
-            button(class="increment", on:click=increment) {
-                "Increment"
-            }
-            button(class="reset", on:click=reset) {
-                "Reset"
-            }
+            p { "Value: " (state.get()) }
+            button(on:click=increment) { "+" }
+            button(on:click=decrement) { "-" }
+            button(on:click=reset) { "Reset" }
         }
     }
 }
 
 fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
-    sycamore::render(|| view! { App() });
+    sycamore::render(|ctx| {
+        view! { ctx,
+            App {}
+        }
+    });
 }

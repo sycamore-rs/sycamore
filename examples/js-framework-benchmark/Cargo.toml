@@ -1,0 +1,13 @@
+[package]
+name = "js-framework-benchmark"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+getrandom = { version = "0.2.4", features = ["js"] }
+rand = "0.8.4"
+sycamore = { path = "../../packages/sycamore" }
+wasm-bindgen = "0.2.79"
+web-sys = "0.3.56"

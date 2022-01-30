@@ -1,14 +1,9 @@
 [package]
-authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
-edition = "2018"
 name = "higher-order-components"
-publish = false
 version = "0.1.0"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-console_error_panic_hook = "0.1.7"
-console_log = "0.2.0"
-log = "0.4.14"
-sycamore = {path = "../../packages/sycamore"}
+sycamore = { path = "../../packages/sycamore" }

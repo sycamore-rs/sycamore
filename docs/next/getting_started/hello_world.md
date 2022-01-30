@@ -10,7 +10,7 @@ Here it is:
 use sycamore::prelude::*;
 
 fn main() {
-    sycamore::render(|| view! {
+    sycamore::render(|ctx| view! { ctx,
         p { "Hello, World!" }
     });
 }
@@ -33,13 +33,13 @@ This function is provided by Sycamore and is used to render your app to the DOM 
 `render` accepts a closure (aka. lambda function) which should return a view to be rendered.
 
 ```rust
-view! {
+view! { ctx,
     p { "Hello, World!" }
 }
 ```
 
-The `view!` macro allows creating complex user interfaces ergonomically in HTML. In this case,
-we want to render the following HTML:
+The `view!` macro allows creating complex user interfaces ergonomically in HTML. In this case, we
+want to render the following HTML:
 
 ```html
 <p>Hello World!</p>
@@ -47,6 +47,10 @@ we want to render the following HTML:
 
 The `p { ... }` creates a new `<p>` tag. The `"Hello, World!"` creates a new text node that is
 nested within the `<p>` tag.
+
+The `ctx` variable represents the _reactive scope_. This is what basically keeps track of resources
+and makes reactivity work. Don't worry too much about this now. You'll see this again in the
+[Reactivity](../basics/reactivity) section.
 
 There it is! Trunk just needs one thing to turn this into a website; a html source file to inject
 the view into. Copy the following code to a file called `index.html` in the root of your crate

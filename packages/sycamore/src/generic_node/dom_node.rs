@@ -1,5 +1,7 @@
 //! Rendering backend for the DOM.
 
+#![allow(clippy::unused_unit)] // TODO: wasm-bindgen bug
+
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -9,7 +11,7 @@ use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
 use crate::generic_node::{GenericNode, Html};
-use crate::reactive::{create_scope, on_cleanup, ReactiveScope};
+use crate::reactive::*;
 use crate::utils::render::insert;
 use crate::view::View;
 
@@ -254,13 +256,17 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event(&self, name: &str, handler: Box<dyn Fn(Self::EventType)>) {
+    fn event<'a>(&self, ctx: ScopeRef<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
+        // SAFETY: extend lifetime because the closure is dropped when the ctx is disposed,
+        // preventing the handler from ever being accessed after its lifetime.
+        let handler: Box<dyn Fn(Self::EventType) + 'static> =
+            unsafe { std::mem::transmute(handler) };
         let closure = Closure::wrap(handler);
         self.node
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
             .unwrap_throw();
 
-        on_cleanup(move || {
+        ctx.on_cleanup(move || {
             drop(closure);
         });
     }
@@ -289,25 +295,20 @@ impl Html for DomNode {
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render(template: impl FnOnce() -> View<DomNode>) {
+pub fn render(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
-    render_to(template, &document.body().unwrap_throw());
+    render_to(view, &document.body().unwrap_throw());
 }
 
 /// Render a [`View`] under a `parent` node.
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
-    let scope = render_get_scope(template, parent);
-
-    thread_local! {
-        static GLOBAL_SCOPES: std::cell::RefCell<Vec<ReactiveScope>> = std::cell::RefCell::new(Vec::new());
-    }
-
-    GLOBAL_SCOPES.with(|global_scopes| global_scopes.borrow_mut().push(scope));
+pub fn render_to(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>, parent: &Node) {
+    // Do not call the destructor function, effectively leaking the scope.
+    let _ = render_get_scope(view, parent);
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
@@ -321,11 +322,15 @@ pub fn render_to(template: impl FnOnce() -> View<DomNode>, parent: &Node) {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
-pub fn render_get_scope(template: impl FnOnce() -> View<DomNode>, parent: &Node) -> ReactiveScope {
-    create_scope(|| {
+pub fn render_get_scope<'a>(
+    view: impl FnOnce(ScopeRef<'_>) -> View<DomNode> + 'a,
+    parent: &'a Node,
+) -> impl FnOnce() + 'a {
+    create_scope(|ctx| {
         insert(
+            ctx,
             &DomNode::from_web_sys(parent.clone()),
-            template(),
+            view(ctx),
             None,
             None,
             false,

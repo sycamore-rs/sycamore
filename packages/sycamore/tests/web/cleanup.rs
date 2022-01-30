@@ -5,11 +5,9 @@ use super::*;
 thread_local!(static CLEANUP_CALLED: Cell<bool> = Cell::new(false));
 fn assert_cleanup_called(f: impl FnOnce()) {
     CLEANUP_CALLED.with(|cleanup_called| {
-        assert!(!cleanup_called.get());
+        cleanup_called.set(false);
         f();
         assert!(cleanup_called.get());
-
-        cleanup_called.set(false); // Reset for next test
     });
 }
 
@@ -21,45 +19,44 @@ fn on_cleanup_callback() {
 
 #[wasm_bindgen_test]
 pub fn test_cleanup_in_root() {
-    let root = create_scope(|| {
-        on_cleanup(on_cleanup_callback);
+    let root = create_scope(|ctx| {
+        ctx.on_cleanup(on_cleanup_callback);
     });
-
     assert_cleanup_called(|| {
-        drop(root);
+        root();
     });
 }
 
 #[wasm_bindgen_test]
 pub fn test_cleanup_in_effect() {
-    let trigger = Signal::new(());
+    create_scope_immediate(|ctx| {
+        let trigger = ctx.create_signal(());
+        ctx.create_effect_scoped(|ctx| {
+            trigger.track();
+            ctx.on_cleanup(on_cleanup_callback);
+        });
 
-    create_effect(cloned!((trigger) => move || {
-        trigger.get();
-        on_cleanup(on_cleanup_callback);
-    }));
-
-    assert_cleanup_called(|| {
-        trigger.set(());
+        assert_cleanup_called(|| {
+            trigger.set(());
+        });
     });
 }
 
-#[component(CleanupComp<G>)]
-fn comp() -> View<G> {
-    on_cleanup(on_cleanup_callback);
-
-    view! {}
+#[component]
+fn CleanupComp<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+    ctx.on_cleanup(on_cleanup_callback);
+    view! { ctx, }
 }
 
 #[wasm_bindgen_test]
 fn component_cleanup_on_root_destroyed() {
-    let root = create_scope(|| {
-        let _: View<DomNode> = view! {
-            CleanupComp()
+    let root = create_scope(|ctx| {
+        let _: View<DomNode> = view! { ctx,
+            CleanupComp {}
         };
     });
 
     assert_cleanup_called(move || {
-        drop(root);
+        root();
     });
 }

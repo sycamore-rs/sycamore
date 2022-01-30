@@ -6,12 +6,12 @@ interpolates a value from 0 to 100 over a period of 200ms:
 ```rust
 use std::time::Duration;
 
-use sycamore::reactive::Tweened;
-use sycamore::{easing, prelude::*};
+use sycamore::easing;
+use sycamore::motion::ScopeMotionExt;
 
-let tweened = Tweened::new(0, Duration::from_millis(200), easing::linear);
+let tweened = ctx.create_tweened_signal(0.0f32, Duration::from_millis(250), easing::quad_out);
 
-tweened.set(100);
+tweened.set(100.0);
 ```
 
 Different easing functions are provided in the `sycamore::easing` module.
