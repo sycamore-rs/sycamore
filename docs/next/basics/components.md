@@ -74,10 +74,10 @@ struct MyProps<'a> {
 }
 
 #[component]
-fn MyComponent<'a, G: Html>(ctx: ScopeRef<'a>, value: MyProps<'a>) -> View<G> {
+fn MyComponent<'a, G: Html>(ctx: ScopeRef<'a>, props: MyProps<'a>) -> View<G> {
     view! {
         div(class="my-component") {
-            "Value: " (value.get())
+            "Value: " (props.value.get())
         }
     }
 }
