@@ -11,12 +11,15 @@ pub fn Index<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     view! { ctx,
         div(class="pb-10 mx-4") {
             div(class="flex flex-col items-center w-full mb-10") {
-                h1(class="text-5xl font-bold mt-20 mb-5") {
+                h1(class="text-5xl font-extrabold mt-20 pb-5 \
+                    bg-gradient-to-r from-orange-300 to-red-400 text-transparent bg-clip-text") {
                     "Sycamore"
                 }
 
-                p(class="mb-5 text-center") {
-                    "A reactive library for creating web apps in Rust and WebAssembly"
+                p(class="font-mono mb-5 text-center") {
+                    "A " span(class="underline") { "reactive" }
+                    " library for creating web apps in " span(class="underline") { "Rust" }
+                    " and " span(class="underline") { "WebAssembly" }
                 }
 
                 // region: badges
@@ -44,11 +47,14 @@ pub fn Index<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
                 }
                 // endregion
 
-                a(
-                    href="/docs/getting_started/installation",
-                    class="py-2 px-3 text-white bg-yellow-600 rounded font-medium transition whitespace-nowrap",
-                ) {
-                    "Read the Book"
+                div {
+                    a(
+                        href="/docs/getting_started/installation",
+                        class="inline-block py-2.5 px-5 text-lg font-medium text-white bg-orange-500 rounded-lg \
+                            transition hover:bg-red-400 hover:-translate-y-0.5"
+                    ) {
+                        "Get Started"
+                    }
                 }
             }
             div(class="text-white flex flex-col w-full md:flex-row space-y-4 md:space-y-0 md:space-x-4") {

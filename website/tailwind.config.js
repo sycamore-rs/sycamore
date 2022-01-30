@@ -1,14 +1,16 @@
 const colors = require('tailwindcss/colors');
 
 module.exports = {
-  jit: true,
-  purge: {
-    content: [
-      "./src/**/*.rs"
-    ],
-  },
+  content: [
+    "./src/**/*.rs"
+  ],
   darkMode: "class", // or 'media' or 'class'
   theme: {
+    fontFamily: {
+      body: ['Inter', 'system-ui', 'sans-serif'],
+      mono: ['IBM Plex Mono', 'Menlo', 'monospace'],
+      code: ['ui-monospace', 'monospace'],
+    },
     extend: {
       zIndex: {
         'neg': -1

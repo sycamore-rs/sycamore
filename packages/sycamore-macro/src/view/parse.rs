@@ -226,7 +226,8 @@ impl Parse for Component {
                         false
                     };
                     if !content.is_empty() && !comma_parsed {
-                        content.parse::<Token![,]>()?; // Emit an error if there is no comma and not eof.
+                        content.parse::<Token![,]>()?; // Emit an error if there is no comma and not
+                                                       // eof.
                     }
                     props.push(field_value);
                 } else {

@@ -157,7 +157,7 @@ fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View
     }));
 
     view! { ctx,
-        div(class="pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
+        div(class="font-body pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors"
         ) {
             header::Header {}
