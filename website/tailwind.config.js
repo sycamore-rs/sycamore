@@ -28,8 +28,5 @@ module.exports = {
       white: colors.white,
     }
   },
-  variants: {
-    extend: {},
-  },
   plugins: [],
 };
