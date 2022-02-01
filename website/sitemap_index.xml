@@ -6,6 +6,7 @@
 <url><loc>https://sycamore-rs.netlify.app/news/announcing-v0.5.0</loc><changefreq>yearly</changefreq><priority>0.8</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/news/announcing-v0.6.0</loc><changefreq>yearly</changefreq><priority>0.8</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/news/announcing-v0.7.0</loc><changefreq>yearly</changefreq><priority>0.8</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/news/new-reactive-primitives</loc><changefreq>yearly</changefreq><priority>0.8</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/advanced_reactivity</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/contexts</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/advanced/css</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
