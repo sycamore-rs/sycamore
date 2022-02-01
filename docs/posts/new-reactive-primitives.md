@@ -70,7 +70,7 @@ view! {
 }
 ```
 
-That was the problem. It was like the thorns on the rose bush, or like a stone in the show.
+That was the problem. It was like the thorns on the rose bush, or like a stone in the shoe.
 Reactivity was great on paper, but when implemented in Rust, had a few unexpected gotchas.
 
 In the next version of Sycamore (v0.8), this issue is now fixed! The jest of the issue was that the
