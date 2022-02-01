@@ -92,9 +92,10 @@ let data = ctx.create_signal(...);
 The `ctx` is a reference to the current reactive scope. Whereas previously, reactive scopes were
 internally tracked using a complicated orchestration of thread-locals, reactive scopes are now
 explicitly represented by the `Scope` type. This change was necessary because otherwise, there would
-be no way to associate the `Signal` to the `Scope`.
+be no way to associate the lifetime of the `Signal` to the `Scope`.
 
 Now, how is this an improvement? It is in the return type of `Signal::new` and `ctx.create_signal`.
+
 `Signal::new` returned, well, a `Signal` (which, if you remember, was `Clone`able but not
 `Copy`able) but `ctx.create_signal` returns a `&Signal` (a reference to a `Signal`, which is always
 `Copy`able). The way this works is that the `Scope` acts somewhat akin to an
@@ -119,7 +120,7 @@ Making reactive scopes explicit also allows another exciting possibility: first-
 because using `async` broke the topological code execution upon which relied the global thread-local
 solution. In other words, after a `.await` suspension point, we could no longer know what reactive
 scope we were in. Now that we can access `ctx` directly, that makes writing the following code a
-possibility:
+possibility on our roadmap:
 
 ```rust
 #[component]
