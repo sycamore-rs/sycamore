@@ -8,6 +8,8 @@ enum VersionedDocsLink {
 
 const VERSIONS: &[(&str, VersionedDocsLink)] = &[
     ("Next", VersionedDocsLink::Next),
+    // v0.8.0
+    ("v0.8.0-beta.1", VersionedDocsLink::Some("v0.8")),
     // v0.7.x
     ("v0.7.1", VersionedDocsLink::Some("v0.7")),
     ("v0.7.0", VersionedDocsLink::None),

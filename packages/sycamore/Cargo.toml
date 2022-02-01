@@ -8,7 +8,7 @@ keywords = ["wasm", "gui", "reactive"]
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.7.1"
+version = "0.8.0-beta.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -18,8 +18,8 @@ html-escape = { version = "0.2.9", optional = true }
 indexmap = { version = "1.8.0", features = ["std"] }
 js-sys = "0.3.56"
 once_cell = { version = "1.9.0", optional = true }
-sycamore-macro = { path = "../sycamore-macro", version = "0.7.1" }
-sycamore-reactive = { path = "../sycamore-reactive", version = "0.7.1" }
+sycamore-macro = { path = "../sycamore-macro", version = "0.8.0-beta.1" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.1" }
 wasm-bindgen = "0.2.79"
 wasm-bindgen-futures = { version = "0.4.29", optional = true }
 paste = "1.0.6"
