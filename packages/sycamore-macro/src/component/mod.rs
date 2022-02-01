@@ -3,7 +3,8 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
-use syn::{FnArg, Item, ItemFn, Result, ReturnType};
+use syn::spanned::Spanned;
+use syn::{parse_quote, FnArg, Item, ItemFn, Result, ReturnType, Type, TypeTuple};
 
 pub struct ComponentFunction {
     pub f: ItemFn,
@@ -14,39 +15,68 @@ impl Parse for ComponentFunction {
         let parsed: Item = input.parse()?;
 
         match parsed {
-            Item::Fn(f) => {
-                let ItemFn { sig, .. } = f.clone();
+            Item::Fn(mut f) => {
+                let ItemFn { sig, .. } = &mut f;
 
                 if sig.constness.is_some() {
-                    return Err(syn::Error::new_spanned(
-                        sig.constness,
+                    return Err(syn::Error::new(
+                        sig.constness.span(),
                         "const functions can't be components",
                     ));
                 }
 
                 if sig.abi.is_some() {
-                    return Err(syn::Error::new_spanned(
-                        sig.abi,
+                    return Err(syn::Error::new(
+                        sig.abi.span(),
                         "extern functions can't be components",
                     ));
                 }
 
                 if let ReturnType::Default = sig.output {
-                    return Err(syn::Error::new_spanned(
-                        sig,
+                    return Err(syn::Error::new(
+                        sig.span(),
                         "function must return `sycamore::view::View`",
                     ));
                 };
 
-                let mut inputs = sig.inputs.into_iter();
-                let arg: FnArg = inputs.next().unwrap_or_else(|| syn::parse_quote! { _: () });
+                let inputs = sig.inputs.clone().into_iter().collect::<Vec<_>>();
 
-                if let FnArg::Receiver(arg) = &arg {
-                    return Err(syn::Error::new_spanned(
-                        arg,
+                if inputs.is_empty() {
+                    return Err(syn::Error::new(
+                        sig.inputs.span(),
+                        "component must take at least one argument of type `sycamore::reactive::ScopeRef`",
+                    ));
+                }
+
+                if inputs.len() > 2 {
+                    return Err(syn::Error::new(
+                        sig.inputs.span(),
+                        "component should not take more than 2 arguments",
+                    ));
+                }
+
+                if let FnArg::Receiver(arg) = &inputs[0] {
+                    return Err(syn::Error::new(
+                        arg.span(),
                         "function components can't accept a receiver",
                     ));
-                };
+                }
+
+                if let Some(FnArg::Typed(pat)) = inputs.get(1) {
+                    if let Type::Tuple(TypeTuple { elems, .. }) = &*pat.ty {
+                        if elems.is_empty() {
+                            return Err(syn::Error::new(
+                                elems.span(),
+                                "taking an unit tuple as props is useless",
+                            ));
+                        }
+                    }
+                }
+
+                // If only 1 argument, add an additional argument of type `()`.
+                if inputs.len() == 1 {
+                    sig.inputs.push(parse_quote! { _: () });
+                }
 
                 Ok(Self { f })
             }

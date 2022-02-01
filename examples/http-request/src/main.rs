@@ -36,7 +36,7 @@ fn RenderVisits<G: Html>(ctx: ScopeRef, count: u64) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let count = ctx.create_resource(async move {
         let website_id = "page-visit-counter-tailwindcss.tyz";
         let visits = fetch_visits(website_id).await.unwrap_or_default();

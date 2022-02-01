@@ -167,7 +167,7 @@ fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
     // Get dark mode from media query.
     let dark_mode_mq = web_sys::window()

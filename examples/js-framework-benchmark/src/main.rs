@@ -99,7 +99,7 @@ fn build_data(count: usize) -> Vec<RowData> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let data = ctx.create_signal(Vec::<RowData>::new());
     let selected = ctx.create_signal(None::<usize>);
 

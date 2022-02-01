@@ -69,7 +69,7 @@ fn VersionedDocsLink<G: Html>(
 }
 
 #[component]
-pub fn Versions<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+pub fn Versions<G: Html>(ctx: ScopeRef) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()

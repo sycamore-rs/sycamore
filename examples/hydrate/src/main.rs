@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn Counter<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn Counter<G: Html>(ctx: ScopeRef) -> View<G> {
     let state = ctx.create_signal(0i32);
     let increment = |_| state.set(*state.get() + 1);
     let decrement = |_| state.set(*state.get() - 1);
@@ -17,7 +17,7 @@ fn Counter<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
 }
 
 #[component]
-fn Hello<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn Hello<G: Html>(ctx: ScopeRef) -> View<G> {
     let name = ctx.create_signal(String::new());
 
     view! { ctx,
@@ -39,7 +39,7 @@ fn Hello<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
         p { "Hydration" }
         br

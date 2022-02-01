@@ -5,7 +5,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
             #[component]
-            fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+            fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                 view! { ctx,
                     div(class="my-container") {
                         p { "Hello World!" }
@@ -33,7 +33,7 @@ pub fn bench(c: &mut Criterion) {
             }
 
             #[component]
-            fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+            fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                 let values = ctx.create_signal((0i32..=10).collect::<Vec<_>>());
 
                 view! { ctx,

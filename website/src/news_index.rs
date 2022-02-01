@@ -19,7 +19,7 @@ static POSTS: &[(&str, &str, &str)] = &[
 ];
 
 #[component]
-pub fn NewsIndex<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+pub fn NewsIndex<G: Html>(ctx: ScopeRef) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()

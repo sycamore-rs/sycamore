@@ -6,7 +6,7 @@ fn comp1<G: Html>(_ctx: ScopeRef) -> View<G> {
 }
 
 #[component]
-fn comp2<G: Html>(_ctx: ScopeRef, _: ()) -> View<G> {
+fn comp2<G: Html>(_ctx: ScopeRef) -> View<G> {
     todo!();
 }
 
