@@ -73,7 +73,7 @@ view! {
 That was the problem. It was like the thorns on the rose bush, or like a stone in the shoe.
 Reactivity was great on paper, but when implemented in Rust, it had a few unexpected gotchas.
 
-In the next version of Sycamore (v0.8), this issue is now fixed! The jest of the issue was that the
+In the next version of Sycamore (v0.8), this issue is now fixed! The gist of the issue was that the
 closures needed to be `'static` because `Signal`s were internally reference counted and thus there
 was no way to tell how long a `Signal` lived. Yet, most of the times, the lifetimes of signals were
 stacked like a tower, with the longest living `Signal` at the bottom and the shortest at the top.
