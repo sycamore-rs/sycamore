@@ -18,12 +18,12 @@ proc-macro = true
 
 [dependencies]
 nom = "7.1.0"
-proc-macro2 = "1.0.32"
-quote = "1.0.10"
-syn = "1.0.81"
+proc-macro2 = "1.0.36"
+quote = "1.0.15"
+syn = "1.0.86"
 unicode-xid = "0.2.2"
 
 [dev-dependencies]
-expect-test = "1.1.0"
+expect-test = "1.2.2"
 sycamore-router = { path = "../sycamore-router" }
-trybuild = "1.0.52"
+trybuild = "1.0.55"

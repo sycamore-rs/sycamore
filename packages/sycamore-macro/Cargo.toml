@@ -23,7 +23,7 @@ syn = { version = "1.0.86", features = ["extra-traits"] }
 
 [dev-dependencies]
 sycamore = { path = "../sycamore", features = ["experimental-hydrate"] }
-trybuild = "1.0.54"
+trybuild = "1.0.55"
 
 [features]
 default = []
