@@ -165,16 +165,19 @@ impl<'a> Scope<'a> {
     where
         F: for<'child_lifetime> FnMut(BoundedScopeRef<'child_lifetime, 'a>) + 'a,
     {
-        let mut disposer: Option<Box<dyn FnOnce()>> = None;
+        let mut disposer: Option<Box<ScopeDisposer<'a>>> = None;
         self.create_effect(move || {
             // We run the disposer inside the effect, after effect dependencies have been cleared.
             // This is to make sure that if the effect subscribes to its own signal, there is no
             // use-after-free during the clear dependencies phase.
             if let Some(disposer) = disposer.take() {
-                disposer();
+                // SAFETY: we are not accessing the scope after the effect has been dropped.
+                unsafe {
+                    disposer.dispose();
+                }
             }
             // Create a new nested scope and save the disposer.
-            let new_disposer: Option<Box<dyn FnOnce()>> =
+            let new_disposer: Option<Box<ScopeDisposer<'a>>> =
                 Some(Box::new(self.create_child_scope(|ctx| {
                     // SAFETY: f takes the same parameter as the argument to
                     // self.create_child_scope(_).
@@ -182,7 +185,8 @@ impl<'a> Scope<'a> {
                 })));
             // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
             // effect which is necessarily within the lifetime of self (the Scope).
-            disposer = unsafe { std::mem::transmute(new_disposer) };
+            // disposer = unsafe { std::mem::transmute(new_disposer) };
+            disposer = new_disposer;
         });
     }
 }
