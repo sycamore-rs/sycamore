@@ -265,7 +265,7 @@ pub fn hydrate_to(view: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode>, parent: 
 pub fn hydrate_get_scope<'a>(
     view: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode> + 'a,
     parent: &'a Node,
-) -> impl FnOnce() + 'a {
+) -> ScopeDisposer<'a> {
     create_scope(|ctx| {
         insert(
             ctx,

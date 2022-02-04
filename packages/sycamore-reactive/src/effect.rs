@@ -379,7 +379,7 @@ mod tests {
             trigger.set(());
             assert_eq!(*counter.get(), 2);
 
-            disposer();
+            unsafe { disposer.dispose(); }
             trigger.set(());
             assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
         });

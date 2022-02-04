@@ -165,7 +165,7 @@ impl<'a> ScopeDisposer<'a> {
 /// create_scope(|ctx| {
 ///     outer = Some(ctx);
 /// });
-/// # disposer();
+/// # unsafe { disposer.dispose(); }
 /// ```
 ///
 /// # Examples
@@ -307,7 +307,7 @@ impl<'a> Scope<'a> {
     ///     // outer is accessible inside the closure.
     ///     outer = "Hello World!".to_string();
     /// });
-    /// disposer();
+    /// unsafe { disposer.dispose(); }
     /// drop(outer);
     /// //   ^^^^^ -> and remains accessible outside the closure.
     /// # });
@@ -436,7 +436,7 @@ mod tests {
                 dbg!(r);
             })
         });
-        disposer();
+        unsafe { disposer.dispose(); }
     }
 
     #[test]
@@ -449,7 +449,7 @@ mod tests {
                 });
             });
             assert!(!*cleanup_called.get());
-            disposer();
+            unsafe { disposer.dispose(); }
             assert!(*cleanup_called.get());
         });
     }

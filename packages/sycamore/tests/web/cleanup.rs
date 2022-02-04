@@ -22,8 +22,8 @@ pub fn test_cleanup_in_root() {
     let root = create_scope(|ctx| {
         ctx.on_cleanup(on_cleanup_callback);
     });
-    assert_cleanup_called(|| {
-        root();
+    assert_cleanup_called(|| unsafe {
+        root.dispose();
     });
 }
 
@@ -56,7 +56,7 @@ fn component_cleanup_on_root_destroyed() {
         };
     });
 
-    assert_cleanup_called(move || {
-        root();
+    assert_cleanup_called(move || unsafe {
+        root.dispose();
     });
 }
