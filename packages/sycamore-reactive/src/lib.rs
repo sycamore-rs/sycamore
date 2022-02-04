@@ -175,7 +175,7 @@ impl<'a> ScopeDisposer<'a> {
 /// let disposer = create_scope(|ctx| {
 ///     // Use ctx here.
 /// });
-/// disposer();
+/// unsafe { disposer.dispose(); }
 /// ```
 #[must_use = "not calling the disposer function will result in a memory leak"]
 pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> ScopeDisposer<'disposer> {
@@ -203,9 +203,11 @@ pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> ScopeDis
 /// Calling this is equivalent to writing:
 /// ```
 /// # use sycamore_reactive::*;
+/// # unsafe {
 /// (create_scope(|ctx| {
 ///     // ...
-/// }))(); // Call the disposer function immediately
+/// })).dispose(); // Call the disposer function immediately
+/// # }
 /// ```
 pub fn create_scope_immediate(f: impl for<'a> FnOnce(ScopeRef<'a>)) {
     let disposer = create_scope(f);
