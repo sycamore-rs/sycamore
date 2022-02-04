@@ -38,7 +38,7 @@ impl<'a> Scope<'a> {
         // Previous state used for diffing.
         let mut items = Rc::new(Vec::new());
         let mut mapped: Vec<U> = Vec::new();
-        let mut disposers: Vec<Option<Rc<dyn FnOnce() + 'a>>> = Vec::new();
+        let mut disposers: Vec<Option<Rc<ScopeDisposer<'a>>>> = Vec::new();
 
         let signal = self.create_signal(Vec::new());
 
@@ -221,7 +221,7 @@ impl<'a> Scope<'a> {
         // Previous state used for diffing.
         let mut items = Rc::new(Vec::new());
         let mut mapped = Vec::new();
-        let mut disposers: Vec<Box<dyn FnOnce()>> = Vec::new();
+        let mut disposers: Vec<Box<ScopeDisposer<'a>>> = Vec::new();
 
         let signal = self.create_signal(Vec::new());
 

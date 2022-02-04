@@ -109,6 +109,42 @@ impl<'a, 'bound> Deref for BoundedScopeRef<'a, 'bound> {
     }
 }
 
+/// A handle that allows cleaning up a [`Scope`].
+pub struct ScopeDisposer<'a> {
+    f: Box<dyn FnOnce() + 'a>,
+}
+
+impl<'a> ScopeDisposer<'a> {
+    fn new(f: impl FnOnce() + 'a) -> Self {
+        Self { f: Box::new(f) }
+    }
+
+    /// Cleanup the resources owned by the [`Scope`].
+    ///
+    /// This method will cleanup resources in a certain order such that it is impossible to access a
+    /// dangling-reference within cleanup callbacks and effects etc...
+    ///
+    /// If a [`Scope`] has already been disposed, calling it again does nothing.
+    ///
+    /// # Safety
+    ///
+    /// `dispose` should not be called inside the `create_scope` or `create_child_scope` closure.
+    ///
+    /// # Drop order
+    ///
+    /// Fields are dropped in the following order:
+    /// * `child_scopes` - Run child scope drop first.
+    /// * `effects`
+    /// * `cleanups`
+    /// * `contexts` - Contexts can be refereed to inside a cleanup callback so they are dropped
+    ///   after cleanups.
+    /// * `arena` - Signals and refs are dropped last because they can be refereed to in the other
+    ///   fields (e.g. inside a cleanup callback).
+    pub unsafe fn dispose(self) {
+        (self.f)();
+    }
+}
+
 /// Creates a reactive scope.
 ///
 /// Returns a disposer function which will release the memory owned by the [`Scope`].
@@ -129,7 +165,7 @@ impl<'a, 'bound> Deref for BoundedScopeRef<'a, 'bound> {
 /// create_scope(|ctx| {
 ///     outer = Some(ctx);
 /// });
-/// # disposer();
+/// # unsafe { disposer.dispose(); }
 /// ```
 ///
 /// # Examples
@@ -139,10 +175,10 @@ impl<'a, 'bound> Deref for BoundedScopeRef<'a, 'bound> {
 /// let disposer = create_scope(|ctx| {
 ///     // Use ctx here.
 /// });
-/// disposer();
+/// unsafe { disposer.dispose(); }
 /// ```
 #[must_use = "not calling the disposer function will result in a memory leak"]
-pub fn create_scope(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> impl FnOnce() {
+pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> ScopeDisposer<'disposer> {
     let ctx = Scope::new();
     let boxed = Box::new(ctx);
     let ptr = Box::into_raw(boxed);
@@ -154,12 +190,12 @@ pub fn create_scope(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> impl FnOnce() {
     //                      ^^^ -> `ptr` is still accessible here after the call to f.
 
     // Ownership of `ptr` is passed into the closure.
-    move || unsafe {
+    ScopeDisposer::new(move || unsafe {
         // SAFETY: Safe because ptr created using Box::into_raw.
         let boxed = Box::from_raw(ptr);
         // SAFETY: Outside of call to f.
         boxed.dispose();
-    }
+    })
 }
 
 /// Creates a reactive scope, runs the callback, and disposes the scope immediately.
@@ -167,13 +203,18 @@ pub fn create_scope(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> impl FnOnce() {
 /// Calling this is equivalent to writing:
 /// ```
 /// # use sycamore_reactive::*;
+/// # unsafe {
 /// (create_scope(|ctx| {
 ///     // ...
-/// }))(); // Call the disposer function immediately
+/// })).dispose(); // Call the disposer function immediately
+/// # }
 /// ```
 pub fn create_scope_immediate(f: impl for<'a> FnOnce(ScopeRef<'a>)) {
     let disposer = create_scope(f);
-    disposer();
+    // SAFETY: We are not accessing the scope after calling the disposer function.
+    unsafe {
+        disposer.dispose();
+    }
 }
 
 impl<'a> Scope<'a> {
@@ -268,12 +309,12 @@ impl<'a> Scope<'a> {
     ///     // outer is accessible inside the closure.
     ///     outer = "Hello World!".to_string();
     /// });
-    /// disposer();
+    /// unsafe { disposer.dispose(); }
     /// drop(outer);
     /// //   ^^^^^ -> and remains accessible outside the closure.
     /// # });
     /// ```
-    pub fn create_child_scope<F>(&'a self, f: F) -> impl FnOnce() + 'a
+    pub fn create_child_scope<F>(&'a self, f: F) -> ScopeDisposer<'a>
     where
         F: for<'child_lifetime> FnOnce(BoundedScopeRef<'child_lifetime, 'a>),
     {
@@ -298,39 +339,21 @@ impl<'a> Scope<'a> {
         f(BoundedScopeRef::new(unsafe { &*ptr }));
         //                                    ^^^ -> `ptr` is still accessible here after
         // the call to f.
-        move || unsafe {
+        ScopeDisposer::new(move || unsafe {
             let ctx = self.child_scopes.borrow_mut().remove(key).unwrap();
             // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
             // than 'a.
             let ctx = Box::from_raw(ctx);
             // SAFETY: Outside of call to f.
             ctx.dispose();
-        }
+        })
     }
 
-    /// Cleanup the resources owned by the [`Scope`]. This is automatically called in [`Drop`]
+    /// Cleanup the resources owned by the [`Scope`]. For more details, see [`ScopeDisposer::dispose`].
+    ///
+    /// This is automatically called in [`Drop`]
     /// However, [`dispose`](Self::dispose) only needs to take `&self` instead of `&mut self`.
     /// Dropping a [`Scope`] will automatically call [`dispose`](Self::dispose).
-    ///
-    /// This method will cleanup resources in a certain order such that it is impossible to access a
-    /// dangling-reference within cleanup callbacks and effects etc...
-    ///
-    /// If a [`Scope`] has already been disposed, calling it again does nothing.
-    ///
-    /// # Safety
-    ///
-    /// `dispose` should not be called inside the `create_scope` or `create_child_scope` closure.
-    ///
-    /// # Drop order
-    ///
-    /// Fields are dropped in the following order:
-    /// * `child_scopes` - Run child scope drop first.
-    /// * `effects`
-    /// * `cleanups`
-    /// * `contexts` - Contexts can be refereed to inside a cleanup callback so they are dropped
-    ///   after cleanups.
-    /// * `arena` - Signals and refs are dropped last because they can be refereed to in the other
-    ///   fields (e.g. inside a cleanup callback).
     pub(crate) unsafe fn dispose(&self) {
         // Drop child contexts.
         for &i in self.child_scopes.take().values() {
@@ -415,7 +438,7 @@ mod tests {
                 dbg!(r);
             })
         });
-        disposer();
+        unsafe { disposer.dispose(); }
     }
 
     #[test]
@@ -428,7 +451,7 @@ mod tests {
                 });
             });
             assert!(!*cleanup_called.get());
-            disposer();
+            unsafe { disposer.dispose(); }
             assert!(*cleanup_called.get());
         });
     }

@@ -10,7 +10,9 @@ fn main() {
             });
         });
         outer.set(1);
-        disposer();
+        unsafe {
+            disposer.dispose();
+        }
         // Doesn't call the effect because it has been disposed.
         outer.set(2);
     });

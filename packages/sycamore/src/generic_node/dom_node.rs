@@ -321,11 +321,11 @@ pub fn render_to(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>, parent: &Node
 /// [`render_to`] instead. For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-#[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
+#[must_use = "please hold onto the ScopeDisposer until you want to clean things up, or use render_to() instead"]
 pub fn render_get_scope<'a>(
     view: impl FnOnce(ScopeRef<'_>) -> View<DomNode> + 'a,
     parent: &'a Node,
-) -> impl FnOnce() + 'a {
+) -> ScopeDisposer<'a> {
     create_scope(|ctx| {
         insert(
             ctx,
