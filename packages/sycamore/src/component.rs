@@ -74,6 +74,10 @@ impl<'a, G: GenericNode> Children<'a, G> {
         view.unwrap()
     }
 
+    pub fn call_with_bounded_scope(self, ctx: BoundedScopeRef<'_, 'a>) -> View<G> {
+        (self.f)(ctx)
+    }
+
     /// Create a new [`Children`] from a closure.
     pub fn new(f: impl FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }

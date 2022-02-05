@@ -1,5 +1,6 @@
 //! Suspense with first class `async`/`await` support.
 
+use crate::context::ContextProvider;
 use crate::prelude::*;
 
 struct SuspenseState {}
@@ -13,12 +14,11 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 /// TODO: docs
 #[component]
 pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, G>) -> View<G> {
-    // Provide suspense state.
-    let state = SuspenseState {};
-    ctx.provide_context(state);
-
     let children = props.children.call(ctx);
     view! { ctx,
-        (children)
+        ContextProvider {
+            value: SuspenseState {},
+            (children)
+        }
     }
 }
