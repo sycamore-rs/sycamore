@@ -1,6 +1,8 @@
 use std::future::Future;
 
 pub use wasm_bindgen_futures::*;
+// Re-export `sycamore-futures` crate.
+pub use sycamore_futures::*;
 
 use crate::prelude::*;
 

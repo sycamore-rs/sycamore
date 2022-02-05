@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::{fs, mem};
 
 use pulldown_cmark::html::push_html;
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, HeadingLevel};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag};
 use serde::Serialize;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, ClassStyle, ClassedHTMLGenerator};

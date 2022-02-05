@@ -268,7 +268,7 @@ the data. This will cause the router to wait until the data is loaded before ren
 removing the need for some "Loading..." indicator.
 
 `spawn_local_in_scope` is a simple wrapper around `wasm_bindgen_futures::spawn_local` that extends
-the current scope into inside the `async` block. Make sure you enable the `"futures"` feature on
+the current scope into inside the `async` block. Make sure you enable the `"suspense"` feature on
 `sycamore`.
 
 ```rust
