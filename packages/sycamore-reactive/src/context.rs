@@ -15,6 +15,7 @@ impl<'a> Scope<'a> {
     /// This method panics if a context with the same type exists already in this scope.
     /// Note that if a context with the same type exists in a parent scope, the new context will
     /// shadow the old context.
+    #[track_caller]
     pub fn provide_context<T: 'static>(&'a self, value: T) {
         let value = self.create_ref(value);
         self.provide_context_ref(value);
@@ -32,6 +33,7 @@ impl<'a> Scope<'a> {
     /// This method panics if a context with the same type exists already in this scope.
     /// Note that if a context with the same type exists in a parent scope, the new context will
     /// shadow the old context.
+    #[track_caller]
     pub fn provide_context_ref<T: 'static>(&'a self, value: &'a T) {
         let type_id = TypeId::of::<T>();
         if self.contexts.borrow_mut().insert(type_id, value).is_some() {

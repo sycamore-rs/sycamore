@@ -452,6 +452,52 @@ pub fn render_to_string(view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode>) -> Str
     ret
 }
 
+/// Render a [`View`] into a static [`String`]. Useful
+/// for rendering to a string on the server side.
+///
+/// Waits for suspense to be loaded before returning.
+///
+/// _This API requires the following crate features to be activated: `suspense`, `ssr`_
+#[cfg(feature = "suspense")]
+pub async fn render_to_string_await_suspense(
+    view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode> + 'static,
+) -> String {
+    use futures::channel::oneshot;
+    use sycamore_futures::ScopeSpawnFuture;
+
+    let mut ret = String::new();
+    let v = Rc::new(RefCell::new(None));
+    let (sender, receiver) = oneshot::channel();
+    let disposer = create_scope({
+        let v = Rc::clone(&v);
+        move |ctx| {
+            ctx.spawn_future(async move {
+                *v.borrow_mut() = Some(
+                    crate::suspense::await_suspense(ctx, async {
+                        with_hydration_context(|| view(ctx))
+                    })
+                    .await,
+                );
+                sender
+                    .send(())
+                    .expect("receiving end should not be dropped");
+            });
+        }
+    });
+    receiver.await.expect("rendering should complete");
+    let v = v.borrow().clone().unwrap();
+    for node in v.flatten() {
+        node.write_to_string(&mut ret);
+    }
+
+    // SAFETY: we are done with the scope now.
+    unsafe {
+        disposer.dispose();
+    }
+
+    ret
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
