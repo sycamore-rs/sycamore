@@ -4,7 +4,9 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::spanned::Spanned;
-use syn::{parse_quote, FnArg, Item, ItemFn, Result, ReturnType, Signature, Type, TypeTuple, Pat, Expr};
+use syn::{
+    parse_quote, Expr, FnArg, Item, ItemFn, Pat, Result, ReturnType, Signature, Type, TypeTuple,
+};
 
 pub struct ComponentFunction {
     pub f: ItemFn,
@@ -100,17 +102,20 @@ impl ToTokens for ComponentFunction {
 
         if sig.asyncness.is_some() {
             let inputs = &sig.inputs;
-            let args: Vec<Expr> = inputs.iter().map(|x| match x {
-                FnArg::Typed(t) => match &*t.pat {
-                    Pat::Ident(id) => {
-                        let id = &id.ident;
-                        parse_quote! { #id }
+            let args: Vec<Expr> = inputs
+                .iter()
+                .map(|x| match x {
+                    FnArg::Typed(t) => match &*t.pat {
+                        Pat::Ident(id) => {
+                            let id = &id.ident;
+                            parse_quote! { #id }
+                        }
+                        Pat::Wild(_) => parse_quote!(()),
+                        _ => panic!("unexpected pattern"), // TODO
                     },
-                    Pat::Wild(_) => parse_quote!( () ),
-                    _ => panic!("unexpected pattern"), // TODO
-                },
-                FnArg::Receiver(_) => unreachable!(),
-            }).collect::<Vec<_>>();
+                    FnArg::Receiver(_) => unreachable!(),
+                })
+                .collect::<Vec<_>>();
             let non_async_sig = Signature {
                 asyncness: None,
                 ..sig.clone()
@@ -124,7 +129,7 @@ impl ToTokens for ComponentFunction {
                 FnArg::Typed(t) => match &*t.pat {
                     Pat::Ident(id) => &id.ident,
                     _ => unreachable!(),
-                }
+                },
                 FnArg::Receiver(_) => unreachable!(),
             };
             tokens.extend(quote! {
@@ -138,8 +143,10 @@ impl ToTokens for ComponentFunction {
                     let __view = ::sycamore::view! { #ctx, (__dyn.get().as_ref().clone()) };
 
                     <_ as ::sycamore::futures::ScopeSpawnFuture>::spawn_future(#ctx, async move {
-                        let __async_view = #inner_ident(#(#args),*).await;
-                        __dyn.set(__async_view);
+                        ::sycamore::suspense::suspense_scope(#ctx, async move {
+                            let __async_view = #inner_ident(#(#args),*).await;
+                            __dyn.set(__async_view);
+                        }).await
                     });
 
                     __view

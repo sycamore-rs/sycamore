@@ -2,6 +2,7 @@ use anyhow::Result;
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
+use sycamore::suspense::Suspense;
 
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://api.countapi.xyz/hit";
@@ -41,7 +42,10 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
         div {
             p { "Page Visit Counter" }
-            VisitsCount {}
+            Suspense {
+                fallback: view! { ctx, "Loading..." }, 
+                VisitsCount {}
+            }
         }
     }
 }

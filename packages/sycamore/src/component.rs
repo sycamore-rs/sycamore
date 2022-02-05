@@ -64,14 +64,12 @@ where
 }
 
 impl<'a, G: GenericNode> Children<'a, G> {
-    pub fn call(self, ctx: ScopeRef<'a>) -> View<G> {
-        let mut view = None;
-        let _ = ctx.create_child_scope(|ctx| {
-            // SAFETY: `self.f` takes the same parameter as ctx.create_child_scope
-            let tmp = (self.f)(unsafe { std::mem::transmute(ctx) });
-            view = Some(tmp);
-        });
-        view.unwrap()
+    pub fn call<'b>(self, ctx: ScopeRef<'b>) -> View<G>
+    where
+        'a: 'b,
+    {
+        let bounded = BoundedScopeRef::<'b, 'a>::new(ctx);
+        (self.f)(bounded)
     }
 
     pub fn call_with_bounded_scope(self, ctx: BoundedScopeRef<'_, 'a>) -> View<G> {
