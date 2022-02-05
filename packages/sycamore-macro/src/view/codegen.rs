@@ -470,7 +470,10 @@ impl Codegen {
                         let view_root = self.view_root(children);
                         props_quoted.extend(quote! {
                             .children(
-                                ::sycamore::component::Children::new(move |__ctx| #view_root)
+                                ::sycamore::component::Children::new(move |__ctx| {
+                                    let __ctx: &ScopeRef = &__ctx;
+                                    #view_root
+                                })
                             )
                         });
                     }

@@ -349,7 +349,8 @@ impl<'a> Scope<'a> {
         })
     }
 
-    /// Cleanup the resources owned by the [`Scope`]. For more details, see [`ScopeDisposer::dispose`].
+    /// Cleanup the resources owned by the [`Scope`]. For more details, see
+    /// [`ScopeDisposer::dispose`].
     ///
     /// This is automatically called in [`Drop`]
     /// However, [`dispose`](Self::dispose) only needs to take `&self` instead of `&mut self`.
@@ -438,7 +439,9 @@ mod tests {
                 dbg!(r);
             })
         });
-        unsafe { disposer.dispose(); }
+        unsafe {
+            disposer.dispose();
+        }
     }
 
     #[test]
@@ -451,7 +454,9 @@ mod tests {
                 });
             });
             assert!(!*cleanup_called.get());
-            unsafe { disposer.dispose(); }
+            unsafe {
+                disposer.dispose();
+            }
             assert!(*cleanup_called.get());
         });
     }

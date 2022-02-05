@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::{fs, mem};
 
 use pulldown_cmark::html::push_html;
-use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag};
 use serde::Serialize;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, ClassStyle, ClassedHTMLGenerator};
@@ -45,8 +45,8 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
 
     let options = Options::all();
     let parser = Parser::new_ext(&md, options).filter_map(|event| match event {
-        Event::Start(Tag::Heading(level)) => {
-            if level == 1 {
+        Event::Start(Tag::Heading(level, ..)) => {
+            if level == HeadingLevel::H1 {
                 Some(event)
             } else {
                 tmp = Some(Outline {
@@ -56,14 +56,14 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
                 None
             }
         }
-        Event::End(Tag::Heading(level)) => {
-            if level == 1 {
+        Event::End(Tag::Heading(level, ..)) => {
+            if level == HeadingLevel::H1 {
                 Some(event)
             } else {
                 let tmp = tmp.take().unwrap();
                 let anchor = tmp.name.trim().to_lowercase().replace(" ", "-");
                 let name = tmp.name.clone();
-                if level == 2 {
+                if level == HeadingLevel::H2 {
                     outline_tmp.push(tmp);
                 } else {
                     let l = outline_tmp

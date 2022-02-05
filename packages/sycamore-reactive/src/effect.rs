@@ -110,10 +110,12 @@ impl<'a> Scope<'a> {
                     // we need to add backlinks from the signal to the effect, so that
                     // updating the signal will trigger the effect.
                     for emitter in &boxed.dependencies {
-                        // The SignalEmitter might have been destroyed between when the signal was accessed and now.
+                        // The SignalEmitter might have been destroyed between when the signal was
+                        // accessed and now.
                         if let Some(emitter) = emitter.0.upgrade() {
-                            // SAFETY: When the effect is destroyed or when the emitter is dropped, this
-                            // link will be destroyed to prevent dangling references.
+                            // SAFETY: When the effect is destroyed or when the emitter is dropped,
+                            // this link will be destroyed to prevent
+                            // dangling references.
                             emitter.subscribe(Rc::downgrade(unsafe {
                                 std::mem::transmute(&boxed.cb)
                             }));
@@ -379,7 +381,9 @@ mod tests {
             trigger.set(());
             assert_eq!(*counter.get(), 2);
 
-            unsafe { disposer.dispose(); }
+            unsafe {
+                disposer.dispose();
+            }
             trigger.set(());
             assert_eq!(*counter.get(), 2); // inner effect should be destroyed and thus not executed
         });

@@ -12,7 +12,7 @@
 //! - `experimental-builder-html` - Enables the HTML specific backend builder API. Also enables
 //!   `experimental-builder-agnostic`.
 //! - `experimental-hydrate` - Enables client-side hydration support.
-//! - `futures` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
+//! - `suspense` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
 //!   reactive scope into an `async` function.
 //! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering /
 //!   Pre-rendering).
@@ -36,14 +36,17 @@ extern crate self as sycamore;
 #[cfg(feature = "experimental-builder-agnostic")]
 pub mod builder;
 pub mod component;
+pub mod context;
 pub mod easing;
 pub mod flow;
-#[cfg(feature = "futures")]
+#[cfg(feature = "suspense")]
 pub mod futures;
 pub mod generic_node;
 pub mod motion;
 pub mod noderef;
 pub mod portal;
+#[cfg(feature = "suspense")]
+pub mod suspense;
 pub mod utils;
 pub mod view;
 
@@ -69,6 +72,7 @@ pub mod prelude {
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
 
+    pub use crate::component::Children;
     pub use crate::flow::*;
     pub use crate::generic_node::{GenericNode, Html};
     pub use crate::noderef::{NodeRef, ScopeCreateNodeRef};

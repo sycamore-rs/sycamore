@@ -2,7 +2,15 @@ error: function must return `sycamore::view::View`
  --> tests/component/component-fail.rs:5:1
   |
 5 | fn comp1<G: Html>() {
-  | ^^^^^^^^^^^^^^^^^^^
+  | ^^
+
+error: component must take at least one argument of type `sycamore::reactive::ScopeRef`
+ --> tests/component/component-fail.rs:9:1
+  |
+9 | #[component]
+  | ^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: const functions can't be components
   --> tests/component/component-fail.rs:15:1
