@@ -102,14 +102,13 @@ fn indexed() {
 }
 
 #[test]
-#[ignore]
 fn bind() {
-    // create_scope_immediate(|ctx| {
-    //     let signal = ctx.create_signal(String::new());
-    //     let node = view! { ctx,
-    //         input(bind:value=signal)
-    //     };
-    //     let actual = sycamore::render_to_string(|_| node);
-    //     assert_eq!(actual, "<input/>");
-    // });
+    create_scope_immediate(|ctx| {
+        let signal = ctx.create_signal(String::new());
+        let node = view! { ctx,
+            input(bind:value=signal)
+        };
+        let actual = sycamore::render_to_string(|_| node);
+        assert_eq!(actual, "<input/>");
+    });
 }
