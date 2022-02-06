@@ -513,6 +513,17 @@ mod tests {
     }
 
     #[test]
+    fn signal_split() {
+        create_scope_immediate(|ctx| {
+            let (state, set_state) = ctx.create_signal(0).split();
+            assert_eq!(state(), 0);
+
+            set_state(1);
+            assert_eq!(state(), 1);
+        });
+    }
+
+    #[test]
     fn rc_signal() {
         let mut outer = None;
         create_scope_immediate(|ctx| {
