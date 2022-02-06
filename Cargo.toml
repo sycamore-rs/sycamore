@@ -20,6 +20,7 @@ members = [
   "examples/higher-order-components",
   "examples/motion",
   "examples/ssr",
+  "examples/timer",
   "examples/todomvc",
 
   # Website

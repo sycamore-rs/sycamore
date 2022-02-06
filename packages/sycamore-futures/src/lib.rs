@@ -23,11 +23,11 @@ pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
 pub trait ScopeSpawnFuture<'a> {
     /// Spawns a `!Send` future on the current scope. If the scope is destroyed before the future is
     /// completed, it is aborted immediately.
-    fn spawn_future(&self, f: impl Future<Output = ()> + 'a);
+    fn spawn_future(&'a self, f: impl Future<Output = ()> + 'a);
 }
 
 impl<'a> ScopeSpawnFuture<'a> for Scope<'a> {
-    fn spawn_future(&self, f: impl Future<Output = ()> + 'a) {
+    fn spawn_future(&'a self, f: impl Future<Output = ()> + 'a) {
         let boxed: Pin<Box<dyn Future<Output = ()> + 'a>> = Box::pin(f);
         // SAFETY: We are just transmuting the lifetime here so that we can spawn the future.
         // This is safe because we wrap the future in an `Abortable` future which will be
