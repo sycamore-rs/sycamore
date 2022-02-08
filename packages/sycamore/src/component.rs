@@ -23,6 +23,8 @@ pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
 /// A trait that is implemented automatically by the [`Prop`](crate::Prop) derive macro.
 pub trait Prop {
     type Builder;
+    /// Returns the builder for the type.
+    /// The builder should be automatically generated using the [`Prop`](crate::Prop) derive macro.
     fn builder() -> Self::Builder;
 }
 
@@ -64,6 +66,7 @@ where
 }
 
 impl<'a, G: GenericNode> Children<'a, G> {
+    /// Instantiate the child [`View`] with the passed [`ScopeRef`].
     pub fn call<'b>(self, ctx: ScopeRef<'b>) -> View<G>
     where
         'a: 'b,
@@ -72,6 +75,7 @@ impl<'a, G: GenericNode> Children<'a, G> {
         (self.f)(bounded)
     }
 
+    /// Instantiate the child [`View`] with the passed [`BoundedScopeRef`].
     pub fn call_with_bounded_scope(self, ctx: BoundedScopeRef<'_, 'a>) -> View<G> {
         (self.f)(ctx)
     }

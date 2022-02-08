@@ -2,6 +2,7 @@
 
 use crate::prelude::*;
 
+/// Props for [`ContextProvider`].
 #[derive(Prop)]
 pub struct ContextProviderProps<'a, T, G: GenericNode> {
     value: T,

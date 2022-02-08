@@ -8,7 +8,12 @@ pub use sycamore_futures::*;
 
 use crate::prelude::*;
 
+/// Extension trait for [`Scope`] adding the [`create_resource`](ScopeFuturesExt::create_resource)
+/// method.
 pub trait ScopeFuturesExt<'a> {
+    /// Create a new async resource.
+    /// 
+    /// TODO: docs + example
     fn create_resource<U, F>(&'a self, f: F) -> RcSignal<Option<U>>
     where
         U: 'static,
