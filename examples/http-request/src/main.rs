@@ -1,4 +1,3 @@
-use anyhow::Result;
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
@@ -12,7 +11,7 @@ struct Visits {
     value: u64,
 }
 
-async fn fetch_visits(id: &str) -> Result<Visits> {
+async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
     let url = format!("{}/{}/hits", API_BASE_URL, id);
     let resp = Request::get(&url).send().await?;
 

@@ -22,6 +22,7 @@ members = [
   "examples/ssr",
   "examples/timer",
   "examples/todomvc",
+  "examples/transitions",
 
   # Website
   "docs",

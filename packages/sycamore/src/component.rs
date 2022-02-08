@@ -81,7 +81,7 @@ impl<'a, G: GenericNode> Children<'a, G> {
     }
 
     /// Create a new [`Children`] from a closure.
-    pub fn new(f: impl FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a) -> Self {
+    pub fn new(_ctx: ScopeRef<'a>, f: impl FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }
     }
 }

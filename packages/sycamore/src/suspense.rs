@@ -68,6 +68,8 @@ pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, 
     });
 
     let v = props.children.call(ctx);
+    // Pop the suspense state.
+    state.async_counts.borrow_mut().pop();
 
     if let Some(outer_state) = outer_count {
         outer_state.set(*outer_state.get() + 1);
@@ -121,6 +123,8 @@ pub async fn await_suspense<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) ->
         outer_count.set(*outer_count.get() + 1);
     }
     let ret = f.await;
+    // Pop the suspense state.
+    state.async_counts.borrow_mut().pop();
 
     let (sender, receiver) = oneshot::channel();
     let sender = ctx.create_ref(RefCell::new(Some(sender)));
