@@ -21,19 +21,19 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 
 ## Example List
 
-| Example                                            | Description                                                                                   |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [components](components)                           | UI abstraction using components                                                               |
-| [context](context)                                 | A simple counter which can be incremented and decremented                                     |
-| [counter](counter)                                 | Demonstration for the Context API                                                             |
-| [hello-world](hello-world)                         | Hello World!                                                                                  |
-| [higher-order-components](higher-order-components) | Higher-order-components (functions that create components)                                    |
-| [http-request](http-request)                       | Suspense + async components for sending HTTP requests                                         |
-| [hydrate](hydrate)                                 | Making existing HTML reactive                                                                 |
-| [iteration](iteration)                             | Demonstration of how to iterate over data in UI                                               |
-| [js-framework-benchmark](js-framework-benchmark)   | Implementation of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark |
-| [motion](motion)                                   | Demonstration for using animation frames and tweened signals                                  |
-| [ssr](ssr)                                         | Demonstration of server-side-rendering                                                        |
-| [timer](timer)                                     | Demonstration of using futures to auto-increment a counter                                    |
-| [todomvc](todomvc)                                 | Fully compliant implementation of [TodoMVC](https://todomvc.com/) spec                        |
+| Example                                            | Description                                                                                    |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [components](components)                           | UI abstraction using components                                                                |
+| [context](context)                                 | A simple counter which can be incremented and decremented                                      |
+| [counter](counter)                                 | Demonstration for the Context API                                                              |
+| [hello-world](hello-world)                         | Hello World!                                                                                   |
+| [higher-order-components](higher-order-components) | Higher-order-components (functions that create components)                                     |
+| [http-request](http-request)                       | Suspense + async components for sending HTTP requests                                          |
+| [hydrate](hydrate)                                 | Making existing HTML reactive                                                                  |
+| [iteration](iteration)                             | Demonstration of how to iterate over data in UI                                                |
+| [js-framework-benchmark](js-framework-benchmark)   | Implementation of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) |
+| [motion](motion)                                   | Demonstration for using animation frames and tweened signals                                   |
+| [ssr](ssr)                                         | Demonstration of server-side-rendering                                                         |
+| [timer](timer)                                     | Demonstration of using futures to auto-increment a counter                                     |
+| [todomvc](todomvc)                                 | Fully compliant implementation of [TodoMVC](https://todomvc.com/) spec                         |
 
