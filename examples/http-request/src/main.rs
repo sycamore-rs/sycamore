@@ -43,7 +43,7 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
         div {
             p { "Page Visit Counter" }
             Suspense {
-                fallback: view! { ctx, "Loading..." }, 
+                fallback: view! { ctx, "Loading..." },
                 VisitsCount {}
             }
         }

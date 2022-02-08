@@ -16,12 +16,41 @@ struct SuspenseState {
 /// Props for [`Suspense`].
 #[derive(Prop)]
 pub struct SuspenseProps<'a, G: GenericNode> {
+    /// The fallback [`View`] to display while the child nodes are being awaited.
     #[builder(default)]
     fallback: View<G>,
     children: Children<'a, G>,
 }
 
-/// TODO: docs
+/// `Suspense` lets you wait for `async` tasks to complete before rendering the UI. This is useful
+/// for asynchronous data-fetching or other asynchronous tasks.
+///
+/// `Suspense` is deeply integrated with [async components](https://sycamore-rs.netlify.app/docs/basics/components).
+/// Async components that are nested under the `Suspense` component will not be rendered until they
+/// are resolved. Having multiple async components will have the effect that the final UI will only
+/// be rendered once all individual async components are rendered. This is useful for showing a
+/// loading indicator while the data is being loaded.
+/// 
+/// # Example
+/// ```
+/// use sycamore::prelude::*;
+/// use sycamore::suspense::Suspense;
+/// 
+/// #[component]
+/// async fn AsyncComp<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
+///     view! { ctx, "Hello Suspense!" }
+/// }
+/// 
+/// #[component]
+/// fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+///     view! { ctx,
+///         Suspense {
+///             fallback: view! { ctx, "Loading..." },
+///             AsyncComp {}
+///         }
+///     }
+/// }
+/// ```
 #[component]
 pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, G>) -> View<G> {
     let outer_state = ctx.try_use_context::<SuspenseState>();
