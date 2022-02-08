@@ -1,6 +1,7 @@
 //! Proc-macros used in [Sycamore](https://sycamore-rs.netlify.app).
 
 use proc_macro::TokenStream;
+use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 mod component;
@@ -45,10 +46,21 @@ pub fn node(input: TokenStream) -> TokenStream {
 /// [components](https://sycamore-rs.netlify.app/docs/basics/components) in the Sycamore Book.
 #[proc_macro_attribute]
 pub fn component(_attr: TokenStream, component: TokenStream) -> TokenStream {
-    let comp = parse_macro_input!(component as component::ComponentFunction);
+    let comp = {
+        let component = component.clone();
+        parse_macro_input!(component as component::ComponentFunction)
+    };
 
     component::component_impl(comp)
-        .unwrap_or_else(|err| err.to_compile_error())
+        .unwrap_or_else(|err| {
+            // If proc-macro errors, emit the original function for better IDE support.
+            let error_tokens = err.into_compile_error();
+            let component_tokens = proc_macro2::TokenStream::from(component);
+            quote! {
+                #component_tokens
+                #error_tokens
+            }
+        })
         .into()
 }
 

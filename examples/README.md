@@ -36,4 +36,5 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 | [ssr](ssr)                                         | Demonstration of server-side-rendering                                                         |
 | [timer](timer)                                     | Demonstration of using futures to auto-increment a counter                                     |
 | [todomvc](todomvc)                                 | Fully compliant implementation of [TodoMVC](https://todomvc.com/) spec                         |
+| [transitions](transitions)                         | Suspense + async transitions                                                                   |
 

@@ -36,7 +36,6 @@ extern crate self as sycamore;
 #[cfg(feature = "experimental-builder-agnostic")]
 pub mod builder;
 pub mod component;
-pub mod context;
 pub mod easing;
 pub mod flow;
 #[cfg(feature = "suspense")]
@@ -50,6 +49,9 @@ pub mod suspense;
 pub mod utils;
 pub mod view;
 
+/// Re-export for `sycamore-reactive` crate.
+///
+/// Reactive primitives for Sycamore.
 pub mod reactive {
     pub use sycamore_reactive::*;
 }
@@ -64,6 +66,13 @@ pub use generic_node::{render, render_get_scope, render_to};
 pub use sycamore_macro::*;
 
 /// The sycamore prelude.
+///
+/// In most cases, it is idiomatic to use a glob import (aka wildcard import) at the beginning of
+/// your Rust source file.
+///
+/// ```rust
+/// use sycamore::prelude::*;
+/// ```
 pub mod prelude {
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;

@@ -1,3 +1,8 @@
+//! Iteration utility components for [view!](crate::view!).
+//!
+//! Iteration can be either _"keyed"_ or _"non keyed"_.
+//! Use the [`Keyed`] and [`Indexed`] utility components respectively.
+
 use std::hash::Hash;
 
 use crate::prelude::*;
@@ -17,7 +22,7 @@ where
 }
 
 /// Keyed iteration. Use this instead of directly rendering an array of [`View`]s.
-/// Using this will minimize re-renders instead of re-rendering evertemplate: view node on every
+/// Using this will minimize re-renders instead of re-rendering every view node on every
 /// state change.
 ///
 /// For non keyed iteration, see [`Indexed`].

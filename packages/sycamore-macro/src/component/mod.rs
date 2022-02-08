@@ -142,11 +142,9 @@ impl ToTokens for ComponentFunction {
                     let __dyn = #ctx.create_signal(::sycamore::view::View::empty());
                     let __view = ::sycamore::view! { #ctx, (__dyn.get().as_ref().clone()) };
 
-                    <_ as ::sycamore::futures::ScopeSpawnFuture>::spawn_future(#ctx, async move {
-                        ::sycamore::suspense::suspense_scope(#ctx, async move {
-                            let __async_view = #inner_ident(#(#args),*).await;
-                            __dyn.set(__async_view);
-                        }).await
+                    ::sycamore::suspense::suspense_scope(#ctx, async move {
+                        let __async_view = #inner_ident(#(#args),*).await;
+                        __dyn.set(__async_view);
                     });
 
                     __view

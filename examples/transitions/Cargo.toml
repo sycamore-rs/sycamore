@@ -1,5 +1,5 @@
 [package]
-name = "http-request"
+name = "transitions"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,7 +8,8 @@ edition = "2021"
 [dependencies]
 console_error_panic_hook = "0.1.7"
 console_log = "0.2.0"
+getrandom = { version = "0.2.4", features = ["js"] }
+gloo-timers = { version = "0.2.3", features = ["futures"] }
 log = "0.4.14"
-reqwasm = "0.4.0"
-serde = "1.0.136"
+rand = "0.8.4"
 sycamore = { path = "../../packages/sycamore", features = ["suspense"] }

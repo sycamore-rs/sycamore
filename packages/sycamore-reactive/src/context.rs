@@ -16,9 +16,9 @@ impl<'a> Scope<'a> {
     /// Note that if a context with the same type exists in a parent scope, the new context will
     /// shadow the old context.
     #[track_caller]
-    pub fn provide_context<T: 'static>(&'a self, value: T) {
+    pub fn provide_context<T: 'static>(&'a self, value: T) -> &'a T {
         let value = self.create_ref(value);
-        self.provide_context_ref(value);
+        self.provide_context_ref(value)
     }
 
     /// Provides a context in the current [`Scope`]. The context can later be accessed by using
@@ -34,11 +34,12 @@ impl<'a> Scope<'a> {
     /// Note that if a context with the same type exists in a parent scope, the new context will
     /// shadow the old context.
     #[track_caller]
-    pub fn provide_context_ref<T: 'static>(&'a self, value: &'a T) {
+    pub fn provide_context_ref<T: 'static>(&'a self, value: &'a T) -> &'a T {
         let type_id = TypeId::of::<T>();
         if self.contexts.borrow_mut().insert(type_id, value).is_some() {
             panic!("existing context with type exists already");
         }
+        value
     }
 
     /// Tries to get a context value of the given type. If no context with the right type found,
@@ -66,6 +67,12 @@ impl<'a> Scope<'a> {
     #[track_caller]
     pub fn use_context<T: 'static>(&'a self) -> &'a T {
         self.try_use_context().expect("context not found for type")
+    }
+
+    /// Gets a context value of the given type or computes it from a closure.
+    pub fn use_context_or_else<T: 'static>(&'a self, f: impl FnOnce() -> T) -> &'a T {
+        self.try_use_context()
+            .unwrap_or_else(|| self.provide_context(f()))
     }
 
     /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.

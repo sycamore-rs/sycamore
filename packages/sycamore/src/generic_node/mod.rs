@@ -83,8 +83,10 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Chrome).
     fn set_class_name(&self, value: &str);
 
+    /// Add a class to the element.
     fn add_class(&self, class: &str);
 
+    /// Remove a class from the element.
     fn remove_class(&self, class: &str);
 
     /// Sets a property on a node.
