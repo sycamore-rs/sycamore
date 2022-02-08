@@ -30,17 +30,17 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 /// are resolved. Having multiple async components will have the effect that the final UI will only
 /// be rendered once all individual async components are rendered. This is useful for showing a
 /// loading indicator while the data is being loaded.
-/// 
+///
 /// # Example
 /// ```
 /// use sycamore::prelude::*;
 /// use sycamore::suspense::Suspense;
-/// 
+///
 /// #[component]
 /// async fn AsyncComp<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
 ///     view! { ctx, "Hello Suspense!" }
 /// }
-/// 
+///
 /// #[component]
 /// fn App<G: Html>(ctx: ScopeRef) -> View<G> {
 ///     view! { ctx,
@@ -62,7 +62,6 @@ pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, 
         let state = state.clone();
         move || *state.async_count.get() == 0
     });
-    // FIXME: use ContextProvider
     view! { ctx,
         ContextProvider {
             value: state,
@@ -92,6 +91,11 @@ pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, 
     }
 }
 
+/// Creates a new "suspense scope". This scope is used to signal to a [`Suspense`] component higher
+/// up in the component hierarchy that there is some async task that should be awaited before
+/// rendering the UI.
+///
+/// The scope ends when the returned future is resolved.
 pub async fn suspense_scope<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) -> U {
     if let Some(state) = ctx.try_use_context::<SuspenseState>() {
         state.async_count.set(*state.async_count.get() + 1);
@@ -103,6 +107,7 @@ pub async fn suspense_scope<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) ->
     }
 }
 
+/// Waits until all suspense tasks created within the scope are finished.
 pub async fn await_suspense<G: GenericNode>(
     ctx: ScopeRef<'_>,
     f: impl Future<Output = View<G>>,
@@ -110,6 +115,7 @@ pub async fn await_suspense<G: GenericNode>(
     let state = SuspenseState {
         async_count: create_rc_signal(0),
     };
+    // TODO: create a child scope to prevent context clashes
     ctx.provide_context(state.clone());
     let ret = f.await;
 
