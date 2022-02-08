@@ -11,7 +11,7 @@ use sycamore_futures::ScopeSpawnFuture;
 
 use crate::prelude::*;
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 struct SuspenseState {
     async_counts: RefCell<Vec<RcSignal<u32>>>,
 }
@@ -62,14 +62,11 @@ pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, 
     // Push a new suspense state.
     let count = create_rc_signal(0);
     state.async_counts.borrow_mut().push(count.clone());
-    let ready = ctx.create_selector({
-        let count = count;
-        move || *count.get() == 0
-    });
+    let ready = ctx.create_selector(move || *count.get() == 0);
 
     let v = props.children.call(ctx);
     // Pop the suspense state.
-    state.async_counts.borrow_mut().pop();
+    state.async_counts.borrow_mut().pop().unwrap();
 
     if let Some(outer_state) = outer_count {
         outer_state.set(*outer_state.get() + 1);
@@ -93,17 +90,19 @@ pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, 
 /// up in the component hierarchy that there is some async task that should be awaited before
 /// rendering the UI.
 ///
-/// The scope ends when the returned future is resolved.
-pub async fn suspense_scope<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) -> U {
+/// The scope ends when the future is resolved.
+pub fn suspense_scope<'a>(ctx: ScopeRef<'a>, f: impl Future<Output = ()> + 'a) {
     if let Some(state) = ctx.try_use_context::<SuspenseState>() {
-        if let Some(count) = state.async_counts.borrow().last() {
+        if let Some(count) = state.async_counts.borrow().last().cloned() {
             count.set(*count.get() + 1);
-            let ret = f.await;
-            count.set(*count.get() - 1);
-            return ret;
+            ctx.spawn_future(async move {
+                f.await;
+                count.set(*count.get() - 1);
+            });
+            return;
         }
     }
-    f.await
+    ctx.spawn_future(f);
 }
 
 /// Waits until all suspense tasks created within the scope are finished.
@@ -115,7 +114,7 @@ pub async fn await_suspense<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) ->
     let count = create_rc_signal(0);
     state.async_counts.borrow_mut().push(count.clone());
     let ready = ctx.create_selector({
-        let count = count;
+        let count = count.clone();
         move || *count.get() == 0
     });
 
@@ -124,7 +123,7 @@ pub async fn await_suspense<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) ->
     }
     let ret = f.await;
     // Pop the suspense state.
-    state.async_counts.borrow_mut().pop();
+    state.async_counts.borrow_mut().pop().unwrap();
 
     let (sender, receiver) = oneshot::channel();
     let sender = ctx.create_ref(RefCell::new(Some(sender)));

@@ -39,10 +39,6 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let transition = ctx.use_transition();
     let update = move |x| transition.start(move || tab.set(x));
 
-    ctx.create_effect(|| {
-        log::info!("{}", transition.is_pending());
-    });
-
     view! { ctx,
         div {
             p { "Suspense + Transitions" }
