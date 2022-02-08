@@ -1,3 +1,8 @@
+//! Iteration utility components for [view!](crate::view!).
+//!
+//! Iteration can be either _"keyed"_ or _"non keyed"_.
+//! Use the [`Keyed`] and [`Indexed`] utility components respectively.
+
 use std::hash::Hash;
 
 use crate::prelude::*;

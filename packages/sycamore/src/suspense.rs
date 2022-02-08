@@ -4,6 +4,7 @@ use std::cell::{Cell, RefCell};
 
 use futures::channel::oneshot;
 use futures::Future;
+use sycamore_futures::ScopeSpawnFuture;
 
 use crate::context::ContextProvider;
 use crate::prelude::*;
@@ -108,10 +109,7 @@ pub async fn suspense_scope<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) ->
 }
 
 /// Waits until all suspense tasks created within the scope are finished.
-pub async fn await_suspense<G: GenericNode>(
-    ctx: ScopeRef<'_>,
-    f: impl Future<Output = View<G>>,
-) -> View<G> {
+pub async fn await_suspense<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) -> U {
     let state = SuspenseState {
         async_count: create_rc_signal(0),
     };
@@ -131,6 +129,53 @@ pub async fn await_suspense<G: GenericNode>(
     });
     let _ = receiver.await;
     ret
+}
+
+/// A struct to handle transitions. Created using
+/// [`use_transition`](ScopeUseTransition::use_transition).
+#[derive(Clone, Copy)]
+pub struct TransitionHandle<'a> {
+    ctx: ScopeRef<'a>,
+    is_pending: &'a Signal<bool>,
+}
+
+impl<'a> TransitionHandle<'a> {
+    /// Returns whether the transition is currently in progress or not. This value can be tracked
+    /// from a listener scope.
+    pub fn is_pending(&self) -> bool {
+        *self.is_pending.get()
+    }
+
+    /// Start a transition.
+    pub fn start(&'a self, f: impl Fn() + 'a) {
+        self.ctx.spawn_future(async move {
+            await_suspense(self.ctx, async move {
+                self.is_pending.set(true);
+                f();
+                self.is_pending.set(false);
+            })
+            .await;
+        });
+    }
+}
+
+/// Extension trait for [`Scope`] adding the [`use_transition`](ScopeUseTransition::use_transition)
+/// method.
+pub trait ScopeUseTransition<'a> {
+    /// Create a new [TransitionHandle]. This allows executing updates and awaiting until all async
+    /// tasks are completed.
+    fn use_transition(&'a self) -> &'a TransitionHandle<'a>;
+}
+
+impl<'a> ScopeUseTransition<'a> for Scope<'a> {
+    fn use_transition(&'a self) -> &'a TransitionHandle<'a> {
+        let is_pending = self.create_signal(false);
+
+        self.create_ref(TransitionHandle {
+            ctx: self,
+            is_pending,
+        })
+    }
 }
 
 #[cfg(all(test, feature = "ssr"))]
