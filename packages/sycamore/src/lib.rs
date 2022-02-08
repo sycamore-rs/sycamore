@@ -36,7 +36,6 @@ extern crate self as sycamore;
 #[cfg(feature = "experimental-builder-agnostic")]
 pub mod builder;
 pub mod component;
-pub mod context;
 pub mod easing;
 pub mod flow;
 #[cfg(feature = "suspense")]
