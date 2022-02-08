@@ -53,12 +53,12 @@ pub fn component(_attr: TokenStream, component: TokenStream) -> TokenStream {
 
     component::component_impl(comp)
         .unwrap_or_else(|err| {
-            // If proc-macro errors, emit the original function.
-            let error_tokens = err.to_compile_error();
+            // If proc-macro errors, emit the original function for better IDE support.
+            let error_tokens = err.into_compile_error();
             let component_tokens = proc_macro2::TokenStream::from(component);
             quote! {
-                #error_tokens
                 #component_tokens
+                #error_tokens
             }
         })
         .into()

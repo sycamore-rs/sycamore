@@ -191,8 +191,7 @@ mod tests {
     use sycamore_futures::provide_executor_scope;
 
     use crate::generic_node::render_to_string_await_suspense;
-    use crate::prelude::*;
-    use crate::suspense::Suspense;
+    use super::*;
 
     #[tokio::test]
     async fn suspense() {
@@ -214,5 +213,27 @@ mod tests {
         })
         .await;
         assert_eq!(view, "Hello Suspense!");
+    }
+
+    #[tokio::test]
+    async fn transition() {
+        provide_executor_scope(async {
+            create_scope_immediate(|ctx| {
+                let trigger = ctx.create_signal(());
+                let transition = ctx.use_transition();
+                let _: View<SsrNode> = view! { ctx,
+                    Suspense {
+                        children: Children::new(ctx, move |ctx| {
+                            ctx.create_effect(move || {
+                                trigger.track();
+                                assert!(ctx.try_use_context::<SuspenseState>().is_some());
+                            });
+                            View::empty()
+                        })
+                    }
+                };
+                transition.start(|| trigger.set(()));
+            });
+        }).await;
     }
 }
