@@ -12,7 +12,7 @@ use crate::prelude::*;
 /// method.
 pub trait ScopeFuturesExt<'a> {
     /// Create a new async resource.
-    /// 
+    ///
     /// TODO: docs + example
     fn create_resource<U, F>(&'a self, f: F) -> RcSignal<Option<U>>
     where
