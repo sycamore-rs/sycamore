@@ -68,7 +68,7 @@ jobs:
       # Prepare the environment for running the benchmarks
       - name: Delete all frameworks in js-framework-benchmark except for wasm-bindgen
         run: |
-          mv ./js-framework-benchmarks/frameworks/keyed/wasm-bindgen ./tmp
+          mv ./js-framework-benchmark/frameworks/keyed/wasm-bindgen ./tmp
           rm -rf ./js-framework-benchmark/frameworks/keyed/*
           rm -rf ./js-framework-benchmark/frameworks/non-keyed/*
           mv ./tmp ./js-framework-benchmark/frameworks/keyed/wasm-bindgen
