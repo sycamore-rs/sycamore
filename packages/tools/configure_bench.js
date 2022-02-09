@@ -19,7 +19,7 @@ exec(`cp -r ./sycamore/examples/js-framework-benchmark/dist ./js-framework-bench
 console.log("Building sycamore-baseline...");
 exec(`cd ./sycamore-baseline/examples/js-framework-benchmark && trunk build --release --public-url "/frameworks/keyed/sycamore-baseline"`);
 console.log("Done building. Copying files...");
-exec(`cp -r ./sycamore/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore`);
+exec(`cp -r ./sycamore-baseline/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore-baseline`);
 
 console.log("Creating package.json files...");
 
