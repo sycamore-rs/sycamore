@@ -106,11 +106,11 @@ jobs:
 
       - name: Log results
         run: |
-          msg=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts-results/results.json)
+          msg=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json)
           echo "$msg"
 
       - name: Run results_diff
-        run: cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts-results/results.json &> bench.txt
+        run: cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json &> bench.txt
 
       - name: Read file contents
         id: read_bench
