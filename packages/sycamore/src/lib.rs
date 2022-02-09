@@ -41,6 +41,7 @@ pub mod flow;
 #[cfg(feature = "suspense")]
 pub mod futures;
 pub mod generic_node;
+pub mod html;
 pub mod motion;
 pub mod noderef;
 pub mod portal;

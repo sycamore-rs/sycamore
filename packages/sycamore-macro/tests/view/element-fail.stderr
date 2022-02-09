@@ -17,20 +17,26 @@ error: unknown directive `unknown`
   |                                              ^^^^^^^
 
 error: expected `=`
- --> tests/view/element-fail.rs:9:47
-  |
-9 |         let _: View<G> = view! { ctx, button(a.b.c="123") };
-  |                                               ^
+  --> tests/view/element-fail.rs:10:47
+   |
+10 |         let _: View<G> = view! { ctx, button(a.b.c="123") };
+   |                                               ^
 
 error: unexpected end of input, children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:11:26
+  --> tests/view/element-fail.rs:12:26
    |
-11 |           let _: View<G> = view! { ctx,
+12 |           let _: View<G> = view! { ctx,
    |  __________________________^
-12 | |             p(dangerously_set_inner_html="<span>Test</span>") {
-13 | |                 "Error"
-14 | |             }
-15 | |         };
+13 | |             p(dangerously_set_inner_html="<span>Test</span>") {
+14 | |                 "Error"
+15 | |             }
+16 | |         };
    | |_________^
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0412]: cannot find type `unknownelement` in module `sycamore::html`
+ --> tests/view/element-fail.rs:8:39
+  |
+8 |         let _: View<G> = view! { ctx, unknownelement };
+  |                                       ^^^^^^^^^^^^^^ not found in `sycamore::html`
