@@ -2,7 +2,7 @@
 authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
 categories = ["gui", "wasm", "web-programming"]
 description = "Router for sycamore"
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive"]
 license = "MIT"

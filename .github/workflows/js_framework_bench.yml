@@ -17,11 +17,11 @@ jobs:
 
     env:
       MSG_FOOTER: |
-
         Workflow: [${{ github.run_id }}](/${{ github.repository }}/actions/runs/${{ github.run_id }})
         *Adding new commits will generate a new report*
 
     steps:
+      # Create a message on the issue thread
       - name: Post comment
         uses: jungwinter/comment@v1
         id: create_comment
@@ -34,74 +34,89 @@ jobs:
           issue_number: ${{ github.event.number }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/checkout@v2
-        with:
-          repository: sycamore-rs/js-framework-benchmark
-
-      - name: Configure benchmark
-        run: |
-          search="{ git = \"https://github.com/sycamore-rs/sycamore\", branch = \"master\" }"
-          replace="{ git = \"${{ github.event.pull_request.head.repo.html_url }}\", branch = \"${{ github.event.pull_request.head.ref }}\" }"
-          input=$(cat frameworks/keyed/sycamore/Cargo.toml)
-          output=${input//"$search"/"$replace"}
-          if [[ "$input" == "$output" ]]; then
-            echo "ERROR: failed to configure Cargo.toml"
-            exit 1
-          fi
-          echo "$output" > frameworks/keyed/sycamore/Cargo.toml
-          echo "$output"
-
+      # Install necessary tooling
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: wasm32-unknown-unknown
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+      - name: Install trunk
+        run: >
+          wget -qO-
+          https://github.com/thedodd/trunk/releases/download/v0.14.0/trunk-x86_64-unknown-linux-gnu.tar.gz
+          | tar -xzf- && sudo mv trunk /usr/bin/
+
       - name: Setup NodeJS
         uses: actions/setup-node@v1
         with:
-          node-version: 14.x
+          node-version: 16.x
 
       - name: Install chromedriver
         uses: nanasess/setup-chromedriver@master
 
-      - name: npm install
+      # Checkout repositories into respective directories
+      - uses: actions/checkout@v2
+        with:
+          path: ./sycamore
+      - uses: actions/checkout@v2
+        with:
+          path: ./sycamore-baseline
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - uses: actions/checkout@v2
+        with:
+          repository: krausest/js-framework-benchmark
+          path: ./js-framework-benchmark
+
+      # Prepare the environment for running the benchmarks
+      - name: Delete all frameworks in js-framework-benchmark except for wasm-bindgen
         run: |
-          npm install
-          (cd webdriver-ts && npm install)
-          (cd webdriver-ts-results && npm install)
+          mv ./js-framework-benchmark/frameworks/keyed/wasm-bindgen ./tmp
+          rm -rf ./js-framework-benchmark/frameworks/keyed/*
+          rm -rf ./js-framework-benchmark/frameworks/non-keyed/*
+          mv ./tmp ./js-framework-benchmark/frameworks/keyed/wasm-bindgen
+
+      - name: Configure benchmarks
+        run: node ./sycamore/packages/tools/configure_bench.js
+
+      - name: Install js-framework-benchmark dependencies
+        run: |
+          cd ./js-framework-benchmark
+          npm ci
+          (cd webdriver-ts && npm ci)
+          (cd webdriver-ts-results && npm ci)
 
       - name: Start Server
-        run: npm start &
+        run: cd ./js-framework-benchmark && npm start &
 
-      - name: Build
+      - name: Build benchmark driver
         run: |
-          npm run build-prod
-          (cd webdriver-ts && npm run build-prod)
-          echo "Build Done"
-        shell: bash {0} # Do not fail fast. webdriver-ts current spits out errors for tsc.
+          (cd ./js-framework-benchmark/webdriver-ts && npm run compile)
+        shell: bash {0} # Do not fail fast. webdriver-ts currently spits out errors for tsc.
 
       - name: Benchmark
-        run: npm run bench -- --headless
+        run: cd ./js-framework-benchmark && npm run bench -- --headless
 
       - name: Results
-        run: npm run results
+        run: cd ./js-framework-benchmark && npm run results
 
       - name: Log results
         run: |
-          msg=$(cd results_diff && cargo run)
+          msg=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json)
           echo "$msg"
 
       - name: Run results_diff
-        run: cd results_diff && cargo run &> bench.txt
+        run: cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json &> bench.txt
 
       - name: Read file contents
         id: read_bench
         uses: andstor/file-reader-action@v1
         with:
-          path: results_diff/bench.txt
+          path: ./sycamore/packages/tools/bench-diff/bench.txt
 
       - name: Post results
         uses: jungwinter/comment@v1
