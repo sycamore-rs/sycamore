@@ -72,9 +72,15 @@ impl Codegen {
             children,
         } = elem;
 
-        let tag = match tag {
-            ElementTag::Builtin(id) => id.to_string(),
-            ElementTag::Custom(s) => s.clone(),
+        let quote_tag = match tag {
+            ElementTag::Builtin(id) => quote! {
+                let __el = ::sycamore::generic_node::GenericNode::element(
+                    <::sycamore::html::#id as ::sycamore::html::SycamoreElement>::TAG_NAME
+                );
+            },
+            ElementTag::Custom(tag_s) => quote! {
+                let __el = ::sycamore::generic_node::GenericNode::element(#tag_s);
+            },
         };
 
         let quote_attrs: TokenStream = attrs.iter().map(|attr| self.attribute(attr)).collect();
@@ -229,7 +235,7 @@ impl Codegen {
         };
 
         quote! {{
-            let __el = ::sycamore::generic_node::GenericNode::element(#tag);
+            #quote_tag
             #quote_attrs
             #quote_children
             __el
