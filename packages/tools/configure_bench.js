@@ -40,5 +40,5 @@ const PACKAGE_JSON = (name, version) =>
         "devDependencies": {}
     }`;
 
-writeFileSync("./js-framework-benchmark/frameworks/keyed/sycamore/package.json", PACKAGE_JSON("sycamore", "head"))
-writeFileSync("./js-framework-benchmark/frameworks/keyed/sycamore-baseline/package.json", PACKAGE_JSON("sycamore-baseline", "baseline"))
+writeFileSync("./js-framework-benchmark/frameworks/keyed/sycamore/package.json", PACKAGE_JSON("sycamore", "head"), { flag: "a+" })
+writeFileSync("./js-framework-benchmark/frameworks/keyed/sycamore-baseline/package.json", PACKAGE_JSON("sycamore-baseline", "baseline"), { flag: "a+" })
