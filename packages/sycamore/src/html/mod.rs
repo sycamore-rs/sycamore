@@ -37,6 +37,9 @@ macro_rules! define_elements {
 
 // A list of valid HTML5 elements (does not include removed or obsolete elements).
 define_elements! {
+    /// The `<a>` HTML element (or anchor element), with its `href` attribute, creates a hyperlink to web pages, files, email addresses, locations in the same page, or anything else a URL can address.
+    ///
+    /// Content within each `<a>` should indicate the link's destination. If the `href` attribute is present, pressing the enter key while focused on the `<a>` element will activate it.
     a {},
     abbr {},
     address {},
@@ -50,6 +53,9 @@ define_elements! {
     bdo {},
     blockquote {},
     br {},
+    /// The `<button>` HTML element represents a clickable button, used to submit forms or anywhere in a document for accessible, standard button functionality.
+    ///
+    /// By default, HTML buttons are presented in a style resembling the platform the user agent runs on, but you can change buttons’ appearance with CSS.
     button {},
     canvas {},
     caption {},
@@ -94,12 +100,37 @@ define_elements! {
     i {},
     iframe {},
     img {},
+    /// The `<input>` HTML element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and user agent. The <input> element is one of the most powerful and complex in all of HTML due to the sheer number of combinations of input types and attributes.
     input {},
     ins {},
     kbd {},
     keygen {},
+    /// The `<label>` HTML element represents a caption for an item in a user interface.
+    ///
+    /// Associating a `<label>` with an `<input>` element offers some major advantages:
+    /// * The label text is not only visually associated with its corresponding text input; it is programmatically associated with it too. This means that, for example, a screen reader will read out the label when the user is focused on the form input, making it easier for an assistive technology user to understand what data should be entered.
+    /// * When a user clicks or touches/taps a label, the browser passes the focus to its associated input (the resulting event is also raised for the input). That increased hit area for focusing the input provides an advantage to anyone trying to activate it — including those using a touch-screen device.
+    ///
+    /// To associate the `<label>` with an `<input>` element, you need to give the `<input>` an `id` attribute. The `<label>` then needs a for attribute whose value is the same as the input's `id`.
+    ///
+    /// Alternatively, you can nest the `<input>` directly inside the `<label>`, in which case the `for` and `id` attributes are not needed because the association is implicit:
+    ///
+    /// ```html
+    /// <label>Do you like peas?
+    ///   <input type="checkbox" name="peas">
+    /// </label>
+    /// ```
+    /// The form control that a label is labeling is called the labeled control of the label element. Multiple labels can be associated with the same form control:
+    ///
+    /// ```html
+    /// <label for="username">Enter your username:</label>
+    /// <input id="username">
+    /// <label for="username">Forgot your username?</label>
+    /// ```
+    /// Elements that can be associated with a `<label>` element include `<button>`, `<input>` (except for `type="hidden"`), `<meter>`, `<output>`, `<progress>`, `<select>` and `<textarea>`.
     label {},
     legend {},
+    /// The `<li>` HTML element is used to represent an item in a list. It must be contained in a parent element: an ordered list (`<ol>`), an unordered list (`<ul>`), or a menu (`<menu>`). In menus and unordered lists, list items are usually displayed using bullet points. In ordered lists, they are usually displayed with an ascending counter on the left, such as a number or letter.
     li {},
     link {},
     main {},
@@ -112,6 +143,7 @@ define_elements! {
     nav {},
     noscript {},
     object {},
+    /// The `<ol>` HTML element represents an ordered list of items — typically rendered as a numbered list.
     ol {},
     optgroup {},
     option {},
@@ -135,6 +167,7 @@ define_elements! {
     select {},
     small {},
     source {},
+    /// The `<span>` HTML element is a generic inline container for phrasing content, which does not inherently represent anything. It can be used to group elements for styling purposes (using the class or id attributes), or because they share attribute values, such as lang. It should be used only when no other semantic element is appropriate. `<span>` is very much like a `<div>` element, but `<div>` is a block-level element whereas a `<span>` is an inline element.
     span {},
     strong {},
     style {},
@@ -155,6 +188,7 @@ define_elements! {
     tr {},
     track {},
     u {},
+    /// The `<ul>` HTML element represents an unordered list of items, typically rendered as a bulleted list.
     ul {},
     var {},
     video {},
