@@ -155,12 +155,12 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                     div(class="col-md-6") { h1 { "Sycamore Keyed" } }
                     div(class="col-md-6") {
                         div(class="row") {
-                            Button(ButtonProps { id: "run", text: "Create 1,000 rows", callback: Box::new(run) })
-                            Button(ButtonProps { id: "runlots", text: "Create 10,000 rows", callback: Box::new(runlots) })
-                            Button(ButtonProps { id: "add", text: "Append 1,000 rows", callback: Box::new(add) })
-                            Button(ButtonProps { id: "update", text: "Update every 10th row", callback: Box::new(update) })
-                            Button(ButtonProps { id: "clear", text: "Clear", callback: Box::new(clear) })
-                            Button(ButtonProps { id: "swaprows", text: "Swap Rows", callback: Box::new(swaprows) })
+                            Button { id: "run", text: "Create 1,000 rows", callback: Box::new(run) }
+                            Button { id: "runlots", text: "Create 10,000 rows", callback: Box::new(runlots) }
+                            Button { id: "add", text: "Append 1,000 rows", callback: Box::new(add) }
+                            Button { id: "update", text: "Update every 10th row", callback: Box::new(update) }
+                            Button { id: "clear", text: "Clear", callback: Box::new(clear) }
+                            Button { id: "swaprows", text: "Swap Rows", callback: Box::new(swaprows) }
                         }
                     }
                 }
