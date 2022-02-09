@@ -13,13 +13,13 @@ console.log("Configuring benchmarks");
 console.log("Building sycamore...");
 exec(`cd ./sycamore/examples/js-framework-benchmark && trunk build --release --public-url "/frameworks/keyed/sycamore"`);
 console.log("Done building. Copying files...")
-exec(`cp ./sycamore/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore`);
+exec(`cp -r ./sycamore/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore`);
 
 // ---
 console.log("Building sycamore-baseline...");
 exec(`cd ./sycamore-baseline/examples/js-framework-benchmark && trunk build --release --public-url "/frameworks/keyed/sycamore-baseline"`);
 console.log("Done building. Copying files...");
-exec(`cp ./sycamore/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore`);
+exec(`cp -r ./sycamore/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore`);
 
 console.log("Creating package.json files...");
 
