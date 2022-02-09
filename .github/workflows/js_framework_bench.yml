@@ -83,19 +83,19 @@ jobs:
       - name: Configure benchmarks
         run: node ./sycamore/packages/tools/configure_bench.js
 
-      - name: npm install
+      - name: Install js-framework-benchmark dependencies
         run: |
           cd ./js-framework-benchmark
-          npm install
-          (cd webdriver-ts && npm install)
-          (cd webdriver-ts-results && npm install)
+          npm ci
+          (cd webdriver-ts && npm ci)
+          (cd webdriver-ts-results && npm ci)
 
       - name: Start Server
         run: cd ./js-framework-benchmark && npm start &
 
-      - name: Build
+      - name: Build benchmark driver
         run: |
-          (cd ./js-framework-benchmark/webdriver-ts && npm run build-prod)
+          (cd ./js-framework-benchmark/webdriver-ts && npm run compile)
         shell: bash {0} # Do not fail fast. webdriver-ts currently spits out errors for tsc.
 
       - name: Benchmark
