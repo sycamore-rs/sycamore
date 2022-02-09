@@ -43,6 +43,12 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+      - name: Install trunk
+        run: >
+          wget -qO-
+          https://github.com/thedodd/trunk/releases/download/v0.14.0/trunk-x86_64-unknown-linux-gnu.tar.gz
+          | tar -xzf- && sudo mv trunk /usr/bin/
+
       - name: Setup NodeJS
         uses: actions/setup-node@v1
         with:
