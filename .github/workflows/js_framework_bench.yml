@@ -85,37 +85,38 @@ jobs:
 
       - name: npm install
         run: |
+          cd ./js-framework-benchmark
           npm install
           (cd webdriver-ts && npm install)
           (cd webdriver-ts-results && npm install)
 
       - name: Start Server
-        run: npm start &
+        run: cd ./js-framework-benchmark && npm start &
 
       - name: Build
         run: |
-          (cd webdriver-ts && npm run build-prod)
+          (cd ./js-framework-benchmark/webdriver-ts && npm run build-prod)
         shell: bash {0} # Do not fail fast. webdriver-ts currently spits out errors for tsc.
 
       - name: Benchmark
-        run: npm run bench -- --headless
+        run: cd ./js-framework-benchmark && npm run bench -- --headless
 
       - name: Results
-        run: npm run results
+        run: cd ./js-framework-benchmark && npm run results
 
       - name: Log results
         run: |
-          msg=$(cd ./sycamore/packages/tools/bench-diff && cargo run)
+          msg=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts-results/results.json)
           echo "$msg"
 
       - name: Run results_diff
-        run: cd results_diff && cargo run &> bench.txt
+        run: cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts-results/results.json &> bench.txt
 
       - name: Read file contents
         id: read_bench
         uses: andstor/file-reader-action@v1
         with:
-          path: results_diff/bench.txt
+          path: ./sycamore/packages/tools/bench-diff/bench.txt
 
       - name: Post results
         uses: jungwinter/comment@v1
