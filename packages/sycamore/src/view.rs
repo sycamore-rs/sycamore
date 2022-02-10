@@ -2,6 +2,7 @@
 
 use std::any::Any;
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
@@ -35,15 +36,18 @@ impl<G: GenericNode> View<G> {
     }
 
     /// Create a new [`View`] from a [`FnMut`].
-    pub fn new_dyn<'a>(ctx: ScopeRef<'a>, f: impl FnMut() -> View<G> + 'a) -> Self {
-        let memo = ctx.create_memo(f);
-        let signal = create_rc_signal(memo.get().as_ref().clone());
-        ctx.create_effect({
-            let signal = signal.clone();
-            move || signal.set(memo.get().as_ref().clone())
+    pub fn new_dyn<'a>(ctx: ScopeRef<'a>, mut f: impl FnMut() -> View<G> + 'a) -> Self {
+        let signal = ctx.create_ref(RefCell::new(None::<RcSignal<View<G>>>));
+        ctx.create_effect(move || {
+            let view = f();
+            if signal.borrow().is_some() {
+                signal.borrow().as_ref().unwrap().set(view);
+            } else {
+                *signal.borrow_mut() = Some(create_rc_signal(view));
+            }
         });
         Self {
-            inner: ViewType::Dyn(signal),
+            inner: ViewType::Dyn(signal.borrow().as_ref().unwrap().clone()),
         }
     }
 

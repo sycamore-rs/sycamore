@@ -170,17 +170,16 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                     Keyed {
                         iterable: data,
                         view: move |ctx, row| {
-                            let row_id = row.id;
-                            let is_selected = ctx.create_selector(move || *selected.get() == Some(row_id));
-                            let handle_click = move |_| selected.set(Some(row_id));
+                            let is_selected = ctx.create_selector(move || *selected.get() == Some(row.id));
+                            let handle_click = move |_| selected.set(Some(row.id));
                             view! { ctx,
                                 tr(class=is_selected.get().then(|| "danger").unwrap_or("")) {
-                                    td(class="col-md-1") { (row_id) }
+                                    td(class="col-md-1") { (row.id) }
                                     td(class="col-md-4") {
                                         a(on:click=handle_click) { (row.label.get()) }
                                     }
                                     td(class="col-md-1") {
-                                        a(on:click=move |_| remove(row_id)) {
+                                        a(on:click=move |_| remove(row.id)) {
                                             span(class="glyphicon glyphicon-remove", aria-hidden="true")
                                         }
                                     }

@@ -90,26 +90,21 @@ impl<'a> Scope<'a> {
                     let mut effect = effect_ref.take().unwrap();
                     effect.clear_dependencies();
 
-                    // Push the effect onto the effect stack.
-                    let boxed = Box::new(effect);
-                    let ptr: *mut EffectState<'a> = Box::into_raw(boxed);
                     // Push the effect onto the effect stack so that it is visible by signals.
                     effects
                         .borrow_mut()
-                        .push(ptr as *mut () as *mut EffectState<'static>);
+                        .push(unsafe { std::mem::transmute(&mut effect as *mut EffectState<'a>) });
                     // Now we can call the user-provided function.
                     f();
                     // Pop the effect from the effect stack.
                     effects.borrow_mut().pop().unwrap();
-
-                    //  SAFETY: Now that the effect has been popped from EFFECTS,
-                    // get a boxed EffectState with the correct lifetime back.
-                    let boxed = unsafe { Box::from_raw(ptr) };
+                    // The raw pointer pushed onto `effects` is dead and can no longer be accessed.
+                    // We can now access `effect` directly again.
 
                     // For all the signals collected by the EffectState,
                     // we need to add backlinks from the signal to the effect, so that
                     // updating the signal will trigger the effect.
-                    for emitter in &boxed.dependencies {
+                    for emitter in &effect.dependencies {
                         // The SignalEmitter might have been destroyed between when the signal was
                         // accessed and now.
                         if let Some(emitter) = emitter.0.upgrade() {
@@ -117,13 +112,13 @@ impl<'a> Scope<'a> {
                             // this link will be destroyed to prevent
                             // dangling references.
                             emitter.subscribe(Rc::downgrade(unsafe {
-                                std::mem::transmute(&boxed.cb)
+                                std::mem::transmute(&effect.cb)
                             }));
                         }
                     }
 
                     // Get the effect state back into the Rc
-                    *effect_ref.borrow_mut() = Some(*boxed);
+                    *effect_ref.borrow_mut() = Some(effect);
 
                     debug_assert_eq!(effects.borrow().len(), initial_effect_stack_len);
                 });
@@ -140,7 +135,7 @@ impl<'a> Scope<'a> {
         cb.borrow_mut()();
 
         // Push Rc to self.effects so that it is not dropped immediately.
-        self.effects.borrow_mut().push(effect);
+        self.inner.borrow_mut().effects.push(effect);
     }
 
     /// Creates an effect on signals used inside the effect closure.
