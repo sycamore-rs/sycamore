@@ -2,13 +2,18 @@
 
 use std::cell::UnsafeCell;
 
+use smallvec::SmallVec;
+
+/// The size of the [`SmallVec`] inline data.
+const SCOPE_ARENA_STACK_SIZE: usize = 4;
+
 /// A trait that is implemented for everything.
 pub(crate) trait ReallyAny {}
 impl<T> ReallyAny for T {}
 
 #[derive(Default)]
 pub(crate) struct ScopeArena<'a> {
-    inner: UnsafeCell<Vec<*mut (dyn ReallyAny + 'a)>>,
+    inner: UnsafeCell<SmallVec<[*mut (dyn ReallyAny + 'a); SCOPE_ARENA_STACK_SIZE]>>,
 }
 
 impl<'a> ScopeArena<'a> {
