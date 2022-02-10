@@ -367,18 +367,19 @@ impl<'a> Scope<'a> {
     /// However, [`dispose`](Self::dispose) only needs to take `&self` instead of `&mut self`.
     /// Dropping a [`Scope`] will automatically call [`dispose`](Self::dispose).
     pub(crate) unsafe fn dispose(&self) {
+        let mut inner = self.inner.borrow_mut();
         // Drop child contexts.
-        for &i in mem::take(&mut self.inner.borrow_mut().child_scopes).values() {
+        for &i in mem::take(&mut inner.child_scopes).values() {
             // SAFETY: These pointers were allocated in Self::create_child_scope.
             let ctx = Box::from_raw(i);
             // Dispose of ctx if it has not already been disposed.
             ctx.dispose()
         }
         // Drop effects.
-        drop(mem::take(&mut self.inner.borrow_mut().effects));
+        drop(mem::take(&mut inner.effects));
         // Call cleanup functions in an untracked scope.
         untrack(|| {
-            for cb in mem::take(&mut self.inner.borrow_mut().cleanups) {
+            for cb in mem::take(&mut inner.cleanups) {
                 cb();
             }
         });
