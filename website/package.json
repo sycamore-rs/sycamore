@@ -4,7 +4,7 @@
   "description": "Source code for the docs website hosted at [sycamore-rs.netlify.app](https://sycamore-rs.netlify.app)",
   "scripts": {
     "dev": "trunk serve",
-    "prod": "cd ../docs && cargo build && cd ../website && trunk build --release && tailwindcss -i index.css -o dist/tailwind.css --minify"
+    "prod": "cd ../docs && cargo run --release && cd ../website && trunk build --release && tailwindcss -i index.css -o dist/tailwind.css --minify"
   },
   "devDependencies": {
     "postcss": "^8.4.5",
