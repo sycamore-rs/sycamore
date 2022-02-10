@@ -255,20 +255,23 @@ fn generate_sitemap_xml() -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=next");
-    println!("cargo:rerun-if-changed=versioned_docs");
-    println!("cargo:rerun-if-changed=posts");
-
     // Sitemap.
+    println!("Generating sitemap...");
     generate_sitemap_xml()?;
+    println!("Done.");
 
     // Markdown files.
+    println!("Rendering markdown...");
+    println!("Rendering folder `next`");
     build_dir(Path::new("./next"), Path::new("docs"))?;
+    println!("Rendering folder `versioned_docs`");
     build_dir(Path::new("./versioned_docs"), Path::new("docs"))?;
+    println!("Rendering folder `posts`");
     build_dir(Path::new("./posts"), Path::new("posts"))?;
+    println!("Done.");
 
     // Docs sidebars.
+    println!("Generating docs sidebars...");
     let next_sidebar = fs::read_to_string("./next/sidebar.json")?;
     fs::write("../website/static/docs/sidebar.json", next_sidebar)?;
     for entry in WalkDir::new("./versioned_docs") {
@@ -282,8 +285,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             )?;
         }
     }
+    println!("Done.");
 
     // Syntax highlighting CSS files.
+    println!("Generating CSS for syntax highlighting...");
     let ts = ThemeSet::load_defaults();
     let dark_theme = &ts.themes["base16-ocean.dark"];
     let light_theme = &ts.themes["InspiredGitHub"];
@@ -294,6 +299,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         css_for_theme_with_class_style(light_theme, ClassStyle::SpacedPrefixed { prefix: "s-" });
     fs::write("../website/static/dark.css", dark_css)?;
     fs::write("../website/static/light.css", light_css)?;
+    println!("Done.");
 
     Ok(())
 }
