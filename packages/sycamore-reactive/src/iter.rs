@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::mem::MaybeUninit;
+use std::mem::{self, MaybeUninit};
 use std::rc::Rc;
 
 use crate::*;
@@ -38,7 +38,7 @@ impl<'a> Scope<'a> {
         // Previous state used for diffing.
         let mut items = Rc::new(Vec::new());
         let mut mapped: Vec<U> = Vec::new();
-        let mut disposers: Vec<Option<Rc<ScopeDisposer<'a>>>> = Vec::new();
+        let mut disposers: Vec<Option<ScopeDisposer<'a>>> = Vec::new();
 
         let signal = self.create_signal(Vec::new());
 
@@ -47,7 +47,9 @@ impl<'a> Scope<'a> {
             let new_items = list.get();
             if new_items.is_empty() {
                 // Fast path for removing all items.
-                disposers = Vec::new();
+                for dis in mem::take(&mut disposers) {
+                    unsafe { dis.unwrap().dispose(); }
+                }
                 mapped = Vec::new();
             } else if items.is_empty() {
                 // Fast path for new create.
@@ -60,11 +62,11 @@ impl<'a> Scope<'a> {
                         move |ctx| {
                             // SAFETY: f takes the same parameter as the argument to
                             // self.create_child_scope(_).
-                            *tmp.borrow_mut() = Some(map_fn(unsafe { std::mem::transmute(ctx) }, new_item));
+                            *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(ctx) }, new_item));
                         }
                     });
                     mapped.push(tmp.borrow().clone().unwrap());
-                    disposers.push(Some(Rc::new(new_disposer)));
+                    disposers.push(Some(new_disposer));
                 }
             } else {
                 debug_assert!(
@@ -73,7 +75,13 @@ impl<'a> Scope<'a> {
                 );
 
                 let mut temp = vec![None; new_items.len()];
-                let mut temp_disposers = vec![None; new_items.len()];
+                let mut temp_disposers = {
+                    let mut tmp = Vec::with_capacity(new_items.len());
+                    for _ in 0..new_items.len() {
+                        tmp.push(None);
+                    }
+                    tmp
+                };
 
                 // Skip common prefix.
                 let min_len = usize::min(items.len(), new_items.len());
@@ -97,7 +105,7 @@ impl<'a> Scope<'a> {
                     end -= 1;
                     new_end -= 1;
                     temp[new_end] = Some(mapped[end].clone());
-                    temp_disposers[new_end] = disposers[end].clone();
+                    temp_disposers[new_end] = disposers[end].take();
                 }
                 debug_assert!(
                     if end != 0 && new_end != 0 {
@@ -130,12 +138,12 @@ impl<'a> Scope<'a> {
                     if let Some(j) = new_indices.get(&key_fn(item)).copied() {
                         // Moved. j is index of item in new_items.
                         temp[j] = Some(mapped[i].clone());
-                        temp_disposers[j] = disposers[i].clone();
+                        temp_disposers[j] = disposers[i].take();
                         new_indices_next[j - start]
                             .and_then(|j| new_indices.insert(key_fn(item), j));
                     } else {
                         // Create new.
-                        disposers[i] = None;
+                        unsafe { disposers[i].take().unwrap().dispose(); }
                     }
                 }
 
@@ -147,10 +155,10 @@ impl<'a> Scope<'a> {
                         if j >= mapped.len() {
                             debug_assert_eq!(mapped.len(), j);
                             mapped.push(temp[j].clone().unwrap());
-                            disposers.push(temp_disposers[j].clone());
+                            disposers.push(temp_disposers[j].take());
                         } else {
                             mapped[j] = temp[j].clone().unwrap();
-                            disposers[j] = temp_disposers[j].clone();
+                            disposers[j] = temp_disposers[j].take();
                         }
                     } else {
                         // Create new value.
@@ -162,16 +170,16 @@ impl<'a> Scope<'a> {
                             move |ctx| {
                                 // SAFETY: f takes the same parameter as the argument to
                                 // self.create_child_scope(_).
-                                *tmp.borrow_mut() = Some(map_fn(unsafe { std::mem::transmute(ctx) }, new_item));
+                                *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(ctx) }, new_item));
                             }
                         });
 
                         if mapped.len() > j {
                             mapped[j] = tmp.borrow().clone().unwrap();
-                            disposers[j] = Some(Rc::new(new_disposer));
+                            disposers[j] = Some(new_disposer);
                         } else {
                             mapped.push(tmp.borrow().clone().unwrap());
-                            disposers.push(Some(Rc::new(new_disposer)));
+                            disposers.push(Some(new_disposer));
                         }
                     }
                 }
@@ -261,7 +269,7 @@ impl<'a> Scope<'a> {
 
                                 // SAFETY: f takes the same parameter as the argument to
                                 // self.create_child_scope(_).
-                                (*ptr).write(map_fn(std::mem::transmute(ctx), new_item));
+                                (*ptr).write(map_fn(mem::transmute(ctx), new_item));
                             }
                         });
                         if item.is_none() {
@@ -373,6 +381,59 @@ mod tests {
 
             a.set(vec![1, 2, 3, 4]);
             assert_eq!(*mapped.get(), vec![1, 2, 5, 4]);
+        });
+    }
+
+    #[test]
+    fn keyed_call_cleanup_on_remove() {
+        create_scope_immediate(|ctx| {
+            let a = ctx.create_signal(vec![1, 2, 3]);
+            let counter = Rc::new(Cell::new(0));
+            let _mapped = ctx.map_keyed(
+                a,
+                {
+                    let counter = Rc::clone(&counter);
+                    move |ctx, _| {
+                        let counter = Rc::clone(&counter);
+                        ctx.on_cleanup(move || {
+                            counter.set(counter.get() + 1);
+                        });
+                    }
+                },
+                |x| *x,
+            );
+            assert_eq!(counter.get(), 0, "no cleanup yet");
+
+            a.set(vec![1, 2]);
+            assert_eq!(counter.get(), 1);
+
+            a.set(vec![1, 2, 3]);
+            assert_eq!(counter.get(), 1);
+        });
+    }
+
+    #[test]
+    fn keyed_call_cleanup_on_remove_all() {
+        create_scope_immediate(|ctx| {
+            let a = ctx.create_signal(vec![1, 2, 3]);
+            let counter = Rc::new(Cell::new(0));
+            let _mapped = ctx.map_keyed(
+                a,
+                {
+                    let counter = Rc::clone(&counter);
+                    move |ctx, _| {
+                        let counter = Rc::clone(&counter);
+                        ctx.on_cleanup(move || {
+                            counter.set(counter.get() + 1);
+                        })
+                    }
+                },
+                |x| *x,
+            );
+            assert_eq!(counter.get(), 0, "no cleanup yet");
+
+            a.set(vec![]);
+            assert_eq!(counter.get(), 3);
         });
     }
 
