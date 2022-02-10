@@ -59,7 +59,7 @@ impl<'a> Scope<'a> {
                 return Some(value);
             } else {
                 // SAFETY: `current.parent` necessarily lives longer than `current`.
-                this = current.inner.borrow().parent.map(|x| unsafe { &*x });
+                this = current.parent.map(|x| unsafe { &*x });
             }
         }
         None
@@ -87,7 +87,7 @@ impl<'a> Scope<'a> {
         let mut this = Some(self);
         while let Some(current) = this {
             // SAFETY: `current.parent` necessarily lives longer than `current`.
-            this = current.inner.borrow().parent.map(|x| unsafe { &*x });
+            this = current.parent.map(|x| unsafe { &*x });
             depth += 1;
         }
         depth

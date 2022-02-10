@@ -45,10 +45,6 @@ struct ScopeInner<'a> {
     ///
     /// The raw pointer is owned by this field.
     contexts: HashMap<TypeId, &'a dyn Any>,
-    /// A pointer to the parent scope.
-    /// # Safety
-    /// The parent scope does not actually have the right lifetime.
-    parent: Option<*const Scope<'a>>,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }
@@ -71,6 +67,10 @@ pub struct Scope<'a> {
     inner: RefCell<ScopeInner<'a>>,
     /// An arena allocator for allocating refs and signals.
     arena: ScopeArena<'a>,
+    /// A pointer to the parent scope.
+    /// # Safety
+    /// The parent scope does not actually have the right lifetime.
+    parent: Option<*const Scope<'a>>,
 }
 
 impl<'a> Scope<'a> {
@@ -88,10 +88,10 @@ impl<'a> Scope<'a> {
                 cleanups: Default::default(),
                 child_scopes: Default::default(),
                 contexts: Default::default(),
-                parent: None,
                 _phantom: Default::default(),
             }),
             arena: Default::default(),
+            parent: None,
         }
     }
 }
@@ -328,10 +328,10 @@ impl<'a> Scope<'a> {
     where
         F: for<'child_lifetime> FnOnce(BoundedScopeRef<'child_lifetime, 'a>),
     {
-        let child: Scope = Scope::new();
+        let mut child = Scope::new();
         // SAFETY: The only fields that are accessed on self from child is `context` which does not
         // have any lifetime annotations.
-        child.inner.borrow_mut().parent = Some(unsafe { std::mem::transmute(self as *const _) });
+        child.parent = Some(unsafe { std::mem::transmute(self as *const _) });
         let boxed = Box::new(child);
         let ptr = Box::into_raw(boxed);
 
