@@ -417,6 +417,9 @@ mod tests {
 
             a.set(vec![1, 2, 3]);
             assert_eq!(counter.get(), 1);
+
+            a.set(vec![1, 3]);
+            assert_eq!(counter.get(), 2);
         });
     }
 
@@ -538,6 +541,9 @@ mod tests {
 
             a.set(vec![1, 2, 3]);
             assert_eq!(counter.get(), 1);
+
+            a.set(vec![1, 3]);
+            assert_eq!(counter.get(), 3);
         });
     }
 
