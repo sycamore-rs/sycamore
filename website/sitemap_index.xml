@@ -129,4 +129,5 @@
 <url><loc>https://sycamore-rs.netlify.app/examples/ssr</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/timer</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/todomvc</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/examples/transitions</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>
