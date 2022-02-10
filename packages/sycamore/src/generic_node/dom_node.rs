@@ -8,7 +8,7 @@ use std::hash::{Hash, Hasher};
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
-use web_sys::{Comment, Element, Node, Text};
+use web_sys::{Comment, Document, Element, Node, Text};
 
 use crate::generic_node::{GenericNode, Html};
 use crate::reactive::*;
@@ -25,6 +25,15 @@ extern "C" {
 
     #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
     pub fn set_node_id(this: &NodeWithId, id: usize);
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(extends = Document)]
+    type DocumentCreateTextNodeInt;
+
+    #[wasm_bindgen(method, js_name = "createTextNode")]
+    pub fn create_text_node_int(this: &DocumentCreateTextNodeInt, num: i32) -> web_sys::Text;
 }
 
 /// An unique id for every node.
@@ -150,6 +159,14 @@ impl GenericNode for DomNode {
 
     fn text_node(text: &str) -> Self {
         let node = document().create_text_node(text).into();
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    fn text_node_int(int: i32) -> Self {
+        let node = document().unchecked_into::<DocumentCreateTextNodeInt>().create_text_node_int(int).into();
         DomNode {
             id: Default::default(),
             node,

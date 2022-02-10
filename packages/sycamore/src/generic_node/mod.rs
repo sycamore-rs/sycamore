@@ -58,6 +58,11 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a new text node.
     fn text_node(text: &str) -> Self;
 
+    /// Create a new text node from an integer.
+    fn text_node_int(int: i32) -> Self {
+        Self::text_node(&int.to_string())
+    }
+
     /// Create a marker (dummy) node. For [`DomNode`], this is implemented by creating an empty
     /// comment node. This is used, for example, in [`Keyed`](crate::flow::Keyed) and
     /// [`Indexed`](crate::flow::Indexed) for scenarios where you want to push a new item to the
