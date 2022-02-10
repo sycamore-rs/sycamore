@@ -16,6 +16,7 @@ use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use std::mem;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
@@ -26,6 +27,31 @@ use slotmap::{DefaultKey, SlotMap};
 /// A wrapper type around a lifetime that forces the lifetime to be invariant.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 struct InvariantLifetime<'id>(PhantomData<&'id mut &'id ()>);
+
+/// Internal representation for [`Scope`]. This allows only using a single top-level [`RefCell`]
+/// instead of a [`RefCell`] for every field.
+#[derive(Default)]
+struct ScopeInner<'a> {
+    /// Effect functions created on the [`Scope`].
+    effects: Vec<Rc<RefCell<Option<EffectState<'a>>>>>,
+    /// Cleanup functions.
+    cleanups: Vec<Box<dyn FnOnce() + 'a>>,
+    /// Child scopes.
+    ///
+    /// The raw pointer is owned by this field.
+    child_scopes: SlotMap<DefaultKey, *mut Scope<'a>>,
+    /// Contexts that are allocated on the current [`Scope`].
+    /// See the [`mod@context`] module.
+    ///
+    /// The raw pointer is owned by this field.
+    contexts: HashMap<TypeId, &'a dyn Any>,
+    /// A pointer to the parent scope.
+    /// # Safety
+    /// The parent scope does not actually have the right lifetime.
+    parent: Option<*const Scope<'a>>,
+    // Make sure that 'a is invariant.
+    _phantom: InvariantLifetime<'a>,
+}
 
 /// A reactive scope.
 ///
@@ -42,27 +68,9 @@ struct InvariantLifetime<'id>(PhantomData<&'id mut &'id ()>);
 ///   from an outer scope into an inner scope. This lifetime is also invariant because it is used
 ///   within an cell.
 pub struct Scope<'a> {
-    /// Effect functions created on the [`Scope`].
-    effects: RefCell<Vec<Rc<RefCell<Option<EffectState<'a>>>>>>,
-    /// Cleanup functions.
-    cleanups: RefCell<Vec<Box<dyn FnOnce() + 'a>>>,
-    /// Child scopes.
-    ///
-    /// The raw pointer is owned by this field.
-    child_scopes: RefCell<SlotMap<DefaultKey, *mut Scope<'a>>>,
+    inner: RefCell<ScopeInner<'a>>,
     /// An arena allocator for allocating refs and signals.
     arena: ScopeArena<'a>,
-    /// Contexts that are allocated on the current [`Scope`].
-    /// See the [`mod@context`] module.
-    ///
-    /// The raw pointer is owned by this field.
-    contexts: RefCell<HashMap<TypeId, &'a dyn Any>>,
-    /// A pointer to the parent scope.
-    /// # Safety
-    /// The parent scope does not actually have the right lifetime.
-    parent: Option<*const Scope<'a>>,
-    // Make sure that 'a is invariant.
-    _phantom: InvariantLifetime<'a>,
 }
 
 impl<'a> Scope<'a> {
@@ -75,13 +83,15 @@ impl<'a> Scope<'a> {
         //
         // Self::new() is intentionally pub(crate) only to prevent end-users from creating a Scope.
         Self {
-            effects: Default::default(),
-            cleanups: Default::default(),
-            child_scopes: Default::default(),
+            inner: RefCell::new(ScopeInner {
+                effects: Default::default(),
+                cleanups: Default::default(),
+                child_scopes: Default::default(),
+                contexts: Default::default(),
+                parent: None,
+                _phantom: Default::default(),
+            }),
             arena: Default::default(),
-            contexts: Default::default(),
-            parent: None,
-            _phantom: Default::default(),
         }
     }
 }
@@ -266,7 +276,7 @@ impl<'a> Scope<'a> {
 
     /// Adds a callback that is called when the scope is destroyed.
     pub fn on_cleanup(&self, f: impl FnOnce() + 'a) {
-        self.cleanups.borrow_mut().push(Box::new(f));
+        self.inner.borrow_mut().cleanups.push(Box::new(f));
     }
 
     /// Create a child scope.
@@ -318,16 +328,17 @@ impl<'a> Scope<'a> {
     where
         F: for<'child_lifetime> FnOnce(BoundedScopeRef<'child_lifetime, 'a>),
     {
-        let mut child: Scope = Scope::new();
+        let child: Scope = Scope::new();
         // SAFETY: The only fields that are accessed on self from child is `context` which does not
         // have any lifetime annotations.
-        child.parent = Some(unsafe { std::mem::transmute(self as *const _) });
+        child.inner.borrow_mut().parent = Some(unsafe { std::mem::transmute(self as *const _) });
         let boxed = Box::new(child);
         let ptr = Box::into_raw(boxed);
 
         let key = self
-            .child_scopes
+            .inner
             .borrow_mut()
+            .child_scopes
             // SAFETY: None of the fields of ptr are accessed through child_scopes therefore we can
             // safely transmute the lifetime.
             .insert(unsafe { std::mem::transmute(ptr) });
@@ -340,7 +351,7 @@ impl<'a> Scope<'a> {
         //                                    ^^^ -> `ptr` is still accessible here after
         // the call to f.
         ScopeDisposer::new(move || unsafe {
-            let ctx = self.child_scopes.borrow_mut().remove(key).unwrap();
+            let ctx = self.inner.borrow_mut().child_scopes.remove(key).unwrap();
             // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
             // than 'a.
             let ctx = Box::from_raw(ctx);
@@ -357,17 +368,17 @@ impl<'a> Scope<'a> {
     /// Dropping a [`Scope`] will automatically call [`dispose`](Self::dispose).
     pub(crate) unsafe fn dispose(&self) {
         // Drop child contexts.
-        for &i in self.child_scopes.take().values() {
+        for &i in mem::take(&mut self.inner.borrow_mut().child_scopes).values() {
             // SAFETY: These pointers were allocated in Self::create_child_scope.
             let ctx = Box::from_raw(i);
             // Dispose of ctx if it has not already been disposed.
             ctx.dispose()
         }
         // Drop effects.
-        drop(self.effects.take());
+        drop(mem::take(&mut self.inner.borrow_mut().effects));
         // Call cleanup functions in an untracked scope.
         untrack(|| {
-            for cb in self.cleanups.take() {
+            for cb in mem::take(&mut self.inner.borrow_mut().cleanups) {
                 cb();
             }
         });

@@ -135,7 +135,7 @@ impl<'a> Scope<'a> {
         cb.borrow_mut()();
 
         // Push Rc to self.effects so that it is not dropped immediately.
-        self.effects.borrow_mut().push(effect);
+        self.inner.borrow_mut().effects.push(effect);
     }
 
     /// Creates an effect on signals used inside the effect closure.

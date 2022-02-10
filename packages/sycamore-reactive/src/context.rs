@@ -36,7 +36,13 @@ impl<'a> Scope<'a> {
     #[track_caller]
     pub fn provide_context_ref<T: 'static>(&'a self, value: &'a T) -> &'a T {
         let type_id = TypeId::of::<T>();
-        if self.contexts.borrow_mut().insert(type_id, value).is_some() {
+        if self
+            .inner
+            .borrow_mut()
+            .contexts
+            .insert(type_id, value)
+            .is_some()
+        {
             panic!("existing context with type exists already");
         }
         value
@@ -48,12 +54,12 @@ impl<'a> Scope<'a> {
         let type_id = TypeId::of::<T>();
         let mut this = Some(self);
         while let Some(current) = this {
-            if let Some(value) = current.contexts.borrow_mut().get(&type_id) {
+            if let Some(value) = current.inner.borrow().contexts.get(&type_id) {
                 let value = value.downcast_ref::<T>().unwrap();
                 return Some(value);
             } else {
                 // SAFETY: `current.parent` necessarily lives longer than `current`.
-                this = current.parent.map(|x| unsafe { &*x });
+                this = current.inner.borrow().parent.map(|x| unsafe { &*x });
             }
         }
         None
@@ -81,7 +87,7 @@ impl<'a> Scope<'a> {
         let mut this = Some(self);
         while let Some(current) = this {
             // SAFETY: `current.parent` necessarily lives longer than `current`.
-            this = current.parent.map(|x| unsafe { &*x });
+            this = current.inner.borrow().parent.map(|x| unsafe { &*x });
             depth += 1;
         }
         depth
