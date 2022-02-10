@@ -293,15 +293,14 @@ impl<'a> Scope<'a> {
 
                 if new_items.len() < items.len() {
                     for _i in new_items.len()..items.len() {
-                        disposers.pop();
+                        unsafe {
+                            disposers.pop().unwrap().dispose();
+                        }
                     }
                 }
 
                 // In case the new set is shorter than the old, set the length of the mapped array.
                 mapped.truncate(new_items.len());
-                disposers
-                    .drain(new_items.len()..)
-                    .for_each(|dis| unsafe { dis.dispose() });
 
                 // save a copy of the mapped items for the next update.
                 items = Rc::clone(&new_items);
