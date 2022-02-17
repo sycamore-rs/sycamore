@@ -164,3 +164,25 @@ impl Dyn {
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use syn::parse_quote;
+
+    use super::*;
+
+    #[test]
+    fn needs_ctx_if_ctx_ident_inside_expr() {
+        let ts: Dyn = parse_quote! {
+            (ctx.create_signal(0))
+        };
+        assert!(ts.needs_ctx("ctx"));
+        assert!(!ts.needs_ctx("not_ctx"));
+
+        let not_ctx: Dyn = parse_quote! {
+            (123)
+        };
+        assert!(!ts.needs_ctx("ctx"));
+        assert!(!ts.needs_ctx("not_ctx"));
+    }
+}
