@@ -119,6 +119,8 @@ mod tests {
     }
 
     #[test]
+    // Do not run under miri as there is a memory leak false positive.
+    #[cfg_attr(miri, ignore)]
     #[should_panic = "existing context with type exists already"]
     fn existing_context_with_same_type_should_panic() {
         create_scope_immediate(|ctx| {
