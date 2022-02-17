@@ -1,4 +1,4 @@
-FROM gitpod/workspace-rust
+FROM gitpod/workspace-full
 
 # Install wasm-pack
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
