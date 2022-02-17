@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use sycamore::prelude::*;
 
 #[test]
@@ -110,5 +112,23 @@ fn bind() {
         };
         let actual = sycamore::render_to_string(|_| node);
         assert_eq!(actual, "<input/>");
+    });
+}
+
+#[test]
+fn using_ctx_in_dyn_node_creates_nested_scope() {
+    let _ = sycamore::render_to_string(|ctx| {
+        let outer_depth = ctx.scope_depth();
+        let inner_depth = ctx.create_ref(Cell::new(0));
+        let node = view! { ctx,
+            p {
+                ({
+                    inner_depth.set(ctx.scope_depth());
+                    view! { ctx, }
+                })
+            }
+        };
+        assert_eq!(inner_depth.get(), outer_depth + 1);
+        node
     });
 }

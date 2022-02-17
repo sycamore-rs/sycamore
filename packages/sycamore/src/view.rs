@@ -51,6 +51,26 @@ impl<G: GenericNode> View<G> {
         }
     }
 
+    /// Create a new [`View`] from a [`FnMut`] while creating a new child reactive scope.
+    pub fn new_dyn_scoped<'a>(
+        ctx: ScopeRef<'a>,
+        mut f: impl FnMut(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
+    ) -> Self {
+        let signal = ctx.create_ref(RefCell::new(None::<RcSignal<View<G>>>));
+        ctx.create_effect_scoped(move |ctx| {
+            // SAFETY: `f` takes the same parameter as the child ctx provided by `create_effect_scoped`.
+            let view = f(unsafe { std::mem::transmute(ctx) });
+            if signal.borrow().is_some() {
+                signal.borrow().as_ref().unwrap().set(view);
+            } else {
+                *signal.borrow_mut() = Some(create_rc_signal(view));
+            }
+        });
+        Self {
+            inner: ViewType::Dyn(signal.borrow().as_ref().unwrap().clone()),
+        }
+    }
+
     /// Create a new [`View`] from a `Vec` of [`GenericNode`]s.
     pub fn new_fragment(fragment: Vec<View<G>>) -> Self {
         Self {

@@ -3,6 +3,8 @@
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
+use proc_macro2::{TokenStream, TokenTree};
+use quote::ToTokens;
 use syn::punctuated::Punctuated;
 use syn::{Expr, Ident, LitStr, Path, Token};
 
@@ -146,4 +148,61 @@ pub struct Text {
 
 pub struct Dyn {
     pub value: Expr,
+}
+
+fn needs_ctx(ts: TokenStream, ctx: &str) -> bool {
+    for t in ts {
+        match t {
+            TokenTree::Ident(id) => {
+                if id == ctx {
+                    return true;
+                }
+            }
+            TokenTree::Group(g) => {
+                if needs_ctx(g.stream(), ctx) {
+                    return true;
+                }
+            }
+            _ => (),
+        }
+    }
+    false
+}
+
+impl Dyn {
+    /// Returns `true` if the wrapped [`Expr`] has the identifier `ctx` somewhere.
+    pub fn needs_ctx(&self, ctx: &str) -> bool {
+        let ts = self.value.to_token_stream();
+        needs_ctx(ts, ctx)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use syn::parse_quote;
+
+    use super::*;
+
+    #[test]
+    fn needs_ctx_if_ctx_ident_inside_expr() {
+        let ts: Dyn = parse_quote! {
+            (ctx.create_signal(0))
+        };
+        assert!(ts.needs_ctx("ctx"));
+        assert!(!ts.needs_ctx("not_ctx"));
+
+        let not_ctx: Dyn = parse_quote! {
+            (123)
+        };
+        assert!(!not_ctx.needs_ctx("ctx"));
+        assert!(!not_ctx.needs_ctx("not_ctx"));
+
+        let ts_in_braces: Dyn = parse_quote! {
+            ({
+                ctx.create_signal(0)
+            })
+        };
+        assert!(ts_in_braces.needs_ctx("ctx"));
+        assert!(!ts_in_braces.needs_ctx("not_ctx"));
+    }
 }
