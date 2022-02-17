@@ -7,9 +7,9 @@ pub mod ir;
 pub mod parse;
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::parse::{Parse, ParseStream};
-use syn::{Expr, Result, Token};
+use syn::{parse_quote, Expr, Result, Token};
 
 use self::codegen::Codegen;
 use self::ir::*;
@@ -31,11 +31,12 @@ impl<T: Parse> Parse for WithCtxArg<T> {
 pub fn view_impl(view_root: WithCtxArg<ViewRoot>) -> TokenStream {
     let ctx = view_root.ctx;
     let codegen_state = Codegen {
-        ctx: format_ident!("__ctx"),
+        ctx: parse_quote!(#ctx),
     };
     let quoted = codegen_state.view_root(&view_root.rest);
     quote! {{
-        let __ctx: ::sycamore::reactive::ScopeRef = &#ctx; // Make sure that ctx is used.
+        #[allow(unused_variables)]
+        let #ctx: ::sycamore::reactive::ScopeRef = &#ctx; // Make sure that ctx is used.
         #quoted
     }}
 }
@@ -43,11 +44,12 @@ pub fn view_impl(view_root: WithCtxArg<ViewRoot>) -> TokenStream {
 pub fn node_impl(elem: WithCtxArg<Element>) -> TokenStream {
     let ctx = elem.ctx;
     let codegen_state = Codegen {
-        ctx: format_ident!("__ctx"),
+        ctx: parse_quote!(#ctx),
     };
     let quoted = codegen_state.element(&elem.rest);
     quote! {{
-        let __ctx: ::sycamore::reactive::ScopeRef = &#ctx; // Make sure that ctx is used.
+        #[allow(unused_variables)]
+        let #ctx: ::sycamore::reactive::ScopeRef = &#ctx; // Make sure that ctx is used.
         #quoted
     }}
 }
