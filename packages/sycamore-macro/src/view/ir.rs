@@ -182,7 +182,7 @@ mod tests {
         let not_ctx: Dyn = parse_quote! {
             (123)
         };
-        assert!(!ts.needs_ctx("ctx"));
-        assert!(!ts.needs_ctx("not_ctx"));
+        assert!(!not_ctx.needs_ctx("ctx"));
+        assert!(!not_ctx.needs_ctx("not_ctx"));
     }
 }
