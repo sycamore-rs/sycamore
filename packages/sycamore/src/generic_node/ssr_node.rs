@@ -439,6 +439,7 @@ impl WriteToString for RawText {
 /// for rendering to a string on the server side.
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
+#[must_use]
 pub fn render_to_string(view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode>) -> String {
     let mut ret = String::new();
     create_scope_immediate(|ctx| {
