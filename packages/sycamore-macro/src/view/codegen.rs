@@ -165,24 +165,29 @@ impl Codegen {
                                 } else { #quoted }
                             }).unwrap_or(quoted)
                         }
-                        ViewNode::Dyn(Dyn { value}) => {
-                            let quoted = quote! {
-                                #marker
-                                ::sycamore::utils::render::insert(#ctx, &__el,
+                        ViewNode::Dyn(d @ Dyn { value}) => {
+                            let needs_ctx = d.needs_ctx(&self.ctx.to_string());
+                            let view_quoted = match needs_ctx {
+                                true => quote! {
+                                    ::sycamore::view::View::new_dyn_scoped(#ctx, move |#ctx|
+                                        ::sycamore::view::IntoView::create(&(#value))
+                                    )
+                                },
+                                false => quote! {
                                     ::sycamore::view::View::new_dyn(#ctx, move ||
                                         ::sycamore::view::IntoView::create(&(#value))
-                                    ),
-                                    #initial, __marker, #multi
-                                );
+                                    )
+                                }
+                            };
+                            let quoted = quote! {
+                                #marker
+                                ::sycamore::utils::render::insert(#ctx, &__el, #view_quoted, #initial, __marker, #multi);
                             };
                             codegen_ssr_markers.then(|| quote!{
                                 if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::generic_node::SsrNode>() {
                                     #ssr_markers
-                                    ::sycamore::utils::render::insert(#ctx, &__el,
-                                        ::sycamore::view::View::new_dyn(#ctx, move ||
-                                            ::sycamore::view::IntoView::create(&(#value))
-                                        ),
-                                        #initial, Some(&__end_marker), #multi
+                                    ::sycamore::utils::render::insert(
+                                        #ctx, &__el, #view_quoted, #initial, Some(&__end_marker), #multi
                                     );
                                     #marker_or_none
                                 } else { #quoted }

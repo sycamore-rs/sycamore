@@ -3,6 +3,8 @@
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
+use proc_macro2::TokenTree;
+use quote::ToTokens;
 use syn::punctuated::Punctuated;
 use syn::{Expr, Ident, LitStr, Path, Token};
 
@@ -146,4 +148,19 @@ pub struct Text {
 
 pub struct Dyn {
     pub value: Expr,
+}
+
+impl Dyn {
+    /// Returns `true` if the wrapped [`Expr`] has the identifier `ctx` somewhere.
+    pub fn needs_ctx(&self, ctx: &str) -> bool {
+        let ts = self.value.to_token_stream();
+        for t in ts {
+            if let TokenTree::Ident(id) = t {
+                if id == ctx {
+                    return true;
+                }
+            }
+        }
+        false
+    }
 }
