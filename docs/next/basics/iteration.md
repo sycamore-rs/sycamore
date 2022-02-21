@@ -14,7 +14,7 @@ let count = ctx.create_signal(vec![1, 2]);
 view! {
     ul {
         Keyed {
-            iterable: count.handle(),
+            iterable: count,
             view: |ctx, x| view! { ctx,
                 li { (x) }
             },
@@ -34,7 +34,7 @@ let count = ctx.create_signal(vec![1, 2]);
 view! {
     ul {
         Indexed {
-            iterable: count.handle(),
+            iterable: count,
             view: |ctx, x| view! { ctx,
                 li { (x) }
             },
