@@ -24,11 +24,12 @@ pub mod prelude {
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
-/// # fn _test<G: GenericNode>() -> View<G> {
-/// node("div").build()
+/// # use sycamore::builder::agnostic::node;
+/// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// node(ctx, "div").build()
 /// # }
-/// # fn _test2<G: GenericNode>() -> View<G> {
-/// node("a").build()
+/// # fn _test2<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// node(ctx, "a").build()
 /// # }
 /// ```
 pub fn node<'a, G>(ctx: ScopeRef<'a>, tag: &'static str) -> NodeBuilder<'a, G>
@@ -44,16 +45,17 @@ where
 /// Instantiate a component as a [`View`].
 ///
 /// # Example
-/// ```
+/// ```compile_fail
 /// use sycamore::prelude::*;
 /// # use sycamore::builder::html::*;
-/// #[component(MyComponent<G>)]
-/// fn my_component() -> View<G> {
-///     h1().text("I am a component").build()
+/// #[component]
+/// fn MyComponent<G>(ctx: ScopeRef) -> View<G> {
+///     h1(ctx).text("I am a component").build()
 /// }
 ///
 /// // Elsewhere in another component.
 /// # fn view<G: Html>() -> View<G> {
+/// // FIXME: how is component() supposed to pass down ctx?
 /// component::<_, MyComponent<_>>(())
 /// # }
 /// ```
@@ -70,10 +72,11 @@ where
 /// ```
 /// # use sycamore::prelude::*;
 /// # use sycamore::builder::html::*;
-/// # fn _test<G: GenericNode>() -> View<G> {
+/// # use sycamore::builder::agnostic::fragment;
+/// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
 /// fragment([
-///     div().build(),
-///     div().build()
+///     div(ctx).build(),
+///     div(ctx).build()
 /// ])
 /// # }
 /// ```
@@ -104,9 +107,9 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    ///  div()
-    ///     .child(h1().text("I am a child").build())
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    ///  div(ctx)
+    ///     .child(h1(ctx).text("I am a child").build())
     ///     .build()
     /// # }
     /// ```
@@ -122,14 +125,14 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let visible = Signal::new(true);
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let visible = ctx.create_signal(true);
     ///
-    /// div()
+    /// div(ctx)
     ///     .dyn_child(
     ///         move || {
     ///             if *visible.get() {
-    ///                 h1().text("I am a child").build()
+    ///                 h1(ctx).text("I am a child").build()
     ///             } else { View::empty() }
     ///         }
     ///     )
@@ -202,8 +205,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// h1().text("I am text").build()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h1(ctx).text("I am text").build()
     /// }
     /// ```
     pub fn text(&self, text: impl AsRef<str>) -> &Self {
@@ -218,10 +221,10 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let required = Signal::new(false);
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let required = ctx.create_signal(false);
     ///
-    /// h1()
+    /// h1(ctx)
     ///     .text("Email")
     ///     .dyn_text(
     ///         move || {
@@ -245,16 +248,17 @@ where
     /// Renders a component as a child.
     ///
     /// # Example
-    /// ```
+    /// ```compile_fail
     /// use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// #[component(MyComponent<G>)]
-    /// fn my_component() -> View<G> {
-    ///     h1().text("My component").build()
+    /// #[component]
+    /// fn MyComponent<G>(ctx: ScopeRef) -> View<G> {
+    ///     h1(ctx).text("My component").build()
     /// }
     ///
-    /// # fn _test<G: Html>() -> View<G> {
-    /// div().component::<MyComponent<_>>(()).build()
+    /// # fn _test<G: Html>(ctx: ScopeRef) -> View<G> {
+    /// // FIXME: how is .component() supposed to pass down ctx?
+    /// div(ctx).component::<MyComponent<_>>(()).build()
     /// }
     /// ```
     pub fn component(&self, f: impl FnOnce() -> View<G>) -> &Self {
@@ -269,8 +273,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// button().id("my-button").build()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// button(ctx).id("my-button").build()
     /// # }
     /// ```
     pub fn id(&self, id: impl AsRef<str>) -> &Self {
@@ -283,8 +287,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// button().attr("type", "submit").build()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// button(ctx).attr("type", "submit").build()
     /// # }
     /// ```
     pub fn attr<N, Va>(&self, name: N, value: Va) -> &Self
@@ -303,8 +307,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// input().bool_attr("required", true).build()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// input(ctx).bool_attr("required", true).build()
     /// # }
     /// ```
     pub fn bool_attr<N>(&self, name: N, value: bool) -> &Self
@@ -326,14 +330,17 @@ where
     /// from the node.
     ///
     /// # Example
-    /// ```
+    /// ```compile_fail
+    /// # use std::ops::Deref;
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let input_type = Signal::new(Some("text"));
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let input_type = ctx.create_signal(Some("text"));
     ///
-    /// input()
-    ///     .dyn_attr("type", input_type.handle())
+    /// input(ctx)
+    ///     // FIXME: how do you create a ReadSignal.
+    ///     // Should this function accept &ReadSignal instead, like .dyn_prop() does?
+    ///     .dyn_attr("type", input_type.deref())
     ///     .build()
     /// }
     /// ```
@@ -362,14 +369,17 @@ where
     /// Adds a dynamic boolean attribute on the node.
     ///
     /// # Example
-    /// ```
+    /// ```compile_fail
+    /// # use std::ops::Deref;
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let required = Signal::new(true);
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let required = ctx.create_signal(true);
     ///
-    /// input()
-    ///     .dyn_bool_attr("required", required.handle()).build()
+    /// input(ctx)
+    ///     // FIXME: how do you create a ReadSignal?
+    ///     // Should this function accept &ReadSignal instead, like .dyn_prop() does?
+    ///     .dyn_bool_attr("required", required.deref()).build()
     /// }
     /// ```
     pub fn dyn_bool_attr<N>(&self, name: N, value: ReadSignal<bool>) -> &Self
@@ -399,8 +409,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// input().prop("value", "I am the value set.").build()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// input(ctx).prop("value", "I am the value set.").build()
     /// # }
     /// ```
     pub fn prop<N, Va>(&self, name: N, property: Va) -> &Self
@@ -420,14 +430,15 @@ where
     ///
     /// # Example
     /// ```
+    /// # use std::ops::Deref;
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let checked = Signal::new(Some(false));
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let checked = ctx.create_signal(Some(false));
     ///
-    /// input()
+    /// input(ctx)
     ///     .attr("type", "checkbox")
-    ///     .dyn_prop("checked", checked.handle())
+    ///     .dyn_prop("checked", checked.deref())
     ///     .build()
     /// }
     /// ```
@@ -459,8 +470,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// button().class("bg-green-500").text("My Button").build()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// button(ctx).class("bg-green-500").text("My Button").build()
     /// # }
     /// ```
     pub fn class(&self, class: impl ToString) -> &Self {
@@ -475,15 +486,18 @@ where
     /// from the node.
     ///
     /// # Example
-    /// ```
+    /// ```compile_fail
+    /// # use std::ops::Deref;
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let checked_class = Signal::new(false);
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let checked_class = ctx.create_signal(false);
     ///
-    /// input()
+    /// input(ctx)
     ///     .attr("type", "checkbox")
-    ///     .dyn_class("bg-red-500", checked_class.handle())
+    ///     // FIXME: how do you create a ReadSignal?
+    ///     // Should this function accept &ReadSignal instead, like .dyn_prop() does?
+    ///     .dyn_class("bg-red-500", checked_class.deref())
     ///     .build()
     /// }
     /// ```
@@ -524,8 +538,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// button()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// button(ctx)
     ///     .text("My Button")
     ///     .on(
     ///         "click",
@@ -551,10 +565,10 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
     /// let node_ref = NodeRef::new();
     ///
-    /// input()
+    /// input(ctx)
     ///     .bind_ref(node_ref.clone())
     ///     .build()
     /// # }
@@ -574,8 +588,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// input()
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// input(ctx)
     ///     /* builder stuff */
     ///     .build()
     /// # }
@@ -597,10 +611,10 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: Html>() -> View<G> {
-    /// let value = Signal::new(String::new());
+    /// # fn _test<G: Html>(ctx: ScopeRef) -> View<G> {
+    /// let value = ctx.create_signal(String::new());
     ///
-    /// input()
+    /// input(ctx)
     ///     .bind_value(value)
     ///     .build()
     /// # }
@@ -633,10 +647,10 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: Html>() -> View<G> {
-    /// let checked = Signal::new(false);
+    /// # fn _test<G: Html>(ctx: ScopeRef) -> View<G> {
+    /// let checked = ctx.create_signal(false);
     ///
-    /// input()
+    /// input(ctx)
     ///     .attr("type", "checkbox")
     ///     .bind_checked(checked)
     ///     .build()
