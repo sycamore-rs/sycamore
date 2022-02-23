@@ -52,10 +52,10 @@ jobs:
         if: matrix.rust == '1.58.0'
         env:
           RUN_UI_TESTS: true
-        run: cargo test
+        run: cargo test --features=experimental-builder-html
 
       - name: Run tests (excluding UI)
-        run: cargo test
+        run: cargo test --features=experimental-builder-html
         if: matrix.rust != '1.58.0'
 
       - name: Run headless browser tests
