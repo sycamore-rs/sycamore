@@ -330,7 +330,7 @@ where
     /// from the node.
     ///
     /// # Example
-    /// ```compile_fail
+    /// ```
     /// # use std::ops::Deref;
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
@@ -338,13 +338,11 @@ where
     /// let input_type = ctx.create_signal(Some("text"));
     ///
     /// input(ctx)
-    ///     // FIXME: how do you create a ReadSignal.
-    ///     // Should this function accept &ReadSignal instead, like .dyn_prop() does?
     ///     .dyn_attr("type", input_type.deref())
     ///     .build()
     /// }
     /// ```
-    pub fn dyn_attr<N, T>(&self, name: N, value: ReadSignal<Option<T>>) -> &Self
+    pub fn dyn_attr<N, T>(&self, name: N, value: &'a ReadSignal<Option<T>>) -> &Self
     where
         N: ToString,
         T: ToString + 'a,
@@ -369,7 +367,7 @@ where
     /// Adds a dynamic boolean attribute on the node.
     ///
     /// # Example
-    /// ```compile_fail
+    /// ```
     /// # use std::ops::Deref;
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
@@ -377,12 +375,10 @@ where
     /// let required = ctx.create_signal(true);
     ///
     /// input(ctx)
-    ///     // FIXME: how do you create a ReadSignal?
-    ///     // Should this function accept &ReadSignal instead, like .dyn_prop() does?
     ///     .dyn_bool_attr("required", required.deref()).build()
     /// }
     /// ```
-    pub fn dyn_bool_attr<N>(&self, name: N, value: ReadSignal<bool>) -> &Self
+    pub fn dyn_bool_attr<N>(&self, name: N, value: &'a ReadSignal<bool>) -> &Self
     where
         N: ToString,
     {
@@ -486,7 +482,7 @@ where
     /// from the node.
     ///
     /// # Example
-    /// ```compile_fail
+    /// ```
     /// # use std::ops::Deref;
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
@@ -495,13 +491,11 @@ where
     ///
     /// input(ctx)
     ///     .attr("type", "checkbox")
-    ///     // FIXME: how do you create a ReadSignal?
-    ///     // Should this function accept &ReadSignal instead, like .dyn_prop() does?
     ///     .dyn_class("bg-red-500", checked_class.deref())
     ///     .build()
     /// }
     /// ```
-    pub fn dyn_class(&self, class: impl ToString, apply: ReadSignal<bool>) -> &Self {
+    pub fn dyn_class(&self, class: impl ToString, apply: &'a ReadSignal<bool>) -> &Self {
         let class = class.to_string();
         let element = self.element.clone();
 
