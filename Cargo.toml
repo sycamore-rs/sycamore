@@ -16,6 +16,7 @@ members = [
   "examples/hydrate",
   "examples/iteration",
   "examples/js-framework-benchmark",
+  "examples/hello-builder",
   "examples/hello-world",
   "examples/higher-order-components",
   "examples/motion",
@@ -29,5 +30,5 @@ members = [
   "website",
 
   # Tools
-  "packages/tools/bench-diff"
+  "packages/tools/bench-diff",
 ]
