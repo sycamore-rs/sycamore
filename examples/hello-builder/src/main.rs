@@ -19,7 +19,7 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                 .text("!")
                 .build(),
         )
-        .child(input(ctx).bind_value(&name).build())
+        .child(input(ctx).bind_value(name).build())
         .build()
 }
 

@@ -115,7 +115,6 @@ impl Parse for ElementTag {
         } else {
             let tag = format!(
                 "{tag}-{extended}",
-                tag = tag,
                 extended = extended
                     .into_iter()
                     .map(|x| x.1.to_string())
