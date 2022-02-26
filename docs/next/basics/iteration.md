@@ -11,7 +11,7 @@ algorithm is used to determine which items need to be re-rendered according to t
 
 ```rust
 let count = ctx.create_signal(vec![1, 2]);
-view! {
+view! { ctx,
     ul {
         Keyed {
             iterable: count,
@@ -31,7 +31,7 @@ generally preferred over `Indexed` because it is more efficient in most scenario
 
 ```rust
 let count = ctx.create_signal(vec![1, 2]);
-view! {
+view! { ctx,
     ul {
         Indexed {
             iterable: count,
