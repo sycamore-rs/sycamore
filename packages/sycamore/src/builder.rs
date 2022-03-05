@@ -707,10 +707,10 @@ impl<'a, G: Html, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
 ///
 /// # Example
 /// ```
-/// use sycamore::prelude::*;
-/// # use sycamore::builder::html::*;
+/// # use sycamore::builder::prelude::*;
+/// # use sycamore::prelude::*;
 /// #[component]
-/// fn MyComponent(ctx: ScopeRef) -> View<G> {
+/// fn MyComponent<G: GenericNode>(ctx: ScopeRef) -> View<G> {
 ///     h(h1).t("I am a component").view(ctx)
 /// }
 ///
@@ -730,8 +730,8 @@ where
 ///
 /// # Example
 /// ```
+/// # use sycamore::builder::prelude::*;
 /// # use sycamore::prelude::*;
-/// # use sycamore::builder::html::*;
 /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
 /// fragment([
 ///     h(div).view(ctx),
