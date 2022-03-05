@@ -7,6 +7,7 @@ use js_sys::Reflect;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -289,6 +290,31 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         mut f: impl FnMut() -> O + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
         self.map(move |ctx, el| Self::dyn_c_internal(ctx, el, move || f().into_view(ctx)))
+    }
+
+    pub fn dyn_if<O1: ElementBuilderOrView<'a, G> + 'a, O2: ElementBuilderOrView<'a, G> + 'a>(
+        self,
+        cond: impl Fn() -> bool + 'a,
+        mut then: impl FnMut() -> O1 + 'a,
+        mut r#else: impl FnMut() -> O2 + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        let cond = Rc::new(cond);
+        self.map(move |ctx, el| {
+            Self::dyn_c_internal(ctx, el, move || {
+                if *ctx
+                    .create_selector({
+                        let cond = Rc::clone(&cond);
+                        #[allow(clippy::redundant_closure)] // FIXME: clippy false positive
+                        move || cond()
+                    })
+                    .get()
+                {
+                    then().into_view(ctx)
+                } else {
+                    r#else().into_view(ctx)
+                }
+            });
+        })
     }
 
     pub fn dyn_c_scoped(

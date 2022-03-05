@@ -12,13 +12,11 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     h(div)
         .c(h(h1)
             .t("Hello ")
-            .dyn_c(|| {
-                if *ctx.create_selector(|| !name.get().is_empty()).get() {
-                    h(span).dyn_t(|| name.get().to_string()).view(ctx)
-                } else {
-                    h(span).t("World").view(ctx)
-                }
-            })
+            .dyn_if(
+                || !name.get().is_empty(),
+                || h(span).dyn_t(|| name.get().to_string()),
+                || h(span).t("World").view(ctx),
+            )
             .t("!"))
         .c(h(input).bind_value(name))
         .view(ctx)
