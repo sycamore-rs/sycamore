@@ -3,11 +3,12 @@
 use js_sys::Reflect;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use std::marker::PhantomData;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::component::component_scope;
-use crate::generic_node::{GenericNode, Html};
+use crate::generic_node::{GenericNode, Html, SycamoreElement};
 use crate::noderef::NodeRef;
 use crate::reactive::*;
 use crate::utils::render;
@@ -17,6 +18,401 @@ pub mod prelude {
     pub use super::component;
     pub use super::fragment;
     pub use super::node;
+}
+
+/// A factory for building [`View`]s.
+pub struct ElementBuilder<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G>(F, PhantomData<&'a ()>);
+
+/// Construct a new [`ElementBuilder`] from a [`SycamoreElement`].
+///
+/// # Example
+/// TODO
+pub fn h<'a, E: SycamoreElement, G: GenericNode>(
+    _: E,
+) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G> {
+    ElementBuilder::new(move |_| G::element(E::TAG_NAME))
+}
+
+impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
+    fn new(f: F) -> Self {
+        Self(f, PhantomData)
+    }
+
+    /// Utility function for composing new [`ElementBuilder`]s.
+    fn map(
+        self,
+        f: impl FnOnce(ScopeRef<'a>, &G) + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        ElementBuilder::new(move |ctx| {
+            let el = (self.0)(ctx);
+            f(ctx, &el);
+            el
+        })
+    }
+
+    /// Set the attribute of the element.
+    pub fn attr(
+        self,
+        name: &'a str,
+        value: impl AsRef<str> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |_, el| el.set_attribute(name, value.as_ref()))
+    }
+
+    /// Set the boolean attribute of the element.
+    pub fn bool_attr(
+        self,
+        name: &'a str,
+        value: bool,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |_, el| {
+            if value {
+                el.set_attribute(name, "");
+            }
+        })
+    }
+
+    pub fn dyn_attr<S: AsRef<str> + 'a>(
+        self,
+        name: &'a str,
+        mut value: impl FnMut() -> Option<S> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| {
+            let el = el.clone();
+            ctx.create_effect(move || {
+                let value = value();
+                if let Some(value) = value {
+                    el.set_attribute(name, value.as_ref());
+                } else {
+                    el.remove_attribute(name);
+                }
+            });
+        })
+    }
+
+    pub fn dyn_bool_attr(
+        self,
+        name: &'a str,
+        mut value: impl FnMut() -> bool + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| {
+            let el = el.clone();
+            ctx.create_effect(move || {
+                if value() {
+                    el.set_attribute(name, "");
+                } else {
+                    el.remove_attribute(name);
+                }
+            });
+        })
+    }
+
+    /// A shorthand for [`Self::attr`] for setting the class of the element.
+    pub fn class(
+        self,
+        class: impl AsRef<str> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |_, el| el.add_class(class.as_ref()))
+    }
+
+    /// Adds a dynamic class on the node.
+    ///
+    /// If `value` is `None`, the class will be removed from the element.
+    ///
+    /// # Example
+    /// TODO
+    pub fn dyn_class(
+        self,
+        class: impl AsRef<str> + 'a,
+        mut apply: impl FnMut() -> bool + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| {
+            let el = el.clone();
+            ctx.create_effect(move || {
+                if apply() {
+                    el.add_class(class.as_ref());
+                } else {
+                    el.remove_class(class.as_ref());
+                }
+            });
+        })
+    }
+
+    /// A shorthand for [`Self::attr`] for setting the id of the element.
+    pub fn id(
+        self,
+        class: impl AsRef<str> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |_, el| el.set_attribute("id", class.as_ref()))
+    }
+
+    /// Set a property on the element.
+    pub fn prop(
+        self,
+        name: impl AsRef<str> + 'a,
+        property: impl Into<JsValue> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |_, el| el.set_property(name.as_ref(), &property.into()))
+    }
+
+    /// Set a dynamic property on the element.
+    pub fn dyn_prop<V: Into<JsValue> + 'a>(
+        self,
+        name: impl AsRef<str> + 'a,
+        mut property: impl FnMut() -> V + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| {
+            let el = el.clone();
+            ctx.create_effect(move || {
+                el.set_property(name.as_ref(), &property().into());
+            });
+        })
+    }
+
+    /// Insert a text node under this element. The inserted child is static by default.
+    pub fn t(self, text: &'a str) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(|_, el| el.append_child(&G::text_node(text)))
+    }
+
+    pub fn dyn_t<S: AsRef<str> + 'a>(
+        self,
+        f: impl FnMut() -> S + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(|ctx, el| {
+            let memo = ctx.create_memo(f);
+            Self::dyn_c_internal(ctx, el, move || {
+                View::new_node(G::text_node(memo.get().as_ref().as_ref()))
+            });
+        })
+    }
+
+    /// Insert a child node under this element. The inserted child is static by default.
+    pub fn c(self, c: View<G>) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(|ctx, el| render::insert(ctx, el, c, None, None, true))
+    }
+
+    /// Internal implementation for [`Self::dyn_c`] and [`Self::dyn_t`].
+    fn dyn_c_internal(ctx: ScopeRef<'a>, el: &G, f: impl FnMut() -> View<G> + 'a) {
+        #[allow(unused_imports)]
+        use std::any::{Any, TypeId};
+
+        #[cfg(feature = "ssr")]
+        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::SsrNode>() {
+            // If Server Side Rendering, insert beginning tag for hydration purposes.
+            el.append_child(&G::marker_with_text("#"));
+            // Create end marker. This is needed to make sure that the node is inserted into the
+            // right place.
+            let end_marker = G::marker_with_text("/");
+            el.append_child(&end_marker);
+            render::insert(
+                ctx,
+                el,
+                View::new_dyn(ctx, f),
+                None,
+                Some(&end_marker),
+                true, /* We don't know if this is the only child or not so we pessimistically
+                       * set this to true. */
+            );
+            return;
+        }
+        #[cfg(feature = "experimental-hydrate")]
+        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
+            use crate::utils::hydrate::web::*;
+            // Get start and end markers.
+            let el_hn = <dyn Any>::downcast_ref::<crate::generic_node::HydrateNode>(el).unwrap();
+            let initial = get_next_marker(&el_hn.inner_element());
+            // Do not drop the HydrateNode because it will be cast into a GenericNode.
+            let initial = ::std::mem::ManuallyDrop::new(initial);
+            // SAFETY: This is safe because we already checked that the type is HydrateNode.
+            // __initial is wrapped inside ManuallyDrop to prevent double drop.
+            let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
+            render::insert(
+                ctx,
+                el,
+                View::new_dyn(ctx, f),
+                initial,
+                None,
+                true, /* We don't know if this is the only child or not so we pessimistically
+                       * set this to true. */
+            );
+            return;
+        }
+        // G is neither SsrNode nor HydrateNode. Proceed normally.
+        let marker = G::marker();
+        el.append_child(&marker);
+        render::insert(ctx, el, View::new_dyn(ctx, f), None, Some(&marker), true);
+    }
+
+    pub fn dyn_c(
+        self,
+        f: impl FnMut() -> View<G> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| Self::dyn_c_internal(ctx, el, f))
+    }
+
+    pub fn dyn_c_scoped(
+        self,
+        f: impl FnMut(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| {
+            #[allow(unused_imports)]
+            use std::any::{Any, TypeId};
+
+            #[cfg(feature = "ssr")]
+            if TypeId::of::<G>() == TypeId::of::<crate::generic_node::SsrNode>() {
+                // If Server Side Rendering, insert beginning tag for hydration purposes.
+                el.append_child(&G::marker_with_text("#"));
+                // Create end marker. This is needed to make sure that the node is inserted into the
+                // right place.
+                let end_marker = G::marker_with_text("/");
+                el.append_child(&end_marker);
+                render::insert(
+                    ctx,
+                    el,
+                    View::new_dyn_scoped(ctx, f),
+                    None,
+                    Some(&end_marker),
+                    true, /* We don't know if this is the only child or not so we
+                           * pessimistically set this to true. */
+                );
+                return;
+            }
+            #[cfg(feature = "experimental-hydrate")]
+            if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
+                use crate::utils::hydrate::web::*;
+                // Get start and end markers.
+                let el_hn =
+                    <dyn Any>::downcast_ref::<crate::generic_node::HydrateNode>(el).unwrap();
+                let initial = get_next_marker(&el_hn.inner_element());
+                // Do not drop the HydrateNode because it will be cast into a GenericNode.
+                let initial = ::std::mem::ManuallyDrop::new(initial);
+                // SAFETY: This is safe because we already checked that the type is HydrateNode.
+                // __initial is wrapped inside ManuallyDrop to prevent double drop.
+                let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
+                render::insert(
+                    ctx,
+                    el,
+                    View::new_dyn_scoped(ctx, f),
+                    initial,
+                    None,
+                    true, /* We don't know if this is the only child or not so we
+                           * pessimistically set this to true. */
+                );
+                return;
+            }
+            // G is neither SsrNode nor HydrateNode. Proceed normally.
+            let marker = G::marker();
+            el.append_child(&marker);
+            render::insert(
+                ctx,
+                el,
+                View::new_dyn_scoped(ctx, f),
+                None,
+                Some(&marker),
+                true,
+            );
+        })
+    }
+
+    /// Attach an event handler to the element.
+    pub fn on(
+        self,
+        name: &'a str,
+        handler: impl Fn(G::EventType) + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| el.event(ctx, name, Box::new(handler)))
+    }
+
+    /// Get a hold of the raw element by using a [`NodeRef`].
+    pub fn bind_ref(
+        self,
+        node_ref: NodeRef<G>,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |_, el| node_ref.set(el.clone()))
+    }
+
+    /// Construct a [`View`] by evaluating the lazy [`ElementBuilder`].
+    pub fn view(self, ctx: ScopeRef<'a>) -> View<G> {
+        let el = (self.0)(ctx);
+        View::new_node(el)
+    }
+}
+
+/// HTML-specific builder methods.
+impl<'a, G: Html, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
+    /// Binds a [`Signal`] to the `value` property of the node.
+    ///
+    /// The [`Signal`] will be automatically updated when the value is updated.
+    ///
+    /// # Example
+    /// TODO
+    /// ```
+    pub fn bind_value(
+        self,
+        sub: &'a Signal<String>,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| {
+            ctx.create_effect({
+                let el = el.clone();
+                move || {
+                    el.set_property("value", &sub.get().as_str().into());
+                }
+            });
+            el.event(
+                ctx,
+                "input",
+                Box::new(move |e: web_sys::Event| {
+                    let val = Reflect::get(
+                        &e.target().expect("missing target on input event"),
+                        &"value".into(),
+                    )
+                    .expect("missing property `value`")
+                    .as_string()
+                    .expect("value should be a string");
+                    sub.set(val);
+                }),
+            );
+        })
+    }
+
+    /// Binds a [`Signal`] to the `checked` property of the node.
+    ///
+    /// The [`Signal`] will be automatically updated when the value is updated.
+    ///
+    /// # Example
+    /// TODO
+    /// ```
+    pub fn bind_checked(
+        self,
+        sub: &'a Signal<bool>,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(move |ctx, el| {
+            ctx.create_effect({
+                let el = el.clone();
+                move || {
+                    el.set_property("checked", &(*sub.get()).into());
+                }
+            });
+            el.event(
+                ctx,
+                "change",
+                Box::new(move |e: web_sys::Event| {
+                    let val = Reflect::get(
+                        &e.target().expect("missing target on change event"),
+                        &"checked".into(),
+                    )
+                    .expect("missing property `checked`")
+                    .as_bool()
+                    .expect("could not get property `checked` as a bool");
+                    sub.set(val);
+                }),
+            );
+        })
+    }
+}
+
+pub fn view<'a, G: GenericNode>(ctx: ScopeRef<'a>, f: impl FnOnce(ScopeRef<'a>) -> G) -> View<G> {
+    View::new_node(f(ctx))
 }
 
 /// Create [`NodeBuilder`] to create UI elements.

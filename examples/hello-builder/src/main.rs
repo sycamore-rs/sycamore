@@ -1,26 +1,24 @@
-use sycamore::builder::html::*;
+use sycamore::builder::agnostic::h;
+use sycamore::html::*;
 use sycamore::prelude::*;
 
 #[component]
 fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let name = ctx.create_signal(String::new());
-
-    div(ctx)
-        .child(
-            h1(ctx)
-                .text("Hello ")
-                .dyn_child(move || {
-                    if *ctx.create_selector(move || !name.get().is_empty()).get() {
-                        span(ctx).dyn_text(move || name.get().to_string()).build()
-                    } else {
-                        span(ctx).text("World").build()
-                    }
-                })
-                .text("!")
-                .build(),
-        )
-        .child(input(ctx).bind_value(name).build())
-        .build()
+    h(div)
+        .c(h(h1)
+            .t("Hello ")
+            .dyn_c(|| {
+                if *ctx.create_selector(|| !name.get().is_empty()).get() {
+                    h(span).dyn_t(|| name.get().to_string()).view(ctx)
+                } else {
+                    h(span).t("World").view(ctx)
+                }
+            })
+            .t("!")
+            .view(ctx))
+        .c(h(input).bind_value(name).view(ctx))
+        .view(ctx)
 }
 
 fn main() {

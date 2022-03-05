@@ -1,12 +1,8 @@
 //! HTML tag definitions.
 //!
-//! _Documentation sources: https://developer.mozilla.org/en-US/_
+//! _Documentation sources: <https://developer.mozilla.org/en-US/>_
 
-/// Represents an element.
-pub trait SycamoreElement {
-    const TAG_NAME: &'static str;
-    const NAME_SPACE: Option<&'static str>;
-}
+use crate::generic_node::SycamoreElement;
 
 /// MBE for generating elements.
 macro_rules! define_elements {
