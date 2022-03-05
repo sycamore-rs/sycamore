@@ -1,5 +1,9 @@
-use sycamore::builder::agnostic::h;
-use sycamore::html::*;
+//! Look ma, No `view!`!
+//!
+//! This example demonstrates the basics of the builder API for constructing views, as an
+//! alternative to using the `view!` macro.
+
+use sycamore::builder::prelude::*;
 use sycamore::prelude::*;
 
 #[component]
@@ -25,5 +29,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|ctx| view! {ctx, App() });
+    sycamore::render(|ctx| component(|| App(ctx, ())));
 }

@@ -1,4 +1,7 @@
-//! The renderer-agnostic API.
+//! The builder pattern API for creating UI elements.
+//!
+//! This API is rendering-backend agnostic and can be used with any rendering backend, not just
+//! HTML.
 
 use js_sys::Reflect;
 use std::collections::HashMap;
@@ -14,10 +17,22 @@ use crate::reactive::*;
 use crate::utils::render;
 use crate::view::View;
 
+/// The prelude for the builder API. This is independent from the _sycamore prelude_, aka.
+/// [`sycamore::prelude`].
+///
+/// In most cases, it is idiomatic to use a glob import (aka wildcard import) at the beginning of
+/// your Rust source file.
+///
+/// ```rust
+/// use sycamore::builder::prelude::*;
+/// use sycamore::prelude::*;
+/// ```
 pub mod prelude {
     pub use super::component;
     pub use super::fragment;
+    pub use super::h;
     pub use super::node;
+    pub use crate::html::*;
 }
 
 /// A factory for building [`View`]s.
