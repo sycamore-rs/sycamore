@@ -53,7 +53,6 @@ wasm-bindgen-test = "0.3.29"
 default = ["dom", "wasm-bindgen-interning"]
 dom = []
 experimental-builder-agnostic = []
-experimental-builder-html = ["experimental-builder-agnostic"]
 experimental-hydrate = ["sycamore-macro/experimental-hydrate"]
 ssr = ["html-escape", "once_cell", "experimental-hydrate", "sycamore-macro/ssr"]
 suspense = ["futures", "wasm-bindgen-futures", "sycamore-futures"]

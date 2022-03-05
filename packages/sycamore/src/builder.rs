@@ -361,7 +361,6 @@ impl<'a, G: Html, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     ///
     /// # Example
     /// TODO
-    /// ```
     pub fn bind_value(
         self,
         sub: &'a Signal<String>,
@@ -396,7 +395,6 @@ impl<'a, G: Html, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     ///
     /// # Example
     /// TODO
-    /// ```
     pub fn bind_checked(
         self,
         sub: &'a Signal<bool>,
