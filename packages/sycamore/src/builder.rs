@@ -36,7 +36,30 @@ pub mod prelude {
 }
 
 /// A factory for building [`View`]s.
-pub struct ElementBuilder<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G>(F, PhantomData<&'a ()>);
+pub struct ElementBuilder<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a>(
+    F,
+    PhantomData<&'a ()>,
+);
+
+/// A trait that is implemented only for [`ElementBuilder`] and [`View`].
+/// This should be considered implementation details and should not be used.
+pub trait ElementBuilderOrView<'a, G: GenericNode> {
+    fn into_view(self, ctx: ScopeRef<'a>) -> View<G>;
+}
+
+impl<'a, G: GenericNode> ElementBuilderOrView<'a, G> for View<G> {
+    fn into_view(self, _: ScopeRef<'a>) -> View<G> {
+        self
+    }
+}
+
+impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilderOrView<'a, G>
+    for ElementBuilder<'a, G, F>
+{
+    fn into_view(self, ctx: ScopeRef<'a>) -> View<G> {
+        self.view(ctx)
+    }
+}
 
 /// Construct a new [`ElementBuilder`] from a [`SycamoreElement`].
 ///
@@ -202,8 +225,11 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Insert a child node under this element. The inserted child is static by default.
-    pub fn c(self, c: View<G>) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
-        self.map(|ctx, el| render::insert(ctx, el, c, None, None, true))
+    pub fn c(
+        self,
+        c: impl ElementBuilderOrView<'a, G>,
+    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
+        self.map(|ctx, el| render::insert(ctx, el, c.into_view(ctx), None, None, true))
     }
 
     /// Internal implementation for [`Self::dyn_c`] and [`Self::dyn_t`].
@@ -258,11 +284,11 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         render::insert(ctx, el, View::new_dyn(ctx, f), None, Some(&marker), true);
     }
 
-    pub fn dyn_c(
+    pub fn dyn_c<O: ElementBuilderOrView<'a, G> + 'a>(
         self,
-        f: impl FnMut() -> View<G> + 'a,
+        mut f: impl FnMut() -> O + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
-        self.map(move |ctx, el| Self::dyn_c_internal(ctx, el, f))
+        self.map(move |ctx, el| Self::dyn_c_internal(ctx, el, move || f().into_view(ctx)))
     }
 
     pub fn dyn_c_scoped(

@@ -19,9 +19,8 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                     h(span).t("World").view(ctx)
                 }
             })
-            .t("!")
-            .view(ctx))
-        .c(h(input).bind_value(name).view(ctx))
+            .t("!"))
+        .c(h(input).bind_value(name))
         .view(ctx)
 }
 
