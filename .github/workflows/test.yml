@@ -52,10 +52,10 @@ jobs:
         if: matrix.rust == '1.58.0'
         env:
           RUN_UI_TESTS: true
-        run: cargo test
+        run: cargo test --all-features
 
       - name: Run tests (excluding UI)
-        run: cargo test
+        run: cargo test --all-features
         if: matrix.rust != '1.58.0'
 
       - name: Run headless browser tests
@@ -126,6 +126,6 @@ jobs:
       - name: Run tests
         run: |
           cd packages/sycamore
-          cargo miri test
+          cargo miri test --all-features
           cd ../sycamore-reactive
           cargo miri test
