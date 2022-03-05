@@ -65,7 +65,20 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilderOrView
 /// Construct a new [`ElementBuilder`] from a [`SycamoreElement`].
 ///
 /// # Example
-/// TODO
+/// ```
+/// # use sycamore::builder::prelude::*;
+/// # use sycamore::prelude::*;
+/// # fn _test1<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// h(a)
+/// # .view(ctx) }
+/// # fn _test2<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// h(button)
+/// # .view(ctx) }
+/// # fn _test3<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// h(div)
+/// # .view(ctx) }
+/// // etc...
+/// ```
 pub fn h<'a, E: SycamoreElement, G: GenericNode>(
     _: E,
 ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G> {
@@ -90,6 +103,15 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Set the attribute of the element.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h(button).attr("type", "submit")
+    /// # .view(ctx) }
+    /// ```
     pub fn attr(
         self,
         name: &'a str,
@@ -99,6 +121,15 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Set the boolean attribute of the element.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h(input).bool_attr("required", true)
+    /// # .view(ctx) }
+    /// ```
     pub fn bool_attr(
         self,
         name: &'a str,
@@ -111,6 +142,19 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         })
     }
 
+    /// Adds a dynamic attribute on the node.
+    ///
+    /// If `value` is `None`, the attribute will be removed from the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let input_type = ctx.create_signal("text");
+    /// h(input).dyn_attr("type", || Some(*input_type.get()))
+    /// # .view(ctx) }
+    /// ```
     pub fn dyn_attr<S: AsRef<str> + 'a>(
         self,
         name: &'a str,
@@ -129,6 +173,17 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         })
     }
 
+    /// Adds a dynamic boolean attribute on the node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let required = ctx.create_signal(true);
+    /// h(input).dyn_bool_attr("required", || *required.get())
+    /// # .view(ctx) }
+    /// ```
     pub fn dyn_bool_attr(
         self,
         name: &'a str,
@@ -146,7 +201,17 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         })
     }
 
-    /// A shorthand for [`Self::attr`] for setting the class of the element.
+    /// Adds a class to the element. This is a shorthand for [`Self::attr`] with the `class`
+    /// attribute.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h(button).class("bg-green-500").t("My button")
+    /// # .view(ctx) }
+    /// ```
     pub fn class(
         self,
         class: impl AsRef<str> + 'a,
@@ -159,7 +224,17 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     /// If `value` is `None`, the class will be removed from the element.
     ///
     /// # Example
-    /// TODO
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let checked_class = ctx.create_signal(false);
+    /// h(input)
+    ///     .attr("type", "checkbox")
+    ///     .dyn_class("bg-red-500", || *checked_class.get())
+    /// # .view(ctx) }
+    /// ```
     pub fn dyn_class(
         self,
         class: impl AsRef<str> + 'a,
@@ -177,7 +252,16 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         })
     }
 
-    /// A shorthand for [`Self::attr`] for setting the id of the element.
+    /// Sets the id of an element. This is a shorthand for [`Self::attr`] with the `id` attribute.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h(button).id("my-button")
+    /// # .view(ctx) }
+    /// ```
     pub fn id(
         self,
         class: impl AsRef<str> + 'a,
@@ -186,6 +270,15 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Set a property on the element.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h(input).prop("value", "I am the value set.")
+    /// # .view(ctx) }
+    /// ```
     pub fn prop(
         self,
         name: impl AsRef<str> + 'a,
@@ -195,6 +288,18 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Set a dynamic property on the element.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let checked = ctx.create_signal(false);
+    /// h(input)
+    ///     .attr("type", "checkbox")
+    ///     .dyn_prop("checked", || *checked.get())
+    /// # .view(ctx) }
+    /// ```
     pub fn dyn_prop<V: Into<JsValue> + 'a>(
         self,
         name: impl AsRef<str> + 'a,
@@ -209,10 +314,35 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Insert a text node under this element. The inserted child is static by default.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h(p)
+    ///     .t("Hello World!")
+    ///     .t("Text nodes can be chained as well.")
+    ///     .t("More text...")
+    /// # .view(ctx) }
+    /// ```
     pub fn t(self, text: &'a str) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
         self.map(|_, el| el.append_child(&G::text_node(text)))
     }
 
+    /// Adds a dynamic text node.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let name = ctx.create_signal("Sycamore");
+    /// h(p)
+    ///     .t("Name: ")
+    ///     .dyn_t(|| name.get().to_string())
+    /// # .view(ctx) }
+    /// ```
     pub fn dyn_t<S: AsRef<str> + 'a>(
         self,
         f: impl FnMut() -> S + 'a,
@@ -226,6 +356,18 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Insert a child node under this element. The inserted child is static by default.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let input_type = ctx.create_signal("text");
+    /// h(div).c(
+    ///     h(h1).t("I am a child")
+    /// )
+    /// # .view(ctx) }
+    /// ```
     pub fn c(
         self,
         c: impl ElementBuilderOrView<'a, G>,
@@ -285,6 +427,82 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         render::insert(ctx, el, View::new_dyn(ctx, f), None, Some(&marker), true);
     }
 
+    /// Internal implementation for [`Self::dyn_c_scoped`] and [`Self::dyn_if`].
+    fn dyn_c_internal_scoped(
+        ctx: ScopeRef<'a>,
+        el: &G,
+        f: impl FnMut(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
+    ) {
+        #[allow(unused_imports)]
+        use std::any::{Any, TypeId};
+
+        #[cfg(feature = "ssr")]
+        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::SsrNode>() {
+            // If Server Side Rendering, insert beginning tag for hydration purposes.
+            el.append_child(&G::marker_with_text("#"));
+            // Create end marker. This is needed to make sure that the node is inserted into the
+            // right place.
+            let end_marker = G::marker_with_text("/");
+            el.append_child(&end_marker);
+            render::insert(
+                ctx,
+                el,
+                View::new_dyn_scoped(ctx, f),
+                None,
+                Some(&end_marker),
+                true, /* We don't know if this is the only child or not so we
+                       * pessimistically set this to true. */
+            );
+            return;
+        }
+        #[cfg(feature = "experimental-hydrate")]
+        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
+            use crate::utils::hydrate::web::*;
+            // Get start and end markers.
+            let el_hn = <dyn Any>::downcast_ref::<crate::generic_node::HydrateNode>(el).unwrap();
+            let initial = get_next_marker(&el_hn.inner_element());
+            // Do not drop the HydrateNode because it will be cast into a GenericNode.
+            let initial = ::std::mem::ManuallyDrop::new(initial);
+            // SAFETY: This is safe because we already checked that the type is HydrateNode.
+            // __initial is wrapped inside ManuallyDrop to prevent double drop.
+            let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
+            render::insert(
+                ctx,
+                el,
+                View::new_dyn_scoped(ctx, f),
+                initial,
+                None,
+                true, /* We don't know if this is the only child or not so we
+                       * pessimistically set this to true. */
+            );
+            return;
+        }
+        // G is neither SsrNode nor HydrateNode. Proceed normally.
+        let marker = G::marker();
+        el.append_child(&marker);
+        render::insert(
+            ctx,
+            el,
+            View::new_dyn_scoped(ctx, f),
+            None,
+            Some(&marker),
+            true,
+        );
+    }
+
+    /// Adds a dynamic child. Note that most times, [`dyn_if`](Self::dyn_if) can be used instead
+    /// which is more ergonomic.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn some_view<G: GenericNode>() -> View<G> { todo!() }
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let a_view = || some_view();
+    /// h(div).dyn_c(a_view)
+    /// # .view(ctx) }
+    /// ```
     pub fn dyn_c<O: ElementBuilderOrView<'a, G> + 'a>(
         self,
         mut f: impl FnMut() -> O + 'a,
@@ -292,6 +510,21 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         self.map(move |ctx, el| Self::dyn_c_internal(ctx, el, move || f().into_view(ctx)))
     }
 
+    /// Adds a dynamic, conditional view.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let visible = ctx.create_signal(true);
+    /// h(div).dyn_if(
+    ///     || *visible.get(),
+    ///     || h(p).t("Now you see me"),
+    ///     || h(p).t("Now you don't!"),
+    /// )
+    /// # .view(ctx) }
+    /// ```
     pub fn dyn_if<O1: ElementBuilderOrView<'a, G> + 'a, O2: ElementBuilderOrView<'a, G> + 'a>(
         self,
         cond: impl Fn() -> bool + 'a,
@@ -300,6 +533,7 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
         let cond = Rc::new(cond);
         self.map(move |ctx, el| {
+            // FIXME: should be dyn_c_internal_scoped to prevent memory leaks.
             Self::dyn_c_internal(ctx, el, move || {
                 if *ctx
                     .create_selector({
@@ -317,71 +551,29 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
         })
     }
 
+    /// Adds a dynamic child that is created in a new reactive scope.
+    ///
+    /// [`dyn_c`](Self::dyn_c) uses [`create_effect`](Scope::create_effect) whereas this method uses
+    /// [`create_effect_scoped`](Scope::create_effect_scoped).
     pub fn dyn_c_scoped(
         self,
         f: impl FnMut(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
-        self.map(move |ctx, el| {
-            #[allow(unused_imports)]
-            use std::any::{Any, TypeId};
-
-            #[cfg(feature = "ssr")]
-            if TypeId::of::<G>() == TypeId::of::<crate::generic_node::SsrNode>() {
-                // If Server Side Rendering, insert beginning tag for hydration purposes.
-                el.append_child(&G::marker_with_text("#"));
-                // Create end marker. This is needed to make sure that the node is inserted into the
-                // right place.
-                let end_marker = G::marker_with_text("/");
-                el.append_child(&end_marker);
-                render::insert(
-                    ctx,
-                    el,
-                    View::new_dyn_scoped(ctx, f),
-                    None,
-                    Some(&end_marker),
-                    true, /* We don't know if this is the only child or not so we
-                           * pessimistically set this to true. */
-                );
-                return;
-            }
-            #[cfg(feature = "experimental-hydrate")]
-            if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
-                use crate::utils::hydrate::web::*;
-                // Get start and end markers.
-                let el_hn =
-                    <dyn Any>::downcast_ref::<crate::generic_node::HydrateNode>(el).unwrap();
-                let initial = get_next_marker(&el_hn.inner_element());
-                // Do not drop the HydrateNode because it will be cast into a GenericNode.
-                let initial = ::std::mem::ManuallyDrop::new(initial);
-                // SAFETY: This is safe because we already checked that the type is HydrateNode.
-                // __initial is wrapped inside ManuallyDrop to prevent double drop.
-                let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
-                render::insert(
-                    ctx,
-                    el,
-                    View::new_dyn_scoped(ctx, f),
-                    initial,
-                    None,
-                    true, /* We don't know if this is the only child or not so we
-                           * pessimistically set this to true. */
-                );
-                return;
-            }
-            // G is neither SsrNode nor HydrateNode. Proceed normally.
-            let marker = G::marker();
-            el.append_child(&marker);
-            render::insert(
-                ctx,
-                el,
-                View::new_dyn_scoped(ctx, f),
-                None,
-                Some(&marker),
-                true,
-            );
-        })
+        self.map(|ctx, el| Self::dyn_c_internal_scoped(ctx, el, f))
     }
 
     /// Attach an event handler to the element.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// h(button)
+    ///     .t("My button")
+    ///     .on("click", |_| web_sys::console::log_1(&"Clicked".into()))
+    /// # .view(ctx) }
+    /// ```
     pub fn on(
         self,
         name: &'a str,
@@ -391,6 +583,16 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Get a hold of the raw element by using a [`NodeRef`].
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let node_ref = ctx.create_node_ref();
+    /// h(input).bind_ref(node_ref.clone())
+    /// # .view(ctx) }
+    /// ```
     pub fn bind_ref(
         self,
         node_ref: NodeRef<G>,
@@ -399,6 +601,20 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G
     }
 
     /// Construct a [`View`] by evaluating the lazy [`ElementBuilder`].
+    ///
+    /// This is the method that should be called at the end of the building chain.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// #[component]
+    /// fn MyComponent<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    ///     h(div)
+    ///         /* builder stuff... */
+    ///         .view(ctx)
+    /// }
+    /// ```
     pub fn view(self, ctx: ScopeRef<'a>) -> View<G> {
         let el = (self.0)(ctx);
         View::new_node(el)
@@ -412,7 +628,14 @@ impl<'a, G: Html, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// The [`Signal`] will be automatically updated when the value is updated.
     ///
     /// # Example
-    /// TODO
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: Html>(ctx: ScopeRef) -> View<G> {
+    /// let value = ctx.create_signal(String::new());
+    /// h(input).bind_value(value)
+    /// # .view(ctx) }
+    /// ```
     pub fn bind_value(
         self,
         sub: &'a Signal<String>,
@@ -446,7 +669,14 @@ impl<'a, G: Html, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// The [`Signal`] will be automatically updated when the value is updated.
     ///
     /// # Example
-    /// TODO
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: Html>(ctx: ScopeRef) -> View<G> {
+    /// let checked = ctx.create_signal(true);
+    /// h(input).attr("type", "checkbox").bind_checked(checked)
+    /// # .view(ctx) }
+    /// ```
     pub fn bind_checked(
         self,
         sub: &'a Signal<bool>,
@@ -474,10 +704,6 @@ impl<'a, G: Html, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
             );
         })
     }
-}
-
-pub fn view<'a, G: GenericNode>(ctx: ScopeRef<'a>, f: impl FnOnce(ScopeRef<'a>) -> G) -> View<G> {
-    View::new_node(f(ctx))
 }
 
 /// Create [`NodeBuilder`] to create UI elements.
@@ -583,8 +809,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let visible = Signal::new(true);
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let visible = ctx.create_signal(true);
     ///
     /// div()
     ///     .dyn_child(
@@ -679,8 +905,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let required = Signal::new(false);
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let required = ctx.create_signal(false);
     ///
     /// h1()
     ///     .text("Email")
@@ -738,16 +964,6 @@ where
         self.attr("id", id.as_ref())
     }
 
-    /// Set an attribute on the node.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore::prelude::*;
-    /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// button().attr("type", "submit").build()
-    /// # }
-    /// ```
     pub fn attr<N, Va>(&self, name: N, value: Va) -> &Self
     where
         N: AsRef<str>,
@@ -758,16 +974,6 @@ where
         self
     }
 
-    /// Set a boolean attribute on the node.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore::prelude::*;
-    /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// input().bool_attr("required", true).build()
-    /// # }
-    /// ```
     pub fn bool_attr<N>(&self, name: N, value: bool) -> &Self
     where
         N: AsRef<str>,
@@ -790,8 +996,8 @@ where
     /// ```
     /// # use sycamore::prelude::*;
     /// # use sycamore::builder::html::*;
-    /// # fn _test<G: GenericNode>() -> View<G> {
-    /// let input_type = Signal::new(Some("text"));
+    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+    /// let input_type = ctx.create_signal(Some("text"));
     ///
     /// input()
     ///     .dyn_attr("type", input_type.handle())
