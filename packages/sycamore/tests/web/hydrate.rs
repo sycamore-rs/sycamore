@@ -258,3 +258,33 @@ mod dynamic_template {
         });
     }
 }
+
+mod top_level_dynamic_with_siblings {
+    use super::*;
+    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+        view! { ctx, "Value: " (state.get()) "!" }
+    }
+    #[test]
+    fn ssr() {
+        check(
+            &sycamore::render_to_string(|ctx| v(ctx, ctx.create_signal(0))),
+            expect![[r#"Value: 0!"#]],
+        );
+    }
+    #[wasm_bindgen_test]
+    fn test() {
+        let html = sycamore::render_to_string(|ctx| v(ctx, ctx.create_signal(0)));
+        let c = test_container();
+        c.set_inner_html(&html);
+
+        create_scope_immediate(|ctx| {
+            let state = ctx.create_signal(0);
+
+            sycamore::hydrate_to(|_| v(ctx, state), &c);
+
+            // Reactivity should work normally.
+            state.set(1);
+            assert_eq!(c.text_content().unwrap(), "Value: 1!");
+        });
+    }
+}

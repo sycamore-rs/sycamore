@@ -27,9 +27,7 @@ use crate::view::View;
 /// use sycamore::prelude::*;
 /// ```
 pub mod prelude {
-    pub use super::component;
-    pub use super::fragment;
-    pub use super::h;
+    pub use super::{component, dyn_t, fragment, h, t, tag};
     pub use crate::html::*;
 }
 
@@ -61,6 +59,9 @@ impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilderOrView
 
 /// Construct a new [`ElementBuilder`] from a [`SycamoreElement`].
 ///
+/// Note that this can not be used to construct custom elements because they are not type checked in
+/// Rust. You'll need to use the [`tag`] function instead.
+///
 /// # Example
 /// ```
 /// # use sycamore::builder::prelude::*;
@@ -80,6 +81,30 @@ pub fn h<'a, E: SycamoreElement, G: GenericNode>(
     _: E,
 ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G> {
     ElementBuilder::new(move |_| G::element(E::TAG_NAME))
+}
+
+/// Construct a new [`ElementBuilder`] from a tag name.
+/// Generally, it is preferable to use [`h`] instead unless using custom elements.
+///
+/// # Example
+/// ```
+/// # use sycamore::builder::prelude::*;
+/// # use sycamore::prelude::*;
+/// # fn _test1<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// tag("a")
+/// # .view(ctx) }
+/// # fn _test2<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// tag("button")
+/// # .view(ctx) }
+/// # fn _test3<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// tag("my-custom-element")
+/// # .view(ctx) }
+/// // etc...
+/// ```
+pub fn tag<'a, G: GenericNode>(
+    t: impl AsRef<str>,
+) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G> {
+    ElementBuilder::new(move |_| G::element(t.as_ref()))
 }
 
 impl<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
@@ -744,4 +769,42 @@ where
     G: GenericNode,
 {
     View::new_fragment(Vec::from_iter(parts.to_vec()))
+}
+
+/// Construct a new top-level text [`View`].
+///
+/// # Example
+/// ```
+/// # use sycamore::builder::prelude::*;
+/// # use sycamore::prelude::*;
+/// # fn _test1<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// t("Hello!")
+/// # }
+/// # fn _test2<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// t("This is top level text.")
+/// # }
+/// # fn _test3<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// t("We aren't directly nested under an element.")
+/// # }
+/// // etc...
+/// ```
+pub fn t<G: GenericNode>(t: impl AsRef<str>) -> View<G> {
+    View::new_node(G::text_node(t.as_ref()))
+}
+
+/// Construct a new top-level dynamic text [`View`].
+///
+/// # Example
+/// ```
+/// # use sycamore::builder::prelude::*;
+/// # use sycamore::prelude::*;
+/// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// dyn_t(ctx, || "Hello!")
+/// # }
+/// ```
+pub fn dyn_t<'a, G: GenericNode, S: AsRef<str>>(
+    ctx: ScopeRef<'a>,
+    mut f: impl FnMut() -> S + 'a,
+) -> View<G> {
+    View::new_dyn(ctx, move || View::new_node(G::text_node(f().as_ref())))
 }
