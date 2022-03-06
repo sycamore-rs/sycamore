@@ -33,7 +33,7 @@ pub fn OutlineView<G: Html>(ctx: ScopeRef, outline: Vec<Outline>) -> View<G> {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
                         let name = x.name.clone();
-                        let href = format!("#{}", x.name.trim().to_lowercase().replace(" ", "-"));
+                        let href = format!("#{}", x.name.trim().to_lowercase().replace(' ', "-"));
                         view! { ctx,
                             li {
                                 a(
@@ -47,7 +47,7 @@ pub fn OutlineView<G: Html>(ctx: ScopeRef, outline: Vec<Outline>) -> View<G> {
                     }).collect();
                     let nested = View::new_fragment(nested);
 
-                    let href = format!("#{}", name.trim().to_lowercase().replace(" ", "-"));
+                    let href = format!("#{}", name.trim().to_lowercase().replace(' ', "-"));
 
                     view! { ctx,
                         li {
