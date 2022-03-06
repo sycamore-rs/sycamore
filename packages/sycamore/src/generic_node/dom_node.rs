@@ -166,7 +166,10 @@ impl GenericNode for DomNode {
     }
 
     fn text_node_int(int: i32) -> Self {
-        let node = document().unchecked_into::<DocumentCreateTextNodeInt>().create_text_node_int(int).into();
+        let node = document()
+            .unchecked_into::<DocumentCreateTextNodeInt>()
+            .create_text_node_int(int)
+            .into();
         DomNode {
             id: Default::default(),
             node,

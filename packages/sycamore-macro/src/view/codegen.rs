@@ -75,7 +75,7 @@ impl Codegen {
         let quote_tag = match tag {
             ElementTag::Builtin(id) => quote! {
                 let __el = ::sycamore::generic_node::GenericNode::element(
-                    <::sycamore::html::#id as ::sycamore::html::SycamoreElement>::TAG_NAME
+                    <::sycamore::html::#id as ::sycamore::generic_node::SycamoreElement>::TAG_NAME
                 );
             },
             ElementTag::Custom(tag_s) => quote! {

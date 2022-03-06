@@ -22,6 +22,13 @@ pub use hydrate_dom::*;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
 
+/// Represents an element. For instance, this trait is implemented for all types in the
+/// [`html`](crate::html) module.
+pub trait SycamoreElement {
+    const TAG_NAME: &'static str;
+    const NAME_SPACE: Option<&'static str>;
+}
+
 /// Abstraction over a rendering backend.
 ///
 /// You would probably use this trait as a trait bound when you want to accept any rendering

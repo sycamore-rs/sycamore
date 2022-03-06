@@ -58,7 +58,8 @@ impl<G: GenericNode> View<G> {
     ) -> Self {
         let signal = ctx.create_ref(RefCell::new(None::<RcSignal<View<G>>>));
         ctx.create_effect_scoped(move |ctx| {
-            // SAFETY: `f` takes the same parameter as the child ctx provided by `create_effect_scoped`.
+            // SAFETY: `f` takes the same parameter as the child ctx provided by
+            // `create_effect_scoped`.
             let view = f(unsafe { std::mem::transmute(ctx) });
             if signal.borrow().is_some() {
                 signal.borrow().as_ref().unwrap().set(view);
@@ -223,8 +224,8 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoView<G> for T {
         // Strings and string slices.
         specialize_as_ref_to_str!(&str, String, Rc<str>, Rc<String>, Cow<'_, str>);
 
-        // Numbers that are smaller than can be represented by an `i32` use fast-path by passing value directly to JS.
-        // Note that `u16` and `u32` cannot be represented by an `i32`
+        // Numbers that are smaller than can be represented by an `i32` use fast-path by passing
+        // value directly to JS. Note that `u16` and `u32` cannot be represented by an `i32`
         specialize_num!(i8, i16, i32, u8);
         // Number that are bigger than an `i32`.
         specialize_big_num!(i64, i128, isize, u16, u32, u64, u128, usize);

@@ -52,10 +52,10 @@ jobs:
         if: matrix.rust == '1.58.0'
         env:
           RUN_UI_TESTS: true
-        run: cargo test
+        run: cargo test --all-features
 
       - name: Run tests (excluding UI)
-        run: cargo test
+        run: cargo test --all-features
         if: matrix.rust != '1.58.0'
 
       - name: Run headless browser tests
@@ -124,6 +124,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
+        # Note that we don't have --all-features for packages/sycamore because of https://github.com/rust-lang/miri/issues/1038
         run: |
           cd packages/sycamore
           cargo miri test
