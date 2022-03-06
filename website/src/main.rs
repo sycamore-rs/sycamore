@@ -1,3 +1,5 @@
+#![allow(deprecated)] // TODO: remove usage of deprecated API.
+
 mod content;
 mod header;
 mod index;

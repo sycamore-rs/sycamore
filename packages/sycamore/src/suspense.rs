@@ -7,7 +7,7 @@ use std::cell::{Cell, RefCell};
 
 use futures::channel::oneshot;
 use futures::Future;
-use sycamore_futures::ScopeSpawnFuture;
+use sycamore_futures::ScopeSpawnLocal;
 
 use crate::prelude::*;
 
@@ -95,14 +95,14 @@ pub fn suspense_scope<'a>(ctx: ScopeRef<'a>, f: impl Future<Output = ()> + 'a) {
     if let Some(state) = ctx.try_use_context::<SuspenseState>() {
         if let Some(count) = state.async_counts.borrow().last().cloned() {
             count.set(*count.get() + 1);
-            ctx.spawn_future(async move {
+            ctx.spawn_local(async move {
                 f.await;
                 count.set(*count.get() - 1);
             });
             return;
         }
     }
-    ctx.spawn_future(f);
+    ctx.spawn_local(f);
 }
 
 /// Waits until all suspense tasks created within the scope are finished.
@@ -159,7 +159,7 @@ impl<'a> TransitionHandle<'a> {
 
     /// Start a transition.
     pub fn start(&'a self, f: impl Fn() + 'a) {
-        self.ctx.spawn_future(async move {
+        self.ctx.spawn_local(async move {
             self.is_pending.set(true);
             await_suspense(self.ctx, async move { f() }).await;
             self.is_pending.set(false);

@@ -8,6 +8,9 @@ use sycamore_reactive::Scope;
 
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`
 /// scope.
+///
+/// Normally, you do not need to call this as it is handled internally by Sycamore when creating
+/// your app.
 pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
     #[cfg(target_arch = "wasm32")]
     {
@@ -20,14 +23,17 @@ pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
     }
 }
 
-pub trait ScopeSpawnFuture<'a> {
+/// Extension trait for Sycamore, providing the [`spawn_local`](ScopeSpawnLocal::spawn_local)
+/// method.
+pub trait ScopeSpawnLocal<'a> {
     /// Spawns a `!Send` future on the current scope. If the scope is destroyed before the future is
-    /// completed, it is aborted immediately.
-    fn spawn_future(&'a self, f: impl Future<Output = ()> + 'a);
+    /// completed, it is aborted immediately. This ensures that it is impossible to access any
+    /// values referencing the scope after they are destroyed.
+    fn spawn_local(&'a self, f: impl Future<Output = ()> + 'a);
 }
 
-impl<'a> ScopeSpawnFuture<'a> for Scope<'a> {
-    fn spawn_future(&'a self, f: impl Future<Output = ()> + 'a) {
+impl<'a> ScopeSpawnLocal<'a> for Scope<'a> {
+    fn spawn_local(&'a self, f: impl Future<Output = ()> + 'a) {
         let boxed: Pin<Box<dyn Future<Output = ()> + 'a>> = Box::pin(f);
         // SAFETY: We are just transmuting the lifetime here so that we can spawn the future.
         // This is safe because we wrap the future in an `Abortable` future which will be
