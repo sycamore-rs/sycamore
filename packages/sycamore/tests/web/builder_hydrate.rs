@@ -218,7 +218,10 @@ mod dynamic_with_siblings {
 mod dynamic_template {
     use super::*;
     fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<View<G>>) -> View<G> {
-        h(p).t("before").dyn_c(|| state.get().as_ref().clone()).t("after").view(ctx)
+        h(p).t("before")
+            .dyn_c(|| state.get().as_ref().clone())
+            .t("after")
+            .view(ctx)
     }
     #[test]
     fn ssr() {
