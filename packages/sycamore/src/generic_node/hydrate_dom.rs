@@ -25,18 +25,22 @@ pub struct HydrateNode {
 }
 
 impl HydrateNode {
+    /// Get the underlying [`web_sys::Node`].
     pub fn inner_element(&self) -> Node {
         self.node.inner_element()
     }
 
+    /// Cast the underlying [`web_sys::Node`] using [`JsCast`].
     pub fn unchecked_into<T: JsCast>(self) -> T {
         self.node.unchecked_into()
     }
 
+    /// Get the [`NodeId`] for the node.
     pub(super) fn get_node_id(&self) -> NodeId {
         self.node.get_node_id()
     }
 
+    /// Create a new [`DomNode`] from a raw [`web_sys::Node`].
     pub fn from_web_sys(node: Node) -> Self {
         Self {
             node: DomNode::from_web_sys(node),

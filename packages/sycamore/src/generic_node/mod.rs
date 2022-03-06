@@ -25,7 +25,9 @@ pub use ssr_node::*;
 /// Represents an element. For instance, this trait is implemented for all types in the
 /// [`html`](crate::html) module.
 pub trait SycamoreElement {
+    /// The tag name of the element.
     const TAG_NAME: &'static str;
+    /// The namespace of the element, or `None`, e.g. in the case of standard HTML5 elements.
     const NAME_SPACE: Option<&'static str>;
 }
 
@@ -57,6 +59,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 
     /// Whether this rendering backend needs the hydration registry.
     const USE_HYDRATION_CONTEXT: bool = false;
+    /// Whether this rendering backend hydrates nodes on the client side.
     const CLIENT_SIDE_HYDRATION: bool = false;
 
     /// Create a new element node.

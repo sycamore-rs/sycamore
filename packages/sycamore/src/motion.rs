@@ -11,6 +11,7 @@ use crate::reactive::*;
 /// Type returned by `create_raf` and `create_raf_loop`.
 type RafState<'a> = (RcSignal<bool>, &'a dyn Fn(), &'a dyn Fn());
 
+/// Extension trait for [`Scope`] adding methods related to animation frames and tweened signals.
 pub trait ScopeMotionExt<'a> {
     /// Schedule a callback to be called on each animation frame.
     /// Does nothing if not on `wasm32` target.
