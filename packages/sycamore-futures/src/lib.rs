@@ -9,7 +9,8 @@ use sycamore_reactive::Scope;
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`
 /// scope.
 ///
-/// Normally, you do not need to call this as it is handled internally by Sycamore when creating your app.
+/// Normally, you do not need to call this as it is handled internally by Sycamore when creating
+/// your app.
 pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
     #[cfg(target_arch = "wasm32")]
     {
@@ -22,10 +23,12 @@ pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
     }
 }
 
-/// Extension trait for Sycamore, providing the [`spawn_local`](ScopeSpawnLocal::spawn_local) method.
+/// Extension trait for Sycamore, providing the [`spawn_local`](ScopeSpawnLocal::spawn_local)
+/// method.
 pub trait ScopeSpawnLocal<'a> {
     /// Spawns a `!Send` future on the current scope. If the scope is destroyed before the future is
-    /// completed, it is aborted immediately.
+    /// completed, it is aborted immediately. This ensures that it is impossible to access any
+    /// values referencing the scope after they are destroyed.
     fn spawn_local(&'a self, f: impl Future<Output = ()> + 'a);
 }
 
