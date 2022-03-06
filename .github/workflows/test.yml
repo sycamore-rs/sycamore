@@ -124,8 +124,9 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
+        # Note that we don't have --all-features for packages/sycamore because of https://github.com/rust-lang/miri/issues/1038
         run: |
           cd packages/sycamore
-          cargo miri test --all-features
+          cargo miri test
           cd ../sycamore-reactive
           cargo miri test
