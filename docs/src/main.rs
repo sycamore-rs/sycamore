@@ -61,7 +61,7 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
                 Some(event)
             } else {
                 let tmp = tmp.take().unwrap();
-                let anchor = tmp.name.trim().to_lowercase().replace(" ", "-");
+                let anchor = tmp.name.trim().to_lowercase().replace(' ', "-");
                 let name = tmp.name.clone();
                 if level == HeadingLevel::H2 {
                     outline_tmp.push(tmp);
