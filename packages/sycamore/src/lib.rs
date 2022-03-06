@@ -6,10 +6,11 @@
 //! [Sycamore Book](https://sycamore-rs.netlify.app/docs/getting_started/installation).
 //!
 //! ## Feature Flags
+//!
+//! - `builder` - Enables the builder API.
+//!
 //! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on
 //!   `wasm32-unknown-unknown` target.
-//!
-//! - `experimental-builder-agnostic` - Enables the agnostic backend builder API.
 //!
 //! - `experimental-hydrate` - Enables client-side hydration support.
 //!
@@ -37,7 +38,7 @@
 #[allow(unused_extern_crates)] // False positive
 extern crate self as sycamore;
 
-#[cfg(feature = "experimental-builder-agnostic")]
+#[cfg(feature = "builder")]
 pub mod builder;
 pub mod component;
 pub mod easing;

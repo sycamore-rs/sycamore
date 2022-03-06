@@ -26,6 +26,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 | [components](components)                           | UI abstraction using components                                                                |
 | [context](context)                                 | A simple counter which can be incremented and decremented                                      |
 | [counter](counter)                                 | Demonstration for the Context API                                                              |
+| [hello-builder](hello-builder)                     | Hello World! With the builder API!                                                             |
 | [hello-world](hello-world)                         | Hello World!                                                                                   |
 | [higher-order-components](higher-order-components) | Higher-order-components (functions that create components)                                     |
 | [http-request](http-request)                       | Suspense + async components for sending HTTP requests                                          |
