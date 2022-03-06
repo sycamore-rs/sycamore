@@ -266,12 +266,23 @@ pub fn hydrate_get_scope<'a>(
     view: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode> + 'a,
     parent: &'a Node,
 ) -> ScopeDisposer<'a> {
+    // Get children from parent into a View to set as the initial node value.
+    let mut children = Vec::new();
+    let child_nodes = parent.child_nodes();
+    for i in 0..child_nodes.length() {
+        children.push(child_nodes.get(i).unwrap());
+    }
+    let children = children
+        .into_iter()
+        .map(|x| View::new_node(HydrateNode::from_web_sys(x)))
+        .collect::<Vec<_>>();
+
     create_scope(|ctx| {
         insert(
             ctx,
             &HydrateNode::from_web_sys(parent.clone()),
             with_hydration_context(|| view(ctx)),
-            None,
+            Some(View::new_fragment(children)),
             None,
             false,
         );

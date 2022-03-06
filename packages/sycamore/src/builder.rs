@@ -27,9 +27,7 @@ use crate::view::View;
 /// use sycamore::prelude::*;
 /// ```
 pub mod prelude {
-    pub use super::component;
-    pub use super::fragment;
-    pub use super::h;
+    pub use super::{component, dyn_t, fragment, h, t};
     pub use crate::html::*;
 }
 
@@ -744,4 +742,42 @@ where
     G: GenericNode,
 {
     View::new_fragment(Vec::from_iter(parts.to_vec()))
+}
+
+/// Construct a new top-level text [`View`].
+///
+/// # Example
+/// ```
+/// # use sycamore::builder::prelude::*;
+/// # use sycamore::prelude::*;
+/// # fn _test1<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// t("Hello!")
+/// # }
+/// # fn _test2<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// t("This is top level text.")
+/// # }
+/// # fn _test3<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// t("We aren't directly nested under an element.")
+/// # }
+/// // etc...
+/// ```
+pub fn t<G: GenericNode>(t: impl AsRef<str>) -> View<G> {
+    View::new_node(G::text_node(t.as_ref()))
+}
+
+/// Construct a new top-level dynamic text [`View`].
+///
+/// # Example
+/// ```
+/// # use sycamore::builder::prelude::*;
+/// # use sycamore::prelude::*;
+/// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
+/// dyn_t(ctx, || "Hello!")
+/// # }
+/// ```
+pub fn dyn_t<'a, G: GenericNode, S: AsRef<str>>(
+    ctx: ScopeRef<'a>,
+    mut f: impl FnMut() -> S + 'a,
+) -> View<G> {
+    View::new_dyn(ctx, move || View::new_node(G::text_node(f().as_ref())))
 }
