@@ -11,11 +11,11 @@ repository = "https://github.com/sycamore-rs/sycamore"
 version = "0.8.0-beta.2"
 
 [dependencies]
-futures = { version = "0.3.19" }
+futures = "0.3.21"
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.2" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.29"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "1.16.1", features = ["rt"] }
+tokio = { version = "1.17.0", features = ["rt"] }
