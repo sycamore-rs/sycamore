@@ -1,9 +1,13 @@
-# `view!`
+# Views
 
 Sycamore uses the `view!` macro as an ergonomic way to create complex user interfaces. You might
 have already seen it in the _"Hello, World!"_ example.
 
-## Syntax
+> Dislike macros? Check out the alternative [builder pattern](#builder-syntax).
+
+## `view!` Syntax
+
+Write your markup inside the `view!` macro and get a `View` expression.
 
 ### Elements
 
@@ -40,7 +44,7 @@ Creating all these top-level nodes is not very useful. You can create nested nod
 
 ```rust
 view! { ctx,
-    div(class="foo") {
+    div {
         p {
             span { "Hello " }
             strong { "World!" }
@@ -143,4 +147,106 @@ restriction will be lifted in the future.)
 
 ```rust
 view! { ctx, }
+```
+
+## Builder syntax
+
+For those who dislike macro DSLs, we also provide an ergonomic builder API for constructing views.
+To begin, enable the `"builder"` feature flag on `sycamore` in your `Cargo.toml` file. Also make
+sure to add the builder prelude as well as the main sycamore prelude to your source file.
+
+```rust
+use sycamore::builder::prelude::*;
+use sycamore::prelude::*;
+```
+
+### Elements
+
+Elements can easily be created using the utility `h` function.
+
+```rust
+h(a)
+h(button)
+h(div)
+// etc...
+```
+
+Observe that this creates an `ElementBuilder`. This is a struct used for lazily constructing the
+element. To get a `View` from an `ElementBuilder`, just call `.view(ctx)` at the end of the builder
+chain. This will evaluate all the lazy builder calls preceding it by passing in `ctx`.
+
+### Text nodes
+
+Text nodes are created using the `t` function.
+
+```rust
+t("Hello World!")
+```
+
+This function does not return an `ElementBuilder` (because text nodes are not elements!) and instead
+directly gives you a `View`.
+
+### Nesting
+
+Nodes can be nested under an element using a combination of `.c(...)` for child element nodes and
+`.t(...)` for child text nodes.
+
+```rust
+h(div).c(
+    h(p)
+        .c(h(span).t("Hello "))
+        .c(h(strong).t("World!"))
+)
+```
+
+### Interpolation
+
+Dynamic values are inserted using `.dyn_c(...)` and `.dyn_t(...)` instead of `.c(...)` and `.t(...)`
+respectively.
+
+```rust
+let my_number = 123;
+
+h(p)
+    .t("This is my number: ")
+    .dyn_t(|| my_number.to_string())
+```
+
+### Attributes
+
+Unsurprisingly, attributes can also be set using the builder pattern.
+
+```rust
+h(p).attr("class", "my-class").attr("id", "my-paragraph").attr("aria-label", "My paragraph")
+```
+
+For convenience, the methods `.class(...)` and `.id(...)` are provided for setting the `class` and
+`id` attributes directly. This means that we can rewrite our previous example as:
+
+```rust
+h(p).class("my-class").ud("my-paragraph").attr("aria-label", "My paragraph")
+```
+
+#### `dangerously_set_inner_html`
+
+At this time, the special `dangerously_set_inner_html` attribute from the `view!` macro is not
+supported by the builder API.
+
+### Events
+
+Events are attached using `.on(...)`.
+
+```rust
+h(button).on("click", |_| { /* do something */ }).t("Click me")
+```
+
+### Fragments
+
+Construct fragments using `fragment(...)`.
+
+```rust
+fragment([
+    h(p).t("First child").view(ctx),
+    h(p).t("Second child").view(ctx),
+])
 ```
