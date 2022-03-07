@@ -40,6 +40,7 @@ pub struct ElementBuilder<'a, G: GenericNode, F: FnOnce(ScopeRef<'a>) -> G + 'a>
 /// A trait that is implemented only for [`ElementBuilder`] and [`View`].
 /// This should be considered implementation details and should not be used.
 pub trait ElementBuilderOrView<'a, G: GenericNode> {
+    /// Convert into a [`View`].
     fn into_view(self, ctx: ScopeRef<'a>) -> View<G>;
 }
 

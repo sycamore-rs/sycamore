@@ -13,8 +13,8 @@ pub struct PortalProps<'a, G>
 where
     G: GenericNode,
 {
-    pub children: Children<'a, G>,
-    pub selector: &'static str,
+    children: Children<'a, G>,
+    selector: &'a str,
 }
 
 /// A portal into another part of the DOM.

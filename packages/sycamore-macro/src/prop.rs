@@ -210,10 +210,11 @@ mod struct_info {
             }
 
             Ok(quote! {
-                impl #impl_generics #name #ty_generics #where_clause {
+                impl #impl_generics ::sycamore::component::Prop for #name #ty_generics #where_clause {
+                    type Builder = #builder_name #generics_with_empty;
                     #[doc = #builder_method_doc]
                     #[allow(dead_code, clippy::default_trait_access)]
-                    #vis fn builder() -> #builder_name #generics_with_empty {
+                    fn builder() -> Self::Builder {
                         #builder_name {
                             fields: #empties_tuple,
                             phantom: ::core::default::Default::default(),
@@ -234,16 +235,6 @@ mod struct_info {
                     fn clone(&self) -> Self {
                         Self {
                             fields: self.fields.clone(),
-                            phantom: ::core::default::Default::default(),
-                        }
-                    }
-                }
-
-                impl #impl_generics ::sycamore::component::Prop for #name #ty_generics #where_clause {
-                    type Builder = #builder_name #generics_with_empty;
-                    fn builder() -> Self::Builder {
-                        #builder_name {
-                            fields: #empties_tuple,
                             phantom: ::core::default::Default::default(),
                         }
                     }

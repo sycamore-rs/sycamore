@@ -1,5 +1,7 @@
 //! Easing functions.
 
+#![allow(missing_docs)] // TODO: add some simple docs for every single easing function (maybe interpolation formula?)
+
 use std::f32::consts::PI;
 
 const EXP_BASE: f32 = 2.0;

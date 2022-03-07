@@ -64,14 +64,17 @@ pub struct DomNode {
 }
 
 impl DomNode {
+    /// Get the underlying [`web_sys::Node`].
     pub fn inner_element(&self) -> Node {
         self.node.clone()
     }
 
+    /// Cast the underlying [`web_sys::Node`] using [`JsCast`].
     pub fn unchecked_into<T: JsCast>(self) -> T {
         self.node.unchecked_into()
     }
 
+    /// Get the [`NodeId`] for the node.
     pub(super) fn get_node_id(&self) -> NodeId {
         if self.id.get().0 == 0 {
             // self.id not yet initialized.
@@ -84,6 +87,7 @@ impl DomNode {
         self.id.get()
     }
 
+    /// Create a new [`DomNode`] from a raw [`web_sys::Node`].
     pub fn from_web_sys(node: Node) -> Self {
         Self {
             id: Default::default(),

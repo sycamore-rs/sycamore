@@ -30,6 +30,7 @@
 #![warn(clippy::clone_on_ref_ptr)]
 #![warn(clippy::rc_buffer)]
 #![warn(clippy::semicolon_if_nothing_returned)]
+#![warn(missing_docs)]
 #![warn(rust_2018_idioms)]
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]

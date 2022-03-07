@@ -88,12 +88,21 @@ where
 /// A manager for the current hydration state.
 #[derive(Debug, Clone, Copy)]
 pub struct HydrationRegistry {
+    /// The current node id. This is incremented every time a new element is created.
     pub current_id: usize,
+    /// The current component id. This is incremented every time a new component is created.
+    /// Every time this is incremented, `current_id` is reset to `0`. This is to add more tolerance
+    /// to hydration so that one component that doesn't hydrate correctly will not prevent other
+    /// components from hydrating.
     pub current_component_id: usize,
+    /// The next component id. We need to save this because exiting the component scope decrements
+    /// the current component id. This is to ensure that component ids are unique for each
+    /// instance of a component.
     pub next_component_id: usize,
 }
 
 impl HydrationRegistry {
+    /// Create a new [`HydrationRegistry`] with defaults.
     pub fn new() -> Self {
         Self {
             current_id: 0,

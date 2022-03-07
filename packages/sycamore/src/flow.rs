@@ -16,9 +16,11 @@ where
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
 {
-    pub iterable: &'a ReadSignal<Vec<T>>,
-    pub view: F,
-    pub key: K,
+    iterable: &'a ReadSignal<Vec<T>>,
+    /// The map function that renders a [`View`] for each element in `iterable`.
+    view: F,
+    /// The key function that assigns each element in `iterable` an unique key.
+    key: K,
 }
 
 /// Keyed iteration. Use this instead of directly rendering an array of [`View`]s.
@@ -53,8 +55,9 @@ pub struct IndexedProps<'a, G: GenericNode, T, F>
 where
     F: Fn(BoundedScopeRef<'_, 'a>, T) -> View<G> + 'a,
 {
-    pub iterable: &'a ReadSignal<Vec<T>>,
-    pub view: F,
+    iterable: &'a ReadSignal<Vec<T>>,
+    /// The map function that renders a [`View`] for each element in `iterable`.
+    view: F,
 }
 
 /// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of

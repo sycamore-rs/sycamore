@@ -76,6 +76,7 @@ impl SsrNode {
         *self.0.parent.borrow_mut() = parent;
     }
 
+    /// Get an [`Element`], or `panic!` if wrong type.
     #[track_caller]
     pub fn unwrap_element(&self) -> &RefCell<Element> {
         match self.0.ty.as_ref() {
@@ -84,6 +85,7 @@ impl SsrNode {
         }
     }
 
+    /// Get a [`Text`], or `panic!` if wrong type.
     #[track_caller]
     pub fn unwrap_text(&self) -> &RefCell<Text> {
         match &self.0.ty.as_ref() {
@@ -365,6 +367,7 @@ impl WriteToString for SsrNode {
     }
 }
 
+/// A SSR element.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
     name: String,
@@ -403,6 +406,7 @@ impl WriteToString for Element {
     }
 }
 
+/// A SSR comment node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct Comment(String);
 
@@ -416,6 +420,7 @@ impl WriteToString for Comment {
     }
 }
 
+/// A SSR text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 pub struct Text(String);
 

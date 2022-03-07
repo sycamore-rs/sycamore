@@ -84,6 +84,7 @@ impl<G: GenericNode> View<G> {
         Self::new_node(G::marker())
     }
 
+    /// Try to cast to a [`GenericNode`], or `None` if wrong type.
     pub fn as_node(&self) -> Option<&G> {
         if let ViewType::Node(v) = &self.inner {
             Some(v)
@@ -92,6 +93,7 @@ impl<G: GenericNode> View<G> {
         }
     }
 
+    /// Try to cast to a slice representing the view fragment, or `None` if wrong type.
     pub fn as_fragment(&self) -> Option<&[View<G>]> {
         if let ViewType::Fragment(v) = &self.inner {
             Some(v)
@@ -100,6 +102,7 @@ impl<G: GenericNode> View<G> {
         }
     }
 
+    /// Try to cast to the underlying [`RcSignal`] for a dynamic view, or `None` if wrong type.
     pub fn as_dyn(&self) -> Option<&RcSignal<View<G>>> {
         if let ViewType::Dyn(v) = &self.inner {
             Some(v)
@@ -108,6 +111,7 @@ impl<G: GenericNode> View<G> {
         }
     }
 
+    /// Returns `true` if the view is a single node.
     pub fn is_node(&self) -> bool {
         matches!(
             self,
@@ -117,6 +121,7 @@ impl<G: GenericNode> View<G> {
         )
     }
 
+    /// Returns `true` if the view is a view fragment.
     pub fn is_fragment(&self) -> bool {
         matches!(
             self,
@@ -126,6 +131,7 @@ impl<G: GenericNode> View<G> {
         )
     }
 
+    /// Returns `true` if the view is a dynamic view.
     pub fn is_dyn(&self) -> bool {
         matches!(
             self,
