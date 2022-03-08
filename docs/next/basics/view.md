@@ -224,7 +224,7 @@ For convenience, the methods `.class(...)` and `.id(...)` are provided for setti
 `id` attributes directly. This means that we can rewrite our previous example as:
 
 ```rust
-h(p).class("my-class").ud("my-paragraph").attr("aria-label", "My paragraph")
+h(p).class("my-class").id("my-paragraph").attr("aria-label", "My paragraph")
 ```
 
 #### `dangerously_set_inner_html`
