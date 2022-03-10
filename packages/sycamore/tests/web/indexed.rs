@@ -11,8 +11,8 @@ fn append() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -22,17 +22,17 @@ fn append() {
 
         let p = document().query_selector("ul").unwrap().unwrap();
 
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.push(3);
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.set(count.get()[1..].into());
-        assert_eq!(p.text_content().unwrap(), "23");
+        assert_eq!(p.text_content().unwrap(), "0213");
     });
 }
 
@@ -45,8 +45,8 @@ fn swap_rows() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -55,21 +55,21 @@ fn swap_rows() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.swap(0, 2);
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "321");
+        assert_eq!(p.text_content().unwrap(), "031221");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.swap(0, 2);
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
     });
 }
 
@@ -82,8 +82,8 @@ fn update_row() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -92,10 +92,10 @@ fn update_row() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
 
         count.set(vec![1, 3]);
-        assert_eq!(p.text_content().unwrap(), "13");
+        assert_eq!(p.text_content().unwrap(), "0113");
     });
 }
 
@@ -108,8 +108,8 @@ fn trigger_with_same_data() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -118,10 +118,10 @@ fn trigger_with_same_data() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
 
         count.set(count.get().as_ref().clone());
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
     });
 }
 
@@ -134,8 +134,8 @@ fn delete_row() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -144,14 +144,14 @@ fn delete_row() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.remove(1);
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "13");
+        assert_eq!(p.text_content().unwrap(), "0113");
     });
 }
 
@@ -164,8 +164,8 @@ fn delete_row_from_start() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -174,10 +174,10 @@ fn delete_row_from_start() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
 
         count.set(count.get().iter().cloned().skip(1).collect());
-        assert_eq!(p.text_content().unwrap(), "2");
+        assert_eq!(p.text_content().unwrap(), "02");
     });
 }
 
@@ -190,8 +190,8 @@ fn delete_row_from_end() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -200,10 +200,10 @@ fn delete_row_from_end() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
 
         count.set(count.get().iter().cloned().take(1).collect());
-        assert_eq!(p.text_content().unwrap(), "1");
+        assert_eq!(p.text_content().unwrap(), "01");
     });
 }
 
@@ -216,8 +216,8 @@ fn clear() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -226,7 +226,7 @@ fn clear() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.set(Vec::new());
         assert_eq!(p.text_content().unwrap(), "");
@@ -242,8 +242,8 @@ fn insert_front() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -252,14 +252,14 @@ fn insert_front() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.insert(0, 4);
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "4123");
+        assert_eq!(p.text_content().unwrap(), "04112233");
     });
 }
 
@@ -277,8 +277,8 @@ fn nested_reactivity() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item.get()) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item.get())) }
                     },
                 }
             }
@@ -287,17 +287,17 @@ fn nested_reactivity() {
         sycamore::render_to(|_| node, &test_container());
 
         let p = document().query_selector("ul").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.get()[0].set(4);
-        assert_eq!(p.text_content().unwrap(), "423");
+        assert_eq!(p.text_content().unwrap(), "041223");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.push(ctx.create_signal(5));
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "4235");
+        assert_eq!(p.text_content().unwrap(), "04122335");
     });
 }
 
@@ -310,9 +310,9 @@ fn fragment_template() {
             div {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |ctx, item, idx| view! { ctx,
                         span { "The value is: " }
-                        strong { (item) }
+                        strong { (format!("{}{}", idx, item)) }
                     },
                 }
             }
@@ -325,8 +325,8 @@ fn fragment_template() {
         assert_eq!(
             p.text_content().unwrap(),
             "\
-    The value is: 1\
-    The value is: 2"
+    The value is: 01\
+    The value is: 12"
         );
 
         count.set({
@@ -337,17 +337,17 @@ fn fragment_template() {
         assert_eq!(
             p.text_content().unwrap(),
             "\
-    The value is: 1\
-    The value is: 2\
-    The value is: 3"
+    The value is: 01\
+    The value is: 12\
+    The value is: 23"
         );
 
         count.set(count.get()[1..].into());
         assert_eq!(
             p.text_content().unwrap(),
             "\
-    The value is: 2\
-    The value is: 3"
+    The value is: 02\
+    The value is: 13"
         );
     });
 }
@@ -360,8 +360,8 @@ fn template_top_level() {
         let node = view! { ctx,
             Indexed {
                 iterable: count,
-                view: |ctx, item| view! { ctx,
-                    li { (item) }
+                view: |ctx, item, idx| view! { ctx,
+                    li { (format!("{}{}", idx, item)) }
                 },
             }
         };
@@ -373,17 +373,17 @@ fn template_top_level() {
             .unwrap()
             .unwrap();
 
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.push(3);
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.set(count.get()[1..].into());
-        assert_eq!(p.text_content().unwrap(), "23");
+        assert_eq!(p.text_content().unwrap(), "0213");
     });
 }
 
@@ -396,8 +396,8 @@ fn template_dyn_top_level() {
             div {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        (item)
+                    view: |ctx, item, idx| view! { ctx,
+                        (format!("{}{}", idx, item))
                     },
                 }
             }
@@ -410,17 +410,17 @@ fn template_dyn_top_level() {
             .unwrap()
             .unwrap();
 
-        assert_eq!(p.text_content().unwrap(), "12");
+        assert_eq!(p.text_content().unwrap(), "0112");
 
         count.set({
             let mut tmp = (*count.get()).clone();
             tmp.push(3);
             tmp
         });
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_eq!(p.text_content().unwrap(), "011223");
 
         count.set(count.get()[1..].into());
-        assert_eq!(p.text_content().unwrap(), "23");
+        assert_eq!(p.text_content().unwrap(), "0213");
     });
 }
 
@@ -435,14 +435,14 @@ fn template_with_other_nodes_at_same_level() {
                 li { "before" }
                 Indexed {
                     iterable: vec1,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
                 Indexed {
                     iterable: vec2,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
                 li { "after" }
@@ -453,15 +453,15 @@ fn template_with_other_nodes_at_same_level() {
 
         let elem = document().query_selector("ul").unwrap().unwrap();
 
-        assert_eq!(elem.text_content().unwrap(), "before1245after");
+        assert_eq!(elem.text_content().unwrap(), "before01120415after");
 
         vec1.set(vec1.get().iter().cloned().chain(once(3)).collect());
-        assert_eq!(elem.text_content().unwrap(), "before12345after");
+        assert_eq!(elem.text_content().unwrap(), "before0112230415after");
 
         vec1.set(Vec::new());
-        assert_eq!(elem.text_content().unwrap(), "before45after");
+        assert_eq!(elem.text_content().unwrap(), "before0415after");
 
         vec1.set(vec![1]);
-        assert_eq!(elem.text_content().unwrap(), "before145after");
+        assert_eq!(elem.text_content().unwrap(), "before010415after");
     });
 }

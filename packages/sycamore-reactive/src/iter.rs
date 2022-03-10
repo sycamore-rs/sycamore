@@ -218,7 +218,7 @@ impl<'a> Scope<'a> {
     pub fn map_indexed<T, U>(
         &'a self,
         list: &'a ReadSignal<Vec<T>>,
-        map_fn: impl for<'child_lifetime> Fn(BoundedScopeRef<'child_lifetime, 'a>, T) -> U + 'a,
+        map_fn: impl for<'child_lifetime> Fn(BoundedScopeRef<'child_lifetime, 'a>, T, usize) -> U + 'a,
     ) -> &'a ReadSignal<Vec<U>>
     where
         T: PartialEq + Clone,
@@ -273,7 +273,7 @@ impl<'a> Scope<'a> {
 
                                 // SAFETY: f takes the same parameter as the argument to
                                 // self.create_child_scope(_).
-                                (*ptr).write(map_fn(mem::transmute(ctx), new_item));
+                                (*ptr).write(map_fn(mem::transmute(ctx), new_item, i));
                             }
                         });
                         if item.is_none() {
@@ -452,7 +452,7 @@ mod tests {
     fn indexed() {
         create_scope_immediate(|ctx| {
             let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_indexed(a, |_, x| x * 2);
+            let mapped = ctx.map_indexed(a, |_, x, _| x * 2);
             assert_eq!(*mapped.get(), vec![2, 4, 6]);
 
             a.set(vec![1, 2, 3, 4]);
@@ -468,7 +468,7 @@ mod tests {
     fn indexed_clear() {
         create_scope_immediate(|ctx| {
             let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_indexed(a, |_, x| x * 2);
+            let mapped = ctx.map_indexed(a, |_, x, _| x * 2);
 
             a.set(Vec::new());
             assert_eq!(*mapped.get(), Vec::<i32>::new());
@@ -480,7 +480,7 @@ mod tests {
     fn indexed_react() {
         create_scope_immediate(|ctx| {
             let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_indexed(a, |_, x| x * 2);
+            let mapped = ctx.map_indexed(a, |_, x, _| x * 2);
 
             let counter = ctx.create_signal(0);
             ctx.create_effect(|| {
@@ -502,7 +502,7 @@ mod tests {
             let counter = Rc::new(Cell::new(0));
             let mapped = ctx.map_indexed(a, {
                 let counter = Rc::clone(&counter);
-                move |_, _| {
+                move |_, _, _| {
                     counter.set(counter.get() + 1);
                     counter.get()
                 }
@@ -527,7 +527,7 @@ mod tests {
             let counter = Rc::new(Cell::new(0));
             let _mapped = ctx.map_indexed(a, {
                 let counter = Rc::clone(&counter);
-                move |ctx, _| {
+                move |ctx, _, _| {
                     let counter = Rc::clone(&counter);
                     ctx.on_cleanup(move || {
                         counter.set(counter.get() + 1);
@@ -554,7 +554,7 @@ mod tests {
             let counter = Rc::new(Cell::new(0));
             let _mapped = ctx.map_indexed(a, {
                 let counter = Rc::clone(&counter);
-                move |ctx, _| {
+                move |ctx, _, _| {
                     let counter = Rc::clone(&counter);
                     ctx.on_cleanup(move || {
                         counter.set(counter.get() + 1);
