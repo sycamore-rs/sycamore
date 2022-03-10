@@ -29,7 +29,7 @@ pub fn OutlineView<G: Html>(ctx: ScopeRef, outline: Vec<Outline>) -> View<G> {
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
             Indexed {
                 iterable: ctx.create_signal(outline),
-                view: |ctx, item| {
+                view: |ctx, item, _| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
                         let name = x.name.clone();

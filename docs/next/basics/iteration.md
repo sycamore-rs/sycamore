@@ -35,7 +35,7 @@ view! { ctx,
     ul {
         Indexed {
             iterable: count,
-            view: |ctx, x| view! { ctx,
+            view: |ctx, x, _| view! { ctx,
                 li { (x) }
             },
         }

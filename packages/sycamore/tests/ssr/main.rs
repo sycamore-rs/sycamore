@@ -83,23 +83,23 @@ fn indexed() {
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
-                        li { (item) }
+                    view: |ctx, item, idx| view! { ctx,
+                        li { (format!("{}{}", idx, item)) }
                     },
                 }
             }
         };
 
         let actual = sycamore::render_to_string(|_| node.clone());
-        assert_eq!(actual, "<ul><li>1</li><li>2</li></ul>");
+        assert_eq!(actual, "<ul><li>01</li><li>12</li></ul>");
 
         count.set(count.get().iter().cloned().chain(Some(3)).collect());
         let actual = sycamore::render_to_string(|_| node.clone());
-        assert_eq!(actual, "<ul><li>1</li><li>2</li><li>3</li></ul>");
+        assert_eq!(actual, "<ul><li>01</li><li>12</li><li>23</li></ul>");
 
         count.set(count.get()[1..].into());
         let actual = sycamore::render_to_string(|_| node.clone());
-        assert_eq!(actual, "<ul><li>2</li><li>3</li></ul>");
+        assert_eq!(actual, "<ul><li>02</li><li>13</li></ul>");
     });
 }
 

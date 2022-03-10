@@ -40,7 +40,7 @@ pub fn bench(c: &mut Criterion) {
                     div(class="my-container") {
                         Indexed {
                             iterable: values,
-                            view: |ctx, x| view! { ctx,
+                            view: |ctx, x, _| view! { ctx,
                                 ListItem(x)
                             }
                         }

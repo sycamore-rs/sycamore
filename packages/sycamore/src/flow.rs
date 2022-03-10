@@ -53,7 +53,7 @@ where
 #[derive(Prop)]
 pub struct IndexedProps<'a, G: GenericNode, T, F>
 where
-    F: Fn(BoundedScopeRef<'_, 'a>, T) -> View<G> + 'a,
+    F: Fn(BoundedScopeRef<'_, 'a>, T, usize) -> View<G> + 'a,
 {
     iterable: &'a ReadSignal<Vec<T>>,
     /// The map function that renders a [`View`] for each element in `iterable`.
@@ -72,7 +72,7 @@ pub fn Indexed<'a, G: GenericNode, T, F>(
 ) -> View<G>
 where
     T: Clone + PartialEq,
-    F: Fn(BoundedScopeRef<'_, 'a>, T) -> View<G> + 'a,
+    F: Fn(BoundedScopeRef<'_, 'a>, T, usize) -> View<G> + 'a,
 {
     let IndexedProps { iterable, view } = props;
 
