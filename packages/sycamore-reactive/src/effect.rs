@@ -53,7 +53,7 @@ impl<'a> EffectState<'a> {
     }
 }
 
-impl<'a> Scope<'a> {
+impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
     /// Creates an effect on signals used inside the effect closure.
     ///
     /// # Example
@@ -69,12 +69,12 @@ impl<'a> Scope<'a> {
     /// state.set(1); // Prints "State changed. New state value = 1"
     /// # });
     /// ```
-    pub fn create_effect(&self, f: impl FnMut() + 'a) {
+    pub fn create_effect(self, f: impl FnMut() + 'a) {
         self._create_effect(Box::new(f))
     }
 
     /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
-    fn _create_effect(&self, mut f: Box<dyn FnMut() + 'a>) {
+    fn _create_effect(self, mut f: Box<dyn FnMut() + 'a>) {
         let effect = Rc::new(RefCell::new(None::<EffectState<'a>>));
         let cb = Rc::new(RefCell::new({
             let effect = Rc::downgrade(&effect);
@@ -135,7 +135,7 @@ impl<'a> Scope<'a> {
         cb.borrow_mut()();
 
         // Push Rc to self.effects so that it is not dropped immediately.
-        self.inner.borrow_mut().effects.push(effect);
+        self.raw.inner.borrow_mut().effects.push(effect);
     }
 
     /// Creates an effect on signals used inside the effect closure.
@@ -158,9 +158,9 @@ impl<'a> Scope<'a> {
     /// });
     /// # });
     /// ```
-    pub fn create_effect_scoped<F>(&'a self, mut f: F)
+    pub fn create_effect_scoped<F>(self, mut f: F)
     where
-        F: for<'child_lifetime> FnMut(BoundedScopeRef<'child_lifetime, 'a>) + 'a,
+        F: for<'child_lifetime> FnMut(BoundedScope<'child_lifetime, 'a>) + 'a,
     {
         let mut disposer: Option<Box<ScopeDisposer<'a>>> = None;
         self.create_effect(move || {
@@ -178,7 +178,7 @@ impl<'a> Scope<'a> {
                 Some(Box::new(self.create_child_scope(|ctx| {
                     // SAFETY: f takes the same parameter as the argument to
                     // self.create_child_scope(_).
-                    f(unsafe { std::mem::transmute(ctx) })
+                    f(unsafe { std::mem::transmute(ctx) });
                 })));
             // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
             // effect which is necessarily within the lifetime of self (the Scope).
@@ -391,18 +391,18 @@ mod tests {
             let parent: &Signal<Option<*const ()>> = ctx.create_signal(None);
             ctx.create_effect_scoped(|ctx| {
                 trigger.track();
-                let p = ctx.parent.unwrap();
+                let p = ctx.raw.parent.unwrap();
                 parent.set(Some(p as *const ()));
             });
             assert_eq!(
                 parent.get().unwrap(),
-                ctx as *const _ as *const (),
+                ctx.raw as *const _ as *const (),
                 "the parent scope of the effect should be `ctx`"
             );
             trigger.set(());
             assert_eq!(
                 parent.get().unwrap(),
-                ctx as *const _ as *const (),
+                ctx.raw as *const _ as *const (),
                 "the parent should still be `ctx` after effect is re-executed"
             );
         });

@@ -46,7 +46,7 @@ impl<'a> Scope<'a> {
     /// assert_eq!(*double.get(), 2);
     /// # });
     /// ```
-    pub fn create_memo<U: 'a>(&'a self, f: impl FnMut() -> U + 'a) -> &'a ReadSignal<U> {
+    pub fn create_memo<U: 'a>(self, f: impl FnMut() -> U + 'a) -> &'a ReadSignal<U> {
         self.create_selector_with(f, |_, _| false)
     }
 
@@ -71,7 +71,7 @@ impl<'a> Scope<'a> {
     /// # });
     /// ```
     pub fn create_selector<U: PartialEq + 'a>(
-        &'a self,
+        self,
         f: impl FnMut() -> U + 'a,
     ) -> &'a ReadSignal<U> {
         self.create_selector_with(f, PartialEq::eq)
@@ -87,7 +87,7 @@ impl<'a> Scope<'a> {
     /// To use the type's [`PartialEq`] implementation instead of a custom function, use
     /// [`create_selector`](Self::create_selector).
     pub fn create_selector_with<U: 'a>(
-        &'a self,
+        self,
         mut f: impl FnMut() -> U + 'a,
         eq_f: impl Fn(&U, &U) -> bool + 'a,
     ) -> &'a ReadSignal<U> {
@@ -146,7 +146,7 @@ impl<'a> Scope<'a> {
     /// # });
     /// ```
     pub fn create_reducer<U, Msg>(
-        &'a self,
+        self,
         initial: U,
         reduce: impl Fn(&U, Msg) -> U + 'a,
     ) -> (&'a ReadSignal<U>, impl Fn(Msg) + 'a) {

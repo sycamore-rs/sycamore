@@ -23,9 +23,9 @@ impl<'a> Scope<'a> {
     ///
     ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
     pub fn map_keyed<T, K, U>(
-        &'a self,
+        self,
         list: &'a ReadSignal<Vec<T>>,
-        map_fn: impl for<'child_lifetime> Fn(BoundedScopeRef<'child_lifetime, 'a>, T) -> U + 'a,
+        map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
         key_fn: impl Fn(&T) -> K + 'a,
     ) -> &'a ReadSignal<Vec<U>>
     where
@@ -216,9 +216,9 @@ impl<'a> Scope<'a> {
     ///   [`Signal`]) and therefore reactive.
     /// * `map_fn` - A closure that maps from the input type to the output type.
     pub fn map_indexed<T, U>(
-        &'a self,
+        self,
         list: &'a ReadSignal<Vec<T>>,
-        map_fn: impl for<'child_lifetime> Fn(BoundedScopeRef<'child_lifetime, 'a>, T) -> U + 'a,
+        map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
     ) -> &'a ReadSignal<Vec<U>>
     where
         T: PartialEq + Clone,
