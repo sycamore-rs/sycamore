@@ -10,8 +10,9 @@ pub mod reconcile;
 pub mod render;
 
 use sycamore::prelude::*;
+use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
-use web_sys::{Document, Element, HtmlElement, Node, Window};
+use web_sys::{Document, Element, Event, HtmlElement, HtmlInputElement, Node, Window};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -327,36 +328,31 @@ fn reactive_attribute() {
 #[wasm_bindgen_test]
 #[ignore]
 fn two_way_bind_to_props() {
-    // create_scope_immediate(|ctx| {
-    //     let value = ctx.create_signal(String::new());
-    //     let value2 = value.clone();
+    create_scope_immediate(|ctx| {
+        let value = ctx.create_signal(String::new());
 
-    //     sycamore::render_to(
-    //         || {
-    //             cloned!((value) => view! {
-    //                 input(bind:value=value)
-    //                 p { (value2.get()) }
-    //             })
-    //         },
-    //         &test_container(),
-    //     );
+        let node = view! { ctx,
+            input(bind:value=value)
+            p { (value.get()) }
+        };
 
-    //     let input = document()
-    //         .query_selector("input")
-    //         .unwrap()
-    //         .unwrap()
-    //         .unchecked_into::<HtmlInputElement>();
+        sycamore::render_to(|_| node, &test_container());
+        let input = document()
+            .query_selector("input")
+            .unwrap()
+            .unwrap()
+            .unchecked_into::<HtmlInputElement>();
 
-    //     value.set("abc".to_string());
-    //     assert_eq!(
-    //         js_sys::Reflect::get(&input, &"value".into()).unwrap(),
-    //         "abc"
-    //     );
+        value.set("abc".to_string());
+        assert_eq!(
+            js_sys::Reflect::get(&input, &"value".into()).unwrap(),
+            "abc"
+        );
 
-    //     js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
-    //     input.dispatch_event(&Event::new("input").unwrap()).unwrap();
-    //     assert_eq!(value.get().as_str(), "def");
-    // });
+        js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
+        input.dispatch_event(&Event::new("input").unwrap()).unwrap();
+        assert_eq!(value.get().as_str(), "def");
+    });
 }
 
 #[wasm_bindgen_test]
@@ -437,4 +433,39 @@ fn dyn_fragment_reuse_nodes() {
         assert_eq!(p.text_content().unwrap(), "123");
         assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
     });
+}
+
+#[wasm_bindgen_test]
+fn dom_node_add_class_splits_at_whitespace() {
+    let node = DomNode::element("div");
+    node.add_class("my_class");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "my_class"
+    );
+    node.add_class("my_class");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "my_class"
+    );
+    node.remove_class("my_class");
+    node.add_class("hyphenated-class");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "hyphenated-class"
+    );
+    node.remove_class("hyphenated-class");
+    node.add_class("multiple classes");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "multiple classes"
+    );
 }
