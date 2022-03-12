@@ -46,7 +46,7 @@ impl Parse for ComponentFunction {
                 if inputs.is_empty() {
                     return Err(syn::Error::new(
                         sig.inputs.span(),
-                        "component must take at least one argument of type `sycamore::reactive::ScopeRef`",
+                        "component must take at least one argument of type `sycamore::reactive::Scope`",
                     ));
                 }
 

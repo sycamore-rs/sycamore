@@ -209,7 +209,7 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn event<'a>(&self, ctx: ScopeRef<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
+    fn event<'a>(&self, ctx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
         self.node.event(ctx, name, handler);
     }
 
@@ -241,7 +241,7 @@ impl Html for HydrateNode {
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
 /// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
-pub fn hydrate(template: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode>) {
+pub fn hydrate(template: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
@@ -254,7 +254,7 @@ pub fn hydrate(template: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode>) {
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
 /// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
-pub fn hydrate_to(view: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode>, parent: &Node) {
+pub fn hydrate_to(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
     let _ = hydrate_get_scope(view, parent);
 }
@@ -267,7 +267,7 @@ pub fn hydrate_to(view: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode>, parent: 
 /// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
 pub fn hydrate_get_scope<'a>(
-    view: impl FnOnce(ScopeRef<'_>) -> View<HydrateNode> + 'a,
+    view: impl FnOnce(Scope<'_>) -> View<HydrateNode> + 'a,
     parent: &'a Node,
 ) -> ScopeDisposer<'a> {
     // Get children from parent into a View to set as the initial node value.

@@ -3,7 +3,7 @@ use sycamore::futures::ScopeSpawnLocal;
 use sycamore::prelude::*;
 
 #[component]
-fn TimerCounter<G: Html>(ctx: ScopeRef) -> View<G> {
+fn TimerCounter<G: Html>(ctx: Scope) -> View<G> {
     let state = ctx.create_signal(0);
 
     ctx.spawn_local(async move {

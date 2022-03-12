@@ -145,7 +145,7 @@ fn base_pathname() -> String {
 pub struct RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
-    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration,
     G: GenericNode,
 {
@@ -158,7 +158,7 @@ where
 impl<'a, R, F, I, G> RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
-    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration,
     G: GenericNode,
 {
@@ -176,12 +176,12 @@ where
 /// For server environments, see [`StaticRouter`].
 #[component]
 pub fn Router<'a, G: Html, R, F, I>(
-    ctx: ScopeRef<'a>,
+    ctx: Scope<'a>,
     props: RouterProps<'a, R, F, I, G>,
 ) -> View<G>
 where
     R: Route + 'a,
-    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration + 'static,
 {
     let RouterProps {
@@ -253,7 +253,7 @@ where
 pub struct StaticRouterProps<'a, R, F, G>
 where
     R: Route + 'a,
-    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     view: F,
@@ -265,7 +265,7 @@ where
 impl<'a, R, F, G> StaticRouterProps<'a, R, F, G>
 where
     R: Route,
-    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     /// Create a new [`StaticRouterProps`].
@@ -284,12 +284,12 @@ where
 /// the route preload to finish loading.
 #[component]
 pub fn StaticRouter<'a, G: Html, R, F>(
-    ctx: ScopeRef<'a>,
+    ctx: Scope<'a>,
     props: StaticRouterProps<'a, R, F, G>,
 ) -> View<G>
 where
     R: Route + 'static,
-    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
     let StaticRouterProps {
         view,
@@ -380,7 +380,7 @@ mod tests {
         }
 
         #[component]
-        fn Comp<G: Html>(ctx: ScopeRef, path: String) -> View<G> {
+        fn Comp<G: Html>(ctx: Scope, path: String) -> View<G> {
             let route = Routes::match_route(
                 &path
                     .split('/')

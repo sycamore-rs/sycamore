@@ -24,7 +24,7 @@ use crate::view::{View, ViewType};
 ///   Even if the node to be inserted is the only child of `parent`, `multi` can still be set to
 ///   `false` but forgoes the optimizations.
 pub fn insert<G: GenericNode>(
-    ctx: ScopeRef<'_>,
+    ctx: Scope<'_>,
     parent: &G,
     accessor: View<G>,
     initial: Option<View<G>>,
@@ -35,7 +35,7 @@ pub fn insert<G: GenericNode>(
 }
 
 fn insert_expression<G: GenericNode>(
-    ctx: ScopeRef<'_>,
+    ctx: Scope<'_>,
     parent: &G,
     value: &View<G>,
     mut current: Option<View<G>>,
@@ -76,7 +76,7 @@ fn insert_expression<G: GenericNode>(
                     value = f.get();
                 }
                 insert_expression(
-                    &ctx,
+                    ctx,
                     &parent,
                     &value,
                     current.clone(),
@@ -100,7 +100,7 @@ fn insert_expression<G: GenericNode>(
                     // This will call normalize_incoming_fragment again, but this time with the
                     // unwrap_fragment arg set to true.
                     insert_expression(
-                        &ctx,
+                        ctx,
                         &parent,
                         &value,
                         current.clone(),

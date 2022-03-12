@@ -43,7 +43,7 @@ pub fn test_cleanup_in_effect() {
 }
 
 #[component]
-fn CleanupComp<G: Html>(ctx: ScopeRef) -> View<G> {
+fn CleanupComp<G: Html>(ctx: Scope) -> View<G> {
     ctx.on_cleanup(on_cleanup_callback);
     view! { ctx, }
 }

@@ -36,7 +36,7 @@ pub fn view_impl(view_root: WithCtxArg<ViewRoot>) -> TokenStream {
     let quoted = codegen_state.view_root(&view_root.rest);
     quote! {{
         #[allow(unused_variables)]
-        let #ctx: ::sycamore::reactive::ScopeRef = &#ctx; // Make sure that ctx is used.
+        let #ctx: ::sycamore::reactive::BoundedScope = #ctx; // Make sure that ctx is used.
         #quoted
     }}
 }
@@ -49,7 +49,7 @@ pub fn node_impl(elem: WithCtxArg<Element>) -> TokenStream {
     let quoted = codegen_state.element(&elem.rest);
     quote! {{
         #[allow(unused_variables)]
-        let #ctx: ::sycamore::reactive::ScopeRef = &#ctx; // Make sure that ctx is used.
+        let #ctx: ::sycamore::reactive::BoundedScope = #ctx; // Make sure that ctx is used.
         #quoted
     }}
 }

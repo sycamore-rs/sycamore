@@ -19,7 +19,7 @@ pub struct SidebarData {
 }
 
 #[component]
-pub fn Sidebar<G: Html>(ctx: ScopeRef, (version, data): (String, SidebarData)) -> View<G> {
+pub fn Sidebar<G: Html>(ctx: Scope, (version, data): (String, SidebarData)) -> View<G> {
     let sections = data
         .sections
         .into_iter()

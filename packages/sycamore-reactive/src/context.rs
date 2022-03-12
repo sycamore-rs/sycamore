@@ -16,7 +16,7 @@ impl<'a> Scope<'a> {
     /// Note that if a context with the same type exists in a parent scope, the new context will
     /// shadow the old context.
     #[track_caller]
-    pub fn provide_context<T: 'static>(&'a self, value: T) -> &'a T {
+    pub fn provide_context<T: 'static>(self, value: T) -> &'a T {
         let value = self.create_ref(value);
         self.provide_context_ref(value)
     }
@@ -34,9 +34,10 @@ impl<'a> Scope<'a> {
     /// Note that if a context with the same type exists in a parent scope, the new context will
     /// shadow the old context.
     #[track_caller]
-    pub fn provide_context_ref<T: 'static>(&'a self, value: &'a T) -> &'a T {
+    pub fn provide_context_ref<T: 'static>(self, value: &'a T) -> &'a T {
         let type_id = TypeId::of::<T>();
         if self
+            .raw
             .inner
             .borrow_mut()
             .contexts
@@ -51,9 +52,9 @@ impl<'a> Scope<'a> {
 
     /// Tries to get a context value of the given type. If no context with the right type found,
     /// returns `None`. For a panicking version, see [`use_context`](Self::use_context).
-    pub fn try_use_context<T: 'static>(&'a self) -> Option<&'a T> {
+    pub fn try_use_context<T: 'static>(self) -> Option<&'a T> {
         let type_id = TypeId::of::<T>();
-        let mut this = Some(self);
+        let mut this = Some(self.raw);
         while let Some(current) = this {
             if let Some(value) = current
                 .inner
@@ -78,12 +79,12 @@ impl<'a> Scope<'a> {
     /// This method panics if the context cannot be found in the current scope hierarchy.
     /// For a non-panicking version, see [`try_use_context`](Self::try_use_context).
     #[track_caller]
-    pub fn use_context<T: 'static>(&'a self) -> &'a T {
+    pub fn use_context<T: 'static>(self) -> &'a T {
         self.try_use_context().expect("context not found for type")
     }
 
     /// Gets a context value of the given type or computes it from a closure.
-    pub fn use_context_or_else<T: 'static>(&'a self, f: impl FnOnce() -> T) -> &'a T {
+    pub fn use_context_or_else<T: 'static>(self, f: impl FnOnce() -> T) -> &'a T {
         self.try_use_context()
             .unwrap_or_else(|| self.provide_context(f()))
     }
@@ -91,7 +92,7 @@ impl<'a> Scope<'a> {
     /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
     pub fn scope_depth(&self) -> u32 {
         let mut depth = 0;
-        let mut this = Some(self);
+        let mut this = Some(self.raw);
         while let Some(current) = this {
             // SAFETY: `current.parent` necessarily lives longer than `current`.
             this = current.parent.map(|x| unsafe { &*x });

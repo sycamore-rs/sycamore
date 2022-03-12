@@ -30,7 +30,7 @@ const VERSIONS: &[(&str, VersionedDocsLink)] = &[
 
 #[component]
 fn VersionedDocsLink<G: Html>(
-    ctx: ScopeRef,
+    ctx: Scope,
     (name, versioned_docs_link): (&'static str, &'static VersionedDocsLink),
 ) -> View<G> {
     match versioned_docs_link {
@@ -73,7 +73,7 @@ fn VersionedDocsLink<G: Html>(
 }
 
 #[component]
-pub fn Versions<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn Versions<G: Html>(ctx: Scope) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()

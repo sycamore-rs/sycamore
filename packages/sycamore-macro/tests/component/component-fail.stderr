@@ -4,7 +4,7 @@ error: function must return `sycamore::view::View`
 5 | fn comp1<G: Html>() {
   | ^^
 
-error: component must take at least one argument of type `sycamore::reactive::ScopeRef`
+error: component must take at least one argument of type `sycamore::reactive::Scope`
  --> tests/component/component-fail.rs:9:1
   |
 9 | #[component]

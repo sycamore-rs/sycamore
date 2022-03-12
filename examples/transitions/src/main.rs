@@ -21,7 +21,7 @@ impl Tab {
 }
 
 #[component]
-async fn Child<G: Html>(ctx: ScopeRef<'_>, tab: Tab) -> View<G> {
+async fn Child<G: Html>(ctx: Scope<'_>, tab: Tab) -> View<G> {
     let delay_ms = rand::thread_rng().gen_range(200..500);
     TimeoutFuture::new(delay_ms).await;
 
@@ -34,7 +34,7 @@ async fn Child<G: Html>(ctx: ScopeRef<'_>, tab: Tab) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+fn App<G: Html>(ctx: Scope) -> View<G> {
     let tab = ctx.create_signal(Tab::One);
     let transition = ctx.use_transition();
     let update = move |x| transition.start(move || tab.set(x));

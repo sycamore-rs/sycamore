@@ -40,12 +40,12 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 /// use sycamore::suspense::Suspense;
 ///
 /// #[component]
-/// async fn AsyncComp<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
+/// async fn AsyncComp<G: Html>(ctx: Scope<'_>) -> View<G> {
 ///     view! { ctx, "Hello Suspense!" }
 /// }
 ///
 /// #[component]
-/// fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+/// fn App<G: Html>(ctx: Scope) -> View<G> {
 ///     view! { ctx,
 ///         Suspense {
 ///             fallback: view! { ctx, "Loading..." },
@@ -55,7 +55,7 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 /// }
 /// ```
 #[component]
-pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, G>) -> View<G> {
+pub fn Suspense<'a, G: GenericNode>(ctx: Scope<'a>, props: SuspenseProps<'a, G>) -> View<G> {
     let state = ctx.use_context_or_else(SuspenseState::default);
     // Get the outer suspense state.
     let outer_count = state.async_counts.borrow().last().cloned();
@@ -91,7 +91,7 @@ pub fn Suspense<'a, G: GenericNode>(ctx: ScopeRef<'a>, props: SuspenseProps<'a, 
 /// rendering the UI.
 ///
 /// The scope ends when the future is resolved.
-pub fn suspense_scope<'a>(ctx: ScopeRef<'a>, f: impl Future<Output = ()> + 'a) {
+pub fn suspense_scope<'a>(ctx: Scope<'a>, f: impl Future<Output = ()> + 'a) {
     if let Some(state) = ctx.try_use_context::<SuspenseState>() {
         if let Some(count) = state.async_counts.borrow().last().cloned() {
             count.set(*count.get() + 1);
@@ -106,7 +106,7 @@ pub fn suspense_scope<'a>(ctx: ScopeRef<'a>, f: impl Future<Output = ()> + 'a) {
 }
 
 /// Waits until all suspense tasks created within the scope are finished.
-pub async fn await_suspense<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) -> U {
+pub async fn await_suspense<U>(ctx: Scope<'_>, f: impl Future<Output = U>) -> U {
     let state = ctx.use_context_or_else(SuspenseState::default);
     // Get the outer suspense state.
     let outer_count = state.async_counts.borrow().last().cloned();
@@ -146,7 +146,7 @@ pub async fn await_suspense<U>(ctx: ScopeRef<'_>, f: impl Future<Output = U>) ->
 /// [`use_transition`](ScopeUseTransition::use_transition).
 #[derive(Clone, Copy)]
 pub struct TransitionHandle<'a> {
-    ctx: ScopeRef<'a>,
+    ctx: Scope<'a>,
     is_pending: &'a Signal<bool>,
 }
 
@@ -158,7 +158,7 @@ impl<'a> TransitionHandle<'a> {
     }
 
     /// Start a transition.
-    pub fn start(&'a self, f: impl Fn() + 'a) {
+    pub fn start(self, f: impl Fn() + 'a) {
         self.ctx.spawn_local(async move {
             self.is_pending.set(true);
             await_suspense(self.ctx, async move { f() }).await;
@@ -172,11 +172,11 @@ impl<'a> TransitionHandle<'a> {
 pub trait ScopeUseTransition<'a> {
     /// Create a new [TransitionHandle]. This allows executing updates and awaiting until all async
     /// tasks are completed.
-    fn use_transition(&'a self) -> &'a TransitionHandle<'a>;
+    fn use_transition(self) -> &'a TransitionHandle<'a>;
 }
 
 impl<'a> ScopeUseTransition<'a> for Scope<'a> {
-    fn use_transition(&'a self) -> &'a TransitionHandle<'a> {
+    fn use_transition(self) -> &'a TransitionHandle<'a> {
         let is_pending = self.create_signal(false);
 
         self.create_ref(TransitionHandle {
@@ -196,7 +196,7 @@ mod tests {
     #[tokio::test]
     async fn suspense() {
         #[component]
-        async fn Comp<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
+        async fn Comp<G: Html>(ctx: Scope<'_>) -> View<G> {
             view! { ctx, "Hello Suspense!" }
         }
 

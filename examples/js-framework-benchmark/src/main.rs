@@ -49,7 +49,7 @@ struct ButtonProps<'a> {
 }
 
 #[component]
-fn Button<'a, G: Html>(ctx: ScopeRef<'a>, props: ButtonProps<'a>) -> View<G> {
+fn Button<'a, G: Html>(ctx: Scope<'a>, props: ButtonProps<'a>) -> View<G> {
     let ButtonProps { id, text, callback } = props;
 
     view! { ctx,
@@ -99,7 +99,7 @@ fn build_data(count: usize) -> Vec<RowData> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+fn App<G: Html>(ctx: Scope) -> View<G> {
     let data = ctx.create_signal(Vec::<RowData>::new());
     let selected = ctx.create_signal(None::<usize>);
 

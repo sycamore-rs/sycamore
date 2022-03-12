@@ -8,7 +8,7 @@ fn check(actual: &str, expect: Expect) {
 
 mod hello_world {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         view! { ctx, p { "Hello World!" } }
     }
     #[test]
@@ -33,7 +33,7 @@ mod hello_world {
 
 mod hydrate_recursive {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         view! { ctx, div { p { "Nested" } } }
     }
     #[test]
@@ -58,7 +58,7 @@ mod hydrate_recursive {
 
 mod multiple_nodes_at_same_depth {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         view! { ctx, div { p { "First" } p { "Second" } } }
     }
     #[test]
@@ -85,7 +85,7 @@ mod multiple_nodes_at_same_depth {
 
 mod top_level_fragment {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         view! { ctx, p { "First" } p { "Second" } }
     }
     #[test]
@@ -110,7 +110,7 @@ mod top_level_fragment {
 
 mod dynamic {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
         view! { ctx, p { (state.get()) } }
     }
     #[test]
@@ -166,7 +166,7 @@ mod dynamic {
 
 mod dynamic_with_siblings {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
         view! { ctx, p { "Value: " (state.get()) "!" } }
     }
     #[test]
@@ -213,7 +213,7 @@ mod dynamic_with_siblings {
 
 mod dynamic_template {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<View<G>>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<View<G>>) -> View<G> {
         view! { ctx, p { "before" (*state.get()) "after" } }
     }
     #[test]
@@ -261,7 +261,7 @@ mod dynamic_template {
 
 mod top_level_dynamic_with_siblings {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
         view! { ctx, "Value: " (state.get()) "!" }
     }
     #[test]

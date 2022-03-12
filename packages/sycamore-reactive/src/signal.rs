@@ -130,7 +130,7 @@ impl<T> ReadSignal<T> {
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|ctx| {
     /// let state = ctx.create_signal(1);
-    /// let double = state.map(&ctx, |&x| x * 2);
+    /// let double = state.map(ctx, |&x| x * 2);
     /// assert_eq!(*double.get(), 2);
     ///
     /// state.set(2);
@@ -140,7 +140,7 @@ impl<T> ReadSignal<T> {
     #[must_use]
     pub fn map<'a, U>(
         &'a self,
-        ctx: ScopeRef<'a>,
+        ctx: Scope<'a>,
         mut f: impl FnMut(&T) -> U + 'a,
     ) -> &'a ReadSignal<U> {
         ctx.create_memo(move || f(&self.get()))

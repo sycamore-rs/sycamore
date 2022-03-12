@@ -17,7 +17,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::mem;
-use std::ops::Deref;
 use std::rc::{Rc, Weak};
 
 use arena::*;
@@ -39,7 +38,7 @@ struct ScopeInner<'a> {
     /// Child scopes.
     ///
     /// The raw pointer is owned by this field.
-    child_scopes: SlotMap<DefaultKey, *mut Scope<'a>>,
+    child_scopes: SlotMap<DefaultKey, *mut ScopeRaw<'a>>,
     /// Contexts that are allocated on the current [`Scope`].
     /// See the [`mod@context`] module.
     ///
@@ -52,33 +51,56 @@ struct ScopeInner<'a> {
     _phantom: InvariantLifetime<'a>,
 }
 
-/// A reactive scope.
-///
-/// The only way to ever use a scope should be behind a reference.
-/// It should never be possible to access a raw [`Scope`] on the stack.
-///
-/// The intended way to access a [`Scope`] is with the [`create_scope`] function.
-///
-/// For convenience, the [`ScopeRef`] type alias is defined as a reference to a [`Scope`].
-///
-/// # Lifetime
-///
-/// * `'a` - The lifetime of the scope and all data allocated on it. This allows passing in data
-///   from an outer scope into an inner scope. This lifetime is also invariant because it is used
-///   within an cell.
-pub struct Scope<'a> {
+/// What the [`BoundedScope`] points to.
+struct ScopeRaw<'a> {
     inner: RefCell<ScopeInner<'a>>,
     /// An arena allocator for allocating refs and signals.
     arena: ScopeArena<'a>,
     /// A pointer to the parent scope.
     /// # Safety
     /// The parent scope does not actually have the right lifetime.
-    parent: Option<*const Scope<'a>>,
+    parent: Option<*const ScopeRaw<'a>>,
 }
 
-impl<'a> Scope<'a> {
-    /// Create a new [`Scope`]. This function is deliberately not `pub` because it should not be
-    /// possible to access a [`Scope`] directly on the stack.
+/// A reference to a reactive scope. This reference is `Copy`, allowing it to be copied into
+/// closures without any clones.
+///
+/// The intended way to access a [`Scope`] is with the [`create_scope`] function.
+///
+/// # Lifetime
+///
+/// * `'a` - The lifetime of the scope and all data allocated on it. This allows passing in data
+///   from an outer scope into an inner scope. This lifetime is invariant because it is used within
+///   an cell.
+/// * `'b` - The bounded lifetime of the scope. This ensures that the scope cannot live longer than
+///   this lifetime. This lifetime is covariant because if the scope can outlive `'b1`, it can also
+///   outlive `'b2` if `'b1: 'b2`.
+///
+/// As a convenience, the [`Scope`] type alias is provided that uses the same lifetime for both `'a`
+/// and `'b`. Any [`BoundedScope`] can be casted to a [`Scope`] because the second lifetime
+/// parameter is always longer than the first.
+#[derive(Clone, Copy)]
+pub struct BoundedScope<'a, 'b: 'a> {
+    raw: &'a ScopeRaw<'a>,
+    /// `&'b` for covariance!
+    _phantom: PhantomData<&'b ()>,
+}
+
+impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
+    fn new(raw: &'a ScopeRaw<'a>) -> Self {
+        Self {
+            raw,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+/// A type-alias for [`BoundedScope`] where both lifetimes are the same.
+pub type Scope<'a> = BoundedScope<'a, 'a>;
+
+impl<'a> ScopeRaw<'a> {
+    /// Create a new [`ScopeRaw`]. This function is deliberately not `pub` because it should not be
+    /// possible to access a [`ScopeRaw`] directly on the stack.
     pub(crate) fn new() -> Self {
         // Even though the initialization code below is same as deriving Default::default(), we
         // can't do that because accessing a raw Scope outside of a scope closure breaks
@@ -96,29 +118,6 @@ impl<'a> Scope<'a> {
             arena: Default::default(),
             parent: None,
         }
-    }
-}
-
-/// A reference to a [`Scope`].
-pub type ScopeRef<'a> = &'a Scope<'a>;
-
-/// A [`ScopeRef`] that is bounded by the `'bound` lifetime. This is used to bypass restrictions on
-/// HRTBs (Higher Ranked Trait Bounds) so that `'a` can be higher ranked while still be bounded by
-/// the `'bound` lifetime.
-pub struct BoundedScopeRef<'a, 'bound: 'a>(ScopeRef<'a>, PhantomData<&'bound ()>);
-
-impl<'a, 'bound> BoundedScopeRef<'a, 'bound> {
-    /// Create a new [`BoundedScopeRef`] from a [`ScopeRef`].
-    pub fn new(ctx: ScopeRef<'a>) -> Self {
-        Self(ctx, PhantomData)
-    }
-}
-
-impl<'a, 'bound> Deref for BoundedScopeRef<'a, 'bound> {
-    type Target = ScopeRef<'a>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
@@ -191,15 +190,15 @@ impl<'a> ScopeDisposer<'a> {
 /// unsafe { disposer.dispose(); }
 /// ```
 #[must_use = "not calling the disposer function will result in a memory leak"]
-pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> ScopeDisposer<'disposer> {
-    let ctx = Scope::new();
+pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(Scope<'a>)) -> ScopeDisposer<'disposer> {
+    let ctx = ScopeRaw::new();
     let boxed = Box::new(ctx);
     let ptr = Box::into_raw(boxed);
     // SAFETY: Safe because heap allocated value has stable address.
     // The reference passed to f cannot possible escape the closure. We know however, that ptr
     // necessary outlives the closure call because it is only dropped in the returned disposer
     // closure.
-    untrack(|| f(unsafe { &*ptr }));
+    untrack(|| f(unsafe { BoundedScope::new(&*ptr) }));
     //                      ^^^ -> `ptr` is still accessible here after the call to f.
 
     // Ownership of `ptr` is passed into the closure.
@@ -222,7 +221,7 @@ pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(ScopeRef<'a>)) -> ScopeDis
 /// })).dispose(); // Call the disposer function immediately
 /// # }
 /// ```
-pub fn create_scope_immediate(f: impl for<'a> FnOnce(ScopeRef<'a>)) {
+pub fn create_scope_immediate(f: impl for<'a> FnOnce(Scope<'a>)) {
     let disposer = create_scope(f);
     // SAFETY: We are not accessing the scope after calling the disposer function.
     unsafe {
@@ -230,7 +229,7 @@ pub fn create_scope_immediate(f: impl for<'a> FnOnce(ScopeRef<'a>)) {
     }
 }
 
-impl<'a> Scope<'a> {
+impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
     /// Create a new [`Signal`] under the current [`Scope`].
     /// The created signal lasts as long as the scope and cannot be used outside of the scope.
     ///
@@ -247,9 +246,9 @@ impl<'a> Scope<'a> {
     ///     outer = Some(signal);
     /// });
     /// ```
-    pub fn create_signal<T>(&'a self, value: T) -> &'a Signal<T> {
+    pub fn create_signal<T>(self, value: T) -> &'a Signal<T> {
         let signal = Signal::new(value);
-        self.arena.alloc(signal)
+        self.raw.arena.alloc(signal)
     }
 
     /// Allocate a new arbitrary value under the current [`Scope`].
@@ -273,13 +272,13 @@ impl<'a> Scope<'a> {
     /// let _ = outer.unwrap();
     /// # });
     /// ```
-    pub fn create_ref<T: 'a>(&'a self, value: T) -> &'a T {
-        self.arena.alloc(value)
+    pub fn create_ref<T: 'a>(self, value: T) -> &'a T {
+        self.raw.arena.alloc(value)
     }
 
     /// Adds a callback that is called when the scope is destroyed.
-    pub fn on_cleanup(&self, f: impl FnOnce() + 'a) {
-        self.inner.borrow_mut().cleanups.push(Box::new(f));
+    pub fn on_cleanup(self, f: impl FnOnce() + 'a) {
+        self.raw.inner.borrow_mut().cleanups.push(Box::new(f));
     }
 
     /// Create a child scope.
@@ -327,18 +326,19 @@ impl<'a> Scope<'a> {
     /// //   ^^^^^ -> and remains accessible outside the closure.
     /// # });
     /// ```
-    pub fn create_child_scope<F>(&'a self, f: F) -> ScopeDisposer<'a>
+    pub fn create_child_scope<F>(self, f: F) -> ScopeDisposer<'a>
     where
-        F: for<'child_lifetime> FnOnce(BoundedScopeRef<'child_lifetime, 'a>),
+        F: for<'child_lifetime> FnOnce(BoundedScope<'child_lifetime, 'a>),
     {
-        let mut child = Scope::new();
+        let mut child = ScopeRaw::new();
         // SAFETY: The only fields that are accessed on self from child is `context` which does not
         // have any lifetime annotations.
-        child.parent = Some(unsafe { std::mem::transmute(self as *const _) });
+        child.parent = Some(unsafe { std::mem::transmute(self.raw as *const _) });
         let boxed = Box::new(child);
         let ptr = Box::into_raw(boxed);
 
         let key = self
+            .raw
             .inner
             .borrow_mut()
             .child_scopes
@@ -350,11 +350,17 @@ impl<'a> Scope<'a> {
         // - It is allocated on the heap and therefore has a stable address.
         // - self.child_ctx is append only. That means that the Box<Ctx> will not be dropped until
         //   Self is dropped.
-        f(BoundedScopeRef::new(unsafe { &*ptr }));
-        //                                    ^^^ -> `ptr` is still accessible here after
+        f(unsafe { BoundedScope::new(&*ptr) });
+        //                                 ^^^ -> `ptr` is still accessible here after
         // the call to f.
         ScopeDisposer::new(move || unsafe {
-            let ctx = self.inner.borrow_mut().child_scopes.remove(key).unwrap();
+            let ctx = self
+                .raw
+                .inner
+                .borrow_mut()
+                .child_scopes
+                .remove(key)
+                .unwrap();
             // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
             // than 'a.
             let ctx = Box::from_raw(ctx);
@@ -363,6 +369,19 @@ impl<'a> Scope<'a> {
         })
     }
 
+    /// Returns a [`RcSignal`] that is `true` when the scope is still valid and `false` once it is
+    /// disposed.
+    pub fn use_scope_status(&self) -> RcSignal<bool> {
+        let status = create_rc_signal(true);
+        self.on_cleanup({
+            let status = status.clone();
+            move || status.set(false)
+        });
+        status
+    }
+}
+
+impl<'a> ScopeRaw<'a> {
     /// Cleanup the resources owned by the [`Scope`]. For more details, see
     /// [`ScopeDisposer::dispose`].
     ///
@@ -389,20 +408,9 @@ impl<'a> Scope<'a> {
         // Cleanup signals and refs allocated on the arena.
         self.arena.dispose();
     }
-
-    /// Returns a [`RcSignal`] that is `true` when the scope is still valid and `false` once it is
-    /// disposed.
-    pub fn use_scope_status(&self) -> RcSignal<bool> {
-        let status = create_rc_signal(true);
-        self.on_cleanup({
-            let status = status.clone();
-            move || status.set(false)
-        });
-        status
-    }
 }
 
-impl Drop for Scope<'_> {
+impl Drop for ScopeRaw<'_> {
     fn drop(&mut self) {
         // SAFETY: scope cannot be dropped while it is borrowed inside closure.
         unsafe { self.dispose() };

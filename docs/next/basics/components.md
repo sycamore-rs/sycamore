@@ -4,7 +4,7 @@ Any serious UI framework needs a way to compose and abstract UI elements. In Syc
 accomplished using components.
 
 Components in `sycamore` are simply functions slapped with the `#[component]` attribute that take a
-argument of type `ScopeRef` (a reactive scope). Component functions only run once (unlike React
+argument of type `Scope` (a reactive scope). Component functions only run once (unlike React
 where functional-components are called on every render). Think of it as a builder-pattern for
 constructing UI.
 
@@ -13,7 +13,7 @@ convention to name components using `PascalCase`.
 
 ```rust
 #[component]
-fn MyComponent<G: Html>(ctx: ScopeRef) -> View<G> {
+fn MyComponent<G: Html>(ctx: Scope) -> View<G> {
     view! { ctx,
         // ...
     }
@@ -74,7 +74,7 @@ struct MyProps<'a> {
 }
 
 #[component]
-fn MyComponent<'a, G: Html>(ctx: ScopeRef<'a>, props: MyProps<'a>) -> View<G> {
+fn MyComponent<'a, G: Html>(ctx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     view! {
         div(class="my-component") {
             "Value: " (props.value.get())
@@ -91,7 +91,7 @@ view! {
 state.set(1); // automatically updates value in MyComponent
 ```
 
-Note how the `'a` lifetime is used to ensure that the data lives as long as the `ScopeRef`.
+Note how the `'a` lifetime is used to ensure that the data lives as long as the `Scope`.
 
 ## Lifecycle
 
@@ -108,7 +108,7 @@ can also be used to schedule a callback when the component is destroyed.
 
 ```rust
 #[component]
-fn MyComponent(ctx: ScopeRef) -> View<G> {
+fn MyComponent(ctx: Scope) -> View<G> {
     ctx.on_cleanup(|| {
         // Perform cleanup.
     });

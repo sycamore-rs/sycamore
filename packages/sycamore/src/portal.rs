@@ -19,7 +19,7 @@ where
 
 /// A portal into another part of the DOM.
 #[component]
-pub fn Portal<'a, G: Html>(ctx: ScopeRef<'a>, props: PortalProps<'a, G>) -> View<G> {
+pub fn Portal<'a, G: Html>(ctx: Scope<'a>, props: PortalProps<'a, G>) -> View<G> {
     let PortalProps { children, selector } = props;
 
     if G::IS_BROWSER {

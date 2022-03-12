@@ -18,7 +18,7 @@ pub struct Outline {
 }
 
 #[component]
-pub fn OutlineView<G: Html>(ctx: ScopeRef, outline: Vec<Outline>) -> View<G> {
+pub fn OutlineView<G: Html>(ctx: Scope, outline: Vec<Outline>) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -77,7 +77,7 @@ pub struct ContentProps {
 
 #[component]
 pub fn Content<G: Html>(
-    ctx: ScopeRef,
+    ctx: Scope,
     ContentProps {
         data: MarkdownPage { html, outline },
         sidebar,

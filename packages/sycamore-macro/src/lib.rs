@@ -23,7 +23,7 @@ pub fn view(view: TokenStream) -> TokenStream {
 /// use sycamore::prelude::*;
 ///
 /// #[component]
-/// pub fn MyComponent<G: Html>(ctx: ScopeRef) -> View<G> {
+/// pub fn MyComponent<G: Html>(ctx: Scope) -> View<G> {
 ///     let cool_button: G = node! { ctx, button { "The coolest 😎" } };
 ///
 ///     cool_button.set_property("myProperty", &"Epic!".into());

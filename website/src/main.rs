@@ -63,12 +63,12 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
     }
 }
 
-fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
+fn switch<'a, G: Html>(ctx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
     let cached_sidebar_data =
         ctx.create_ref(create_rc_signal(None::<(Option<String>, SidebarData)>));
     ctx.provide_context_ref(cached_sidebar_data);
 
-    let fetch_docs_data = |url| {
+    let fetch_docs_data = move |url| {
         let data = ctx.create_resource(docs_preload(url));
         if cached_sidebar_data.get().is_none()
             || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None
@@ -169,7 +169,7 @@ fn switch<'a, G: Html>(ctx: ScopeRef<'a>, route: &'a ReadSignal<Routes>) -> View
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+fn App<G: Html>(ctx: Scope) -> View<G> {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
     // Get dark mode from media query.
     let dark_mode_mq = web_sys::window()
