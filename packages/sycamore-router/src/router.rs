@@ -175,10 +175,7 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<'a, G: Html, R, F, I>(
-    ctx: Scope<'a>,
-    props: RouterProps<'a, R, F, I, G>,
-) -> View<G>
+pub fn Router<'a, G: Html, R, F, I>(ctx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
 where
     R: Route + 'a,
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,

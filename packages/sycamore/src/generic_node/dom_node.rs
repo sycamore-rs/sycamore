@@ -6,6 +6,7 @@ use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
+use js_sys::Array;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Document, Element, Node, Text};
@@ -207,11 +208,20 @@ impl GenericNode for DomNode {
     }
 
     fn add_class(&self, class: &str) {
-        self.node
-            .unchecked_ref::<Element>()
-            .class_list()
-            .add_1(class)
-            .unwrap_throw();
+        let class_list = class.split_ascii_whitespace().collect::<Vec<_>>();
+        if class_list.len() == 1 {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .add_1(class_list[0])
+                .unwrap_throw();
+        } else {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .add(&class_list.into_iter().map(JsValue::from).collect::<Array>())
+                .unwrap_throw();
+        }
     }
 
     fn remove_class(&self, class: &str) {

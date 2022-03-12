@@ -99,6 +99,8 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn set_class_name(&self, value: &str);
 
     /// Add a class to the element.
+    /// If multiple classes are specified, delimited by spaces, all the classes should be added.
+    /// Any classes that are already present should not be added a second time.
     fn add_class(&self, class: &str);
 
     /// Remove a class from the element.
