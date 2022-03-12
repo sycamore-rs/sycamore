@@ -64,7 +64,7 @@ pub mod reactive {
 }
 
 #[cfg(feature = "ssr")]
-pub use crate::generic_node::render_to_string;
+pub use generic_node::render_to_string;
 #[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
 pub use generic_node::{hydrate, hydrate_get_scope, hydrate_to};
 #[cfg(feature = "dom")]
