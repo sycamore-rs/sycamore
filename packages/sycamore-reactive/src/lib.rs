@@ -43,8 +43,11 @@ struct ScopeInner<'a> {
     /// Contexts that are allocated on the current [`Scope`].
     /// See the [`mod@context`] module.
     ///
-    /// The raw pointer is owned by this field.
-    contexts: HashMap<TypeId, &'a dyn Any>,
+    /// Note that the `HashMap` is wrapped with an `Option<Box<_>>`. This is because contexts are
+    /// usually read and rarely created. Making this heap allocated when prevent blowing up the
+    /// size of the [`ScopeInner`] struct when most of the times, this field is unneeded.
+    #[allow(clippy::box_collection)]
+    contexts: Option<Box<HashMap<TypeId, &'a dyn Any>>>,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }
@@ -87,7 +90,7 @@ impl<'a> Scope<'a> {
                 effects: Default::default(),
                 cleanups: Default::default(),
                 child_scopes: Default::default(),
-                contexts: Default::default(),
+                contexts: None,
                 _phantom: Default::default(),
             }),
             arena: Default::default(),
