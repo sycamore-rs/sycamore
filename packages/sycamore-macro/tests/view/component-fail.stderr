@@ -19,7 +19,7 @@ error: unexpected end of input, expected either `(` or `{`
 error[E0412]: cannot find type `G` in this scope
  --> tests/view/component-fail.rs:4:29
   |
-4 | fn c(ctx: ScopeRef) -> View<G> {
+4 | fn c(ctx: Scope) -> View<G> {
   |     -                       ^ not found in this scope
   |     |
   |     help: you might be missing a type parameter: `<G>`
@@ -33,7 +33,7 @@ error[E0425]: cannot find function, tuple struct or tuple variant `UnknownCompon
 error[E0425]: cannot find function, tuple struct or tuple variant `C` in this scope
   --> tests/view/component-fail.rs:15:39
    |
-4  | fn c(ctx: ScopeRef) -> View<G> {
+4  | fn c(ctx: Scope) -> View<G> {
    | ------------------------------ similarly named function `c` defined here
 ...
 15 |         let _: View<G> = view! { ctx, C(1) };

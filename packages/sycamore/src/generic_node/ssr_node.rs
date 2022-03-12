@@ -312,7 +312,7 @@ impl GenericNode for SsrNode {
 
     fn event<'a>(
         &self,
-        _ctx: ScopeRef<'a>,
+        _ctx: Scope<'a>,
         _name: &str,
         _handler: Box<dyn Fn(Self::EventType) + 'a>,
     ) {
@@ -445,7 +445,7 @@ impl WriteToString for RawText {
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
 #[must_use]
-pub fn render_to_string(view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode>) -> String {
+pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String {
     let mut ret = String::new();
     create_scope_immediate(|ctx| {
         let v = with_hydration_context(|| view(ctx));
@@ -466,7 +466,7 @@ pub fn render_to_string(view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode>) -> Str
 /// _This API requires the following crate features to be activated: `suspense`, `ssr`_
 #[cfg(feature = "suspense")]
 pub async fn render_to_string_await_suspense(
-    view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode> + 'static,
+    view: impl FnOnce(Scope<'_>) -> View<SsrNode> + 'static,
 ) -> String {
     use futures::channel::oneshot;
     use sycamore_futures::ScopeSpawnLocal;

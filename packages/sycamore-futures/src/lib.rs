@@ -29,11 +29,11 @@ pub trait ScopeSpawnLocal<'a> {
     /// Spawns a `!Send` future on the current scope. If the scope is destroyed before the future is
     /// completed, it is aborted immediately. This ensures that it is impossible to access any
     /// values referencing the scope after they are destroyed.
-    fn spawn_local(&'a self, f: impl Future<Output = ()> + 'a);
+    fn spawn_local(self, f: impl Future<Output = ()> + 'a);
 }
 
 impl<'a> ScopeSpawnLocal<'a> for Scope<'a> {
-    fn spawn_local(&'a self, f: impl Future<Output = ()> + 'a) {
+    fn spawn_local(self, f: impl Future<Output = ()> + 'a) {
         let boxed: Pin<Box<dyn Future<Output = ()> + 'a>> = Box::pin(f);
         // SAFETY: We are just transmuting the lifetime here so that we can spawn the future.
         // This is safe because we wrap the future in an `Abortable` future which will be

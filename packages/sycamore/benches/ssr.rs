@@ -5,7 +5,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
             #[component]
-            fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+            fn App<G: Html>(ctx: Scope) -> View<G> {
                 view! { ctx,
                     div(class="my-container") {
                         p { "Hello World!" }
@@ -20,7 +20,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
             #[component]
-            fn ListItem<G: Html>(ctx: ScopeRef, value: i32) -> View<G> {
+            fn ListItem<G: Html>(ctx: Scope, value: i32) -> View<G> {
                 view! { ctx,
                     p {
                         span(class="placeholder")
@@ -33,7 +33,7 @@ pub fn bench(c: &mut Criterion) {
             }
 
             #[component]
-            fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+            fn App<G: Html>(ctx: Scope) -> View<G> {
                 let values = ctx.create_signal((0i32..=10).collect::<Vec<_>>());
 
                 view! { ctx,

@@ -280,7 +280,7 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event<'a>(&self, ctx: ScopeRef<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
+    fn event<'a>(&self, ctx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
         // SAFETY: extend lifetime because the closure is dropped when the ctx is disposed,
         // preventing the handler from ever being accessed after its lifetime.
         let handler: Box<dyn Fn(Self::EventType) + 'static> =
@@ -319,7 +319,7 @@ impl Html for DomNode {
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>) {
+pub fn render(view: impl FnOnce(Scope<'_>) -> View<DomNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
@@ -330,7 +330,7 @@ pub fn render(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>) {
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>, parent: &Node) {
+pub fn render_to(view: impl FnOnce(Scope<'_>) -> View<DomNode>, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
     let _ = render_get_scope(view, parent);
 }
@@ -347,7 +347,7 @@ pub fn render_to(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>, parent: &Node
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ScopeDisposer until you want to clean things up, or use render_to() instead"]
 pub fn render_get_scope<'a>(
-    view: impl FnOnce(ScopeRef<'_>) -> View<DomNode> + 'a,
+    view: impl FnOnce(Scope<'_>) -> View<DomNode> + 'a,
     parent: &'a Node,
 ) -> ScopeDisposer<'a> {
     create_scope(|ctx| {

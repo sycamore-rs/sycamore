@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn c(ctx: ScopeRef) -> View<G> {
+fn c(ctx: Scope) -> View<G> {
     view! {
         div
     }

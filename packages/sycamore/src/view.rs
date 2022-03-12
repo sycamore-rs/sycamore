@@ -36,7 +36,7 @@ impl<G: GenericNode> View<G> {
     }
 
     /// Create a new [`View`] from a [`FnMut`].
-    pub fn new_dyn<'a>(ctx: ScopeRef<'a>, mut f: impl FnMut() -> View<G> + 'a) -> Self {
+    pub fn new_dyn<'a>(ctx: Scope<'a>, mut f: impl FnMut() -> View<G> + 'a) -> Self {
         let signal = ctx.create_ref(RefCell::new(None::<RcSignal<View<G>>>));
         ctx.create_effect(move || {
             let view = f();
@@ -53,8 +53,8 @@ impl<G: GenericNode> View<G> {
 
     /// Create a new [`View`] from a [`FnMut`] while creating a new child reactive scope.
     pub fn new_dyn_scoped<'a>(
-        ctx: ScopeRef<'a>,
-        mut f: impl FnMut(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
+        ctx: Scope<'a>,
+        mut f: impl FnMut(BoundedScope<'_, 'a>) -> View<G> + 'a,
     ) -> Self {
         let signal = ctx.create_ref(RefCell::new(None::<RcSignal<View<G>>>));
         ctx.create_effect_scoped(move |ctx| {

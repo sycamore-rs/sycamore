@@ -13,7 +13,7 @@ use std::hash::Hash;
 use wasm_bindgen::prelude::*;
 use web_sys::Event;
 
-use crate::reactive::ScopeRef;
+use crate::reactive::Scope;
 
 #[cfg(feature = "dom")]
 pub use dom_node::*;
@@ -140,7 +140,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn remove_self(&self);
 
     /// Add a event handler to the event `name`.
-    fn event<'a>(&self, ctx: ScopeRef<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>);
+    fn event<'a>(&self, ctx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>);
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.

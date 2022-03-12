@@ -28,14 +28,14 @@ pub trait ScopeFuturesExt<'a> {
     ///
     /// TODO: docs + example
     #[deprecated = "use Scope::spawn_local instead"]
-    fn create_resource<U, F>(&'a self, f: F) -> RcSignal<Option<U>>
+    fn create_resource<U, F>(self, f: F) -> RcSignal<Option<U>>
     where
         U: 'static,
         F: Future<Output = U> + 'static;
 }
 
 impl<'a> ScopeFuturesExt<'a> for Scope<'a> {
-    fn create_resource<U, F>(&'a self, f: F) -> RcSignal<Option<U>>
+    fn create_resource<U, F>(self, f: F) -> RcSignal<Option<U>>
     where
         U: 'static,
         F: Future<Output = U> + 'static,

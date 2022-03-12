@@ -48,19 +48,19 @@ impl Prop for () {
 /// Get the builder for the component function.
 #[doc(hidden)]
 pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
-    _f: &impl FnOnce(ScopeRef<'a>, T) -> View<G>,
+    _f: &impl FnOnce(Scope<'a>, T) -> View<G>,
 ) -> T::Builder {
     T::builder()
 }
 
 /// Component children.
 pub struct Children<'a, G: GenericNode> {
-    f: Box<dyn FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a>,
+    f: Box<dyn FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a>,
 }
 
 impl<'a, F, G: GenericNode> From<F> for Children<'a, G>
 where
-    F: FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
+    F: FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a,
 {
     fn from(f: F) -> Self {
         Self { f: Box::new(f) }
@@ -68,25 +68,18 @@ where
 }
 
 impl<'a, G: GenericNode> Children<'a, G> {
-    /// Instantiate the child [`View`] with the passed [`ScopeRef`].
-    pub fn call<'b>(self, ctx: ScopeRef<'b>) -> View<G>
-    where
-        'a: 'b,
-    {
-        let bounded = BoundedScopeRef::<'b, 'a>::new(ctx);
-        (self.f)(bounded)
+    /// Instantiate the child [`View`] with the passed [`Scope`].
+    pub fn call(self, ctx: BoundedScope<'_, 'a>) -> View<G> {
+        (self.f)(ctx)
     }
 
-    /// Instantiate the child [`View`] with the passed [`BoundedScopeRef`].
-    pub fn call_with_bounded_scope(self, ctx: BoundedScopeRef<'_, 'a>) -> View<G> {
+    /// Instantiate the child [`View`] with the passed [`BoundedScope`].
+    pub fn call_with_bounded_scope(self, ctx: BoundedScope<'_, 'a>) -> View<G> {
         (self.f)(ctx)
     }
 
     /// Create a new [`Children`] from a closure.
-    pub fn new(
-        _ctx: ScopeRef<'a>,
-        f: impl FnOnce(BoundedScopeRef<'_, 'a>) -> View<G> + 'a,
-    ) -> Self {
+    pub fn new(_ctx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }
     }
 }

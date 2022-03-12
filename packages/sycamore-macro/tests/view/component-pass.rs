@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-pub fn Component<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn Component<G: Html>(ctx: Scope) -> View<G> {
     view! { ctx,
         div
     }

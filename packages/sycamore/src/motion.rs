@@ -21,7 +21,7 @@ pub trait ScopeMotionExt<'a> {
     /// third item is a function to stop the raf.
     ///
     /// The raf is not started by default. Call the `start` function to initiate the raf.
-    fn create_raf(&'a self, f: impl FnMut() + 'a) -> RafState<'a>;
+    fn create_raf(self, f: impl FnMut() + 'a) -> RafState<'a>;
 
     /// Schedule a callback to be called on each animation frame.
     /// Does nothing if not on `wasm32` target.
@@ -31,11 +31,11 @@ pub trait ScopeMotionExt<'a> {
     /// looping from outside the function.
     ///
     /// The raf is not started by default. Call the `start` function to initiate the raf.
-    fn create_raf_loop(&'a self, f: impl FnMut() -> bool + 'a) -> RafState<'a>;
+    fn create_raf_loop(self, f: impl FnMut() -> bool + 'a) -> RafState<'a>;
 
     /// Create a new [`Tweened`] signal.
     fn create_tweened_signal<T: Lerp + Clone + 'a>(
-        &'a self,
+        self,
         initial: T,
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,
@@ -43,7 +43,7 @@ pub trait ScopeMotionExt<'a> {
 }
 
 impl<'a> ScopeMotionExt<'a> for Scope<'a> {
-    fn create_raf(&'a self, f: impl FnMut() + 'a) -> RafState<'a> {
+    fn create_raf(self, f: impl FnMut() + 'a) -> RafState<'a> {
         let running = self.create_ref(create_rc_signal(false));
         let start: &dyn Fn();
         let stop: &dyn Fn();
@@ -96,7 +96,7 @@ impl<'a> ScopeMotionExt<'a> for Scope<'a> {
         (running.clone(), start, stop)
     }
 
-    fn create_raf_loop(&'a self, mut f: impl FnMut() -> bool + 'a) -> RafState<'a> {
+    fn create_raf_loop(self, mut f: impl FnMut() -> bool + 'a) -> RafState<'a> {
         let stop_shared = self.create_ref(Cell::new(None::<&dyn Fn()>));
         let (running, start, stop) = self.create_raf(move || {
             if !f() {
@@ -108,7 +108,7 @@ impl<'a> ScopeMotionExt<'a> for Scope<'a> {
     }
 
     fn create_tweened_signal<T: Lerp + Clone + 'a>(
-        &'a self,
+        self,
         initial: T,
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,
@@ -169,9 +169,9 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
 pub struct Tweened<'a, T: Lerp + Clone>(Rc<RefCell<TweenedInner<'a, T>>>);
 
 struct TweenedInner<'a, T: Lerp + Clone + 'a> {
-    /// The [`ScopeRef`] under which the tweened signal was created. We need to hold on to the
+    /// The [`Scope`] under which the tweened signal was created. We need to hold on to the
     /// context to be able to spawn the raf callback.
-    ctx: ScopeRef<'a>,
+    ctx: Scope<'a>,
     value: RcSignal<T>,
     raf_state: Option<RafState<'a>>,
     transition_duration_ms: f32,
@@ -183,7 +183,7 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
     ///
     /// End users should use [`Scope::create_tweened_signal`] instead.
     pub(crate) fn new(
-        ctx: ScopeRef<'a>,
+        ctx: Scope<'a>,
         initial: T,
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,

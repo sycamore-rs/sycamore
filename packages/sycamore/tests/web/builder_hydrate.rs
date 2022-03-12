@@ -9,7 +9,7 @@ fn check(actual: &str, expect: Expect) {
 
 mod hello_world {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         h(p).t("Hello World!").view(ctx)
     }
     #[test]
@@ -34,7 +34,7 @@ mod hello_world {
 
 mod hydrate_recursive {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         h(div).c(h(p).t("Nested")).view(ctx)
     }
     #[test]
@@ -59,7 +59,7 @@ mod hydrate_recursive {
 
 mod multiple_nodes_at_same_depth {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         h(div).c(h(p).t("First")).c(h(p).t("Second")).view(ctx)
     }
     #[test]
@@ -86,7 +86,7 @@ mod multiple_nodes_at_same_depth {
 
 mod top_level_fragment {
     use super::*;
-    fn v<G: Html>(ctx: ScopeRef) -> View<G> {
+    fn v<G: Html>(ctx: Scope) -> View<G> {
         fragment([h(p).t("First").view(ctx), h(p).t("Second").view(ctx)])
     }
     #[test]
@@ -111,7 +111,7 @@ mod top_level_fragment {
 
 mod dynamic {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
         h(p).dyn_t(|| state.get().to_string()).view(ctx)
     }
     #[test]
@@ -167,7 +167,7 @@ mod dynamic {
 
 mod dynamic_with_siblings {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
         h(p).t("Value: ")
             .dyn_t(|| state.get().to_string())
             .t("!")
@@ -217,7 +217,7 @@ mod dynamic_with_siblings {
 
 mod dynamic_template {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<View<G>>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<View<G>>) -> View<G> {
         h(p).t("before")
             .dyn_c(|| state.get().as_ref().clone())
             .t("after")
@@ -268,7 +268,7 @@ mod dynamic_template {
 
 mod top_level_dynamic_with_siblings {
     use super::*;
-    fn v<'a, G: Html>(ctx: ScopeRef<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+    fn v<'a, G: Html>(ctx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
         fragment([t("Value: "), dyn_t(ctx, || state.get().to_string()), t("!")])
     }
     #[test]
