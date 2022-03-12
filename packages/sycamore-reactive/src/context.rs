@@ -40,6 +40,7 @@ impl<'a> Scope<'a> {
             .inner
             .borrow_mut()
             .contexts
+            .get_or_insert_with(Default::default)
             .insert(type_id, value)
             .is_some()
         {
@@ -54,7 +55,13 @@ impl<'a> Scope<'a> {
         let type_id = TypeId::of::<T>();
         let mut this = Some(self);
         while let Some(current) = this {
-            if let Some(value) = current.inner.borrow().contexts.get(&type_id) {
+            if let Some(value) = current
+                .inner
+                .borrow()
+                .contexts
+                .as_ref()
+                .and_then(|c| c.get(&type_id))
+            {
                 let value = value.downcast_ref::<T>().unwrap();
                 return Some(value);
             } else {
