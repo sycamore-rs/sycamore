@@ -175,10 +175,7 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<'a, G: Html, R, F, I>(
-    ctx: Scope<'a>,
-    props: RouterProps<'a, R, F, I, G>,
-) -> View<G>
+pub fn Router<'a, G: Html, R, F, I>(ctx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
 where
     R: Route + 'a,
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
@@ -189,8 +186,7 @@ where
         integration,
         _phantom,
     } = props;
-    let view = Rc::new(RefCell::new(Some(view)));
-    let integration = Rc::new(integration);
+    let integration = ctx.create_ref(integration);
     let base_pathname = base_pathname();
 
     PATHNAME.with(|pathname| {
@@ -238,7 +234,7 @@ where
         )
     });
     // Delegate click events from child <a> tags.
-    let tmp = view.take().unwrap_throw()(ctx, route_signal);
+    let tmp = view(ctx, route_signal);
     if let Some(node) = tmp.as_node() {
         node.event(ctx, "click", integration.click_handler());
     } else {
