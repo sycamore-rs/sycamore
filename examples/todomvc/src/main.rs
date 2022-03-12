@@ -135,7 +135,7 @@ fn main() {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+fn App<G: Html>(ctx: Scope) -> View<G> {
     // Initialize application state
     let local_storage = web_sys::window()
         .unwrap()
@@ -180,7 +180,7 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
 }
 
 #[component]
-pub fn Copyright<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn Copyright<G: Html>(ctx: Scope) -> View<G> {
     view! { ctx,
         footer(class="info") {
             p { "Double click to edit a todo" }
@@ -197,7 +197,7 @@ pub fn Copyright<G: Html>(ctx: ScopeRef) -> View<G> {
 }
 
 #[component]
-pub fn Header<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn Header<G: Html>(ctx: Scope) -> View<G> {
     let app_state = ctx.use_context::<AppState>();
     let value = ctx.create_signal(String::new());
     let input_ref = ctx.create_node_ref();
@@ -234,7 +234,7 @@ pub fn Header<G: Html>(ctx: ScopeRef) -> View<G> {
 }
 
 #[component]
-pub fn Item<G: Html>(ctx: ScopeRef, todo: RcSignal<Todo>) -> View<G> {
+pub fn Item<G: Html>(ctx: Scope, todo: RcSignal<Todo>) -> View<G> {
     let app_state = ctx.use_context::<AppState>();
     // Make `todo` live as long as the scope.
     let todo = ctx.create_ref(todo);
@@ -353,7 +353,7 @@ pub fn Item<G: Html>(ctx: ScopeRef, todo: RcSignal<Todo>) -> View<G> {
 }
 
 #[component]
-pub fn List<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn List<G: Html>(ctx: Scope) -> View<G> {
     let app_state = ctx.use_context::<AppState>();
     let todos_left = ctx.create_selector(|| app_state.todos_left());
 
@@ -405,7 +405,7 @@ pub fn List<G: Html>(ctx: ScopeRef) -> View<G> {
 }
 
 #[component]
-pub fn TodoFilter<G: Html>(ctx: ScopeRef, filter: Filter) -> View<G> {
+pub fn TodoFilter<G: Html>(ctx: Scope, filter: Filter) -> View<G> {
     let app_state = ctx.use_context::<AppState>();
     let selected = move || filter == *app_state.filter.get();
     let set_filter = |filter| app_state.filter.set(filter);
@@ -424,7 +424,7 @@ pub fn TodoFilter<G: Html>(ctx: ScopeRef, filter: Filter) -> View<G> {
 }
 
 #[component]
-pub fn Footer<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn Footer<G: Html>(ctx: Scope) -> View<G> {
     let app_state = ctx.use_context::<AppState>();
 
     let items_text = || match app_state.todos_left() {

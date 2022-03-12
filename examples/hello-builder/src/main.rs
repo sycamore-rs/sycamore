@@ -7,7 +7,7 @@ use sycamore::builder::prelude::*;
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+fn App<G: Html>(ctx: Scope) -> View<G> {
     let name = ctx.create_signal(String::new());
     h(div)
         .c(h(h1)
@@ -15,7 +15,7 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
             .dyn_if(
                 || !name.get().is_empty(),
                 || h(span).dyn_t(|| name.get().to_string()),
-                || h(span).t("World").view(ctx),
+                || h(span).t("World"),
             )
             .t("!"))
         .c(h(input).bind_value(name))

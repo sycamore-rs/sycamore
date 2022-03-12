@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-pub fn Index<G: Html>(ctx: ScopeRef) -> View<G> {
+pub fn Index<G: Html>(ctx: Scope) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()

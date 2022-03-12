@@ -3,15 +3,15 @@
 use sycamore::prelude::*;
 
 #[component]
-fn MyComponent<G: Html>(ctx: ScopeRef, props: i32) -> View<G> {
+fn MyComponent<G: Html>(ctx: Scope, props: i32) -> View<G> {
     view! { ctx,
         (props)
     }
 }
 
 fn higher_order_component<G: Html>(
-    Comp: &dyn Fn(ScopeRef, i32) -> View<G>,
-) -> impl Fn(ScopeRef, ()) -> View<G> + '_ {
+    Comp: &dyn Fn(Scope, i32) -> View<G>,
+) -> impl Fn(Scope, ()) -> View<G> + '_ {
     move |ctx, _| {
         view! { ctx,
             div {

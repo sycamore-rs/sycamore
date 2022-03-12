@@ -20,7 +20,7 @@ async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
 }
 
 #[component]
-async fn VisitsCount<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
+async fn VisitsCount<G: Html>(ctx: Scope<'_>) -> View<G> {
     let id = "sycamore-visits-counter";
     let visits = fetch_visits(id).await.unwrap_or_default();
 
@@ -37,7 +37,7 @@ async fn VisitsCount<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
+fn App<G: Html>(ctx: Scope) -> View<G> {
     view! { ctx,
         div {
             p { "Page Visit Counter" }
