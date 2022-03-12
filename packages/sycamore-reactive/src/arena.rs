@@ -33,7 +33,7 @@ impl<'a> ScopeArena<'a> {
         // - It is allocated on the heap and therefore has a stable address.
         // - self.inner is append only. That means that the Box<_> will not be dropped until Self is
         //   dropped.
-        // - The drop code for ScopeRef never reads the allocated value and therefore does not
+        // - The drop code for Scope never reads the allocated value and therefore does not
         //   create a stacked-borrows violation.
         unsafe { &*ptr }
     }

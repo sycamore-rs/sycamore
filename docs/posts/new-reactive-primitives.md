@@ -124,7 +124,7 @@ possibility on our roadmap:
 
 ```rust
 #[component]
-async fn AsyncFetch<G: Html>(ctx: ScopeRef) -> View<G> {
+async fn AsyncFetch<G: Html>(ctx: Scope) -> View<G> {
     let data = fetch_data().await;
     let derived = ctx.create_memo(|| data);
     //            ^^^ -> We can still access `ctx`, even after the `.await` suspension point.
