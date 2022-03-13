@@ -91,6 +91,12 @@ impl GenericNode for HydrateNode {
     fn element(tag: &str) -> Self {
         let el = get_next_element();
         if let Some(el) = el {
+            // If in debug mode, check that the hydrate element has the same tag as the argument.
+            debug_assert_eq!(
+                el.tag_name().to_ascii_lowercase(),
+                tag,
+                "hydration error, mismatched element tag"
+            );
             Self {
                 node: DomNode::from_web_sys(el.into()),
             }
