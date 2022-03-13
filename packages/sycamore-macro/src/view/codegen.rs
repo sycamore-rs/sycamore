@@ -54,11 +54,19 @@ impl Codegen {
             ViewNode::Text(Text { value }) => quote! {
                 ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(#value))
             },
-            ViewNode::Dyn(Dyn { value }) => {
-                quote! {
-                    ::sycamore::view::View::new_dyn(#ctx, move ||
-                        ::sycamore::view::IntoView::create(&(#value))
-                    )
+            ViewNode::Dyn(d @ Dyn { value }) => {
+                let needs_ctx = d.needs_ctx(&ctx.to_string());
+                match needs_ctx {
+                    true => quote! {
+                        ::sycamore::view::View::new_dyn_scoped(#ctx, move |#ctx|
+                            ::sycamore::view::IntoView::create(&(#value))
+                        )
+                    },
+                    false => quote! {
+                        ::sycamore::view::View::new_dyn(#ctx, move ||
+                            ::sycamore::view::IntoView::create(&(#value))
+                        )
+                    },
                 }
             }
         }
@@ -481,8 +489,7 @@ impl Codegen {
                         let view_root = self.view_root(children);
                         props_quoted.extend(quote! {
                             .children(
-                                ::sycamore::component::Children::new(#ctx, move |__ctx| {
-                                    let __ctx: &Scope = &__ctx;
+                                ::sycamore::component::Children::new(#ctx, move |#ctx| {
                                     #view_root
                                 })
                             )
