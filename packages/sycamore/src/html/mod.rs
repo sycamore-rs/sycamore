@@ -149,6 +149,7 @@ define_elements! {
     /// Paragraphs are block-level elements, and notably will automatically close if another block-level element is parsed before the closing `</p>` tag.
     p {},
     param {},
+    path {},
     picture {},
     pre {},
     progress {},
