@@ -225,11 +225,20 @@ impl GenericNode for DomNode {
     }
 
     fn remove_class(&self, class: &str) {
-        self.node
-            .unchecked_ref::<Element>()
-            .class_list()
-            .remove_1(class)
-            .unwrap_throw();
+        let class_list = class.split_ascii_whitespace().collect::<Vec<_>>();
+        if class_list.len() == 1 {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .remove_1(class_list[0])
+                .unwrap_throw();
+        } else {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .remove(&class_list.into_iter().map(JsValue::from).collect::<Array>())
+                .unwrap_throw();
+        }
     }
 
     fn set_property(&self, name: &str, value: &JsValue) {
