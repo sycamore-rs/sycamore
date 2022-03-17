@@ -15,6 +15,7 @@ use crate::utils::render::insert;
 use crate::view::View;
 
 use super::dom_node::NodeId;
+use super::SycamoreElement;
 
 /// Rendering backend for the DOM with hydration support.
 ///
@@ -88,7 +89,7 @@ impl GenericNode for HydrateNode {
 
     /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
     /// node.
-    fn element(tag: &str) -> Self {
+    fn element<T: SycamoreElement>() -> Self {
         let el = get_next_element();
         if let Some(el) = el {
             Self {
@@ -96,8 +97,14 @@ impl GenericNode for HydrateNode {
             }
         } else {
             Self {
-                node: DomNode::element(tag),
+                node: DomNode::element::<T>(),
             }
+        }
+    }
+
+    fn element_from_tag(tag: &str) -> Self {
+        Self {
+            node: DomNode::element_from_tag(tag),
         }
     }
 

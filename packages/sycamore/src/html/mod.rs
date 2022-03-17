@@ -7,6 +7,7 @@ use crate::generic_node::SycamoreElement;
 /// MBE for generating elements.
 macro_rules! define_elements {
     (
+        $ns:expr,
         $(
             $(#[$attr:meta])*
             $el:ident {
@@ -25,7 +26,7 @@ macro_rules! define_elements {
 
             impl SycamoreElement for $el {
                 const TAG_NAME: &'static str = stringify!($el);
-                const NAME_SPACE: Option<&'static str> = None;
+                const NAME_SPACE: Option<&'static str> = $ns;
             }
         )*
     };
@@ -33,6 +34,7 @@ macro_rules! define_elements {
 
 // A list of valid HTML5 elements (does not include removed or obsolete elements).
 define_elements! {
+    None,
     /// The `<a>` HTML element (or anchor element), with its `href` attribute, creates a hyperlink to web pages, files, email addresses, locations in the same page, or anything else a URL can address.
     ///
     /// Content within each `<a>` should indicate the link's destination. If the `href` attribute is present, pressing the enter key while focused on the `<a>` element will activate it.
@@ -170,7 +172,6 @@ define_elements! {
     sub {},
     summary {},
     sup {},
-    svg {},
     table {},
     tbody {},
     td {},
@@ -189,4 +190,75 @@ define_elements! {
     var {},
     video {},
     wbr {},
+}
+
+// A list of valid SVG elements. Some elements are commented out because they conflict with the HTML elements.
+define_elements! {
+    Some("http://www.w3.org/2000/svg"),
+    svg {},
+    // a,
+    animate {},
+    animateMotion {},
+    animateTransform {},
+    circle {},
+    clipPath {},
+    defs {},
+    desc {},
+    discard {},
+    ellipse {},
+    feBlend {},
+    feColorMatrix {},
+    feComponentTransfer {},
+    feComposite {},
+    feConvolveMatrix {},
+    feDiffuseLighting {},
+    feDisplacementMap {},
+    feDistantLight {},
+    feDropShadow {},
+    feFlood {},
+    feFuncA {},
+    feFuncB {},
+    feFuncG {},
+    feFuncR {},
+    feGaussianBlur {},
+    feImage {},
+    feMerge {},
+    feMergeNode {},
+    feMorphology {},
+    feOffset {},
+    fePointLight {},
+    feSpecularLighting {},
+    feSpotLight {},
+    feTile {},
+    feTurbulence {},
+    filter {},
+    foreignObject {},
+    g {},
+    hatch {},
+    hatchpath {},
+    image {},
+    line {},
+    linearGradient {},
+    marker {},
+    mask {},
+    metadata {},
+    mpath {},
+    path {},
+    pattern {},
+    polygon {},
+    polyline {},
+    radialGradient {},
+    rect {},
+    // script {},
+    set {},
+    stop {},
+    // style {},
+    switch {},
+    symbol {},
+    text {},
+    textPath {},
+    // title {},
+    tspan {},
+    r#use {},
+    view {},
 }
