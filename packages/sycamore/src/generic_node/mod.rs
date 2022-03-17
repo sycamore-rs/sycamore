@@ -63,7 +63,10 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     const CLIENT_SIDE_HYDRATION: bool = false;
 
     /// Create a new element node.
-    fn element(tag: &str) -> Self;
+    fn element<T: SycamoreElement>() -> Self;
+
+    /// Create a new element node from a tag string.
+    fn element_from_tag(tag: &str) -> Self;
 
     /// Create a new text node.
     fn text_node(text: &str) -> Self;

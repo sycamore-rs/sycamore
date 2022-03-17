@@ -3,6 +3,7 @@
 #![allow(clippy::redundant_clone)] // Borrow checking error
 
 use sycamore::generic_node::DomNode;
+use sycamore::html;
 use sycamore::utils::render::{append_nodes, insert, reconcile_fragments};
 
 use super::*;
@@ -17,7 +18,7 @@ fn insert_create_nodes() {
             DomNode::text_node("2"),
             DomNode::text_node("3"),
         ];
-        let parent = DomNode::element("div");
+        let parent = DomNode::element::<html::div>();
 
         insert(
             ctx,
@@ -38,7 +39,7 @@ fn reconcile_pop_nodes() {
         DomNode::text_node("2"),
         DomNode::text_node("3"),
     ];
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
 
     for node in &child_nodes {
@@ -57,7 +58,7 @@ fn reconcile_remove_nodes() {
         DomNode::text_node("2"),
         DomNode::text_node("3"),
     ];
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
 
     for node in &child_nodes {
@@ -80,7 +81,7 @@ fn reconcile_append_nodes() {
         DomNode::text_node("2"),
         DomNode::text_node("3"),
     ];
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     let child_nodes = nodes[..2].to_vec();
 
     for node in &child_nodes {
@@ -99,7 +100,7 @@ fn reconcile_swap_nodes() {
         DomNode::text_node("2"),
         DomNode::text_node("3"),
     ];
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
 
     for node in &child_nodes {
@@ -122,7 +123,7 @@ fn reconcile_clear_nodes() {
         DomNode::text_node("2"),
         DomNode::text_node("3"),
     ];
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
 
     for node in &child_nodes {
@@ -143,7 +144,7 @@ fn clear_and_insert_with_other_nodes_at_same_level() {
     ];
     let before = DomNode::text_node("before");
     let after = DomNode::text_node("after");
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();
     for node in &child_nodes {
@@ -178,7 +179,7 @@ fn clear_with_other_nodes_at_same_level() {
     ];
     let before = DomNode::text_node("before");
     let after = DomNode::text_node("after");
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();
     for node in &child_nodes {
@@ -207,7 +208,7 @@ fn insert_with_other_nodes_at_same_level() {
     ];
     let before = DomNode::text_node("before");
     let after = DomNode::text_node("after");
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();
     for node in &child_nodes {
@@ -236,7 +237,7 @@ fn reconcile_with_other_nodes_at_same_level() {
     ];
     let before = DomNode::text_node("before");
     let after = DomNode::text_node("after");
-    let parent = DomNode::element("div");
+    let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();
     for node in &child_nodes {

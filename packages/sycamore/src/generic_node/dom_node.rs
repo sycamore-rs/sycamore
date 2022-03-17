@@ -16,6 +16,8 @@ use crate::reactive::*;
 use crate::utils::render::insert;
 use crate::view::View;
 
+use super::SycamoreElement;
+
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(extends = Node)]
@@ -150,7 +152,27 @@ fn document() -> web_sys::Document {
 impl GenericNode for DomNode {
     type EventType = web_sys::Event;
 
-    fn element(tag: &str) -> Self {
+    fn element<T: SycamoreElement>() -> Self {
+        let node = if let Some(ns) = T::NAME_SPACE {
+            document()
+                .create_element_ns(Some(ns), intern(T::TAG_NAME))
+                .unwrap_throw()
+                .dyn_into()
+                .unwrap_throw()
+        } else {
+            document()
+                .create_element(intern(T::TAG_NAME))
+                .unwrap_throw()
+                .dyn_into()
+                .unwrap_throw()
+        };
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    fn element_from_tag(tag: &str) -> Self {
         let node = document()
             .create_element(intern(tag))
             .unwrap_throw()

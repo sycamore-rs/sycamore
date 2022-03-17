@@ -9,6 +9,7 @@ pub mod portal;
 pub mod reconcile;
 pub mod render;
 
+use sycamore::html;
 use sycamore::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
@@ -437,7 +438,7 @@ fn dyn_fragment_reuse_nodes() {
 
 #[wasm_bindgen_test]
 fn dom_node_add_class_splits_at_whitespace() {
-    let node = DomNode::element("div");
+    let node = DomNode::element::<html::div>();
     node.add_class("my_class");
     assert_eq!(
         node.inner_element()

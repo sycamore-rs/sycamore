@@ -1,5 +1,6 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
@@ -14,6 +15,8 @@ use crate::generic_node::{GenericNode, Html};
 use crate::reactive::*;
 use crate::utils::hydrate::{get_next_id, with_hydration_context};
 use crate::view::View;
+
+use super::SycamoreElement;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
@@ -129,14 +132,27 @@ impl GenericNode for SsrNode {
     type EventType = web_sys::Event;
     const USE_HYDRATION_CONTEXT: bool = true;
 
-    fn element(tag: &str) -> Self {
+    fn element<T: SycamoreElement>() -> Self {
         let hk = get_next_id();
         let mut attributes = IndexMap::new();
         if let Some(hk) = hk {
             attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
         }
         Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: tag.to_string(),
+            name: Cow::Borrowed(T::TAG_NAME),
+            attributes,
+            children: Default::default(),
+        })))
+    }
+
+    fn element_from_tag(tag: &str) -> Self {
+        let hk = get_next_id();
+        let mut attributes = IndexMap::new();
+        if let Some(hk) = hk {
+            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
+        }
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
+            name: Cow::Owned(tag.to_string()),
             attributes,
             children: Default::default(),
         })))
@@ -365,7 +381,7 @@ impl WriteToString for SsrNode {
 /// A SSR element.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Element {
-    name: String,
+    name: Cow<'static, str>,
     attributes: IndexMap<String, String>,
     children: Vec<SsrNode>,
 }
@@ -386,7 +402,7 @@ impl WriteToString for Element {
         }
 
         // Check if self-closing tag (void-element).
-        if self.children.is_empty() && VOID_ELEMENTS.contains(self.name.as_str()) {
+        if self.children.is_empty() && VOID_ELEMENTS.contains(&*self.name) {
             s.push_str("/>");
         } else {
             s.push('>');
@@ -502,6 +518,7 @@ pub async fn render_to_string_await_suspense(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::html;
     use crate::prelude::*;
 
     #[test]
@@ -536,9 +553,9 @@ mod tests {
 
     #[test]
     fn append_child() {
-        let node = SsrNode::element("div");
-        let p = SsrNode::element("p");
-        let p2 = SsrNode::element("p");
+        let node = SsrNode::element::<html::div>();
+        let p = SsrNode::element::<html::p>();
+        let p2 = SsrNode::element::<html::p>();
 
         node.append_child(&p);
         node.append_child(&p2);
@@ -556,8 +573,8 @@ mod tests {
 
     #[test]
     fn remove_child() {
-        let node = SsrNode::element("div");
-        let p = SsrNode::element("p");
+        let node = SsrNode::element::<html::div>();
+        let p = SsrNode::element::<html::p>();
 
         node.append_child(&p);
         // p parent should be updated
@@ -575,10 +592,10 @@ mod tests {
 
     #[test]
     fn remove_child_2() {
-        let node = SsrNode::element("div");
-        let p = SsrNode::element("p");
-        let p2 = SsrNode::element("p");
-        let p3 = SsrNode::element("p");
+        let node = SsrNode::element::<html::div>();
+        let p = SsrNode::element::<html::p>();
+        let p2 = SsrNode::element::<html::p>();
+        let p3 = SsrNode::element::<html::p>();
 
         node.append_child(&p);
         node.append_child(&p2);

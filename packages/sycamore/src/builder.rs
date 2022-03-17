@@ -81,7 +81,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a
 pub fn h<'a, E: SycamoreElement, G: GenericNode>(
     _: E,
 ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-    ElementBuilder::new(move |_| G::element(E::TAG_NAME))
+    ElementBuilder::new(move |_| G::element::<E>())
 }
 
 /// Construct a new [`ElementBuilder`] from a tag name.
@@ -105,7 +105,7 @@ pub fn h<'a, E: SycamoreElement, G: GenericNode>(
 pub fn tag<'a, G: GenericNode>(
     t: impl AsRef<str>,
 ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-    ElementBuilder::new(move |_| G::element(t.as_ref()))
+    ElementBuilder::new(move |_| G::element_from_tag(t.as_ref()))
 }
 
 impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {

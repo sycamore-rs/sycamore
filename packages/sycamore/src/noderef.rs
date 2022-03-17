@@ -96,6 +96,7 @@ impl<'a> ScopeCreateNodeRef<'a> for Scope<'a> {
 
 #[cfg(all(test, feature = "ssr"))]
 mod tests {
+    use crate::html;
     use crate::prelude::*;
 
     #[test]
@@ -108,7 +109,7 @@ mod tests {
     #[test]
     fn set_noderef() {
         let noderef = NodeRef::<SsrNode>::new();
-        let node = SsrNode::element("div");
+        let node = SsrNode::element::<html::div>();
         noderef.set(node.clone());
         assert_eq!(noderef.try_get_raw(), Some(node.clone()));
         assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
@@ -117,7 +118,7 @@ mod tests {
     #[test]
     fn cast_noderef() {
         let noderef = NodeRef::<SsrNode>::new();
-        let node = SsrNode::element("div");
+        let node = SsrNode::element::<html::div>();
         noderef.set(node.clone());
         assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
         assert!(noderef.try_get::<DomNode>().is_none());
