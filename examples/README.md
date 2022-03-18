@@ -35,6 +35,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 | [js-framework-benchmark](js-framework-benchmark)   | Implementation of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) |
 | [motion](motion)                                   | Demonstration for using animation frames and tweened signals                                   |
 | [ssr](ssr)                                         | Demonstration of server-side-rendering                                                         |
+| [svg](svg)                                         | Creating SVGs with the `view!` macro                                                           |
 | [timer](timer)                                     | Demonstration of using futures to auto-increment a counter                                     |
 | [todomvc](todomvc)                                 | Fully compliant implementation of [TodoMVC](https://todomvc.com/) spec                         |
 | [transitions](transitions)                         | Suspense + async transitions                                                                   |

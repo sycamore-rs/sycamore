@@ -192,7 +192,8 @@ define_elements! {
     wbr {},
 }
 
-// A list of valid SVG elements. Some elements are commented out because they conflict with the HTML elements.
+// A list of valid SVG elements. Some elements are commented out because they conflict with the HTML
+// elements.
 define_elements! {
     Some("http://www.w3.org/2000/svg"),
     svg {},

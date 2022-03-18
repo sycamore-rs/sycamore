@@ -173,6 +173,7 @@ struct TweenedInner<'a, T: Lerp + Clone + 'a> {
     /// context to be able to spawn the raf callback.
     ctx: Scope<'a>,
     value: RcSignal<T>,
+    is_tweening: RcSignal<bool>,
     raf_state: Option<RafState<'a>>,
     transition_duration_ms: f32,
     easing_fn: Rc<dyn Fn(f32) -> f32>,
@@ -192,6 +193,7 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
         Self(Rc::new(RefCell::new(TweenedInner {
             ctx,
             value,
+            is_tweening: create_rc_signal(false),
             raf_state: None,
             transition_duration_ms: transition_duration.as_millis() as f32,
             easing_fn: Rc::new(easing_fn),
@@ -212,6 +214,7 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
 
         let start_time = Date::now();
         let signal = self.0.borrow().value.clone();
+        let is_tweening = self.0.borrow().is_tweening.clone();
         let transition_duration_ms = self.0.borrow().transition_duration_ms;
 
         // If previous raf is still running, call stop() to cancel it.
@@ -232,10 +235,12 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
                 true
             } else {
                 signal.set(new_value.clone());
+                is_tweening.set(false);
                 false
             }
         });
         start();
+        self.0.borrow().is_tweening.set(true);
         self.0.borrow_mut().raf_state = Some((running, start, stop));
     }
 
@@ -253,6 +258,12 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
     pub fn signal(&self) -> RcSignal<T> {
         self.0.borrow().value.clone()
     }
+
+    /// Returns `true` if the value is currently being tweened/interpolated. This value is reactive
+    /// and can be tracked.
+    pub fn is_tweening(&self) -> bool {
+        *self.0.borrow().is_tweening.get()
+    }
 }
 
 impl<'a, T: Lerp + Clone + 'static> Clone for Tweened<'a, T> {
@@ -266,6 +277,7 @@ impl<'a, T: Lerp + Clone + 'static> Clone for TweenedInner<'a, T> {
         Self {
             ctx: self.ctx,
             value: self.value.clone(),
+            is_tweening: self.is_tweening.clone(),
             raf_state: self.raf_state.clone(),
             transition_duration_ms: self.transition_duration_ms,
             easing_fn: Rc::clone(&self.easing_fn),
