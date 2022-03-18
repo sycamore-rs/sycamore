@@ -21,6 +21,7 @@ members = [
   "examples/higher-order-components",
   "examples/motion",
   "examples/ssr",
+  "examples/svg",
   "examples/timer",
   "examples/todomvc",
   "examples/transitions",
