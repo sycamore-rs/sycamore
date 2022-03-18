@@ -95,7 +95,7 @@ impl GenericNode for HydrateNode {
             // If in debug mode, check that the hydrate element has the same tag as the argument.
             debug_assert_eq!(
                 el.tag_name().to_ascii_lowercase(),
-                tag,
+                T::TAG_NAME,
                 "hydration error, mismatched element tag"
             );
             Self {
