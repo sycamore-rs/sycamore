@@ -131,7 +131,6 @@ impl Codegen {
                     };
                     let marker_or_none = marker_is_some.then(|| marker.clone()).unwrap_or_default();
 
-                    // If __el is a HydrateNode, use get_next_marker as initial node value.
                     let initial = quote! { ::sycamore::utils::initial_node(&__el) };
                     let ssr_markers = quote! {
                         ::sycamore::generic_node::GenericNode::append_child(
