@@ -131,22 +131,7 @@ impl Codegen {
                     };
                     let marker_or_none = marker_is_some.then(|| marker.clone()).unwrap_or_default();
 
-                    // If __el is a HydrateNode, use get_next_marker as initial node value.
-                    let initial = if cfg!(feature = "experimental-hydrate") {
-                        quote! {
-                            if let ::std::option::Option::Some(__el)
-                                = <dyn ::std::any::Any>::downcast_ref::<::sycamore::generic_node::HydrateNode>(&__el) {
-                                let __initial = ::sycamore::utils::hydrate::web::get_next_marker(&__el.inner_element());
-                                // Do not drop the HydrateNode because it will be cast into a GenericNode.
-                                let __initial = ::std::mem::ManuallyDrop::new(__initial);
-                                // SAFETY: This is safe because we already checked that the type is HydrateNode.
-                                // __initial is wrapped inside ManuallyDrop to prevent double drop.
-                                unsafe { ::std::ptr::read(&__initial as *const _ as *const _) }
-                            } else { ::std::option::Option::None }
-                        }
-                    } else {
-                        quote! { ::std::option::Option::None }
-                    };
+                    let initial = quote! { ::sycamore::utils::initial_node(&__el) };
                     let ssr_markers = quote! {
                         ::sycamore::generic_node::GenericNode::append_child(
                             &__el,
@@ -161,15 +146,21 @@ impl Codegen {
                             let comp = self.component(comp);
                             let quoted = quote! {
                                 #marker
-                                ::sycamore::utils::render::insert(#ctx, &__el, #comp, #initial, __marker, #multi);
+                                ::sycamore::utils::render::insert(#ctx, &__el, __comp, __initial, __marker, #multi);
                             };
                             codegen_ssr_markers.then(|| quote! {
+                                let __comp = #comp;
+                                let __initial = #initial;
                                 if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::generic_node::SsrNode>() {
                                     #ssr_markers
-                                    ::sycamore::utils::render::insert(#ctx, &__el, #comp, #initial, Some(&__end_marker), #multi);
+                                    ::sycamore::utils::render::insert(#ctx, &__el, __comp, __initial, Some(&__end_marker), #multi);
                                     #marker_or_none
                                 } else { #quoted }
-                            }).unwrap_or(quoted)
+                            }).unwrap_or(quote! {
+                                let __comp = #comp;
+                                let __initial = #initial;
+                                #quoted
+                            })
                         }
                         ViewNode::Dyn(d @ Dyn { value}) => {
                             let needs_ctx = d.needs_ctx(&self.ctx.to_string());
@@ -187,17 +178,23 @@ impl Codegen {
                             };
                             let quoted = quote! {
                                 #marker
-                                ::sycamore::utils::render::insert(#ctx, &__el, #view_quoted, #initial, __marker, #multi);
+                                ::sycamore::utils::render::insert(#ctx, &__el, __view, __initial, __marker, #multi);
                             };
-                            codegen_ssr_markers.then(|| quote!{
+                            codegen_ssr_markers.then(|| quote! {
+                                let __view = #view_quoted;
+                                let __initial = #initial;
                                 if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::generic_node::SsrNode>() {
                                     #ssr_markers
                                     ::sycamore::utils::render::insert(
-                                        #ctx, &__el, #view_quoted, #initial, Some(&__end_marker), #multi
+                                        #ctx, &__el, __view, __initial, Some(&__end_marker), #multi
                                     );
                                     #marker_or_none
                                 } else { #quoted }
-                            }).unwrap_or(quoted)
+                            }).unwrap_or(quote! {
+                                let __view = #view_quoted;
+                                let __initial = #initial;
+                                #quoted
+                            })
                         },
                         _ => unreachable!("only component and dyn node can be dynamic"),
                     });
