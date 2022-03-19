@@ -12,14 +12,14 @@ pub mod hydrate;
 pub mod render;
 
 /// If `el` is a `HydrateNode`, use `get_next_marker` to get the initial node value.
-pub fn initial_node<G: GenericNode>(el: &G) -> Option<View<G>> {
+pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
     #[cfg(feature = "experimental-hydrate")]
     {
         use crate::generic_node::HydrateNode;
         use std::any::Any;
         use std::mem::ManuallyDrop;
         use std::ptr;
-        if let Some(el) = <dyn Any>::downcast_ref::<HydrateNode>(el) {
+        if let Some(el) = <dyn Any>::downcast_ref::<HydrateNode>(_el) {
             let initial = hydrate::web::get_next_marker(&el.inner_element());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
             let initial = ManuallyDrop::new(initial);
