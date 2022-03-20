@@ -11,9 +11,9 @@ use crate::view::View;
 #[doc(hidden)]
 pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
     if G::USE_HYDRATION_CONTEXT {
-        #[cfg(feature = "experimental-hydrate")]
+        #[cfg(feature = "hydrate")]
         return crate::utils::hydrate::hydrate_component(|| untrack(f));
-        #[cfg(not(feature = "experimental-hydrate"))]
+        #[cfg(not(feature = "hydrate"))]
         return untrack(f);
     } else {
         untrack(f)

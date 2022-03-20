@@ -422,7 +422,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             );
             return;
         }
-        #[cfg(feature = "experimental-hydrate")]
+        #[cfg(feature = "hydrate")]
         if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
             use crate::utils::hydrate::web::*;
             // Get start and end markers.
@@ -478,7 +478,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             );
             return;
         }
-        #[cfg(feature = "experimental-hydrate")]
+        #[cfg(feature = "hydrate")]
         if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
             use crate::utils::hydrate::web::*;
             // Get start and end markers.

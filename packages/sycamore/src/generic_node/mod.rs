@@ -2,7 +2,7 @@
 
 #[cfg(feature = "dom")]
 pub mod dom_node;
-#[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
+#[cfg(all(feature = "dom", feature = "hydrate"))]
 pub mod hydrate_dom;
 #[cfg(feature = "ssr")]
 pub mod ssr_node;
@@ -17,7 +17,7 @@ use crate::reactive::Scope;
 
 #[cfg(feature = "dom")]
 pub use dom_node::*;
-#[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
+#[cfg(all(feature = "dom", feature = "hydrate"))]
 pub use hydrate_dom::*;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;

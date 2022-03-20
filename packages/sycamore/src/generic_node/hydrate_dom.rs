@@ -19,7 +19,7 @@ use super::SycamoreElement;
 
 /// Rendering backend for the DOM with hydration support.
 ///
-/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 #[derive(Clone)]
 pub struct HydrateNode {
     node: DomNode,
@@ -253,7 +253,7 @@ impl Html for HydrateNode {
 ///
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
-/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 pub fn hydrate(template: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
@@ -266,7 +266,7 @@ pub fn hydrate(template: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
 ///
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
-/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 pub fn hydrate_to(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
     let _ = hydrate_get_scope(view, parent);
@@ -277,7 +277,7 @@ pub fn hydrate_to(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>, parent: &No
 /// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
 /// modal is closed).
 ///
-/// _This API requires the following crate features to be activated: `experimental-hydrate`, `dom`_
+/// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
 pub fn hydrate_get_scope<'a>(
     view: impl FnOnce(Scope<'_>) -> View<HydrateNode> + 'a,

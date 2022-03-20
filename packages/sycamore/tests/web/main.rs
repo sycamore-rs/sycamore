@@ -1,7 +1,7 @@
-#[cfg(all(feature = "experimental-hydrate", feature = "builder"))]
+#[cfg(all(feature = "hydrate", feature = "builder"))]
 pub mod builder_hydrate;
 pub mod cleanup;
-#[cfg(feature = "experimental-hydrate")]
+#[cfg(feature = "hydrate")]
 pub mod hydrate;
 pub mod indexed;
 pub mod keyed;

@@ -12,7 +12,7 @@
 //! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on
 //!   `wasm32-unknown-unknown` target.
 //!
-//! - `experimental-hydrate` - Enables client-side hydration support.
+//! - `hydrate` - Enables client-side hydration support.
 //!
 //! - `suspense` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
 //!   reactive scope into an `async` function.
@@ -65,7 +65,7 @@ pub mod reactive {
 
 #[cfg(feature = "ssr")]
 pub use generic_node::render_to_string;
-#[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
+#[cfg(all(feature = "dom", feature = "hydrate"))]
 pub use generic_node::{hydrate, hydrate_get_scope, hydrate_to};
 #[cfg(feature = "dom")]
 pub use generic_node::{render, render_get_scope, render_to};
@@ -83,7 +83,7 @@ pub use sycamore_macro::*;
 pub mod prelude {
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;
-    #[cfg(all(feature = "dom", feature = "experimental-hydrate"))]
+    #[cfg(all(feature = "dom", feature = "hydrate"))]
     pub use crate::generic_node::HydrateNode;
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;

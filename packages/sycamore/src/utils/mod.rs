@@ -7,13 +7,13 @@
 use crate::generic_node::GenericNode;
 use crate::prelude::View;
 
-#[cfg(feature = "experimental-hydrate")]
+#[cfg(feature = "hydrate")]
 pub mod hydrate;
 pub mod render;
 
 /// If `el` is a `HydrateNode`, use `get_next_marker` to get the initial node value.
 pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
-    #[cfg(feature = "experimental-hydrate")]
+    #[cfg(feature = "hydrate")]
     {
         use crate::generic_node::HydrateNode;
         use std::any::Any;
@@ -30,7 +30,7 @@ pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
             None
         }
     }
-    #[cfg(not(feature = "experimental-hydrate"))]
+    #[cfg(not(feature = "hydrate"))]
     {
         None
     }
