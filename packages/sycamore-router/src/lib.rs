@@ -1,5 +1,7 @@
 //! The Sycamore Router.
 
+#![warn(missing_docs)]
+
 // Alias self to sycamore_router for proc-macros.
 extern crate self as sycamore_router;
 
@@ -46,20 +48,24 @@ pub enum Segment {
 /// Represents a capture of an URL segment or segments.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Capture<'a> {
+    /// A dynamic parameter in the URL (i.e. matches a single url segment).
     DynParam(&'a str),
+    /// A dynamic segment in the URL (i.e. matches multiple url segments).
     DynSegments(Vec<&'a str>),
 }
 
 impl<'a> Capture<'a> {
-    pub fn as_dyn_param(&self) -> Option<&&'a str> {
+    /// Attempts to cast the [`Capture`] to a [`Capture::DynParam`] with the matched url param.
+    pub fn as_dyn_param(&self) -> Option<&'a str> {
         if let Self::DynParam(v) = self {
-            Some(v)
+            Some(*v)
         } else {
             None
         }
     }
 
-    pub fn as_dyn_segments(&self) -> Option<&Vec<&'a str>> {
+    /// Attempts to cast the [`Capture`] to a [`Capture::DynSegments`] with the matched url params.
+    pub fn as_dyn_segments(&self) -> Option<&[&'a str]> {
         if let Self::DynSegments(v) = self {
             Some(v)
         } else {
@@ -75,10 +81,13 @@ pub struct RoutePath {
 }
 
 impl RoutePath {
+    /// Create a new [`RoutePath`] from a list of [`Segment`]s.
     pub fn new(segments: Vec<Segment>) -> Self {
         Self { segments }
     }
 
+    /// Attempt to match the path (url) with the current [`RoutePath`]. The path should already be
+    /// split around `/` characters.
     pub fn match_path<'a>(&self, path: &[&'a str]) -> Option<Vec<Capture<'a>>> {
         let mut paths = path.iter();
         let mut segments = self.segments.iter();
