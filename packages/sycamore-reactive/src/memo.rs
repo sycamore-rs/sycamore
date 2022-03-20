@@ -18,8 +18,8 @@ impl<'a> Scope<'a> {
     ///
     /// ```
     /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|ctx| {
-    /// let state = ctx.create_signal(0);
+    /// # create_scope_immediate(|cx| {
+    /// let state = cx.create_signal(0);
     /// let double = || *state.get() * 2;
     ///
     /// let _ = double();
@@ -37,9 +37,9 @@ impl<'a> Scope<'a> {
     /// # Example
     /// ```
     /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|ctx| {
-    /// let state = ctx.create_signal(0);
-    /// let double = ctx.create_memo(|| *state.get() * 2);
+    /// # create_scope_immediate(|cx| {
+    /// let state = cx.create_signal(0);
+    /// let double = cx.create_memo(|| *state.get() * 2);
     ///
     /// assert_eq!(*double.get(), 0);
     /// state.set(1);
@@ -61,9 +61,9 @@ impl<'a> Scope<'a> {
     /// # Example
     /// ```
     /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|ctx| {
-    /// let state = ctx.create_signal(0);
-    /// let double = ctx.create_selector(|| *state.get() * 2);
+    /// # create_scope_immediate(|cx| {
+    /// let state = cx.create_signal(0);
+    /// let double = cx.create_selector(|| *state.get() * 2);
     ///
     /// assert_eq!(*double.get(), 0);
     /// state.set(1);
@@ -132,8 +132,8 @@ impl<'a> Scope<'a> {
     ///     Decrement,
     /// }
     ///
-    /// # create_scope_immediate(|ctx| {
-    /// let (state, dispatch) = ctx.create_reducer(0, |state, msg: Msg| match msg {
+    /// # create_scope_immediate(|cx| {
+    /// let (state, dispatch) = cx.create_reducer(0, |state, msg: Msg| match msg {
     ///     Msg::Increment => *state + 1,
     ///     Msg::Decrement => *state - 1,
     /// });
@@ -166,9 +166,9 @@ mod tests {
 
     #[test]
     fn memo() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
-            let double = ctx.create_memo(|| *state.get() * 2);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
+            let double = cx.create_memo(|| *state.get() * 2);
 
             assert_eq!(*double.get(), 0);
             state.set(1);
@@ -181,11 +181,11 @@ mod tests {
     /// Make sure value is memoized rather than executed on demand.
     #[test]
     fn memo_only_run_once() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
 
-            let counter = ctx.create_signal(0);
-            let double = ctx.create_memo(|| {
+            let counter = cx.create_signal(0);
+            let double = cx.create_memo(|| {
                 counter.set(*counter.get_untracked() + 1);
                 *state.get() * 2
             });
@@ -200,10 +200,10 @@ mod tests {
 
     #[test]
     fn dependency_on_memo() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
-            let double = ctx.create_memo(|| *state.get() * 2);
-            let quadruple = ctx.create_memo(|| *double.get() * 2);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
+            let double = cx.create_memo(|| *state.get() * 2);
+            let quadruple = cx.create_memo(|| *double.get() * 2);
 
             assert_eq!(*quadruple.get(), 0);
             state.set(1);
@@ -213,9 +213,9 @@ mod tests {
 
     #[test]
     fn untracked_memo() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(1);
-            let double = ctx.create_memo(|| *state.get_untracked() * 2);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(1);
+            let double = cx.create_memo(|| *state.get_untracked() * 2);
 
             assert_eq!(*double.get(), 2);
             state.set(2);
@@ -227,12 +227,12 @@ mod tests {
 
     #[test]
     fn selector() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
-            let double = ctx.create_selector(|| *state.get() * 2);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
+            let double = cx.create_selector(|| *state.get() * 2);
 
-            let counter = ctx.create_signal(0);
-            ctx.create_effect(|| {
+            let counter = cx.create_signal(0);
+            cx.create_effect(|| {
                 counter.set(*counter.get_untracked() + 1);
 
                 double.track();
@@ -252,13 +252,13 @@ mod tests {
 
     #[test]
     fn reducer() {
-        create_scope_immediate(|ctx| {
+        create_scope_immediate(|cx| {
             enum Msg {
                 Increment,
                 Decrement,
             }
 
-            let (state, dispatch) = ctx.create_reducer(0, |state, msg: Msg| match msg {
+            let (state, dispatch) = cx.create_reducer(0, |state, msg: Msg| match msg {
                 Msg::Increment => *state + 1,
                 Msg::Decrement => *state - 1,
             });
@@ -276,17 +276,17 @@ mod tests {
 
     #[test]
     fn memo_reducer() {
-        create_scope_immediate(|ctx| {
+        create_scope_immediate(|cx| {
             enum Msg {
                 Increment,
                 Decrement,
             }
 
-            let (state, dispatch) = ctx.create_reducer(0, |state, msg: Msg| match msg {
+            let (state, dispatch) = cx.create_reducer(0, |state, msg: Msg| match msg {
                 Msg::Increment => *state + 1,
                 Msg::Decrement => *state - 1,
             });
-            let doubled = ctx.create_memo(|| *state.get() * 2);
+            let doubled = cx.create_memo(|| *state.get() * 2);
 
             assert_eq!(*doubled.get(), 0);
             dispatch(Msg::Increment);

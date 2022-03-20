@@ -108,19 +108,19 @@ mod tests {
 
     #[test]
     fn context() {
-        create_scope_immediate(|ctx| {
-            ctx.provide_context(42i32);
-            let x = ctx.use_context::<i32>();
+        create_scope_immediate(|cx| {
+            cx.provide_context(42i32);
+            let x = cx.use_context::<i32>();
             assert_eq!(*x, 42);
         });
     }
 
     #[test]
     fn context_in_nested_scope() {
-        create_scope_immediate(|ctx| {
-            ctx.provide_context(42i32);
-            let _ = ctx.create_child_scope(|ctx| {
-                let x = ctx.use_context::<i32>();
+        create_scope_immediate(|cx| {
+            cx.provide_context(42i32);
+            let _ = cx.create_child_scope(|cx| {
+                let x = cx.use_context::<i32>();
                 assert_eq!(*x, 42);
             });
         });
@@ -131,9 +131,9 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     #[should_panic = "existing context with type exists already"]
     fn existing_context_with_same_type_should_panic() {
-        create_scope_immediate(|ctx| {
-            ctx.provide_context(0i32);
-            ctx.provide_context(0i32);
+        create_scope_immediate(|cx| {
+            cx.provide_context(0i32);
+            cx.provide_context(0i32);
             //                  ^^^^ -> has type `i32` and therefore should panic
         });
     }

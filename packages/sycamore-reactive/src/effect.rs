@@ -59,10 +59,10 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
     /// # Example
     /// ```
     /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|ctx| {
-    /// let state = ctx.create_signal(0);
+    /// # create_scope_immediate(|cx| {
+    /// let state = cx.create_signal(0);
     ///
-    /// ctx.create_effect(|| {
+    /// cx.create_effect(|| {
     ///     println!("State changed. New state value = {}", state.get());
     /// }); // Prints "State changed. New state value = 0"
     ///
@@ -150,10 +150,10 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
     /// # Example
     /// ```
     /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|ctx| {
-    /// ctx.create_effect_scoped(|ctx| {
-    ///     // Use the scoped ctx inside here.
-    ///     let _nested_signal = ctx.create_signal(0);
+    /// # create_scope_immediate(|cx| {
+    /// cx.create_effect_scoped(|cx| {
+    ///     // Use the scoped cx inside here.
+    ///     let _nested_signal = cx.create_signal(0);
     ///     // _nested_signal cannot escape out of the effect closure.
     /// });
     /// # });
@@ -175,10 +175,10 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
             }
             // Create a new nested scope and save the disposer.
             let new_disposer: Option<Box<ScopeDisposer<'a>>> =
-                Some(Box::new(self.create_child_scope(|ctx| {
+                Some(Box::new(self.create_child_scope(|cx| {
                     // SAFETY: f takes the same parameter as the argument to
                     // self.create_child_scope(_).
-                    f(unsafe { std::mem::transmute(ctx) });
+                    f(unsafe { std::mem::transmute(cx) });
                 })));
             // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
             // effect which is necessarily within the lifetime of self (the Scope).
@@ -196,9 +196,9 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
 ///
 /// ```
 /// # use sycamore_reactive::*;
-/// # create_scope_immediate(|ctx| {
-/// let state = ctx.create_signal(1);
-/// let double = ctx.create_memo(|| untrack(|| *state.get() * 2));
+/// # create_scope_immediate(|cx| {
+/// let state = cx.create_signal(1);
+/// let double = cx.create_memo(|| untrack(|| *state.get() * 2));
 /// //                              ^^^^^^^
 /// assert_eq!(*double.get(), 2);
 ///
@@ -222,12 +222,12 @@ mod tests {
 
     #[test]
     fn effect() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
 
-            let double = ctx.create_signal(-1);
+            let double = cx.create_signal(-1);
 
-            ctx.create_effect(|| {
+            cx.create_effect(|| {
                 double.set(*state.get() * 2);
             });
             assert_eq!(*double.get(), 0); // calling create_effect should call the effect at least once
@@ -241,12 +241,12 @@ mod tests {
 
     #[test]
     fn effect_with_explicit_dependencies() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
 
-            let double = ctx.create_signal(-1);
+            let double = cx.create_signal(-1);
 
-            ctx.create_effect(on([state], || {
+            cx.create_effect(on([state], || {
                 double.set(*state.get() * 2);
             }));
             assert_eq!(*double.get(), 0); // calling create_effect should call the effect at least once
@@ -260,9 +260,9 @@ mod tests {
 
     #[test]
     fn effect_cannot_create_infinite_loop() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
-            ctx.create_effect(|| {
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
+            cx.create_effect(|| {
                 state.track();
                 state.set(0);
             });
@@ -272,11 +272,11 @@ mod tests {
 
     #[test]
     fn effect_should_only_subscribe_once_to_same_signal() {
-        create_scope_immediate(|ctx| {
-            let state = ctx.create_signal(0);
+        create_scope_immediate(|cx| {
+            let state = cx.create_signal(0);
 
-            let counter = ctx.create_signal(0);
-            ctx.create_effect(|| {
+            let counter = cx.create_signal(0);
+            cx.create_effect(|| {
                 counter.set(*counter.get_untracked() + 1);
 
                 // call state.track() twice but should subscribe once
@@ -293,14 +293,14 @@ mod tests {
 
     #[test]
     fn effect_should_recreate_dependencies_each_time() {
-        create_scope_immediate(|ctx| {
-            let condition = ctx.create_signal(true);
+        create_scope_immediate(|cx| {
+            let condition = cx.create_signal(true);
 
-            let state1 = ctx.create_signal(0);
-            let state2 = ctx.create_signal(1);
+            let state1 = cx.create_signal(0);
+            let state2 = cx.create_signal(1);
 
-            let counter = ctx.create_signal(0);
-            ctx.create_effect(|| {
+            let counter = cx.create_signal(0);
+            cx.create_effect(|| {
                 counter.set(*counter.get_untracked() + 1);
 
                 if *condition.get() {
@@ -331,17 +331,17 @@ mod tests {
 
     #[test]
     fn outer_effects_run_first() {
-        create_scope_immediate(|ctx| {
-            let trigger = ctx.create_signal(());
+        create_scope_immediate(|cx| {
+            let trigger = cx.create_signal(());
 
-            let outer_counter = ctx.create_signal(0);
-            let inner_counter = ctx.create_signal(0);
+            let outer_counter = cx.create_signal(0);
+            let inner_counter = cx.create_signal(0);
 
-            ctx.create_effect_scoped(|ctx| {
+            cx.create_effect_scoped(|cx| {
                 trigger.track();
                 outer_counter.set(*outer_counter.get_untracked() + 1);
 
-                ctx.create_effect(|| {
+                cx.create_effect(|| {
                     trigger.track();
                     inner_counter.set(*inner_counter.get_untracked() + 1);
                 });
@@ -359,13 +359,13 @@ mod tests {
 
     #[test]
     fn destroy_effects_on_scope_dispose() {
-        create_scope_immediate(|ctx| {
-            let counter = ctx.create_signal(0);
+        create_scope_immediate(|cx| {
+            let counter = cx.create_signal(0);
 
-            let trigger = ctx.create_signal(());
+            let trigger = cx.create_signal(());
 
-            let disposer = ctx.create_child_scope(|ctx| {
-                ctx.create_effect(|| {
+            let disposer = cx.create_child_scope(|cx| {
+                cx.create_effect(|| {
                     trigger.track();
                     counter.set(*counter.get_untracked() + 1);
                 });
@@ -386,35 +386,35 @@ mod tests {
 
     #[test]
     fn effect_preserves_scope_hierarchy() {
-        create_scope_immediate(|ctx| {
-            let trigger = ctx.create_signal(());
-            let parent: &Signal<Option<*const ()>> = ctx.create_signal(None);
-            ctx.create_effect_scoped(|ctx| {
+        create_scope_immediate(|cx| {
+            let trigger = cx.create_signal(());
+            let parent: &Signal<Option<*const ()>> = cx.create_signal(None);
+            cx.create_effect_scoped(|cx| {
                 trigger.track();
-                let p = ctx.raw.parent.unwrap();
+                let p = cx.raw.parent.unwrap();
                 parent.set(Some(p as *const ()));
             });
             assert_eq!(
                 parent.get().unwrap(),
-                ctx.raw as *const _ as *const (),
-                "the parent scope of the effect should be `ctx`"
+                cx.raw as *const _ as *const (),
+                "the parent scope of the effect should be `cx`"
             );
             trigger.set(());
             assert_eq!(
                 parent.get().unwrap(),
-                ctx.raw as *const _ as *const (),
-                "the parent should still be `ctx` after effect is re-executed"
+                cx.raw as *const _ as *const (),
+                "the parent should still be `cx` after effect is re-executed"
             );
         });
     }
 
     #[test]
     fn effect_scoped_subscribing_to_own_signal() {
-        create_scope_immediate(|ctx| {
-            let trigger = ctx.create_signal(());
-            ctx.create_effect_scoped(|ctx| {
+        create_scope_immediate(|cx| {
+            let trigger = cx.create_signal(());
+            cx.create_effect_scoped(|cx| {
                 trigger.track();
-                let signal = ctx.create_signal(());
+                let signal = cx.create_signal(());
                 // Track own signal:
                 signal.track();
             });
@@ -424,10 +424,10 @@ mod tests {
 
     #[test]
     fn effect_do_not_subscribe_to_destroyed_signal() {
-        create_scope_immediate(|ctx| {
-            let trigger = ctx.create_signal(());
+        create_scope_immediate(|cx| {
+            let trigger = cx.create_signal(());
             let mut signal = Some(create_rc_signal(()));
-            ctx.create_effect(move || {
+            cx.create_effect(move || {
                 trigger.track();
                 if let Some(signal) = signal.take() {
                     signal.track();

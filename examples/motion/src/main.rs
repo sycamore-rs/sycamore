@@ -5,12 +5,12 @@ use sycamore::motion::ScopeMotionExt;
 use sycamore::prelude::*;
 
 #[component]
-fn CreateRAF<G: Html>(ctx: Scope) -> View<G> {
-    let state = ctx.create_signal(0i32);
-    let (_running, start, stop) = ctx.create_raf(|| {
+fn CreateRAF<G: Html>(cx: Scope) -> View<G> {
+    let state = cx.create_signal(0i32);
+    let (_running, start, stop) = cx.create_raf(|| {
         state.set(*state.get() + 1);
     });
-    view! { ctx,
+    view! { cx,
         div {
             p { (state.get()) " frames" }
             button(on:click=|_| start()) { "Start" }
@@ -20,11 +20,11 @@ fn CreateRAF<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-fn Tweened<G: Html>(ctx: Scope) -> View<G> {
+fn Tweened<G: Html>(cx: Scope) -> View<G> {
     let progress =
-        ctx.create_tweened_signal([0.0f32, 1.0], Duration::from_millis(250), easing::quad_out);
+        cx.create_tweened_signal([0.0f32, 1.0], Duration::from_millis(250), easing::quad_out);
 
-    view! { ctx,
+    view! { cx,
         div {
             style {
                 r#"
@@ -47,8 +47,8 @@ fn Tweened<G: Html>(ctx: Scope) -> View<G> {
 }
 
 fn main() {
-    sycamore::render(|ctx| {
-        view! { ctx,
+    sycamore::render(|cx| {
+        view! { cx,
             p { "Motion demo" }
             p { "request_animation_frame" }
             CreateRAF {}

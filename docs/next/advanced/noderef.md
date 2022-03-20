@@ -7,9 +7,9 @@ A `NodeRef` can be created by using `create_node_ref`. This can be assigned, in 
 using the `ref` property in the `view!` macro.
 
 ```rust
-let node_ref = ctx.create_node_ref();
+let node_ref = cx.create_node_ref();
 
-view! { ctx,
+view! { cx,
     p(ref=node_ref) { "Hello World!" }
 }
 ```

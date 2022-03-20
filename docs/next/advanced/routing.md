@@ -190,17 +190,17 @@ To display content based on the route that matches, we can use a `Router`.
 view! {
     Router {
         integration: HistoryIntegration::new(),
-        view: |ctx, route: &ReadSignal<AppRoutes>| {
+        view: |cx, route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
-                        AppRoutes::Index => view! { ctx,
+                        AppRoutes::Index => view! { cx,
                             "This is the index page"
                         },
-                        AppRoutes::About => view! { ctx,
+                        AppRoutes::About => view! { cx,
                             "About this website"
                         },
-                        AppRoutes::NotFound => view! { ctx,
+                        AppRoutes::NotFound => view! { cx,
                             "404 Not Found"
                         },
                     })
@@ -238,17 +238,17 @@ let route = AppRoutes::match_path(path);
 view! {
     StaticRouter {
         route: route,
-        view: |ctx, route: &ReadSignal<AppRoutes>| {
+        view: |cx, route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
-                        AppRoutes::Index => view! { ctx,
+                        AppRoutes::Index => view! { cx,
                             "This is the index page"
                         },
-                        AppRoutes::About => view! { ctx,
+                        AppRoutes::About => view! { cx,
                             "About this website"
                         },
-                        AppRoutes::NotFound => view! { ctx,
+                        AppRoutes::NotFound => view! { cx,
                             "404 Not Found"
                         },
                     })

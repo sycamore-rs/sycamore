@@ -63,13 +63,13 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
     }
 }
 
-fn switch<'a, G: Html>(ctx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
+fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
     let cached_sidebar_data =
-        ctx.create_ref(create_rc_signal(None::<(Option<String>, SidebarData)>));
-    ctx.provide_context_ref(cached_sidebar_data);
+        cx.create_ref(create_rc_signal(None::<(Option<String>, SidebarData)>));
+    cx.provide_context_ref(cached_sidebar_data);
 
     let fetch_docs_data = move |url| {
-        let data = ctx.create_resource(docs_preload(url));
+        let data = cx.create_resource(docs_preload(url));
         if cached_sidebar_data.get().is_none()
             || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None
         {
@@ -81,18 +81,18 @@ fn switch<'a, G: Html>(ctx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G>
         }
         data
     };
-    let view = ctx.create_memo(on([route], move || match route.get().as_ref() {
-        Routes::Index => view! { ctx,
+    let view = cx.create_memo(on([route], move || match route.get().as_ref() {
+        Routes::Index => view! { cx,
             div(class="container mx-auto") {
                 index::Index {}
             }
         },
         Routes::Docs(a, b) => {
             let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
-            view! { ctx,
+            view! { cx,
                 (if let Some(data) = data.get().as_ref() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
-                        view! { ctx,
+                        view! { cx,
                             content::Content {
                                 data: data.clone(),
                                 sidebar: (
@@ -102,21 +102,21 @@ fn switch<'a, G: Html>(ctx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G>
                             }
                         }
                     } else {
-                        view! { ctx, }
+                        view! { cx, }
                     }
                 } else {
-                    view! { ctx, }
+                    view! { cx, }
                 })
             }
         }
         Routes::VersionedDocs(version, a, b) => {
             let version = version.clone();
             let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
-            view! { ctx,
+            view! { cx,
                 (if let Some(data) = data.get().as_ref() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
                         let version = version.clone();
-                        view! { ctx,
+                        view! { cx,
                             content::Content {
                                 data: data.clone(),
                                 sidebar: (
@@ -126,39 +126,39 @@ fn switch<'a, G: Html>(ctx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G>
                             }
                         }
                     } else {
-                        view! { ctx, }
+                        view! { cx, }
                     }
                 } else {
-                    view! { ctx, }
+                    view! { cx, }
                 })
             }
         }
-        Routes::NewsIndex => view! { ctx,
+        Routes::NewsIndex => view! { cx,
             news_index::NewsIndex {}
         },
         Routes::Post(name) => {
-            let data = ctx.create_resource(docs_preload(format!("/static/posts/{}.json", name)));
-            view! { ctx,
+            let data = cx.create_resource(docs_preload(format!("/static/posts/{}.json", name)));
+            view! { cx,
                 (if let Some(data) = data.get().as_ref() {
-                    view! { ctx,
+                    view! { cx,
                         content::Content {
                             data: data.clone(),
                         }
                     }
                 } else {
-                    view! { ctx, }
+                    view! { cx, }
                 })
             }
         }
-        Routes::Versions => view! { ctx,
+        Routes::Versions => view! { cx,
             versions::Versions {}
         },
-        Routes::NotFound => view! { ctx,
+        Routes::NotFound => view! { cx,
             "404 Not Found"
         },
     }));
 
-    view! { ctx,
+    view! { cx,
         div(class="font-body pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors"
         ) {
@@ -169,7 +169,7 @@ fn switch<'a, G: Html>(ctx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G>
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
+fn App<G: Html>(cx: Scope) -> View<G> {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
     // Get dark mode from media query.
     let dark_mode_mq = web_sys::window()
@@ -185,10 +185,10 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
         dark_mode_mq
     };
     let dark_mode = DarkMode(create_rc_signal(dark_mode));
-    ctx.provide_context(dark_mode);
-    let DarkMode(dark_mode) = ctx.use_context::<DarkMode>();
+    cx.provide_context(dark_mode);
+    let DarkMode(dark_mode) = cx.use_context::<DarkMode>();
 
-    ctx.create_effect(move || {
+    cx.create_effect(move || {
         if let Some(local_storage) = &local_storage {
             local_storage
                 .set_item("dark_mode", &dark_mode.get().to_string())
@@ -196,12 +196,12 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
         }
     });
 
-    view! { ctx,
+    view! { cx,
         main(class=if *dark_mode.get() { "dark" } else { "" }) {
             (if *dark_mode.get() {
-                view! { ctx, link(rel="stylesheet", href="/static/dark.css") }
+                view! { cx, link(rel="stylesheet", href="/static/dark.css") }
             } else {
-                view! { ctx, link(rel="stylesheet", href="/static/light.css") }
+                view! { cx, link(rel="stylesheet", href="/static/light.css") }
             })
             Router {
                 integration: HistoryIntegration::new(),
@@ -218,7 +218,7 @@ fn main() {
         console_log::init_with_level(log::Level::Debug).unwrap();
     }
 
-    sycamore::render(|ctx| {
-        view! { ctx, App {} }
+    sycamore::render(|cx| {
+        view! { cx, App {} }
     });
 }

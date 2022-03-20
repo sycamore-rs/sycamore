@@ -59,10 +59,10 @@ impl<'a> Scope<'a> {
                     let new_disposer = self.create_child_scope({
                         let tmp = Rc::clone(&tmp);
                         let map_fn = Rc::clone(&map_fn);
-                        move |ctx| {
+                        move |cx| {
                             // SAFETY: f takes the same parameter as the argument to
                             // self.create_child_scope(_).
-                            *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(ctx) }, new_item));
+                            *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                         }
                     });
                     mapped.push(tmp.borrow().clone().unwrap());
@@ -167,10 +167,10 @@ impl<'a> Scope<'a> {
                             let tmp = Rc::clone(&tmp);
                             let map_fn = Rc::clone(&map_fn);
                             let new_item = new_items[j].clone();
-                            move |ctx| {
+                            move |cx| {
                                 // SAFETY: f takes the same parameter as the argument to
                                 // self.create_child_scope(_).
-                                *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(ctx) }, new_item));
+                                *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                             }
                         });
 
@@ -265,7 +265,7 @@ impl<'a> Scope<'a> {
                     if item.is_none() || eqs {
                         let new_disposer = self.create_child_scope({
                             let map_fn = Rc::clone(&map_fn);
-                            move |ctx| unsafe {
+                            move |cx| unsafe {
                                 // SAFETY: callback is called immediately in
                                 // self.create_child_scope.
                                 // ptr is still accessible after self.create_child_scope and
@@ -273,7 +273,7 @@ impl<'a> Scope<'a> {
 
                                 // SAFETY: f takes the same parameter as the argument to
                                 // self.create_child_scope(_).
-                                (*ptr).write(map_fn(mem::transmute(ctx), new_item));
+                                (*ptr).write(map_fn(mem::transmute(cx), new_item));
                             }
                         });
                         if item.is_none() {
@@ -325,9 +325,9 @@ mod tests {
 
     #[test]
     fn keyed() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_keyed(a, |_, x| x * 2, |x| *x);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
+            let mapped = cx.map_keyed(a, |_, x| x * 2, |x| *x);
             assert_eq!(*mapped.get(), vec![2, 4, 6]);
 
             a.set(vec![1, 2, 3, 4]);
@@ -340,9 +340,9 @@ mod tests {
 
     #[test]
     fn keyed_recompute_everything() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_keyed(a, |_, x| x * 2, |x| *x);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
+            let mapped = cx.map_keyed(a, |_, x| x * 2, |x| *x);
             assert_eq!(*mapped.get(), vec![2, 4, 6]);
 
             a.set(vec![4, 5, 6]);
@@ -353,9 +353,9 @@ mod tests {
     /// Test fast path for clearing Vec.
     #[test]
     fn keyed_clear() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_keyed(a, |_, x| x * 2, |x| *x);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
+            let mapped = cx.map_keyed(a, |_, x| x * 2, |x| *x);
 
             a.set(Vec::new());
             assert_eq!(*mapped.get(), Vec::<i32>::new());
@@ -365,10 +365,10 @@ mod tests {
     /// Test that using [`Scope::map_keyed`] will reuse previous computations.
     #[test]
     fn keyed_use_previous_computation() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let mapped = ctx.map_keyed(
+            let mapped = cx.map_keyed(
                 a,
                 {
                     let counter = Rc::clone(&counter);
@@ -394,16 +394,16 @@ mod tests {
 
     #[test]
     fn keyed_call_cleanup_on_remove() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = ctx.map_keyed(
+            let _mapped = cx.map_keyed(
                 a,
                 {
                     let counter = Rc::clone(&counter);
-                    move |ctx, _| {
+                    move |cx, _| {
                         let counter = Rc::clone(&counter);
-                        ctx.on_cleanup(move || {
+                        cx.on_cleanup(move || {
                             counter.set(counter.get() + 1);
                         });
                     }
@@ -425,16 +425,16 @@ mod tests {
 
     #[test]
     fn keyed_call_cleanup_on_remove_all() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = ctx.map_keyed(
+            let _mapped = cx.map_keyed(
                 a,
                 {
                     let counter = Rc::clone(&counter);
-                    move |ctx, _| {
+                    move |cx, _| {
                         let counter = Rc::clone(&counter);
-                        ctx.on_cleanup(move || {
+                        cx.on_cleanup(move || {
                             counter.set(counter.get() + 1);
                         })
                     }
@@ -450,9 +450,9 @@ mod tests {
 
     #[test]
     fn indexed() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_indexed(a, |_, x| x * 2);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
+            let mapped = cx.map_indexed(a, |_, x| x * 2);
             assert_eq!(*mapped.get(), vec![2, 4, 6]);
 
             a.set(vec![1, 2, 3, 4]);
@@ -466,9 +466,9 @@ mod tests {
     /// Test fast path for clearing Vec.
     #[test]
     fn indexed_clear() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_indexed(a, |_, x| x * 2);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
+            let mapped = cx.map_indexed(a, |_, x| x * 2);
 
             a.set(Vec::new());
             assert_eq!(*mapped.get(), Vec::<i32>::new());
@@ -478,12 +478,12 @@ mod tests {
     /// Test that result of mapped function can be listened to.
     #[test]
     fn indexed_react() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
-            let mapped = ctx.map_indexed(a, |_, x| x * 2);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
+            let mapped = cx.map_indexed(a, |_, x| x * 2);
 
-            let counter = ctx.create_signal(0);
-            ctx.create_effect(|| {
+            let counter = cx.create_signal(0);
+            cx.create_effect(|| {
                 counter.set(*counter.get_untracked() + 1);
                 mapped.track();
             });
@@ -497,10 +497,10 @@ mod tests {
     /// Test that using [`map_indexed`] will reuse previous computations.
     #[test]
     fn indexed_use_previous_computation() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let mapped = ctx.map_indexed(a, {
+            let mapped = cx.map_indexed(a, {
                 let counter = Rc::clone(&counter);
                 move |_, _| {
                     counter.set(counter.get() + 1);
@@ -522,14 +522,14 @@ mod tests {
 
     #[test]
     fn indexed_call_cleanup_on_remove() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = ctx.map_indexed(a, {
+            let _mapped = cx.map_indexed(a, {
                 let counter = Rc::clone(&counter);
-                move |ctx, _| {
+                move |cx, _| {
                     let counter = Rc::clone(&counter);
-                    ctx.on_cleanup(move || {
+                    cx.on_cleanup(move || {
                         counter.set(counter.get() + 1);
                     });
                 }
@@ -549,14 +549,14 @@ mod tests {
 
     #[test]
     fn indexed_call_cleanup_on_remove_all() {
-        create_scope_immediate(|ctx| {
-            let a = ctx.create_signal(vec![1, 2, 3]);
+        create_scope_immediate(|cx| {
+            let a = cx.create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = ctx.map_indexed(a, {
+            let _mapped = cx.map_indexed(a, {
                 let counter = Rc::clone(&counter);
-                move |ctx, _| {
+                move |cx, _| {
                     let counter = Rc::clone(&counter);
-                    ctx.on_cleanup(move || {
+                    cx.on_cleanup(move || {
                         counter.set(counter.get() + 1);
                     })
                 }

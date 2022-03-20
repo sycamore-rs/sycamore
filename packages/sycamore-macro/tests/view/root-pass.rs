@@ -1,17 +1,17 @@
 use sycamore::prelude::*;
 
 fn compile_pass<G: GenericNode>() {
-    create_scope_immediate(|ctx| {
-        let _: View<G> = view! { ctx, "Raw text nodes!" };
+    create_scope_immediate(|cx| {
+        let _: View<G> = view! { cx, "Raw text nodes!" };
     
-        let _: View<G> = view! { ctx,
+        let _: View<G> = view! { cx,
             p { "First" }
             p { "Second" }
             "Third"
         };
     
         let spliced = 123;
-        let _: View<G> = view! { ctx, (spliced) };
+        let _: View<G> = view! { cx, (spliced) };
     });
 }
 

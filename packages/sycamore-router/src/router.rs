@@ -175,7 +175,7 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<'a, G: Html, R, F, I>(ctx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
+pub fn Router<'a, G: Html, R, F, I>(cx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
 where
     R: Route + 'a,
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
@@ -202,7 +202,7 @@ where
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    ctx.on_cleanup(|| PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
+    cx.on_cleanup(|| PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
 
     // Listen to popstate event.
     integration.on_popstate(Box::new({
@@ -214,11 +214,11 @@ where
             pathname.set(path.to_string());
         }
     }));
-    let route_signal = ctx.create_memo(move || R::match_path(&pathname.get()));
+    let route_signal = cx.create_memo(move || R::match_path(&pathname.get()));
     // Delegate click events from child <a> tags.
-    let view = view(ctx, route_signal);
+    let view = view(cx, route_signal);
     if let Some(node) = view.as_node() {
-        node.event(ctx, "click", integration.click_handler());
+        node.event(cx, "click", integration.click_handler());
     } else {
         // TODO: support fragments and dynamic nodes
         unimplemented!("support fragments and dynamic nodes for Router")
@@ -262,7 +262,7 @@ where
 /// the route preload to finish loading.
 #[component]
 pub fn StaticRouter<'a, G: Html, R, F>(
-    ctx: Scope<'a>,
+    cx: Scope<'a>,
     props: StaticRouterProps<'a, R, F, G>,
 ) -> View<G>
 where
@@ -275,7 +275,7 @@ where
         _phantom,
     } = props;
 
-    view(ctx, ctx.create_signal(route))
+    view(cx, cx.create_signal(route))
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -358,7 +358,7 @@ mod tests {
         }
 
         #[component]
-        fn Comp<G: Html>(ctx: Scope, path: String) -> View<G> {
+        fn Comp<G: Html>(cx: Scope, path: String) -> View<G> {
             let route = Routes::match_route(
                 &path
                     .split('/')
@@ -366,18 +366,18 @@ mod tests {
                     .collect::<Vec<_>>(),
             );
 
-            view! { ctx,
+            view! { cx,
                 StaticRouter {
                     route: route,
-                    view: |ctx, route: &ReadSignal<Routes>| {
+                    view: |cx, route: &ReadSignal<Routes>| {
                         match route.get().as_ref() {
-                            Routes::Home => view! { ctx,
+                            Routes::Home => view! { cx,
                                 "Home"
                             },
-                            Routes::About => view! { ctx,
+                            Routes::About => view! { cx,
                                 "About"
                             },
-                            Routes::NotFound => view! { ctx,
+                            Routes::NotFound => view! { cx,
                                 "Not Found"
                             }
                         }
@@ -387,17 +387,17 @@ mod tests {
         }
 
         assert_eq!(
-            sycamore::render_to_string(|ctx| view! { ctx, Comp("/".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp("/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|ctx| view! { ctx, Comp("/about".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp("/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|ctx| view! { ctx, Comp("/404".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp("/404".to_string()) }),
             "Not Found"
         );
     }

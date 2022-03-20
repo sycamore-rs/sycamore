@@ -4,14 +4,14 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn append() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -39,14 +39,14 @@ fn append() {
 
 #[wasm_bindgen_test]
 fn swap_rows() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -77,14 +77,14 @@ fn swap_rows() {
 
 #[wasm_bindgen_test]
 fn update_row() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -104,14 +104,14 @@ fn update_row() {
 
 #[wasm_bindgen_test]
 fn trigger_with_same_data() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -131,14 +131,14 @@ fn trigger_with_same_data() {
 
 #[wasm_bindgen_test]
 fn delete_row() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -162,14 +162,14 @@ fn delete_row() {
 
 #[wasm_bindgen_test]
 fn delete_row_from_start() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -189,14 +189,14 @@ fn delete_row_from_start() {
 
 #[wasm_bindgen_test]
 fn delete_row_from_end() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -216,14 +216,14 @@ fn delete_row_from_end() {
 
 #[wasm_bindgen_test]
 fn clear() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -243,14 +243,14 @@ fn clear() {
 
 #[wasm_bindgen_test]
 fn insert_front() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |item| *item,
@@ -274,19 +274,19 @@ fn insert_front() {
 
 #[wasm_bindgen_test]
 fn nested_reactivity() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(
             vec![1, 2, 3]
                 .into_iter()
-                .map(|x| ctx.create_signal(x))
+                .map(|x| cx.create_signal(x))
                 .collect(),
         );
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item.get()) }
                     },
                     key: |item| *item.get(),
@@ -304,7 +304,7 @@ fn nested_reactivity() {
 
         count.set({
             let mut tmp = (*count.get()).clone();
-            tmp.push(ctx.create_signal(5));
+            tmp.push(cx.create_signal(5));
             tmp
         });
         assert_eq!(p.text_content().unwrap(), "4235");
@@ -313,14 +313,14 @@ fn nested_reactivity() {
 
 #[wasm_bindgen_test]
 fn fragment_template() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             div {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         span { "The value is: " }
                         strong { (item) }
                     },
@@ -365,13 +365,13 @@ fn fragment_template() {
 
 #[wasm_bindgen_test]
 fn template_top_level() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             Keyed {
                 iterable: count,
-                view: |ctx, item| view! { ctx,
+                view: |cx, item| view! { cx,
                     li { (item) }
                 },
                 key: |item| *item,
@@ -401,14 +401,14 @@ fn template_top_level() {
 
 #[wasm_bindgen_test]
 fn template_dyn_top_level() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = cx.create_signal(vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             div {
                 Keyed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         (item)
                     },
                     key: |item| *item,
@@ -439,23 +439,23 @@ fn template_dyn_top_level() {
 
 #[wasm_bindgen_test]
 fn template_with_other_nodes_at_same_level() {
-    create_scope_immediate(|ctx| {
-        let vec1 = ctx.create_signal(vec![1, 2]);
-        let vec2 = ctx.create_signal(vec![4, 5]);
+    create_scope_immediate(|cx| {
+        let vec1 = cx.create_signal(vec![1, 2]);
+        let vec2 = cx.create_signal(vec![4, 5]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 li { "before" }
                 Keyed {
                     iterable: vec1,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |x| *x
                 }
                 Keyed {
                     iterable: vec2,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                     key: |x| *x

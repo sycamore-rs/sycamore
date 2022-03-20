@@ -5,23 +5,23 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
             #[component]
-            fn App<G: Html>(ctx: Scope) -> View<G> {
-                view! { ctx,
+            fn App<G: Html>(cx: Scope) -> View<G> {
+                view! { cx,
                     div(class="my-container") {
                         p { "Hello World!" }
                     }
                 }
             }
 
-            let _ssr = sycamore::render_to_string(|ctx| view! { ctx, App() });
+            let _ssr = sycamore::render_to_string(|cx| view! { cx, App() });
         })
     });
 
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
             #[component]
-            fn ListItem<G: Html>(ctx: Scope, value: i32) -> View<G> {
-                view! { ctx,
+            fn ListItem<G: Html>(cx: Scope, value: i32) -> View<G> {
+                view! { cx,
                     p {
                         span(class="placeholder")
                         i { (value) }
@@ -33,14 +33,14 @@ pub fn bench(c: &mut Criterion) {
             }
 
             #[component]
-            fn App<G: Html>(ctx: Scope) -> View<G> {
-                let values = ctx.create_signal((0i32..=10).collect::<Vec<_>>());
+            fn App<G: Html>(cx: Scope) -> View<G> {
+                let values = cx.create_signal((0i32..=10).collect::<Vec<_>>());
 
-                view! { ctx,
+                view! { cx,
                     div(class="my-container") {
                         Indexed {
                             iterable: values,
-                            view: |ctx, x| view! { ctx,
+                            view: |cx, x| view! { cx,
                                 ListItem(x)
                             }
                         }
@@ -48,7 +48,7 @@ pub fn bench(c: &mut Criterion) {
                 }
             }
 
-            let _ssr = sycamore::render_to_string(|ctx| view! { ctx, App {} });
+            let _ssr = sycamore::render_to_string(|cx| view! { cx, App {} });
         })
     });
 }

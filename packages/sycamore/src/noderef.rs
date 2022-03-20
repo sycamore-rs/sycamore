@@ -126,9 +126,9 @@ mod tests {
 
     #[test]
     fn noderef_with_ssrnode() {
-        create_scope_immediate(|ctx| {
-            let noderef = ctx.create_node_ref();
-            let _: View<SsrNode> = view! { ctx, div(ref=noderef) };
+        create_scope_immediate(|cx| {
+            let noderef = cx.create_node_ref();
+            let _: View<SsrNode> = view! { cx, div(ref=noderef) };
             assert!(noderef.try_get::<SsrNode>().is_some());
         });
     }

@@ -7,8 +7,8 @@ use sycamore::builder::prelude::*;
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
-    let name = ctx.create_signal(String::new());
+fn App<G: Html>(cx: Scope) -> View<G> {
+    let name = cx.create_signal(String::new());
     h(div)
         .c(h(h1)
             .t("Hello ")
@@ -19,12 +19,12 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
             )
             .t("!"))
         .c(h(input).bind_value(name))
-        .view(ctx)
+        .view(cx)
 }
 
 fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|ctx| component(|| App(ctx, ())));
+    sycamore::render(|cx| component(|| App(cx, ())));
 }

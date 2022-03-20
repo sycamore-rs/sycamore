@@ -1,18 +1,18 @@
 use sycamore::prelude::*;
 
 #[component]
-fn c(ctx: Scope) -> View<G> {
+fn c(cx: Scope) -> View<G> {
     view! {
         div
     }
 }
 
 fn compile_fail<G: Html>() {
-    create_scope_immediate(|ctx| {
-        let _: View<G> = view! { ctx, UnknownComponent() };
+    create_scope_immediate(|cx| {
+        let _: View<G> = view! { cx, UnknownComponent() };
 
-        let _: View<G> = view! { ctx, C };
-        let _: View<G> = view! { ctx, C(1) };
+        let _: View<G> = view! { cx, C };
+        let _: View<G> = view! { cx, C(1) };
     });
 }
 

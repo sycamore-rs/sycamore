@@ -49,10 +49,10 @@ struct ButtonProps<'a> {
 }
 
 #[component]
-fn Button<'a, G: Html>(ctx: Scope<'a>, props: ButtonProps<'a>) -> View<G> {
+fn Button<'a, G: Html>(cx: Scope<'a>, props: ButtonProps<'a>) -> View<G> {
     let ButtonProps { id, text, callback } = props;
 
-    view! { ctx,
+    view! { cx,
         div(class="col-sm-6 smallpad") {
             button(id=id, class="btn btn-primary btn-block", type="button", on:click=move |_| callback()) {
                 (text)
@@ -99,9 +99,9 @@ fn build_data(count: usize) -> Vec<RowData> {
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
-    let data = ctx.create_signal(Vec::<RowData>::new());
-    let selected = ctx.create_signal(None::<usize>);
+fn App<G: Html>(cx: Scope) -> View<G> {
+    let data = cx.create_signal(Vec::<RowData>::new());
+    let selected = cx.create_signal(None::<usize>);
 
     let remove = |id| {
         data.set(
@@ -148,7 +148,7 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
         data.set(d);
     };
 
-    view! { ctx,
+    view! { cx,
         div(class="container") {
             div(class="jumbotron") {
                 div(class="row") {
@@ -169,10 +169,10 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
                 tbody {
                     Keyed {
                         iterable: data,
-                        view: move |ctx, row| {
-                            let is_selected = ctx.create_selector(move || *selected.get() == Some(row.id));
+                        view: move |cx, row| {
+                            let is_selected = cx.create_selector(move || *selected.get() == Some(row.id));
                             let handle_click = move |_| selected.set(Some(row.id));
-                            view! { ctx,
+                            view! { cx,
                                 tr(class=is_selected.get().then(|| "danger").unwrap_or("")) {
                                     td(class="col-md-1") { (row.id) }
                                     td(class="col-md-4") {
@@ -198,5 +198,5 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
 fn main() {
     let document = web_sys::window().unwrap().document().unwrap();
     let mount_el = document.query_selector("#main").unwrap().unwrap();
-    sycamore::render_to(|ctx| view! { ctx, App {} }, &mount_el);
+    sycamore::render_to(|cx| view! { cx, App {} }, &mount_el);
 }

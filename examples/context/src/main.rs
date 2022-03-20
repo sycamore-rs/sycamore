@@ -1,10 +1,10 @@
 use sycamore::prelude::*;
 
 #[component]
-fn Counter<G: Html>(ctx: Scope) -> View<G> {
-    let counter = ctx.use_context::<RcSignal<i32>>();
+fn Counter<G: Html>(cx: Scope) -> View<G> {
+    let counter = cx.use_context::<RcSignal<i32>>();
 
-    view! { ctx,
+    view! { cx,
         p(class="value") {
             "Value: " (counter.get())
         }
@@ -12,13 +12,13 @@ fn Counter<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Controls<G: Html>(ctx: Scope) -> View<G> {
-    let state = ctx.use_context::<RcSignal<i32>>();
+pub fn Controls<G: Html>(cx: Scope) -> View<G> {
+    let state = cx.use_context::<RcSignal<i32>>();
     let increment = move |_| state.set(*state.get() + 1);
     let decrement = move |_| state.set(*state.get() - 1);
     let reset = move |_| state.set(0);
 
-    view! { ctx,
+    view! { cx,
         button(on:click=decrement) { "-" }
         button(on:click=increment) { "+" }
         button(on:click=reset) { "Reset" }
@@ -26,11 +26,11 @@ pub fn Controls<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
+fn App<G: Html>(cx: Scope) -> View<G> {
     let counter = create_rc_signal(0i32);
-    ctx.provide_context(counter);
+    cx.provide_context(counter);
 
-    view! { ctx,
+    view! { cx,
         div {
             "Context demo"
             Counter()
@@ -40,5 +40,5 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
 }
 
 fn main() {
-    sycamore::render(|ctx| view! { ctx, App() });
+    sycamore::render(|cx| view! { cx, App() });
 }

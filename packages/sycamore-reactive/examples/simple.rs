@@ -1,10 +1,10 @@
 use sycamore_reactive::*;
 
 fn main() {
-    create_scope_immediate(|ctx| {
-        let data = ctx.create_signal(0);
-        let doubled = ctx.create_memo(|| *data.get() * 2);
-        ctx.create_effect(on([doubled], move || {
+    create_scope_immediate(|cx| {
+        let data = cx.create_signal(0);
+        let doubled = cx.create_memo(|| *data.get() * 2);
+        cx.create_effect(on([doubled], move || {
             println!("data value changed. new value = {data}, doubled value = {doubled}")
         }));
         data.set(1);

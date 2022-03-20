@@ -171,7 +171,7 @@ pub struct Tweened<'a, T: Lerp + Clone>(Rc<RefCell<TweenedInner<'a, T>>>);
 struct TweenedInner<'a, T: Lerp + Clone + 'a> {
     /// The [`Scope`] under which the tweened signal was created. We need to hold on to the
     /// context to be able to spawn the raf callback.
-    ctx: Scope<'a>,
+    cx: Scope<'a>,
     value: RcSignal<T>,
     is_tweening: RcSignal<bool>,
     raf_state: Option<RafState<'a>>,
@@ -184,14 +184,14 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
     ///
     /// End users should use [`Scope::create_tweened_signal`] instead.
     pub(crate) fn new(
-        ctx: Scope<'a>,
+        cx: Scope<'a>,
         initial: T,
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,
     ) -> Self {
         let value = create_rc_signal(initial);
         Self(Rc::new(RefCell::new(TweenedInner {
-            ctx,
+            cx,
             value,
             is_tweening: create_rc_signal(false),
             raf_state: None,
@@ -224,7 +224,7 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
             }
         }
 
-        let (running, start, stop) = self.0.borrow().ctx.create_raf_loop(move || {
+        let (running, start, stop) = self.0.borrow().cx.create_raf_loop(move || {
             let now = Date::now();
 
             let since_start = now - start_time;
@@ -275,7 +275,7 @@ impl<'a, T: Lerp + Clone + 'static> Clone for Tweened<'a, T> {
 impl<'a, T: Lerp + Clone + 'static> Clone for TweenedInner<'a, T> {
     fn clone(&self) -> Self {
         Self {
-            ctx: self.ctx,
+            cx: self.cx,
             value: self.value.clone(),
             is_tweening: self.is_tweening.clone(),
             raf_state: self.raf_state.clone(),

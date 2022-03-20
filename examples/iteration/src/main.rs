@@ -7,8 +7,8 @@ struct Cat {
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
-    let items = ctx.create_signal(vec![
+fn App<G: Html>(cx: Scope) -> View<G> {
+    let items = cx.create_signal(vec![
         Cat {
             id: "J---aiyznGQ",
             name: "Keyboard Cat",
@@ -23,12 +23,12 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
         },
     ]);
 
-    view! { ctx,
+    view! { cx,
         p { "The famous cats of YouTube" }
         ul {
             Indexed {
                 iterable: items,
-                view: |ctx, Cat { id, name }| view! { ctx,
+                view: |cx, Cat { id, name }| view! { cx,
                     li {
                         a(href=format!("https://www.youtube.com/watch?v={id}")) {
                             (name)
@@ -41,5 +41,5 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
 }
 
 fn main() {
-    sycamore::render(|ctx| view! { ctx, App() });
+    sycamore::render(|cx| view! { cx, App() });
 }

@@ -222,8 +222,8 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn event<'a>(&self, ctx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
-        self.node.event(ctx, name, handler);
+    fn event<'a>(&self, cx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
+        self.node.event(cx, name, handler);
     }
 
     #[inline]
@@ -294,11 +294,11 @@ pub fn hydrate_get_scope<'a>(
         .map(|x| View::new_node(HydrateNode::from_web_sys(x)))
         .collect::<Vec<_>>();
 
-    create_scope(|ctx| {
+    create_scope(|cx| {
         insert(
-            ctx,
+            cx,
             &HydrateNode::from_web_sys(parent.clone()),
-            with_hydration_context(|| view(ctx)),
+            with_hydration_context(|| view(cx)),
             Some(View::new_fragment(children)),
             None,
             false,

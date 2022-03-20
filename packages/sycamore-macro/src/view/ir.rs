@@ -150,16 +150,16 @@ pub struct Dyn {
     pub value: Expr,
 }
 
-fn needs_ctx(ts: TokenStream, ctx: &str) -> bool {
+fn needs_cx(ts: TokenStream, cx: &str) -> bool {
     for t in ts {
         match t {
             TokenTree::Ident(id) => {
-                if id == ctx {
+                if id == cx {
                     return true;
                 }
             }
             TokenTree::Group(g) => {
-                if needs_ctx(g.stream(), ctx) {
+                if needs_cx(g.stream(), cx) {
                     return true;
                 }
             }
@@ -170,10 +170,10 @@ fn needs_ctx(ts: TokenStream, ctx: &str) -> bool {
 }
 
 impl Dyn {
-    /// Returns `true` if the wrapped [`Expr`] has the identifier `ctx` somewhere.
-    pub fn needs_ctx(&self, ctx: &str) -> bool {
+    /// Returns `true` if the wrapped [`Expr`] has the identifier `cx` somewhere.
+    pub fn needs_cx(&self, cx: &str) -> bool {
         let ts = self.value.to_token_stream();
-        needs_ctx(ts, ctx)
+        needs_cx(ts, cx)
     }
 }
 
@@ -184,25 +184,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn needs_ctx_if_ctx_ident_inside_expr() {
+    fn needs_cx_if_cx_ident_inside_expr() {
         let ts: Dyn = parse_quote! {
-            (ctx.create_signal(0))
+            (cx.create_signal(0))
         };
-        assert!(ts.needs_ctx("ctx"));
-        assert!(!ts.needs_ctx("not_ctx"));
+        assert!(ts.needs_cx("cx"));
+        assert!(!ts.needs_cx("not_cx"));
 
-        let not_ctx: Dyn = parse_quote! {
+        let not_cx: Dyn = parse_quote! {
             (123)
         };
-        assert!(!not_ctx.needs_ctx("ctx"));
-        assert!(!not_ctx.needs_ctx("not_ctx"));
+        assert!(!not_cx.needs_cx("cx"));
+        assert!(!not_cx.needs_cx("not_cx"));
 
         let ts_in_braces: Dyn = parse_quote! {
             ({
-                ctx.create_signal(0)
+                cx.create_signal(0)
             })
         };
-        assert!(ts_in_braces.needs_ctx("ctx"));
-        assert!(!ts_in_braces.needs_ctx("not_ctx"));
+        assert!(ts_in_braces.needs_cx("cx"));
+        assert!(!ts_in_braces.needs_cx("not_cx"));
     }
 }

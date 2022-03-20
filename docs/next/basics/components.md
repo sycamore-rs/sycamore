@@ -13,8 +13,8 @@ convention to name components using `PascalCase`.
 
 ```rust
 #[component]
-fn MyComponent<G: Html>(ctx: Scope) -> View<G> {
-    view! { ctx,
+fn MyComponent<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
         // ...
     }
 }
@@ -23,7 +23,7 @@ fn MyComponent<G: Html>(ctx: Scope) -> View<G> {
 To use the component from elsewhere, the `view!` macro has some special syntax.
 
 ```rust
-view! { ctx,
+view! { cx,
     MyComponent {
         // props...
     }
@@ -48,7 +48,7 @@ struct MyProps {
 The component can then be constructed by passing the properties to it from the `view!` macro.
 
 ```rust
-view! { ctx,
+view! { cx,
     MyComponent {
         name: "John Doe",
         email: "...",
@@ -74,7 +74,7 @@ struct MyProps<'a> {
 }
 
 #[component]
-fn MyComponent<'a, G: Html>(ctx: Scope<'a>, props: MyProps<'a>) -> View<G> {
+fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     view! {
         div(class="my-component") {
             "Value: " (props.value.get())
@@ -82,7 +82,7 @@ fn MyComponent<'a, G: Html>(ctx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     }
 }
 
-let state = ctx.create_signal(0);
+let state = cx.create_signal(0);
 view! {
     MyComponent {
         value: state
@@ -108,8 +108,8 @@ can also be used to schedule a callback when the component is destroyed.
 
 ```rust
 #[component]
-fn MyComponent(ctx: Scope) -> View<G> {
-    ctx.on_cleanup(|| {
+fn MyComponent(cx: Scope) -> View<G> {
+    cx.on_cleanup(|| {
         // Perform cleanup.
     });
     // ...

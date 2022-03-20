@@ -326,7 +326,7 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<'a>(&self, _ctx: Scope<'a>, _name: &str, _handler: Box<dyn Fn(Self::EventType) + 'a>) {
+    fn event<'a>(&self, _cx: Scope<'a>, _name: &str, _handler: Box<dyn Fn(Self::EventType) + 'a>) {
         // Noop. Events are attached on client side.
     }
 
@@ -458,8 +458,8 @@ impl WriteToString for RawText {
 #[must_use]
 pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String {
     let mut ret = String::new();
-    create_scope_immediate(|ctx| {
-        let v = with_hydration_context(|| view(ctx));
+    create_scope_immediate(|cx| {
+        let v = with_hydration_context(|| view(cx));
 
         for node in v.flatten() {
             node.write_to_string(&mut ret);
@@ -487,11 +487,11 @@ pub async fn render_to_string_await_suspense(
     let (sender, receiver) = oneshot::channel();
     let disposer = create_scope({
         let v = Rc::clone(&v);
-        move |ctx| {
-            ctx.spawn_local(async move {
+        move |cx| {
+            cx.spawn_local(async move {
                 *v.borrow_mut() = Some(
-                    crate::suspense::await_suspense(ctx, async {
-                        with_hydration_context(|| view(ctx))
+                    crate::suspense::await_suspense(cx, async {
+                        with_hydration_context(|| view(cx))
                     })
                     .await,
                 );
@@ -524,7 +524,7 @@ mod tests {
     #[test]
     fn render_hello_world() {
         assert_eq!(
-            render_to_string(|ctx| view! { ctx,
+            render_to_string(|cx| view! { cx,
                 "Hello World!"
             }),
             "Hello World!"
@@ -534,7 +534,7 @@ mod tests {
     #[test]
     fn render_escaped_text() {
         assert_eq!(
-            render_to_string(|ctx| view! { ctx,
+            render_to_string(|cx| view! { cx,
                 "<script>Dangerous!</script>"
             }),
             "&lt;script>Dangerous!&lt;/script>"
@@ -544,7 +544,7 @@ mod tests {
     #[test]
     fn render_unescaped_html() {
         assert_eq!(
-            render_to_string(|ctx| view! { ctx,
+            render_to_string(|cx| view! { cx,
                 div(dangerously_set_inner_html="<a>Html!</a>")
             }),
             "<div data-hk=\"0.0\"><a>Html!</a></div>"

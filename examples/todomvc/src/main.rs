@@ -127,15 +127,15 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|ctx| {
-        view! { ctx,
+    sycamore::render(|cx| {
+        view! { cx,
             App()
         }
     });
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
+fn App<G: Html>(cx: Scope) -> View<G> {
     // Initialize application state
     let local_storage = web_sys::window()
         .unwrap()
@@ -152,10 +152,10 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
         todos,
         filter: create_rc_signal(Filter::get_filter_from_hash()),
     };
-    ctx.provide_context(app_state);
+    cx.provide_context(app_state);
     // Set up an effect that runs a function anytime app_state.todos changes
-    ctx.create_effect(move || {
-        let app_state = ctx.use_context::<AppState>();
+    cx.create_effect(move || {
+        let app_state = cx.use_context::<AppState>();
         for todo in app_state.todos.get().iter() {
             todo.track();
         }
@@ -167,7 +167,7 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
             .unwrap();
     });
 
-    view! { ctx,
+    view! { cx,
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 Header {}
@@ -180,8 +180,8 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Copyright<G: Html>(ctx: Scope) -> View<G> {
-    view! { ctx,
+pub fn Copyright<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
         footer(class="info") {
             p { "Double click to edit a todo" }
             p {
@@ -197,10 +197,10 @@ pub fn Copyright<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Header<G: Html>(ctx: Scope) -> View<G> {
-    let app_state = ctx.use_context::<AppState>();
-    let value = ctx.create_signal(String::new());
-    let input_ref = ctx.create_node_ref();
+pub fn Header<G: Html>(cx: Scope) -> View<G> {
+    let app_state = cx.use_context::<AppState>();
+    let value = cx.create_signal(String::new());
+    let input_ref = cx.create_node_ref();
 
     let handle_submit = |event: Event| {
         let event: KeyboardEvent = event.unchecked_into();
@@ -220,7 +220,7 @@ pub fn Header<G: Html>(ctx: Scope) -> View<G> {
         }
     };
 
-    view! { ctx,
+    view! { cx,
         header(class="header") {
             h1 { "todos" }
             input(ref=input_ref,
@@ -234,18 +234,18 @@ pub fn Header<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Item<G: Html>(ctx: Scope, todo: RcSignal<Todo>) -> View<G> {
-    let app_state = ctx.use_context::<AppState>();
+pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
+    let app_state = cx.use_context::<AppState>();
     // Make `todo` live as long as the scope.
-    let todo = ctx.create_ref(todo);
+    let todo = cx.create_ref(todo);
 
     let title = || todo.get().title.clone();
-    let completed = ctx.create_selector(|| todo.get().completed);
+    let completed = cx.create_selector(|| todo.get().completed);
     let id = todo.get().id;
 
-    let editing = ctx.create_signal(false);
-    let input_ref = ctx.create_node_ref();
-    let value = ctx.create_signal("".to_string());
+    let editing = cx.create_signal(false);
+    let input_ref = cx.create_node_ref();
+    let value = cx.create_signal("".to_string());
 
     let handle_input = |event: Event| {
         let target: HtmlInputElement = event.target().unwrap().unchecked_into();
@@ -306,8 +306,8 @@ pub fn Item<G: Html>(ctx: Scope, todo: RcSignal<Todo>) -> View<G> {
 
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
-    let checked = ctx.create_signal(false);
-    ctx.create_effect(|| {
+    let checked = cx.create_signal(false);
+    cx.create_effect(|| {
         // Calling checked.set will also update the `checked` property on the input element.
         checked.set(*completed.get())
     });
@@ -320,7 +320,7 @@ pub fn Item<G: Html>(ctx: Scope, todo: RcSignal<Todo>) -> View<G> {
         )
     };
 
-    view! { ctx,
+    view! { cx,
         li(class=class()) {
             div(class="view") {
                 input(
@@ -336,7 +336,7 @@ pub fn Item<G: Html>(ctx: Scope, todo: RcSignal<Todo>) -> View<G> {
             }
 
             (if *editing.get() {
-                view! { ctx,
+                view! { cx,
                     input(ref=input_ref,
                         class="edit",
                         value=todo.get().title.clone(),
@@ -353,11 +353,11 @@ pub fn Item<G: Html>(ctx: Scope, todo: RcSignal<Todo>) -> View<G> {
 }
 
 #[component]
-pub fn List<G: Html>(ctx: Scope) -> View<G> {
-    let app_state = ctx.use_context::<AppState>();
-    let todos_left = ctx.create_selector(|| app_state.todos_left());
+pub fn List<G: Html>(cx: Scope) -> View<G> {
+    let app_state = cx.use_context::<AppState>();
+    let todos_left = cx.create_selector(|| app_state.todos_left());
 
-    let filtered_todos = ctx.create_memo(|| {
+    let filtered_todos = cx.create_memo(|| {
         app_state
             .todos
             .get()
@@ -373,13 +373,13 @@ pub fn List<G: Html>(ctx: Scope) -> View<G> {
 
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
-    let checked = ctx.create_signal(false);
-    ctx.create_effect(|| {
+    let checked = cx.create_signal(false);
+    cx.create_effect(|| {
         // Calling checked.set will also update the `checked` property on the input element.
         checked.set(*todos_left.get() == 0)
     });
 
-    view! { ctx,
+    view! { cx,
         section(class="main") {
             input(
                 id="toggle-all",
@@ -394,7 +394,7 @@ pub fn List<G: Html>(ctx: Scope) -> View<G> {
             ul(class="todo-list") {
                 Keyed {
                     iterable: filtered_todos,
-                    view: |ctx, todo| view! { ctx,
+                    view: |cx, todo| view! { cx,
                         Item(todo)
                     },
                     key: |todo| todo.get().id,
@@ -405,12 +405,12 @@ pub fn List<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn TodoFilter<G: Html>(ctx: Scope, filter: Filter) -> View<G> {
-    let app_state = ctx.use_context::<AppState>();
+pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
+    let app_state = cx.use_context::<AppState>();
     let selected = move || filter == *app_state.filter.get();
     let set_filter = |filter| app_state.filter.set(filter);
 
-    view! { ctx,
+    view! { cx,
         li {
             a(
                 class=if selected() { "selected" } else { "" },
@@ -424,8 +424,8 @@ pub fn TodoFilter<G: Html>(ctx: Scope, filter: Filter) -> View<G> {
 }
 
 #[component]
-pub fn Footer<G: Html>(ctx: Scope) -> View<G> {
-    let app_state = ctx.use_context::<AppState>();
+pub fn Footer<G: Html>(cx: Scope) -> View<G> {
+    let app_state = cx.use_context::<AppState>();
 
     let items_text = || match app_state.todos_left() {
         1 => "item",
@@ -433,11 +433,11 @@ pub fn Footer<G: Html>(ctx: Scope) -> View<G> {
     };
 
     let has_completed_todos =
-        ctx.create_selector(|| app_state.todos_left() < app_state.todos.get().len());
+        cx.create_selector(|| app_state.todos_left() < app_state.todos.get().len());
 
     let handle_clear_completed = |_| app_state.clear_completed();
 
-    view! { ctx,
+    view! { cx,
         footer(class="footer") {
             span(class="todo-count") {
                 strong { (app_state.todos_left()) }
@@ -450,7 +450,7 @@ pub fn Footer<G: Html>(ctx: Scope) -> View<G> {
             }
 
             (if *has_completed_todos.get() {
-                view! { ctx,
+                view! { cx,
                     button(class="clear-completed", on:click=handle_clear_completed) {
                         "Clear completed"
                     }
