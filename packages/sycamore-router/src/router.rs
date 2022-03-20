@@ -186,12 +186,14 @@ where
         integration,
         _phantom,
     } = props;
-    let view = Rc::new(RefCell::new(Some(view)));
     let integration = Rc::new(integration);
     let base_pathname = base_pathname();
 
     PATHNAME.with(|pathname| {
-        assert!(pathname.borrow().is_none());
+        assert!(
+            pathname.borrow().is_none(),
+            "cannot have more than one Router component initialized"
+        );
         // Get initial url from window.location.
         let path = integration.current_pathname();
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
@@ -235,7 +237,7 @@ where
         )
     });
     // Delegate click events from child <a> tags.
-    let tmp = view.take().unwrap_throw()(ctx, route_signal);
+    let tmp = view(ctx, route_signal);
     if let Some(node) = tmp.as_node() {
         node.event(ctx, "click", integration.click_handler());
     } else {
@@ -266,9 +268,9 @@ where
     G: GenericNode,
 {
     /// Create a new [`StaticRouterProps`].
-    pub fn new(route: R, render: F) -> Self {
+    pub fn new(route: R, view: F) -> Self {
         Self {
-            view: render,
+            view,
             route,
             _phantom: PhantomData,
         }
