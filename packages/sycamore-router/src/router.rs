@@ -202,11 +202,7 @@ where
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    ctx.on_cleanup(|| {
-        PATHNAME.with(|pathname| {
-            *pathname.borrow_mut() = None;
-        });
-    });
+    ctx.on_cleanup(|| PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
 
     // Listen to popstate event.
     integration.on_popstate(Box::new({
@@ -218,33 +214,16 @@ where
             pathname.set(path.to_string());
         }
     }));
-
-    let path = ctx.create_selector(move || {
-        pathname
-            .get()
-            .split('/')
-            .filter(|s| !s.is_empty())
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-    });
-    let route_signal = ctx.create_memo(move || {
-        R::match_route(
-            path.get()
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>()
-                .as_slice(),
-        )
-    });
+    let route_signal = ctx.create_memo(move || R::match_path(&pathname.get()));
     // Delegate click events from child <a> tags.
-    let tmp = view(ctx, route_signal);
-    if let Some(node) = tmp.as_node() {
+    let view = view(ctx, route_signal);
+    if let Some(node) = view.as_node() {
         node.event(ctx, "click", integration.click_handler());
     } else {
-        // TODO: support fragments and lazy nodes
-        panic!("render should return a single node");
+        // TODO: support fragments and dynamic nodes
+        unimplemented!("support fragments and dynamic nodes for Router")
     }
-    tmp
+    view
 }
 
 /// Props for [`StaticRouter`].
@@ -310,7 +289,7 @@ pub fn navigate(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.borrow().is_some(),
-            "navigate can only be used with a BrowserRouter"
+            "navigate can only be used with a Router"
         );
 
         let pathname = pathname.borrow().clone().unwrap_throw();
@@ -339,7 +318,7 @@ pub fn navigate_replace(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.borrow().is_some(),
-            "navigate_replace can only be used with a BrowserRouter"
+            "navigate_replace can only be used with a Router"
         );
 
         let pathname = pathname.borrow().clone().unwrap_throw();
