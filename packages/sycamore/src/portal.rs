@@ -42,7 +42,7 @@ pub fn Portal<'a, G: Html>(cx: Scope<'a>, props: PortalProps<'a, G>) -> View<G> 
                 .unwrap_throw();
         }
 
-        cx.on_cleanup(move || {
+        on_cleanup(cx, move || {
             for child in &children {
                 container
                     .remove_child(

@@ -331,7 +331,7 @@ impl GenericNode for DomNode {
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
             .unwrap_throw();
 
-        cx.on_cleanup(move || {
+        on_cleanup(cx, move || {
             drop(closure);
         });
     }

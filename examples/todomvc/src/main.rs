@@ -152,10 +152,10 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         todos,
         filter: create_rc_signal(Filter::get_filter_from_hash()),
     };
-    cx.provide_context(app_state);
+    provide_context(cx, app_state);
     // Set up an effect that runs a function anytime app_state.todos changes
-    cx.create_effect(move || {
-        let app_state = cx.use_context::<AppState>();
+    create_effect(cx, move || {
+        let app_state = use_context::<AppState>(cx);
         for todo in app_state.todos.get().iter() {
             todo.track();
         }
@@ -198,8 +198,8 @@ pub fn Copyright<G: Html>(cx: Scope) -> View<G> {
 
 #[component]
 pub fn Header<G: Html>(cx: Scope) -> View<G> {
-    let app_state = cx.use_context::<AppState>();
-    let value = cx.create_signal(String::new());
+    let app_state = use_context::<AppState>(cx);
+    let value = create_signal(cx, String::new());
     let input_ref = cx.create_node_ref();
 
     let handle_submit = |event: Event| {
@@ -235,17 +235,17 @@ pub fn Header<G: Html>(cx: Scope) -> View<G> {
 
 #[component]
 pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
-    let app_state = cx.use_context::<AppState>();
+    let app_state = use_context::<AppState>(cx);
     // Make `todo` live as long as the scope.
-    let todo = cx.create_ref(todo);
+    let todo = create_ref(cx, todo);
 
     let title = || todo.get().title.clone();
-    let completed = cx.create_selector(|| todo.get().completed);
+    let completed = create_selector(cx, || todo.get().completed);
     let id = todo.get().id;
 
-    let editing = cx.create_signal(false);
+    let editing = create_signal(cx, false);
     let input_ref = cx.create_node_ref();
-    let value = cx.create_signal("".to_string());
+    let value = create_signal(cx, "".to_string());
 
     let handle_input = |event: Event| {
         let target: HtmlInputElement = event.target().unwrap().unchecked_into();
@@ -306,8 +306,8 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
 
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
-    let checked = cx.create_signal(false);
-    cx.create_effect(|| {
+    let checked = create_signal(cx, false);
+    create_effect(cx, || {
         // Calling checked.set will also update the `checked` property on the input element.
         checked.set(*completed.get())
     });
@@ -354,10 +354,10 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
 
 #[component]
 pub fn List<G: Html>(cx: Scope) -> View<G> {
-    let app_state = cx.use_context::<AppState>();
-    let todos_left = cx.create_selector(|| app_state.todos_left());
+    let app_state = use_context::<AppState>(cx);
+    let todos_left = create_selector(cx, || app_state.todos_left());
 
-    let filtered_todos = cx.create_memo(|| {
+    let filtered_todos = create_memo(cx, || {
         app_state
             .todos
             .get()
@@ -373,8 +373,8 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
 
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
-    let checked = cx.create_signal(false);
-    cx.create_effect(|| {
+    let checked = create_signal(cx, false);
+    create_effect(cx, || {
         // Calling checked.set will also update the `checked` property on the input element.
         checked.set(*todos_left.get() == 0)
     });
@@ -406,7 +406,7 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
 
 #[component]
 pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
-    let app_state = cx.use_context::<AppState>();
+    let app_state = use_context::<AppState>(cx);
     let selected = move || filter == *app_state.filter.get();
     let set_filter = |filter| app_state.filter.set(filter);
 
@@ -425,7 +425,7 @@ pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
 
 #[component]
 pub fn Footer<G: Html>(cx: Scope) -> View<G> {
-    let app_state = cx.use_context::<AppState>();
+    let app_state = use_context::<AppState>(cx);
 
     let items_text = || match app_state.todos_left() {
         1 => "item",
@@ -433,7 +433,7 @@ pub fn Footer<G: Html>(cx: Scope) -> View<G> {
     };
 
     let has_completed_todos =
-        cx.create_selector(|| app_state.todos_left() < app_state.todos.get().len());
+        create_selector(cx, || app_state.todos_left() < app_state.todos.get().len());
 
     let handle_clear_completed = |_| app_state.clear_completed();
 

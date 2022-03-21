@@ -34,7 +34,7 @@ pub fn bench(c: &mut Criterion) {
 
             #[component]
             fn App<G: Html>(cx: Scope) -> View<G> {
-                let values = cx.create_signal((0i32..=10).collect::<Vec<_>>());
+                let values = create_signal(cx, (0i32..=10).collect::<Vec<_>>());
 
                 view! { cx,
                     div(class="my-container") {

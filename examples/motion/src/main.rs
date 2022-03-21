@@ -6,7 +6,7 @@ use sycamore::prelude::*;
 
 #[component]
 fn CreateRAF<G: Html>(cx: Scope) -> View<G> {
-    let state = cx.create_signal(0i32);
+    let state = create_signal(cx, 0i32);
     let (_running, start, stop) = cx.create_raf(|| {
         state.set(*state.get() + 1);
     });

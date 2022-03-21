@@ -202,7 +202,7 @@ where
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    cx.on_cleanup(|| PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
+    on_cleanup(cx, || PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
 
     // Listen to popstate event.
     integration.on_popstate(Box::new({
@@ -214,7 +214,7 @@ where
             pathname.set(path.to_string());
         }
     }));
-    let route_signal = cx.create_memo(move || R::match_path(&pathname.get()));
+    let route_signal = create_memo(cx, move || R::match_path(&pathname.get()));
     // Delegate click events from child <a> tags.
     let view = view(cx, route_signal);
     if let Some(node) = view.as_node() {
@@ -275,7 +275,7 @@ where
         _phantom,
     } = props;
 
-    view(cx, cx.create_signal(route))
+    view(cx, create_signal(cx, route))
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.

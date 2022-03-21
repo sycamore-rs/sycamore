@@ -3,47 +3,47 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::mem::{self, MaybeUninit};
+use std::mem;
+use std::mem::MaybeUninit;
 use std::rc::Rc;
 
 use crate::*;
 
-impl<'a> Scope<'a> {
-    /// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
-    /// computed, meaning that it's value will only be updated when requested. Modifications to the
-    /// input `Vec` are diffed using keys to prevent recomputing values that have not changed.
-    ///
-    /// This function is the underlying utility behind `Keyed`.
-    ///
-    /// # Params
-    /// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a
-    ///   [`Signal`]) and therefore reactive.
-    /// * `map_fn` - A closure that maps from the input type to the output type.
-    /// * `key_fn` - A closure that returns an _unique_ key to each entry.
-    ///
-    ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
-    pub fn map_keyed<T, K, U>(
-        self,
-        list: &'a ReadSignal<Vec<T>>,
-        map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
-        key_fn: impl Fn(&T) -> K + 'a,
-    ) -> &'a ReadSignal<Vec<U>>
-    where
-        T: Eq + Clone + 'a,
-        K: Eq + Hash,
-        U: Clone + 'a,
-    {
-        let map_fn = Rc::new(map_fn);
+/// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
+/// computed, meaning that it's value will only be updated when requested. Modifications to the
+/// input `Vec` are diffed using keys to prevent recomputing values that have not changed.
+///
+/// This function is the underlying utility behind `Keyed`.
+///
+/// # Params
+/// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a
+///   [`Signal`]) and therefore reactive.
+/// * `map_fn` - A closure that maps from the input type to the output type.
+/// * `key_fn` - A closure that returns an _unique_ key to each entry.
+///
+///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
+pub fn map_keyed<'a, T, K, U>(
+    cx: Scope<'a>,
+    list: &'a ReadSignal<Vec<T>>,
+    map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
+    key_fn: impl Fn(&T) -> K + 'a,
+) -> &'a ReadSignal<Vec<U>>
+where
+    T: Eq + Clone + 'a,
+    K: Eq + Hash,
+    U: Clone + 'a,
+{
+    let map_fn = Rc::new(map_fn);
 
-        // Previous state used for diffing.
-        let mut items = Rc::new(Vec::new());
-        let mut mapped: Vec<U> = Vec::new();
-        let mut disposers: Vec<Option<ScopeDisposer<'a>>> = Vec::new();
+    // Previous state used for diffing.
+    let mut items = Rc::new(Vec::new());
+    let mut mapped: Vec<U> = Vec::new();
+    let mut disposers: Vec<Option<ScopeDisposer<'a>>> = Vec::new();
 
-        let signal = self.create_signal(Vec::new());
+    let signal = create_signal(cx, Vec::new());
 
-        // Diff and update signal each time list is updated.
-        self.create_effect(move || {
+    // Diff and update signal each time list is updated.
+    create_effect(cx, move || {
             let new_items = list.get();
             if new_items.is_empty() {
                 // Fast path for removing all items.
@@ -56,12 +56,12 @@ impl<'a> Scope<'a> {
                 // TODO: do not clone T
                 for new_item in new_items.iter().cloned() {
                     let tmp = Rc::new(RefCell::new(None));
-                    let new_disposer = self.create_child_scope({
+                    let new_disposer = create_child_scope(cx, {
                         let tmp = Rc::clone(&tmp);
                         let map_fn = Rc::clone(&map_fn);
                         move |cx| {
                             // SAFETY: f takes the same parameter as the argument to
-                            // self.create_child_scope(_).
+                            // create_child_scope(cx, (_).
                             *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                         }
                     });
@@ -163,13 +163,13 @@ impl<'a> Scope<'a> {
                     } else {
                         // Create new value.
                         let tmp = Rc::new(RefCell::new(None));
-                        let new_disposer = self.create_child_scope({
+                        let new_disposer = create_child_scope(cx, {
                             let tmp = Rc::clone(&tmp);
                             let map_fn = Rc::clone(&map_fn);
                             let new_item = new_items[j].clone();
                             move |cx| {
                                 // SAFETY: f takes the same parameter as the argument to
-                                // self.create_child_scope(_).
+                                // create_child_scope.
                                 *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                             }
                         });
@@ -199,122 +199,121 @@ impl<'a> Scope<'a> {
             signal.set(mapped.clone());
         });
 
-        signal
-    }
+    signal
+}
 
-    /// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
-    /// computed, meaning that it's value will only be updated when requested. Modifications to the
-    /// input `Vec` are diffed by index to prevent recomputing values that have not changed.
-    ///
-    /// Generally, it is preferred to use [`map_keyed`](Self::map_keyed) instead when a key function
-    /// is available.
-    ///
-    /// This function is the underlying utility behind `Indexed`.
-    ///
-    /// # Params
-    /// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a
-    ///   [`Signal`]) and therefore reactive.
-    /// * `map_fn` - A closure that maps from the input type to the output type.
-    pub fn map_indexed<T, U>(
-        self,
-        list: &'a ReadSignal<Vec<T>>,
-        map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
-    ) -> &'a ReadSignal<Vec<U>>
-    where
-        T: PartialEq + Clone,
-        U: Clone + 'a,
-    {
-        let map_fn = Rc::new(map_fn);
+/// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
+/// computed, meaning that it's value will only be updated when requested. Modifications to the
+/// input `Vec` are diffed by index to prevent recomputing values that have not changed.
+///
+/// Generally, it is preferred to use [`map_keyed`] instead when a key function
+/// is available.
+///
+/// This function is the underlying utility behind `Indexed`.
+///
+/// # Params
+/// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a
+///   [`Signal`]) and therefore reactive.
+/// * `map_fn` - A closure that maps from the input type to the output type.
+pub fn map_indexed<'a, T, U>(
+    cx: Scope<'a>,
+    list: &'a ReadSignal<Vec<T>>,
+    map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
+) -> &'a ReadSignal<Vec<U>>
+where
+    T: PartialEq + Clone,
+    U: Clone + 'a,
+{
+    let map_fn = Rc::new(map_fn);
 
-        // Previous state used for diffing.
-        let mut items = Rc::new(Vec::new());
-        let mut mapped = Vec::new();
-        let mut disposers: Vec<ScopeDisposer<'a>> = Vec::new();
+    // Previous state used for diffing.
+    let mut items = Rc::new(Vec::new());
+    let mut mapped = Vec::new();
+    let mut disposers: Vec<ScopeDisposer<'a>> = Vec::new();
 
-        let signal = self.create_signal(Vec::new());
+    let signal = create_signal(cx, Vec::new());
 
-        // Diff and update signal each time list is updated.
-        self.create_effect(move || {
-            let new_items = list.get();
+    // Diff and update signal each time list is updated.
+    create_effect(cx, move || {
+        let new_items = list.get();
 
-            if new_items.is_empty() {
-                // Fast path for removing all items.
-                for dis in mem::take(&mut disposers) {
-                    unsafe {
-                        dis.dispose();
-                    }
+        if new_items.is_empty() {
+            // Fast path for removing all items.
+            for dis in mem::take(&mut disposers) {
+                unsafe {
+                    dis.dispose();
                 }
-                items = Rc::new(Vec::new());
-                mapped = Vec::new();
-            } else {
-                // Pre-allocate space needed
-                if new_items.len() > items.len() {
-                    let new_count = new_items.len() - items.len();
-                    mapped.reserve(new_count);
-                    disposers.reserve(new_count);
-                }
-
-                for (i, new_item) in new_items.iter().enumerate() {
-                    let new_item = new_item.clone();
-                    let item = items.get(i);
-                    // We lift the equality out of the else if branch to satisfy borrow checker.
-                    let eqs = item != Some(&new_item);
-
-                    let mut tmp = MaybeUninit::<U>::zeroed();
-                    let ptr = &mut tmp as *mut MaybeUninit<U>;
-                    if item.is_none() || eqs {
-                        let new_disposer = self.create_child_scope({
-                            let map_fn = Rc::clone(&map_fn);
-                            move |cx| unsafe {
-                                // SAFETY: callback is called immediately in
-                                // self.create_child_scope.
-                                // ptr is still accessible after self.create_child_scope and
-                                // therefore lives long enough.
-
-                                // SAFETY: f takes the same parameter as the argument to
-                                // self.create_child_scope(_).
-                                (*ptr).write(map_fn(mem::transmute(cx), new_item));
-                            }
-                        });
-                        if item.is_none() {
-                            // SAFETY: tmp is written in self.create_child_scope
-                            mapped.push(unsafe { tmp.assume_init() });
-                            disposers.push(new_disposer);
-                        } else if eqs {
-                            // SAFETY: tmp is written in self.create_child_scope
-                            mapped[i] = unsafe { tmp.assume_init() };
-                            let prev = mem::replace(&mut disposers[i], new_disposer);
-                            unsafe {
-                                prev.dispose();
-                            }
-                        }
-                    }
-                }
-
-                if new_items.len() < items.len() {
-                    for _i in new_items.len()..items.len() {
-                        unsafe {
-                            disposers.pop().unwrap().dispose();
-                        }
-                    }
-                }
-
-                // In case the new set is shorter than the old, set the length of the mapped array.
-                mapped.truncate(new_items.len());
-
-                // save a copy of the mapped items for the next update.
-                items = Rc::clone(&new_items);
-                debug_assert!([items.len(), mapped.len(), disposers.len()]
-                    .iter()
-                    .all(|l| *l == new_items.len()));
+            }
+            items = Rc::new(Vec::new());
+            mapped = Vec::new();
+        } else {
+            // Pre-allocate space needed
+            if new_items.len() > items.len() {
+                let new_count = new_items.len() - items.len();
+                mapped.reserve(new_count);
+                disposers.reserve(new_count);
             }
 
-            // Update signal to trigger updates.
-            signal.set(mapped.clone());
-        });
+            for (i, new_item) in new_items.iter().enumerate() {
+                let new_item = new_item.clone();
+                let item = items.get(i);
+                // We lift the equality out of the else if branch to satisfy borrow checker.
+                let eqs = item != Some(&new_item);
 
-        signal
-    }
+                let mut tmp = MaybeUninit::<U>::zeroed();
+                let ptr = &mut tmp as *mut MaybeUninit<U>;
+                if item.is_none() || eqs {
+                    let new_disposer = create_child_scope(cx, {
+                        let map_fn = Rc::clone(&map_fn);
+                        move |cx| unsafe {
+                            // SAFETY: callback is called immediately in
+                            // create_child_scope(cx, .
+                            // ptr is still accessible after create_child_scope(cx,  and
+                            // therefore lives long enough.
+
+                            // SAFETY: f takes the same parameter as the argument to
+                            // create_child_scope(cx, (_).
+                            (*ptr).write(map_fn(mem::transmute(cx), new_item));
+                        }
+                    });
+                    if item.is_none() {
+                        // SAFETY: tmp is written in create_child_scope(cx, 
+                        mapped.push(unsafe { tmp.assume_init() });
+                        disposers.push(new_disposer);
+                    } else if eqs {
+                        // SAFETY: tmp is written in create_child_scope(cx, 
+                        mapped[i] = unsafe { tmp.assume_init() };
+                        let prev = mem::replace(&mut disposers[i], new_disposer);
+                        unsafe {
+                            prev.dispose();
+                        }
+                    }
+                }
+            }
+
+            if new_items.len() < items.len() {
+                for _i in new_items.len()..items.len() {
+                    unsafe {
+                        disposers.pop().unwrap().dispose();
+                    }
+                }
+            }
+
+            // In case the new set is shorter than the old, set the length of the mapped array.
+            mapped.truncate(new_items.len());
+
+            // save a copy of the mapped items for the next update.
+            items = Rc::clone(&new_items);
+            debug_assert!([items.len(), mapped.len(), disposers.len()]
+                .iter()
+                .all(|l| *l == new_items.len()));
+        }
+
+        // Update signal to trigger updates.
+        signal.set(mapped.clone());
+    });
+
+    signal
 }
 
 #[cfg(test)]
@@ -326,8 +325,8 @@ mod tests {
     #[test]
     fn keyed() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
-            let mapped = cx.map_keyed(a, |_, x| x * 2, |x| *x);
+            let a = create_signal(cx, vec![1, 2, 3]);
+            let mapped = map_keyed(cx, a, |_, x| x * 2, |x| *x);
             assert_eq!(*mapped.get(), vec![2, 4, 6]);
 
             a.set(vec![1, 2, 3, 4]);
@@ -341,8 +340,8 @@ mod tests {
     #[test]
     fn keyed_recompute_everything() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
-            let mapped = cx.map_keyed(a, |_, x| x * 2, |x| *x);
+            let a = create_signal(cx, vec![1, 2, 3]);
+            let mapped = map_keyed(cx, a, |_, x| x * 2, |x| *x);
             assert_eq!(*mapped.get(), vec![2, 4, 6]);
 
             a.set(vec![4, 5, 6]);
@@ -354,8 +353,8 @@ mod tests {
     #[test]
     fn keyed_clear() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
-            let mapped = cx.map_keyed(a, |_, x| x * 2, |x| *x);
+            let a = create_signal(cx, vec![1, 2, 3]);
+            let mapped = map_keyed(cx, a, |_, x| x * 2, |x| *x);
 
             a.set(Vec::new());
             assert_eq!(*mapped.get(), Vec::<i32>::new());
@@ -366,9 +365,9 @@ mod tests {
     #[test]
     fn keyed_use_previous_computation() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
+            let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let mapped = cx.map_keyed(
+            let mapped = map_keyed(cx, 
                 a,
                 {
                     let counter = Rc::clone(&counter);
@@ -395,15 +394,15 @@ mod tests {
     #[test]
     fn keyed_call_cleanup_on_remove() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
+            let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = cx.map_keyed(
+            let _mapped = map_keyed(cx, 
                 a,
                 {
                     let counter = Rc::clone(&counter);
                     move |cx, _| {
                         let counter = Rc::clone(&counter);
-                        cx.on_cleanup(move || {
+                        on_cleanup(cx, move || {
                             counter.set(counter.get() + 1);
                         });
                     }
@@ -426,15 +425,15 @@ mod tests {
     #[test]
     fn keyed_call_cleanup_on_remove_all() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
+            let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = cx.map_keyed(
+            let _mapped = map_keyed(cx, 
                 a,
                 {
                     let counter = Rc::clone(&counter);
                     move |cx, _| {
                         let counter = Rc::clone(&counter);
-                        cx.on_cleanup(move || {
+                        on_cleanup(cx, move || {
                             counter.set(counter.get() + 1);
                         })
                     }
@@ -451,8 +450,8 @@ mod tests {
     #[test]
     fn indexed() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
-            let mapped = cx.map_indexed(a, |_, x| x * 2);
+            let a = create_signal(cx, vec![1, 2, 3]);
+            let mapped = map_indexed(cx, a, |_, x| x * 2);
             assert_eq!(*mapped.get(), vec![2, 4, 6]);
 
             a.set(vec![1, 2, 3, 4]);
@@ -467,8 +466,8 @@ mod tests {
     #[test]
     fn indexed_clear() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
-            let mapped = cx.map_indexed(a, |_, x| x * 2);
+            let a = create_signal(cx, vec![1, 2, 3]);
+            let mapped = map_indexed(cx, a, |_, x| x * 2);
 
             a.set(Vec::new());
             assert_eq!(*mapped.get(), Vec::<i32>::new());
@@ -479,11 +478,11 @@ mod tests {
     #[test]
     fn indexed_react() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
-            let mapped = cx.map_indexed(a, |_, x| x * 2);
+            let a = create_signal(cx, vec![1, 2, 3]);
+            let mapped = map_indexed(cx, a, |_, x| x * 2);
 
-            let counter = cx.create_signal(0);
-            cx.create_effect(|| {
+            let counter = create_signal(cx, 0);
+            create_effect(cx, || {
                 counter.set(*counter.get_untracked() + 1);
                 mapped.track();
             });
@@ -498,9 +497,9 @@ mod tests {
     #[test]
     fn indexed_use_previous_computation() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
+            let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let mapped = cx.map_indexed(a, {
+            let mapped = map_indexed(cx, a, {
                 let counter = Rc::clone(&counter);
                 move |_, _| {
                     counter.set(counter.get() + 1);
@@ -523,13 +522,13 @@ mod tests {
     #[test]
     fn indexed_call_cleanup_on_remove() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
+            let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = cx.map_indexed(a, {
+            let _mapped = map_indexed(cx, a, {
                 let counter = Rc::clone(&counter);
                 move |cx, _| {
                     let counter = Rc::clone(&counter);
-                    cx.on_cleanup(move || {
+                    on_cleanup(cx, move || {
                         counter.set(counter.get() + 1);
                     });
                 }
@@ -550,13 +549,13 @@ mod tests {
     #[test]
     fn indexed_call_cleanup_on_remove_all() {
         create_scope_immediate(|cx| {
-            let a = cx.create_signal(vec![1, 2, 3]);
+            let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = cx.map_indexed(a, {
+            let _mapped = map_indexed(cx, a, {
                 let counter = Rc::clone(&counter);
                 move |cx, _| {
                     let counter = Rc::clone(&counter);
-                    cx.on_cleanup(move || {
+                    on_cleanup(cx, move || {
                         counter.set(counter.get() + 1);
                     })
                 }

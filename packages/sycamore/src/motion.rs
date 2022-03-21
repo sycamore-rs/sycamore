@@ -44,7 +44,7 @@ pub trait ScopeMotionExt<'a> {
 
 impl<'a> ScopeMotionExt<'a> for Scope<'a> {
     fn create_raf(self, f: impl FnMut() + 'a) -> RafState<'a> {
-        let running = self.create_ref(create_rc_signal(false));
+        let running = create_ref(self, create_rc_signal(false));
         let start: &dyn Fn();
         let stop: &dyn Fn();
 
@@ -55,7 +55,7 @@ impl<'a> ScopeMotionExt<'a> for Scope<'a> {
             // the closure will not be accessed once the enclosing Scope is disposed.
             let extended: Box<dyn FnMut() + 'static> = unsafe { std::mem::transmute(boxed) };
             let extended = RefCell::new(extended);
-            let scope_status = self.use_scope_status();
+            let scope_status = use_scope_status(self);
 
             let f = Rc::new(RefCell::new(None::<Closure<dyn Fn()>>));
             let g = Rc::clone(&f);
@@ -76,7 +76,7 @@ impl<'a> ScopeMotionExt<'a> for Scope<'a> {
                     }
                 }
             })));
-            start = self.create_ref(move || {
+            start = create_ref(self, move || {
                 if !*running.get() {
                     running.set(true);
                     web_sys::window()
@@ -87,17 +87,17 @@ impl<'a> ScopeMotionExt<'a> for Scope<'a> {
                         .unwrap_throw();
                 }
             });
-            stop = self.create_ref(|| running.set(false));
+            stop = create_ref(self, || running.set(false));
         } else {
-            start = self.create_ref(|| running.set(true));
-            stop = self.create_ref(|| running.set(false));
+            start = create_ref(self, || running.set(true));
+            stop = create_ref(self, || running.set(false));
         }
 
         (running.clone(), start, stop)
     }
 
     fn create_raf_loop(self, mut f: impl FnMut() -> bool + 'a) -> RafState<'a> {
-        let stop_shared = self.create_ref(Cell::new(None::<&dyn Fn()>));
+        let stop_shared = create_ref(self, Cell::new(None::<&dyn Fn()>));
         let (running, start, stop) = self.create_raf(move || {
             if !f() {
                 stop_shared.get().unwrap()();
@@ -113,7 +113,10 @@ impl<'a> ScopeMotionExt<'a> for Scope<'a> {
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,
     ) -> &'a Tweened<'a, T> {
-        self.create_ref(Tweened::new(self, initial, transition_duration, easing_fn))
+        create_ref(
+            self,
+            Tweened::new(self, initial, transition_duration, easing_fn),
+        )
     }
 }
 

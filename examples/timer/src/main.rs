@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 
 #[component]
 fn TimerCounter<G: Html>(cx: Scope) -> View<G> {
-    let state = cx.create_signal(0);
+    let state = create_signal(cx, 0);
 
     cx.spawn_local(async move {
         loop {

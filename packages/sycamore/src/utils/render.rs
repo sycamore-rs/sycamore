@@ -70,7 +70,7 @@ fn insert_expression<G: GenericNode>(
             let parent = parent.clone();
             let marker = marker.cloned();
             let f = f.clone();
-            cx.create_effect_scoped(move |cx| {
+            create_effect_scoped(cx, move |cx| {
                 let mut value = f.get();
                 while let ViewType::Dyn(f) = &value.inner {
                     value = f.get();
@@ -95,7 +95,7 @@ fn insert_expression<G: GenericNode>(
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
-                cx.create_effect_scoped(move |cx| {
+                create_effect_scoped(cx, move |cx| {
                     let value = View::new_fragment(v.clone());
                     // This will call normalize_incoming_fragment again, but this time with the
                     // unwrap_fragment arg set to true.

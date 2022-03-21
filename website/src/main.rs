@@ -65,8 +65,8 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
 
 fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
     let cached_sidebar_data =
-        cx.create_ref(create_rc_signal(None::<(Option<String>, SidebarData)>));
-    cx.provide_context_ref(cached_sidebar_data);
+        create_ref(cx, create_rc_signal(None::<(Option<String>, SidebarData)>));
+    provide_context_ref(cx, cached_sidebar_data);
 
     let fetch_docs_data = move |url| {
         let data = cx.create_resource(docs_preload(url));
@@ -81,82 +81,85 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
         }
         data
     };
-    let view = cx.create_memo(on([route], move || match route.get().as_ref() {
-        Routes::Index => view! { cx,
-            div(class="container mx-auto") {
-                index::Index {}
+    let view = create_memo(
+        cx,
+        on([route], move || match route.get().as_ref() {
+            Routes::Index => view! { cx,
+                div(class="container mx-auto") {
+                    index::Index {}
+                }
+            },
+            Routes::Docs(a, b) => {
+                let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
+                view! { cx,
+                    (if let Some(data) = data.get().as_ref() {
+                        if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+                            view! { cx,
+                                content::Content {
+                                    data: data.clone(),
+                                    sidebar: (
+                                        "next".to_string(),
+                                        cached_sidebar_data.1.clone(),
+                                    ),
+                                }
+                            }
+                        } else {
+                            view! { cx, }
+                        }
+                    } else {
+                        view! { cx, }
+                    })
+                }
             }
-        },
-        Routes::Docs(a, b) => {
-            let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
-            view! { cx,
-                (if let Some(data) = data.get().as_ref() {
-                    if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+            Routes::VersionedDocs(version, a, b) => {
+                let version = version.clone();
+                let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
+                view! { cx,
+                    (if let Some(data) = data.get().as_ref() {
+                        if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
+                            let version = version.clone();
+                            view! { cx,
+                                content::Content {
+                                    data: data.clone(),
+                                    sidebar: (
+                                        version,
+                                        cached_sidebar_data.1.clone(),
+                                    ),
+                                }
+                            }
+                        } else {
+                            view! { cx, }
+                        }
+                    } else {
+                        view! { cx, }
+                    })
+                }
+            }
+            Routes::NewsIndex => view! { cx,
+                news_index::NewsIndex {}
+            },
+            Routes::Post(name) => {
+                let data = cx.create_resource(docs_preload(format!("/static/posts/{}.json", name)));
+                view! { cx,
+                    (if let Some(data) = data.get().as_ref() {
                         view! { cx,
                             content::Content {
                                 data: data.clone(),
-                                sidebar: (
-                                    "next".to_string(),
-                                    cached_sidebar_data.1.clone(),
-                                ),
                             }
                         }
                     } else {
                         view! { cx, }
-                    }
-                } else {
-                    view! { cx, }
-                })
+                    })
+                }
             }
-        }
-        Routes::VersionedDocs(version, a, b) => {
-            let version = version.clone();
-            let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
-            view! { cx,
-                (if let Some(data) = data.get().as_ref() {
-                    if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
-                        let version = version.clone();
-                        view! { cx,
-                            content::Content {
-                                data: data.clone(),
-                                sidebar: (
-                                    version,
-                                    cached_sidebar_data.1.clone(),
-                                ),
-                            }
-                        }
-                    } else {
-                        view! { cx, }
-                    }
-                } else {
-                    view! { cx, }
-                })
-            }
-        }
-        Routes::NewsIndex => view! { cx,
-            news_index::NewsIndex {}
-        },
-        Routes::Post(name) => {
-            let data = cx.create_resource(docs_preload(format!("/static/posts/{}.json", name)));
-            view! { cx,
-                (if let Some(data) = data.get().as_ref() {
-                    view! { cx,
-                        content::Content {
-                            data: data.clone(),
-                        }
-                    }
-                } else {
-                    view! { cx, }
-                })
-            }
-        }
-        Routes::Versions => view! { cx,
-            versions::Versions {}
-        },
-        Routes::NotFound => view! { cx,
-            "404 Not Found"
-        },
-    }));
+            Routes::Versions => view! { cx,
+                versions::Versions {}
+            },
+            Routes::NotFound => view! { cx,
+                "404 Not Found"
+            },
+        }),
+    );
 
     view! { cx,
         div(class="font-body pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
@@ -185,10 +188,10 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         dark_mode_mq
     };
     let dark_mode = DarkMode(create_rc_signal(dark_mode));
-    cx.provide_context(dark_mode);
-    let DarkMode(dark_mode) = cx.use_context::<DarkMode>();
+    provide_context(cx, dark_mode);
+    let DarkMode(dark_mode) = use_context::<DarkMode>(cx);
 
-    cx.create_effect(move || {
+    create_effect(cx, move || {
         if let Some(local_storage) = &local_storage {
             local_storage
                 .set_item("dark_mode", &dark_mode.get().to_string())

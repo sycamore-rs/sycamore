@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
+use sycamore_reactive::create_ref;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::GenericNode;
@@ -90,7 +91,7 @@ pub trait ScopeCreateNodeRef<'a> {
 
 impl<'a> ScopeCreateNodeRef<'a> for Scope<'a> {
     fn create_node_ref<G: GenericNode>(self) -> &'a NodeRef<G> {
-        self.create_ref(NodeRef::new())
+        create_ref(self, NodeRef::new())
     }
 }
 

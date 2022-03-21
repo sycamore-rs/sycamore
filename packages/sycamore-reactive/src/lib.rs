@@ -9,7 +9,10 @@ mod iter;
 mod memo;
 mod signal;
 
+pub use context::*;
 pub use effect::*;
+pub use iter::*;
+pub use memo::*;
 pub use signal::*;
 
 use std::any::{Any, TypeId};
@@ -210,6 +213,88 @@ pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(Scope<'a>)) -> ScopeDispos
     })
 }
 
+/// Create a child scope.
+///
+/// Returns a disposer function which will release the memory owned by the [`Scope`]. If the
+/// disposer function is never called, the child scope will be disposed automatically when the
+/// parent scope is disposed.
+///
+/// # Child scope lifetime
+///
+/// The lifetime of the child scope is strictly a subset of the lifetime of the parent scope.
+/// ```txt
+/// [------------'a-------------]
+///      [---------'b--------]
+/// 'a: lifetime of parent
+/// 'b: lifetime of child
+/// ```
+/// If the disposer is never called, the lifetime `'b` lasts as long as `'a`.
+/// As such, it is impossible for anything allocated in the child scope to escape into the
+/// parent scope.
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let mut outer = None;
+/// let disposer = create_child_scope(cx, |cx| {
+///     outer = Some(cx);
+///     //           ^^^
+/// });
+/// disposer();
+/// let _ = outer.unwrap();
+/// # });
+/// ```
+/// However, the closure itself only needs to live as long as the call to this method because it
+/// is called immediately. For example, the following compiles and is perfectly safe:
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let mut outer = String::new();
+/// let disposer = create_child_scope(cx, |cx| {
+///     // outer is accessible inside the closure.
+///     outer = "Hello World!".to_string();
+/// });
+/// unsafe { disposer.dispose(); }
+/// drop(outer);
+/// //   ^^^^^ -> and remains accessible outside the closure.
+/// # });
+/// ```
+pub fn create_child_scope<'a, F>(cx: Scope<'a>, f: F) -> ScopeDisposer<'a>
+where
+    F: for<'child_lifetime> FnOnce(BoundedScope<'child_lifetime, 'a>),
+{
+    let mut child = ScopeRaw::new();
+    // SAFETY: The only fields that are accessed on self from child is `context` which does not
+    // have any lifetime annotations.
+    child.parent = Some(unsafe { std::mem::transmute(cx.raw as *const _) });
+    let boxed = Box::new(child);
+    let ptr = Box::into_raw(boxed);
+
+    let key = cx
+        .raw
+        .inner
+        .borrow_mut()
+        .child_scopes
+        // SAFETY: None of the fields of ptr are accessed through child_scopes therefore we can
+        // safely transmute the lifetime.
+        .insert(unsafe { std::mem::transmute(ptr) });
+
+    // SAFETY: the address of the cx lives as long as 'a because:
+    // - It is allocated on the heap and therefore has a stable address.
+    // - self.child_cx is append only. That means that the Box<cx> will not be dropped until
+    //   Self is dropped.
+    f(unsafe { BoundedScope::new(&*ptr) });
+    //                                  ^^^ -> `ptr` is still accessible here after
+    // the call to f.
+    ScopeDisposer::new(move || unsafe {
+        let cx = cx.raw.inner.borrow_mut().child_scopes.remove(key).unwrap();
+        // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
+        // than 'a.
+        let cx = Box::from_raw(cx);
+        // SAFETY: Outside of call to f.
+        cx.dispose();
+    })
+}
+
 /// Creates a reactive scope, runs the callback, and disposes the scope immediately.
 ///
 /// Calling this is equivalent to writing:
@@ -229,156 +314,45 @@ pub fn create_scope_immediate(f: impl for<'a> FnOnce(Scope<'a>)) {
     }
 }
 
-impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
-    /// Create a new [`Signal`] under the current [`Scope`].
-    /// The created signal lasts as long as the scope and cannot be used outside of the scope.
-    ///
-    /// # Signal lifetime
-    ///
-    /// The lifetime of the returned signal is the same as the [`Scope`].
-    /// As such, the signal cannot escape the [`Scope`].
-    ///
-    /// ```compile_fail
-    /// # use sycamore_reactive::*;
-    /// let mut outer = None;
-    /// create_scope_immediate(|cx| {
-    ///     let signal = cx.create_signal(0);
-    ///     outer = Some(signal);
-    /// });
-    /// ```
-    pub fn create_signal<T>(self, value: T) -> &'a Signal<T> {
-        let signal = Signal::new(value);
-        self.raw.arena.alloc(signal)
-    }
+/// Allocate a new arbitrary value under the current [`Scope`].
+/// The allocated value lasts as long as the scope and cannot be used outside of the scope.
+///
+/// # Ref lifetime
+///
+/// The lifetime of the returned ref is the same as the [`Scope`].
+/// As such, the reference cannot escape the [`Scope`].
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let mut outer = None;
+/// let disposer = create_child_scope(cx, |cx| {
+///     let data = create_ref(cx, 0);
+///     let raw: &i32 = &data;
+///     outer = Some(raw);
+///     //           ^^^
+/// });
+/// disposer();
+/// let _ = outer.unwrap();
+/// # });
+/// ```
+pub fn create_ref<T>(cx: Scope, value: T) -> &T {
+    cx.raw.arena.alloc(value)
+}
 
-    /// Allocate a new arbitrary value under the current [`Scope`].
-    /// The allocated value lasts as long as the scope and cannot be used outside of the scope.
-    ///
-    /// # Ref lifetime
-    ///
-    /// The lifetime of the returned ref is the same as the [`Scope`].
-    /// As such, the reference cannot escape the [`Scope`].
-    /// ```compile_fail
-    /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|cx| {
-    /// let mut outer = None;
-    /// let disposer = cx.create_child_scope(|cx| {
-    ///     let data = cx.create_ref(0);
-    ///     let raw: &i32 = &data;
-    ///     outer = Some(raw);
-    ///     //           ^^^
-    /// });
-    /// disposer();
-    /// let _ = outer.unwrap();
-    /// # });
-    /// ```
-    pub fn create_ref<T: 'a>(self, value: T) -> &'a T {
-        self.raw.arena.alloc(value)
-    }
+/// Adds a callback that is called when the scope is destroyed.
+pub fn on_cleanup<'a>(cx: Scope<'a>, f: impl FnOnce() + 'a) {
+    cx.raw.inner.borrow_mut().cleanups.push(Box::new(f));
+}
 
-    /// Adds a callback that is called when the scope is destroyed.
-    pub fn on_cleanup(self, f: impl FnOnce() + 'a) {
-        self.raw.inner.borrow_mut().cleanups.push(Box::new(f));
-    }
-
-    /// Create a child scope.
-    ///
-    /// Returns a disposer function which will release the memory owned by the [`Scope`]. If the
-    /// disposer function is never called, the child scope will be disposed automatically when the
-    /// parent scope is disposed.
-    ///
-    /// # Child scope lifetime
-    ///
-    /// The lifetime of the child scope is strictly a subset of the lifetime of the parent scope.
-    /// ```txt
-    /// [------------'a-------------]
-    ///      [---------'b--------]
-    /// 'a: lifetime of parent
-    /// 'b: lifetime of child
-    /// ```
-    /// If the disposer is never called, the lifetime `'b` lasts as long as `'a`.
-    /// As such, it is impossible for anything allocated in the child scope to escape into the
-    /// parent scope.
-    /// ```compile_fail
-    /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|cx| {
-    /// let mut outer = None;
-    /// let disposer = cx.create_child_scope(|cx| {
-    ///     outer = Some(cx);
-    ///     //           ^^^
-    /// });
-    /// disposer();
-    /// let _ = outer.unwrap();
-    /// # });
-    /// ```
-    /// However, the closure itself only needs to live as long as the call to this method because it
-    /// is called immediately. For example, the following compiles and is perfectly safe:
-    /// ```
-    /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|cx| {
-    /// let mut outer = String::new();
-    /// let disposer = cx.create_child_scope(|cx| {
-    ///     // outer is accessible inside the closure.
-    ///     outer = "Hello World!".to_string();
-    /// });
-    /// unsafe { disposer.dispose(); }
-    /// drop(outer);
-    /// //   ^^^^^ -> and remains accessible outside the closure.
-    /// # });
-    /// ```
-    pub fn create_child_scope<F>(self, f: F) -> ScopeDisposer<'a>
-    where
-        F: for<'child_lifetime> FnOnce(BoundedScope<'child_lifetime, 'a>),
-    {
-        let mut child = ScopeRaw::new();
-        // SAFETY: The only fields that are accessed on self from child is `context` which does not
-        // have any lifetime annotations.
-        child.parent = Some(unsafe { std::mem::transmute(self.raw as *const _) });
-        let boxed = Box::new(child);
-        let ptr = Box::into_raw(boxed);
-
-        let key = self
-            .raw
-            .inner
-            .borrow_mut()
-            .child_scopes
-            // SAFETY: None of the fields of ptr are accessed through child_scopes therefore we can
-            // safely transmute the lifetime.
-            .insert(unsafe { std::mem::transmute(ptr) });
-
-        // SAFETY: the address of the cx lives as long as 'a because:
-        // - It is allocated on the heap and therefore has a stable address.
-        // - self.child_cx is append only. That means that the Box<cx> will not be dropped until
-        //   Self is dropped.
-        f(unsafe { BoundedScope::new(&*ptr) });
-        //                                 ^^^ -> `ptr` is still accessible here after
-        // the call to f.
-        ScopeDisposer::new(move || unsafe {
-            let cx = self
-                .raw
-                .inner
-                .borrow_mut()
-                .child_scopes
-                .remove(key)
-                .unwrap();
-            // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
-            // than 'a.
-            let cx = Box::from_raw(cx);
-            // SAFETY: Outside of call to f.
-            cx.dispose();
-        })
-    }
-
-    /// Returns a [`RcSignal`] that is `true` when the scope is still valid and `false` once it is
-    /// disposed.
-    pub fn use_scope_status(&self) -> RcSignal<bool> {
-        let status = create_rc_signal(true);
-        self.on_cleanup({
-            let status = status.clone();
-            move || status.set(false)
-        });
-        status
-    }
+/// Returns a [`RcSignal`] that is `true` when the scope is still valid and `false` once it is
+/// disposed.
+pub fn use_scope_status(cx: Scope) -> RcSignal<bool> {
+    let status = create_rc_signal(true);
+    on_cleanup(cx, {
+        let status = status.clone();
+        move || status.set(false)
+    });
+    status
 }
 
 impl<'a> ScopeRaw<'a> {
@@ -427,9 +401,9 @@ impl Drop for ScopeRaw<'_> {
 /// ```
 /// # use sycamore_reactive::*;
 /// # create_scope_immediate(|cx| {
-/// let state = cx.create_signal(0);
+/// let state = create_signal(cx, 0);
 ///
-/// cx.create_effect(on([state], || {
+/// create_effect(cx, on([state], || {
 ///     println!("State changed. New state value = {}", state.get());
 /// })); // Prints "State changed. New state value = 0"
 ///
@@ -456,8 +430,8 @@ mod tests {
     #[test]
     fn refs() {
         let disposer = create_scope(|cx| {
-            let r = cx.create_ref(0);
-            cx.on_cleanup(move || {
+            let r = create_ref(cx, 0);
+            on_cleanup(cx, move || {
                 let _ = r; // r can be accessed inside scope here.
                 dbg!(r);
             })
@@ -470,9 +444,9 @@ mod tests {
     #[test]
     fn cleanup() {
         create_scope_immediate(|cx| {
-            let cleanup_called = cx.create_signal(false);
-            let disposer = cx.create_child_scope(|cx| {
-                cx.on_cleanup(|| {
+            let cleanup_called = create_signal(cx, false);
+            let disposer = create_child_scope(cx, |cx| {
+                on_cleanup(cx, || {
                     cleanup_called.set(true);
                 });
             });
@@ -487,14 +461,14 @@ mod tests {
     #[test]
     fn cleanup_in_effect() {
         create_scope_immediate(|cx| {
-            let trigger = cx.create_signal(());
+            let trigger = create_signal(cx, ());
 
-            let counter = cx.create_signal(0);
+            let counter = create_signal(cx, 0);
 
-            cx.create_effect_scoped(|cx| {
+            create_effect_scoped(cx, |cx| {
                 trigger.track();
 
-                cx.on_cleanup(|| {
+                on_cleanup(cx, || {
                     counter.set(*counter.get() + 1);
                 });
             });
@@ -512,14 +486,14 @@ mod tests {
     #[test]
     fn cleanup_is_untracked() {
         create_scope_immediate(|cx| {
-            let trigger = cx.create_signal(());
+            let trigger = create_signal(cx, ());
 
-            let counter = cx.create_signal(0);
+            let counter = create_signal(cx, 0);
 
-            cx.create_effect_scoped(|cx| {
+            create_effect_scoped(cx, |cx| {
                 counter.set(*counter.get_untracked() + 1);
 
-                cx.on_cleanup(|| {
+                on_cleanup(cx, || {
                     trigger.track(); // trigger should not be tracked
                 });
             });
@@ -534,8 +508,8 @@ mod tests {
     #[test]
     fn can_store_disposer_in_own_signal() {
         create_scope_immediate(|cx| {
-            let signal = cx.create_signal(None);
-            let disposer = cx.create_child_scope(|_cx| {});
+            let signal = create_signal(cx, None);
+            let disposer = create_child_scope(cx, |_cx| {});
             signal.set(Some(disposer));
         });
     }

@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 
 #[component]
 fn Counter<G: Html>(cx: Scope) -> View<G> {
-    let state = cx.create_signal(0i32);
+    let state = create_signal(cx, 0i32);
     let increment = |_| state.set(*state.get() + 1);
     let decrement = |_| state.set(*state.get() - 1);
     let reset = |_| state.set(0);
@@ -18,13 +18,13 @@ fn Counter<G: Html>(cx: Scope) -> View<G> {
 
 #[component]
 fn Hello<G: Html>(cx: Scope) -> View<G> {
-    let name = cx.create_signal(String::new());
+    let name = create_signal(cx, String::new());
 
     view! { cx,
         div {
             p {
                 "Hello "
-                (if *cx.create_selector(|| !name.get().is_empty()).get() {
+                (if *create_selector(cx, || !name.get().is_empty()).get() {
                     view! { cx,
                         span { (name.get()) }
                     }

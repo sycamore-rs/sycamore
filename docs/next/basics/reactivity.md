@@ -27,7 +27,7 @@ Reactivity is based on reactive primitives. A `Signal` is one such example of a 
 At it's simplest, a `Signal` is simply a wrapper around a type that can be read and written to and
 which can be listened on whenever its wrapped value is mutated.
 
-To create a signal, we use `cx.create_signal(...)`. Note that the return value of this method is
+To create a signal, we use `create_signal(cx, ...)`. Note that the return value of this method is
 not actually `Signal` but `&Signal`. The reason for this is because the created signal is allocated
 on the reactive scope and therefore has its lifetime tied with the scope. Furthermore, this allows
 using Rust's lifetime system to make sure signals are not accessed once its enclosing scope has been
@@ -37,7 +37,7 @@ Here is an example of creating a signal, accessing it via `.get()`, and modifyin
 `.set(...)`.
 
 ```rust
-let state = cx.create_signal(0); // Create a reactive atom with an initial value of `0`.
+let state = create_signal(cx, 0); // Create a reactive atom with an initial value of `0`.
 println!("The state is: {}", state.get()); // prints "The state is: 0"
 state.set(1);
 println!("The state is: {}", state.get()); // should now print "The state is: 1"
@@ -50,8 +50,8 @@ Let's do that! For example, imagine we wanted to print out every state change. T
 accomplished like so:
 
 ```rust
-let state = cx.create_signal(0);
-cx.create_effect(|| println!("The state changed. New value: {}", state.get()));
+let state = create_signal(cx, 0);
+create_effect(cx, || println!("The state changed. New value: {}", state.get()));
 // Prints "The state changed. New value: 0"
 // (note that the effect is always executed at least 1 regardless of state changes)
 
@@ -75,7 +75,7 @@ In this spirit, we can easily create a derived state (also know as derive stores
 `create_memo(...)`.
 
 ```rust
-let state = cx.create_signal(0);
+let state = create_signal(cx, 0);
 let double = create_memo(|| *state.get() * 2);
 
 assert_eq!(*double.get(), 0);
@@ -93,7 +93,7 @@ is used together with UI rendering.
 Reactivity is automatically built-in into the `view!` macro. Say we have the following code:
 
 ```rust
-let state = cx.create_signal(0);
+let state = create_signal(cx, 0);
 view! { cx,
     p {
         (state.get())
@@ -104,11 +104,11 @@ view! { cx,
 This will expand to something approximately like:
 
 ```rust
-let state = cx.create_signal(0);
+let state = create_signal(cx, 0);
 {
     let element = GenericNode::element(p);
     let text = GenericNode::text(String::new() /* placeholder */);
-    cx.create_effect(move || {
+    create_effect(cx, move || {
         // Update text when `state` changes.
         text.update_text(Some(&state.get()));
     });

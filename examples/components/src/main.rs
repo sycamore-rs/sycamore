@@ -15,7 +15,7 @@ fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: &'a Signal<i32>) -> View<G> {
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let state = cx.create_signal(0);
+    let state = create_signal(cx, 0);
 
     let increment = |_| state.set(*state.get() + 1);
 

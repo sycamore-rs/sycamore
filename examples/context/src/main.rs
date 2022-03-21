@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 
 #[component]
 fn Counter<G: Html>(cx: Scope) -> View<G> {
-    let counter = cx.use_context::<RcSignal<i32>>();
+    let counter = use_context::<RcSignal<i32>>(cx);
 
     view! { cx,
         p(class="value") {
@@ -13,7 +13,7 @@ fn Counter<G: Html>(cx: Scope) -> View<G> {
 
 #[component]
 pub fn Controls<G: Html>(cx: Scope) -> View<G> {
-    let state = cx.use_context::<RcSignal<i32>>();
+    let state = use_context::<RcSignal<i32>>(cx);
     let increment = move |_| state.set(*state.get() + 1);
     let decrement = move |_| state.set(*state.get() - 1);
     let reset = move |_| state.set(0);
@@ -28,7 +28,7 @@ pub fn Controls<G: Html>(cx: Scope) -> View<G> {
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
     let counter = create_rc_signal(0i32);
-    cx.provide_context(counter);
+    provide_context(cx, counter);
 
     view! { cx,
         div {

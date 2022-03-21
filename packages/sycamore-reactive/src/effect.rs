@@ -53,139 +53,136 @@ impl<'a> EffectState<'a> {
     }
 }
 
-impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
-    /// Creates an effect on signals used inside the effect closure.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|cx| {
-    /// let state = cx.create_signal(0);
-    ///
-    /// cx.create_effect(|| {
-    ///     println!("State changed. New state value = {}", state.get());
-    /// }); // Prints "State changed. New state value = 0"
-    ///
-    /// state.set(1); // Prints "State changed. New state value = 1"
-    /// # });
-    /// ```
-    pub fn create_effect(self, f: impl FnMut() + 'a) {
-        self._create_effect(Box::new(f))
-    }
+/// Creates an effect on signals used inside the effect closure.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let state = create_signal(cx, 0);
+///
+/// create_effect(cx, || {
+///     println!("State changed. New state value = {}", state.get());
+/// }); // Prints "State changed. New state value = 0"
+///
+/// state.set(1); // Prints "State changed. New state value = 1"
+/// # });
+/// ```
+pub fn create_effect<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) {
+    _create_effect(cx, Box::new(f))
+}
 
-    /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
-    fn _create_effect(self, mut f: Box<dyn FnMut() + 'a>) {
-        let effect = Rc::new(RefCell::new(None::<EffectState<'a>>));
-        let cb = Rc::new(RefCell::new({
-            let effect = Rc::downgrade(&effect);
-            move || {
-                EFFECTS.with(|effects| {
-                    // Record initial effect stack length to verify that it is the same after.
-                    let initial_effect_stack_len = effects.borrow().len();
-                    // Upgrade the effect to an Rc now so that it is valid for the rest of the
-                    // callback.
-                    let effect_ref = effect.upgrade().unwrap();
+/// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
+fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<dyn FnMut() + 'a>) {
+    let effect = Rc::new(RefCell::new(None::<EffectState<'a>>));
+    let cb = Rc::new(RefCell::new({
+        let effect = Rc::downgrade(&effect);
+        move || {
+            EFFECTS.with(|effects| {
+                // Record initial effect stack length to verify that it is the same after.
+                let initial_effect_stack_len = effects.borrow().len();
+                // Upgrade the effect to an Rc now so that it is valid for the rest of the
+                // callback.
+                let effect_ref = effect.upgrade().unwrap();
 
-                    // Take effect out.
-                    let mut effect = effect_ref.take().unwrap();
-                    effect.clear_dependencies();
+                // Take effect out.
+                let mut effect = effect_ref.take().unwrap();
+                effect.clear_dependencies();
 
-                    // Push the effect onto the effect stack so that it is visible by signals.
-                    effects
-                        .borrow_mut()
-                        .push(unsafe { std::mem::transmute(&mut effect as *mut EffectState<'a>) });
-                    // Now we can call the user-provided function.
-                    f();
-                    // Pop the effect from the effect stack.
-                    effects.borrow_mut().pop().unwrap();
-                    // The raw pointer pushed onto `effects` is dead and can no longer be accessed.
-                    // We can now access `effect` directly again.
+                // Push the effect onto the effect stack so that it is visible by signals.
+                effects
+                    .borrow_mut()
+                    .push(unsafe { std::mem::transmute(&mut effect as *mut EffectState<'a>) });
+                // Now we can call the user-provided function.
+                f();
+                // Pop the effect from the effect stack.
+                effects.borrow_mut().pop().unwrap();
+                // The raw pointer pushed onto `effects` is dead and can no longer be accessed.
+                // We can now access `effect` directly again.
 
-                    // For all the signals collected by the EffectState,
-                    // we need to add backlinks from the signal to the effect, so that
-                    // updating the signal will trigger the effect.
-                    for emitter in &effect.dependencies {
-                        // The SignalEmitter might have been destroyed between when the signal was
-                        // accessed and now.
-                        if let Some(emitter) = emitter.0.upgrade() {
-                            // SAFETY: When the effect is destroyed or when the emitter is dropped,
-                            // this link will be destroyed to prevent
-                            // dangling references.
-                            emitter.subscribe(Rc::downgrade(unsafe {
-                                std::mem::transmute(&effect.cb)
-                            }));
-                        }
+                // For all the signals collected by the EffectState,
+                // we need to add backlinks from the signal to the effect, so that
+                // updating the signal will trigger the effect.
+                for emitter in &effect.dependencies {
+                    // The SignalEmitter might have been destroyed between when the signal was
+                    // accessed and now.
+                    if let Some(emitter) = emitter.0.upgrade() {
+                        // SAFETY: When the effect is destroyed or when the emitter is dropped,
+                        // this link will be destroyed to prevent
+                        // dangling references.
+                        emitter
+                            .subscribe(Rc::downgrade(unsafe { std::mem::transmute(&effect.cb) }));
                     }
-
-                    // Get the effect state back into the Rc
-                    *effect_ref.borrow_mut() = Some(effect);
-
-                    debug_assert_eq!(effects.borrow().len(), initial_effect_stack_len);
-                });
-            }
-        }));
-
-        // Initialize initial effect state.
-        *effect.borrow_mut() = Some(EffectState {
-            cb: cb.clone(),
-            dependencies: HashSet::new(),
-        });
-
-        // Initial callback call to get everything started.
-        cb.borrow_mut()();
-
-        // Push Rc to self.effects so that it is not dropped immediately.
-        self.raw.inner.borrow_mut().effects.push(effect);
-    }
-
-    /// Creates an effect on signals used inside the effect closure.
-    ///
-    /// Instead of [`create_effect`](Self::create_effect), this function also provides a new
-    /// reactive scope instead the effect closure. This scope is created for each new run of the
-    /// effect.
-    ///
-    /// Items created within the scope cannot escape outside the effect because that can result in
-    /// an use-after-free.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore_reactive::*;
-    /// # create_scope_immediate(|cx| {
-    /// cx.create_effect_scoped(|cx| {
-    ///     // Use the scoped cx inside here.
-    ///     let _nested_signal = cx.create_signal(0);
-    ///     // _nested_signal cannot escape out of the effect closure.
-    /// });
-    /// # });
-    /// ```
-    pub fn create_effect_scoped<F>(self, mut f: F)
-    where
-        F: for<'child_lifetime> FnMut(BoundedScope<'child_lifetime, 'a>) + 'a,
-    {
-        let mut disposer: Option<Box<ScopeDisposer<'a>>> = None;
-        self.create_effect(move || {
-            // We run the disposer inside the effect, after effect dependencies have been cleared.
-            // This is to make sure that if the effect subscribes to its own signal, there is no
-            // use-after-free during the clear dependencies phase.
-            if let Some(disposer) = disposer.take() {
-                // SAFETY: we are not accessing the scope after the effect has been dropped.
-                unsafe {
-                    disposer.dispose();
                 }
+
+                // Get the effect state back into the Rc
+                *effect_ref.borrow_mut() = Some(effect);
+
+                debug_assert_eq!(effects.borrow().len(), initial_effect_stack_len);
+            });
+        }
+    }));
+
+    // Initialize initial effect state.
+    *effect.borrow_mut() = Some(EffectState {
+        cb: cb.clone(),
+        dependencies: HashSet::new(),
+    });
+
+    // Initial callback call to get everything started.
+    cb.borrow_mut()();
+
+    // Push Rc to self.effects so that it is not dropped immediately.
+    cx.raw.inner.borrow_mut().effects.push(effect);
+}
+
+/// Creates an effect on signals used inside the effect closure.
+///
+/// Instead of [`create_effect`], this function also provides a new
+/// reactive scope instead the effect closure. This scope is created for each new run of the
+/// effect.
+///
+/// Items created within the scope cannot escape outside the effect because that can result in
+/// an use-after-free.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// create_effect_scoped(cx, |cx| {
+///     // Use the scoped cx inside here.
+///     let _nested_signal = create_signal(cx, 0);
+///     // _nested_signal cannot escape out of the effect closure.
+/// });
+/// # });
+/// ```
+pub fn create_effect_scoped<'a, F>(cx: Scope<'a>, mut f: F)
+where
+    F: for<'child_lifetime> FnMut(BoundedScope<'child_lifetime, 'a>) + 'a,
+{
+    let mut disposer: Option<Box<ScopeDisposer<'a>>> = None;
+    create_effect(cx, move || {
+        // We run the disposer inside the effect, after effect dependencies have been cleared.
+        // This is to make sure that if the effect subscribes to its own signal, there is no
+        // use-after-free during the clear dependencies phase.
+        if let Some(disposer) = disposer.take() {
+            // SAFETY: we are not accessing the scope after the effect has been dropped.
+            unsafe {
+                disposer.dispose();
             }
-            // Create a new nested scope and save the disposer.
-            let new_disposer: Option<Box<ScopeDisposer<'a>>> =
-                Some(Box::new(self.create_child_scope(|cx| {
-                    // SAFETY: f takes the same parameter as the argument to
-                    // self.create_child_scope(_).
-                    f(unsafe { std::mem::transmute(cx) });
-                })));
-            // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
-            // effect which is necessarily within the lifetime of self (the Scope).
-            // disposer = unsafe { std::mem::transmute(new_disposer) };
-            disposer = new_disposer;
-        });
-    }
+        }
+        // Create a new nested scope and save the disposer.
+        let new_disposer: Option<Box<ScopeDisposer<'a>>> =
+            Some(Box::new(create_child_scope(cx, |cx| {
+                // SAFETY: f takes the same parameter as the argument to
+                // self.create_child_scope(_).
+                f(unsafe { std::mem::transmute(cx) });
+            })));
+        // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
+        // effect which is necessarily within the lifetime of self (the Scope).
+        // disposer = unsafe { std::mem::transmute(new_disposer) };
+        disposer = new_disposer;
+    });
 }
 
 /// Run the passed closure inside an untracked dependency scope.
@@ -197,8 +194,8 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
 /// ```
 /// # use sycamore_reactive::*;
 /// # create_scope_immediate(|cx| {
-/// let state = cx.create_signal(1);
-/// let double = cx.create_memo(|| untrack(|| *state.get() * 2));
+/// let state = create_signal(cx, 1);
+/// let double = create_memo(cx, || untrack(|| *state.get() * 2));
 /// //                              ^^^^^^^
 /// assert_eq!(*double.get(), 2);
 ///
@@ -223,11 +220,11 @@ mod tests {
     #[test]
     fn effect() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
 
-            let double = cx.create_signal(-1);
+            let double = create_signal(cx, -1);
 
-            cx.create_effect(|| {
+            create_effect(cx, || {
                 double.set(*state.get() * 2);
             });
             assert_eq!(*double.get(), 0); // calling create_effect should call the effect at least once
@@ -242,13 +239,16 @@ mod tests {
     #[test]
     fn effect_with_explicit_dependencies() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
 
-            let double = cx.create_signal(-1);
+            let double = create_signal(cx, -1);
 
-            cx.create_effect(on([state], || {
-                double.set(*state.get() * 2);
-            }));
+            create_effect(
+                cx,
+                on([state], || {
+                    double.set(*state.get() * 2);
+                }),
+            );
             assert_eq!(*double.get(), 0); // calling create_effect should call the effect at least once
 
             state.set(1);
@@ -261,8 +261,8 @@ mod tests {
     #[test]
     fn effect_cannot_create_infinite_loop() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
-            cx.create_effect(|| {
+            let state = create_signal(cx, 0);
+            create_effect(cx, || {
                 state.track();
                 state.set(0);
             });
@@ -273,10 +273,10 @@ mod tests {
     #[test]
     fn effect_should_only_subscribe_once_to_same_signal() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
 
-            let counter = cx.create_signal(0);
-            cx.create_effect(|| {
+            let counter = create_signal(cx, 0);
+            create_effect(cx, || {
                 counter.set(*counter.get_untracked() + 1);
 
                 // call state.track() twice but should subscribe once
@@ -294,13 +294,13 @@ mod tests {
     #[test]
     fn effect_should_recreate_dependencies_each_time() {
         create_scope_immediate(|cx| {
-            let condition = cx.create_signal(true);
+            let condition = create_signal(cx, true);
 
-            let state1 = cx.create_signal(0);
-            let state2 = cx.create_signal(1);
+            let state1 = create_signal(cx, 0);
+            let state2 = create_signal(cx, 1);
 
-            let counter = cx.create_signal(0);
-            cx.create_effect(|| {
+            let counter = create_signal(cx, 0);
+            create_effect(cx, || {
                 counter.set(*counter.get_untracked() + 1);
 
                 if *condition.get() {
@@ -332,16 +332,16 @@ mod tests {
     #[test]
     fn outer_effects_run_first() {
         create_scope_immediate(|cx| {
-            let trigger = cx.create_signal(());
+            let trigger = create_signal(cx, ());
 
-            let outer_counter = cx.create_signal(0);
-            let inner_counter = cx.create_signal(0);
+            let outer_counter = create_signal(cx, 0);
+            let inner_counter = create_signal(cx, 0);
 
-            cx.create_effect_scoped(|cx| {
+            create_effect_scoped(cx, |cx| {
                 trigger.track();
                 outer_counter.set(*outer_counter.get_untracked() + 1);
 
-                cx.create_effect(|| {
+                create_effect(cx, || {
                     trigger.track();
                     inner_counter.set(*inner_counter.get_untracked() + 1);
                 });
@@ -360,12 +360,12 @@ mod tests {
     #[test]
     fn destroy_effects_on_scope_dispose() {
         create_scope_immediate(|cx| {
-            let counter = cx.create_signal(0);
+            let counter = create_signal(cx, 0);
 
-            let trigger = cx.create_signal(());
+            let trigger = create_signal(cx, ());
 
-            let disposer = cx.create_child_scope(|cx| {
-                cx.create_effect(|| {
+            let disposer = create_child_scope(cx, |cx| {
+                create_effect(cx, || {
                     trigger.track();
                     counter.set(*counter.get_untracked() + 1);
                 });
@@ -387,9 +387,9 @@ mod tests {
     #[test]
     fn effect_preserves_scope_hierarchy() {
         create_scope_immediate(|cx| {
-            let trigger = cx.create_signal(());
-            let parent: &Signal<Option<*const ()>> = cx.create_signal(None);
-            cx.create_effect_scoped(|cx| {
+            let trigger = create_signal(cx, ());
+            let parent: &Signal<Option<*const ()>> = create_signal(cx, None);
+            create_effect_scoped(cx, |cx| {
                 trigger.track();
                 let p = cx.raw.parent.unwrap();
                 parent.set(Some(p as *const ()));
@@ -411,10 +411,10 @@ mod tests {
     #[test]
     fn effect_scoped_subscribing_to_own_signal() {
         create_scope_immediate(|cx| {
-            let trigger = cx.create_signal(());
-            cx.create_effect_scoped(|cx| {
+            let trigger = create_signal(cx, ());
+            create_effect_scoped(cx, |cx| {
                 trigger.track();
-                let signal = cx.create_signal(());
+                let signal = create_signal(cx, ());
                 // Track own signal:
                 signal.track();
             });
@@ -425,9 +425,9 @@ mod tests {
     #[test]
     fn effect_do_not_subscribe_to_destroyed_signal() {
         create_scope_immediate(|cx| {
-            let trigger = cx.create_signal(());
+            let trigger = create_signal(cx, ());
             let mut signal = Some(create_rc_signal(()));
-            cx.create_effect(move || {
+            create_effect(cx, move || {
                 trigger.track();
                 if let Some(signal) = signal.take() {
                     signal.track();

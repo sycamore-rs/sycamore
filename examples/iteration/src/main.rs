@@ -8,7 +8,7 @@ struct Cat {
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let items = cx.create_signal(vec![
+    let items = create_signal(cx, vec![
         Cat {
             id: "J---aiyznGQ",
             name: "Keyboard Cat",

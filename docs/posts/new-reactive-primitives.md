@@ -4,6 +4,8 @@ _2022-02-01_
 
 _How the next version of Sycamore will be the most ergonomic yet_
 
+> _Note:_ This article has been updated to reflex changes introduced in the latest v0.8 beta.
+
 Sycamore is a library for building isomorphic web applications in Rust and WebAssembly.
 
 At its core, Sycamore is built on what are called "reactive primitives". These reactive primitives
@@ -86,7 +88,7 @@ instead tied to the lifetime of the reactive scope in which it is created.
 // Before:
 let data = Signal::new(...);
 // After:
-let data = cx.create_signal(...);
+let data = create_signal(cx, ...);
 ```
 
 The `cx` is a reference to the current reactive scope. Whereas previously, reactive scopes were
@@ -106,11 +108,11 @@ lifetime as the `Scope`.
 This means that we can now use our `Signal` in as many closures as we want.
 
 ```rust
-let data = cx.create_signal(...);
+let data = create_signal(cx, ...);
 let callback = || data.get();
 //             ^^ -> Look ma, no clones!
 let another_callback = || data.get();
-cx.create_effect(|| {
+create_effect(cx, || {
     log::info!("{data}");
 });
 ```
@@ -126,8 +128,8 @@ possibility on our roadmap:
 #[component]
 async fn AsyncFetch<G: Html>(cx: Scope) -> View<G> {
     let data = fetch_data().await;
-    let derived = cx.create_memo(|| data);
-    //            ^^^ -> We can still access `cx`, even after the `.await` suspension point.
+    let derived = create_memo(cx, || data);
+    //                        ^^ -> We can still access `cx`, even after the `.await` suspension point.
     view! {
         (derived)
     }
@@ -155,7 +157,7 @@ The second is now that `Signal`s are tied to the `Scope`, it is impossible for t
 let mut outer = None;
 // Crete a new reactive scope and allow access to it through `cx`.
 create_scope(|cx| {
-    let data = cx.create_signal(0);
+    let data = create_signal(cx, 0);
     outer = Some(data);
     //           ^^^^ -> ERROR: `data` cannot escape
 });
@@ -165,6 +167,6 @@ However, this behavior is rarely desired. And when absolutely needed, one can al
 an `RcSignal` just like before.
 
 And this wraps up Sycamore's new reactive primitives. To try them out, install the `v0.8` beta
-published on crates.io (as of writing, the latest beta is `v0.8.0-beta.1`). Note that there are
-quite a few breaking changes, not just with reactivity, but also with some other aspects of Sycamore
-(such as components) to make them compatible with the new reactivity system.
+published on crates.io. Note that there are quite a few breaking changes, not just with reactivity,
+but also with some other aspects of Sycamore (such as components) to make them compatible with the
+new reactivity system.

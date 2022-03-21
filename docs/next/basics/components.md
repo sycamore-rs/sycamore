@@ -82,7 +82,7 @@ fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     }
 }
 
-let state = cx.create_signal(0);
+let state = create_signal(cx, 0);
 view! {
     MyComponent {
         value: state
@@ -109,7 +109,7 @@ can also be used to schedule a callback when the component is destroyed.
 ```rust
 #[component]
 fn MyComponent(cx: Scope) -> View<G> {
-    cx.on_cleanup(|| {
+    on_cleanup(cx, || {
         // Perform cleanup.
     });
     // ...

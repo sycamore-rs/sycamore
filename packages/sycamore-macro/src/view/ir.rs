@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn needs_cx_if_cx_ident_inside_expr() {
         let ts: Dyn = parse_quote! {
-            (cx.create_signal(0))
+            (create_signal(cx, 0))
         };
         assert!(ts.needs_cx("cx"));
         assert!(!ts.needs_cx("not_cx"));
@@ -199,7 +199,7 @@ mod tests {
 
         let ts_in_braces: Dyn = parse_quote! {
             ({
-                cx.create_signal(0)
+                create_signal(cx, 0)
             })
         };
         assert!(ts_in_braces.needs_cx("cx"));

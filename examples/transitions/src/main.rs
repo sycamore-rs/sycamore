@@ -35,7 +35,7 @@ async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let tab = cx.create_signal(Tab::One);
+    let tab = create_signal(cx, Tab::One);
     let transition = cx.use_transition();
     let update = move |x| transition.start(move || tab.set(x));
 

@@ -4,7 +4,7 @@ use std::pin::Pin;
 
 use futures::future::abortable;
 use futures::Future;
-use sycamore_reactive::Scope;
+use sycamore_reactive::{on_cleanup, Scope};
 
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`
 /// scope.
@@ -41,7 +41,7 @@ impl<'a> ScopeSpawnLocal<'a> for Scope<'a> {
         let extended: Pin<Box<dyn Future<Output = ()> + 'static>> =
             unsafe { std::mem::transmute(boxed) };
         let (abortable, handle) = abortable(extended);
-        self.on_cleanup(move || handle.abort());
+        on_cleanup(self, move || handle.abort());
         #[cfg(not(target_arch = "wasm32"))]
         tokio::task::spawn_local(abortable);
         #[cfg(target_arch = "wasm32")]

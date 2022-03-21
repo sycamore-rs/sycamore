@@ -139,7 +139,7 @@ impl ToTokens for ComponentFunction {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = #cx.create_signal(::sycamore::view::View::empty());
+                    let __dyn = create_signal(#cx, ::sycamore::view::View::empty());
                     let __view = ::sycamore::view! { #cx, (__dyn.get().as_ref().clone()) };
 
                     ::sycamore::suspense::suspense_scope(#cx, async move {

@@ -56,13 +56,13 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 /// ```
 #[component]
 pub fn Suspense<'a, G: GenericNode>(cx: Scope<'a>, props: SuspenseProps<'a, G>) -> View<G> {
-    let state = cx.use_context_or_else(SuspenseState::default);
+    let state = use_context_or_else(cx, SuspenseState::default);
     // Get the outer suspense state.
     let outer_count = state.async_counts.borrow().last().cloned();
     // Push a new suspense state.
     let count = create_rc_signal(0);
     state.async_counts.borrow_mut().push(count.clone());
-    let ready = cx.create_selector(move || *count.get() == 0);
+    let ready = create_selector(cx, move || *count.get() == 0);
 
     let v = props.children.call(cx);
     // Pop the suspense state.
@@ -72,8 +72,8 @@ pub fn Suspense<'a, G: GenericNode>(cx: Scope<'a>, props: SuspenseProps<'a, G>) 
         outer_state.set(*outer_state.get() + 1);
         // We keep track whether outer_state has already been decremented to prevent it from being
         // decremented twice.
-        let completed = cx.create_ref(Cell::new(false));
-        cx.create_effect(move || {
+        let completed = create_ref(cx, Cell::new(false));
+        create_effect(cx, move || {
             if !completed.get() && *ready.get() {
                 outer_state.set(*outer_state.get() - 1);
                 completed.set(true);
@@ -92,7 +92,7 @@ pub fn Suspense<'a, G: GenericNode>(cx: Scope<'a>, props: SuspenseProps<'a, G>) 
 ///
 /// The scope ends when the future is resolved.
 pub fn suspense_scope<'a>(cx: Scope<'a>, f: impl Future<Output = ()> + 'a) {
-    if let Some(state) = cx.try_use_context::<SuspenseState>() {
+    if let Some(state) = try_use_context::<SuspenseState>(cx) {
         if let Some(count) = state.async_counts.borrow().last().cloned() {
             count.set(*count.get() + 1);
             cx.spawn_local(async move {
@@ -107,13 +107,13 @@ pub fn suspense_scope<'a>(cx: Scope<'a>, f: impl Future<Output = ()> + 'a) {
 
 /// Waits until all suspense tasks created within the scope are finished.
 pub async fn await_suspense<U>(cx: Scope<'_>, f: impl Future<Output = U>) -> U {
-    let state = cx.use_context_or_else(SuspenseState::default);
+    let state = use_context_or_else(cx, SuspenseState::default);
     // Get the outer suspense state.
     let outer_count = state.async_counts.borrow().last().cloned();
     // Push a new suspense state.
     let count = create_rc_signal(0);
     state.async_counts.borrow_mut().push(count.clone());
-    let ready = cx.create_selector({
+    let ready = create_selector(cx, {
         let count = count.clone();
         move || *count.get() == 0
     });
@@ -126,9 +126,9 @@ pub async fn await_suspense<U>(cx: Scope<'_>, f: impl Future<Output = U>) -> U {
     state.async_counts.borrow_mut().pop().unwrap();
 
     let (sender, receiver) = oneshot::channel();
-    let sender = cx.create_ref(RefCell::new(Some(sender)));
+    let sender = create_ref(cx, RefCell::new(Some(sender)));
 
-    cx.create_effect(move || {
+    create_effect(cx, move || {
         if *ready.get() {
             if let Some(sender) = sender.take() {
                 let _ = sender.send(());
@@ -177,12 +177,15 @@ pub trait ScopeUseTransition<'a> {
 
 impl<'a> ScopeUseTransition<'a> for Scope<'a> {
     fn use_transition(self) -> &'a TransitionHandle<'a> {
-        let is_pending = self.create_signal(false);
+        let is_pending = create_signal(self, false);
 
-        self.create_ref(TransitionHandle {
-            cx: self,
-            is_pending,
-        })
+        create_ref(
+            self,
+            TransitionHandle {
+                cx: self,
+                is_pending,
+            },
+        )
     }
 }
 
@@ -219,14 +222,14 @@ mod tests {
     async fn transition() {
         provide_executor_scope(async {
             create_scope_immediate(|cx| {
-                let trigger = cx.create_signal(());
+                let trigger = create_signal(cx, ());
                 let transition = cx.use_transition();
                 let _: View<SsrNode> = view! { cx,
                     Suspense {
                         children: Children::new(cx, move |cx| {
-                            cx.create_effect(move || {
+                            create_effect(cx, move || {
                                 trigger.track();
-                                assert!(cx.try_use_context::<SuspenseState>().is_some());
+                                assert!(cx.try_use_context::<SuspenseState>(cx).is_some());
                             });
                             View::empty()
                         })

@@ -2,10 +2,10 @@ use sycamore_reactive::*;
 
 fn main() {
     create_scope_immediate(|cx| {
-        let outer = cx.create_signal(0);
-        let disposer = cx.create_child_scope(|cx| {
+        let outer = create_signal(cx, 0);
+        let disposer = create_child_scope(cx, |cx| {
             dbg!(outer.get());
-            cx.create_effect(|| {
+            create_effect(cx, || {
                 dbg!(outer.get());
             });
         });

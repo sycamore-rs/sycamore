@@ -45,7 +45,7 @@ where
         key,
     } = props;
 
-    let mapped = cx.map_keyed(iterable, view, key);
+    let mapped = map_keyed(cx, iterable, view, key);
     View::new_dyn(cx, || View::new_fragment(mapped.get().as_ref().clone()))
 }
 
@@ -76,6 +76,6 @@ where
 {
     let IndexedProps { iterable, view } = props;
 
-    let mapped = cx.map_indexed(iterable, view);
+    let mapped = map_indexed(cx, iterable, view);
     View::new_dyn(cx, || View::new_fragment(mapped.get().as_ref().clone()))
 }

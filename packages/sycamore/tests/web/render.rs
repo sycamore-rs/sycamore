@@ -27,7 +27,7 @@ fn lazy() {
 #[wasm_bindgen_test]
 fn lazy_reactive() {
     create_scope_immediate(|cx| {
-        let template = cx.create_signal(view! { cx,
+        let template = create_signal(cx, view! { cx,
             "1"
         });
         let node: View<DomNode> = View::new_dyn(cx, || (*template.get()).clone());
@@ -50,7 +50,7 @@ fn lazy_reactive() {
 #[wasm_bindgen_test]
 fn lazy_in_fragment() {
     create_scope_immediate(|cx| {
-        let num = cx.create_signal(0);
+        let num = create_signal(cx, 0);
 
         let node = view! { cx,
             "before"

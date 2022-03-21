@@ -15,7 +15,7 @@ fn hello_world() {
 #[test]
 fn reactive_text() {
     create_scope_immediate(|cx| {
-        let count = cx.create_signal(0);
+        let count = create_signal(cx, 0);
         let node = view! { cx,
             p { (count.get()) }
         };
@@ -28,7 +28,7 @@ fn reactive_text() {
 #[test]
 fn reactive_text_with_siblings() {
     create_scope_immediate(|cx| {
-        let count = cx.create_signal(0);
+        let count = create_signal(cx, 0);
         let node = view! { cx,
             p { "before" (count.get()) "after" }
         };
@@ -78,7 +78,7 @@ fn fragments() {
 #[test]
 fn indexed() {
     create_scope_immediate(|cx| {
-        let count = cx.create_signal(vec![1, 2]);
+        let count = create_signal(cx, vec![1, 2]);
         let node = view! { cx,
             ul {
                 Indexed {
@@ -106,7 +106,7 @@ fn indexed() {
 #[test]
 fn bind() {
     create_scope_immediate(|cx| {
-        let signal = cx.create_signal(String::new());
+        let signal = create_signal(cx, String::new());
         let node = view! { cx,
             input(bind:value=signal)
         };
@@ -119,7 +119,7 @@ fn bind() {
 fn using_cx_in_dyn_node_creates_nested_scope() {
     let _ = sycamore::render_to_string(|cx| {
         let outer_depth = cx.scope_depth();
-        let inner_depth = cx.create_ref(Cell::new(0));
+        let inner_depth = create_ref(cx, Cell::new(0));
         let node = view! { cx,
             p {
                 ({

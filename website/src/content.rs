@@ -28,7 +28,7 @@ pub fn OutlineView<G: Html>(cx: Scope, outline: Vec<Outline>) -> View<G> {
     view! { cx,
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
             Indexed {
-                iterable: cx.create_signal(outline),
+                iterable: create_signal(cx, outline),
                 view: |cx, item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
@@ -83,7 +83,7 @@ pub fn Content<G: Html>(
         sidebar,
     }: ContentProps,
 ) -> View<G> {
-    let sidebar = cx.create_ref(sidebar);
+    let sidebar = create_ref(cx, sidebar);
     let show_sidebar = sidebar.is_some();
 
     let sidebar_version = sidebar.as_ref().map(|x| x.0.clone());

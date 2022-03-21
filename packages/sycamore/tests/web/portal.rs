@@ -14,7 +14,7 @@ fn test_portal() {
     test_container.append_child(&root).unwrap();
 
     create_scope_immediate(|cx| {
-        let switch = cx.create_signal(true);
+        let switch = create_signal(cx, true);
         sycamore::render_to(
             |_| {
                 view! { cx,

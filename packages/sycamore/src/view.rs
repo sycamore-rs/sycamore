@@ -37,8 +37,8 @@ impl<G: GenericNode> View<G> {
 
     /// Create a new [`View`] from a [`FnMut`].
     pub fn new_dyn<'a>(cx: Scope<'a>, mut f: impl FnMut() -> View<G> + 'a) -> Self {
-        let signal = cx.create_ref(RefCell::new(None::<RcSignal<View<G>>>));
-        cx.create_effect(move || {
+        let signal = create_ref(cx, RefCell::new(None::<RcSignal<View<G>>>));
+        create_effect(cx, move || {
             let view = f();
             if signal.borrow().is_some() {
                 signal.borrow().as_ref().unwrap().set(view);
@@ -56,8 +56,8 @@ impl<G: GenericNode> View<G> {
         cx: Scope<'a>,
         mut f: impl FnMut(BoundedScope<'_, 'a>) -> View<G> + 'a,
     ) -> Self {
-        let signal = cx.create_ref(RefCell::new(None::<RcSignal<View<G>>>));
-        cx.create_effect_scoped(move |cx| {
+        let signal = create_ref(cx, RefCell::new(None::<RcSignal<View<G>>>));
+        create_effect_scoped(cx, move |cx| {
             // SAFETY: `f` takes the same parameter as the child cx provided by
             // `create_effect_scoped`.
             let view = f(unsafe { std::mem::transmute(cx) });

@@ -117,18 +117,18 @@ mod dynamic {
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, cx.create_signal(0))),
+            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
             expect![[r##"<p data-hk="0.0"><!--#-->0<!--/--></p>"##]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html_str = sycamore::render_to_string(|cx| v(cx, cx.create_signal(0)));
+        let html_str = sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0)));
         let c = test_container();
         c.set_inner_html(&html_str);
 
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
 
             sycamore::hydrate_to(|_| v(cx, state), &c);
 
@@ -176,18 +176,18 @@ mod dynamic_with_siblings {
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, cx.create_signal(0))),
+            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
             expect![[r##"<p data-hk="0.0">Value: <!--#-->0<!--/-->!</p>"##]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html_str = sycamore::render_to_string(|cx| v(cx, cx.create_signal(0)));
+        let html_str = sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0)));
         let c = test_container();
         c.set_inner_html(&html_str);
 
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
 
             sycamore::hydrate_to(|_| v(cx, state), &c);
 
@@ -226,19 +226,19 @@ mod dynamic_template {
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, cx.create_signal(view! { cx, "text" }))),
+            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" }))),
             expect![[r##"<p data-hk="0.0">before<!--#-->text<!--/-->after</p>"##]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
         let html_str =
-            sycamore::render_to_string(|cx| v(cx, cx.create_signal(view! { cx, "text" })));
+            sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" })));
         let c = test_container();
         c.set_inner_html(&html_str);
 
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(view! { cx, "text" });
+            let state = create_signal(cx, view! { cx, "text" });
 
             sycamore::hydrate_to(|_| v(cx, state), &c);
 
@@ -274,18 +274,18 @@ mod top_level_dynamic_with_siblings {
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, cx.create_signal(0))),
+            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
             expect![[r#"Value: 0!"#]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html_str = sycamore::render_to_string(|cx| v(cx, cx.create_signal(0)));
+        let html_str = sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0)));
         let c = test_container();
         c.set_inner_html(&html_str);
 
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
 
             sycamore::hydrate_to(|_| v(cx, state), &c);
 

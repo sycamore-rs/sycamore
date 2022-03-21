@@ -100,8 +100,8 @@ fn build_data(count: usize) -> Vec<RowData> {
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let data = cx.create_signal(Vec::<RowData>::new());
-    let selected = cx.create_signal(None::<usize>);
+    let data = create_signal(cx, Vec::<RowData>::new());
+    let selected = create_signal(cx, None::<usize>);
 
     let remove = |id| {
         data.set(
@@ -170,7 +170,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
                     Keyed {
                         iterable: data,
                         view: move |cx, row| {
-                            let is_selected = cx.create_selector(move || *selected.get() == Some(row.id));
+                            let is_selected = create_selector(cx, move || *selected.get() == Some(row.id));
                             let handle_click = move |_| selected.set(Some(row.id));
                             view! { cx,
                                 tr(class=is_selected.get().then(|| "danger").unwrap_or("")) {

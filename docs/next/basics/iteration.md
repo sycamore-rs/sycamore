@@ -10,7 +10,7 @@ identify the item to prevent re-rendering views twice. Every time the list chang
 algorithm is used to determine which items need to be re-rendered according to the associated key.
 
 ```rust
-let count = cx.create_signal(vec![1, 2]);
+let count = create_signal(cx, vec![1, 2]);
 view! { cx,
     ul {
         Keyed {
@@ -30,7 +30,7 @@ The `Indexed` component is used to render a list of items that is keyed by index
 generally preferred over `Indexed` because it is more efficient in most scenarios.
 
 ```rust
-let count = cx.create_signal(vec![1, 2]);
+let count = create_signal(cx, vec![1, 2]);
 view! { cx,
     ul {
         Indexed {

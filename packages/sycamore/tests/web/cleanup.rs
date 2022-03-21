@@ -20,7 +20,7 @@ fn on_cleanup_callback() {
 #[wasm_bindgen_test]
 pub fn test_cleanup_in_root() {
     let root = create_scope(|cx| {
-        cx.on_cleanup(on_cleanup_callback);
+        on_cleanup(cx, on_cleanup_callback);
     });
     assert_cleanup_called(|| unsafe {
         root.dispose();
@@ -30,10 +30,10 @@ pub fn test_cleanup_in_root() {
 #[wasm_bindgen_test]
 pub fn test_cleanup_in_effect() {
     create_scope_immediate(|cx| {
-        let trigger = cx.create_signal(());
-        cx.create_effect_scoped(|cx| {
+        let trigger = create_signal(cx, ());
+        create_effect_scoped(cx, |cx| {
             trigger.track();
-            cx.on_cleanup(on_cleanup_callback);
+            on_cleanup(cx, on_cleanup_callback);
         });
 
         assert_cleanup_called(|| {
@@ -44,7 +44,7 @@ pub fn test_cleanup_in_effect() {
 
 #[component]
 fn CleanupComp<G: Html>(cx: Scope) -> View<G> {
-    cx.on_cleanup(on_cleanup_callback);
+    on_cleanup(cx, on_cleanup_callback);
     view! { cx, }
 }
 

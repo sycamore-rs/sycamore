@@ -87,7 +87,7 @@ impl<T> ReadSignal<T> {
     /// ```rust
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|cx| {
-    /// let state = cx.create_signal(0);
+    /// let state = create_signal(cx, 0);
     /// assert_eq!(*state.get(), 0);
     ///
     /// state.set(1);
@@ -108,8 +108,8 @@ impl<T> ReadSignal<T> {
     /// ```
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|cx| {
-    /// let state = cx.create_signal(1);
-    /// let double = cx.create_memo(|| *state.get_untracked() * 2);
+    /// let state = create_signal(cx, 1);
+    /// let double = create_memo(cx, || *state.get_untracked() * 2);
     /// assert_eq!(*double.get(), 2);
     ///
     /// state.set(2);
@@ -123,13 +123,13 @@ impl<T> ReadSignal<T> {
     }
 
     /// Creates a mapped [`ReadSignal`]. This is equivalent to using
-    /// [`create_memo`](Scope::create_memo).
+    /// [`create_memo`].
     ///
     /// # Example
     /// ```rust
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|cx| {
-    /// let state = cx.create_signal(1);
+    /// let state = create_signal(cx, 1);
     /// let double = state.map(cx, |&x| x * 2);
     /// assert_eq!(*double.get(), 2);
     ///
@@ -143,7 +143,7 @@ impl<T> ReadSignal<T> {
         cx: Scope<'a>,
         mut f: impl FnMut(&T) -> U + 'a,
     ) -> &'a ReadSignal<U> {
-        cx.create_memo(move || f(&self.get()))
+        create_memo(cx, move || f(&self.get()))
     }
 
     /// When called inside a reactive scope, calling this will add itself to the scope's
@@ -175,7 +175,7 @@ impl<T> Signal<T> {
     /// ```
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|cx| {
-    /// let state = cx.create_signal(0);
+    /// let state = create_signal(cx, 0);
     /// assert_eq!(*state.get(), 0);
     ///
     /// state.set(1);
@@ -200,7 +200,7 @@ impl<T> Signal<T> {
     /// ```rust
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|cx| {
-    /// let (state, set_state) = cx.create_signal(0).split();
+    /// let (state, set_state) = create_signal(cx, 0).split();
     /// assert_eq!(*state(), 0);
     ///
     /// set_state(1);
@@ -262,10 +262,31 @@ impl<'a, T> AnyReadSignal<'a> for ReadSignal<T> {
     }
 }
 
+/// Create a new [`Signal`] under the current [`Scope`].
+/// The created signal lasts as long as the scope and cannot be used outside of the scope.
+///
+/// # Signal lifetime
+///
+/// The lifetime of the returned signal is the same as the [`Scope`].
+/// As such, the signal cannot escape the [`Scope`].
+///
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// let mut outer = None;
+/// create_scope_immediate(|cx| {
+///     let signal = create_signal(cx, 0);
+///     outer = Some(signal);
+/// });
+/// ```
+pub fn create_signal<T>(cx: Scope, value: T) -> &Signal<T> {
+    let signal = Signal::new(value);
+    create_ref(cx, signal)
+}
+
 /// A signal that is not bound to a [`Scope`].
 ///
 /// Sometimes, it is useful to have a signal that can escape the enclosing [reactive scope](Scope).
-/// However, this cannot be achieved simply with [`Scope::create_signal`] because the resulting
+/// However, this cannot be achieved simply with [`create_signal`] because the resulting
 /// [`Signal`] is tied to the [`Scope`] by it's lifetime. The [`Signal`] can only live as long as
 /// the [`Scope`].
 ///
@@ -274,7 +295,7 @@ impl<'a, T> AnyReadSignal<'a> for ReadSignal<T> {
 /// implement the [`Copy`] trait and therefore needs to be manually cloned into all closures where
 /// it is used.
 ///
-/// In general, [`Scope::create_signal`] should be preferred, both for performance and ergonomics.
+/// In general, [`create_signal`] should be preferred, both for performance and ergonomics.
 ///
 /// # Usage
 ///
@@ -289,13 +310,13 @@ impl<'a, T> AnyReadSignal<'a> for ReadSignal<T> {
 /// // Even though the RcSignal is created inside a reactive scope, it can escape out of it.
 /// let rc_state = create_rc_signal(0);
 /// let rc_state_cloned = rc_state.clone();
-/// let double = cx.create_memo(move || *rc_state_cloned.get() * 2);
+/// let double = create_memo(cx, move || *rc_state_cloned.get() * 2);
 /// assert_eq!(*double.get(), 0);
 ///
 /// rc_state.set(1);
 /// assert_eq!(*double.get(), 2);
 ///
-/// // This isn't possible with simply cx.create_signal()
+/// // This isn't possible with simply create_signal(cx, )
 /// outer = Some(rc_state);
 /// });
 /// ```
@@ -432,7 +453,7 @@ mod tests {
     #[test]
     fn signal() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
             assert_eq!(*state.get(), 0);
 
             state.set(1);
@@ -443,7 +464,7 @@ mod tests {
     #[test]
     fn signal_composition() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
             let double = || *state.get() * 2;
 
             assert_eq!(double(), 0);
@@ -455,7 +476,7 @@ mod tests {
     #[test]
     fn set_silent_signal() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
             let double = state.map(cx, |&x| x * 2);
 
             assert_eq!(*double.get(), 0);
@@ -467,7 +488,7 @@ mod tests {
     #[test]
     fn read_signal() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
             let readonly: &ReadSignal<i32> = state.deref();
 
             assert_eq!(*readonly.get(), 0);
@@ -479,7 +500,7 @@ mod tests {
     #[test]
     fn map_signal() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(0);
+            let state = create_signal(cx, 0);
             let double = state.map(cx, |&x| x * 2);
 
             assert_eq!(*double.get(), 0);
@@ -491,7 +512,7 @@ mod tests {
     #[test]
     fn take_signal() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(123);
+            let state = create_signal(cx, 123);
 
             let x = state.take();
             assert_eq!(*x, 123);
@@ -502,7 +523,7 @@ mod tests {
     #[test]
     fn take_silent_signal() {
         create_scope_immediate(|cx| {
-            let state = cx.create_signal(123);
+            let state = create_signal(cx, 123);
             let double = state.map(cx, |&x| x * 2);
 
             // Do not trigger subscribers.
@@ -515,7 +536,7 @@ mod tests {
     #[test]
     fn signal_split() {
         create_scope_immediate(|cx| {
-            let (state, set_state) = cx.create_signal(0).split();
+            let (state, set_state) = create_signal(cx, 0).split();
             assert_eq!(*state(), 0);
 
             set_state(1);
@@ -529,7 +550,7 @@ mod tests {
         create_scope_immediate(|cx| {
             let rc_state = create_rc_signal(0);
             let rc_state_cloned = rc_state.clone();
-            let double = cx.create_memo(move || *rc_state_cloned.get() * 2);
+            let double = create_memo(cx, move || *rc_state_cloned.get() * 2);
             assert_eq!(*double.get(), 0);
 
             rc_state.set(1);
@@ -543,7 +564,7 @@ mod tests {
     #[test]
     fn signal_display() {
         create_scope_immediate(|cx| {
-            let signal = cx.create_signal(0);
+            let signal = create_signal(cx, 0);
             assert_eq!(format!("{signal}"), "0");
             let read_signal: &ReadSignal<_> = signal;
             assert_eq!(format!("{read_signal}"), "0");
@@ -555,7 +576,7 @@ mod tests {
     #[test]
     fn signal_debug() {
         create_scope_immediate(|cx| {
-            let signal = cx.create_signal(0);
+            let signal = create_signal(cx, 0);
             assert_eq!(format!("{signal:?}"), "Signal(0)");
             let read_signal: &ReadSignal<_> = signal;
             assert_eq!(format!("{read_signal:?}"), "ReadSignal(0)");

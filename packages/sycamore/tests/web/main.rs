@@ -157,7 +157,7 @@ fn template_interpolation() {
 #[wasm_bindgen_test]
 fn template_interpolation_if_else() {
     create_scope_immediate(|cx| {
-        let show = cx.create_signal(true);
+        let show = create_signal(cx, true);
         let node = view! { cx,
             p {
                 (if *show.get() {
@@ -205,7 +205,7 @@ fn template_interpolation_if_else() {
 #[wasm_bindgen_test]
 fn template_interpolation_if_else_with_sibling() {
     create_scope_immediate(|cx| {
-        let show = cx.create_signal(true);
+        let show = create_signal(cx, true);
         let node = view! { cx,
             div { "Before" }
             (if *show.get() {
@@ -252,7 +252,7 @@ fn template_interpolation_if_else_with_sibling() {
 #[wasm_bindgen_test]
 fn template_interpolation_nested_reactivity() {
     create_scope_immediate(|cx| {
-        let count = cx.create_signal(0);
+        let count = create_signal(cx, 0);
         let text = view! { cx, p { (count.get() ) } };
         let node = view! { cx,
             p {
@@ -272,7 +272,7 @@ fn template_interpolation_nested_reactivity() {
 #[wasm_bindgen_test]
 fn reactive_text() {
     create_scope_immediate(|cx| {
-        let count = cx.create_signal(0);
+        let count = create_signal(cx, 0);
 
         let node = view! { cx,
             p { (count.get()) }
@@ -291,7 +291,7 @@ fn reactive_text() {
 #[wasm_bindgen_test]
 fn reactive_text_do_not_destroy_previous_children() {
     create_scope_immediate(|cx| {
-        let count = cx.create_signal(0);
+        let count = create_signal(cx, 0);
 
         let node = view! { cx,
             p { "Value: " (count.get()) }
@@ -310,7 +310,7 @@ fn reactive_text_do_not_destroy_previous_children() {
 #[wasm_bindgen_test]
 fn reactive_attribute() {
     create_scope_immediate(|cx| {
-        let count = cx.create_signal(0);
+        let count = create_signal(cx, 0);
 
         let node = view! { cx,
             span(attribute=count.get())
@@ -330,7 +330,7 @@ fn reactive_attribute() {
 #[ignore]
 fn two_way_bind_to_props() {
     create_scope_immediate(|cx| {
-        let value = cx.create_signal(String::new());
+        let value = create_signal(cx, String::new());
 
         let node = view! { cx,
             input(bind:value=value)
