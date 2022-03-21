@@ -22,19 +22,18 @@ use super::SycamoreElement;
 extern "C" {
     #[wasm_bindgen(extends = Node)]
     pub(super) type NodeWithId;
-
     #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
     pub fn node_id(this: &NodeWithId) -> Option<usize>;
-
     #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
     pub fn set_node_id(this: &NodeWithId, id: usize);
-}
 
-#[wasm_bindgen]
-extern "C" {
+    #[wasm_bindgen(extends = Element)]
+    type ElementTrySetClassName;
+    #[wasm_bindgen(method, catch, setter, js_name = "className")]
+    fn try_set_class_name(this: &ElementTrySetClassName, class_name: &str) -> Result<(), JsValue>;
+
     #[wasm_bindgen(extends = Document)]
     type DocumentCreateTextNodeInt;
-
     #[wasm_bindgen(method, js_name = "createTextNode")]
     pub fn create_text_node_int(this: &DocumentCreateTextNodeInt, num: i32) -> web_sys::Text;
 }
@@ -226,7 +225,18 @@ impl GenericNode for DomNode {
     }
 
     fn set_class_name(&self, value: &str) {
-        self.node.unchecked_ref::<Element>().set_class_name(value);
+        if self
+            .node
+            .unchecked_ref::<ElementTrySetClassName>()
+            .try_set_class_name(value)
+            .is_err()
+        {
+            // Node is a SVG element.
+            self.node
+                .unchecked_ref::<Element>()
+                .set_attribute("class", value)
+                .unwrap_throw();
+        }
     }
 
     fn add_class(&self, class: &str) {

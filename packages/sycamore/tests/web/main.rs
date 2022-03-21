@@ -8,6 +8,7 @@ pub mod keyed;
 pub mod portal;
 pub mod reconcile;
 pub mod render;
+pub mod svg;
 
 use sycamore::html;
 use sycamore::prelude::*;

@@ -293,11 +293,7 @@ impl Codegen {
                     }
                 } else {
                     quote! {
-                        ::sycamore::generic_node::GenericNode::set_attribute(
-                            &__el,
-                            #name,
-                            #quoted_text,
-                        );
+                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, #name, #quoted_text);
                     }
                 };
 
