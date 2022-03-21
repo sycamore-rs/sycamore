@@ -365,7 +365,7 @@ impl Codegen {
                         &__el,
                         #cx,
                         #event,
-                        ::std::boxed::Box::new(#expr),
+                        #expr,
                     );
                 });
             }
@@ -390,11 +390,6 @@ impl Codegen {
                         return tokens;
                     }
                 };
-
-                // let value_ty = match property_ty {
-                //     JsPropertyType::Bool => quote! { ::std::primitive::bool },
-                //     JsPropertyType::String => quote! { ::std::string::String },
-                // };
 
                 let convert_into_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => {

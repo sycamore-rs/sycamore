@@ -2,7 +2,7 @@
 
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use std::ops::Deref;
+use std::ops::{AddAssign, Deref, DivAssign, MulAssign, SubAssign};
 
 use crate::effect::EFFECTS;
 use crate::*;
@@ -195,6 +195,7 @@ impl<T> Signal<T> {
     ///
     /// # Example
     /// ```
+    /// # use std::rc::Rc;
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|cx| {
     /// let state = create_signal(cx, 0);
@@ -217,7 +218,7 @@ impl<T> Signal<T> {
     }
 
     /// Set the current value of the state wrapped in a [`Rc`] _without_ triggering subscribers.
-    /// 
+    ///
     /// See the documentation for [`Signal::set_rc()`] for more information.
     ///
     /// Make sure you know what you are doing because this can make state inconsistent.
@@ -264,11 +265,40 @@ impl<T: Default> Signal<T> {
     }
 }
 
-impl<'a, T> Deref for Signal<T> {
+impl<T> Deref for Signal<T> {
     type Target = ReadSignal<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<T: AddAssign + Copy> AddAssign<T> for &Signal<T> {
+    fn add_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value += other;
+        self.set(value);
+    }
+}
+impl<T: SubAssign + Copy> SubAssign<T> for &Signal<T> {
+    fn sub_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value -= other;
+        self.set(value);
+    }
+}
+impl<T: MulAssign + Copy> MulAssign<T> for &Signal<T> {
+    fn mul_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value *= other;
+        self.set(value);
+    }
+}
+impl<T: DivAssign + Copy> DivAssign<T> for &Signal<T> {
+    fn div_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value /= other;
+        self.set(value);
     }
 }
 
@@ -613,6 +643,23 @@ mod tests {
             assert_eq!(format!("{read_signal:?}"), "ReadSignal(0)");
             let rcsignal = create_rc_signal(0);
             assert_eq!(format!("{rcsignal:?}"), "RcSignal(0)");
+        });
+    }
+
+    #[test]
+    fn signal_add_assign_update() {
+        create_scope_immediate(|cx| {
+            let mut signal = create_signal(cx, 0);
+            let counter = create_signal(cx, 0);
+            create_effect(cx, || {
+                signal.track();
+                counter.set(*counter.get_untracked() + 1);
+            });
+            signal += 1;
+            signal -= 1;
+            signal *= 1;
+            signal /= 1;
+            assert_eq!(*counter.get(), 5);
         });
     }
 }
