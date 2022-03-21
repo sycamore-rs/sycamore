@@ -225,8 +225,7 @@ mod dynamic_template {
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html =
-            sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" })));
+        let html = sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" })));
         let c = test_container();
         c.set_inner_html(&html);
 

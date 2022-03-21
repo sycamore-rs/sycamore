@@ -27,9 +27,12 @@ fn lazy() {
 #[wasm_bindgen_test]
 fn lazy_reactive() {
     create_scope_immediate(|cx| {
-        let template = create_signal(cx, view! { cx,
-            "1"
-        });
+        let template = create_signal(
+            cx,
+            view! { cx,
+                "1"
+            },
+        );
         let node: View<DomNode> = View::new_dyn(cx, || (*template.get()).clone());
 
         sycamore::render_to(|_| node, &test_container());

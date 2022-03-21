@@ -66,10 +66,7 @@ where
 ///
 /// For keyed iteration, see [`Keyed`].
 #[component]
-pub fn Indexed<'a, G: GenericNode, T, F>(
-    cx: Scope<'a>,
-    props: IndexedProps<'a, G, T, F>,
-) -> View<G>
+pub fn Indexed<'a, G: GenericNode, T, F>(cx: Scope<'a>, props: IndexedProps<'a, G, T, F>) -> View<G>
 where
     T: Clone + PartialEq,
     F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,

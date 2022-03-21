@@ -16,8 +16,8 @@ use crate::*;
 /// This function is the underlying utility behind `Keyed`.
 ///
 /// # Params
-/// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a
-///   [`Signal`]) and therefore reactive.
+/// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a [`Signal`])
+///   and therefore reactive.
 /// * `map_fn` - A closure that maps from the input type to the output type.
 /// * `key_fn` - A closure that returns an _unique_ key to each entry.
 ///
@@ -44,70 +44,72 @@ where
 
     // Diff and update signal each time list is updated.
     create_effect(cx, move || {
-            let new_items = list.get();
-            if new_items.is_empty() {
-                // Fast path for removing all items.
-                for dis in mem::take(&mut disposers) {
-                    unsafe { dis.unwrap().dispose(); }
+        let new_items = list.get();
+        if new_items.is_empty() {
+            // Fast path for removing all items.
+            for dis in mem::take(&mut disposers) {
+                unsafe {
+                    dis.unwrap().dispose();
                 }
-                mapped = Vec::new();
-            } else if items.is_empty() {
-                // Fast path for new create.
-                // TODO: do not clone T
-                for new_item in new_items.iter().cloned() {
-                    let tmp = Rc::new(RefCell::new(None));
-                    let new_disposer = create_child_scope(cx, {
-                        let tmp = Rc::clone(&tmp);
-                        let map_fn = Rc::clone(&map_fn);
-                        move |cx| {
-                            // SAFETY: f takes the same parameter as the argument to
-                            // create_child_scope(cx, (_).
-                            *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
-                        }
-                    });
-                    mapped.push(tmp.borrow().clone().unwrap());
-                    disposers.push(Some(new_disposer));
-                }
-            } else {
-                debug_assert!(
-                    !new_items.is_empty() && !items.is_empty(),
-                    "new_items.is_empty() and items.is_empty() are special cased"
-                );
-
-                let mut temp = vec![None; new_items.len()];
-                let mut temp_disposers = {
-                    let mut tmp = Vec::with_capacity(new_items.len());
-                    for _ in 0..new_items.len() {
-                        tmp.push(None);
+            }
+            mapped = Vec::new();
+        } else if items.is_empty() {
+            // Fast path for new create.
+            // TODO: do not clone T
+            for new_item in new_items.iter().cloned() {
+                let tmp = Rc::new(RefCell::new(None));
+                let new_disposer = create_child_scope(cx, {
+                    let tmp = Rc::clone(&tmp);
+                    let map_fn = Rc::clone(&map_fn);
+                    move |cx| {
+                        // SAFETY: f takes the same parameter as the argument to
+                        // create_child_scope(cx, (_).
+                        *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                     }
-                    tmp
-                };
+                });
+                mapped.push(tmp.borrow().clone().unwrap());
+                disposers.push(Some(new_disposer));
+            }
+        } else {
+            debug_assert!(
+                !new_items.is_empty() && !items.is_empty(),
+                "new_items.is_empty() and items.is_empty() are special cased"
+            );
 
-                // Skip common prefix.
-                let min_len = usize::min(items.len(), new_items.len());
-                let start = items
-                    .iter()
-                    .zip(new_items.iter())
-                    .position(|(a, b)| a != b)
-                    .unwrap_or(min_len);
-                debug_assert!(
-                    (items.get(start).is_none() && new_items.get(start).is_none())
-                        || (items.get(start) != new_items.get(start)),
-                    "start is the first index where items[start] != new_items[start]"
-                );
-
-                // Skip common suffix.
-                let mut end = items.len();
-                let mut new_end = new_items.len();
-                #[allow(clippy::suspicious_operation_groupings)]
-                // FIXME: make code clearer so that clippy won't complain
-                while end > start && new_end > start && items[end - 1] == new_items[new_end - 1] {
-                    end -= 1;
-                    new_end -= 1;
-                    temp[new_end] = Some(mapped[end].clone());
-                    temp_disposers[new_end] = disposers[end].take();
+            let mut temp = vec![None; new_items.len()];
+            let mut temp_disposers = {
+                let mut tmp = Vec::with_capacity(new_items.len());
+                for _ in 0..new_items.len() {
+                    tmp.push(None);
                 }
-                debug_assert!(
+                tmp
+            };
+
+            // Skip common prefix.
+            let min_len = usize::min(items.len(), new_items.len());
+            let start = items
+                .iter()
+                .zip(new_items.iter())
+                .position(|(a, b)| a != b)
+                .unwrap_or(min_len);
+            debug_assert!(
+                (items.get(start).is_none() && new_items.get(start).is_none())
+                    || (items.get(start) != new_items.get(start)),
+                "start is the first index where items[start] != new_items[start]"
+            );
+
+            // Skip common suffix.
+            let mut end = items.len();
+            let mut new_end = new_items.len();
+            #[allow(clippy::suspicious_operation_groupings)]
+            // FIXME: make code clearer so that clippy won't complain
+            while end > start && new_end > start && items[end - 1] == new_items[new_end - 1] {
+                end -= 1;
+                new_end -= 1;
+                temp[new_end] = Some(mapped[end].clone());
+                temp_disposers[new_end] = disposers[end].take();
+            }
+            debug_assert!(
                     if end != 0 && new_end != 0 {
                         (end == items.len() && new_end == new_items.len())
                             || (items[end - 1] != new_items[new_end - 1])
@@ -117,87 +119,89 @@ where
                     "end and new_end are the last indexes where items[end - 1] != new_items[new_end - 1]"
                 );
 
-                // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
-                // natural order.
-                let mut new_indices = HashMap::with_capacity(new_end - start);
+            // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
+            // natural order.
+            let mut new_indices = HashMap::with_capacity(new_end - start);
 
-                // Indexes for new_indices_next are shifted by start because values at 0..start are
-                // always None.
-                let mut new_indices_next = vec![None; new_end - start];
-                for j in (start..new_end).rev() {
-                    let item = &new_items[j];
-                    let i = new_indices.get(&key_fn(item));
-                    new_indices_next[j - start] = i.copied();
-                    new_indices.insert(key_fn(item), j);
-                }
+            // Indexes for new_indices_next are shifted by start because values at 0..start are
+            // always None.
+            let mut new_indices_next = vec![None; new_end - start];
+            for j in (start..new_end).rev() {
+                let item = &new_items[j];
+                let i = new_indices.get(&key_fn(item));
+                new_indices_next[j - start] = i.copied();
+                new_indices.insert(key_fn(item), j);
+            }
 
-                // 1) Step through old items and see if they can be found in new set; if so, mark
-                // them as moved.
-                for i in start..end {
-                    let item = &items[i];
-                    if let Some(j) = new_indices.get(&key_fn(item)).copied() {
-                        // Moved. j is index of item in new_items.
-                        temp[j] = Some(mapped[i].clone());
-                        temp_disposers[j] = disposers[i].take();
-                        new_indices_next[j - start]
-                            .and_then(|j| new_indices.insert(key_fn(item), j));
-                    } else {
-                        // Create new.
-                        unsafe { disposers[i].take().unwrap().dispose(); }
-                    }
-                }
-
-                // 2) Set all the new values, pulling from the moved array if copied, otherwise
-                // entering the new value.
-                for j in start..new_items.len() {
-                    if matches!(temp.get(j), Some(Some(_))) {
-                        // Pull from moved array.
-                        if j >= mapped.len() {
-                            debug_assert_eq!(mapped.len(), j);
-                            mapped.push(temp[j].clone().unwrap());
-                            disposers.push(temp_disposers[j].take());
-                        } else {
-                            mapped[j] = temp[j].clone().unwrap();
-                            disposers[j] = temp_disposers[j].take();
-                        }
-                    } else {
-                        // Create new value.
-                        let tmp = Rc::new(RefCell::new(None));
-                        let new_disposer = create_child_scope(cx, {
-                            let tmp = Rc::clone(&tmp);
-                            let map_fn = Rc::clone(&map_fn);
-                            let new_item = new_items[j].clone();
-                            move |cx| {
-                                // SAFETY: f takes the same parameter as the argument to
-                                // create_child_scope.
-                                *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
-                            }
-                        });
-
-                        if mapped.len() > j {
-                            mapped[j] = tmp.borrow().clone().unwrap();
-                            disposers[j] = Some(new_disposer);
-                        } else {
-                            mapped.push(tmp.borrow().clone().unwrap());
-                            disposers.push(Some(new_disposer));
-                        }
+            // 1) Step through old items and see if they can be found in new set; if so, mark
+            // them as moved.
+            for i in start..end {
+                let item = &items[i];
+                if let Some(j) = new_indices.get(&key_fn(item)).copied() {
+                    // Moved. j is index of item in new_items.
+                    temp[j] = Some(mapped[i].clone());
+                    temp_disposers[j] = disposers[i].take();
+                    new_indices_next[j - start].and_then(|j| new_indices.insert(key_fn(item), j));
+                } else {
+                    // Create new.
+                    unsafe {
+                        disposers[i].take().unwrap().dispose();
                     }
                 }
             }
 
-            // 3) In case the new set is shorter than the old, set the length of the mapped array.
-            mapped.truncate(new_items.len());
-            disposers.truncate(new_items.len());
+            // 2) Set all the new values, pulling from the moved array if copied, otherwise
+            // entering the new value.
+            for j in start..new_items.len() {
+                if matches!(temp.get(j), Some(Some(_))) {
+                    // Pull from moved array.
+                    if j >= mapped.len() {
+                        debug_assert_eq!(mapped.len(), j);
+                        mapped.push(temp[j].clone().unwrap());
+                        disposers.push(temp_disposers[j].take());
+                    } else {
+                        mapped[j] = temp[j].clone().unwrap();
+                        disposers[j] = temp_disposers[j].take();
+                    }
+                } else {
+                    // Create new value.
+                    let tmp = Rc::new(RefCell::new(None));
+                    let new_disposer = create_child_scope(cx, {
+                        let tmp = Rc::clone(&tmp);
+                        let map_fn = Rc::clone(&map_fn);
+                        let new_item = new_items[j].clone();
+                        move |cx| {
+                            // SAFETY: f takes the same parameter as the argument to
+                            // create_child_scope.
+                            *tmp.borrow_mut() =
+                                Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
+                        }
+                    });
 
-            // 4) Save a copy of the mapped items for the next update.
-            items = Rc::clone(&new_items);
-            debug_assert!([items.len(), mapped.len(), disposers.len()]
-                .iter()
-                .all(|l| *l == new_items.len()));
+                    if mapped.len() > j {
+                        mapped[j] = tmp.borrow().clone().unwrap();
+                        disposers[j] = Some(new_disposer);
+                    } else {
+                        mapped.push(tmp.borrow().clone().unwrap());
+                        disposers.push(Some(new_disposer));
+                    }
+                }
+            }
+        }
 
-            // 5) Update signal to trigger updates.
-            signal.set(mapped.clone());
-        });
+        // 3) In case the new set is shorter than the old, set the length of the mapped array.
+        mapped.truncate(new_items.len());
+        disposers.truncate(new_items.len());
+
+        // 4) Save a copy of the mapped items for the next update.
+        items = Rc::clone(&new_items);
+        debug_assert!([items.len(), mapped.len(), disposers.len()]
+            .iter()
+            .all(|l| *l == new_items.len()));
+
+        // 5) Update signal to trigger updates.
+        signal.set(mapped.clone());
+    });
 
     signal
 }
@@ -212,8 +216,8 @@ where
 /// This function is the underlying utility behind `Indexed`.
 ///
 /// # Params
-/// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a
-///   [`Signal`]) and therefore reactive.
+/// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a [`Signal`])
+///   and therefore reactive.
 /// * `map_fn` - A closure that maps from the input type to the output type.
 pub fn map_indexed<'a, T, U>(
     cx: Scope<'a>,
@@ -277,11 +281,11 @@ where
                         }
                     });
                     if item.is_none() {
-                        // SAFETY: tmp is written in create_child_scope(cx, 
+                        // SAFETY: tmp is written in create_child_scope(cx,
                         mapped.push(unsafe { tmp.assume_init() });
                         disposers.push(new_disposer);
                     } else if eqs {
-                        // SAFETY: tmp is written in create_child_scope(cx, 
+                        // SAFETY: tmp is written in create_child_scope(cx,
                         mapped[i] = unsafe { tmp.assume_init() };
                         let prev = mem::replace(&mut disposers[i], new_disposer);
                         unsafe {
@@ -367,7 +371,8 @@ mod tests {
         create_scope_immediate(|cx| {
             let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let mapped = map_keyed(cx, 
+            let mapped = map_keyed(
+                cx,
                 a,
                 {
                     let counter = Rc::clone(&counter);
@@ -396,7 +401,8 @@ mod tests {
         create_scope_immediate(|cx| {
             let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = map_keyed(cx, 
+            let _mapped = map_keyed(
+                cx,
                 a,
                 {
                     let counter = Rc::clone(&counter);
@@ -427,7 +433,8 @@ mod tests {
         create_scope_immediate(|cx| {
             let a = create_signal(cx, vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
-            let _mapped = map_keyed(cx, 
+            let _mapped = map_keyed(
+                cx,
                 a,
                 {
                     let counter = Rc::clone(&counter);

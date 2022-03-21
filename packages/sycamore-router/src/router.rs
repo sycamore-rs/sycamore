@@ -202,7 +202,9 @@ where
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    on_cleanup(cx, || PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
+    on_cleanup(cx, || {
+        PATHNAME.with(|pathname| *pathname.borrow_mut() = None)
+    });
 
     // Listen to popstate event.
     integration.on_popstate(Box::new({

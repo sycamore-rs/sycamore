@@ -143,7 +143,7 @@ pub async fn await_suspense<U>(cx: Scope<'_>, f: impl Future<Output = U>) -> U {
 }
 
 /// A struct to handle transitions. Created using
-/// [`use_transition`](ScopeUseTransition::use_transition).
+/// [`use_transition`].
 #[derive(Clone, Copy)]
 pub struct TransitionHandle<'a> {
     cx: Scope<'a>,

@@ -280,8 +280,8 @@ where
 
     // SAFETY: the address of the cx lives as long as 'a because:
     // - It is allocated on the heap and therefore has a stable address.
-    // - self.child_cx is append only. That means that the Box<cx> will not be dropped until
-    //   Self is dropped.
+    // - self.child_cx is append only. That means that the Box<cx> will not be dropped until Self is
+    //   dropped.
     f(unsafe { BoundedScope::new(&*ptr) });
     //                                  ^^^ -> `ptr` is still accessible here after
     // the call to f.

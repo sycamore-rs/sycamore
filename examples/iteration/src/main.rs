@@ -8,20 +8,23 @@ struct Cat {
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let items = create_signal(cx, vec![
-        Cat {
-            id: "J---aiyznGQ",
-            name: "Keyboard Cat",
-        },
-        Cat {
-            id: "z_AbfPXTKms",
-            name: "Maru",
-        },
-        Cat {
-            id: "OUtn3pvWmpg",
-            name: "Henri The Existential Cat",
-        },
-    ]);
+    let items = create_signal(
+        cx,
+        vec![
+            Cat {
+                id: "J---aiyznGQ",
+                name: "Keyboard Cat",
+            },
+            Cat {
+                id: "z_AbfPXTKms",
+                name: "Maru",
+            },
+            Cat {
+                id: "OUtn3pvWmpg",
+                name: "Henri The Existential Cat",
+            },
+        ],
+    );
 
     view! { cx,
         p { "The famous cats of YouTube" }

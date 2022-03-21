@@ -3,7 +3,7 @@
 //! # Spawning futures
 //!
 //! The recommended way to spawn a future is to use the
-//! [`spawn_local`](ScopeSpawnLocal::spawn_local) method on the reactive scope. The benefit of using
+//! [`spawn_local_scoped`] method on the reactive scope. The benefit of using
 //! this instead of [`wasm_bindgen_futures::spawn_local`] is that the future does not need to be
 //! `'static`, allowing values in the surrounding scope to be directly referenced from inside the
 //! future without any cloning necessary.

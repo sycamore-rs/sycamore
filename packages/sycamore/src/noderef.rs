@@ -18,7 +18,7 @@ pub struct NodeRef<G: GenericNode>(Rc<RefCell<Option<G>>>);
 impl<G: GenericNode + Any> NodeRef<G> {
     /// Creates an empty [`NodeRef`].
     ///
-    /// Generally, it is preferable to use [`create_node_ref`](ScopeCreateNodeRef::create_node_ref)
+    /// Generally, it is preferable to use [`create_node_ref`]
     /// instead.
     pub fn new() -> Self {
         Self(Rc::new(RefCell::new(None)))
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn noderef_with_ssrnode() {
         create_scope_immediate(|cx| {
-            let noderef = create_node_ref(cx, );
+            let noderef = create_node_ref(cx);
             let _: View<SsrNode> = view! { cx, div(ref=noderef) };
             assert!(noderef.try_get::<SsrNode>().is_some());
         });

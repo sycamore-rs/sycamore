@@ -139,7 +139,8 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
                 news_index::NewsIndex {}
             },
             Routes::Post(name) => {
-                let data = create_resource(cx, docs_preload(format!("/static/posts/{}.json", name)));
+                let data =
+                    create_resource(cx, docs_preload(format!("/static/posts/{}.json", name)));
                 view! { cx,
                     (if let Some(data) = data.get().as_ref() {
                         view! { cx,

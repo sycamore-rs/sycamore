@@ -575,8 +575,8 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
 
     /// Adds a dynamic child that is created in a new reactive scope.
     ///
-    /// [`dyn_c`](Self::dyn_c) uses [`create_effect`](Scope::create_effect) whereas this method uses
-    /// [`create_effect_scoped`](Scope::create_effect_scoped).
+    /// [`dyn_c`](Self::dyn_c) uses [`create_effect`] whereas this method uses
+    /// [`create_effect_scoped`].
     pub fn dyn_c_scoped(
         self,
         f: impl FnMut(BoundedScope<'_, 'a>) -> View<G> + 'a,

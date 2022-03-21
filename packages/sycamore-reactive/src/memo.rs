@@ -120,8 +120,7 @@ pub fn create_selector_with<'a, U: 'a>(
 ///
 /// # Params
 /// * `initial` - The initial value of the state.
-/// * `reducer` - A function that takes the previous value and a message and returns the next
-///   value.
+/// * `reducer` - A function that takes the previous value and a message and returns the next value.
 ///
 /// # Example
 /// ```

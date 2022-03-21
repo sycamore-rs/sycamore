@@ -266,7 +266,8 @@ fn insert_front() {
 #[wasm_bindgen_test]
 fn nested_reactivity() {
     create_scope_immediate(|cx| {
-        let count = create_signal(cx, 
+        let count = create_signal(
+            cx,
             vec![1, 2, 3]
                 .into_iter()
                 .map(|x| create_signal(cx, x))
