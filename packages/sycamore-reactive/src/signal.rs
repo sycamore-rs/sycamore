@@ -183,7 +183,29 @@ impl<T> Signal<T> {
     /// # });
     /// ```
     pub fn set(&self, value: T) {
-        *self.0.value.borrow_mut() = Rc::new(value);
+        self.set_silent(value);
+        self.0.emitter.trigger_subscribers();
+    }
+
+    /// Set the current value of the state wrapped in a [`Rc`]. Unlike [`Signal::set()`], this
+    /// method accepts the value wrapped in a [`Rc`] because the underlying storage is already using
+    /// [`Rc`], thus preventing an unnecessary clone.
+    ///
+    /// This will notify and update any effects and memos that depend on this value.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_signal(cx, 0);
+    /// assert_eq!(*state.get(), 0);
+    ///
+    /// state.set_rc(Rc::new(1));
+    /// assert_eq!(*state.get(), 1);
+    /// # });
+    /// ```
+    pub fn set_rc(&self, value: Rc<T>) {
+        self.set_rc_silent(value);
         self.0.emitter.trigger_subscribers();
     }
 
@@ -191,7 +213,16 @@ impl<T> Signal<T> {
     ///
     /// Make sure you know what you are doing because this can make state inconsistent.
     pub fn set_silent(&self, value: T) {
-        *self.0.value.borrow_mut() = Rc::new(value);
+        self.set_rc_silent(Rc::new(value));
+    }
+
+    /// Set the current value of the state wrapped in a [`Rc`] _without_ triggering subscribers.
+    /// 
+    /// See the documentation for [`Signal::set_rc()`] for more information.
+    ///
+    /// Make sure you know what you are doing because this can make state inconsistent.
+    pub fn set_rc_silent(&self, value: Rc<T>) {
+        *self.0.value.borrow_mut() = value;
     }
 
     /// Split a signal into getter and setter handles.
@@ -316,7 +347,7 @@ pub fn create_signal<T>(cx: Scope, value: T) -> &Signal<T> {
 /// rc_state.set(1);
 /// assert_eq!(*double.get(), 2);
 ///
-/// // This isn't possible with simply create_signal(cx, )
+/// // This isn't possible with simply create_signal(_)
 /// outer = Some(rc_state);
 /// });
 /// ```
