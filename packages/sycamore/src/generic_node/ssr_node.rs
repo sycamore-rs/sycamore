@@ -326,7 +326,7 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<'a>(&self, _cx: Scope<'a>, _name: &str, _handler: Box<dyn FnMut(Self::EventType) + 'a>) {
+    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, _cx: Scope<'a>, _name: &str, _handler: F) {
         // Noop. Events are attached on client side.
     }
 
