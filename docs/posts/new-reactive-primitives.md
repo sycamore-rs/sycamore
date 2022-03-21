@@ -4,7 +4,7 @@ _2022-02-01_
 
 _How the next version of Sycamore will be the most ergonomic yet_
 
-> _Note:_ This article has been updated to reflex changes introduced in the latest v0.8 beta.
+> _Note:_ This post has been updated to reflect changes introduced in the latest v0.8 beta.
 
 Sycamore is a library for building isomorphic web applications in Rust and WebAssembly.
 
