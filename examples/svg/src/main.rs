@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use sycamore::motion::ScopeMotionExt;
+use sycamore::motion::create_tweened_signal;
 use sycamore::{easing, prelude::*};
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let rotate = cx.create_tweened_signal(0f64, Duration::from_millis(800), easing::quad_inout);
+    let rotate = create_tweened_signal(cx, 0f64, Duration::from_millis(800), easing::quad_inout);
 
     view! { cx,
         button(disabled=rotate.is_tweening(), on:click=|_| rotate.set(*rotate.get() + 0.5)) { "Half rotate..." }

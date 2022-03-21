@@ -480,7 +480,7 @@ pub async fn render_to_string_await_suspense(
     view: impl FnOnce(Scope<'_>) -> View<SsrNode> + 'static,
 ) -> String {
     use futures::channel::oneshot;
-    use sycamore_futures::ScopeSpawnLocal;
+    use sycamore_futures::spawn_local_scoped;
 
     let mut ret = String::new();
     let v = Rc::new(RefCell::new(None));
@@ -488,7 +488,7 @@ pub async fn render_to_string_await_suspense(
     let disposer = create_scope({
         let v = Rc::clone(&v);
         move |cx| {
-            cx.spawn_local(async move {
+            spawn_local_scoped(cx, async move {
                 *v.borrow_mut() = Some(
                     crate::suspense::await_suspense(cx, async {
                         with_hydration_context(|| view(cx))

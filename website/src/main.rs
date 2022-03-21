@@ -11,7 +11,7 @@ use content::MarkdownPage;
 use reqwasm::http::Request;
 use serde_lite::Deserialize;
 use sidebar::SidebarData;
-use sycamore::futures::{spawn_local, ScopeFuturesExt};
+use sycamore::futures::{create_resource, spawn_local_scoped};
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router};
 const LATEST_MAJOR_VERSION: &str = "v0.7";
@@ -69,13 +69,13 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
     provide_context_ref(cx, cached_sidebar_data);
 
     let fetch_docs_data = move |url| {
-        let data = cx.create_resource(docs_preload(url));
+        let data = create_resource(cx, docs_preload(url));
         if cached_sidebar_data.get().is_none()
             || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None
         {
             // Update sidebar
             let cached_sidebar_data = cached_sidebar_data.clone();
-            spawn_local(async move {
+            spawn_local_scoped(cx, async move {
                 cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
             });
         }
@@ -139,7 +139,7 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
                 news_index::NewsIndex {}
             },
             Routes::Post(name) => {
-                let data = cx.create_resource(docs_preload(format!("/static/posts/{}.json", name)));
+                let data = create_resource(cx, docs_preload(format!("/static/posts/{}.json", name)));
                 view! { cx,
                     (if let Some(data) = data.get().as_ref() {
                         view! { cx,

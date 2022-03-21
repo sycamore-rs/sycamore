@@ -1,12 +1,12 @@
 use gloo_timers::future::TimeoutFuture;
-use sycamore::futures::ScopeSpawnLocal;
+use sycamore::futures::spawn_local_scoped;
 use sycamore::prelude::*;
 
 #[component]
 fn TimerCounter<G: Html>(cx: Scope) -> View<G> {
     let state = create_signal(cx, 0);
 
-    cx.spawn_local(async move {
+    spawn_local_scoped(cx, async move {
         loop {
             TimeoutFuture::new(1000).await;
             state.set(*state.get() + 1);

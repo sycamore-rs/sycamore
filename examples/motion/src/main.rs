@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use sycamore::easing;
-use sycamore::motion::ScopeMotionExt;
+use sycamore::motion::{create_raf, create_tweened_signal};
 use sycamore::prelude::*;
 
 #[component]
 fn CreateRAF<G: Html>(cx: Scope) -> View<G> {
     let state = create_signal(cx, 0i32);
-    let (_running, start, stop) = cx.create_raf(|| {
+    let (_running, start, stop) = create_raf(cx, || {
         state.set(*state.get() + 1);
     });
     view! { cx,
@@ -21,8 +21,12 @@ fn CreateRAF<G: Html>(cx: Scope) -> View<G> {
 
 #[component]
 fn Tweened<G: Html>(cx: Scope) -> View<G> {
-    let progress =
-        cx.create_tweened_signal([0.0f32, 1.0], Duration::from_millis(250), easing::quad_out);
+    let progress = create_tweened_signal(
+        cx,
+        [0.0f32, 1.0],
+        Duration::from_millis(250),
+        easing::quad_out,
+    );
 
     view! { cx,
         div {
