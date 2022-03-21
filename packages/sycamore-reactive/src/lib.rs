@@ -425,7 +425,7 @@ pub fn on<'a, U, const N: usize>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{create_scope, create_scope_immediate};
+    use super::*;
 
     #[test]
     fn refs() {

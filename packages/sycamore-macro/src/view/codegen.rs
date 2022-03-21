@@ -485,6 +485,8 @@ impl Codegen {
                         props_quoted.extend(quote! {
                             .children(
                                 ::sycamore::component::Children::new(#cx, move |#cx| {
+                                    #[allow(unused_variables)]
+                                    let #cx: ::sycamore::reactive::BoundedScope = #cx;
                                     #view_root
                                 })
                             )

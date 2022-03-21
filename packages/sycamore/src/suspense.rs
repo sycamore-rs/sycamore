@@ -209,13 +209,13 @@ mod tests {
         provide_executor_scope(async {
             create_scope_immediate(|cx| {
                 let trigger = create_signal(cx, ());
-                let transition = cx.use_transition();
+                let transition = use_transition(cx);
                 let _: View<SsrNode> = view! { cx,
                     Suspense {
                         children: Children::new(cx, move |cx| {
                             create_effect(cx, move || {
                                 trigger.track();
-                                assert!(cx.try_use_context::<SuspenseState>(cx).is_some());
+                                assert!(try_use_context::<SuspenseState>(cx).is_some());
                             });
                             View::empty()
                         })

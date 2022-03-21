@@ -118,12 +118,12 @@ fn bind() {
 #[test]
 fn using_cx_in_dyn_node_creates_nested_scope() {
     let _ = sycamore::render_to_string(|cx| {
-        let outer_depth = cx.scope_depth();
+        let outer_depth = scope_depth(cx);
         let inner_depth = create_ref(cx, Cell::new(0));
         let node = view! { cx,
             p {
                 ({
-                    inner_depth.set(cx.scope_depth());
+                    inner_depth.set(scope_depth(cx));
                     view! { cx, }
                 })
             }

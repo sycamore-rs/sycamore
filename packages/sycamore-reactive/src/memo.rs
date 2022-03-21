@@ -132,7 +132,7 @@ pub fn create_selector_with<'a, U: 'a>(
 /// }
 ///
 /// # create_scope_immediate(|cx| {
-/// let (state, dispatch) = cx.create_reducer(0, |state, msg: Msg| match msg {
+/// let (state, dispatch) = create_reducer(cx, 0, |state, msg: Msg| match msg {
 ///     Msg::Increment => *state + 1,
 ///     Msg::Decrement => *state - 1,
 /// });
@@ -256,7 +256,7 @@ mod tests {
                 Decrement,
             }
 
-            let (state, dispatch) = cx.create_reducer(0, |state, msg: Msg| match msg {
+            let (state, dispatch) = create_reducer(cx, 0, |state, msg: Msg| match msg {
                 Msg::Increment => *state + 1,
                 Msg::Decrement => *state - 1,
             });
@@ -280,7 +280,7 @@ mod tests {
                 Decrement,
             }
 
-            let (state, dispatch) = cx.create_reducer(0, |state, msg: Msg| match msg {
+            let (state, dispatch) = create_reducer(cx, 0, |state, msg: Msg| match msg {
                 Msg::Increment => *state + 1,
                 Msg::Decrement => *state - 1,
             });
