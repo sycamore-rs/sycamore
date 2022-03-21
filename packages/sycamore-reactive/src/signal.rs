@@ -2,7 +2,7 @@
 
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use std::ops::{AddAssign, Deref, DivAssign, MulAssign, SubAssign};
+use std::ops::{AddAssign, Deref, DerefMut, DivAssign, MulAssign, SubAssign};
 
 use crate::effect::EFFECTS;
 use crate::*;
@@ -243,6 +243,49 @@ impl<T> Signal<T> {
         let getter = move || self.get();
         let setter = move |x| self.set(x);
         (getter, setter)
+    }
+}
+
+/// A mutable reference for modifying a [`Signal`].
+///
+/// Construct this using the [`Signal::modify()`] method.
+pub struct Modify<'a, T>(Option<T>, &'a Signal<T>);
+
+impl<'a, T> Deref for Modify<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref().unwrap()
+    }
+}
+impl<'a, T> DerefMut for Modify<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_mut().unwrap()
+    }
+}
+
+/// When the mutable handle is dropped, update the [`Signal`].
+impl<T> Drop for Modify<'_, T> {
+    fn drop(&mut self) {
+        self.1.set(self.0.take().unwrap())
+    }
+}
+
+impl<T: Clone> Signal<T> {
+    /// Return a mutable handle to make it easier to mutate the inner value.
+    /// This requires the inner type to implement [`Clone`].
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_signal(cx, "Hello ".to_string());
+    /// state.modify().push_str("World!");
+    /// assert_eq!(*state.get(), "Hello World!");
+    /// # });
+    /// ```
+    pub fn modify(&self) -> Modify<T> {
+        Modify(Some(self.value.borrow().as_ref().clone()), self)
     }
 }
 
@@ -660,6 +703,21 @@ mod tests {
             signal *= 1;
             signal /= 1;
             assert_eq!(*counter.get(), 5);
+        });
+    }
+
+    #[test]
+    fn signal_modify() {
+        create_scope_immediate(|cx| {
+            let signal = create_signal(cx, "Hello ".to_string());
+            let counter = create_signal(cx, 0);
+            create_effect(cx, || {
+                signal.track();
+                counter.set(*counter.get_untracked() + 1);
+            });
+            signal.modify().push_str("World!");
+            assert_eq!(*signal.get(), "Hello World!");
+            assert_eq!(*counter.get(), 2);
         });
     }
 }
