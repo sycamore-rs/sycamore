@@ -222,7 +222,7 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn event<'a>(&self, cx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
+    fn event<'a>(&self, cx: Scope<'a>, name: &str, handler: Box<dyn FnMut(Self::EventType) + 'a>) {
         self.node.event(cx, name, handler);
     }
 

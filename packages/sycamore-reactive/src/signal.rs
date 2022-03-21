@@ -2,7 +2,7 @@
 
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use std::ops::Deref;
+use std::ops::{AddAssign, Deref, DivAssign, MulAssign, SubAssign};
 
 use crate::effect::EFFECTS;
 use crate::*;
@@ -217,7 +217,7 @@ impl<T> Signal<T> {
     }
 
     /// Set the current value of the state wrapped in a [`Rc`] _without_ triggering subscribers.
-    /// 
+    ///
     /// See the documentation for [`Signal::set_rc()`] for more information.
     ///
     /// Make sure you know what you are doing because this can make state inconsistent.
@@ -264,11 +264,40 @@ impl<T: Default> Signal<T> {
     }
 }
 
-impl<'a, T> Deref for Signal<T> {
+impl<T> Deref for Signal<T> {
     type Target = ReadSignal<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<T: AddAssign + Copy> AddAssign<T> for &Signal<T> {
+    fn add_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value += other;
+        self.set(value);
+    }
+}
+impl<T: SubAssign + Copy> SubAssign<T> for &Signal<T> {
+    fn sub_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value -= other;
+        self.set(value);
+    }
+}
+impl<T: MulAssign + Copy> MulAssign<T> for Signal<T> {
+    fn mul_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value *= other;
+        self.set(value);
+    }
+}
+impl<T: DivAssign + Copy> DivAssign<T> for Signal<T> {
+    fn div_assign(&mut self, other: T) {
+        let mut value = **self.0.value.borrow();
+        value /= other;
+        self.set(value);
     }
 }
 
