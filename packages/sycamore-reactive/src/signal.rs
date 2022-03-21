@@ -287,14 +287,14 @@ impl<T: SubAssign + Copy> SubAssign<T> for &Signal<T> {
         self.set(value);
     }
 }
-impl<T: MulAssign + Copy> MulAssign<T> for Signal<T> {
+impl<T: MulAssign + Copy> MulAssign<T> for &Signal<T> {
     fn mul_assign(&mut self, other: T) {
         let mut value = **self.0.value.borrow();
         value *= other;
         self.set(value);
     }
 }
-impl<T: DivAssign + Copy> DivAssign<T> for Signal<T> {
+impl<T: DivAssign + Copy> DivAssign<T> for &Signal<T> {
     fn div_assign(&mut self, other: T) {
         let mut value = **self.0.value.borrow();
         value /= other;
@@ -643,6 +643,23 @@ mod tests {
             assert_eq!(format!("{read_signal:?}"), "ReadSignal(0)");
             let rcsignal = create_rc_signal(0);
             assert_eq!(format!("{rcsignal:?}"), "RcSignal(0)");
+        });
+    }
+
+    #[test]
+    fn signal_add_assign_update() {
+        create_scope_immediate(|cx| {
+            let mut signal = create_signal(cx, 0);
+            let counter = create_signal(cx, 0);
+            create_effect(cx, || {
+                signal.track();
+                counter.set(*counter.get_untracked() + 1);
+            });
+            signal += 1;
+            signal -= 1;
+            signal *= 1;
+            signal /= 1;
+            assert_eq!(*counter.get(), 5);
         });
     }
 }
