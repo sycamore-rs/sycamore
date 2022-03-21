@@ -52,30 +52,15 @@ pub struct AppState {
 
 impl AppState {
     fn add_todo(&self, title: String) {
-        self.todos.set(
-            self.todos
-                .get()
-                .as_ref()
-                .clone()
-                .into_iter()
-                .chain(Some(create_rc_signal(Todo {
-                    title,
-                    completed: false,
-                    id: Uuid::new_v4(),
-                })))
-                .collect(),
-        )
+        self.todos.modify().push(create_rc_signal(Todo {
+            title,
+            completed: false,
+            id: Uuid::new_v4(),
+        }))
     }
 
     fn remove_todo(&self, id: Uuid) {
-        self.todos.set(
-            self.todos
-                .get()
-                .iter()
-                .filter(|todo| todo.get().id != id)
-                .cloned()
-                .collect(),
-        );
+        self.todos.modify().retain(|todo| todo.get().id != id);
     }
 
     fn todos_left(&self) -> usize {
@@ -110,14 +95,7 @@ impl AppState {
     }
 
     fn clear_completed(&self) {
-        self.todos.set(
-            self.todos
-                .get()
-                .iter()
-                .filter(|todo| !todo.get().completed)
-                .cloned()
-                .collect(),
-        );
+        self.todos.modify().retain(|todo| !todo.get().completed);
     }
 }
 
@@ -456,7 +434,7 @@ pub fn Footer<G: Html>(cx: Scope) -> View<G> {
                     }
                 }
             } else {
-                View::empty()
+                view! { cx, }
             })
         }
     }
