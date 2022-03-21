@@ -12,7 +12,7 @@ use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test]
 fn insert_create_nodes() {
-    create_scope_immediate(|ctx| {
+    create_scope_immediate(|cx| {
         let nodes = [
             DomNode::text_node("1"),
             DomNode::text_node("2"),
@@ -21,7 +21,7 @@ fn insert_create_nodes() {
         let parent = DomNode::element::<html::div>();
 
         insert(
-            ctx,
+            cx,
             &parent,
             View::new_fragment(nodes.iter().cloned().map(View::new_node).collect()),
             None,

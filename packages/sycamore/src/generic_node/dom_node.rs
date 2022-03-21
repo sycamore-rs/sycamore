@@ -321,8 +321,8 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event<'a>(&self, ctx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
-        // SAFETY: extend lifetime because the closure is dropped when the ctx is disposed,
+    fn event<'a>(&self, cx: Scope<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
+        // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
         // preventing the handler from ever being accessed after its lifetime.
         let handler: Box<dyn Fn(Self::EventType) + 'static> =
             unsafe { std::mem::transmute(handler) };
@@ -331,7 +331,7 @@ impl GenericNode for DomNode {
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
             .unwrap_throw();
 
-        ctx.on_cleanup(move || {
+        on_cleanup(cx, move || {
             drop(closure);
         });
     }
@@ -391,11 +391,11 @@ pub fn render_get_scope<'a>(
     view: impl FnOnce(Scope<'_>) -> View<DomNode> + 'a,
     parent: &'a Node,
 ) -> ScopeDisposer<'a> {
-    create_scope(|ctx| {
+    create_scope(|cx| {
         insert(
-            ctx,
+            cx,
             &DomNode::from_web_sys(parent.clone()),
-            view(ctx),
+            view(cx),
             None,
             None,
             false,

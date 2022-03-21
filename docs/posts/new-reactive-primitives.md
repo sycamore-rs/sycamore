@@ -4,6 +4,8 @@ _2022-02-01_
 
 _How the next version of Sycamore will be the most ergonomic yet_
 
+> _Note:_ This article has been updated to reflex changes introduced in the latest v0.8 beta.
+
 Sycamore is a library for building isomorphic web applications in Rust and WebAssembly.
 
 At its core, Sycamore is built on what are called "reactive primitives". These reactive primitives
@@ -86,18 +88,18 @@ instead tied to the lifetime of the reactive scope in which it is created.
 // Before:
 let data = Signal::new(...);
 // After:
-let data = ctx.create_signal(...);
+let data = create_signal(cx, ...);
 ```
 
-The `ctx` is a reference to the current reactive scope. Whereas previously, reactive scopes were
+The `cx` is a reference to the current reactive scope. Whereas previously, reactive scopes were
 internally tracked using a complicated orchestration of thread-locals, reactive scopes are now
 explicitly represented by the `Scope` type. This change was necessary because otherwise, there would
 be no way to associate the lifetime of the `Signal` to the `Scope`.
 
-Now, how is this an improvement? It is in the return type of `Signal::new` and `ctx.create_signal`.
+Now, how is this an improvement? It is in the return type of `Signal::new` and `cx.create_signal`.
 
 `Signal::new` returned, well, a `Signal` (which, if you remember, was `Clone`able but not
-`Copy`able) but `ctx.create_signal` returns a `&Signal` (a reference to a `Signal`, which is always
+`Copy`able) but `cx.create_signal` returns a `&Signal` (a reference to a `Signal`, which is always
 `Copy`able). The way this works is that the `Scope` acts somewhat akin to an
 [arena allocator](https://en.wikipedia.org/wiki/Region-based_memory_management). `Signal`s that are
 created on a `Scope` are allocated in an internal allocator, thus making the `Signal` share the same
@@ -106,11 +108,11 @@ lifetime as the `Scope`.
 This means that we can now use our `Signal` in as many closures as we want.
 
 ```rust
-let data = ctx.create_signal(...);
+let data = create_signal(cx, ...);
 let callback = || data.get();
 //             ^^ -> Look ma, no clones!
 let another_callback = || data.get();
-ctx.create_effect(|| {
+create_effect(cx, || {
     log::info!("{data}");
 });
 ```
@@ -119,15 +121,15 @@ Making reactive scopes explicit also allows another exciting possibility: first-
 `async`/`await` support directly inside components! The reason this wasn't possible before was
 because using `async` broke the topological code execution upon which relied the global thread-local
 solution. In other words, after a `.await` suspension point, we could no longer know what reactive
-scope we were in. Now that we can access `ctx` directly, that makes writing the following code a
+scope we were in. Now that we can access `cx` directly, that makes writing the following code a
 possibility on our roadmap:
 
 ```rust
 #[component]
-async fn AsyncFetch<G: Html>(ctx: Scope) -> View<G> {
+async fn AsyncFetch<G: Html>(cx: Scope) -> View<G> {
     let data = fetch_data().await;
-    let derived = ctx.create_memo(|| data);
-    //            ^^^ -> We can still access `ctx`, even after the `.await` suspension point.
+    let derived = create_memo(cx, || data);
+    //                        ^^ -> We can still access `cx`, even after the `.await` suspension point.
     view! {
         (derived)
     }
@@ -143,7 +145,7 @@ The first is due to the nature of arena allocators. Arena allocators only free t
 once when they are destroyed. There is no deallocation while the arena allocator is still valid.
 This means that `Signal`s _must_ live as long as the `Scope`, no longer and no shorter. This means
 that one must be more careful in preventing leaking memory, for example, by not using
-`ctx.create_signal` in a loop or in an effect where it might be called multiple times.
+`cx.create_signal` in a loop or in an effect where it might be called multiple times.
 
 In the pretty rare cases where something like this is necessary, it is still possible to use a
 reference-counted `Signal`, an `RcSignal` which is pretty much identical to the old `Signal`.
@@ -153,9 +155,9 @@ The second is now that `Signal`s are tied to the `Scope`, it is impossible for t
 
 ```rust
 let mut outer = None;
-// Crete a new reactive scope and allow access to it through `ctx`.
-create_scope(|ctx| {
-    let data = ctx.create_signal(0);
+// Crete a new reactive scope and allow access to it through `cx`.
+create_scope(|cx| {
+    let data = create_signal(cx, 0);
     outer = Some(data);
     //           ^^^^ -> ERROR: `data` cannot escape
 });
@@ -165,6 +167,6 @@ However, this behavior is rarely desired. And when absolutely needed, one can al
 an `RcSignal` just like before.
 
 And this wraps up Sycamore's new reactive primitives. To try them out, install the `v0.8` beta
-published on crates.io (as of writing, the latest beta is `v0.8.0-beta.1`). Note that there are
-quite a few breaking changes, not just with reactivity, but also with some other aspects of Sycamore
-(such as components) to make them compatible with the new reactivity system.
+published on crates.io. Note that there are quite a few breaking changes, not just with reactivity,
+but also with some other aspects of Sycamore (such as components) to make them compatible with the
+new reactivity system.

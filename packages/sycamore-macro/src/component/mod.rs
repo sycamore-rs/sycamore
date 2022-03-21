@@ -125,7 +125,7 @@ impl ToTokens for ComponentFunction {
                 ident: inner_ident.clone(),
                 ..sig.clone()
             };
-            let ctx = match inputs.first().unwrap() {
+            let cx = match inputs.first().unwrap() {
                 FnArg::Typed(t) => match &*t.pat {
                     Pat::Ident(id) => &id.ident,
                     _ => unreachable!(),
@@ -139,10 +139,10 @@ impl ToTokens for ComponentFunction {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = #ctx.create_signal(::sycamore::view::View::empty());
-                    let __view = ::sycamore::view! { #ctx, (__dyn.get().as_ref().clone()) };
+                    let __dyn = create_signal(#cx, ::sycamore::view::View::empty());
+                    let __view = ::sycamore::view! { #cx, (__dyn.get().as_ref().clone()) };
 
-                    ::sycamore::suspense::suspense_scope(#ctx, async move {
+                    ::sycamore::suspense::suspense_scope(#cx, async move {
                         let __async_view = #inner_ident(#(#args),*).await;
                         __dyn.set(__async_view);
                     });

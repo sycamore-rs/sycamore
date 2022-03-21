@@ -1,8 +1,8 @@
 use sycamore::prelude::*;
 
 #[component]
-fn MyComponent<'a, G: Html>(ctx: Scope<'a>, props: &'a Signal<i32>) -> View<G> {
-    view! { ctx,
+fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: &'a Signal<i32>) -> View<G> {
+    view! { cx,
         div(class="my-component") {
             "My component"
             p {
@@ -14,12 +14,12 @@ fn MyComponent<'a, G: Html>(ctx: Scope<'a>, props: &'a Signal<i32>) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
-    let state = ctx.create_signal(0);
+fn App<G: Html>(cx: Scope) -> View<G> {
+    let state = create_signal(cx, 0);
 
     let increment = |_| state.set(*state.get() + 1);
 
-    view! { ctx,
+    view! { cx,
         div {
             "Component demo"
 
@@ -32,5 +32,5 @@ fn App<G: Html>(ctx: Scope) -> View<G> {
 }
 
 fn main() {
-    sycamore::render(|ctx| view! { ctx, App() });
+    sycamore::render(|cx| view! { cx, App() });
 }

@@ -13,7 +13,7 @@ DOM. When rendering on the server, however, we don't have a DOM accessible to us
 browser using your favorite web server.
 
 ```rust
-let html = render_to_string(|ctx| view! { ctx,
+let html = render_to_string(|cx| view! { cx,
     div(class="my-class") {
         button { "Click me" }
     }

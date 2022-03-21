@@ -1,12 +1,12 @@
 use sycamore::prelude::*;
 
 #[component]
-fn Counter<G: Html>(ctx: Scope) -> View<G> {
-    let state = ctx.create_signal(0i32);
+fn Counter<G: Html>(cx: Scope) -> View<G> {
+    let state = create_signal(cx, 0i32);
     let increment = |_| state.set(*state.get() + 1);
     let decrement = |_| state.set(*state.get() - 1);
     let reset = |_| state.set(0);
-    view! { ctx,
+    view! { cx,
         div {
             p { "Value: " (state.get()) }
             button(on:click=increment) { "+" }
@@ -17,19 +17,19 @@ fn Counter<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-fn Hello<G: Html>(ctx: Scope) -> View<G> {
-    let name = ctx.create_signal(String::new());
+fn Hello<G: Html>(cx: Scope) -> View<G> {
+    let name = create_signal(cx, String::new());
 
-    view! { ctx,
+    view! { cx,
         div {
             p {
                 "Hello "
-                (if *ctx.create_selector(|| !name.get().is_empty()).get() {
-                    view! { ctx,
+                (if *create_selector(cx, || !name.get().is_empty()).get() {
+                    view! { cx,
                         span { (name.get()) }
                     }
                 } else {
-                    view! { ctx, span { "World" } }
+                    view! { cx, span { "World" } }
                 })
                 "!"
             }
@@ -39,8 +39,8 @@ fn Hello<G: Html>(ctx: Scope) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
-    view! { ctx,
+fn App<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
         p { "Hydration" }
         br
         Hello {}
@@ -51,8 +51,8 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    let s = sycamore::render_to_string(|ctx| view! { ctx, App {} });
+    let s = sycamore::render_to_string(|cx| view! { cx, App {} });
     log::info!("{}", s);
 
-    sycamore::hydrate(|ctx| view! { ctx, App {} });
+    sycamore::hydrate(|cx| view! { cx, App {} });
 }

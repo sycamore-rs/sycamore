@@ -69,17 +69,17 @@ where
 
 impl<'a, G: GenericNode> Children<'a, G> {
     /// Instantiate the child [`View`] with the passed [`Scope`].
-    pub fn call(self, ctx: BoundedScope<'_, 'a>) -> View<G> {
-        (self.f)(ctx)
+    pub fn call(self, cx: BoundedScope<'_, 'a>) -> View<G> {
+        (self.f)(cx)
     }
 
     /// Instantiate the child [`View`] with the passed [`BoundedScope`].
-    pub fn call_with_bounded_scope(self, ctx: BoundedScope<'_, 'a>) -> View<G> {
-        (self.f)(ctx)
+    pub fn call_with_bounded_scope(self, cx: BoundedScope<'_, 'a>) -> View<G> {
+        (self.f)(cx)
     }
 
     /// Create a new [`Children`] from a closure.
-    pub fn new(_ctx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
+    pub fn new(_cx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }
     }
 }

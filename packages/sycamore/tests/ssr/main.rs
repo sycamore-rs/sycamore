@@ -4,8 +4,8 @@ use sycamore::prelude::*;
 
 #[test]
 fn hello_world() {
-    create_scope_immediate(|ctx| {
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
             p { "Hello World!" }
         };
         assert_eq!(sycamore::render_to_string(|_| node), "<p>Hello World!</p>");
@@ -14,9 +14,9 @@ fn hello_world() {
 
 #[test]
 fn reactive_text() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
+        let node = view! { cx,
             p { (count.get()) }
         };
         assert_eq!(sycamore::render_to_string(|_| node.clone()), "<p>0</p>");
@@ -27,9 +27,9 @@ fn reactive_text() {
 
 #[test]
 fn reactive_text_with_siblings() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
+        let node = view! { cx,
             p { "before" (count.get()) "after" }
         };
         assert_eq!(
@@ -46,8 +46,8 @@ fn reactive_text_with_siblings() {
 
 #[test]
 fn self_closing_tag() {
-    create_scope_immediate(|ctx| {
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
             div {
                 input
                 input(value="a")
@@ -62,8 +62,8 @@ fn self_closing_tag() {
 
 #[test]
 fn fragments() {
-    create_scope_immediate(|ctx| {
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
             p { "1" }
             p { "2" }
             p { "3" }
@@ -77,13 +77,13 @@ fn fragments() {
 
 #[test]
 fn indexed() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -105,9 +105,9 @@ fn indexed() {
 
 #[test]
 fn bind() {
-    create_scope_immediate(|ctx| {
-        let signal = ctx.create_signal(String::new());
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let signal = create_signal(cx, String::new());
+        let node = view! { cx,
             input(bind:value=signal)
         };
         let actual = sycamore::render_to_string(|_| node);
@@ -116,15 +116,15 @@ fn bind() {
 }
 
 #[test]
-fn using_ctx_in_dyn_node_creates_nested_scope() {
-    let _ = sycamore::render_to_string(|ctx| {
-        let outer_depth = ctx.scope_depth();
-        let inner_depth = ctx.create_ref(Cell::new(0));
-        let node = view! { ctx,
+fn using_cx_in_dyn_node_creates_nested_scope() {
+    let _ = sycamore::render_to_string(|cx| {
+        let outer_depth = scope_depth(cx);
+        let inner_depth = create_ref(cx, Cell::new(0));
+        let node = view! { cx,
             p {
                 ({
-                    inner_depth.set(ctx.scope_depth());
-                    view! { ctx, }
+                    inner_depth.set(scope_depth(cx));
+                    view! { cx, }
                 })
             }
         };

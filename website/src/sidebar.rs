@@ -19,7 +19,7 @@ pub struct SidebarData {
 }
 
 #[component]
-pub fn Sidebar<G: Html>(ctx: Scope, (version, data): (String, SidebarData)) -> View<G> {
+pub fn Sidebar<G: Html>(cx: Scope, (version, data): (String, SidebarData)) -> View<G> {
     let sections = data
         .sections
         .into_iter()
@@ -27,7 +27,7 @@ pub fn Sidebar<G: Html>(ctx: Scope, (version, data): (String, SidebarData)) -> V
             let pages = items
                 .into_iter()
                 .map(|SidebarItem { name, href }| {
-                    view! { ctx,
+                    view! { cx,
                         li {
                             a(
                                 href=format!("../{}", href),
@@ -41,7 +41,7 @@ pub fn Sidebar<G: Html>(ctx: Scope, (version, data): (String, SidebarData)) -> V
                 .collect();
 
             let pages = View::new_fragment(pages);
-            view! { ctx,
+            view! { cx,
                 li {
                     h1(class="text-lg font-bold py-1 pl-2") {
                         (title)
@@ -55,7 +55,7 @@ pub fn Sidebar<G: Html>(ctx: Scope, (version, data): (String, SidebarData)) -> V
         .collect();
 
     let sections = View::new_fragment(sections);
-    view! { ctx,
+    view! { cx,
         ul {
             li {
                 a(

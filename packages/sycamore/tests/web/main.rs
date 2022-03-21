@@ -68,8 +68,8 @@ fn empty_template() {
 #[wasm_bindgen_test]
 fn hello_world() {
     sycamore::render_to(
-        |ctx| {
-            view! { ctx,
+        |cx| {
+            view! { cx,
                 p { "Hello World!" }
             }
         },
@@ -90,8 +90,8 @@ fn hello_world_noderef() {
     let p_ref = NodeRef::new();
 
     sycamore::render_to(
-        |ctx| {
-            view! { ctx,
+        |cx| {
+            view! { cx,
                 p(ref=p_ref) { "Hello World!" }
             }
         },
@@ -111,8 +111,8 @@ fn hello_world_noderef() {
 fn interpolation() {
     let text = "Hello Sycamore!";
     sycamore::render_to(
-        |ctx| {
-            view! { ctx,
+        |cx| {
+            view! { cx,
                 p { (text) }
             }
         },
@@ -133,9 +133,9 @@ fn interpolation() {
 #[wasm_bindgen_test]
 fn template_interpolation() {
     sycamore::render_to(
-        |ctx| {
-            let text = view! { ctx, "Hello Sycamore!" };
-            view! { ctx,
+        |cx| {
+            let text = view! { cx, "Hello Sycamore!" };
+            view! { cx,
                 p {
                     (text)
                 }
@@ -156,14 +156,14 @@ fn template_interpolation() {
 
 #[wasm_bindgen_test]
 fn template_interpolation_if_else() {
-    create_scope_immediate(|ctx| {
-        let show = ctx.create_signal(true);
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let show = create_signal(cx, true);
+        let node = view! { cx,
             p {
                 (if *show.get() {
-                    view! { ctx, "Hello Sycamore!" }
+                    view! { cx, "Hello Sycamore!" }
                 } else {
-                    view! { ctx, }
+                    view! { cx, }
                 })
             }
         };
@@ -204,14 +204,14 @@ fn template_interpolation_if_else() {
 
 #[wasm_bindgen_test]
 fn template_interpolation_if_else_with_sibling() {
-    create_scope_immediate(|ctx| {
-        let show = ctx.create_signal(true);
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let show = create_signal(cx, true);
+        let node = view! { cx,
             div { "Before" }
             (if *show.get() {
-                view! { ctx, p { "Hello Sycamore!" } }
+                view! { cx, p { "Hello Sycamore!" } }
             } else {
-                view! { ctx, p { "" }}
+                view! { cx, p { "" }}
             })
         };
         sycamore::render_to(|_| node, &test_container());
@@ -251,10 +251,10 @@ fn template_interpolation_if_else_with_sibling() {
 
 #[wasm_bindgen_test]
 fn template_interpolation_nested_reactivity() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
-        let text = view! { ctx, p { (count.get() ) } };
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
+        let text = view! { cx, p { (count.get() ) } };
+        let node = view! { cx,
             p {
                 (text)
             }
@@ -271,10 +271,10 @@ fn template_interpolation_nested_reactivity() {
 
 #[wasm_bindgen_test]
 fn reactive_text() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             p { (count.get()) }
         };
 
@@ -290,10 +290,10 @@ fn reactive_text() {
 
 #[wasm_bindgen_test]
 fn reactive_text_do_not_destroy_previous_children() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             p { "Value: " (count.get()) }
         };
 
@@ -309,10 +309,10 @@ fn reactive_text_do_not_destroy_previous_children() {
 
 #[wasm_bindgen_test]
 fn reactive_attribute() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             span(attribute=count.get())
         };
 
@@ -329,10 +329,10 @@ fn reactive_attribute() {
 #[wasm_bindgen_test]
 #[ignore]
 fn two_way_bind_to_props() {
-    create_scope_immediate(|ctx| {
-        let value = ctx.create_signal(String::new());
+    create_scope_immediate(|cx| {
+        let value = create_signal(cx, String::new());
 
-        let node = view! { ctx,
+        let node = view! { cx,
             input(bind:value=value)
             p { (value.get()) }
         };
@@ -358,9 +358,9 @@ fn two_way_bind_to_props() {
 
 #[wasm_bindgen_test]
 fn noderefs() {
-    create_scope_immediate(|ctx| {
-        let noderef = ctx.create_node_ref();
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let noderef = create_node_ref(cx);
+        let node = view! { cx,
             div {
                 input(ref=noderef)
             }
@@ -378,8 +378,8 @@ fn noderefs() {
 
 #[wasm_bindgen_test]
 fn fragments() {
-    create_scope_immediate(|ctx| {
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
             p { "1" }
             p { "2" }
             p { "3" }
@@ -396,8 +396,8 @@ fn fragments() {
 
 #[wasm_bindgen_test]
 fn fragments_text_nodes() {
-    create_scope_immediate(|ctx| {
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
             "1"
             "2"
             "3"
@@ -415,13 +415,13 @@ fn fragments_text_nodes() {
 
 #[wasm_bindgen_test]
 fn dyn_fragment_reuse_nodes() {
-    create_scope_immediate(|ctx| {
-        let nodes = vec![view! { ctx, "1" }, view! { ctx, "2" }, view! { ctx, "3" }];
+    create_scope_immediate(|cx| {
+        let nodes = vec![view! { cx, "1" }, view! { cx, "2" }, view! { cx, "3" }];
 
         sycamore::render_to(
             {
                 let nodes = nodes.clone();
-                |_| View::new_dyn(ctx, move || View::new_fragment(nodes.clone()))
+                |_| View::new_dyn(cx, move || View::new_fragment(nodes.clone()))
             },
             &test_container(),
         );

@@ -10,7 +10,7 @@ Here it is:
 use sycamore::prelude::*;
 
 fn main() {
-    sycamore::render(|ctx| view! { ctx,
+    sycamore::render(|cx| view! { cx,
         p { "Hello, World!" }
     });
 }
@@ -33,7 +33,7 @@ This function is provided by Sycamore and is used to render your app to the DOM 
 `render` accepts a closure (aka. lambda function) which should return a view to be rendered.
 
 ```rust
-view! { ctx,
+view! { cx,
     p { "Hello, World!" }
 }
 ```
@@ -48,7 +48,7 @@ want to render the following HTML:
 The `p { ... }` creates a new `<p>` tag. The `"Hello, World!"` creates a new text node that is
 nested within the `<p>` tag.
 
-The `ctx` variable represents the _reactive scope_. This is what basically keeps track of resources
+The `cx` variable represents the _reactive scope_. This is what basically keeps track of resources
 and makes reactivity work. Don't worry too much about this now. You'll see this again in the
 [Reactivity](../basics/reactivity) section.
 

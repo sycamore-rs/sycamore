@@ -30,7 +30,7 @@ where
 /// For non keyed iteration, see [`Indexed`].
 #[component]
 pub fn Keyed<'a, G: GenericNode, T, F, K, Key>(
-    ctx: Scope<'a>,
+    cx: Scope<'a>,
     props: KeyedProps<'a, T, F, G, K, Key>,
 ) -> View<G>
 where
@@ -45,8 +45,8 @@ where
         key,
     } = props;
 
-    let mapped = ctx.map_keyed(iterable, view, key);
-    View::new_dyn(ctx, || View::new_fragment(mapped.get().as_ref().clone()))
+    let mapped = map_keyed(cx, iterable, view, key);
+    View::new_dyn(cx, || View::new_fragment(mapped.get().as_ref().clone()))
 }
 
 /// Props for [`Indexed`].
@@ -66,16 +66,13 @@ where
 ///
 /// For keyed iteration, see [`Keyed`].
 #[component]
-pub fn Indexed<'a, G: GenericNode, T, F>(
-    ctx: Scope<'a>,
-    props: IndexedProps<'a, G, T, F>,
-) -> View<G>
+pub fn Indexed<'a, G: GenericNode, T, F>(cx: Scope<'a>, props: IndexedProps<'a, G, T, F>) -> View<G>
 where
     T: Clone + PartialEq,
     F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,
 {
     let IndexedProps { iterable, view } = props;
 
-    let mapped = ctx.map_indexed(iterable, view);
-    View::new_dyn(ctx, || View::new_fragment(mapped.get().as_ref().clone()))
+    let mapped = map_indexed(cx, iterable, view);
+    View::new_dyn(cx, || View::new_fragment(mapped.get().as_ref().clone()))
 }

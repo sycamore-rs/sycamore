@@ -9,8 +9,8 @@ Sycamore is a _reactive_ library for creating web apps in **Rust** and **WebAsse
 
 ```rust
 #[component]
-fn Hello<G: Html>(ctx: Scope) -> View<G> {
-    view! { ctx,
+fn Hello<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
         p { "Hello World!" }
     }
 }

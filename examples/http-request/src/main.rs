@@ -20,11 +20,11 @@ async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
 }
 
 #[component]
-async fn VisitsCount<G: Html>(ctx: Scope<'_>) -> View<G> {
+async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
     let id = "sycamore-visits-counter";
     let visits = fetch_visits(id).await.unwrap_or_default();
 
-    view! { ctx,
+    view! { cx,
         div {
             p {
                 "Total visits: "
@@ -37,12 +37,12 @@ async fn VisitsCount<G: Html>(ctx: Scope<'_>) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: Scope) -> View<G> {
-    view! { ctx,
+fn App<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
         div {
             p { "Page Visit Counter" }
             Suspense {
-                fallback: view! { ctx, "Loading..." },
+                fallback: view! { cx, "Loading..." },
                 VisitsCount {}
             }
         }
@@ -53,5 +53,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|ctx| view! { ctx, App {} });
+    sycamore::render(|cx| view! { cx, App {} });
 }

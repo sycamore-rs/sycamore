@@ -30,11 +30,11 @@ const VERSIONS: &[(&str, VersionedDocsLink)] = &[
 
 #[component]
 fn VersionedDocsLink<G: Html>(
-    ctx: Scope,
+    cx: Scope,
     (name, versioned_docs_link): (&'static str, &'static VersionedDocsLink),
 ) -> View<G> {
     match versioned_docs_link {
-        VersionedDocsLink::Some(link) => view! { ctx,
+        VersionedDocsLink::Some(link) => view! { cx,
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("/docs/{}/getting_started/installation", link),
@@ -48,7 +48,7 @@ fn VersionedDocsLink<G: Html>(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::None => view! { ctx,
+        VersionedDocsLink::None => view! { cx,
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("https://docs.rs/sycamore/{}", &name[1..]),
@@ -58,7 +58,7 @@ fn VersionedDocsLink<G: Html>(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::Next => view! { ctx,
+        VersionedDocsLink::Next => view! { cx,
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href="/docs/getting_started/installation",
@@ -73,7 +73,7 @@ fn VersionedDocsLink<G: Html>(
 }
 
 #[component]
-pub fn Versions<G: Html>(ctx: Scope) -> View<G> {
+pub fn Versions<G: Html>(cx: Scope) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -83,7 +83,7 @@ pub fn Versions<G: Html>(ctx: Scope) -> View<G> {
     let versions = VERSIONS
         .iter()
         .map(|(name, versioned_docs_link)| {
-            view! { ctx,
+            view! { cx,
                 li {
                     h2(class="text-2xl font-light") { (name) }
                     div(class="flex flex-col divide-y dark:divide-gray-500 text-gray-600 dark:text-gray-300") {
@@ -95,7 +95,7 @@ pub fn Versions<G: Html>(ctx: Scope) -> View<G> {
         .collect();
     let versions = View::new_fragment(versions);
 
-    view! { ctx,
+    view! { cx,
         div(class="container mx-auto") {
             h1(class="text-4xl font-bold") { "Versions" }
             ul(class="mt-5 ml-2 flex flex-col space-y-4") {

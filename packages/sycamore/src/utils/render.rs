@@ -24,18 +24,18 @@ use crate::view::{View, ViewType};
 ///   Even if the node to be inserted is the only child of `parent`, `multi` can still be set to
 ///   `false` but forgoes the optimizations.
 pub fn insert<G: GenericNode>(
-    ctx: Scope<'_>,
+    cx: Scope<'_>,
     parent: &G,
     accessor: View<G>,
     initial: Option<View<G>>,
     marker: Option<&G>,
     multi: bool,
 ) {
-    insert_expression(ctx, parent, &accessor, initial, marker, false, multi);
+    insert_expression(cx, parent, &accessor, initial, marker, false, multi);
 }
 
 fn insert_expression<G: GenericNode>(
-    ctx: Scope<'_>,
+    cx: Scope<'_>,
     parent: &G,
     value: &View<G>,
     mut current: Option<View<G>>,
@@ -70,13 +70,13 @@ fn insert_expression<G: GenericNode>(
             let parent = parent.clone();
             let marker = marker.cloned();
             let f = f.clone();
-            ctx.create_effect_scoped(move |ctx| {
+            create_effect_scoped(cx, move |cx| {
                 let mut value = f.get();
                 while let ViewType::Dyn(f) = &value.inner {
                     value = f.get();
                 }
                 insert_expression(
-                    ctx,
+                    cx,
                     &parent,
                     &value,
                     current.clone(),
@@ -95,12 +95,12 @@ fn insert_expression<G: GenericNode>(
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
-                ctx.create_effect_scoped(move |ctx| {
+                create_effect_scoped(cx, move |cx| {
                     let value = View::new_fragment(v.clone());
                     // This will call normalize_incoming_fragment again, but this time with the
                     // unwrap_fragment arg set to true.
                     insert_expression(
-                        ctx,
+                        cx,
                         &parent,
                         &value,
                         current.clone(),

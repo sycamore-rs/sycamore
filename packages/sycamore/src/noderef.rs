@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
+use sycamore_reactive::create_ref;
 use wasm_bindgen::prelude::*;
 
 use crate::generic_node::GenericNode;
@@ -17,7 +18,7 @@ pub struct NodeRef<G: GenericNode>(Rc<RefCell<Option<G>>>);
 impl<G: GenericNode + Any> NodeRef<G> {
     /// Creates an empty [`NodeRef`].
     ///
-    /// Generally, it is preferable to use [`create_node_ref`](ScopeCreateNodeRef::create_node_ref)
+    /// Generally, it is preferable to use [`create_node_ref`]
     /// instead.
     pub fn new() -> Self {
         Self(Rc::new(RefCell::new(None)))
@@ -82,16 +83,9 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
 
 /* Hook implementation */
 
-/// Extension trait for [`Scope`] adding the `create_node_ref` method.
-pub trait ScopeCreateNodeRef<'a> {
-    /// Create a new [`NodeRef`] on the current [`Scope`].
-    fn create_node_ref<G: GenericNode>(self) -> &'a NodeRef<G>;
-}
-
-impl<'a> ScopeCreateNodeRef<'a> for Scope<'a> {
-    fn create_node_ref<G: GenericNode>(self) -> &'a NodeRef<G> {
-        self.create_ref(NodeRef::new())
-    }
+/// Create a new [`NodeRef`] on the current [`Scope`].
+pub fn create_node_ref<G: GenericNode>(cx: Scope<'_>) -> &NodeRef<G> {
+    create_ref(cx, NodeRef::new())
 }
 
 #[cfg(all(test, feature = "ssr"))]
@@ -126,9 +120,9 @@ mod tests {
 
     #[test]
     fn noderef_with_ssrnode() {
-        create_scope_immediate(|ctx| {
-            let noderef = ctx.create_node_ref();
-            let _: View<SsrNode> = view! { ctx, div(ref=noderef) };
+        create_scope_immediate(|cx| {
+            let noderef = create_node_ref(cx);
+            let _: View<SsrNode> = view! { cx, div(ref=noderef) };
             assert!(noderef.try_get::<SsrNode>().is_some());
         });
     }
