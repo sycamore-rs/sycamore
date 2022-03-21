@@ -195,6 +195,7 @@ impl<T> Signal<T> {
     ///
     /// # Example
     /// ```
+    /// # use std::rc::Rc;
     /// # use sycamore_reactive::*;
     /// # create_scope_immediate(|cx| {
     /// let state = create_signal(cx, 0);
