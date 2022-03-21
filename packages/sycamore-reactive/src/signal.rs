@@ -217,7 +217,7 @@ impl<T> Signal<T> {
     }
 
     /// Set the current value of the state wrapped in a [`Rc`] _without_ triggering subscribers.
-    /// 
+    ///
     /// See the documentation for [`Signal::set_rc()`] for more information.
     ///
     /// Make sure you know what you are doing because this can make state inconsistent.
