@@ -359,7 +359,7 @@ fn two_way_bind_to_props() {
 #[wasm_bindgen_test]
 fn noderefs() {
     create_scope_immediate(|cx| {
-        let noderef = cx.create_node_ref();
+        let noderef = create_node_ref(cx, );
         let node = view! { cx,
             div {
                 input(ref=noderef)

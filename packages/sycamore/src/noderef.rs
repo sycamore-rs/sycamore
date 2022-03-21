@@ -83,16 +83,9 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
 
 /* Hook implementation */
 
-/// Extension trait for [`Scope`] adding the `create_node_ref` method.
-pub trait ScopeCreateNodeRef<'a> {
-    /// Create a new [`NodeRef`] on the current [`Scope`].
-    fn create_node_ref<G: GenericNode>(self) -> &'a NodeRef<G>;
-}
-
-impl<'a> ScopeCreateNodeRef<'a> for Scope<'a> {
-    fn create_node_ref<G: GenericNode>(self) -> &'a NodeRef<G> {
-        create_ref(self, NodeRef::new())
-    }
+/// Create a new [`NodeRef`] on the current [`Scope`].
+pub fn create_node_ref<G: GenericNode>(cx: Scope<'_>) -> &NodeRef<G> {
+    create_ref(cx, NodeRef::new())
 }
 
 #[cfg(all(test, feature = "ssr"))]
@@ -128,7 +121,7 @@ mod tests {
     #[test]
     fn noderef_with_ssrnode() {
         create_scope_immediate(|cx| {
-            let noderef = cx.create_node_ref();
+            let noderef = create_node_ref(cx, );
             let _: View<SsrNode> = view! { cx, div(ref=noderef) };
             assert!(noderef.try_get::<SsrNode>().is_some());
         });

@@ -167,26 +167,12 @@ impl<'a> TransitionHandle<'a> {
     }
 }
 
-/// Extension trait for [`Scope`] adding the [`use_transition`](ScopeUseTransition::use_transition)
-/// method.
-pub trait ScopeUseTransition<'a> {
-    /// Create a new [TransitionHandle]. This allows executing updates and awaiting until all async
-    /// tasks are completed.
-    fn use_transition(self) -> &'a TransitionHandle<'a>;
-}
+/// Create a new [TransitionHandle]. This allows executing updates and awaiting until all async
+/// tasks are completed.
+pub fn use_transition(cx: Scope<'_>) -> &TransitionHandle<'_> {
+    let is_pending = create_signal(cx, false);
 
-impl<'a> ScopeUseTransition<'a> for Scope<'a> {
-    fn use_transition(self) -> &'a TransitionHandle<'a> {
-        let is_pending = create_signal(self, false);
-
-        create_ref(
-            self,
-            TransitionHandle {
-                cx: self,
-                is_pending,
-            },
-        )
-    }
+    create_ref(cx, TransitionHandle { cx, is_pending })
 }
 
 #[cfg(all(test, feature = "ssr"))]

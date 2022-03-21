@@ -1,7 +1,7 @@
 use gloo_timers::future::TimeoutFuture;
 use rand::Rng;
 use sycamore::prelude::*;
-use sycamore::suspense::{ScopeUseTransition, Suspense};
+use sycamore::suspense::{use_transition, Suspense};
 
 #[derive(Debug, Clone, Copy)]
 enum Tab {
@@ -36,7 +36,7 @@ async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
     let tab = create_signal(cx, Tab::One);
-    let transition = cx.use_transition();
+    let transition = use_transition(cx);
     let update = move |x| transition.start(move || tab.set(x));
 
     view! { cx,

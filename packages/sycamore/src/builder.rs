@@ -611,7 +611,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
     /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
-    /// let node_ref = cx.create_node_ref();
+    /// let node_ref = create_node_ref(cx, );
     /// h(input).bind_ref(node_ref.clone())
     /// # .view(cx) }
     /// ```
