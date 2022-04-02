@@ -86,7 +86,7 @@ define_elements! {
     form {},
     head {},
     header {},
-    hgorup {},
+    hgroup {},
     h1 {},
     h2 {},
     h3 {},
