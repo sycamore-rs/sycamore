@@ -3,7 +3,7 @@
 use std::fmt;
 
 use syn::ext::IdentExt;
-use syn::parse::{Parse, ParseStream};
+use syn::parse::{Parse, ParseStream, discouraged::Speculative};
 use syn::punctuated::Punctuated;
 use syn::token::{Brace, Paren};
 use syn::{braced, parenthesized, token, Expr, FieldValue, Ident, LitStr, Result, Token};
@@ -216,20 +216,19 @@ impl Parse for Component {
             braced!(content in input);
             let mut props = Punctuated::<FieldValue, Token![,]>::new();
             while !content.is_empty() {
-                if content.peek(Ident) && content.peek2(Token![:]) && !content.peek3(Token![:]) {
-                    // Parse component prop field.
-                    let field_value = content.parse()?;
-                    let comma_parsed = if content.peek(Token![,]) {
-                        let _comma: Token![,] = content.parse()?;
-                        true
-                    } else {
-                        false
-                    };
-                    if !content.is_empty() && !comma_parsed {
-                        content.parse::<Token![,]>()?; // Emit an error if there is no comma and not
-                                                       // eof.
+                let fork = content.fork();
+                if let Ok(value) = fork.parse() {
+                    if fork.peek(Brace) {
+                        break;
                     }
-                    props.push(field_value);
+                    content.advance_to(&fork);
+
+                    props.push_value(value);
+                    if content.is_empty() {
+                        break;
+                    }
+                    let punct = content.parse()?;
+                    props.push_punct(punct);
                 } else {
                     break;
                 }
