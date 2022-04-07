@@ -482,6 +482,8 @@ pub async fn render_to_string_await_suspense(
     use futures::channel::oneshot;
     use sycamore_futures::spawn_local_scoped;
 
+    use crate::utils::hydrate::with_hydration_context_async;
+
     let mut ret = String::new();
     let v = Rc::new(RefCell::new(None));
     let (sender, receiver) = oneshot::channel();
@@ -490,8 +492,8 @@ pub async fn render_to_string_await_suspense(
         move |cx| {
             spawn_local_scoped(cx, async move {
                 *v.borrow_mut() = Some(
-                    crate::suspense::await_suspense(cx, async {
-                        with_hydration_context(|| view(cx))
+                    with_hydration_context_async(async {
+                        crate::suspense::await_suspense(cx, async { view(cx) }).await
                     })
                     .await,
                 );

@@ -4,6 +4,8 @@ pub mod web;
 
 use std::cell::RefCell;
 
+use futures::Future;
+
 thread_local! {
     static HYDRATION_CONTEXT: RefCell<Option<HydrationRegistry>> = RefCell::new(None);
 }
@@ -22,6 +24,27 @@ where
         *context.borrow_mut() = prev;
         r
     })
+}
+
+/// Run the async future inside a hydration context. If already inside a hydration context, creates a
+/// nested context.
+/// 
+/// Same as [`with_hydration_context`] but allows for async futures.
+pub async fn with_hydration_context_async<F, R>(f: F) -> R
+where
+    F: Future<Output = R>,
+{
+    let mut prev = None;
+    HYDRATION_CONTEXT.with(|context| {
+        // Save previous context to restore later.
+        prev = Some(*context.borrow());
+        *context.borrow_mut() = Some(HydrationRegistry::new());
+    });
+    let r = f.await;
+    HYDRATION_CONTEXT.with(|context| {
+        *context.borrow_mut() = prev.unwrap();
+    });
+    r
 }
 
 /// Returns a tuple of the current component id and the current hydration key.
