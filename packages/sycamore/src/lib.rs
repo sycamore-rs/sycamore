@@ -65,6 +65,8 @@ pub mod reactive {
 
 #[cfg(feature = "ssr")]
 pub use generic_node::render_to_string;
+#[cfg(all(feature = "ssr", feature = "suspense"))]
+pub use generic_node::render_to_string_await_suspense;
 #[cfg(all(feature = "dom", feature = "hydrate"))]
 pub use generic_node::{hydrate, hydrate_get_scope, hydrate_to};
 #[cfg(feature = "dom")]
