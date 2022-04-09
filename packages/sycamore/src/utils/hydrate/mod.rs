@@ -24,8 +24,8 @@ where
     })
 }
 
-/// Run the async future inside a hydration context. If already inside a hydration context, creates a
-/// nested context.
+/// Run the async future inside a hydration context. If already inside a hydration context, creates
+/// a nested context.
 ///
 /// Same as [`with_hydration_context`] but allows for async futures.
 #[cfg(feature = "suspense")]

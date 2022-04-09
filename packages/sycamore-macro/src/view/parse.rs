@@ -3,7 +3,7 @@
 use std::fmt;
 
 use syn::ext::IdentExt;
-use syn::parse::{Parse, ParseStream, discouraged::Speculative};
+use syn::parse::{discouraged::Speculative, Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Brace, Paren};
 use syn::{braced, parenthesized, token, Expr, FieldValue, Ident, LitStr, Result, Token};
