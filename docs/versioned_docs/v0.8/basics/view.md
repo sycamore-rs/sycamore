@@ -15,7 +15,7 @@ Creating HTML elements is easy as pie with the `view!` macro. Since you'll likel
 lot of elements in your app, there is a special terse syntax.
 
 ```rust
-view! { ctx,
+view! { cx,
     // A simple div
     div
     // A div with a class
@@ -33,7 +33,7 @@ Of course, in your app, you probably want to display some text. To create a text
 string literal.
 
 ```rust
-view! { ctx,
+view! { cx,
     "Hello World!"
 }
 ```
@@ -43,7 +43,7 @@ view! { ctx,
 Creating all these top-level nodes is not very useful. You can create nested nodes like so.
 
 ```rust
-view! { ctx,
+view! { cx,
     div {
         p {
             span { "Hello " }
@@ -53,7 +53,7 @@ view! { ctx,
 }
 ```
 
-## Interpolation
+### Interpolation
 
 Views can contain interpolated values. Anything that implements `std::fmt::Display` will
 automatically be inserted as text into the DOM tree. For example:
@@ -61,7 +61,7 @@ automatically be inserted as text into the DOM tree. For example:
 ```rust
 let my_number = 123;
 
-view! { ctx,
+view! { cx,
     p {
         "This is my number: " (my_number)
     }
@@ -72,11 +72,11 @@ Other views created using the `view!` macro can also be interpolated using the s
 example:
 
 ```rust
-let inner_view = view! { ctx,
+let inner_view = view! { cx,
     "Inside"
 };
 
-let outer_view = view! { ctx,
+let outer_view = view! { cx,
     "Outside"
     div {
         (inner_view)
@@ -92,7 +92,7 @@ value of the expression. Learn more about this in [Reactivity](./reactivity).
 Attributes (including classes and ids) can also be specified.
 
 ```rust
-view! { ctx,
+view! { cx,
     p(class="my-class", id="my-paragraph", aria-label="My paragraph")
     button(disabled=true) {
        "My button"
@@ -107,7 +107,7 @@ element. This should generally be avoided because it is a possible security risk
 input to this attribute as that will create an XSS (Cross-Site Scripting) vulnerability.
 
 ```rust
-view! { ctx,
+view! { cx,
     div(dangerously_set_inner_html="<span>Inner HTML!</span>")
 
     // DO NOT DO THIS!!!
@@ -123,7 +123,7 @@ Instead, when displaying user input, use interpolation syntax instead.
 Events are attached using the `on:*` directive.
 
 ```rust
-view! { ctx,
+view! { cx,
     button(on:click=|_| { /* do something */ }) {
         "Click me"
     }
@@ -136,17 +136,17 @@ As seen in previous examples, views can also be fragments. You can create as man
 at the top-level.
 
 ```rust
-view! { ctx,
+view! { cx,
     p { "First child" }
     p { "Second child" }
 }
 ```
 
-Fragments can also be empty. (Note that passing the `ctx` variable is still required. This
+Fragments can also be empty. (Note that passing the `cx` variable is still required. This
 restriction will be lifted in the future.)
 
 ```rust
-view! { ctx, }
+view! { cx, }
 ```
 
 ## Builder syntax
@@ -172,8 +172,8 @@ h(div)
 ```
 
 Observe that this creates an `ElementBuilder`. This is a struct used for lazily constructing the
-element. To get a `View` from an `ElementBuilder`, just call `.view(ctx)` at the end of the builder
-chain. This will evaluate all the lazy builder calls preceding it by passing in `ctx`.
+element. To get a `View` from an `ElementBuilder`, just call `.view(cx)` at the end of the builder
+chain. This will evaluate all the lazy builder calls preceding it by passing in `cx`.
 
 ### Text nodes
 
@@ -224,7 +224,7 @@ For convenience, the methods `.class(...)` and `.id(...)` are provided for setti
 `id` attributes directly. This means that we can rewrite our previous example as:
 
 ```rust
-h(p).class("my-class").ud("my-paragraph").attr("aria-label", "My paragraph")
+h(p).class("my-class").id("my-paragraph").attr("aria-label", "My paragraph")
 ```
 
 #### `dangerously_set_inner_html`
@@ -246,7 +246,7 @@ Construct fragments using `fragment(...)`.
 
 ```rust
 fragment([
-    h(p).t("First child").view(ctx),
-    h(p).t("Second child").view(ctx),
+    h(p).t("First child").view(cx),
+    h(p).t("Second child").view(cx),
 ])
 ```

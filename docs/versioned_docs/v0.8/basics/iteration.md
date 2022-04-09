@@ -10,12 +10,12 @@ identify the item to prevent re-rendering views twice. Every time the list chang
 algorithm is used to determine which items need to be re-rendered according to the associated key.
 
 ```rust
-let count = ctx.create_signal(vec![1, 2]);
-view! { ctx,
+let count = create_signal(cx, vec![1, 2]);
+view! { cx,
     ul {
         Keyed {
             iterable: count,
-            view: |ctx, x| view! { ctx,
+            view: |cx, x| view! { cx,
                 li { (x) }
             },
             key: |x| *x,
@@ -30,12 +30,12 @@ The `Indexed` component is used to render a list of items that is keyed by index
 generally preferred over `Indexed` because it is more efficient in most scenarios.
 
 ```rust
-let count = ctx.create_signal(vec![1, 2]);
-view! { ctx,
+let count = create_signal(cx, vec![1, 2]);
+view! { cx,
     ul {
         Indexed {
             iterable: count,
-            view: |ctx, x| view! { ctx,
+            view: |cx, x| view! { cx,
                 li { (x) }
             },
         }
@@ -53,10 +53,10 @@ single node will be re-rendered every time the list changes.
 let count = vec![1, 2];
 
 let views = View::new_fragment(
-    count.iter().map(|&x| view! { ctx, li (x) }).collect()
+    count.iter().map(|&x| view! { cx, li (x) }).collect()
 );
 
-view! { ctx,
+view! { cx,
     ul {
         (views)
     }

@@ -61,7 +61,7 @@ You now need to add Sycamore to your new project's dependencies. Add the followi
 `Cargo.toml` file in your project folder:
 
 ```toml
-sycamore = "0.8.0-beta.3"
+sycamore = "0.8.0-beta.4"
 ```
 
 > **Note**: Sycamore is currently being developed at a rapid pace. To have access to the latest
