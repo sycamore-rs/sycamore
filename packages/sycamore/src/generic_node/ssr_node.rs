@@ -311,10 +311,8 @@ impl GenericNode for SsrNode {
                 children
                     .iter()
                     .skip_while(|child| *child != self)
-                    .skip(1)
-                    .take(1)
+                    .nth(1)
                     .cloned()
-                    .next()
             }
             _ => panic!("node type cannot have children"),
         }
