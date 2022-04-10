@@ -25,12 +25,10 @@ async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
     let visits = fetch_visits(id).await.unwrap_or_default();
 
     view! { cx,
-        div {
-            p {
-                "Total visits: "
-                span(class="text-green-500") {
-                    (visits.value)
-                }
+        p {
+            "Total visits: "
+            span {
+                (visits.value)
             }
         }
     }
