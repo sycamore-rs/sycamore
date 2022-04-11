@@ -387,6 +387,17 @@ pub fn create_signal<T>(cx: Scope, value: T) -> &Signal<T> {
     create_ref(cx, signal)
 }
 
+/// Create a new [`Signal`] under the current [`Scope`] but with an initial value wrapped in a
+/// [`Rc`]. This is useful to avoid having to clone a value that is already wrapped in a [`Rc`] when
+/// creating a new signal. Otherwise, this is identical to [`create_signal`].
+pub fn create_signal_from_rc<T>(cx: Scope, value: Rc<T>) -> &Signal<T> {
+    let signal = Signal(ReadSignal {
+        value: RefCell::new(value),
+        emitter: Default::default(),
+    });
+    create_ref(cx, signal)
+}
+
 /// A signal that is not bound to a [`Scope`].
 ///
 /// Sometimes, it is useful to have a signal that can escape the enclosing [reactive scope](Scope).
@@ -445,6 +456,16 @@ impl<T> Clone for RcSignal<T> {
 /// For more details, check the documentation for [`RcSignal`].
 pub fn create_rc_signal<T>(value: T) -> RcSignal<T> {
     RcSignal(Rc::new(Signal::new(value)))
+}
+
+/// Create a new [`RcSignal`] with the specified initial value wrapped in a [`Rc`].
+///
+/// For more details, check the documentation for [`RcSignal`].
+pub fn create_rc_signal_from_rc<T>(value: Rc<T>) -> RcSignal<T> {
+    RcSignal(Rc::new(Signal(ReadSignal {
+        value: RefCell::new(value),
+        emitter: Default::default(),
+    })))
 }
 
 /* Display implementations */
@@ -718,6 +739,14 @@ mod tests {
             signal.modify().push_str("World!");
             assert_eq!(*signal.get(), "Hello World!");
             assert_eq!(*counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn create_signals_from_rc_value() {
+        create_scope_immediate(|cx| {
+            let _signal: &Signal<i32> = create_signal_from_rc(cx, Rc::new(0));
+            let _rc_signal: RcSignal<i32> = create_rc_signal_from_rc(Rc::new(0));
         });
     }
 }
