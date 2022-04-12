@@ -11,6 +11,7 @@ repository = "https://github.com/sycamore-rs/sycamore"
 version = "0.8.0-beta.4"
 
 [dependencies]
+bumpalo = { version = "3.9.1", features = ["boxed"] }
 indexmap = "1.8.0"
 serde = { version = "1.0.136", optional = true }
 slotmap = "1.0.6"

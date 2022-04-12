@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 
 #[derive(Prop)]
 pub struct Prop {
-    prop: &'static str,
+    value: &'static str,
 }
 
 #[component]
@@ -24,9 +24,9 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, Component() };
         let _: View<G> = view! { cx, Component {} };
 
-        let prop = "prop";
-        let _: View<G> = view! { cx, PropComponent { prop: prop } };
-        let _: View<G> = view! { cx, PropComponent { prop } };
+        let value = "prop";
+        let _: View<G> = view! { cx, PropComponent { value: value } };
+        let _: View<G> = view! { cx, PropComponent { value } };
     });
 }
 
