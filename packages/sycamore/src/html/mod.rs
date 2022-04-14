@@ -314,6 +314,7 @@ pub struct NoHydrateProps<'a, G: GenericNode> {
 /// When using `SsrNode`, this means that hydration markers won't be generated. When using
 /// `HydrateNode`, this means that this will ignore. When using `DomNode`, rendering proceeds as
 /// normal.
+#[cfg(feature = "hydrate")]
 #[component]
 pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
     if G::CLIENT_SIDE_HYDRATION {
@@ -336,6 +337,7 @@ pub struct NoSsrProps<'a, G: GenericNode> {
 }
 
 /// Only render the children of this component in the browser.
+#[cfg(feature = "hydrate")]
 #[component]
 pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
     if !G::IS_BROWSER {
