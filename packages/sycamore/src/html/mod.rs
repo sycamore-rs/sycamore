@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::generic_node::SycamoreElement;
 use crate::prelude::*;
+use crate::utils::hydrate::with_no_hydration_context;
 
 /// MBE for generating elements.
 macro_rules! define_elements {
@@ -299,5 +300,52 @@ pub fn on_mount<'a>(cx: Scope<'a>, f: impl Fn() + 'a) {
         let boxed: Box<dyn Fn()> = Box::new(cb);
         let closure = create_ref(cx, Closure::wrap(boxed));
         queue_microtask(closure);
+    }
+}
+
+/// Props for [`NoHydrate`].
+#[derive(Prop)]
+pub struct NoHydrateProps<'a, G: GenericNode> {
+    children: Children<'a, G>,
+}
+
+/// Render the children of this component in a scope that will not be hydrated.
+///
+/// When using `SsrNode`, this means that hydration markers won't be generated. When using
+/// `HydrateNode`, this means that this will ignore. When using `DomNode`, rendering proceeds as
+/// normal.
+#[component]
+pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
+    if G::CLIENT_SIDE_HYDRATION {
+        // We don't want to hydrate the children, so we just do nothing.
+        view! { cx, }
+    } else if G::USE_HYDRATION_CONTEXT {
+        // If we have a hydration context, remove it in this scope so that hydration markers are not
+        // generated.
+        with_no_hydration_context(|| props.children.call(cx))
+    } else {
+        // Just continue rendering as normal.
+        props.children.call(cx)
+    }
+}
+
+/// Props for [`NoSsr`].
+#[derive(Prop)]
+pub struct NoSsrProps<'a, G: GenericNode> {
+    children: Children<'a, G>,
+}
+
+/// Only render the children of this component in the browser.
+#[component]
+pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
+    if !G::IS_BROWSER {
+        // We don't want to render the children, so we just do nothing.
+        view! { cx, }
+    } else if G::USE_HYDRATION_CONTEXT {
+        // Since the nodes were not rendered on the server, there is nothing to hydrate.
+        with_no_hydration_context(|| props.children.call(cx))
+    } else {
+        // Just continue rendering as normal.
+        props.children.call(cx)
     }
 }
