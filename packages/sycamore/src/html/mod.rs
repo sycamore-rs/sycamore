@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 use crate::generic_node::SycamoreElement;
 use crate::prelude::*;
 #[cfg(feature = "hydrate")]
-use crate::utils::hydrate::with_no_hydration_context;
+use crate::utils::hydrate::{hydration_completed, with_no_hydration_context};
 
 /// MBE for generating elements.
 macro_rules! define_elements {
@@ -326,7 +326,7 @@ pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> Vi
         // the node won't get inserted into the DOM.
         div(ref=node_ref) {}
     };
-    if G::CLIENT_SIDE_HYDRATION {
+    if G::CLIENT_SIDE_HYDRATION && !hydration_completed() {
         // We don't want to hydrate the children, so we just do nothing.
     } else if G::USE_HYDRATION_CONTEXT {
         // If we have a hydration context, remove it in this scope so that hydration markers are not
