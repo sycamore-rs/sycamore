@@ -117,7 +117,6 @@ pub fn is_bool_attr(name: &str) -> bool {
             "seamless",
             "selected",
             "sortable",
-            "spellcheck",
             "translate",
         ]
         .into_iter()
