@@ -11,4 +11,9 @@ fn Comp2<G: Html>(_cx: Scope) -> View<G> {
     ::std::todo!();
 }
 
+#[component]
+async fn AsyncComponent1<G: Html>(_cx: Scope<'_>) -> View<G> {
+    ::std::todo!();
+}
+
 fn main() {}

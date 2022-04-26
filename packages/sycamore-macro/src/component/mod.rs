@@ -139,8 +139,8 @@ impl ToTokens for ComponentFunction {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = create_signal(#cx, ::sycamore::view::View::empty());
-                    let __view = ::sycamore::view! { #cx, (__dyn.get().as_ref().clone()) };
+                    let __dyn = ::sycamore::reactive::create_signal(#cx, ::sycamore::view::View::empty());
+                    let __view = ::sycamore::view::View::new_dyn(#cx, || <_ as ::std::clone::Clone>::clone(&*__dyn.get()));
 
                     ::sycamore::suspense::suspense_scope(#cx, async move {
                         let __async_view = #inner_ident(#(#args),*).await;
