@@ -6,7 +6,7 @@ pub struct Prop {
 }
 
 #[component]
-pub fn PropComponent<G: Html>(cx: Scope, Prop { prop }: Prop) -> View<G> {
+pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
     view! { cx,
         div
     }

@@ -1,13 +1,14 @@
-use sycamore::prelude::*;
+#![no_implicit_prelude]
+use ::sycamore::prelude::{component, Html, Scope, View};
 
 #[component]
-fn comp1<G: Html>(_cx: Scope) -> View<G> {
-    todo!();
+fn Comp1<G: Html>(_cx: Scope) -> View<G> {
+    ::std::todo!();
 }
 
 #[component]
-fn comp2<G: Html>(_cx: Scope) -> View<G> {
-    todo!();
+fn Comp2<G: Html>(_cx: Scope) -> View<G> {
+    ::std::todo!();
 }
 
 fn main() {}

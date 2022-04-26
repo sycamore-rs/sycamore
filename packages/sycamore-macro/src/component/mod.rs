@@ -36,8 +36,8 @@ impl Parse for ComponentFunction {
 
                 if let ReturnType::Default = sig.output {
                     return Err(syn::Error::new(
-                        sig.span(),
-                        "function must return `sycamore::view::View`",
+                        sig.paren_token.span,
+                        "component must return `sycamore::view::View`",
                     ));
                 };
 
@@ -45,7 +45,7 @@ impl Parse for ComponentFunction {
 
                 if inputs.is_empty() {
                     return Err(syn::Error::new(
-                        sig.inputs.span(),
+                        sig.paren_token.span,
                         "component must take at least one argument of type `sycamore::reactive::Scope`",
                     ));
                 }
@@ -84,7 +84,7 @@ impl Parse for ComponentFunction {
             }
             item => Err(syn::Error::new_spanned(
                 item,
-                "`component` attribute can only be applied to functions",
+                "the `component` attribute can only be applied to functions",
             )),
         }
     }

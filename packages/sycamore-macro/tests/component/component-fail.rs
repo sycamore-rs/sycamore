@@ -2,31 +2,32 @@ use sycamore::prelude::*;
 
 /// Missing return type.
 #[component]
-fn comp1<G: Html>() {
+fn Comp1<G: Html>(_cx: Scope) {
+    todo!();
+}
+
+// Missing cx param.
+#[component]
+fn Comp2<G: Html>() -> View<G> {
     todo!();
 }
 
 #[component]
-async fn comp2<G: Html>() -> View<G> {
+const fn Comp3<G: Html>(_cx: Scope) -> View<G> {
     todo!();
 }
 
 #[component]
-const fn comp3<G: Html>() -> View<G> {
+extern fn Comp4<G: Html>(_cx: Scope) -> View<G> {
     todo!();
 }
 
 #[component]
-extern fn comp4<G: Html>() -> View<G> {
+fn Comp5<G: Html>(self) -> View<G> {
     todo!();
 }
 
 #[component]
-fn comp5<G: Html>(self) -> View<G> {
-    todo!();
-}
-
-#[component]
-struct Comp7;
+struct Comp6;
 
 fn main() {}
