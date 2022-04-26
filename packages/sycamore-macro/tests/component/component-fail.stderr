@@ -1,37 +1,47 @@
-error: function must return `sycamore::view::View`
- --> tests/component/component-fail.rs:5:1
+error: component must return `sycamore::view::View`
+ --> tests/component/component-fail.rs:5:18
   |
-5 | fn comp1<G: Html>() {
-  | ^^
+5 | fn Comp1<G: Html>(_cx: Scope) {
+  |                  ^^^^^^^^^^^^
 
 error: component must take at least one argument of type `sycamore::reactive::Scope`
- --> tests/component/component-fail.rs:9:1
-  |
-9 | #[component]
-  | ^^^^^^^^^^^^
-  |
-  = note: this error originates in the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)
+  --> tests/component/component-fail.rs:11:18
+   |
+11 | fn Comp2<G: Html>() -> View<G> {
+   |                  ^^
 
 error: const functions can't be components
-  --> tests/component/component-fail.rs:15:1
+  --> tests/component/component-fail.rs:16:1
    |
-15 | const fn comp3<G: Html>() -> View<G> {
+16 | const fn Comp3<G: Html>(_cx: Scope) -> View<G> {
    | ^^^^^
 
 error: extern functions can't be components
-  --> tests/component/component-fail.rs:20:1
+  --> tests/component/component-fail.rs:21:1
    |
-20 | extern fn comp4<G: Html>() -> View<G> {
+21 | extern fn Comp4<G: Html>(_cx: Scope) -> View<G> {
    | ^^^^^^
 
 error: function components can't accept a receiver
-  --> tests/component/component-fail.rs:25:19
+  --> tests/component/component-fail.rs:26:19
    |
-25 | fn comp5<G: Html>(self) -> View<G> {
+26 | fn Comp5<G: Html>(self) -> View<G> {
    |                   ^^^^
 
-error: `component` attribute can only be applied to functions
-  --> tests/component/component-fail.rs:30:1
+error: the `component` attribute can only be applied to functions
+  --> tests/component/component-fail.rs:31:1
    |
-30 | struct Comp7;
+31 | struct Comp6;
    | ^^^^^^^^^^^^^
+
+error: component should not take more than 2 arguments
+  --> tests/component/component-fail.rs:34:77
+   |
+34 | fn CompWithMultipleProps<G: Html>(_cx: Scope, prop1: ::std::primitive::i32, prop2: ::std::primitive::i32) -> View<G> {
+   |                                                                             ^^^^^
+
+error: taking an unit tuple as props is useless
+  --> tests/component/component-fail.rs:41:49
+   |
+41 | fn CompWithUnitProps<G: Html>(_cx: Scope, prop: ()) -> View<G> {
+   |                                                 ^^

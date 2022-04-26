@@ -83,17 +83,24 @@ impl Parse for Element {
             while !content.is_empty() {
                 body.push(content.parse()?);
             }
+
+            // Check if dangerously_set_inner_html is also set.
+            let dangerously_set_inner_html_span = attrs.iter().find_map(|attr| {
+                (attr.ty == AttributeType::DangerouslySetInnerHtml).then(|| attr.span)
+            });
+            if let Some(span) = dangerously_set_inner_html_span {
+                if !body.is_empty() {
+                    return Err(syn::Error::new(
+                        span,
+                        content.error("children and dangerously_set_inner_html cannot be both set"),
+                    ));
+                }
+            }
+
             body
         } else {
             Vec::new()
         };
-
-        let has_dangerously_set_inner_html_attr = attrs
-            .iter()
-            .any(|attr| attr.ty == AttributeType::DangerouslySetInnerHtml);
-        if has_dangerously_set_inner_html_attr && !children.is_empty() {
-            return Err(input.error("children and dangerously_set_inner_html cannot be both set"));
-        }
 
         Ok(Self {
             tag,
@@ -128,10 +135,11 @@ impl Parse for ElementTag {
 
 impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
+        let span = input.span();
         let ty = input.parse()?;
         let _eqs: Token![=] = input.parse()?;
         let value = input.parse()?;
-        Ok(Self { ty, value })
+        Ok(Self { ty, value, span })
     }
 }
 

@@ -3,9 +3,11 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
-    parse_quote, Expr, FnArg, Item, ItemFn, Pat, Result, ReturnType, Signature, Type, TypeTuple,
+    parse_quote, Expr, FnArg, Item, ItemFn, Pat, Result, ReturnType, Signature, Token, Type,
+    TypeTuple,
 };
 
 pub struct ComponentFunction {
@@ -36,8 +38,8 @@ impl Parse for ComponentFunction {
 
                 if let ReturnType::Default = sig.output {
                     return Err(syn::Error::new(
-                        sig.span(),
-                        "function must return `sycamore::view::View`",
+                        sig.paren_token.span,
+                        "component must return `sycamore::view::View`",
                     ));
                 };
 
@@ -45,14 +47,19 @@ impl Parse for ComponentFunction {
 
                 if inputs.is_empty() {
                     return Err(syn::Error::new(
-                        sig.inputs.span(),
+                        sig.paren_token.span,
                         "component must take at least one argument of type `sycamore::reactive::Scope`",
                     ));
                 }
 
                 if inputs.len() > 2 {
                     return Err(syn::Error::new(
-                        sig.inputs.span(),
+                        sig.inputs
+                            .clone()
+                            .into_iter()
+                            .skip(2)
+                            .collect::<Punctuated<_, Token![,]>>()
+                            .span(),
                         "component should not take more than 2 arguments",
                     ));
                 }
@@ -68,7 +75,7 @@ impl Parse for ComponentFunction {
                     if let Type::Tuple(TypeTuple { elems, .. }) = &*pat.ty {
                         if elems.is_empty() {
                             return Err(syn::Error::new(
-                                elems.span(),
+                                pat.ty.span(),
                                 "taking an unit tuple as props is useless",
                             ));
                         }
@@ -84,7 +91,7 @@ impl Parse for ComponentFunction {
             }
             item => Err(syn::Error::new_spanned(
                 item,
-                "`component` attribute can only be applied to functions",
+                "the `component` attribute can only be applied to functions",
             )),
         }
     }
@@ -139,8 +146,8 @@ impl ToTokens for ComponentFunction {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = create_signal(#cx, ::sycamore::view::View::empty());
-                    let __view = ::sycamore::view! { #cx, (__dyn.get().as_ref().clone()) };
+                    let __dyn = ::sycamore::reactive::create_signal(#cx, ::sycamore::view::View::empty());
+                    let __view = ::sycamore::view::View::new_dyn(#cx, || <_ as ::std::clone::Clone>::clone(&*__dyn.get()));
 
                     ::sycamore::suspense::suspense_scope(#cx, async move {
                         let __async_view = #inner_ident(#(#args),*).await;
