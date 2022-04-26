@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
-use proc_macro2::{TokenStream, TokenTree};
+use proc_macro2::{TokenStream, TokenTree, Span};
 use quote::ToTokens;
 use syn::punctuated::Punctuated;
 use syn::{Expr, Ident, LitStr, Path, Token};
@@ -58,6 +58,7 @@ pub enum ElementTag {
 pub struct Attribute {
     pub ty: AttributeType,
     pub value: Expr,
+    pub span: Span,
 }
 
 #[derive(PartialEq, Eq)]

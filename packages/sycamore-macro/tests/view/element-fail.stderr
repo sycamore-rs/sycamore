@@ -23,17 +23,10 @@ error: expected `=`
    |                                              ^
 
 error: unexpected end of input, children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:12:26
+  --> tests/view/element-fail.rs:13:15
    |
-12 |           let _: View<G> = view! { cx,
-   |  __________________________^
-13 | |             p(dangerously_set_inner_html="<span>Test</span>") {
-14 | |                 "Error"
-15 | |             }
-16 | |         };
-   | |_________^
-   |
-   = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+13 |             p(dangerously_set_inner_html="<span>Test</span>") {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0412]: cannot find type `unknownelement` in module `sycamore::html`
  --> tests/view/element-fail.rs:8:38
