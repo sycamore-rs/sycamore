@@ -3,9 +3,11 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
-    parse_quote, Expr, FnArg, Item, ItemFn, Pat, Result, ReturnType, Signature, Type, TypeTuple,
+    parse_quote, Expr, FnArg, Item, ItemFn, Pat, Result, ReturnType, Signature, Token, Type,
+    TypeTuple,
 };
 
 pub struct ComponentFunction {
@@ -52,7 +54,12 @@ impl Parse for ComponentFunction {
 
                 if inputs.len() > 2 {
                     return Err(syn::Error::new(
-                        sig.inputs.span(),
+                        sig.inputs
+                            .clone()
+                            .into_iter()
+                            .skip(2)
+                            .collect::<Punctuated<_, Token![,]>>()
+                            .span(),
                         "component should not take more than 2 arguments",
                     ));
                 }
@@ -68,7 +75,7 @@ impl Parse for ComponentFunction {
                     if let Type::Tuple(TypeTuple { elems, .. }) = &*pat.ty {
                         if elems.is_empty() {
                             return Err(syn::Error::new(
-                                elems.span(),
+                                pat.ty.span(),
                                 "taking an unit tuple as props is useless",
                             ));
                         }

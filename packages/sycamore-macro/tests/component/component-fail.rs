@@ -30,4 +30,16 @@ fn Comp5<G: Html>(self) -> View<G> {
 #[component]
 struct Comp6;
 
+#[component]
+fn CompWithMultipleProps<G: Html>(_cx: Scope, prop1: ::std::primitive::i32, prop2: ::std::primitive::i32) -> View<G> {
+    let _ = prop1;
+    let _ = prop2;
+    ::std::todo!();
+}
+
+#[component]
+fn CompWithUnitProps<G: Html>(_cx: Scope, prop: ()) -> View<G> {
+    ::std::todo!();
+}
+
 fn main() {}
