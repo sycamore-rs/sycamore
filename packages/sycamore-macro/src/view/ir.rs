@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
-use proc_macro2::{TokenStream, TokenTree, Span};
+use proc_macro2::{Span, TokenStream, TokenTree};
 use quote::ToTokens;
 use syn::punctuated::Punctuated;
 use syn::{Expr, Ident, LitStr, Path, Token};
