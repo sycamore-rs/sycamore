@@ -88,11 +88,13 @@ impl Parse for Element {
             let dangerously_set_inner_html_span = attrs.iter().find_map(|attr| {
                 (attr.ty == AttributeType::DangerouslySetInnerHtml).then(|| attr.span)
             });
-            if dangerously_set_inner_html_span.is_some() && !body.is_empty() {
-                return Err(syn::Error::new(
-                    dangerously_set_inner_html_span.unwrap(),
-                    content.error("children and dangerously_set_inner_html cannot be both set"),
-                ));
+            if let Some(span) = dangerously_set_inner_html_span {
+                if !body.is_empty() {
+                    return Err(syn::Error::new(
+                        span,
+                        content.error("children and dangerously_set_inner_html cannot be both set"),
+                    ));
+                }
             }
 
             body
