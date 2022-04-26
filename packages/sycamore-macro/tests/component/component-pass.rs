@@ -2,17 +2,24 @@
 use ::sycamore::prelude::{component, Html, Scope, View};
 
 #[component]
-fn Comp1<G: Html>(_cx: Scope) -> View<G> {
+fn CompNoProps<G: Html>(_cx: Scope) -> View<G> {
     ::std::todo!();
 }
 
 #[component]
-fn Comp2<G: Html>(_cx: Scope) -> View<G> {
+fn CompWithProps<G: Html>(_cx: Scope, prop: ::std::primitive::i32) -> View<G> {
+    let _ = prop;
     ::std::todo!();
 }
 
 #[component]
-async fn AsyncComponent1<G: Html>(_cx: Scope<'_>) -> View<G> {
+async fn AsyncCompNoProps<G: Html>(_cx: Scope<'_>) -> View<G> {
+    ::std::todo!();
+}
+
+#[component]
+async fn AsyncCompWithProps<G: Html>(_cx: Scope<'_>, prop: ::std::primitive::i32) -> View<G> {
+    let _ = prop;
     ::std::todo!();
 }
 
