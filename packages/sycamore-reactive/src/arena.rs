@@ -20,8 +20,8 @@ pub(crate) struct ScopeArena<'a> {
 }
 
 impl<'a> ScopeArena<'a> {
-    /// Allocate a value onto the arena. Returns a reference that lasts as long as the arena itself.
-    pub fn alloc<T: 'a>(&'a self, value: T) -> &'a T {
+    /// Allocate a value onto the arena. Returns a mutable reference that lasts as long as the arena itself.
+    pub fn alloc<T: 'a>(&'a self, value: T) -> &'a mut T {
         let boxed = bumpalo::boxed::Box::new_in(value, &self.bump);
         let ptr = bumpalo::boxed::Box::into_raw(boxed);
         unsafe {
@@ -38,7 +38,7 @@ impl<'a> ScopeArena<'a> {
         //   dropped.
         // - The drop code for Scope never reads the allocated value and therefore does not create a
         //   stacked-borrows violation.
-        unsafe { &*ptr }
+        unsafe { &mut *ptr }
     }
 
     /// Cleanup the resources owned by the [`ScopeArena`]. This is automatically called in [`Drop`].

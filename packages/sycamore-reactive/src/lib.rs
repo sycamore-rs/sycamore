@@ -96,13 +96,6 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
             _phantom: PhantomData,
         }
     }
-
-    /// Allocate a new [`bumpalo::boxed::Box`] on the scope's internal arena allocator.
-    /// The memory of the box will not be freed until the scope is dropped so make sure
-    /// to only allocate objects that live as long as the scope itself.
-    fn alloc_box_in_arena<T: 'a>(&self, value: T) -> bumpalo::boxed::Box<'a, T> {
-        bumpalo::boxed::Box::new_in(value, &self.raw.arena.bump)
-    }
 }
 
 /// A type-alias for [`BoundedScope`] where both lifetimes are the same.
