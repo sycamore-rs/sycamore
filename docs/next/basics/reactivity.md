@@ -71,12 +71,11 @@ and calling `state.get()` inside this listener scope adds itself as a _dependenc
 Sure, effects are nice but Rust is a multi-paradigm language, not just an imperative language. Let's
 take advantage of the more functional side of Rust!
 
-In this spirit, we can easily create a derived state (also know as derive stores) using
-`create_memo(...)`.
+In fact, we can easily create a derived state (also know as derive stores) using `create_memo(...)`.
 
 ```rust
 let state = create_signal(cx, 0);
-let double = create_memo(|| *state.get() * 2);
+let double = create_memo(cx, || *state.get() * 2);
 
 assert_eq!(*double.get(), 0);
 state.set(1);
@@ -129,7 +128,7 @@ in a `create_effect`) returns.
 For example, code inside the `spawn_local` won't be tracked:
 
 ```rust
-create_effect(move || {
+create_effect(cx, move || {
     wasm_bindgen_futures::spawn_local(async move {
         // This scope is not tracked because spawn_local runs on the
         // next microtask tick once the effect closure has returned already.
@@ -145,7 +144,7 @@ around by accessing reactive dependencies as needed before going into a future, 
 fix:
 
 ```rust
-create_effect(move || {
+create_effect(cx, move || {
     signal.track(); // Same as calling `.get()` but without returning a value.
     wasm_bindgen_futures::spawn_local(async move {
         // This scope is not tracked because spawn_local runs on the next microtask tick (in other words, some time later).

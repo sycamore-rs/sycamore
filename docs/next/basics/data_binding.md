@@ -1,14 +1,12 @@
 # Data binding
 
-TODO: fix data binding codegen
-
 You can bind your `Signal` to a DOM property with the `bind:` directive. When the DOM property is
 updated, so is your `Signal`. Here is an example.
 
 ```rust
 use sycamore::prelude::*;
 
-let value = Signal::new(String::new());
+let value = create_signal(cx, String::new());
 
 view! {
     input(bind:value=value)

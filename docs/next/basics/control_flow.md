@@ -1,18 +1,16 @@
 # Control Flow
 
-TODO: update docs
-
 Control flow in Sycamore can be achieved using the interpolation syntax. For example:
 
 ```rust
-let visible = Signal::new(false);
+let visible = create_signal(cx, true);
 
-view! {
+view! { cx,
     div {
         (if *visible.get() {
-            view! { "Now you see me" }
+            view! { cx, "Now you see me" }
         } else {
-            view! {} // Now you don't
+            view! { cx, } // Now you don't
         })
     }
 }
@@ -29,16 +27,14 @@ Note the usage of `create_selector` here. The reason for this is to memoize the 
 every time `name` is changed. Rather, we only want it to be created when `name` becomes non-empty.
 
 ```rust
-let name = Signal::new(String::new());
+let name = create_signal(cx, String::new());
 
-view! {
+view! { cx,
     h1 {
-        (if *create_selector(cloned!((name) => move || !name.get().is_empty())).get() {
-            cloned!((name) => view! {
-                span { (name.get()) }
-            })
+        (if *create_selector(cx, || !name.get().is_empty()).get() {
+            view! { cx, span { (name.get()) } }
         } else {
-            view! { span { "World" } }
+            view! { cx, span { "World" } }
         })
     }
 }

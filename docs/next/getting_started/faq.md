@@ -41,6 +41,6 @@ Check out the page on [SSR](../advanced/ssr) in the Sycamore Book.
 
 ## Is there a full-stack framework (like Next.js) for Sycamore?
 
-Check out [`perseus`](https://github.com/arctic-hen7/perseus), a full-stack framework for Sycamore
+Check out [Perseus](https://github.com/arctic-hen7/perseus), a full-stack framework for Sycamore
 developed by community member [`arctic-hen7`](https://github.com/arctic-hen7). Perseus is
 full-featured, supporting Server-Side Rendering (SSR), Static Site Generation (SSG), i18n and more.
