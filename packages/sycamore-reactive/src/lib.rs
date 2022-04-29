@@ -34,8 +34,6 @@ struct InvariantLifetime<'id>(PhantomData<&'id mut &'id ()>);
 /// instead of a [`RefCell`] for every field.
 #[derive(Default)]
 struct ScopeInner<'a> {
-    /// Effect functions created on the [`Scope`].
-    effects: Vec<Rc<RefCell<Option<EffectState<'a>>>>>,
     /// Cleanup functions.
     cleanups: Vec<Box<dyn FnOnce() + 'a>>,
     /// Child scopes.
@@ -96,6 +94,11 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
             _phantom: PhantomData,
         }
     }
+
+    /// Alias for `self.raw.arena.alloc`.
+    fn alloc<T>(&self, value: T) -> &'a mut T {
+        self.raw.arena.alloc(value)
+    }
 }
 
 /// A type-alias for [`BoundedScope`] where both lifetimes are the same.
@@ -112,7 +115,6 @@ impl<'a> ScopeRaw<'a> {
         // Self::new() is intentionally pub(crate) only to prevent end-users from creating a Scope.
         Self {
             inner: RefCell::new(ScopeInner {
-                effects: Default::default(),
                 cleanups: Default::default(),
                 child_scopes: Default::default(),
                 contexts: None,
@@ -371,8 +373,6 @@ impl<'a> ScopeRaw<'a> {
             // Dispose of cx if it has not already been disposed.
             cx.dispose()
         }
-        // Drop effects.
-        drop(mem::take(&mut inner.effects));
         // Call cleanup functions in an untracked scope.
         untrack(|| {
             for cb in mem::take(&mut inner.cleanups) {
