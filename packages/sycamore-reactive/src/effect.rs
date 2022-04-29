@@ -69,31 +69,27 @@ impl<'a> EffectState<'a> {
 /// # });
 /// ```
 pub fn create_effect<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) {
-    let f = cx.raw.arena.alloc(f);
+    let f = cx.alloc(f);
     _create_effect(cx, f)
 }
 
 /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
 fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
-    let effect = Rc::new(RefCell::new(None::<EffectState<'a>>));
+    let effect = &*cx.alloc(RefCell::new(None::<EffectState<'a>>));
     let cb = Rc::new(RefCell::new({
-        let effect = Rc::downgrade(&effect);
         move || {
             EFFECTS.with(|effects| {
                 // Record initial effect stack length to verify that it is the same after.
                 let initial_effect_stack_len = effects.borrow().len();
-                // Upgrade the effect to an Rc now so that it is valid for the rest of the
-                // callback.
-                let effect_ref = effect.upgrade().unwrap();
 
                 // Take effect out.
-                let mut effect = effect_ref.take().unwrap();
-                effect.clear_dependencies();
+                let mut tmp_effect = effect.take().unwrap();
+                tmp_effect.clear_dependencies();
 
                 // Push the effect onto the effect stack so that it is visible by signals.
                 effects
                     .borrow_mut()
-                    .push(unsafe { std::mem::transmute(&mut effect as *mut EffectState<'a>) });
+                    .push(unsafe { std::mem::transmute(&mut tmp_effect as *mut EffectState<'a>) });
                 // Now we can call the user-provided function.
                 f();
                 // Pop the effect from the effect stack.
@@ -101,23 +97,22 @@ fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
                 // The raw pointer pushed onto `effects` is dead and can no longer be accessed.
                 // We can now access `effect` directly again.
 
-                // For all the signals collected by the EffectState,
-                // we need to add backlinks from the signal to the effect, so that
-                // updating the signal will trigger the effect.
-                for emitter in &effect.dependencies {
+                // For all the signals collected by the EffectState, we need to add backlinks from
+                // the signal to the effect, so that updating the signal will trigger the effect.
+                for emitter in &tmp_effect.dependencies {
                     // The SignalEmitter might have been destroyed between when the signal was
                     // accessed and now.
                     if let Some(emitter) = emitter.0.upgrade() {
                         // SAFETY: When the effect is destroyed or when the emitter is dropped,
-                        // this link will be destroyed to prevent
-                        // dangling references.
-                        emitter
-                            .subscribe(Rc::downgrade(unsafe { std::mem::transmute(&effect.cb) }));
+                        // this link will be destroyed to prevent dangling references.
+                        emitter.subscribe(Rc::downgrade(unsafe {
+                            std::mem::transmute(&tmp_effect.cb)
+                        }));
                     }
                 }
 
                 // Get the effect state back into the Rc
-                *effect_ref.borrow_mut() = Some(effect);
+                *effect.borrow_mut() = Some(tmp_effect);
 
                 debug_assert_eq!(effects.borrow().len(), initial_effect_stack_len);
             });
@@ -132,9 +127,6 @@ fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
 
     // Initial callback call to get everything started.
     cb.borrow_mut()();
-
-    // Push Rc to self.effects so that it is not dropped immediately.
-    cx.raw.inner.borrow_mut().effects.push(effect);
 }
 
 /// Creates an effect on signals used inside the effect closure.

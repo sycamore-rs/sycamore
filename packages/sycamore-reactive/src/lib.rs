@@ -96,6 +96,11 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
             _phantom: PhantomData,
         }
     }
+
+    /// Alias for `self.raw.arena.alloc`.
+    fn alloc<T>(&self, value: T) -> &'a mut T {
+        self.raw.arena.alloc(value)
+    }
 }
 
 /// A type-alias for [`BoundedScope`] where both lifetimes are the same.
