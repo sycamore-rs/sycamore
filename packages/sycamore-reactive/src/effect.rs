@@ -69,11 +69,11 @@ impl<'a> EffectState<'a> {
 /// # });
 /// ```
 pub fn create_effect<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) {
-    _create_effect(cx, Box::new(f))
+    _create_effect(cx, cx.alloc_box_in_arena(f))
 }
 
 /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
-fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<dyn FnMut() + 'a>) {
+fn _create_effect<'a>(cx: Scope<'a>, mut f: bumpalo::boxed::Box<dyn FnMut() + 'a>) {
     let effect = Rc::new(RefCell::new(None::<EffectState<'a>>));
     let cb = Rc::new(RefCell::new({
         let effect = Rc::downgrade(&effect);

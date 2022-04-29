@@ -14,7 +14,7 @@ impl<T> ReallyAny for T {}
 
 #[derive(Default)]
 pub(crate) struct ScopeArena<'a> {
-    bump: Bump,
+    pub bump: Bump,
     // We need to store the raw pointers because otherwise the values won't be dropped.
     inner: UnsafeCell<SmallVec<[*mut (dyn ReallyAny + 'a); SCOPE_ARENA_STACK_SIZE]>>,
 }
