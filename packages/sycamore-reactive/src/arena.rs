@@ -20,7 +20,9 @@ pub(crate) struct ScopeArena<'a> {
 }
 
 impl<'a> ScopeArena<'a> {
-    /// Allocate a value onto the arena. Returns a mutable reference that lasts as long as the arena itself.
+    /// Allocate a value onto the arena. Returns a mutable reference that lasts as long as the arena
+    /// itself.
+    #[allow(clippy::mut_from_ref)] // We return a new reference each time so this is a false-positive.
     pub fn alloc<T: 'a>(&'a self, value: T) -> &'a mut T {
         let boxed = bumpalo::boxed::Box::new_in(value, &self.bump);
         let ptr = bumpalo::boxed::Box::into_raw(boxed);

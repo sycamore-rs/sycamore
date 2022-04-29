@@ -168,9 +168,7 @@ where
         // use-after-free during the clear dependencies phase.
         if let Some(disposer) = disposer.take() {
             // SAFETY: we are not accessing the scope after the effect has been dropped.
-            unsafe {
-                disposer.dispose();
-            }
+            unsafe { disposer.dispose() };
         }
         // Create a new nested scope and save the disposer.
         let new_disposer: Option<Box<ScopeDisposer<'a>>> =
@@ -179,9 +177,6 @@ where
                 // self.create_child_scope(_).
                 f(unsafe { std::mem::transmute(cx) });
             })));
-        // SAFETY: transmute the lifetime. This is safe because disposer is only used within the
-        // effect which is necessarily within the lifetime of self (the Scope).
-        // disposer = unsafe { std::mem::transmute(new_disposer) };
         disposer = new_disposer;
     });
 }
