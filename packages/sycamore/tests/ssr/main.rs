@@ -132,3 +132,39 @@ fn using_cx_in_dyn_node_creates_nested_scope() {
         node
     });
 }
+
+#[test]
+fn ssr_no_hydrate_sub_tree() {
+    let out = sycamore::render_to_string(|cx| {
+        view! { cx,
+            div {
+                p { "Hydrated" }
+                sycamore::html::NoHydrate {
+                    p { "But not this" }
+                }
+            }
+        }
+    });
+    assert_eq!(
+        out,
+        r#"<div data-hk="0.0"><p data-hk="0.1">Hydrated</p><!--#--><div data-hk="1.0"><p>But not this</p></div><!--/--></div>"#
+    );
+}
+
+#[test]
+fn no_ssr_sub_tree_should_not_be_emitted_in_ssr() {
+    let out = sycamore::render_to_string(|cx| {
+        view! { cx,
+            div {
+                p { "Rendered" }
+                sycamore::html::NoSsr {
+                    p { "But not this" }
+                }
+            }
+        }
+    });
+    assert_eq!(
+        out,
+        r#"<div data-hk="0.0"><p data-hk="0.1">Rendered</p><!--#--><div data-hk="1.0"><!----></div><!--/--></div>"#
+    );
+}
