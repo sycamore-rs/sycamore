@@ -6,6 +6,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::generic_node::SycamoreElement;
 use crate::prelude::*;
+#[cfg(feature = "hydrate")]
+use crate::utils::hydrate::{hydration_completed, with_no_hydration_context};
 
 /// MBE for generating elements.
 macro_rules! define_elements {
@@ -299,5 +301,74 @@ pub fn on_mount<'a>(cx: Scope<'a>, f: impl Fn() + 'a) {
         let boxed: Box<dyn Fn()> = Box::new(cb);
         let closure = create_ref(cx, Closure::wrap(boxed));
         queue_microtask(closure);
+    }
+}
+
+/// Props for [`NoHydrate`].
+#[derive(Prop)]
+pub struct NoHydrateProps<'a, G: GenericNode> {
+    children: Children<'a, G>,
+}
+
+/// Render the children of this component in a scope that will not be hydrated.
+///
+/// When using `SsrNode`, this means that hydration markers won't be generated. When using
+/// `HydrateNode`, this means that the entire sub-tree will be ignored. When using `DomNode`,
+/// rendering proceeds as normal.
+///
+/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+/// elements.
+#[cfg(feature = "hydrate")]
+#[component]
+pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
+    use crate::utils::render;
+
+    let node_ref = create_node_ref(cx);
+    let v = view! { cx,
+        // TODO: remove wrapper `div`. We currently cannot do that because otherwise
+        // the node won't get inserted into the DOM.
+        div(ref=node_ref) {}
+    };
+    if G::CLIENT_SIDE_HYDRATION && !hydration_completed() {
+        // We don't want to hydrate the children, so we just do nothing.
+    } else if G::USE_HYDRATION_CONTEXT {
+        // If we have a hydration context, remove it in this scope so that hydration markers are not
+        // generated.
+        let nodes = with_no_hydration_context(|| props.children.call(cx));
+        render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
+    } else {
+        // Just continue rendering as normal.
+        let nodes = props.children.call(cx);
+        render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
+    };
+    v
+}
+
+/// Props for [`NoSsr`].
+#[derive(Prop)]
+pub struct NoSsrProps<'a, G: GenericNode> {
+    children: Children<'a, G>,
+}
+
+/// Only render the children of this component in the browser.
+/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+/// elements.
+#[cfg(feature = "hydrate")]
+#[component]
+pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
+    let node = if !G::IS_BROWSER {
+        // We don't want to render the children, so we just do nothing.
+        view! { cx, }
+    } else if G::USE_HYDRATION_CONTEXT {
+        // Since the nodes were not rendered on the server, there is nothing to hydrate.
+        with_no_hydration_context(|| props.children.call(cx))
+    } else {
+        // Just continue rendering as normal.
+        props.children.call(cx)
+    };
+    view! { cx,
+        // TODO: remove wrapper `div`. We currently cannot do that because otherwise
+        // the node won't get inserted into the DOM.
+        div { (node) }
     }
 }

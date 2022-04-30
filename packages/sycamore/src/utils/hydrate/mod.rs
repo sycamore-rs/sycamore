@@ -46,6 +46,22 @@ where
     r
 }
 
+/// Run the closure without a hydration context. If called within an hydration context, the old
+/// hydration context is restored when the closure returns.
+pub fn with_no_hydration_context<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    HYDRATION_CONTEXT.with(|context| {
+        // Save previous context to restore later.
+        let prev = *context.borrow();
+        *context.borrow_mut() = None;
+        let r = f();
+        *context.borrow_mut() = prev;
+        r
+    })
+}
+
 /// Returns a tuple of the current component id and the current hydration key.
 /// Increments the hydration key.
 ///
