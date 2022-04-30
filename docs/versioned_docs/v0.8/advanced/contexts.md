@@ -55,7 +55,7 @@ To access the context, use the `use_context` method.
 ```rust
 #[component]
 fn ChildComponent<G: Html>(cx: Scope) -> View<G> {
-    let dark_mode = use_context ::<Signal<DarkMode>>();
+    let dark_mode = use_context::<Signal<DarkMode>>(cx);
     // ...
 }
 
