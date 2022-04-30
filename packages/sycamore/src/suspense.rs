@@ -57,8 +57,8 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 #[component]
 pub fn Suspense<'a, G: GenericNode>(cx: Scope<'a>, props: SuspenseProps<'a, G>) -> View<G> {
     let v = create_signal(cx, None);
-    // If the Suspense is nested under another Suspense, we want the other Suspense to await this one
-    // as well.
+    // If the Suspense is nested under another Suspense, we want the other Suspense to await this
+    // one as well.
     suspense_scope(cx, async move {
         let res = await_suspense(cx, async move { props.children.call(cx) }).await;
         v.set(Some(res));
@@ -193,7 +193,9 @@ mod tests {
     #[tokio::test]
     async fn transition() {
         provide_executor_scope(async {
-            create_scope_immediate(|cx| {
+            let (sender, receiver) = oneshot::channel();
+            let mut sender = Some(sender);
+            let disposer = create_scope(|cx| {
                 let trigger = create_signal(cx, ());
                 let transition = use_transition(cx);
                 let _: View<SsrNode> = view! { cx,
@@ -203,12 +205,20 @@ mod tests {
                                 trigger.track();
                                 assert!(try_use_context::<SuspenseState>(cx).is_some());
                             });
-                            View::empty()
+                            view! { cx, }
                         })
                     }
                 };
-                transition.start(|| trigger.set(()), || ());
+                let done = create_signal(cx, false);
+                transition.start(|| trigger.set(()), || done.set(true));
+                create_effect(cx, move || {
+                    if *done.get() {
+                        sender.take().unwrap().send(()).unwrap();
+                    }
+                })
             });
+            receiver.await.unwrap();
+            unsafe { disposer.dispose() };
         })
         .await;
     }
