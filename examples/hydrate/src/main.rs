@@ -46,7 +46,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         Hello {}
         br
         Counter {}
-        
+
         sycamore::html::NoHydrate {
             p { "This paragraph is not hydrated!" }
         }
