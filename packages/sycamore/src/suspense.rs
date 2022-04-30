@@ -57,7 +57,7 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 #[component]
 pub fn Suspense<'a, G: GenericNode>(cx: Scope<'a>, props: SuspenseProps<'a, G>) -> View<G> {
     let v = create_signal(cx, None);
-    // If the Suspense is nested under another Suspense, we want to other Suspense to await this one
+    // If the Suspense is nested under another Suspense, we want the other Suspense to await this one
     // as well.
     suspense_scope(cx, async move {
         let res = await_suspense(cx, async move { props.children.call(cx) }).await;
