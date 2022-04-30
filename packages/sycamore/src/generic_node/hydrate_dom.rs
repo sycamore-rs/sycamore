@@ -254,11 +254,11 @@ impl Html for HydrateNode {
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
-pub fn hydrate(template: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
+pub fn hydrate(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
-    hydrate_to(template, &document.body().unwrap_throw());
+    hydrate_to(view, &document.body().unwrap_throw());
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
