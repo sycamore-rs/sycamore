@@ -4,7 +4,7 @@
 //! of some internal state during the entire codegen.
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 use syn::{Expr, ExprLit, Ident, Lit};
 
@@ -456,13 +456,17 @@ impl Codegen {
             Component::ElementLike(comp) => {
                 let ElementLikeComponent {
                     ident,
+                    brace,
                     props,
                     children,
                 } = comp;
                 if props.is_empty() && children.is_none() {
                     // If no props, just generate a `()` for props.
+                    // We make sure to give the `()` the same span as the brace tokens for proper
+                    // error spans.
+                    let unit = quote_spanned! { brace.span=> () };
                     quote! {
-                       ::sycamore::component::component_scope(move || #ident(#cx, ()))
+                       ::sycamore::component::component_scope(move || #ident(#cx, #unit))
                     }
                 } else {
                     let mut props_quoted = quote! {

@@ -6,6 +6,7 @@ use once_cell::sync::Lazy;
 use proc_macro2::{Span, TokenStream, TokenTree};
 use quote::ToTokens;
 use syn::punctuated::Punctuated;
+use syn::token::Brace;
 use syn::{Expr, Ident, LitStr, Path, Token};
 
 pub struct ViewRoot(pub Vec<ViewNode>);
@@ -138,6 +139,7 @@ pub struct FnLikeComponent {
 
 pub struct ElementLikeComponent {
     pub ident: Path,
+    pub brace: Brace,
     pub props: Vec<(Ident, Expr)>,
     pub children: Option<ViewRoot>,
 }

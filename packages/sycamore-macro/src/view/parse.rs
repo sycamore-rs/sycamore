@@ -221,7 +221,7 @@ impl Parse for Component {
             Ok(Self::FnLike(FnLikeComponent { ident, args }))
         } else if input.peek(Brace) {
             // Parse element link component.
-            braced!(content in input);
+            let brace = braced!(content in input);
             let mut props = Punctuated::<FieldValue, Token![,]>::new();
             while !content.is_empty() {
                 let fork = content.fork();
@@ -253,6 +253,7 @@ impl Parse for Component {
             };
             Ok(Self::ElementLike(ElementLikeComponent {
                 ident,
+                brace,
                 props: props
                     .into_iter()
                     .map(|x| match x.member {
