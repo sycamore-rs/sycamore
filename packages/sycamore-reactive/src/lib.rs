@@ -239,7 +239,7 @@ pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(Scope<'a>)) -> ScopeDispos
 /// let mut outer = None;
 /// let disposer = create_child_scope(cx, |cx| {
 ///     outer = Some(cx);
-///     //           ^^^
+///     //           ^^
 /// });
 /// disposer();
 /// let _ = outer.unwrap();

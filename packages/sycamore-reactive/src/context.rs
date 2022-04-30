@@ -82,8 +82,30 @@ pub fn use_context<T: 'static>(cx: Scope) -> &T {
 }
 
 /// Gets a context value of the given type or computes it from a closure.
-pub fn use_context_or_else<T: 'static>(cx: Scope, f: impl FnOnce() -> T) -> &T {
+///
+/// Note that if no context exists, the new context will be created in the _current_ scope. This
+/// means that the new value will still be inaccessible in an outer scope.
+pub fn use_context_or_else<T, F>(cx: Scope, f: F) -> &T
+where
+    T: 'static,
+    F: FnOnce() -> T,
+{
     try_use_context(cx).unwrap_or_else(|| provide_context(cx, f()))
+}
+
+/// Gets a context value of the given type or computes it from a closure.
+///
+/// Unlike [`provide_context`], this closure should return a reference that lives at least as long
+/// as the scope.
+///
+/// Note that if no context exists, the new context will be created in the _current_ scope. This
+/// means that the new value will still be inaccessible in an outer scope.
+pub fn use_context_or_else_ref<'a, T, F>(cx: Scope<'a>, f: F) -> &'a T
+where
+    T: 'static,
+    F: FnOnce() -> &'a T,
+{
+    try_use_context(cx).unwrap_or_else(|| provide_context_ref(cx, f()))
 }
 
 /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
@@ -131,6 +153,34 @@ mod tests {
             provide_context(cx, 0i32);
             provide_context(cx, 0i32);
             //                  ^^^^ -> has type `i32` and therefore should panic
+        });
+    }
+
+    #[test]
+    fn test_use_context_or_else() {
+        create_scope_immediate(|cx| {
+            assert!(try_use_context::<i32>(cx).is_none());
+
+            let a = use_context_or_else(cx, || 123);
+            assert_eq!(*a, 123);
+
+            assert!(try_use_context::<i32>(cx).is_some());
+            let b: &i32 = use_context_or_else(cx, || panic!("don't call me"));
+            assert_eq!(*b, 123);
+        });
+    }
+
+    #[test]
+    fn test_use_context_or_else_ref() {
+        create_scope_immediate(|cx| {
+            assert!(try_use_context::<Signal<i32>>(cx).is_none());
+
+            let a = use_context_or_else_ref(cx, || create_signal(cx, 123));
+            assert_eq!(*a.get(), 123);
+
+            assert!(try_use_context::<Signal<i32>>(cx).is_some());
+            let b: &Signal<i32> = use_context_or_else_ref(cx, || panic!("don't call me"));
+            assert_eq!(*b.get(), 123);
         });
     }
 }
