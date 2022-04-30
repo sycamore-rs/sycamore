@@ -44,7 +44,15 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         p { "Hydration" }
         br
         Hello {}
+        br
         Counter {}
+        
+        sycamore::html::NoHydrate {
+            p { "This paragraph is not hydrated!" }
+        }
+        sycamore::html::NoSsr {
+            p { "This paragraph is only rendered on the client side" }
+        }
     }
 }
 fn main() {

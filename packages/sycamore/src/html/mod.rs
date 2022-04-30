@@ -313,8 +313,11 @@ pub struct NoHydrateProps<'a, G: GenericNode> {
 /// Render the children of this component in a scope that will not be hydrated.
 ///
 /// When using `SsrNode`, this means that hydration markers won't be generated. When using
-/// `HydrateNode`, this means that this will ignore. When using `DomNode`, rendering proceeds as
-/// normal.
+/// `HydrateNode`, this means that the entire sub-tree will be ignored. When using `DomNode`,
+/// rendering proceeds as normal.
+///
+/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+/// elements.
 #[cfg(feature = "hydrate")]
 #[component]
 pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
@@ -348,6 +351,8 @@ pub struct NoSsrProps<'a, G: GenericNode> {
 }
 
 /// Only render the children of this component in the browser.
+/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+/// elements.
 #[cfg(feature = "hydrate")]
 #[component]
 pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
