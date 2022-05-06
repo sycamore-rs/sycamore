@@ -11,12 +11,11 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Document, Element, Node, Text};
 
+use super::SycamoreElement;
 use crate::generic_node::{GenericNode, Html};
 use crate::reactive::*;
 use crate::utils::render::insert;
 use crate::view::View;
-
-use super::SycamoreElement;
 
 #[wasm_bindgen]
 extern "C" {
@@ -150,6 +149,7 @@ fn document() -> web_sys::Document {
 
 impl GenericNode for DomNode {
     type EventType = web_sys::Event;
+    type PropertyType = JsValue;
 
     fn element<T: SycamoreElement>() -> Self {
         let node = if let Some(ns) = T::NAME_SPACE {

@@ -3,11 +3,11 @@
 //! This API is rendering-backend agnostic and can be used with any rendering backend, not just
 //! HTML.
 
-use js_sys::Reflect;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::rc::Rc;
-use wasm_bindgen::prelude::*;
+
+use js_sys::Reflect;
 
 use crate::component::component_scope;
 use crate::generic_node::{GenericNode, Html, SycamoreElement};
@@ -305,7 +305,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     pub fn prop(
         self,
         name: impl AsRef<str> + 'a,
-        property: impl Into<JsValue> + 'a,
+        property: impl Into<G::PropertyType> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |_, el| el.set_property(name.as_ref(), &property.into()))
     }
@@ -323,7 +323,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     ///     .dyn_prop("checked", || *checked.get())
     /// # .view(cx) }
     /// ```
-    pub fn dyn_prop<V: Into<JsValue> + 'a>(
+    pub fn dyn_prop<V: Into<G::PropertyType> + 'a>(
         self,
         name: impl AsRef<str> + 'a,
         mut property: impl FnMut() -> V + 'a,

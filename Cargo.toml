@@ -2,6 +2,7 @@
 members = [
   # Packages
   "packages/sycamore",
+  "packages/sycamore-core",
   "packages/sycamore-futures",
   "packages/sycamore-macro",
   "packages/sycamore-reactive",

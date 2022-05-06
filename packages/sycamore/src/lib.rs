@@ -49,12 +49,13 @@ pub mod futures;
 pub mod generic_node;
 pub mod html;
 pub mod motion;
-pub mod noderef;
 pub mod portal;
 #[cfg(feature = "suspense")]
 pub mod suspense;
 pub mod utils;
-pub mod view;
+
+/* Re-export modules from sycamore_core */
+pub use sycamore_core::*;
 
 /// Re-export for `sycamore-reactive` crate.
 ///
@@ -71,7 +72,6 @@ pub use generic_node::render_to_string_await_suspense;
 pub use generic_node::{hydrate, hydrate_get_scope, hydrate_to};
 #[cfg(feature = "dom")]
 pub use generic_node::{render, render_get_scope, render_to};
-
 pub use sycamore_macro::*;
 
 /// The sycamore prelude.
@@ -83,22 +83,21 @@ pub use sycamore_macro::*;
 /// use sycamore::prelude::*;
 /// ```
 pub mod prelude {
+    pub use sycamore_macro::*;
+
+    pub use crate::component::Children;
+    pub use crate::flow::*;
     #[cfg(feature = "dom")]
     pub use crate::generic_node::DomNode;
     #[cfg(all(feature = "dom", feature = "hydrate"))]
     pub use crate::generic_node::HydrateNode;
     #[cfg(feature = "ssr")]
     pub use crate::generic_node::SsrNode;
-
-    pub use crate::component::Children;
-    pub use crate::flow::*;
     pub use crate::generic_node::{GenericNode, Html};
     pub use crate::html::on_mount;
     pub use crate::noderef::{create_node_ref, NodeRef};
     pub use crate::reactive::*;
     pub use crate::view::View;
-
-    pub use sycamore_macro::*;
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

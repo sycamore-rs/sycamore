@@ -18,6 +18,7 @@ indexmap = { version = "1.8.0", features = ["std"] }
 js-sys = "0.3.56"
 once_cell = { version = "1.10.0", optional = true }
 paste = "1.0.6"
+sycamore-core = { path = "../sycamore-core", version = "0.8.0-beta.5" }
 sycamore-futures = { path = "../sycamore-futures", version = "0.8.0-beta.5", optional = true }
 sycamore-macro = { path = "../sycamore-macro", version = "=0.8.0-beta.5" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.5" }

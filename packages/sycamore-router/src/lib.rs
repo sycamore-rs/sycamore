@@ -7,11 +7,10 @@ extern crate self as sycamore_router;
 
 mod router;
 
-pub use sycamore_router_macro::Route;
-
 use std::str::FromStr;
 
 pub use router::*;
+pub use sycamore_router_macro::Route;
 
 /// Trait that is implemented for `enum`s that can match routes.
 ///
@@ -193,8 +192,9 @@ impl<T: Route> TryFromSegments for T {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use Segment::*;
+
+    use super::*;
 
     fn check(path: &str, route: RoutePath, expected: Option<Vec<Capture>>) {
         let path = path

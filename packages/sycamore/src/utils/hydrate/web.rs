@@ -3,10 +3,9 @@
 use wasm_bindgen::JsCast;
 use web_sys::{window, Comment, Element, Node};
 
+use super::*;
 use crate::generic_node::HydrateNode;
 use crate::view::View;
-
-use super::*;
 
 const COMMENT_NODE_TYPE: u16 = 8;
 

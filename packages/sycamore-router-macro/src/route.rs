@@ -4,9 +4,7 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Fields, Ident, LitStr, Token, Variant};
 
-use crate::parser::route;
-use crate::parser::RoutePathAst;
-use crate::parser::SegmentAst;
+use crate::parser::{route, RoutePathAst, SegmentAst};
 
 pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut quoted = TokenStream::new();

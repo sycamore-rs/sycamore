@@ -1,0 +1,15 @@
+[package]
+name = "sycamore-core"
+categories = ["gui", "wasm", "web-programming"]
+description = "Core functionality for the Sycamore web framework"
+edition = "2021"
+homepage = "https://github.com/sycamore-rs/sycamore"
+keywords = ["wasm", "gui", "reactive"]
+license = "MIT"
+readme = "../../README.md"
+repository = "https://github.com/sycamore-rs/sycamore"
+version = "0.8.0-beta.5"
+
+[dependencies]
+ahash = "0.7.6"
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.5" }

@@ -1,15 +1,13 @@
 //! References to nodes in templates.
 
+use std::any::Any;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
-use sycamore_reactive::create_ref;
-use wasm_bindgen::prelude::*;
+use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
-use crate::reactive::Scope;
-use std::any::Any;
 
 /// A reference to a [`GenericNode`].
 #[derive(Clone, PartialEq, Eq)]
@@ -32,7 +30,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// For a non panicking version, see [`NodeRef::try_get`].
     #[track_caller]
     pub fn get<T: GenericNode>(&self) -> T {
-        self.try_get().expect_throw("NodeRef is not set")
+        self.try_get().expect("NodeRef is not set")
     }
 
     /// Tries to get the T stored inside the [`NodeRef`] or `None` if it is not yet set or
@@ -52,7 +50,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// For a non panicking version, see [`NodeRef::try_get_raw`].
     #[track_caller]
     pub fn get_raw(&self) -> G {
-        self.try_get().expect_throw("NodeRef is not set")
+        self.try_get().expect("NodeRef is not set")
     }
 
     /// Tries to get the raw [`GenericNode`] stored inside the [`NodeRef`] or `None` if it is

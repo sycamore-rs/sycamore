@@ -9,12 +9,6 @@ mod iter;
 mod memo;
 mod signal;
 
-pub use context::*;
-pub use effect::*;
-pub use iter::*;
-pub use memo::*;
-pub use signal::*;
-
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -23,7 +17,12 @@ use std::mem;
 use std::rc::{Rc, Weak};
 
 use arena::*;
+pub use context::*;
+pub use effect::*;
 use indexmap::IndexMap;
+pub use iter::*;
+pub use memo::*;
+pub use signal::*;
 use slotmap::{DefaultKey, SlotMap};
 
 /// A wrapper type around a lifetime that forces the lifetime to be invariant.

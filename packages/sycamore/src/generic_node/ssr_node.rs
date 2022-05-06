@@ -11,12 +11,11 @@ use indexmap::map::IndexMap;
 use once_cell::sync::Lazy;
 use wasm_bindgen::prelude::*;
 
+use super::SycamoreElement;
 use crate::generic_node::{GenericNode, Html};
 use crate::reactive::*;
 use crate::utils::hydrate::{get_next_id, with_hydration_context};
 use crate::view::View;
-
-use super::SycamoreElement;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
@@ -130,6 +129,8 @@ impl GenericNode for SsrNode {
     /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
     /// anyways, it's okay to do this.
     type EventType = web_sys::Event;
+    type PropertyType = JsValue;
+
     const USE_HYDRATION_CONTEXT: bool = true;
 
     fn element<T: SycamoreElement>() -> Self {

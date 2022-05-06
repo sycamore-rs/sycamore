@@ -1,4 +1,4 @@
-//! Result of the [view!](crate::view!) macro.
+//! Abstractions for representing UI views.
 
 use std::any::Any;
 use std::borrow::Cow;
@@ -6,8 +6,9 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
+use sycamore_reactive::*;
+
 use crate::generic_node::GenericNode;
-use crate::reactive::*;
 
 /// Internal type for [`View`].
 #[derive(Clone)]
@@ -21,7 +22,7 @@ pub(crate) enum ViewType<G: GenericNode> {
     Fragment(Rc<Box<[View<G>]>>),
 }
 
-/// Result of the [view!](crate::view!) macro.
+/// Represents an UI view.
 #[derive(Clone)]
 pub struct View<G: GenericNode> {
     pub(crate) inner: ViewType<G>,
