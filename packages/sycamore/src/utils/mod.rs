@@ -5,7 +5,7 @@
 //! The API can change without warning and without a semver compatible release.
 
 use crate::generic_node::GenericNode;
-use crate::prelude::View;
+use crate::prelude::*;
 
 #[cfg(feature = "hydrate")]
 pub mod hydrate;
@@ -19,7 +19,6 @@ pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
         use std::mem::ManuallyDrop;
         use std::ptr;
 
-        use crate::generic_node::HydrateNode;
         if let Some(el) = <dyn Any>::downcast_ref::<HydrateNode>(_el) {
             let initial = hydrate::web::get_next_marker(&el.inner_element());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
