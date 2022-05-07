@@ -290,7 +290,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         } else if b_end == b_start {
             // Remove.
             while a_start < a_end {
-                if map.as_ref().map_or(false, |m| m.contains_key(&a[a_start])) {
+                if map.as_ref().map_or(true, |m| m.contains_key(&a[a_start])) {
                     parent.remove_child(&a[a_start]);
                 }
                 a_start += 1;
