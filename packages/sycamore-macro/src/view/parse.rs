@@ -226,7 +226,7 @@ impl Parse for Component {
             while !content.is_empty() {
                 let fork = content.fork();
                 if let Ok(value) = fork.parse() {
-                    if fork.peek(Brace) {
+                    if fork.peek(Brace) || ViewNode::peek_type(&fork).is_some() {
                         break;
                     }
                     content.advance_to(&fork);
