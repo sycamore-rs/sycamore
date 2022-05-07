@@ -298,7 +298,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
     /// h(input).prop("value", "I am the value set.")
     /// # .view(cx) }
     /// ```
@@ -316,7 +316,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
     /// let checked = create_signal(cx, false);
     /// h(input)
     ///     .attr("type", "checkbox")
