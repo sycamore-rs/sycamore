@@ -12,6 +12,13 @@ pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
     }
 }
 
+#[component]
+async fn AsyncPropComponent<G: Html>(cx: Scope<'_>, Prop { prop: _ }: Prop) -> View<G> {
+    view! { cx,
+        div
+    }
+}
+
 #[derive(Prop)]
 pub struct PropWithChildren<'a, G: GenericNode> {
     children: Children<'a, G>,
