@@ -13,6 +13,7 @@ members = [
   "examples/context",
   "examples/counter",
   "examples/http-request",
+  "examples/http-request-builder",
   "examples/hydrate",
   "examples/iteration",
   "examples/js-framework-benchmark",

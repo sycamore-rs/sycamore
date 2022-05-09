@@ -30,6 +30,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 | [hello-world](hello-world)                         | Hello World!                                                                                   |
 | [higher-order-components](higher-order-components) | Higher-order-components (functions that create components)                                     |
 | [http-request](http-request)                       | Suspense + async components for sending HTTP requests                                          |
+| [http-request-builder](http-request-builder)       | Suspense + async components for sending HTTP requests using the builder API!                   |
 | [hydrate](hydrate)                                 | Making existing HTML reactive                                                                  |
 | [iteration](iteration)                             | Demonstration of how to iterate over data in UI                                                |
 | [js-framework-benchmark](js-framework-benchmark)   | Implementation of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) |
