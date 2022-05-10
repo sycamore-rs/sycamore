@@ -143,11 +143,13 @@ fn async_comp_inputs_from_sig_inputs(
         unreachable!("We check in parsing that the first argument is not a receiver");
     };
 
-    let prop_arg = inputs.next().map(|x| match x {
+    // In parsing we checked that there were two args so we can unwrap here.
+    let prop_fn_arg = inputs.next().unwrap();
+    let prop_arg = match prop_fn_arg {
         FnArg::Typed(t) => match &*t.pat {
-            Pat::Ident(id) => pat_ident_arm(&mut sync_input, x, id),
+            Pat::Ident(id) => pat_ident_arm(&mut sync_input, prop_fn_arg, id),
             Pat::Wild(_) => {
-                sync_input.push(x.clone());
+                sync_input.push(prop_fn_arg.clone());
                 parse_quote!(())
             }
             Pat::Struct(pat_struct) => {
@@ -181,11 +183,9 @@ fn async_comp_inputs_from_sig_inputs(
             _ => panic!("unexpected pattern!"),
         },
         FnArg::Receiver(_) => unreachable!(),
-    });
+    };
 
-    // In parsing we checked that there were two args and so the second arg can either
-    // be a Some or would have panic'd so we are safe to unwrap here.
-    async_args.push(prop_arg.unwrap());
+    async_args.push(prop_arg);
 
     AsyncCompInputs {
         cx,
