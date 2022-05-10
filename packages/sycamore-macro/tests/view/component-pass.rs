@@ -23,6 +23,14 @@ pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<
 }
 
 #[component]
+pub async fn AsyncComponentWithPropDestructuring<'a, G: Html>(
+    cx: Scope<'a>,
+    PropWithChildren { children }: PropWithChildren<'a, G>,
+) -> View<G> {
+    children.call(cx)
+}
+
+#[component]
 pub fn Component<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div
@@ -46,6 +54,12 @@ fn compile_pass<G: Html>() {
 
         let _: View<G> = view! { cx,
             ComponentWithChildren {
+                Component {}
+            }
+        };
+
+        let _: View<G> = view! { cx,
+            AsyncComponentWithPropDestructuring {
                 Component {}
             }
         };
