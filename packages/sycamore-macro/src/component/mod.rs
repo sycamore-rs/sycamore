@@ -106,7 +106,6 @@ impl Parse for ComponentFunction {
 
 struct AsyncCompInputs {
     cx: syn::Ident,
-    // only expect one input (i.e. prop struct) but Punctuated ready to add to Signature.
     sync_input: Punctuated<FnArg, syn::token::Comma>,
     async_args: Vec<Expr>,
 }
