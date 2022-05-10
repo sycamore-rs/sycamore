@@ -23,7 +23,7 @@ pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<
 }
 
 #[component]
-pub fn AsyncComponentWithPropDestructuring<'a, G: Html>(
+pub async fn AsyncComponentWithPropDestructuring<'a, G: Html>(
     cx: Scope<'a>,
     PropWithChildren { children }: PropWithChildren<'a, G>,
 ) -> View<G> {
