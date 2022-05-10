@@ -12,13 +12,6 @@ pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
     }
 }
 
-#[component]
-async fn AsyncPropComponent<G: Html>(cx: Scope<'_>, Prop { prop: _ }: Prop) -> View<G> {
-    view! { cx,
-        div
-    }
-}
-
 #[derive(Prop)]
 pub struct PropWithChildren<'a, G: GenericNode> {
     children: Children<'a, G>,
@@ -27,6 +20,14 @@ pub struct PropWithChildren<'a, G: GenericNode> {
 #[component]
 pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<'a, G>) -> View<G> {
     prop.children.call(cx)
+}
+
+#[component]
+pub fn AsyncComponentWithPropDestructuring<'a, G: Html>(
+    cx: Scope<'a>,
+    PropWithChildren { children }: PropWithChildren<'a, G>,
+) -> View<G> {
+    children.call(cx)
 }
 
 #[component]
@@ -53,6 +54,12 @@ fn compile_pass<G: Html>() {
 
         let _: View<G> = view! { cx,
             ComponentWithChildren {
+                Component {}
+            }
+        };
+
+        let _: View<G> = view! { cx,
+            AsyncComponentWithPropDestructuring {
                 Component {}
             }
         };
