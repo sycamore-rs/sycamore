@@ -156,7 +156,10 @@ impl<'a> ScopeDisposer<'a> {
     /// * `contexts` - Contexts can be refereed to inside a cleanup callback so they are dropped
     ///   after cleanups.
     /// * `arena` - Signals and refs are dropped last because they can be refereed to in the other
-    ///   fields (e.g. inside a cleanup callback).
+    ///   fields (e.g. inside a cleanup callback). Refs are dropped in the opposite order in which
+    ///   they are created, i.e. the first ref is dropped last. This ensures that if a closure that
+    ///   references something allocated in the arena is allocated onto this same arena, it will not
+    ///   be able to access the reference after it has been deallocated.
     pub unsafe fn dispose(self) {
         (self.f)();
     }
@@ -425,6 +428,8 @@ pub fn on<'a, U, const N: usize>(
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
+
     use super::*;
 
     #[test]
@@ -512,5 +517,66 @@ mod tests {
             let disposer = create_child_scope(cx, |_cx| {});
             signal.set(Some(disposer));
         });
+    }
+
+    #[test]
+    fn refs_are_dropped_on_dispose() {
+        thread_local! {
+            static COUNTER: Cell<u32> = Cell::new(0);
+        }
+
+        struct IncOnDrop;
+        impl Drop for IncOnDrop {
+            fn drop(&mut self) {
+                COUNTER.with(|c| c.set(c.get() + 1));
+            }
+        }
+
+        struct AssertDropCount {
+            count: u32,
+        }
+        impl Drop for AssertDropCount {
+            fn drop(&mut self) {
+                assert_eq!(COUNTER.with(Cell::get), self.count);
+            }
+        }
+
+        assert_eq!(COUNTER.with(Cell::get), 0);
+        let disposer = create_scope(|cx| {
+            create_ref(cx, IncOnDrop);
+        });
+        assert_eq!(COUNTER.with(Cell::get), 0);
+        unsafe { disposer.dispose() };
+        assert_eq!(COUNTER.with(Cell::get), 1);
+
+        let disposer = create_scope(|cx| {
+            create_ref(cx, AssertDropCount { count: 2 }); // This is dropped last.
+            create_ref(cx, IncOnDrop);
+            create_ref(cx, AssertDropCount { count: 1 }); // This is dropped first.
+                                                          // That's because if this were a closure,
+                                                          // we could reference previous refs and
+                                                          // access it in drop.
+        });
+
+        unsafe { disposer.dispose() };
+    }
+
+    #[test]
+    fn access_previous_ref_in_drop() {
+        struct ReadRefOnDrop<'a> {
+            r: &'a i32,
+            expect: i32,
+        }
+        impl<'a> Drop for ReadRefOnDrop<'a> {
+            fn drop(&mut self) {
+                assert_eq!(*self.r, self.expect);
+            }
+        }
+
+        let disposer = create_scope(|cx| {
+            let r = create_ref(cx, 123);
+            create_ref(cx, ReadRefOnDrop { r, expect: 123 });
+        });
+        unsafe { disposer.dispose() };
     }
 }

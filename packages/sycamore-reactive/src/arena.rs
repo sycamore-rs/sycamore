@@ -49,7 +49,7 @@ impl<'a> ScopeArena<'a> {
     ///
     /// If a [`ScopeArena`] has already been disposed, calling it again does nothing.
     pub unsafe fn dispose(&self) {
-        for &ptr in &*self.inner.get() {
+        for &ptr in (&*self.inner.get()).iter().rev() {
             // SAFETY: the ptr was allocated in Self::alloc using bumpalo::boxed::Box::into_raw.
             let boxed: bumpalo::boxed::Box<dyn ReallyAny> = bumpalo::boxed::Box::from_raw(ptr);
             // Call the drop code for the allocated value.
