@@ -4,6 +4,8 @@
 
 use wasm_bindgen::prelude::*;
 
+#[cfg(feature = "builder")]
+use crate::builder::ElementBuilder;
 use crate::generic_node::SycamoreElement;
 use crate::prelude::*;
 #[cfg(feature = "hydrate")]
@@ -27,11 +29,19 @@ macro_rules! define_elements {
             #[allow(non_camel_case_types)]
             #[doc = concat!("Build a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element.")]
             $(#[$attr])*
-            pub struct $el;
+            pub struct $el {}
 
             impl SycamoreElement for $el {
                 const TAG_NAME: &'static str = stringify!($el);
                 const NAME_SPACE: Option<&'static str> = $ns;
+            }
+
+            #[cfg(feature = "builder")]
+            #[allow(non_snake_case)]
+            #[doc = concat!("Create a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element builder.")]
+            $(#[$attr])*
+            pub fn $el<'a, G: GenericNode>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
+                ElementBuilder::new(move |_| G::element::<$el>())
             }
         )*
     };
