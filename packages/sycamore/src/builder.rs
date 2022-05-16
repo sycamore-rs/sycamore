@@ -10,7 +10,7 @@ use std::rc::Rc;
 use js_sys::Reflect;
 
 use crate::component::component_scope;
-use crate::generic_node::{GenericNode, Html, SycamoreElement};
+use crate::generic_node::{GenericNode, Html};
 use crate::noderef::NodeRef;
 use crate::reactive::*;
 use crate::utils::render;
@@ -27,7 +27,7 @@ use crate::view::View;
 /// use sycamore::prelude::*;
 /// ```
 pub mod prelude {
-    pub use super::{component, dyn_t, fragment, h, t, tag};
+    pub use super::{component, dyn_t, fragment, t, tag};
     pub use crate::html::*;
 }
 
@@ -56,32 +56,6 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a
     fn into_view(self, cx: Scope<'a>) -> View<G> {
         self.view(cx)
     }
-}
-
-/// Construct a new [`ElementBuilder`] from a [`SycamoreElement`].
-///
-/// Note that this can not be used to construct custom elements because they are not type checked in
-/// Rust. You'll need to use the [`tag`] function instead.
-///
-/// # Example
-/// ```
-/// # use sycamore::builder::prelude::*;
-/// # use sycamore::prelude::*;
-/// # fn _test1<G: GenericNode>(cx: Scope) -> View<G> {
-/// a()
-/// # .view(cx) }
-/// # fn _test2<G: GenericNode>(cx: Scope) -> View<G> {
-/// button()
-/// # .view(cx) }
-/// # fn _test3<G: GenericNode>(cx: Scope) -> View<G> {
-/// div()
-/// # .view(cx) }
-/// // etc...
-/// ```
-pub fn h<'a, E: SycamoreElement, G: GenericNode>(
-    _: E,
-) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-    ElementBuilder::new(move |_| G::element::<E>())
 }
 
 /// Construct a new [`ElementBuilder`] from a tag name.
@@ -385,9 +359,8 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
     /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
-    /// let input_type = create_signal(cx, "text");
     /// div().c(
-    ///     h(h1).t("I am a child")
+    ///     h1().t("I am a child")
     /// )
     /// # .view(cx) }
     /// ```
@@ -736,7 +709,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
 /// # use sycamore::prelude::*;
 /// #[component]
 /// fn MyComponent<G: GenericNode>(cx: Scope) -> View<G> {
-///     h(h1).t("I am a component").view(cx)
+///     h1().t("I am a component").view(cx)
 /// }
 ///
 /// // Elsewhere...

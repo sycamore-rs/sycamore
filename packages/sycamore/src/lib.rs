@@ -24,6 +24,9 @@
 //! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
 //!   improves performance at a slight cost in binary size. If you want to minimize the size of the
 //!   result `.wasm` binary, you might want to disable this.
+//!
+//! - `web` (_default_) - Enables the web backend for Sycamore. This feature is enabled by most of
+//!   the other features so you should rarely need to enable it manually.
 
 #![warn(clippy::clone_on_ref_ptr)]
 #![warn(clippy::rc_buffer)]
