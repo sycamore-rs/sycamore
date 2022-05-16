@@ -55,6 +55,7 @@ define_elements! {
     bdi {},
     bdo {},
     blockquote {},
+    body {},
     br {},
     /// The `<button>` HTML element represents a clickable button, used to submit forms or anywhere in a document for accessible, standard button functionality.
     ///
