@@ -8,13 +8,13 @@
 //! This crate is re-exported in the `sycamore` crate. It is recommended to use that instead of
 //! using this crate directly.
 
-pub mod dom_node;
+mod dom_node;
 #[cfg(feature = "hydrate")]
-pub mod hydrate_node;
+mod hydrate_node;
 #[cfg(feature = "hydrate")]
 pub mod hydrate_web;
 #[cfg(feature = "ssr")]
-pub mod ssr_node;
+mod ssr_node;
 
 pub use dom_node::*;
 #[cfg(feature = "hydrate")]

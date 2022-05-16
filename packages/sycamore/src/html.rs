@@ -9,6 +9,7 @@ use crate::generic_node::SycamoreElement;
 use crate::prelude::*;
 #[cfg(feature = "hydrate")]
 use crate::utils::hydrate::{hydration_completed, with_no_hydration_context};
+
 /// MBE for generating elements.
 macro_rules! define_elements {
     (
