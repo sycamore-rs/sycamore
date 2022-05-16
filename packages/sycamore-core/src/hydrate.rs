@@ -1,4 +1,7 @@
 //! Hydration support for Sycamore.
+//!
+//! This is backend-agnostic. If you are looking specifically for hydrating the DOM, see the
+//! `sycamore-web` crate.
 
 use std::cell::RefCell;
 

@@ -1,4 +1,4 @@
-//! References to nodes in templates.
+//! References to nodes in views.
 
 use std::any::Any;
 use std::cell::RefCell;

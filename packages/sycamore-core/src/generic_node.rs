@@ -23,7 +23,7 @@ pub trait SycamoreElement {
 /// _disappearing_, meaning that they are simply functions that generate [`GenericNode`]s inside a
 /// new reactive context. This means that using components add minimal overhead.
 ///
-/// Sycamore ships with 2 rendering backends out of the box:
+/// Sycamore ships with a few rendering backends out of the box. Here are some examples:
 /// * `DomNode` - Rendering in the browser (to real DOM nodes).
 /// * `SsrNode` - Render to a static string (often on the server side for Server Side Rendering,
 ///   aka. SSR).

@@ -21,13 +21,13 @@ pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
     }
 }
 
-/// A trait that is implemented automatically by the [`Prop`](crate::Prop) derive macro.
+/// A trait that is implemented automatically by the `Prop` derive macro.
 pub trait Prop {
     /// The type of the builder. This allows getting the builder type when the name is unknown (e.g.
     /// in a macro).
     type Builder;
     /// Returns the builder for the type.
-    /// The builder should be automatically generated using the [`Prop`](crate::Prop) derive macro.
+    /// The builder should be automatically generated using the `Prop` derive macro.
     fn builder() -> Self::Builder;
 }
 
