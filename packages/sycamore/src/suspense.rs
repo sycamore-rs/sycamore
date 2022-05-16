@@ -166,7 +166,7 @@ mod tests {
     use sycamore_futures::provide_executor_scope;
 
     use super::*;
-    use crate::generic_node::render_to_string_await_suspense;
+    use crate::web::render_to_string_await_suspense;
 
     #[tokio::test]
     async fn suspense() {
