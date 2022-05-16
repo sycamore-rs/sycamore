@@ -15,7 +15,7 @@ use crate::generic_node::GenericNode;
 /// # Example
 /// ```
 /// use sycamore::prelude::*;
-/// 
+///
 /// #[component]
 /// fn Component<G: Html>(cx: Scope) -> View<G> {
 ///     let my_div = create_node_ref(cx);
