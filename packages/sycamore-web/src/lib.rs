@@ -10,17 +10,15 @@
 
 mod dom_node;
 #[cfg(feature = "hydrate")]
-mod hydrate_node;
+pub mod hydrate;
 #[cfg(feature = "hydrate")]
-pub mod hydrate_web;
+mod hydrate_node;
 #[cfg(feature = "ssr")]
 mod ssr_node;
 
 pub use dom_node::*;
 #[cfg(feature = "hydrate")]
 pub use hydrate_node::*;
-#[cfg(feature = "hydrate")]
-pub use hydrate_web::*;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
 use sycamore_core::generic_node::GenericNode;

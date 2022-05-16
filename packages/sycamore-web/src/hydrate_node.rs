@@ -13,7 +13,7 @@ use wasm_bindgen::JsCast;
 use web_sys::Node;
 
 use crate::dom_node::{DomNode, NodeId};
-use crate::hydrate_web::get_next_element;
+use crate::hydrate::get_next_element;
 use crate::Html;
 
 /// Rendering backend for the DOM with hydration support.

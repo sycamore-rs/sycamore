@@ -80,19 +80,10 @@ impl SsrNode {
 
     /// Get an [`Element`], or `panic!` if wrong type.
     #[track_caller]
-    pub fn unwrap_element(&self) -> &RefCell<Element> {
+    fn unwrap_element(&self) -> &RefCell<Element> {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => e,
             _ => panic!("node is not an element"),
-        }
-    }
-
-    /// Get a [`Text`], or `panic!` if wrong type.
-    #[track_caller]
-    pub fn unwrap_text(&self) -> &RefCell<Text> {
-        match &self.0.ty.as_ref() {
-            SsrNodeType::Text(e) => e,
-            _ => panic!("node is not a text node"),
         }
     }
 
@@ -382,7 +373,7 @@ impl WriteToString for SsrNode {
 
 /// A SSR element.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Element {
+struct Element {
     name: Cow<'static, str>,
     attributes: IndexMap<String, String>,
     children: Vec<SsrNode>,
@@ -435,7 +426,7 @@ impl WriteToString for Comment {
 
 /// A SSR text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Text(String);
+struct Text(String);
 
 impl WriteToString for Text {
     fn write_to_string(&self, s: &mut String) {
@@ -445,7 +436,7 @@ impl WriteToString for Text {
 
 /// Un-escaped text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct RawText(String);
+struct RawText(String);
 
 impl WriteToString for RawText {
     fn write_to_string(&self, s: &mut String) {

@@ -8,7 +8,7 @@
 #[cfg(feature = "hydrate")]
 pub mod hydrate {
     pub use sycamore_core::hydrate::*;
-    pub use sycamore_web::hydrate_web as web;
+    pub use sycamore_web::hydrate as web;
 }
 
 pub use sycamore_core::render;
