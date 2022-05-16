@@ -7,8 +7,6 @@
 //!
 //! ## Feature Flags
 //!
-//! - `builder` - Enables the builder API.
-//!
 //! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on
 //!   `wasm32-unknown-unknown` target.
 //!
@@ -39,7 +37,6 @@
 #[allow(unused_extern_crates)] // False positive
 extern crate self as sycamore;
 
-#[cfg(feature = "builder")]
 pub mod builder;
 pub mod easing;
 pub mod flow;

@@ -4,7 +4,6 @@
 
 use wasm_bindgen::prelude::*;
 
-#[cfg(feature = "builder")]
 use crate::builder::ElementBuilder;
 use crate::generic_node::SycamoreElement;
 use crate::prelude::*;
@@ -36,7 +35,6 @@ macro_rules! define_elements {
                 const NAME_SPACE: Option<&'static str> = $ns;
             }
 
-            #[cfg(feature = "builder")]
             #[allow(non_snake_case)]
             #[doc = concat!("Create a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element builder.")]
             $(#[$attr])*

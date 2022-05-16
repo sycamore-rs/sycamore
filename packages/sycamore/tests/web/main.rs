@@ -1,4 +1,4 @@
-#[cfg(all(feature = "hydrate", feature = "builder"))]
+#[cfg(all(feature = "hydrate"))]
 pub mod builder_hydrate;
 pub mod cleanup;
 #[cfg(feature = "hydrate")]

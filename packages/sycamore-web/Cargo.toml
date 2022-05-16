@@ -1,7 +1,7 @@
 [package]
 name = "sycamore-web"
 categories = ["gui", "wasm", "web-programming"]
-description = "A reactive library for creating web apps in Rust and WebAssembly"
+description = "Web utilities for the Sycamore UI framework"
 edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive", "web"]
@@ -12,3 +12,8 @@ version = "0.8.0-beta.5"
 
 [dependencies]
 sycamore-core = { path = "../sycamore-core", version = "0.8.0-beta.5" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.5" }
+wasm-bindgen = "0.2.80"
+
+[features]
+ssr = []
