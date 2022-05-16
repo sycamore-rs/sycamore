@@ -17,8 +17,7 @@ async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
     let url = format!("{}/{}/hits", API_BASE_URL, id);
     let resp = Request::get(&url).send().await?;
 
-    let body = resp.json::<Visits>().await?;
-    Ok(body)
+    resp.json::<Visits>().await
 }
 
 #[component]
