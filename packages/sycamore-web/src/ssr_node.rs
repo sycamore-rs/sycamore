@@ -412,7 +412,7 @@ impl WriteToString for Element {
 
 /// A SSR comment node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Comment(String);
+struct Comment(String);
 
 impl WriteToString for Comment {
     fn write_to_string(&self, s: &mut String) {
