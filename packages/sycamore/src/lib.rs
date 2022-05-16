@@ -41,7 +41,6 @@ extern crate self as sycamore;
 
 #[cfg(feature = "builder")]
 pub mod builder;
-pub mod component;
 pub mod easing;
 pub mod flow;
 #[cfg(feature = "suspense")]
@@ -49,14 +48,13 @@ pub mod futures;
 pub mod generic_node;
 pub mod html;
 pub mod motion;
-pub mod noderef;
 pub mod portal;
 #[cfg(feature = "suspense")]
 pub mod suspense;
 pub mod utils;
 
 /* Re-export modules from sycamore_core */
-pub use sycamore_core::*;
+pub use sycamore_core::{component, noderef, view};
 
 /// Re-export for `sycamore-reactive` crate.
 ///

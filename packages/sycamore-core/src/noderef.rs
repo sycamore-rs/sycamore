@@ -10,6 +10,20 @@ use sycamore_reactive::*;
 use crate::generic_node::GenericNode;
 
 /// A reference to a [`GenericNode`].
+/// This allows programmatically accessing the node and call imperative methods on it.
+///
+/// # Example
+/// ```
+/// use sycamore::prelude::*;
+/// 
+/// #[component]
+/// fn Component<G: Html>(cx: Scope) -> View<G> {
+///     let my_div = create_node_ref(cx);
+///     view! { cx,
+///         div(ref=my_div)
+///     }
+/// }
+/// ```
 #[derive(Clone, PartialEq, Eq)]
 pub struct NodeRef<G: GenericNode>(Rc<RefCell<Option<G>>>);
 
@@ -62,6 +76,9 @@ impl<G: GenericNode + Any> NodeRef<G> {
     }
 
     /// Sets the [`NodeRef`] with the specified [`GenericNode`].
+    ///
+    /// This method should be rarely used. Instead, use the `ref=` syntax in the `view!` macro to
+    /// set the node.
     pub fn set(&self, node: G) {
         *self.0.borrow_mut() = Some(node);
     }
@@ -84,44 +101,4 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
 /// Create a new [`NodeRef`] on the current [`Scope`].
 pub fn create_node_ref<G: GenericNode>(cx: Scope<'_>) -> &NodeRef<G> {
     create_ref(cx, NodeRef::new())
-}
-
-#[cfg(all(test, feature = "ssr"))]
-mod tests {
-    use crate::html;
-    use crate::prelude::*;
-
-    #[test]
-    fn empty_noderef() {
-        let noderef = NodeRef::<SsrNode>::new();
-        assert!(noderef.try_get_raw().is_none());
-        assert!(noderef.try_get::<SsrNode>().is_none());
-    }
-
-    #[test]
-    fn set_noderef() {
-        let noderef = NodeRef::<SsrNode>::new();
-        let node = SsrNode::element::<html::div>();
-        noderef.set(node.clone());
-        assert_eq!(noderef.try_get_raw(), Some(node.clone()));
-        assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
-    }
-
-    #[test]
-    fn cast_noderef() {
-        let noderef = NodeRef::<SsrNode>::new();
-        let node = SsrNode::element::<html::div>();
-        noderef.set(node.clone());
-        assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
-        assert!(noderef.try_get::<DomNode>().is_none());
-    }
-
-    #[test]
-    fn noderef_with_ssrnode() {
-        create_scope_immediate(|cx| {
-            let noderef = create_node_ref(cx);
-            let _: View<SsrNode> = view! { cx, div(ref=noderef) };
-            assert!(noderef.try_get::<SsrNode>().is_some());
-        });
-    }
 }

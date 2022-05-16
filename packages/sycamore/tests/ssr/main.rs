@@ -1,3 +1,5 @@
+mod noderef;
+
 use std::cell::Cell;
 
 use sycamore::prelude::*;

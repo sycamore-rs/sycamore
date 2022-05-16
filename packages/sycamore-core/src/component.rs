@@ -1,7 +1,8 @@
 //! Utilities for components and component properties.
 
+use sycamore_reactive::*;
+
 use crate::generic_node::GenericNode;
-use crate::reactive::*;
 use crate::view::View;
 
 /// Runs the given closure inside a new component scope. In other words, this does the following:
@@ -12,7 +13,7 @@ use crate::view::View;
 pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
     if G::USE_HYDRATION_CONTEXT {
         #[cfg(feature = "hydrate")]
-        return crate::utils::hydrate::hydrate_component(|| untrack(f));
+        return crate::hydrate::hydrate_component(|| untrack(f));
         #[cfg(not(feature = "hydrate"))]
         return untrack(f);
     } else {

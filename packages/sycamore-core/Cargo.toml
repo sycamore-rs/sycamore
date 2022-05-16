@@ -14,5 +14,9 @@ version = "0.8.0-beta.5"
 ahash = "0.7.6"
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.5" }
 
+[dev-dependencies]
+sycamore = { path = "../sycamore" }
+
 [features]
+default = []
 hydrate = []
