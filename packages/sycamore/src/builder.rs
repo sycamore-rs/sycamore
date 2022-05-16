@@ -59,17 +59,16 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a
 }
 
 /// Construct a new [`ElementBuilder`] from a tag name.
-/// Generally, it is preferable to use [`h`] instead unless using custom elements.
 ///
 /// # Example
 /// ```
 /// # use sycamore::builder::prelude::*;
 /// # use sycamore::prelude::*;
 /// # fn _test1<G: GenericNode>(cx: Scope) -> View<G> {
-/// tag("a")
+/// tag("a")      // Not recommended. Use `a()` instead.
 /// # .view(cx) }
 /// # fn _test2<G: GenericNode>(cx: Scope) -> View<G> {
-/// tag("button")
+/// tag("button") // Not recommended. Use `button()` instead.
 /// # .view(cx) }
 /// # fn _test3<G: GenericNode>(cx: Scope) -> View<G> {
 /// tag("my-custom-element")

@@ -56,7 +56,7 @@ pub mod utils;
 /* Re-export modules from sycamore_core */
 pub use sycamore_core::{component, noderef, view};
 
-/// Re-export for `sycamore-reactive` crate.
+/// Re-export of the `sycamore-reactive` crate.
 ///
 /// Reactive primitives for Sycamore.
 pub mod reactive {
