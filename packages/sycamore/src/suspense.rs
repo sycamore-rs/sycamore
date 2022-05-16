@@ -161,7 +161,7 @@ pub fn use_transition(cx: Scope<'_>) -> &TransitionHandle<'_> {
     create_ref(cx, TransitionHandle { cx, is_pending })
 }
 
-#[cfg(all(test, feature = "ssr"))]
+#[cfg(all(test, feature = "ssr", not(miri)))]
 mod tests {
     use sycamore_futures::provide_executor_scope;
 

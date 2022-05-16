@@ -1,4 +1,4 @@
-use sycamore::html;
+use sycamore::web::html;
 use sycamore::prelude::*;
 
 #[test]

@@ -2,9 +2,8 @@
 
 #![allow(clippy::redundant_clone)] // Borrow checking error
 
-use sycamore::generic_node::DomNode;
-use sycamore::html;
 use sycamore::utils::render::{append_nodes, insert, reconcile_fragments};
+use sycamore::web::{html, DomNode};
 use wasm_bindgen_test::*;
 
 use super::*;
