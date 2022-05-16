@@ -36,7 +36,7 @@ web-sys = { version = "0.3.57", features = [
 ] }
 
 [dev-dependencies]
-sycamore = { path = "../sycamore" }
+sycamore = { path = "../sycamore", features = ["ssr"] }
 
 [features]
 hydrate = ["sycamore-core/hydrate"]

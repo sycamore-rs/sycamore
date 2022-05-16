@@ -473,10 +473,8 @@ pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String
 
 #[cfg(test)]
 mod tests {
-    use sycamore::html;
     use sycamore::prelude::*;
-
-    use super::*;
+    use sycamore::{html, render_to_string};
 
     #[test]
     fn render_hello_world() {
