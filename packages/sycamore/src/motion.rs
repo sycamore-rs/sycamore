@@ -22,7 +22,7 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
     let stop: &dyn Fn();
 
     // Only run on wasm32 architecture.
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(all(target_arch = "wasm32", feature = "web"))]
     {
         use wasm_bindgen::prelude::*;
         use wasm_bindgen::JsCast;
@@ -66,7 +66,7 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
         });
         stop = create_ref(cx, || running.set(false));
     }
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(all(target_arch = "wasm32", feature = "web")))]
     {
         start = create_ref(cx, || running.set(true));
         stop = create_ref(cx, || running.set(false));

@@ -47,10 +47,10 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         br
         Counter {}
 
-        sycamore::html::NoHydrate {
+        sycamore::web::NoHydrate {
             p { "This paragraph is not hydrated!" }
         }
-        sycamore::html::NoSsr {
+        sycamore::web::NoSsr {
             p { "This paragraph is only rendered on the client side" }
         }
     }
