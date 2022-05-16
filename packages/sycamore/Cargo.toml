@@ -15,7 +15,7 @@ ahash = "0.7.6"
 futures = { version = "0.3.21", optional = true }
 html-escape = { version = "0.2.9", optional = true }
 indexmap = { version = "1.8.0", features = ["std"] }
-js-sys = "0.3.56"
+js-sys = { version = "0.3.56", optional = true }
 once_cell = { version = "1.10.0", optional = true }
 paste = "1.0.6"
 sycamore-core = { path = "../sycamore-core", version = "0.8.0-beta.5" }
@@ -23,7 +23,7 @@ sycamore-futures = { path = "../sycamore-futures", version = "0.8.0-beta.5", opt
 sycamore-macro = { path = "../sycamore-macro", version = "0.8.0-beta.5" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.5" }
 sycamore-web = { path = "../sycamore-web", version = "0.8.0-beta.5", optional = true }
-wasm-bindgen = "0.2.79"
+wasm-bindgen = { version = "0.2.79", optional = true }
 wasm-bindgen-futures = { version = "0.4.29", optional = true }
 
 [dependencies.web-sys]
@@ -44,6 +44,7 @@ features = [
     "Window",
 ]
 version = "0.3.56"
+optional = true
 
 [dev-dependencies]
 criterion = "0.3.5"
@@ -52,9 +53,9 @@ tokio = { version = "1.17.0", features = ["macros", "rt"] }
 wasm-bindgen-test = "0.3.29"
 
 [features]
-default = ["dom", "wasm-bindgen-interning"]
-dom = ["web"]
+default = ["web", "wasm-bindgen-interning"]
 hydrate = [
+    "web",
     "sycamore-macro/hydrate",
     "sycamore-core/hydrate",
     "sycamore-web/hydrate",
@@ -70,7 +71,7 @@ ssr = [
 suspense = ["futures", "wasm-bindgen-futures", "sycamore-futures"]
 serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
-web = ["sycamore-web"]
+web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]
 
 [[bench]]
 harness = false

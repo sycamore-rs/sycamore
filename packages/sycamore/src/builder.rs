@@ -7,14 +7,14 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use js_sys::Reflect;
-
 use crate::component::component_scope;
-use crate::generic_node::{GenericNode, Html};
+use crate::generic_node::GenericNode;
 use crate::noderef::NodeRef;
 use crate::reactive::*;
 use crate::utils::render;
 use crate::view::View;
+#[cfg(feature = "web")]
+use crate::web::Html;
 
 /// The prelude for the builder API. This is independent from the _sycamore prelude_, aka.
 /// [`sycamore::prelude`].
@@ -28,7 +28,8 @@ use crate::view::View;
 /// ```
 pub mod prelude {
     pub use super::{component, dyn_t, fragment, t, tag};
-    pub use crate::html::*;
+    #[cfg(feature = "web")]
+    pub use crate::web::html::*;
 }
 
 /// A factory for building [`View`]s.
@@ -376,7 +377,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         use std::any::{Any, TypeId};
 
         #[cfg(feature = "ssr")]
-        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::SsrNode>() {
+        if TypeId::of::<G>() == TypeId::of::<crate::web::SsrNode>() {
             // If Server Side Rendering, insert beginning tag for hydration purposes.
             el.append_child(&G::marker_with_text("#"));
             // Create end marker. This is needed to make sure that the node is inserted into the
@@ -395,10 +396,10 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             return;
         }
         #[cfg(feature = "hydrate")]
-        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
+        if TypeId::of::<G>() == TypeId::of::<crate::web::HydrateNode>() {
             use crate::utils::hydrate::web::*;
             // Get start and end markers.
-            let el_hn = <dyn Any>::downcast_ref::<crate::generic_node::HydrateNode>(el).unwrap();
+            let el_hn = <dyn Any>::downcast_ref::<crate::web::HydrateNode>(el).unwrap();
             let initial = get_next_marker(&el_hn.inner_element());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
             let initial = ::std::mem::ManuallyDrop::new(initial);
@@ -432,7 +433,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         use std::any::{Any, TypeId};
 
         #[cfg(feature = "ssr")]
-        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::SsrNode>() {
+        if TypeId::of::<G>() == TypeId::of::<crate::web::SsrNode>() {
             // If Server Side Rendering, insert beginning tag for hydration purposes.
             el.append_child(&G::marker_with_text("#"));
             // Create end marker. This is needed to make sure that the node is inserted into the
@@ -451,10 +452,10 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             return;
         }
         #[cfg(feature = "hydrate")]
-        if TypeId::of::<G>() == TypeId::of::<crate::generic_node::HydrateNode>() {
+        if TypeId::of::<G>() == TypeId::of::<crate::web::HydrateNode>() {
             use crate::utils::hydrate::web::*;
             // Get start and end markers.
-            let el_hn = <dyn Any>::downcast_ref::<crate::generic_node::HydrateNode>(el).unwrap();
+            let el_hn = <dyn Any>::downcast_ref::<crate::web::HydrateNode>(el).unwrap();
             let initial = get_next_marker(&el_hn.inner_element());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
             let initial = ::std::mem::ManuallyDrop::new(initial);
@@ -616,6 +617,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
 }
 
 /// HTML-specific builder methods.
+#[cfg(feature = "web")]
 impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// Binds a [`Signal`] to the `value` property of the node.
     ///
@@ -645,7 +647,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
                 cx,
                 "input",
                 Box::new(move |e: web_sys::Event| {
-                    let val = Reflect::get(
+                    let val = js_sys::Reflect::get(
                         &e.target().expect("missing target on input event"),
                         &"value".into(),
                     )
@@ -686,7 +688,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
                 cx,
                 "change",
                 Box::new(move |e: web_sys::Event| {
-                    let val = Reflect::get(
+                    let val = js_sys::Reflect::get(
                         &e.target().expect("missing target on change event"),
                         &"checked".into(),
                     )
@@ -718,7 +720,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
 /// ```
 pub fn component<G>(f: impl FnOnce() -> View<G>) -> View<G>
 where
-    G: GenericNode + Html,
+    G: GenericNode,
 {
     component_scope(f)
 }

@@ -82,7 +82,7 @@ impl Codegen {
 
         let quote_tag = match tag {
             ElementTag::Builtin(id) => quote! {
-                let __el = ::sycamore::generic_node::GenericNode::element::<::sycamore::html::#id>();
+                let __el = ::sycamore::generic_node::GenericNode::element::<::sycamore::web::html::#id>();
             },
             ElementTag::Custom(tag_s) => quote! {
                 let __el = ::sycamore::generic_node::GenericNode::element_from_tag(#tag_s);
@@ -151,7 +151,7 @@ impl Codegen {
                             codegen_ssr_markers.then(|| quote! {
                                 let __comp = #comp;
                                 let __initial = #initial;
-                                if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::generic_node::SsrNode>() {
+                                if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::web::SsrNode>() {
                                     #ssr_markers
                                     ::sycamore::utils::render::insert(#cx, &__el, __comp, __initial, Some(&__end_marker), #multi);
                                     #marker_or_none
@@ -183,7 +183,7 @@ impl Codegen {
                             codegen_ssr_markers.then(|| quote! {
                                 let __view = #view_quoted;
                                 let __initial = #initial;
-                                if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::generic_node::SsrNode>() {
+                                if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::web::SsrNode>() {
                                     #ssr_markers
                                     ::sycamore::utils::render::insert(
                                         #cx, &__el, __view, __initial, Some(&__end_marker), #multi

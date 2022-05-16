@@ -7,9 +7,6 @@
 //!
 //! ## Feature Flags
 //!
-//! - `dom` (_default_) - Enables rendering templates to DOM nodes. Only useful on
-//!   `wasm32-unknown-unknown` target.
-//!
 //! - `hydrate` - Enables client-side hydration support.
 //!
 //! - `suspense` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
@@ -45,16 +42,17 @@ pub mod easing;
 pub mod flow;
 #[cfg(feature = "suspense")]
 pub mod futures;
-pub mod generic_node;
-pub mod html;
 pub mod motion;
-pub mod portal;
 #[cfg(feature = "suspense")]
 pub mod suspense;
 pub mod utils;
+#[cfg(feature = "web")]
+pub mod web;
 
-/* Re-export modules from sycamore_core */
-pub use sycamore_core::{component, noderef, view};
+/* Re-export modules from sycamore-core */
+pub use sycamore_core::{component, generic_node, noderef, view};
+/* Re-export of the sycamore-macro crate */
+pub use sycamore_macro::*;
 
 /// Re-export of the `sycamore-reactive` crate.
 ///
@@ -64,14 +62,13 @@ pub mod reactive {
 }
 
 #[cfg(feature = "ssr")]
-pub use generic_node::render_to_string;
+pub use web::render_to_string;
 #[cfg(all(feature = "ssr", feature = "suspense"))]
-pub use generic_node::render_to_string_await_suspense;
-#[cfg(all(feature = "dom", feature = "hydrate"))]
-pub use generic_node::{hydrate, hydrate_get_scope, hydrate_to};
-#[cfg(feature = "dom")]
-pub use generic_node::{render, render_get_scope, render_to};
-pub use sycamore_macro::*;
+pub use web::render_to_string_await_suspense;
+#[cfg(all(feature = "web", feature = "hydrate"))]
+pub use web::{hydrate, hydrate_get_scope, hydrate_to};
+#[cfg(feature = "web")]
+pub use web::{render, render_get_scope, render_to};
 
 /// The sycamore prelude.
 ///
@@ -86,23 +83,27 @@ pub mod prelude {
 
     pub use crate::component::Children;
     pub use crate::flow::*;
-    #[cfg(feature = "dom")]
-    pub use crate::generic_node::DomNode;
-    #[cfg(all(feature = "dom", feature = "hydrate"))]
-    pub use crate::generic_node::HydrateNode;
-    #[cfg(feature = "ssr")]
-    pub use crate::generic_node::SsrNode;
-    pub use crate::generic_node::{GenericNode, Html};
-    pub use crate::html::on_mount;
+    pub use crate::generic_node::GenericNode;
     pub use crate::noderef::{create_node_ref, NodeRef};
     pub use crate::reactive::*;
     pub use crate::view::View;
+    #[cfg(feature = "web")]
+    pub use crate::web::on_mount;
+    #[cfg(all(feature = "web", feature = "hydrate"))]
+    pub use crate::web::HydrateNode;
+    #[cfg(feature = "ssr")]
+    pub use crate::web::SsrNode;
+    #[cfg(feature = "web")]
+    pub use crate::web::{DomNode, Html};
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.
 #[doc(hidden)]
 pub mod rt {
+    #[cfg(feature = "web")]
     pub use js_sys::Reflect;
+    #[cfg(feature = "web")]
     pub use wasm_bindgen::{intern, JsCast, JsValue};
+    #[cfg(feature = "web")]
     pub use web_sys::Event;
 }
