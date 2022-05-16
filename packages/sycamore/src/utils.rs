@@ -4,12 +4,17 @@
 //! This API is considered implementation details and should not at any time be considered stable.
 //! The API can change without warning and without a semver compatible release.
 
+/// Utilities for hydration support.
+#[cfg(feature = "hydrate")]
+pub mod hydrate {
+    pub use sycamore_core::hydrate::*;
+    pub use sycamore_web::hydrate_web as web;
+}
+
+pub use sycamore_core::render;
+
 use crate::generic_node::GenericNode;
 use crate::prelude::*;
-
-#[cfg(feature = "hydrate")]
-pub mod hydrate;
-pub use sycamore_core::render;
 
 /// If `el` is a `HydrateNode`, use `get_next_marker` to get the initial node value.
 pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {

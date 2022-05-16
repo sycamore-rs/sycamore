@@ -9,6 +9,7 @@
 
 pub mod component;
 pub mod generic_node;
+#[cfg(feature = "hydrate")]
 pub mod hydrate;
 pub mod noderef;
 pub mod render;

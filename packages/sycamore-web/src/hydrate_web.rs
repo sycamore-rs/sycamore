@@ -1,11 +1,11 @@
 //! Utilities for client-side hydration in the browser.
 
+use sycamore_core::hydrate::{get_next_id, hydration_completed};
+use sycamore_core::view::View;
 use wasm_bindgen::JsCast;
 use web_sys::{window, Comment, Element, Node};
 
-use super::*;
-use crate::generic_node::HydrateNode;
-use crate::view::View;
+use crate::hydrate_node::HydrateNode;
 
 const COMMENT_NODE_TYPE: u16 = 8;
 

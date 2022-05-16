@@ -1,10 +1,41 @@
-//! Web utilities for the Sycamore UI framework.utilities
+//! Web renderer for the Sycamore UI framework.
+//!
+//! Sycamore on its own is a backend-agnostic UI framework. This crate provides web support to
+//! Sycamore. With this crate, it is possible to render Sycamore views to the DOM (using
+//! [`DomNode`]), "hydrate" existing DOM nodes (using [`HydrateNode`]), or render a static string
+//! (using [`SsrNode`]).
 //!
 //! This crate is re-exported in the `sycamore` crate. It is recommended to use that instead of
 //! using this crate directly.
 
+pub mod dom_node;
+#[cfg(feature = "hydrate")]
+pub mod hydrate_node;
+#[cfg(feature = "hydrate")]
+pub mod hydrate_web;
+#[cfg(feature = "ssr")]
+pub mod ssr_node;
+
+pub use dom_node::*;
+#[cfg(feature = "hydrate")]
+pub use hydrate_node::*;
+#[cfg(feature = "hydrate")]
+pub use hydrate_web::*;
+#[cfg(feature = "ssr")]
+pub use ssr_node::*;
+use sycamore_core::generic_node::GenericNode;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
+use web_sys::Event;
+
+/// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
+pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
+    /// A boolean indicating whether this node is rendered in a browser context.
+    ///
+    /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
+    /// in the browser. It only means that it does not create DOM nodes.
+    const IS_BROWSER: bool;
+}
 
 /// Queue up a callback to be executed when the component is mounted.
 ///

@@ -2,6 +2,7 @@
 //!
 //! _Documentation sources: <https://developer.mozilla.org/en-US/>_
 
+pub use sycamore_web::on_mount;
 use wasm_bindgen::prelude::*;
 
 use crate::builder::ElementBuilder;
@@ -9,7 +10,6 @@ use crate::generic_node::SycamoreElement;
 use crate::prelude::*;
 #[cfg(feature = "hydrate")]
 use crate::utils::hydrate::{hydration_completed, with_no_hydration_context};
-
 /// MBE for generating elements.
 macro_rules! define_elements {
     (

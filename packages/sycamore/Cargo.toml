@@ -54,8 +54,19 @@ wasm-bindgen-test = "0.3.29"
 [features]
 default = ["dom", "wasm-bindgen-interning"]
 dom = ["web"]
-hydrate = ["sycamore-macro/hydrate", "sycamore-core/hydrate"]
-ssr = ["web", "html-escape", "once_cell", "hydrate", "sycamore-macro/ssr"]
+hydrate = [
+    "sycamore-macro/hydrate",
+    "sycamore-core/hydrate",
+    "sycamore-web/hydrate",
+]
+ssr = [
+    "web",
+    "html-escape",
+    "once_cell",
+    "hydrate",
+    "sycamore-macro/ssr",
+    "sycamore-web/ssr",
+]
 suspense = ["futures", "wasm-bindgen-futures", "sycamore-futures"]
 serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]

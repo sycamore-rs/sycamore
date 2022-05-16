@@ -1,21 +1,19 @@
 //! Rendering backend for the DOM.
 
-#![allow(clippy::unused_unit)] // TODO: wasm-bindgen bug
-
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
+use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::render::insert;
+use sycamore_core::view::View;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Document, Element, Node, Text};
 
-use super::SycamoreElement;
-use crate::generic_node::{GenericNode, Html};
-use crate::reactive::*;
-use crate::utils::render::insert;
-use crate::view::View;
+use crate::Html;
 
 #[wasm_bindgen]
 extern "C" {

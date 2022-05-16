@@ -3,18 +3,18 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
+use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::hydrate::{hydration_completed, with_hydration_context};
+use sycamore_core::render::insert;
+use sycamore_core::view::View;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::Node;
 
-use super::dom_node::NodeId;
-use super::SycamoreElement;
-use crate::generic_node::{DomNode, GenericNode, Html};
-use crate::reactive::*;
-use crate::utils::hydrate::web::get_next_element;
-use crate::utils::hydrate::{hydration_completed, with_hydration_context};
-use crate::utils::render::insert;
-use crate::view::View;
+use crate::dom_node::{DomNode, NodeId};
+use crate::hydrate_web::get_next_element;
+use crate::Html;
 
 /// Rendering backend for the DOM with hydration support.
 ///
