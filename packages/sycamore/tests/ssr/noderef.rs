@@ -1,5 +1,5 @@
-use sycamore::web::html;
 use sycamore::prelude::*;
+use sycamore::web::html;
 
 #[test]
 fn empty_noderef() {
