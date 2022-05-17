@@ -6,10 +6,8 @@ pub mod portal;
 /* Re-export sycamore-web */
 pub use sycamore_web::*;
 
-#[cfg(all(feature = "ssr", feature = "suspense"))]
+#[allow(unused_imports)]
 use crate::prelude::*;
-#[cfg(feature = "hydrate")]
-use crate::utils::hydrate::{hydration_completed, with_no_hydration_context};
 
 /// Render a [`View`] into a static [`String`]. Useful
 /// for rendering to a string on the server side.
@@ -80,7 +78,7 @@ pub struct NoHydrateProps<'a, G: GenericNode> {
 #[cfg(feature = "hydrate")]
 #[component]
 pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
-    use crate::utils::render;
+    use crate::utils::{hydrate, render};
 
     let node_ref = create_node_ref(cx);
     let v = view! { cx,
@@ -88,12 +86,12 @@ pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> Vi
         // the node won't get inserted into the DOM.
         div(ref=node_ref) {}
     };
-    if G::CLIENT_SIDE_HYDRATION && !hydration_completed() {
+    if G::CLIENT_SIDE_HYDRATION && !hydrate::hydration_completed() {
         // We don't want to hydrate the children, so we just do nothing.
     } else if G::USE_HYDRATION_CONTEXT {
         // If we have a hydration context, remove it in this scope so that hydration markers are not
         // generated.
-        let nodes = with_no_hydration_context(|| props.children.call(cx));
+        let nodes = hydrate::with_no_hydration_context(|| props.children.call(cx));
         render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
     } else {
         // Just continue rendering as normal.
@@ -116,12 +114,14 @@ pub struct NoSsrProps<'a, G: GenericNode> {
 #[cfg(feature = "hydrate")]
 #[component]
 pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
+    use crate::utils::hydrate;
+
     let node = if !G::IS_BROWSER {
         // We don't want to render the children, so we just do nothing.
         view! { cx, }
     } else if G::USE_HYDRATION_CONTEXT {
         // Since the nodes were not rendered on the server, there is nothing to hydrate.
-        with_no_hydration_context(|| props.children.call(cx))
+        hydrate::with_no_hydration_context(|| props.children.call(cx))
     } else {
         // Just continue rendering as normal.
         props.children.call(cx)
