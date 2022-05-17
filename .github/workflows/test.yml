@@ -48,15 +48,19 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run tests
+      - name: Run tests with default features
+        # Only run tests for sycamore to prevent stray feature flags from other tests.
+        run: cd packages/sycamore && cargo test
+
+      - name: Run tests with all features
         if: matrix.rust == '1.58.0'
         env:
           RUN_UI_TESTS: true
         run: cargo test --all-features
 
-      - name: Run tests (excluding UI)
-        run: cargo test --all-features
+      - name: Run tests with all features excluding UI
         if: matrix.rust != '1.58.0'
+        run: cargo test --all-features
 
       - name: Run headless browser tests
         run: cd packages/sycamore && wasm-pack test --firefox --chrome --headless --all-features
@@ -123,10 +127,6 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run tests
-        # Note that we don't have --all-features for packages/sycamore because of https://github.com/rust-lang/miri/issues/1038
+      - name: Run tests with all features
         run: |
-          cd packages/sycamore
-          cargo miri test
-          cd ../sycamore-reactive
-          cargo miri test
+          cargo miri test --all-features

@@ -1,4 +1,5 @@
 #[test]
+#[cfg_attr(miri, ignore)]
 fn view_ui() {
     let t = trybuild::TestCases::new();
     t.pass("tests/view/*-pass.rs");
@@ -8,6 +9,7 @@ fn view_ui() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn component_ui() {
     let t = trybuild::TestCases::new();
     t.pass("tests/component/*-pass.rs");

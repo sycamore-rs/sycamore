@@ -465,7 +465,8 @@ pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String
 #[cfg(test)]
 mod tests {
     use sycamore::prelude::*;
-    use sycamore::{html, render_to_string};
+    use sycamore::render_to_string;
+    use sycamore::web::html;
 
     #[test]
     fn render_hello_world() {
