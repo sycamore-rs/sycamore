@@ -165,9 +165,9 @@ use sycamore::prelude::*;
 Elements can easily be created using the utility `h` function.
 
 ```rust
-h(a)
-h(button)
-h(div)
+a()
+button()
+div()
 // etc...
 ```
 
@@ -192,10 +192,10 @@ Nodes can be nested under an element using a combination of `.c(...)` for child 
 `.t(...)` for child text nodes.
 
 ```rust
-h(div).c(
-    h(p)
-        .c(h(span).t("Hello "))
-        .c(h(strong).t("World!"))
+div().c(
+    p()
+        .c(span().t("Hello "))
+        .c(strong().t("World!"))
 )
 ```
 
@@ -207,7 +207,7 @@ respectively.
 ```rust
 let my_number = 123;
 
-h(p)
+p()
     .t("This is my number: ")
     .dyn_t(|| my_number.to_string())
 ```
@@ -217,14 +217,14 @@ h(p)
 Unsurprisingly, attributes can also be set using the builder pattern.
 
 ```rust
-h(p).attr("class", "my-class").attr("id", "my-paragraph").attr("aria-label", "My paragraph")
+p().attr("class", "my-class").attr("id", "my-paragraph").attr("aria-label", "My paragraph")
 ```
 
 For convenience, the methods `.class(...)` and `.id(...)` are provided for setting the `class` and
 `id` attributes directly. This means that we can rewrite our previous example as:
 
 ```rust
-h(p).class("my-class").id("my-paragraph").attr("aria-label", "My paragraph")
+p().class("my-class").id("my-paragraph").attr("aria-label", "My paragraph")
 ```
 
 #### `dangerously_set_inner_html`
@@ -237,7 +237,7 @@ supported by the builder API.
 Events are attached using `.on(...)`.
 
 ```rust
-h(button).on("click", |_| { /* do something */ }).t("Click me")
+button().on("click", |_| { /* do something */ }).t("Click me")
 ```
 
 ### Fragments
@@ -246,7 +246,7 @@ Construct fragments using `fragment(...)`.
 
 ```rust
 fragment([
-    h(p).t("First child").view(cx),
-    h(p).t("Second child").view(cx),
+    p().t("First child").view(cx),
+    p().t("Second child").view(cx),
 ])
 ```
