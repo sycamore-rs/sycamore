@@ -89,7 +89,7 @@ fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
                 // Push the effect onto the effect stack so that it is visible by signals.
                 effects
                     .borrow_mut()
-                    .push(unsafe { std::mem::transmute(&mut tmp_effect as *mut EffectState<'a>) });
+                    .push((&mut tmp_effect as *mut EffectState<'a>).cast::<EffectState<'static>>());
                 // Now we can call the user-provided function.
                 f();
                 // Pop the effect from the effect stack.

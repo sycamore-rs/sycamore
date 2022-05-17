@@ -329,14 +329,10 @@ impl GenericNode for DomNode {
         // preventing the handler from ever being accessed after its lifetime.
         let handler: Box<dyn FnMut(Self::EventType) + 'static> =
             unsafe { std::mem::transmute(boxed) };
-        let closure = Closure::wrap(handler);
+        let closure = create_ref(cx, Closure::wrap(handler));
         self.node
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
             .unwrap_throw();
-
-        on_cleanup(cx, move || {
-            drop(closure);
-        });
     }
 
     fn update_inner_text(&self, text: &str) {
