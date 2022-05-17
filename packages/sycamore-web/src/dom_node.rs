@@ -1,22 +1,19 @@
 //! Rendering backend for the DOM.
 
-#![allow(clippy::unused_unit)] // TODO: wasm-bindgen bug
-
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
+use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::render::insert;
+use sycamore_core::view::View;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Document, Element, Node, Text};
 
-use crate::generic_node::{GenericNode, Html};
-use crate::reactive::*;
-use crate::utils::render::insert;
-use crate::view::View;
-
-use super::SycamoreElement;
+use crate::Html;
 
 #[wasm_bindgen]
 extern "C" {
@@ -150,20 +147,19 @@ fn document() -> web_sys::Document {
 
 impl GenericNode for DomNode {
     type EventType = web_sys::Event;
+    type PropertyType = JsValue;
 
     fn element<T: SycamoreElement>() -> Self {
         let node = if let Some(ns) = T::NAME_SPACE {
             document()
                 .create_element_ns(Some(ns), intern(T::TAG_NAME))
                 .unwrap_throw()
-                .dyn_into()
-                .unwrap_throw()
+                .into()
         } else {
             document()
                 .create_element(intern(T::TAG_NAME))
                 .unwrap_throw()
-                .dyn_into()
-                .unwrap_throw()
+                .into()
         };
         DomNode {
             id: Default::default(),
@@ -172,11 +168,7 @@ impl GenericNode for DomNode {
     }
 
     fn element_from_tag(tag: &str) -> Self {
-        let node = document()
-            .create_element(intern(tag))
-            .unwrap_throw()
-            .dyn_into()
-            .unwrap_throw();
+        let node = document().create_element(intern(tag)).unwrap_throw().into();
         DomNode {
             id: Default::default(),
             node,

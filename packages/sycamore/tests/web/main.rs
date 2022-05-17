@@ -1,4 +1,4 @@
-#[cfg(all(feature = "hydrate", feature = "builder"))]
+#[cfg(all(feature = "hydrate"))]
 pub mod builder_hydrate;
 pub mod cleanup;
 #[cfg(feature = "hydrate")]
@@ -10,8 +10,8 @@ pub mod reconcile;
 pub mod render;
 pub mod svg;
 
-use sycamore::html;
 use sycamore::prelude::*;
+use sycamore::web::html;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
 use web_sys::{Document, Element, Event, HtmlElement, HtmlInputElement, Node, Window};

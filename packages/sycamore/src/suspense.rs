@@ -161,12 +161,12 @@ pub fn use_transition(cx: Scope<'_>) -> &TransitionHandle<'_> {
     create_ref(cx, TransitionHandle { cx, is_pending })
 }
 
-#[cfg(all(test, feature = "ssr"))]
+#[cfg(all(test, feature = "ssr", not(miri)))]
 mod tests {
     use sycamore_futures::provide_executor_scope;
 
     use super::*;
-    use crate::generic_node::render_to_string_await_suspense;
+    use crate::web::render_to_string_await_suspense;
 
     #[tokio::test]
     async fn suspense() {

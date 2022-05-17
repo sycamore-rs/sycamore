@@ -1,7 +1,8 @@
 use std::time::Duration;
 
+use sycamore::easing;
 use sycamore::motion::create_tweened_signal;
-use sycamore::{easing, prelude::*};
+use sycamore::prelude::*;
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {

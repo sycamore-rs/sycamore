@@ -1,4 +1,5 @@
 #[test]
+#[cfg_attr(miri, ignore)]
 fn ui() {
     let t = trybuild::TestCases::new();
     t.pass("tests/router/*-pass.rs");

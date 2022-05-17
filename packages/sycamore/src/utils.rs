@@ -4,21 +4,26 @@
 //! This API is considered implementation details and should not at any time be considered stable.
 //! The API can change without warning and without a semver compatible release.
 
-use crate::generic_node::GenericNode;
-use crate::prelude::View;
-
+/// Utilities for hydration support.
 #[cfg(feature = "hydrate")]
-pub mod hydrate;
-pub mod render;
+pub mod hydrate {
+    pub use sycamore_core::hydrate::*;
+    pub use sycamore_web::hydrate as web;
+}
+
+pub use sycamore_core::render;
+
+use crate::generic_node::GenericNode;
+use crate::prelude::*;
 
 /// If `el` is a `HydrateNode`, use `get_next_marker` to get the initial node value.
 pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
     #[cfg(feature = "hydrate")]
     {
-        use crate::generic_node::HydrateNode;
         use std::any::Any;
         use std::mem::ManuallyDrop;
         use std::ptr;
+
         if let Some(el) = <dyn Any>::downcast_ref::<HydrateNode>(_el) {
             let initial = hydrate::web::get_next_marker(&el.inner_element());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.

@@ -10,7 +10,7 @@ fn check(actual: &str, expect: Expect) {
 mod hello_world {
     use super::*;
     fn v<G: Html>(cx: Scope) -> View<G> {
-        h(p).t("Hello World!").view(cx)
+        p().t("Hello World!").view(cx)
     }
     #[test]
     fn ssr() {
@@ -35,7 +35,7 @@ mod hello_world {
 mod hydrate_recursive {
     use super::*;
     fn v<G: Html>(cx: Scope) -> View<G> {
-        h(div).c(h(p).t("Nested")).view(cx)
+        div().c(p().t("Nested")).view(cx)
     }
     #[test]
     fn ssr() {
@@ -60,7 +60,7 @@ mod hydrate_recursive {
 mod multiple_nodes_at_same_depth {
     use super::*;
     fn v<G: Html>(cx: Scope) -> View<G> {
-        h(div).c(h(p).t("First")).c(h(p).t("Second")).view(cx)
+        div().c(p().t("First")).c(p().t("Second")).view(cx)
     }
     #[test]
     fn ssr() {
@@ -87,7 +87,7 @@ mod multiple_nodes_at_same_depth {
 mod top_level_fragment {
     use super::*;
     fn v<G: Html>(cx: Scope) -> View<G> {
-        fragment([h(p).t("First").view(cx), h(p).t("Second").view(cx)])
+        fragment([p().t("First").view(cx), p().t("Second").view(cx)])
     }
     #[test]
     fn ssr() {
@@ -112,7 +112,7 @@ mod top_level_fragment {
 mod dynamic {
     use super::*;
     fn v<'a, G: Html>(cx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
-        h(p).dyn_t(|| state.get().to_string()).view(cx)
+        p().dyn_t(|| state.get().to_string()).view(cx)
     }
     #[test]
     fn ssr() {
@@ -168,7 +168,7 @@ mod dynamic {
 mod dynamic_with_siblings {
     use super::*;
     fn v<'a, G: Html>(cx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
-        h(p).t("Value: ")
+        p().t("Value: ")
             .dyn_t(|| state.get().to_string())
             .t("!")
             .view(cx)
@@ -218,7 +218,7 @@ mod dynamic_with_siblings {
 mod dynamic_template {
     use super::*;
     fn v<'a, G: Html>(cx: Scope<'a>, state: &'a ReadSignal<View<G>>) -> View<G> {
-        h(p).t("before")
+        p().t("before")
             .dyn_c(|| state.get().as_ref().clone())
             .t("after")
             .view(cx)

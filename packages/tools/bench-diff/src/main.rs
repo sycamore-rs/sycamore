@@ -1,8 +1,9 @@
 //! Tool for generating diff of js-framework-benchmark runs between two sycamore versions.
 
-use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::{env, fs};
+
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 struct Result {

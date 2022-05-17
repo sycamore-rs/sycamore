@@ -25,15 +25,15 @@ async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
     let id = "sycamore-builder-visits-counter";
     let visits = fetch_visits(id).await.unwrap_or_default();
 
-    h(p).t("Total Visits: ")
-        .c(h(span).dyn_t(move || visits.value.to_string()))
+    p().t("Total Visits: ")
+        .c(span().dyn_t(move || visits.value.to_string()))
         .view(cx)
 }
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    h(div)
-        .c(h(p).t("Page Visit Counter"))
+    div()
+        .c(p().t("Page Visit Counter"))
         .c(Suspense(
             cx,
             // Take advantage that structs that derive Prop have public builders even

@@ -1,6 +1,7 @@
 //! Hydration support for Sycamore.
-
-pub mod web;
+//!
+//! This is backend-agnostic. If you are looking specifically for hydrating the DOM, see the
+//! `sycamore-web` crate.
 
 use std::cell::RefCell;
 
@@ -28,10 +29,9 @@ where
 /// a nested context.
 ///
 /// Same as [`with_hydration_context`] but allows for async futures.
-#[cfg(feature = "suspense")]
 pub async fn with_hydration_context_async<F, R>(f: F) -> R
 where
-    F: futures::Future<Output = R>,
+    F: std::future::Future<Output = R>,
 {
     let mut prev = None;
     HYDRATION_CONTEXT.with(|context| {

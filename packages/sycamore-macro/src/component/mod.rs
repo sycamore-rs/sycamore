@@ -214,7 +214,8 @@ impl ToTokens for ComponentFunction {
             // again as an argument to the inner async function which has the user defined
             // destructured pattern which will work as expected.
             //
-            // Note: that the change to the signature is not semantically different to a would be caller.
+            // Note: that the change to the signature is not semantically different to a would be
+            // caller.
             let inputs = &sig.inputs;
             let AsyncCompInputs {
                 cx,

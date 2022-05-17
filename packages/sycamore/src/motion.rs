@@ -3,9 +3,6 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use js_sys::Date;
-use wasm_bindgen::{prelude::*, JsCast};
-
 use crate::reactive::*;
 
 /// Type returned by `create_raf` and `create_raf_loop`.
@@ -19,14 +16,18 @@ type RafState<'a> = (RcSignal<bool>, &'a dyn Fn(), &'a dyn Fn());
 /// third item is a function to stop the raf.
 ///
 /// The raf is not started by default. Call the `start` function to initiate the raf.
-pub fn create_raf<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) -> RafState<'a> {
+pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
     let running = create_ref(cx, create_rc_signal(false));
     let start: &dyn Fn();
     let stop: &dyn Fn();
 
-    if cfg!(target_arch = "wasm32") {
-        // Only run on wasm32 architecture.
-        let boxed: Box<dyn FnMut() + 'a> = Box::new(f);
+    // Only run on wasm32 architecture.
+    #[cfg(all(target_arch = "wasm32", feature = "web"))]
+    {
+        use wasm_bindgen::prelude::*;
+        use wasm_bindgen::JsCast;
+
+        let boxed: Box<dyn FnMut() + 'a> = Box::new(_f);
         // SAFETY: We are only transmuting the lifetime from 'a to 'static which is safe because
         // the closure will not be accessed once the enclosing Scope is disposed.
         let extended: Box<dyn FnMut() + 'static> = unsafe { std::mem::transmute(boxed) };
@@ -64,7 +65,9 @@ pub fn create_raf<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) -> RafState<'a> {
             }
         });
         stop = create_ref(cx, || running.set(false));
-    } else {
+    }
+    #[cfg(not(all(target_arch = "wasm32", feature = "web")))]
+    {
         start = create_ref(cx, || running.set(true));
         stop = create_ref(cx, || running.set(false));
     }
@@ -195,40 +198,47 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
     ///
     /// To immediately set the value without interpolating the value, use `signal().set(...)`
     /// instead.
-    pub fn set(&self, new_value: T) {
-        let start = self.signal().get_untracked().as_ref().clone();
-        let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
+    ///
+    /// If not running on `wasm32-unknown-unknown`, does nothing.
+    pub fn set(&self, _new_value: T) {
+        #[cfg(all(target_arch = "wasm32", feature = "web"))]
+        {
+            use js_sys::Date;
 
-        let start_time = Date::now();
-        let signal = self.0.borrow().value.clone();
-        let is_tweening = self.0.borrow().is_tweening.clone();
-        let transition_duration_ms = self.0.borrow().transition_duration_ms;
+            let start = self.signal().get_untracked().as_ref().clone();
+            let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
 
-        // If previous raf is still running, call stop() to cancel it.
-        if let Some((running, _, stop)) = &self.0.borrow_mut().raf_state {
-            if *running.get_untracked() {
-                stop();
+            let start_time = Date::now();
+            let signal = self.0.borrow().value.clone();
+            let is_tweening = self.0.borrow().is_tweening.clone();
+            let transition_duration_ms = self.0.borrow().transition_duration_ms;
+
+            // If previous raf is still running, call stop() to cancel it.
+            if let Some((running, _, stop)) = &self.0.borrow_mut().raf_state {
+                if *running.get_untracked() {
+                    stop();
+                }
             }
+
+            let (running, start, stop) = create_raf_loop(self.0.borrow().cx, move || {
+                let now = Date::now();
+
+                let since_start = now - start_time;
+                let scalar = since_start as f32 / transition_duration_ms;
+
+                if now < start_time + transition_duration_ms as f64 {
+                    signal.set(start.lerp(&_new_value, easing_fn(scalar)));
+                    true
+                } else {
+                    signal.set(_new_value.clone());
+                    is_tweening.set(false);
+                    false
+                }
+            });
+            start();
+            self.0.borrow().is_tweening.set(true);
+            self.0.borrow_mut().raf_state = Some((running, start, stop));
         }
-
-        let (running, start, stop) = create_raf_loop(self.0.borrow().cx, move || {
-            let now = Date::now();
-
-            let since_start = now - start_time;
-            let scalar = since_start as f32 / transition_duration_ms;
-
-            if now < start_time + transition_duration_ms as f64 {
-                signal.set(start.lerp(&new_value, easing_fn(scalar)));
-                true
-            } else {
-                signal.set(new_value.clone());
-                is_tweening.set(false);
-                false
-            }
-        });
-        start();
-        self.0.borrow().is_tweening.set(true);
-        self.0.borrow_mut().raf_state = Some((running, start, stop));
     }
 
     /// Alias for `signal().get()`.

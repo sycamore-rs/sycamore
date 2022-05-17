@@ -9,14 +9,13 @@ use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
 use once_cell::sync::Lazy;
+use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::hydrate::{get_next_id, with_hydration_context};
+use sycamore_core::view::View;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 
-use crate::generic_node::{GenericNode, Html};
-use crate::reactive::*;
-use crate::utils::hydrate::{get_next_id, with_hydration_context};
-use crate::view::View;
-
-use super::SycamoreElement;
+use crate::Html;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
@@ -81,19 +80,10 @@ impl SsrNode {
 
     /// Get an [`Element`], or `panic!` if wrong type.
     #[track_caller]
-    pub fn unwrap_element(&self) -> &RefCell<Element> {
+    fn unwrap_element(&self) -> &RefCell<Element> {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => e,
             _ => panic!("node is not an element"),
-        }
-    }
-
-    /// Get a [`Text`], or `panic!` if wrong type.
-    #[track_caller]
-    pub fn unwrap_text(&self) -> &RefCell<Text> {
-        match &self.0.ty.as_ref() {
-            SsrNodeType::Text(e) => e,
-            _ => panic!("node is not a text node"),
         }
     }
 
@@ -130,6 +120,8 @@ impl GenericNode for SsrNode {
     /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
     /// anyways, it's okay to do this.
     type EventType = web_sys::Event;
+    type PropertyType = JsValue;
+
     const USE_HYDRATION_CONTEXT: bool = true;
 
     fn element<T: SycamoreElement>() -> Self {
@@ -361,7 +353,10 @@ impl Html for SsrNode {
     const IS_BROWSER: bool = false;
 }
 
-trait WriteToString {
+/// Write the [`SsrNode`] to a string buffer.
+/// Implementation details.
+#[doc(hidden)]
+pub trait WriteToString {
     fn write_to_string(&self, s: &mut String);
 }
 
@@ -378,7 +373,7 @@ impl WriteToString for SsrNode {
 
 /// A SSR element.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Element {
+struct Element {
     name: Cow<'static, str>,
     attributes: IndexMap<String, String>,
     children: Vec<SsrNode>,
@@ -417,7 +412,7 @@ impl WriteToString for Element {
 
 /// A SSR comment node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Comment(String);
+struct Comment(String);
 
 impl WriteToString for Comment {
     fn write_to_string(&self, s: &mut String) {
@@ -431,7 +426,7 @@ impl WriteToString for Comment {
 
 /// A SSR text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Text(String);
+struct Text(String);
 
 impl WriteToString for Text {
     fn write_to_string(&self, s: &mut String) {
@@ -441,7 +436,7 @@ impl WriteToString for Text {
 
 /// Un-escaped text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct RawText(String);
+struct RawText(String);
 
 impl WriteToString for RawText {
     fn write_to_string(&self, s: &mut String) {
@@ -467,59 +462,11 @@ pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String
     ret
 }
 
-/// Render a [`View`] into a static [`String`]. Useful
-/// for rendering to a string on the server side.
-///
-/// Waits for suspense to be loaded before returning.
-///
-/// _This API requires the following crate features to be activated: `suspense`, `ssr`_
-#[cfg(feature = "suspense")]
-pub async fn render_to_string_await_suspense(
-    view: impl FnOnce(Scope<'_>) -> View<SsrNode> + 'static,
-) -> String {
-    use futures::channel::oneshot;
-    use sycamore_futures::spawn_local_scoped;
-
-    use crate::utils::hydrate::with_hydration_context_async;
-
-    let mut ret = String::new();
-    let v = Rc::new(RefCell::new(None));
-    let (sender, receiver) = oneshot::channel();
-    let disposer = create_scope({
-        let v = Rc::clone(&v);
-        move |cx| {
-            spawn_local_scoped(cx, async move {
-                *v.borrow_mut() = Some(
-                    with_hydration_context_async(async {
-                        crate::suspense::await_suspense(cx, async { view(cx) }).await
-                    })
-                    .await,
-                );
-                sender
-                    .send(())
-                    .expect("receiving end should not be dropped");
-            });
-        }
-    });
-    receiver.await.expect("rendering should complete");
-    let v = v.borrow().clone().unwrap();
-    for node in v.flatten() {
-        node.write_to_string(&mut ret);
-    }
-
-    // SAFETY: we are done with the scope now.
-    unsafe {
-        disposer.dispose();
-    }
-
-    ret
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::html;
-    use crate::prelude::*;
+    use sycamore::prelude::*;
+    use sycamore::render_to_string;
+    use sycamore::web::html;
 
     #[test]
     fn render_hello_world() {

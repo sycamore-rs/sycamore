@@ -1,3 +1,5 @@
+mod noderef;
+
 use std::cell::Cell;
 
 use sycamore::prelude::*;
@@ -139,7 +141,7 @@ fn ssr_no_hydrate_sub_tree() {
         view! { cx,
             div {
                 p { "Hydrated" }
-                sycamore::html::NoHydrate {
+                sycamore::web::NoHydrate {
                     p { "But not this" }
                 }
             }
@@ -157,7 +159,7 @@ fn no_ssr_sub_tree_should_not_be_emitted_in_ssr() {
         view! { cx,
             div {
                 p { "Rendered" }
-                sycamore::html::NoSsr {
+                sycamore::web::NoSsr {
                     p { "But not this" }
                 }
             }

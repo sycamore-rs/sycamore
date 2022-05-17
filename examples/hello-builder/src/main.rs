@@ -9,16 +9,16 @@ use sycamore::prelude::*;
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
     let name = create_signal(cx, String::new());
-    h(div)
-        .c(h(h1)
+    div()
+        .c(h1()
             .t("Hello ")
             .dyn_if(
                 || !name.get().is_empty(),
-                || h(span).dyn_t(|| name.get().to_string()),
-                || h(span).t("World"),
+                || span().dyn_t(|| name.get().to_string()),
+                || span().t("World"),
             )
             .t("!"))
-        .c(h(input).bind_value(name))
+        .c(input().bind_value(name))
         .view(cx)
 }
 

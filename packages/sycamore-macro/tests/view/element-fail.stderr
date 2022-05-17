@@ -28,8 +28,8 @@ error: unexpected end of input, children and dangerously_set_inner_html cannot b
 13 |             p(dangerously_set_inner_html="<span>Test</span>") {
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0412]: cannot find type `unknownelement` in module `sycamore::html`
+error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
  --> tests/view/element-fail.rs:8:38
   |
 8 |         let _: View<G> = view! { cx, unknownelement };
-  |                                      ^^^^^^^^^^^^^^ not found in `sycamore::html`
+  |                                      ^^^^^^^^^^^^^^ not found in `sycamore::web::html`

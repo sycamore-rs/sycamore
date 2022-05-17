@@ -1,17 +1,29 @@
-//! References to nodes in templates.
+//! References to nodes in views.
 
+use std::any::Any;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
-use sycamore_reactive::create_ref;
-use wasm_bindgen::prelude::*;
+use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
-use crate::reactive::Scope;
-use std::any::Any;
 
 /// A reference to a [`GenericNode`].
+/// This allows programmatically accessing the node and call imperative methods on it.
+///
+/// # Example
+/// ```
+/// use sycamore::prelude::*;
+///
+/// #[component]
+/// fn Component<G: Html>(cx: Scope) -> View<G> {
+///     let my_div = create_node_ref(cx);
+///     view! { cx,
+///         div(ref=my_div)
+///     }
+/// }
+/// ```
 #[derive(Clone, PartialEq, Eq)]
 pub struct NodeRef<G: GenericNode>(Rc<RefCell<Option<G>>>);
 
@@ -32,7 +44,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// For a non panicking version, see [`NodeRef::try_get`].
     #[track_caller]
     pub fn get<T: GenericNode>(&self) -> T {
-        self.try_get().expect_throw("NodeRef is not set")
+        self.try_get().expect("NodeRef is not set")
     }
 
     /// Tries to get the T stored inside the [`NodeRef`] or `None` if it is not yet set or
@@ -52,7 +64,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// For a non panicking version, see [`NodeRef::try_get_raw`].
     #[track_caller]
     pub fn get_raw(&self) -> G {
-        self.try_get().expect_throw("NodeRef is not set")
+        self.try_get().expect("NodeRef is not set")
     }
 
     /// Tries to get the raw [`GenericNode`] stored inside the [`NodeRef`] or `None` if it is
@@ -64,6 +76,9 @@ impl<G: GenericNode + Any> NodeRef<G> {
     }
 
     /// Sets the [`NodeRef`] with the specified [`GenericNode`].
+    ///
+    /// This method should be rarely used. Instead, use the `ref=` syntax in the `view!` macro to
+    /// set the node.
     pub fn set(&self, node: G) {
         *self.0.borrow_mut() = Some(node);
     }
@@ -86,44 +101,4 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
 /// Create a new [`NodeRef`] on the current [`Scope`].
 pub fn create_node_ref<G: GenericNode>(cx: Scope<'_>) -> &NodeRef<G> {
     create_ref(cx, NodeRef::new())
-}
-
-#[cfg(all(test, feature = "ssr"))]
-mod tests {
-    use crate::html;
-    use crate::prelude::*;
-
-    #[test]
-    fn empty_noderef() {
-        let noderef = NodeRef::<SsrNode>::new();
-        assert!(noderef.try_get_raw().is_none());
-        assert!(noderef.try_get::<SsrNode>().is_none());
-    }
-
-    #[test]
-    fn set_noderef() {
-        let noderef = NodeRef::<SsrNode>::new();
-        let node = SsrNode::element::<html::div>();
-        noderef.set(node.clone());
-        assert_eq!(noderef.try_get_raw(), Some(node.clone()));
-        assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
-    }
-
-    #[test]
-    fn cast_noderef() {
-        let noderef = NodeRef::<SsrNode>::new();
-        let node = SsrNode::element::<html::div>();
-        noderef.set(node.clone());
-        assert_eq!(noderef.try_get::<SsrNode>(), Some(node));
-        assert!(noderef.try_get::<DomNode>().is_none());
-    }
-
-    #[test]
-    fn noderef_with_ssrnode() {
-        create_scope_immediate(|cx| {
-            let noderef = create_node_ref(cx);
-            let _: View<SsrNode> = view! { cx, div(ref=noderef) };
-            assert!(noderef.try_get::<SsrNode>().is_some());
-        });
-    }
 }
