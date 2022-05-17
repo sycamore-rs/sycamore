@@ -35,7 +35,7 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
         let scope_status = use_scope_status(cx);
 
         let f = Rc::new(RefCell::new(None::<Closure<dyn Fn()>>));
-        let g = Rc::clone(&_f);
+        let g = Rc::clone(&f);
 
         *g.borrow_mut() = Some(Closure::wrap(Box::new({
             let running = running.clone();
@@ -47,7 +47,7 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
                     web_sys::window()
                         .unwrap_throw()
                         .request_animation_frame(
-                            _f.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
+                            f.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
                         )
                         .unwrap_throw();
                 }
