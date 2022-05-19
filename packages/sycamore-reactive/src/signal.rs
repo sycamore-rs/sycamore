@@ -58,13 +58,15 @@ impl SignalEmitter {
     /// not be automatically triggered. In the general case, however, it is preferable to use
     /// [`Signal::set()`] instead.
     pub fn trigger_subscribers(&self) {
-        // Clone subscribers to prevent modifying list when calling callbacks.
-        let subscribers = self.0.borrow().clone();
+        // Clone subscribers to prevent modifying list when calling callbacks. We clone into a
+        // `Vec` instead of an `IndexMap` because it is slightly faster.
+        #[allow(clippy::needless_collect)] // Clippy false positive.
+        let subscribers = self.0.borrow().values().cloned().collect::<Vec<_>>();
         // Subscriber order is reversed because effects attach subscribers at the end of the
         // effect scope. This will ensure that outer effects re-execute before inner effects,
         // preventing inner effects from running twice.
-        for subscriber in subscribers.values().rev() {
-            // subscriber might have already been destroyed in the case of nested effects
+        for subscriber in subscribers.into_iter().rev() {
+            // subscriber might have already been destroyed in the case of nested effects.
             if let Some(callback) = subscriber.upgrade() {
                 // Call the callback.
                 callback.borrow_mut()();
