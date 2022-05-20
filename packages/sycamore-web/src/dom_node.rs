@@ -75,7 +75,7 @@ impl DomNode {
 
     /// Get the [`NodeId`] for the node.
     pub(super) fn get_node_id(&self) -> NodeId {
-        if self.id.get().0 == 0 {
+        if self.id.get() == NodeId(0) {
             // self.id not yet initialized.
             if let Some(id) = self.node.unchecked_ref::<NodeWithId>().node_id() {
                 self.id.set(NodeId(id));
@@ -286,7 +286,7 @@ impl GenericNode for DomNode {
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
-            .insert_before(&new_node.node, reference_node.map(|n| n.node.as_ref()))
+            .insert_before(&new_node.node, reference_node.map(|n| &n.node))
             .unwrap_throw();
     }
 
