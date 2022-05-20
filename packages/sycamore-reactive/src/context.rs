@@ -110,11 +110,17 @@ where
 
 /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
 pub fn scope_depth(cx: Scope) -> u32 {
-    let mut depth = 0;
-    let mut this = Some(cx.raw);
-    while let Some(current) = this {
+    #[inline]
+    fn unchecked_as_ref(x: *const ScopeRaw) -> &ScopeRaw {
         // SAFETY: `current.parent` necessarily lives longer than `current`.
-        this = current.parent.map(|x| unsafe { &*x });
+        unsafe { &*x }
+    }
+
+    let mut depth = 0;
+    let mut next = cx.raw.parent.map(unchecked_as_ref);
+
+    while let Some(current) = next {
+        next = current.parent.map(unchecked_as_ref);
         depth += 1;
     }
     depth
