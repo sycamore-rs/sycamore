@@ -183,4 +183,30 @@ mod tests {
             assert_eq!(*b.get(), 123);
         });
     }
+
+    #[test]
+    fn root_scope_is_zero_depth() {
+        create_scope_immediate(|cx| {
+            assert_eq!(scope_depth(cx), 0);
+        });
+    }
+
+    #[test]
+    fn depth_of_scope_inc_with_child_scopes() {
+        create_scope_immediate(|cx| {
+            let _ = create_child_scope(cx, |cx| {
+                // first non root scope should be 1
+                assert_eq!(scope_depth(cx), 1);
+
+                let _ = create_child_scope(cx, |cx| {
+                    // next scope should thus be 2
+                    assert_eq!(scope_depth(cx), 2);
+                });
+
+                // We should still be one out here - not that the current implementation would
+                // suggest otherwise.
+                assert_eq!(scope_depth(cx), 1);
+            });
+        });
+    }
 }
