@@ -283,18 +283,18 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
                 after.clone()
             };
 
-            while b_start < b_end {
-                parent.insert_child_before(&b[b_start], node.as_ref());
-                b_start += 1;
+            for new_node in &b[b_start..b_end] {
+                parent.insert_child_before(new_node, node.as_ref());
             }
+            b_start = b_end;
         } else if b_end == b_start {
             // Remove.
-            while a_start < a_end {
-                if map.as_ref().map_or(true, |m| m.contains_key(&a[a_start])) {
-                    parent.remove_child(&a[a_start]);
+            for node in &a[a_start..a_end] {
+                if map.is_none() || map.as_ref().unwrap().contains_key(node) {
+                    parent.remove_child(node);
                 }
-                a_start += 1;
             }
+            a_start = a_end;
         } else if a[a_start] == b[b_start] {
             // Common prefix.
             a_start += 1;
@@ -305,14 +305,13 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
             b_end -= 1;
         } else if a[a_start] == b[b_end - 1] && b[b_start] == a[a_end - 1] {
             // Swap backwards.
-            a_end -= 1;
-            b_end -= 1;
-            let node = a[a_end].next_sibling();
+            let node = a[a_end - 1].next_sibling();
             parent.insert_child_before(&b[b_start], a[a_start].next_sibling().as_ref());
+            parent.insert_child_before(&b[b_end - 1], node.as_ref());
             a_start += 1;
             b_start += 1;
-            parent.insert_child_before(&b[b_end], node.as_ref());
-
+            a_end -= 1;
+            b_end -= 1;
             a[a_end] = b[b_end].clone();
         } else {
             // Fallback to map.
@@ -326,25 +325,24 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
             }
             let map = map.as_ref().unwrap();
 
-            let index = map.get(&a[a_start]);
-            if let Some(index) = index {
-                if b_start < *index && *index < b_end {
+            if let Some(&index) = map.get(&a[a_start]) {
+                if b_start < index && index < b_end {
                     let mut i = a_start;
                     let mut sequence = 1;
                     let mut t;
 
                     while i + 1 < a_end && i + 1 < b_end {
                         i += 1;
-                        t = map.get(&a[i]);
-                        if t.is_none() || *t.unwrap() != *index + sequence {
+                        t = map.get(&a[i]).copied();
+                        if t != Some(index + sequence) {
                             break;
                         }
                         sequence += 1;
                     }
 
-                    if sequence > *index - b_start {
+                    if sequence > index - b_start {
                         let node = &a[a_start];
-                        while b_start < *index {
+                        while b_start < index {
                             parent.insert_child_before(&b[b_start], Some(node));
                             b_start += 1;
                         }
