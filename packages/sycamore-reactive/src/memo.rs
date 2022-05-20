@@ -90,20 +90,17 @@ pub fn create_selector_with<'a, U: 'a>(
     mut f: impl FnMut() -> U + 'a,
     eq_f: impl Fn(&U, &U) -> bool + 'a,
 ) -> &'a ReadSignal<U> {
-    let signal: Rc<Cell<Option<&Signal<U>>>> = Default::default();
+    let signal: &Cell<Option<&Signal<U>>> = create_ref(cx, Cell::new(None));
 
-    create_effect(cx, {
-        let signal = signal.clone();
-        move || {
-            let new = f();
-            if let Some(signal) = signal.get() {
-                // Check if new value is different from old value.
-                if !eq_f(&new, &*signal.get_untracked()) {
-                    signal.set(new)
-                }
-            } else {
-                signal.set(Some(create_signal(cx, new)))
+    create_effect(cx, move || {
+        let new = f();
+        if let Some(signal) = signal.get() {
+            // Check if new value is different from old value.
+            if !eq_f(&new, &*signal.get_untracked()) {
+                signal.set(new)
             }
+        } else {
+            signal.set(Some(create_signal(cx, new)))
         }
     });
 
