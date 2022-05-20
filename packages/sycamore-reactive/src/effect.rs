@@ -1,6 +1,6 @@
 //! Side effects.
 
-use std::collections::HashSet;
+use ahash::AHashSet;
 
 use crate::*;
 
@@ -17,7 +17,7 @@ pub(crate) struct EffectState<'a> {
     /// The callback when the effect is re-executed.
     cb: Rc<RefCell<dyn FnMut() + 'a>>,
     /// A list of dependencies that can trigger this effect.
-    dependencies: HashSet<EffectDependency>,
+    dependencies: AHashSet<EffectDependency>,
 }
 
 /// Implements reference equality for [`WeakSignalEmitter`]s.
@@ -122,7 +122,7 @@ fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
     // Initialize initial effect state.
     *effect.borrow_mut() = Some(EffectState {
         cb: cb.clone(),
-        dependencies: HashSet::new(),
+        dependencies: AHashSet::new(),
     });
 
     // Initial callback call to get everything started.
@@ -153,7 +153,7 @@ pub fn create_effect_scoped<'a, F>(cx: Scope<'a>, mut f: F)
 where
     F: for<'child_lifetime> FnMut(BoundedScope<'child_lifetime, 'a>) + 'a,
 {
-    let mut disposer: Option<Box<ScopeDisposer<'a>>> = None;
+    let mut disposer: Option<ScopeDisposer<'a>> = None;
     create_effect(cx, move || {
         // We run the disposer inside the effect, after effect dependencies have been cleared.
         // This is to make sure that if the effect subscribes to its own signal, there is no
@@ -163,12 +163,11 @@ where
             unsafe { disposer.dispose() };
         }
         // Create a new nested scope and save the disposer.
-        let new_disposer: Option<Box<ScopeDisposer<'a>>> =
-            Some(Box::new(create_child_scope(cx, |cx| {
-                // SAFETY: f takes the same parameter as the argument to
-                // self.create_child_scope(_).
-                f(unsafe { std::mem::transmute(cx) });
-            })));
+        let new_disposer: Option<ScopeDisposer<'a>> = Some(create_child_scope(cx, |cx| {
+            // SAFETY: f takes the same parameter as the argument to
+            // self.create_child_scope(_).
+            f(unsafe { std::mem::transmute(cx) });
+        }));
         disposer = new_disposer;
     });
 }

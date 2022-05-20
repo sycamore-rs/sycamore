@@ -1,11 +1,10 @@
 //! Reactive utilities for dealing with lists and iterables.
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem;
-use std::mem::MaybeUninit;
 use std::rc::Rc;
+
+use ahash::AHashMap;
 
 use crate::*;
 
@@ -33,8 +32,6 @@ where
     K: Eq + Hash,
     U: Clone + 'a,
 {
-    let map_fn = Rc::new(map_fn);
-
     // Previous state used for diffing.
     let mut items = Rc::new(Vec::new());
     let mut mapped: Vec<U> = Vec::new();
@@ -57,17 +54,12 @@ where
             // Fast path for new create.
             // TODO: do not clone T
             for new_item in new_items.iter().cloned() {
-                let tmp = Rc::new(RefCell::new(None));
-                let new_disposer = create_child_scope(cx, {
-                    let tmp = Rc::clone(&tmp);
-                    let map_fn = Rc::clone(&map_fn);
-                    move |cx| {
-                        // SAFETY: f takes the same parameter as the argument to
-                        // create_child_scope(cx, (_).
-                        *tmp.borrow_mut() = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
-                    }
+                let mut tmp = None;
+                let new_disposer = create_child_scope(cx, |cx| {
+                    // SAFETY: f takes the same parameter as the argument to create_child_scope.
+                    tmp = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                 });
-                mapped.push(tmp.borrow().clone().unwrap());
+                mapped.push(tmp.unwrap());
                 disposers.push(Some(new_disposer));
             }
         } else {
@@ -121,7 +113,7 @@ where
 
             // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
             // natural order.
-            let mut new_indices = HashMap::with_capacity(new_end - start);
+            let mut new_indices = AHashMap::with_capacity(new_end - start);
 
             // Indexes for new_indices_next are shifted by start because values at 0..start are
             // always None.
@@ -165,24 +157,17 @@ where
                     }
                 } else {
                     // Create new value.
-                    let tmp = Rc::new(RefCell::new(None));
-                    let new_disposer = create_child_scope(cx, {
-                        let tmp = Rc::clone(&tmp);
-                        let map_fn = Rc::clone(&map_fn);
-                        let new_item = new_items[j].clone();
-                        move |cx| {
-                            // SAFETY: f takes the same parameter as the argument to
-                            // create_child_scope.
-                            *tmp.borrow_mut() =
-                                Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
-                        }
+                    let mut tmp = None;
+                    let new_item = new_items[j].clone();
+                    let new_disposer = create_child_scope(cx, |cx| {
+                        // SAFETY: f takes the same parameter as the argument to create_child_scope.
+                        tmp = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                     });
-
                     if mapped.len() > j {
-                        mapped[j] = tmp.borrow().clone().unwrap();
+                        mapped[j] = tmp.unwrap();
                         disposers[j] = Some(new_disposer);
                     } else {
-                        mapped.push(tmp.borrow().clone().unwrap());
+                        mapped.push(tmp.unwrap());
                         disposers.push(Some(new_disposer));
                     }
                 }
@@ -228,8 +213,6 @@ where
     T: PartialEq + Clone,
     U: Clone + 'a,
 {
-    let map_fn = Rc::new(map_fn);
-
     // Previous state used for diffing.
     let mut items = Rc::new(Vec::new());
     let mut mapped = Vec::new();
@@ -264,29 +247,20 @@ where
                 // We lift the equality out of the else if branch to satisfy borrow checker.
                 let eqs = item != Some(&new_item);
 
-                let mut tmp = MaybeUninit::<U>::zeroed();
-                let ptr = &mut tmp as *mut MaybeUninit<U>;
+                let mut tmp = None;
                 if item.is_none() || eqs {
-                    let new_disposer = create_child_scope(cx, {
-                        let map_fn = Rc::clone(&map_fn);
-                        move |cx| unsafe {
-                            // SAFETY: callback is called immediately in
-                            // create_child_scope(cx, .
-                            // ptr is still accessible after create_child_scope(cx,  and
-                            // therefore lives long enough.
-
-                            // SAFETY: f takes the same parameter as the argument to
-                            // create_child_scope(cx, (_).
-                            (*ptr).write(map_fn(mem::transmute(cx), new_item));
-                        }
+                    let new_disposer = create_child_scope(cx, |cx| {
+                        // SAFETY: f takes the same parameter as the argument to
+                        // create_child_scope(cx, _).
+                        tmp = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
                     });
                     if item.is_none() {
-                        // SAFETY: tmp is written in create_child_scope(cx,
-                        mapped.push(unsafe { tmp.assume_init() });
+                        // SAFETY: tmp is written in create_child_scope.
+                        mapped.push(tmp.unwrap());
                         disposers.push(new_disposer);
                     } else if eqs {
-                        // SAFETY: tmp is written in create_child_scope(cx,
-                        mapped[i] = unsafe { tmp.assume_init() };
+                        // SAFETY: tmp is written in create_child_scope.
+                        mapped[i] = tmp.unwrap();
                         let prev = mem::replace(&mut disposers[i], new_disposer);
                         unsafe {
                             prev.dispose();

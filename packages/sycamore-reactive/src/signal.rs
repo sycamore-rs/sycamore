@@ -57,14 +57,19 @@ impl SignalEmitter {
     /// This can be useful when using patterns such as inner mutability where the state updated will
     /// not be automatically triggered. In the general case, however, it is preferable to use
     /// [`Signal::set()`] instead.
+    ///
+    /// This will also re-compute all the subscribers of this signal by calling all the dependency
+    /// callbacks.
     pub fn trigger_subscribers(&self) {
-        // Clone subscribers to prevent modifying list when calling callbacks.
-        let subscribers = self.0.borrow().clone();
+        // Reset subscribers to prevent modifying the subscriber list while it is being read from.
+        // We can completely wipe out the subscriber list because it will be constructed again when
+        // each callback is called.
+        let subscribers = self.0.take().into_values();
         // Subscriber order is reversed because effects attach subscribers at the end of the
         // effect scope. This will ensure that outer effects re-execute before inner effects,
         // preventing inner effects from running twice.
-        for subscriber in subscribers.values().rev() {
-            // subscriber might have already been destroyed in the case of nested effects
+        for subscriber in subscribers.rev() {
+            // subscriber might have already been destroyed in the case of nested effects.
             if let Some(callback) = subscriber.upgrade() {
                 // Call the callback.
                 callback.borrow_mut()();

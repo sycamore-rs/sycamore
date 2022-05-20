@@ -11,11 +11,11 @@ mod signal;
 
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::mem;
 use std::rc::{Rc, Weak};
 
+use ahash::AHashMap;
 use arena::*;
 pub use context::*;
 pub use effect::*;
@@ -42,11 +42,11 @@ struct ScopeInner<'a> {
     /// Contexts that are allocated on the current [`Scope`].
     /// See the [`mod@context`] module.
     ///
-    /// Note that the `HashMap` is wrapped with an `Option<Box<_>>`. This is because contexts are
+    /// Note that the `AHashMap` is wrapped with an `Option<Box<_>>`. This is because contexts are
     /// usually read and rarely created. Making this heap allocated when prevent blowing up the
     /// size of the [`ScopeInner`] struct when most of the times, this field is unneeded.
     #[allow(clippy::box_collection)]
-    contexts: Option<Box<HashMap<TypeId, &'a dyn Any>>>,
+    contexts: Option<Box<AHashMap<TypeId, &'a dyn Any>>>,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }
@@ -205,8 +205,8 @@ pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(Scope<'a>)) -> ScopeDispos
     // The reference passed to f cannot possible escape the closure. We know however, that ptr
     // necessary outlives the closure call because it is only dropped in the returned disposer
     // closure.
-    untrack(|| f(unsafe { BoundedScope::new(&*ptr) }));
-    //                      ^^^ -> `ptr` is still accessible here after the call to f.
+    untrack(|| f(unsafe { Scope::new(&*ptr) }));
+    //                                 ^^^ -> `ptr` is still accessible here after call to f.
 
     // Ownership of `ptr` is passed into the closure.
     ScopeDisposer::new(move || unsafe {
@@ -286,9 +286,8 @@ where
     // - It is allocated on the heap and therefore has a stable address.
     // - self.child_cx is append only. That means that the Box<cx> will not be dropped until Self is
     //   dropped.
-    f(unsafe { BoundedScope::new(&*ptr) });
-    //                                  ^^^ -> `ptr` is still accessible here after
-    // the call to f.
+    f(unsafe { Scope::new(&*ptr) });
+    //                      ^^^ -> `ptr` is still accessible here after call to f.
     ScopeDisposer::new(move || unsafe {
         let cx = cx.raw.inner.borrow_mut().child_scopes.remove(key).unwrap();
         // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
@@ -368,12 +367,12 @@ impl<'a> ScopeRaw<'a> {
     /// Dropping a [`Scope`] will automatically call [`dispose`](Self::dispose).
     pub(crate) unsafe fn dispose(&self) {
         let mut inner = self.inner.borrow_mut();
-        // Drop child contexts.
-        for &i in mem::take(&mut inner.child_scopes).values() {
+        // Drop child scopes.
+        for &child in mem::take(&mut inner.child_scopes).values() {
             // SAFETY: These pointers were allocated in Self::create_child_scope.
-            let cx = Box::from_raw(i);
+            let cx = Box::from_raw(child);
             // Dispose of cx if it has not already been disposed.
-            cx.dispose()
+            cx.dispose();
         }
         // Call cleanup functions in an untracked scope.
         untrack(|| {
@@ -420,8 +419,7 @@ pub fn on<'a, U, const N: usize>(
         for i in dependencies {
             i.track();
         }
-        #[allow(clippy::redundant_closure)] // Clippy false-positive
-        untrack(|| f())
+        untrack(&mut f)
     }
 }
 
