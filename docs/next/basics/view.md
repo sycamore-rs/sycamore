@@ -152,8 +152,7 @@ view! { cx, }
 ## Builder syntax
 
 For those who dislike macro DSLs, we also provide an ergonomic builder API for constructing views.
-To begin, enable the `"builder"` feature flag on `sycamore` in your `Cargo.toml` file. Also make
-sure to add the builder prelude as well as the main sycamore prelude to your source file.
+Add the builder prelude as well as the main sycamore prelude to your source file.
 
 ```rust
 use sycamore::builder::prelude::*;
