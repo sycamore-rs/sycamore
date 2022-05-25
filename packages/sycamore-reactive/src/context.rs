@@ -111,10 +111,11 @@ where
 /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
 pub fn scope_depth(cx: Scope) -> u32 {
     let mut depth = 0;
-    let mut this = Some(cx.raw);
-    while let Some(current) = this {
-        // SAFETY: `current.parent` necessarily lives longer than `current`.
-        this = current.parent.map(|x| unsafe { &*x });
+    let mut current = cx.raw;
+
+    // SAFETY: 'current.parent' necessarily lives longer than 'current'.
+    while let Some(next) = current.parent.map(|x| unsafe { &*x }) {
+        current = next;
         depth += 1;
     }
     depth
@@ -181,6 +182,32 @@ mod tests {
             assert!(try_use_context::<Signal<i32>>(cx).is_some());
             let b: &Signal<i32> = use_context_or_else_ref(cx, || panic!("don't call me"));
             assert_eq!(*b.get(), 123);
+        });
+    }
+
+    #[test]
+    fn root_scope_is_zero_depth() {
+        create_scope_immediate(|cx| {
+            assert_eq!(scope_depth(cx), 0);
+        });
+    }
+
+    #[test]
+    fn depth_of_scope_inc_with_child_scopes() {
+        create_scope_immediate(|cx| {
+            let _ = create_child_scope(cx, |cx| {
+                // first non root scope should be 1
+                assert_eq!(scope_depth(cx), 1);
+
+                let _ = create_child_scope(cx, |cx| {
+                    // next scope should thus be 2
+                    assert_eq!(scope_depth(cx), 2);
+                });
+
+                // We should still be one out here - not that the current implementation would
+                // suggest otherwise.
+                assert_eq!(scope_depth(cx), 1);
+            });
         });
     }
 }
