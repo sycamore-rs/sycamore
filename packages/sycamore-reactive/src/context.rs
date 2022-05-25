@@ -113,6 +113,7 @@ pub fn scope_depth(cx: Scope) -> u32 {
     let mut depth = 0;
     let mut current = cx.raw;
 
+    // SAFETY: 'current.parent' necessarily lives longer than 'current'.
     while let Some(next) = current.parent.map(|x| unsafe { &*x }) {
         current = next;
         depth += 1;
