@@ -215,7 +215,7 @@ mod tests {
                     if *done.get() {
                         sender.take().unwrap().send(()).unwrap();
                     }
-                })
+                });
             });
             receiver.await.unwrap();
             unsafe { disposer.dispose() };
