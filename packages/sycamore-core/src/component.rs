@@ -31,21 +31,6 @@ pub trait Prop {
     fn builder() -> Self::Builder;
 }
 
-/* Implement Prop for () */
-
-/// A builder for `()`.
-#[doc(hidden)]
-pub struct UnitBuilder;
-impl UnitBuilder {
-    pub fn build(self) {}
-}
-impl Prop for () {
-    type Builder = UnitBuilder;
-    fn builder() -> Self::Builder {
-        UnitBuilder
-    }
-}
-
 /// Get the builder for the component function.
 #[doc(hidden)]
 pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
