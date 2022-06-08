@@ -11,8 +11,8 @@ fn MyComponent<G: Html>(cx: Scope, props: i32) -> View<G> {
 
 fn higher_order_component<G: Html>(
     Comp: &dyn Fn(Scope, i32) -> View<G>,
-) -> impl Fn(Scope, ()) -> View<G> + '_ {
-    move |cx, _| {
+) -> impl Fn(Scope) -> View<G> + '_ {
+    move |cx| {
         view! { cx,
             div {
                 Comp(42)

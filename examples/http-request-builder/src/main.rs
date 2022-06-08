@@ -41,7 +41,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
             // crate).
             SuspenseProps::builder()
                 .fallback(t("Loading"))
-                .children(Children::new(cx, |cx| VisitsCount(cx, ())))
+                .children(Children::new(cx, |cx| VisitsCount(cx)))
                 .build(),
         ))
         .view(cx)
@@ -51,5 +51,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|cx| App(cx, ()));
+    sycamore::render(|cx| App(cx));
 }

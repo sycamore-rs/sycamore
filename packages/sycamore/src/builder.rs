@@ -715,7 +715,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
 ///
 /// // Elsewhere...
 /// # fn view<G: Html>(cx: Scope) -> View<G> {
-/// component(|| MyComponent(cx, ()))
+/// component(|| MyComponent(cx))
 /// # }
 /// ```
 pub fn component<G>(f: impl FnOnce() -> View<G>) -> View<G>
