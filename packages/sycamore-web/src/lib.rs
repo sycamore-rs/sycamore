@@ -35,38 +35,26 @@ pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
     const IS_BROWSER: bool;
 }
 
-/// Create a `GenericNode` instance from a `web_sys::HtmlElement`.
+/// Create a generic `Html` node from a `web_sys::Node`.
 ///
-/// When the `GenericNode` is a `DomNode` or a `HydrateNode` then the
-/// web_sys::Element will be reused and won't cause another node to be
-/// created in the browser DOM.
-pub fn from_web_sys<G: GenericNode>(element: web_sys::Element) -> G {
-    use std::any::TypeId;
+/// # Panics
+/// When G is not either a `DomNode` or a `HydrateNode`.
+pub fn from_web_sys<G: Html>(node: web_sys::Node) -> G {
+    use std::any::{Any, TypeId};
 
     let type_id = TypeId::of::<G>();
 
     if TypeId::of::<DomNode>() == type_id {
-        let node = DomNode::from_web_sys(element.into());
-        // SAFETY:
-        // We just made sure that G is a DomNode and we need to transmute the
-        // type as a reference as the reference has the same size
-        let gen_ref: &G = unsafe { std::mem::transmute(&node) };
-        return gen_ref.clone();
+        let node = DomNode::from_web_sys(node);
+        return (&node as &dyn Any).downcast_ref().cloned().unwrap();
     }
     #[cfg(feature = "hydrate")]
     if TypeId::of::<HydrateNode>() == type_id {
-        let node = HydrateNode::from_web_sys(element.into());
-        // SAFETY:
-        // We just made sure that G is a HydrateNode and we need to transmute the
-        // type as a reference as the reference has the same size
-        let gen_ref: &G = unsafe { std::mem::transmute(&node) };
-        return gen_ref.clone();
+        let node = HydrateNode::from_web_sys(node);
+        return (&node as &dyn Any).downcast_ref().cloned().unwrap();
     }
 
-    // fall back to inner_html
-    let node = G::element_from_tag("div");
-    node.dangerously_set_inner_html(&element.outer_html());
-    node.first_child().unwrap()
+    panic!("Expected GenericNode to either be a DomNode or a HydrateNode");
 }
 
 /// Queue up a callback to be executed when the component is mounted.
