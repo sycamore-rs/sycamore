@@ -89,11 +89,6 @@ impl Parse for ComponentFunction {
                     }
                 }
 
-                // If only 1 argument, add an additional argument of type `()`.
-                if inputs.len() == 1 {
-                    sig.inputs.push(parse_quote! { _: () });
-                }
-
                 Ok(Self { f })
             }
             item => Err(syn::Error::new_spanned(
@@ -142,15 +137,10 @@ fn async_comp_inputs_from_sig_inputs(
         unreachable!("We check in parsing that the first argument is not a receiver");
     };
 
-    // In parsing we checked that there were two args so we can unwrap here.
-    let prop_fn_arg = inputs.next().unwrap();
-    let prop_arg = match prop_fn_arg {
+    let prop_arg = inputs.next();
+    let prop_arg = prop_arg.map(|prop_fn_arg| match prop_fn_arg {
         FnArg::Typed(t) => match &*t.pat {
             Pat::Ident(id) => pat_ident_arm(&mut sync_input, prop_fn_arg, id),
-            Pat::Wild(_) => {
-                sync_input.push(prop_fn_arg.clone());
-                parse_quote!(())
-            }
             Pat::Struct(pat_struct) => {
                 // For the sync input we don't want a destructured pattern but just to take a
                 // `syn::PatType` (i.e. `props: MyPropStruct`) then the inner async function
@@ -182,9 +172,11 @@ fn async_comp_inputs_from_sig_inputs(
             _ => panic!("unexpected pattern!"),
         },
         FnArg::Receiver(_) => unreachable!(),
-    };
+    });
 
-    async_args.push(prop_arg);
+    if let Some(arg) = prop_arg {
+        async_args.push(arg);
+    }
 
     AsyncCompInputs {
         cx,
