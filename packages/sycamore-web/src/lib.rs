@@ -35,6 +35,40 @@ pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
     const IS_BROWSER: bool;
 }
 
+/// Create a `GenericNode` instance from a `web_sys::HtmlElement`.
+///
+/// When the `GenericNode` is a `DomNode` or a `HydrateNode` then the
+/// web_sys::Element will be reused and won't cause another node to be
+/// created in the browser DOM.
+pub fn from_web_sys<G: GenericNode>(element: web_sys::Element) -> G {
+    use std::any::TypeId;
+
+    let type_id = TypeId::of::<G>();
+
+    if TypeId::of::<DomNode>() == type_id {
+        let node = DomNode::from_web_sys(element.into());
+        // SAFETY:
+        // We just made sure that G is a DomNode and we need to transmute the
+        // type as a reference as the reference has the same size
+        let gen_ref: &G = unsafe { std::mem::transmute(&node) };
+        return gen_ref.clone();
+    }
+    #[cfg(feature = "hydrate")]
+    if TypeId::of::<HydrateNode>() == type_id {
+        let node = HydrateNode::from_web_sys(element.into());
+        // SAFETY:
+        // We just made sure that G is a HydrateNode and we need to transmute the
+        // type as a reference as the reference has the same size
+        let gen_ref: &G = unsafe { std::mem::transmute(&node) };
+        return gen_ref.clone();
+    }
+
+    // fall back to inner_html
+    let node = G::element_from_tag("div");
+    node.dangerously_set_inner_html(&element.outer_html());
+    node.first_child().unwrap()
+}
+
 /// Queue up a callback to be executed when the component is mounted.
 ///
 /// If not on `wasm32` target, does nothing.
