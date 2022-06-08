@@ -16,6 +16,8 @@ mod hydrate_node;
 #[cfg(feature = "ssr")]
 mod ssr_node;
 
+use std::any::{Any, TypeId};
+
 pub use dom_node::*;
 #[cfg(feature = "hydrate")]
 pub use hydrate_node::*;
@@ -40,8 +42,6 @@ pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
 /// # Panics
 /// When G is not either a `DomNode` or a `HydrateNode`.
 pub fn from_web_sys<G: Html>(node: web_sys::Node) -> G {
-    use std::any::{Any, TypeId};
-
     let type_id = TypeId::of::<G>();
 
     if TypeId::of::<DomNode>() == type_id {
@@ -54,7 +54,7 @@ pub fn from_web_sys<G: Html>(node: web_sys::Node) -> G {
         return (&node as &dyn Any).downcast_ref().cloned().unwrap();
     }
 
-    panic!("Expected GenericNode to either be a DomNode or a HydrateNode");
+    panic!("expected GenericNode to either be a DomNode or a HydrateNode");
 }
 
 /// Queue up a callback to be executed when the component is mounted.
