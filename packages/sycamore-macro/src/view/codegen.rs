@@ -255,13 +255,7 @@ impl Codegen {
         let mut tokens = TokenStream::new();
         let expr = &attr.value;
 
-        let is_dynamic = !matches!(
-            expr,
-            Expr::Lit(ExprLit {
-                lit: Lit::Str(_),
-                ..
-            })
-        );
+        let is_dynamic = !matches!(expr, Expr::Lit(ExprLit { .. }));
 
         match &attr.ty {
             AttributeType::Str { name } => {
@@ -364,6 +358,25 @@ impl Codegen {
                         #expr,
                     );
                 });
+            }
+            AttributeType::Property { prop } => {
+                let set_property = quote! {
+                    ::sycamore::generic_node::GenericNode::set_property(
+                        &__el,
+                        #prop,
+                        &::std::convert::Into::<::sycamore::rt::JsValue>::into(#expr)
+                    );
+                };
+                if is_dynamic {
+                    tokens.extend(quote! {
+                        ::sycamore::reactive::create_effect(#cx, {
+                            let __el = ::std::clone::Clone::clone(&__el);
+                            move || { #set_property }
+                        });
+                    });
+                } else {
+                    tokens.extend(set_property);
+                }
             }
             AttributeType::Bind { prop } => {
                 #[derive(Clone, Copy)]

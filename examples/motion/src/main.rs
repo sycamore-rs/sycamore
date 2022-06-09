@@ -38,8 +38,8 @@ fn Tweened<G: Html>(cx: Scope) -> View<G> {
                 }
                 "#
             }
-            progress(value=progress.get()[0])
-            progress(value=progress.get()[1])
+            progress(prop:value=progress.get()[0])
+            progress(prop:value=progress.get()[1])
 
             button(on:click=|_| progress.set([0.0, 1.0])) { "0%" }
             button(on:click=|_| progress.set([0.25, 0.75])) { "25%" }

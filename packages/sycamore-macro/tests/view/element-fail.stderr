@@ -10,26 +10,32 @@ error: expected `=`
 6 |         let _: View<G> = view! { cx, button(on:click) };
   |                                                     ^
 
-error: unknown directive `unknown`
- --> tests/view/element-fail.rs:7:45
+error: expected `=`
+ --> tests/view/element-fail.rs:7:58
   |
-7 |         let _: View<G> = view! { cx, button(unknown:directive="123") };
+7 |         let _: View<G> = view! { cx, button(prop:disabled) };
+  |                                                          ^
+
+error: unknown directive `unknown`
+ --> tests/view/element-fail.rs:8:45
+  |
+8 |         let _: View<G> = view! { cx, button(unknown:directive="123") };
   |                                             ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:10:46
+  --> tests/view/element-fail.rs:11:46
    |
-10 |         let _: View<G> = view! { cx, button(a.b.c="123") };
+11 |         let _: View<G> = view! { cx, button(a.b.c="123") };
    |                                              ^
 
 error: unexpected end of input, children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:13:15
+  --> tests/view/element-fail.rs:14:15
    |
-13 |             p(dangerously_set_inner_html="<span>Test</span>") {
+14 |             p(dangerously_set_inner_html="<span>Test</span>") {
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
- --> tests/view/element-fail.rs:8:38
+ --> tests/view/element-fail.rs:9:38
   |
-8 |         let _: View<G> = view! { cx, unknownelement };
+9 |         let _: View<G> = view! { cx, unknownelement };
   |                                      ^^^^^^^^^^^^^^ not found in `sycamore::web::html`

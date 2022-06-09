@@ -328,6 +328,29 @@ fn reactive_attribute() {
 }
 
 #[wasm_bindgen_test]
+fn reactive_property() {
+    create_scope_immediate(|cx| {
+        let indeterminate = create_signal(cx, true);
+
+        let node = view! { cx,
+            input(type="checkbox", prop:indeterminate=*indeterminate.get())
+        };
+
+        sycamore::render_to(|_| node, &test_container());
+        let input: web_sys::HtmlInputElement = document()
+            .query_selector("input")
+            .unwrap()
+            .unwrap()
+            .unchecked_into();
+
+        assert!(input.indeterminate());
+
+        indeterminate.set(false);
+        assert!(!input.indeterminate());
+    });
+}
+
+#[wasm_bindgen_test]
 #[ignore]
 fn two_way_bind_to_props() {
     create_scope_immediate(|cx| {

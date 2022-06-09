@@ -317,7 +317,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
                 view! { cx,
                     input(ref=input_ref,
                         class="edit",
-                        value=todo.get().title.clone(),
+                        prop:value=&todo.get().title,
                         on:blur=move |_| handle_blur(),
                         on:keyup=handle_submit,
                         on:input=handle_input,

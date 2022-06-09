@@ -78,6 +78,8 @@ pub enum AttributeType {
     Event { event: String },
     /// Syntax: `bind:<prop>`.
     Bind { prop: String },
+    /// Syntax: `prop:<prop>`.
+    Property { prop: String },
     /// Syntax: `ref`.
     Ref,
 }

@@ -192,6 +192,12 @@ impl Parse for AttributeType {
                         event: event.to_string(),
                     })
                 }
+                "prop" => {
+                    let prop = input.call(Ident::parse_any)?;
+                    Ok(Self::Property {
+                        prop: prop.to_string(),
+                    })
+                }
                 "bind" => {
                     let prop = input.call(Ident::parse_any)?;
                     Ok(Self::Bind {
