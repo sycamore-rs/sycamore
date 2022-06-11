@@ -351,6 +351,24 @@ fn reactive_property() {
 }
 
 #[wasm_bindgen_test]
+fn static_property() {
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
+            input(prop:checked=true)
+        };
+
+        sycamore::render_to(|_| node, &test_container());
+        let input: web_sys::HtmlInputElement = document()
+            .query_selector("input")
+            .unwrap()
+            .unwrap()
+            .unchecked_into();
+
+        assert!(input.checked());
+    });
+}
+
+#[wasm_bindgen_test]
 #[ignore]
 fn two_way_bind_to_props() {
     create_scope_immediate(|cx| {
