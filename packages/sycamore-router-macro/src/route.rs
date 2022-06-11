@@ -98,7 +98,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         #err_quoted
                     }
                 }
-                impl Default for #ty_name {
+                impl ::std::default::Default for #ty_name {
                     fn default() -> Self {
                         #error_handler_name
                     }
