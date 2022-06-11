@@ -16,6 +16,8 @@ mod hydrate_node;
 #[cfg(feature = "ssr")]
 mod ssr_node;
 
+use std::any::{Any, TypeId};
+
 pub use dom_node::*;
 #[cfg(feature = "hydrate")]
 pub use hydrate_node::*;
@@ -33,6 +35,26 @@ pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
     /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
     /// in the browser. It only means that it does not create DOM nodes.
     const IS_BROWSER: bool;
+}
+
+/// Create a generic `Html` node from a `web_sys::Node`.
+///
+/// # Panics
+/// When G is not either a `DomNode` or a `HydrateNode`.
+pub fn from_web_sys<G: Html>(node: web_sys::Node) -> G {
+    let type_id = TypeId::of::<G>();
+
+    if TypeId::of::<DomNode>() == type_id {
+        let node = DomNode::from_web_sys(node);
+        return (&node as &dyn Any).downcast_ref().cloned().unwrap();
+    }
+    #[cfg(feature = "hydrate")]
+    if TypeId::of::<HydrateNode>() == type_id {
+        let node = HydrateNode::from_web_sys(node);
+        return (&node as &dyn Any).downcast_ref().cloned().unwrap();
+    }
+
+    panic!("expected GenericNode to either be a DomNode or a HydrateNode");
 }
 
 /// Queue up a callback to be executed when the component is mounted.
