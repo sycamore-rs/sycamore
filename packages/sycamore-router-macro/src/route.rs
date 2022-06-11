@@ -9,7 +9,8 @@ use crate::parser::{route, RoutePathAst, SegmentAst};
 pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut quoted = TokenStream::new();
     let mut err_quoted = TokenStream::new();
-    let mut has_error_handler = false;
+    // When the `#[not_found]` handler is found, this will store its name so we can use that as the `Default` implementation
+    let mut error_handler_name = None;
 
     match &input.data {
         syn::Data::Enum(de) => {
@@ -50,7 +51,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                             is_to_route = true;
                         }
                         "not_found" => {
-                            if has_error_handler {
+                            if error_handler_name.is_some() {
                                 return Err(syn::Error::new(
                                     attr.span(),
                                     "cannot have more than one error handler",
@@ -65,7 +66,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                             err_quoted = quote! {
                                 return Self::#variant_id;
                             };
-                            has_error_handler = true;
+                            error_handler_name = Some(quote!(Self::#variant_id));
                         }
                         _ => {}
                     }
@@ -82,18 +83,24 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                 }
             }
 
-            if !has_error_handler {
+            if error_handler_name.is_none() {
                 return Err(syn::Error::new(
                     input.span(),
                     "not found route not specified",
                 ));
             }
 
+            // We implement `Default` as well here for the `Router`/`RouterBase` distinction (`Router` needs to pass a default `impl Route` to `RouterBase`)
             Ok(quote! {
                 impl ::sycamore_router::Route for #ty_name {
-                    fn match_route(__segments: &[&str]) -> Self {
+                    fn match_route(&self, __segments: &[&str]) -> Self {
                         #quoted
                         #err_quoted
+                    }
+                }
+                impl Default for #ty_name {
+                    fn default() -> Self {
+                        #error_handler_name
                     }
                 }
             })

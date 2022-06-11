@@ -16,20 +16,20 @@ pub use sycamore_router_macro::Route;
 ///
 /// This trait should not be implemented manually. Use the [`Route`](derive@Route) derive macro
 /// instead.
-pub trait Route: Sized {
+pub trait Route: Sized + Default {
     /// Matches a route with the given path segments. Note that in general, empty segments should be
     /// filtered out before passed as an argument.
     ///
     /// It is likely that you are looking for the [`Route::match_path`] method instead.
-    fn match_route(segments: &[&str]) -> Self;
+    fn match_route(&self, segments: &[&str]) -> Self;
 
     /// Matches a route with the given path.
-    fn match_path(path: &str) -> Self {
+    fn match_path(&self, path: &str) -> Self {
         let segments = path
             .split('/')
             .filter(|s| !s.is_empty())
             .collect::<Vec<_>>();
-        Self::match_route(&segments)
+        self.match_route(&segments)
     }
 }
 
@@ -167,14 +167,14 @@ pub trait TryFromSegments: Sized {
     /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
     /// unsuccessful (e.g. parsing error).
     #[must_use]
-    fn try_from_segments(segments: &[&str]) -> Option<Self>;
+    fn try_from_segments(&self, segments: &[&str]) -> Option<Self>;
 }
 
 impl<T> TryFromSegments for Vec<T>
 where
     T: TryFromParam,
 {
-    fn try_from_segments(segments: &[&str]) -> Option<Self> {
+    fn try_from_segments(&self, segments: &[&str]) -> Option<Self> {
         let mut tmp = Vec::with_capacity(segments.len());
         for segment in segments {
             let value = T::try_from_param(segment)?;
@@ -185,8 +185,8 @@ where
 }
 
 impl<T: Route> TryFromSegments for T {
-    fn try_from_segments(segments: &[&str]) -> Option<Self> {
-        Some(T::match_route(segments))
+    fn try_from_segments(&self, segments: &[&str]) -> Option<Self> {
+        Some(self.match_route(segments))
     }
 }
 
