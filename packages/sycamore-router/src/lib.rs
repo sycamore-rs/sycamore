@@ -167,14 +167,14 @@ pub trait TryFromSegments: Sized {
     /// Sets the value of the capture variable with the value of `segments`. Returns `false` if
     /// unsuccessful (e.g. parsing error).
     #[must_use]
-    fn try_from_segments(&self, segments: &[&str]) -> Option<Self>;
+    fn try_from_segments(segments: &[&str]) -> Option<Self>;
 }
 
 impl<T> TryFromSegments for Vec<T>
 where
     T: TryFromParam,
 {
-    fn try_from_segments(&self, segments: &[&str]) -> Option<Self> {
+    fn try_from_segments(segments: &[&str]) -> Option<Self> {
         let mut tmp = Vec::with_capacity(segments.len());
         for segment in segments {
             let value = T::try_from_param(segment)?;
@@ -185,8 +185,9 @@ where
 }
 
 impl<T: Route> TryFromSegments for T {
-    fn try_from_segments(&self, segments: &[&str]) -> Option<Self> {
-        Some(self.match_route(segments))
+    fn try_from_segments(segments: &[&str]) -> Option<Self> {
+        // It's fine to use `default()` here for the Perseus use-case (TODO is there any situation where this wouldn't be fine?)
+        Some(Self::match_route(&Self::default(), segments))
     }
 }
 
@@ -362,11 +363,17 @@ mod tests {
                 NotFound,
             }
 
-            assert_eq!(Routes::match_route(&[]), Routes::Home);
-            assert_eq!(Routes::match_route(&["about"]), Routes::About);
-            assert_eq!(Routes::match_route(&["404"]), Routes::NotFound);
+            assert_eq!(Routes::match_route(&Routes::default(), &[]), Routes::Home);
             assert_eq!(
-                Routes::match_route(&["about", "something"]),
+                Routes::match_route(&Routes::default(), &["about"]),
+                Routes::About
+            );
+            assert_eq!(
+                Routes::match_route(&Routes::default(), &["404"]),
+                Routes::NotFound
+            );
+            assert_eq!(
+                Routes::match_route(&Routes::default(), &["about", "something"]),
                 Routes::NotFound
             );
         }
@@ -382,12 +389,21 @@ mod tests {
             }
 
             assert_eq!(
-                Routes::match_route(&["account", "123"]),
+                Routes::match_route(&Routes::default(), &["account", "123"]),
                 Routes::Account { id: 123 }
             );
-            assert_eq!(Routes::match_route(&["account", "-1"]), Routes::NotFound);
-            assert_eq!(Routes::match_route(&["account", "abc"]), Routes::NotFound);
-            assert_eq!(Routes::match_route(&["account"]), Routes::NotFound);
+            assert_eq!(
+                Routes::match_route(&Routes::default(), &["account", "-1"]),
+                Routes::NotFound
+            );
+            assert_eq!(
+                Routes::match_route(&Routes::default(), &["account", "abc"]),
+                Routes::NotFound
+            );
+            assert_eq!(
+                Routes::match_route(&Routes::default(), &["account"]),
+                Routes::NotFound
+            );
         }
 
         #[test]
@@ -401,17 +417,20 @@ mod tests {
             }
 
             assert_eq!(
-                Routes::match_route(&["hello", "Bob", "21"]),
+                Routes::match_route(&Routes::default(), &["hello", "Bob", "21"]),
                 Routes::Hello {
                     name: "Bob".to_string(),
                     age: 21
                 }
             );
             assert_eq!(
-                Routes::match_route(&["hello", "21", "Bob"]),
+                Routes::match_route(&Routes::default(), &["hello", "21", "Bob"]),
                 Routes::NotFound
             );
-            assert_eq!(Routes::match_route(&["hello"]), Routes::NotFound);
+            assert_eq!(
+                Routes::match_route(&Routes::default(), &["hello"]),
+                Routes::NotFound
+            );
         }
 
         #[test]
@@ -427,19 +446,19 @@ mod tests {
             }
 
             assert_eq!(
-                Routes::match_route(&["path", "a", "b", "c"]),
+                Routes::match_route(&Routes::default(), &["path", "a", "b", "c"]),
                 Routes::Path {
                     path: vec!["a".to_string(), "b".to_string(), "c".to_string()]
                 }
             );
             assert_eq!(
-                Routes::match_route(&["numbers", "1", "2", "3"]),
+                Routes::match_route(&Routes::default(), &["numbers", "1", "2", "3"]),
                 Routes::Numbers {
                     numbers: vec![1, 2, 3]
                 }
             );
             assert_eq!(
-                Routes::match_route(&["path"]),
+                Routes::match_route(&Routes::default(), &["path"]),
                 Routes::Path { path: Vec::new() }
             );
         }
@@ -455,15 +474,15 @@ mod tests {
             }
 
             assert_eq!(
-                Routes::match_route(&["path", "1", "2", "end"]),
+                Routes::match_route(&Routes::default(), &["path", "1", "2", "end"]),
                 Routes::Path { path: vec![1, 2] }
             );
             assert_eq!(
-                Routes::match_route(&["path", "end"]),
+                Routes::match_route(&Routes::default(), &["path", "end"]),
                 Routes::Path { path: Vec::new() }
             );
             assert_eq!(
-                Routes::match_route(&["path", "1", "end", "2"]),
+                Routes::match_route(&Routes::default(), &["path", "1", "end", "2"]),
                 Routes::NotFound
             );
         }
@@ -482,7 +501,7 @@ mod tests {
             }
 
             assert_eq!(
-                Routes::match_route(&["path", "1", "2"]),
+                Routes::match_route(&Routes::default(), &["path", "1", "2"]),
                 Routes::Path {
                     param: "path".to_string(),
                     segments: vec!["1".to_string(), "2".to_string()]
@@ -510,16 +529,19 @@ mod tests {
                 NotFound,
             }
 
-            assert_eq!(Routes::match_route(&[]), Routes::Home);
+            assert_eq!(Routes::match_route(&Routes::default(), &[]), Routes::Home);
             assert_eq!(
-                Routes::match_route(&["route", "nested"]),
+                Routes::match_route(&Routes::default(), &["route", "nested"]),
                 Routes::Route(Nested::Nested)
             );
             assert_eq!(
-                Routes::match_route(&["route", "404"]),
+                Routes::match_route(&Routes::default(), &["route", "404"]),
                 Routes::Route(Nested::NotFound)
             );
-            assert_eq!(Routes::match_route(&["404"]), Routes::NotFound);
+            assert_eq!(
+                Routes::match_route(&Routes::default(), &["404"]),
+                Routes::NotFound
+            );
         }
     }
 }
