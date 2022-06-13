@@ -49,7 +49,6 @@ pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
 /// #     todo!()
 /// # }
 /// use sycamore::prelude::*;
-///
 /// /// Create a `View` from a foreign `web_sys::Node`
 /// fn my_raw_node_view<G: Html>() -> View<G> {
 ///     // `create_raw_node` is the logic behind creating the foreign web_sys node
