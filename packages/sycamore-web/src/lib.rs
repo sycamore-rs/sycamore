@@ -41,6 +41,26 @@ pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
 ///
 /// # Panics
 /// When G is not either a `DomNode` or a `HydrateNode`.
+///
+/// # Examples
+///
+/// ```
+/// # fn create_raw_node() -> web_sys::Node {
+/// #     todo!()
+/// # }
+/// use sycamore::prelude::*;
+/// /// Create a `View` from a foreign `web_sys::Node`
+/// fn my_raw_node_view<G: Html>() -> View<G> {
+///     // `create_raw_node` is the logic behind creating the foreign web_sys node
+///     let raw_node: web_sys::Node = create_raw_node();
+///
+///     // convert a `web_sys::Node` into G
+///     let node = sycamore::web::from_web_sys(raw_node);
+///
+///     // return generic node in a `View`
+///     View::new_node(node)
+/// }
+/// ```
 pub fn from_web_sys<G: Html>(node: web_sys::Node) -> G {
     let type_id = TypeId::of::<G>();
 
