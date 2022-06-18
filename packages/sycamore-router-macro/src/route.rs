@@ -90,7 +90,6 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                 ));
             }
 
-            // We implement `Default` as well here for the `Router`/`RouterBase` distinction (`Router` needs to pass a default `impl Route` to `RouterBase`)
             Ok(quote! {
                 impl ::sycamore_router::Route for #ty_name {
                     fn match_route(&self, __segments: &[&str]) -> Self {
@@ -98,6 +97,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         #err_quoted
                     }
                 }
+                // We implement `Default` as well here for the `Router`/`RouterBase` distinction (`Router` needs to pass a default `impl Route` to `RouterBase`)
                 impl ::std::default::Default for #ty_name {
                     fn default() -> Self {
                         #error_handler_name
