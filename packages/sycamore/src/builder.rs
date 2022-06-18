@@ -117,29 +117,6 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self.map(move |_, el| el.set_attribute(name, value.as_ref()))
     }
 
-    /// Set the inner html of the element.
-    ///
-    /// This will clear any children that have been added with .c() or .t().
-    ///
-    /// The html will not be parsed in non-browser environments. This means that accessing methods
-    /// such as [`first_child`](GenericNode::first_child) will return `None`.
-    /// # Example
-    /// ```compile_fail
-    /// # // This example only fails because we've not supplied a "button_icon.svg" anywhere.
-    /// # // It might be possible to extract some of the SVG constants out of the website dir, and use that here.
-    /// # use sycamore::builder::prelude::*;
-    /// # use sycamore::prelude::*;
-    /// # fn _test<G: GenericNode>(ctx: ScopeRef) -> View<G> {
-    /// h(button).inner_html(include_str!("button_icon.svg"))
-    /// # .view(ctx) }
-    /// ```
-    pub fn inner_html(
-        self,
-        html: impl AsRef<str> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(ScopeRef<'a>) -> G + 'a> {
-        self.map(move |_, el| el.dangerously_set_inner_html(html.as_ref()))
-    }
-
     /// Set the boolean attribute of the element.
     ///
     /// # Example
@@ -217,6 +194,56 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
                 } else {
                     el.remove_attribute(name);
                 }
+            });
+        })
+    }
+
+    /// Set the inner html of the element.
+    ///
+    /// This will clear any children that have been added with `.c()` or `.t()`.
+    ///
+    /// The html will not be parsed in non-browser environments. This means that accessing methods
+    /// such as [`first_child`](GenericNode::first_child) will return `None`.
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
+    /// h(button).dangerously_set_inner_html("<p>Raw HTML!</p>")
+    /// # .view(cx) }
+    /// ```
+    pub fn dangerously_set_inner_html(
+        self,
+        html: impl AsRef<str> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        self.map(move |_, el| el.dangerously_set_inner_html(html.as_ref()))
+    }
+
+    /// Dynamically set the inner html of the element.
+    ///
+    /// This will clear any children that have been added with `.c()` or `.t()`.
+    ///
+    /// The html will not be parsed in non-browser environments. This means that accessing methods
+    /// such as [`first_child`](GenericNode::first_child) will return `None`.
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
+    /// h(button).dyn_dangerously_set_inner_html("<p>Raw HTML!</p>")
+    /// # .view(cx) }
+    /// ```
+    pub fn dyn_dangerously_set_inner_html<U>(
+        self,
+        mut html: impl FnMut() -> U + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a>
+    where
+        U: AsRef<str> + 'a,
+    {
+        self.map(move |cx, el| {
+            let el = el.clone();
+            create_effect(cx, move || {
+                el.dangerously_set_inner_html(html().as_ref());
             });
         })
     }
