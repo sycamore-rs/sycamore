@@ -198,6 +198,56 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         })
     }
 
+    /// Set the inner html of the element.
+    ///
+    /// This will clear any children that have been added with `.c()` or `.t()`.
+    ///
+    /// The html will not be parsed in non-browser environments. This means that accessing methods
+    /// such as [`first_child`](GenericNode::first_child) will return `None`.
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
+    /// button().dangerously_set_inner_html("<p>Raw HTML!</p>")
+    /// # .view(cx) }
+    /// ```
+    pub fn dangerously_set_inner_html(
+        self,
+        html: impl AsRef<str> + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        self.map(move |_, el| el.dangerously_set_inner_html(html.as_ref()))
+    }
+
+    /// Dynamically set the inner html of the element.
+    ///
+    /// This will clear any children that have been added with `.c()` or `.t()`.
+    ///
+    /// The html will not be parsed in non-browser environments. This means that accessing methods
+    /// such as [`first_child`](GenericNode::first_child) will return `None`.
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
+    /// button().dyn_dangerously_set_inner_html(|| "<p>Raw HTML!</p>")
+    /// # .view(cx) }
+    /// ```
+    pub fn dyn_dangerously_set_inner_html<U>(
+        self,
+        mut html: impl FnMut() -> U + 'a,
+    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a>
+    where
+        U: AsRef<str> + 'a,
+    {
+        self.map(move |cx, el| {
+            let el = el.clone();
+            create_effect(cx, move || {
+                el.dangerously_set_inner_html(html().as_ref());
+            });
+        })
+    }
+
     /// Adds a class to the element. This is a shorthand for [`Self::attr`] with the `class`
     /// attribute.
     ///
