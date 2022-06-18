@@ -230,7 +230,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
     /// # fn _test<G: GenericNode>(cx: Scope) -> View<G> {
-    /// button().dyn_dangerously_set_inner_html("<p>Raw HTML!</p>")
+    /// button().dyn_dangerously_set_inner_html(|| "<p>Raw HTML!</p>")
     /// # .view(cx) }
     /// ```
     pub fn dyn_dangerously_set_inner_html<U>(
