@@ -118,6 +118,24 @@ view! { cx,
 
 Instead, when displaying user input, use interpolation syntax instead.
 
+### Properties
+
+Properties are set using the `prop:*` directive.
+
+```rust
+view! { cx,
+    input(type="checkbox", prop:indeterminate=true)
+}
+```
+
+There are some properties that do not have an attribute, such as
+`indeterminate` in HTML, which must be set using the `prop:*` directive.
+
+There are a number of properties that have an associated attribute, such as
+`value`, in these cases an attribute is deserialized to become the state of the
+property. Consider using the `prop:*` for these cases when the value expected by
+the element property is not a `string`.
+
 ### Events
 
 Events are attached using the `on:*` directive.
