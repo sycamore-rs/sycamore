@@ -19,7 +19,7 @@ where
 
 /// A portal into another part of the DOM.
 #[component]
-pub fn Portal<'a, G: Html>(ctx: ScopeRef<'a>, props: PortalProps<'a, G>) -> View<G> {
+pub fn Portal<'a, G: Html>(cx: Scope<'a>, props: PortalProps<'a, G>) -> View<G> {
     let PortalProps { children, selector } = props;
 
     if G::IS_BROWSER {
@@ -30,7 +30,7 @@ pub fn Portal<'a, G: Html>(ctx: ScopeRef<'a>, props: PortalProps<'a, G>) -> View
             .unwrap_throw()
             .expect_throw("could not find element matching selector");
 
-        let children = children.call(ctx).flatten();
+        let children = children.call(cx).flatten();
 
         for child in &children {
             container
@@ -42,7 +42,7 @@ pub fn Portal<'a, G: Html>(ctx: ScopeRef<'a>, props: PortalProps<'a, G>) -> View
                 .unwrap_throw();
         }
 
-        ctx.on_cleanup(move || {
+        on_cleanup(cx, move || {
             for child in &children {
                 container
                     .remove_child(
@@ -57,5 +57,5 @@ pub fn Portal<'a, G: Html>(ctx: ScopeRef<'a>, props: PortalProps<'a, G>) -> View
         // TODO: Support for other types of nodes.
     }
 
-    view! { ctx, }
+    view! { cx, }
 }

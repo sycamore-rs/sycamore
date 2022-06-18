@@ -1,5 +1,6 @@
 //! Rendering backend for Server Side Rendering, aka. SSR.
 
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
@@ -8,12 +9,13 @@ use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
 use once_cell::sync::Lazy;
+use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::hydrate::{get_next_id, with_hydration_context};
+use sycamore_core::view::View;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 
-use crate::generic_node::{GenericNode, Html};
-use crate::reactive::*;
-use crate::utils::hydrate::{get_next_id, with_hydration_context};
-use crate::view::View;
+use crate::Html;
 
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     vec![
@@ -78,19 +80,10 @@ impl SsrNode {
 
     /// Get an [`Element`], or `panic!` if wrong type.
     #[track_caller]
-    pub fn unwrap_element(&self) -> &RefCell<Element> {
+    fn unwrap_element(&self) -> &RefCell<Element> {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(e) => e,
             _ => panic!("node is not an element"),
-        }
-    }
-
-    /// Get a [`Text`], or `panic!` if wrong type.
-    #[track_caller]
-    pub fn unwrap_text(&self) -> &RefCell<Text> {
-        match &self.0.ty.as_ref() {
-            SsrNodeType::Text(e) => e,
-            _ => panic!("node is not a text node"),
         }
     }
 
@@ -127,16 +120,31 @@ impl GenericNode for SsrNode {
     /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
     /// anyways, it's okay to do this.
     type EventType = web_sys::Event;
+    type PropertyType = JsValue;
+
     const USE_HYDRATION_CONTEXT: bool = true;
 
-    fn element(tag: &str) -> Self {
+    fn element<T: SycamoreElement>() -> Self {
         let hk = get_next_id();
         let mut attributes = IndexMap::new();
         if let Some(hk) = hk {
             attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
         }
         Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: tag.to_string(),
+            name: Cow::Borrowed(T::TAG_NAME),
+            attributes,
+            children: Default::default(),
+        })))
+    }
+
+    fn element_from_tag(tag: &str) -> Self {
+        let hk = get_next_id();
+        let mut attributes = IndexMap::new();
+        if let Some(hk) = hk {
+            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
+        }
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
+            name: Cow::Owned(tag.to_string()),
             attributes,
             children: Default::default(),
         })))
@@ -295,10 +303,8 @@ impl GenericNode for SsrNode {
                 children
                     .iter()
                     .skip_while(|child| *child != self)
-                    .skip(1)
-                    .take(1)
+                    .nth(1)
                     .cloned()
-                    .next()
             }
             _ => panic!("node type cannot have children"),
         }
@@ -310,12 +316,7 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<'a>(
-        &self,
-        _ctx: ScopeRef<'a>,
-        _name: &str,
-        _handler: Box<dyn Fn(Self::EventType) + 'a>,
-    ) {
+    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, _cx: Scope<'a>, _name: &str, _handler: F) {
         // Noop. Events are attached on client side.
     }
 
@@ -352,7 +353,10 @@ impl Html for SsrNode {
     const IS_BROWSER: bool = false;
 }
 
-trait WriteToString {
+/// Write the [`SsrNode`] to a string buffer.
+/// Implementation details.
+#[doc(hidden)]
+pub trait WriteToString {
     fn write_to_string(&self, s: &mut String);
 }
 
@@ -369,8 +373,8 @@ impl WriteToString for SsrNode {
 
 /// A SSR element.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Element {
-    name: String,
+struct Element {
+    name: Cow<'static, str>,
     attributes: IndexMap<String, String>,
     children: Vec<SsrNode>,
 }
@@ -391,7 +395,7 @@ impl WriteToString for Element {
         }
 
         // Check if self-closing tag (void-element).
-        if self.children.is_empty() && VOID_ELEMENTS.contains(self.name.as_str()) {
+        if self.children.is_empty() && VOID_ELEMENTS.contains(&*self.name) {
             s.push_str("/>");
         } else {
             s.push('>');
@@ -408,7 +412,7 @@ impl WriteToString for Element {
 
 /// A SSR comment node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Comment(String);
+struct Comment(String);
 
 impl WriteToString for Comment {
     fn write_to_string(&self, s: &mut String) {
@@ -422,7 +426,7 @@ impl WriteToString for Comment {
 
 /// A SSR text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Text(String);
+struct Text(String);
 
 impl WriteToString for Text {
     fn write_to_string(&self, s: &mut String) {
@@ -432,7 +436,7 @@ impl WriteToString for Text {
 
 /// Un-escaped text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct RawText(String);
+struct RawText(String);
 
 impl WriteToString for RawText {
     fn write_to_string(&self, s: &mut String) {
@@ -445,10 +449,10 @@ impl WriteToString for RawText {
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
 #[must_use]
-pub fn render_to_string(view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode>) -> String {
+pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String {
     let mut ret = String::new();
-    create_scope_immediate(|ctx| {
-        let v = with_hydration_context(|| view(ctx));
+    create_scope_immediate(|cx| {
+        let v = with_hydration_context(|| view(cx));
 
         for node in v.flatten() {
             node.write_to_string(&mut ret);
@@ -458,61 +462,16 @@ pub fn render_to_string(view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode>) -> Str
     ret
 }
 
-/// Render a [`View`] into a static [`String`]. Useful
-/// for rendering to a string on the server side.
-///
-/// Waits for suspense to be loaded before returning.
-///
-/// _This API requires the following crate features to be activated: `suspense`, `ssr`_
-#[cfg(feature = "suspense")]
-pub async fn render_to_string_await_suspense(
-    view: impl FnOnce(ScopeRef<'_>) -> View<SsrNode> + 'static,
-) -> String {
-    use futures::channel::oneshot;
-    use sycamore_futures::ScopeSpawnLocal;
-
-    let mut ret = String::new();
-    let v = Rc::new(RefCell::new(None));
-    let (sender, receiver) = oneshot::channel();
-    let disposer = create_scope({
-        let v = Rc::clone(&v);
-        move |ctx| {
-            ctx.spawn_local(async move {
-                *v.borrow_mut() = Some(
-                    crate::suspense::await_suspense(ctx, async {
-                        with_hydration_context(|| view(ctx))
-                    })
-                    .await,
-                );
-                sender
-                    .send(())
-                    .expect("receiving end should not be dropped");
-            });
-        }
-    });
-    receiver.await.expect("rendering should complete");
-    let v = v.borrow().clone().unwrap();
-    for node in v.flatten() {
-        node.write_to_string(&mut ret);
-    }
-
-    // SAFETY: we are done with the scope now.
-    unsafe {
-        disposer.dispose();
-    }
-
-    ret
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::prelude::*;
+    use sycamore::prelude::*;
+    use sycamore::render_to_string;
+    use sycamore::web::html;
 
     #[test]
     fn render_hello_world() {
         assert_eq!(
-            render_to_string(|ctx| view! { ctx,
+            render_to_string(|cx| view! { cx,
                 "Hello World!"
             }),
             "Hello World!"
@@ -522,7 +481,7 @@ mod tests {
     #[test]
     fn render_escaped_text() {
         assert_eq!(
-            render_to_string(|ctx| view! { ctx,
+            render_to_string(|cx| view! { cx,
                 "<script>Dangerous!</script>"
             }),
             "&lt;script>Dangerous!&lt;/script>"
@@ -532,7 +491,7 @@ mod tests {
     #[test]
     fn render_unescaped_html() {
         assert_eq!(
-            render_to_string(|ctx| view! { ctx,
+            render_to_string(|cx| view! { cx,
                 div(dangerously_set_inner_html="<a>Html!</a>")
             }),
             "<div data-hk=\"0.0\"><a>Html!</a></div>"
@@ -541,9 +500,9 @@ mod tests {
 
     #[test]
     fn append_child() {
-        let node = SsrNode::element("div");
-        let p = SsrNode::element("p");
-        let p2 = SsrNode::element("p");
+        let node = SsrNode::element::<html::div>();
+        let p = SsrNode::element::<html::p>();
+        let p2 = SsrNode::element::<html::p>();
 
         node.append_child(&p);
         node.append_child(&p2);
@@ -561,8 +520,8 @@ mod tests {
 
     #[test]
     fn remove_child() {
-        let node = SsrNode::element("div");
-        let p = SsrNode::element("p");
+        let node = SsrNode::element::<html::div>();
+        let p = SsrNode::element::<html::p>();
 
         node.append_child(&p);
         // p parent should be updated
@@ -580,10 +539,10 @@ mod tests {
 
     #[test]
     fn remove_child_2() {
-        let node = SsrNode::element("div");
-        let p = SsrNode::element("p");
-        let p2 = SsrNode::element("p");
-        let p3 = SsrNode::element("p");
+        let node = SsrNode::element::<html::div>();
+        let p = SsrNode::element::<html::p>();
+        let p2 = SsrNode::element::<html::p>();
+        let p3 = SsrNode::element::<html::p>();
 
         node.append_child(&p);
         node.append_child(&p2);

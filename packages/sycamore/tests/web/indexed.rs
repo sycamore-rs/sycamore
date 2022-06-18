@@ -4,14 +4,14 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn append() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -38,14 +38,14 @@ fn append() {
 
 #[wasm_bindgen_test]
 fn swap_rows() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -75,14 +75,14 @@ fn swap_rows() {
 
 #[wasm_bindgen_test]
 fn update_row() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -101,14 +101,14 @@ fn update_row() {
 
 #[wasm_bindgen_test]
 fn trigger_with_same_data() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -127,14 +127,14 @@ fn trigger_with_same_data() {
 
 #[wasm_bindgen_test]
 fn delete_row() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -157,14 +157,14 @@ fn delete_row() {
 
 #[wasm_bindgen_test]
 fn delete_row_from_start() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -183,14 +183,14 @@ fn delete_row_from_start() {
 
 #[wasm_bindgen_test]
 fn delete_row_from_end() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -209,14 +209,14 @@ fn delete_row_from_end() {
 
 #[wasm_bindgen_test]
 fn clear() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -235,14 +235,14 @@ fn clear() {
 
 #[wasm_bindgen_test]
 fn insert_front() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2, 3]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2, 3]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
@@ -265,19 +265,20 @@ fn insert_front() {
 
 #[wasm_bindgen_test]
 fn nested_reactivity() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(
+    create_scope_immediate(|cx| {
+        let count = create_signal(
+            cx,
             vec![1, 2, 3]
                 .into_iter()
-                .map(|x| ctx.create_signal(x))
+                .map(|x| create_signal(cx, x))
                 .collect(),
         );
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item.get()) }
                     },
                 }
@@ -294,7 +295,7 @@ fn nested_reactivity() {
 
         count.set({
             let mut tmp = (*count.get()).clone();
-            tmp.push(ctx.create_signal(5));
+            tmp.push(create_signal(cx, 5));
             tmp
         });
         assert_eq!(p.text_content().unwrap(), "4235");
@@ -303,14 +304,14 @@ fn nested_reactivity() {
 
 #[wasm_bindgen_test]
 fn fragment_template() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             div {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         span { "The value is: " }
                         strong { (item) }
                     },
@@ -354,13 +355,13 @@ fn fragment_template() {
 
 #[wasm_bindgen_test]
 fn template_top_level() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             Indexed {
                 iterable: count,
-                view: |ctx, item| view! { ctx,
+                view: |cx, item| view! { cx,
                     li { (item) }
                 },
             }
@@ -389,14 +390,14 @@ fn template_top_level() {
 
 #[wasm_bindgen_test]
 fn template_dyn_top_level() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(vec![1, 2]);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, vec![1, 2]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             div {
                 Indexed {
                     iterable: count,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         (item)
                     },
                 }
@@ -426,22 +427,22 @@ fn template_dyn_top_level() {
 
 #[wasm_bindgen_test]
 fn template_with_other_nodes_at_same_level() {
-    create_scope_immediate(|ctx| {
-        let vec1 = ctx.create_signal(vec![1, 2]);
-        let vec2 = ctx.create_signal(vec![4, 5]);
+    create_scope_immediate(|cx| {
+        let vec1 = create_signal(cx, vec![1, 2]);
+        let vec2 = create_signal(cx, vec![4, 5]);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             ul {
                 li { "before" }
                 Indexed {
                     iterable: vec1,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }
                 Indexed {
                     iterable: vec2,
-                    view: |ctx, item| view! { ctx,
+                    view: |cx, item| view! { cx,
                         li { (item) }
                     },
                 }

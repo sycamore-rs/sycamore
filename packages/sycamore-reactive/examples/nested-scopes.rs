@@ -1,11 +1,11 @@
 use sycamore_reactive::*;
 
 fn main() {
-    create_scope_immediate(|ctx| {
-        let outer = ctx.create_signal(0);
-        let disposer = ctx.create_child_scope(|ctx| {
+    create_scope_immediate(|cx| {
+        let outer = create_signal(cx, 0);
+        let disposer = create_child_scope(cx, |cx| {
             dbg!(outer.get());
-            ctx.create_effect(|| {
+            create_effect(cx, || {
                 dbg!(outer.get());
             });
         });

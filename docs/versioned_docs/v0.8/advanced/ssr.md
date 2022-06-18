@@ -13,7 +13,7 @@ DOM. When rendering on the server, however, we don't have a DOM accessible to us
 browser using your favorite web server.
 
 ```rust
-let html = render_to_string(|ctx| view! { ctx,
+let html = render_to_string(|cx| view! { cx,
     div(class="my-class") {
         button { "Click me" }
     }
@@ -31,7 +31,7 @@ client to recreate all the DOM nodes when they are already there. To _"hydrate"_
 `hydrate` and `hydrate_to` instead of `render` and `render_to` functions to mount your app. These
 functions do what they say on the tin: render your app by reusing existing DOM nodes.
 
-In your client-side app, enable the `"experimental-hydrate"` feature on `sycamore` in your
+In your client-side app, enable the `"hydrate"` feature on `sycamore` in your
 `Cargo.toml` file.
 
 ## Quick Start Templates

@@ -1,37 +1,36 @@
 //! Rendering backend for the DOM.
 
-#![allow(clippy::unused_unit)] // TODO: wasm-bindgen bug
-
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
+use js_sys::Array;
+use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::render::insert;
+use sycamore_core::view::View;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Document, Element, Node, Text};
 
-use crate::generic_node::{GenericNode, Html};
-use crate::reactive::*;
-use crate::utils::render::insert;
-use crate::view::View;
+use crate::Html;
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(extends = Node)]
     pub(super) type NodeWithId;
-
     #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
     pub fn node_id(this: &NodeWithId) -> Option<usize>;
-
     #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
     pub fn set_node_id(this: &NodeWithId, id: usize);
-}
 
-#[wasm_bindgen]
-extern "C" {
+    #[wasm_bindgen(extends = Element)]
+    type ElementTrySetClassName;
+    #[wasm_bindgen(method, catch, setter, js_name = "className")]
+    fn try_set_class_name(this: &ElementTrySetClassName, class_name: &str) -> Result<(), JsValue>;
+
     #[wasm_bindgen(extends = Document)]
     type DocumentCreateTextNodeInt;
-
     #[wasm_bindgen(method, js_name = "createTextNode")]
     pub fn create_text_node_int(this: &DocumentCreateTextNodeInt, num: i32) -> web_sys::Text;
 }
@@ -76,7 +75,7 @@ impl DomNode {
 
     /// Get the [`NodeId`] for the node.
     pub(super) fn get_node_id(&self) -> NodeId {
-        if self.id.get().0 == 0 {
+        if self.id.get() == NodeId(0) {
             // self.id not yet initialized.
             if let Some(id) = self.node.unchecked_ref::<NodeWithId>().node_id() {
                 self.id.set(NodeId(id));
@@ -148,13 +147,28 @@ fn document() -> web_sys::Document {
 
 impl GenericNode for DomNode {
     type EventType = web_sys::Event;
+    type PropertyType = JsValue;
 
-    fn element(tag: &str) -> Self {
-        let node = document()
-            .create_element(intern(tag))
-            .unwrap_throw()
-            .dyn_into()
-            .unwrap_throw();
+    fn element<T: SycamoreElement>() -> Self {
+        let node = if let Some(ns) = T::NAME_SPACE {
+            document()
+                .create_element_ns(Some(ns), intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        } else {
+            document()
+                .create_element(intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        };
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    fn element_from_tag(tag: &str) -> Self {
+        let node = document().create_element(intern(tag)).unwrap_throw().into();
         DomNode {
             id: Default::default(),
             node,
@@ -203,23 +217,52 @@ impl GenericNode for DomNode {
     }
 
     fn set_class_name(&self, value: &str) {
-        self.node.unchecked_ref::<Element>().set_class_name(value);
+        if self
+            .node
+            .unchecked_ref::<ElementTrySetClassName>()
+            .try_set_class_name(value)
+            .is_err()
+        {
+            // Node is a SVG element.
+            self.node
+                .unchecked_ref::<Element>()
+                .set_attribute("class", value)
+                .unwrap_throw();
+        }
     }
 
     fn add_class(&self, class: &str) {
-        self.node
-            .unchecked_ref::<Element>()
-            .class_list()
-            .add_1(class)
-            .unwrap_throw();
+        let class_list = class.split_ascii_whitespace().collect::<Vec<_>>();
+        if class_list.len() == 1 {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .add_1(class_list[0])
+                .unwrap_throw();
+        } else {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .add(&class_list.into_iter().map(JsValue::from).collect::<Array>())
+                .unwrap_throw();
+        }
     }
 
     fn remove_class(&self, class: &str) {
-        self.node
-            .unchecked_ref::<Element>()
-            .class_list()
-            .remove_1(class)
-            .unwrap_throw();
+        let class_list = class.split_ascii_whitespace().collect::<Vec<_>>();
+        if class_list.len() == 1 {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .remove_1(class_list[0])
+                .unwrap_throw();
+        } else {
+            self.node
+                .unchecked_ref::<Element>()
+                .class_list()
+                .remove(&class_list.into_iter().map(JsValue::from).collect::<Array>())
+                .unwrap_throw();
+        }
     }
 
     fn set_property(&self, name: &str, value: &JsValue) {
@@ -243,7 +286,7 @@ impl GenericNode for DomNode {
 
     fn insert_child_before(&self, new_node: &Self, reference_node: Option<&Self>) {
         self.node
-            .insert_before(&new_node.node, reference_node.map(|n| n.node.as_ref()))
+            .insert_before(&new_node.node, reference_node.map(|n| &n.node))
             .unwrap_throw();
     }
 
@@ -280,19 +323,16 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event<'a>(&self, ctx: ScopeRef<'a>, name: &str, handler: Box<dyn Fn(Self::EventType) + 'a>) {
-        // SAFETY: extend lifetime because the closure is dropped when the ctx is disposed,
+    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F) {
+        let boxed: Box<dyn FnMut(Self::EventType)> = Box::new(handler);
+        // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
         // preventing the handler from ever being accessed after its lifetime.
-        let handler: Box<dyn Fn(Self::EventType) + 'static> =
-            unsafe { std::mem::transmute(handler) };
-        let closure = Closure::wrap(handler);
+        let handler: Box<dyn FnMut(Self::EventType) + 'static> =
+            unsafe { std::mem::transmute(boxed) };
+        let closure = create_ref(cx, Closure::wrap(handler));
         self.node
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
             .unwrap_throw();
-
-        ctx.on_cleanup(move || {
-            drop(closure);
-        });
     }
 
     fn update_inner_text(&self, text: &str) {
@@ -319,7 +359,7 @@ impl Html for DomNode {
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>) {
+pub fn render(view: impl FnOnce(Scope<'_>) -> View<DomNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
@@ -330,7 +370,7 @@ pub fn render(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>) {
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>, parent: &Node) {
+pub fn render_to(view: impl FnOnce(Scope<'_>) -> View<DomNode>, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
     let _ = render_get_scope(view, parent);
 }
@@ -347,14 +387,14 @@ pub fn render_to(view: impl FnOnce(ScopeRef<'_>) -> View<DomNode>, parent: &Node
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ScopeDisposer until you want to clean things up, or use render_to() instead"]
 pub fn render_get_scope<'a>(
-    view: impl FnOnce(ScopeRef<'_>) -> View<DomNode> + 'a,
+    view: impl FnOnce(Scope<'_>) -> View<DomNode> + 'a,
     parent: &'a Node,
 ) -> ScopeDisposer<'a> {
-    create_scope(|ctx| {
+    create_scope(|cx| {
         insert(
-            ctx,
+            cx,
             &DomNode::from_web_sys(parent.clone()),
-            view(ctx),
+            view(cx),
             None,
             None,
             false,

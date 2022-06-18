@@ -8,7 +8,7 @@ keywords = ["wasm", "gui", "reactive"]
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.8.0-beta.3"
+version = "0.8.0-beta.6"
 
 [lib]
 proc-macro = true
@@ -20,10 +20,10 @@ quote = "1.0.15"
 syn = { version = "1.0.86", features = ["extra-traits", "full"] }
 
 [dev-dependencies]
-sycamore = { path = "../sycamore", features = ["experimental-hydrate"] }
+sycamore = { path = "../sycamore", features = ["hydrate", "suspense"] }
 trybuild = "1.0.56"
 
 [features]
 default = []
-experimental-hydrate = []
+hydrate = []
 ssr = []

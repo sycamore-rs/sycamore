@@ -15,7 +15,7 @@ Creating HTML elements is easy as pie with the `view!` macro. Since you'll likel
 lot of elements in your app, there is a special terse syntax.
 
 ```rust
-view! { ctx,
+view! { cx,
     // A simple div
     div
     // A div with a class
@@ -33,7 +33,7 @@ Of course, in your app, you probably want to display some text. To create a text
 string literal.
 
 ```rust
-view! { ctx,
+view! { cx,
     "Hello World!"
 }
 ```
@@ -43,7 +43,7 @@ view! { ctx,
 Creating all these top-level nodes is not very useful. You can create nested nodes like so.
 
 ```rust
-view! { ctx,
+view! { cx,
     div {
         p {
             span { "Hello " }
@@ -53,7 +53,7 @@ view! { ctx,
 }
 ```
 
-## Interpolation
+### Interpolation
 
 Views can contain interpolated values. Anything that implements `std::fmt::Display` will
 automatically be inserted as text into the DOM tree. For example:
@@ -61,7 +61,7 @@ automatically be inserted as text into the DOM tree. For example:
 ```rust
 let my_number = 123;
 
-view! { ctx,
+view! { cx,
     p {
         "This is my number: " (my_number)
     }
@@ -72,11 +72,11 @@ Other views created using the `view!` macro can also be interpolated using the s
 example:
 
 ```rust
-let inner_view = view! { ctx,
+let inner_view = view! { cx,
     "Inside"
 };
 
-let outer_view = view! { ctx,
+let outer_view = view! { cx,
     "Outside"
     div {
         (inner_view)
@@ -92,7 +92,7 @@ value of the expression. Learn more about this in [Reactivity](./reactivity).
 Attributes (including classes and ids) can also be specified.
 
 ```rust
-view! { ctx,
+view! { cx,
     p(class="my-class", id="my-paragraph", aria-label="My paragraph")
     button(disabled=true) {
        "My button"
@@ -107,7 +107,7 @@ element. This should generally be avoided because it is a possible security risk
 input to this attribute as that will create an XSS (Cross-Site Scripting) vulnerability.
 
 ```rust
-view! { ctx,
+view! { cx,
     div(dangerously_set_inner_html="<span>Inner HTML!</span>")
 
     // DO NOT DO THIS!!!
@@ -118,12 +118,30 @@ view! { ctx,
 
 Instead, when displaying user input, use interpolation syntax instead.
 
+### Properties
+
+Properties are set using the `prop:*` directive.
+
+```rust
+view! { cx,
+    input(type="checkbox", prop:indeterminate=true)
+}
+```
+
+There are some properties that do not have an attribute, such as
+`indeterminate` in HTML, which must be set using the `prop:*` directive.
+
+There are a number of properties that have an associated attribute, such as
+`value`, in these cases an attribute is deserialized to become the state of the
+property. Consider using the `prop:*` for these cases when the value expected by
+the element property is not a `string`.
+
 ### Events
 
 Events are attached using the `on:*` directive.
 
 ```rust
-view! { ctx,
+view! { cx,
     button(on:click=|_| { /* do something */ }) {
         "Click me"
     }
@@ -136,24 +154,23 @@ As seen in previous examples, views can also be fragments. You can create as man
 at the top-level.
 
 ```rust
-view! { ctx,
+view! { cx,
     p { "First child" }
     p { "Second child" }
 }
 ```
 
-Fragments can also be empty. (Note that passing the `ctx` variable is still required. This
+Fragments can also be empty. (Note that passing the `cx` variable is still required. This
 restriction will be lifted in the future.)
 
 ```rust
-view! { ctx, }
+view! { cx, }
 ```
 
 ## Builder syntax
 
 For those who dislike macro DSLs, we also provide an ergonomic builder API for constructing views.
-To begin, enable the `"builder"` feature flag on `sycamore` in your `Cargo.toml` file. Also make
-sure to add the builder prelude as well as the main sycamore prelude to your source file.
+Add the builder prelude as well as the main sycamore prelude to your source file.
 
 ```rust
 use sycamore::builder::prelude::*;
@@ -165,15 +182,15 @@ use sycamore::prelude::*;
 Elements can easily be created using the utility `h` function.
 
 ```rust
-h(a)
-h(button)
-h(div)
+a()
+button()
+div()
 // etc...
 ```
 
 Observe that this creates an `ElementBuilder`. This is a struct used for lazily constructing the
-element. To get a `View` from an `ElementBuilder`, just call `.view(ctx)` at the end of the builder
-chain. This will evaluate all the lazy builder calls preceding it by passing in `ctx`.
+element. To get a `View` from an `ElementBuilder`, just call `.view(cx)` at the end of the builder
+chain. This will evaluate all the lazy builder calls preceding it by passing in `cx`.
 
 ### Text nodes
 
@@ -192,10 +209,10 @@ Nodes can be nested under an element using a combination of `.c(...)` for child 
 `.t(...)` for child text nodes.
 
 ```rust
-h(div).c(
-    h(p)
-        .c(h(span).t("Hello "))
-        .c(h(strong).t("World!"))
+div().c(
+    p()
+        .c(span().t("Hello "))
+        .c(strong().t("World!"))
 )
 ```
 
@@ -207,7 +224,7 @@ respectively.
 ```rust
 let my_number = 123;
 
-h(p)
+p()
     .t("This is my number: ")
     .dyn_t(|| my_number.to_string())
 ```
@@ -217,14 +234,14 @@ h(p)
 Unsurprisingly, attributes can also be set using the builder pattern.
 
 ```rust
-h(p).attr("class", "my-class").attr("id", "my-paragraph").attr("aria-label", "My paragraph")
+p().attr("class", "my-class").attr("id", "my-paragraph").attr("aria-label", "My paragraph")
 ```
 
 For convenience, the methods `.class(...)` and `.id(...)` are provided for setting the `class` and
 `id` attributes directly. This means that we can rewrite our previous example as:
 
 ```rust
-h(p).class("my-class").ud("my-paragraph").attr("aria-label", "My paragraph")
+p().class("my-class").id("my-paragraph").attr("aria-label", "My paragraph")
 ```
 
 #### `dangerously_set_inner_html`
@@ -237,7 +254,7 @@ supported by the builder API.
 Events are attached using `.on(...)`.
 
 ```rust
-h(button).on("click", |_| { /* do something */ }).t("Click me")
+button().on("click", |_| { /* do something */ }).t("Click me")
 ```
 
 ### Fragments
@@ -246,7 +263,7 @@ Construct fragments using `fragment(...)`.
 
 ```rust
 fragment([
-    h(p).t("First child").view(ctx),
-    h(p).t("Second child").view(ctx),
+    p().t("First child").view(cx),
+    p().t("Second child").view(cx),
 ])
 ```

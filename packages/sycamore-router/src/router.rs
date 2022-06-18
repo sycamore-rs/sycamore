@@ -145,7 +145,7 @@ fn base_pathname() -> String {
 pub struct RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
-    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration,
     G: GenericNode,
 {
@@ -158,7 +158,7 @@ where
 impl<'a, R, F, I, G> RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
-    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration,
     G: GenericNode,
 {
@@ -175,13 +175,10 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<'a, G: Html, R, F, I>(
-    ctx: ScopeRef<'a>,
-    props: RouterProps<'a, R, F, I, G>,
-) -> View<G>
+pub fn Router<'a, G: Html, R, F, I>(cx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
 where
     R: Route + 'a,
-    F: FnOnce(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration + 'static,
 {
     let RouterProps {
@@ -189,12 +186,14 @@ where
         integration,
         _phantom,
     } = props;
-    let view = Rc::new(RefCell::new(Some(view)));
     let integration = Rc::new(integration);
     let base_pathname = base_pathname();
 
     PATHNAME.with(|pathname| {
-        assert!(pathname.borrow().is_none());
+        assert!(
+            pathname.borrow().is_none(),
+            "cannot have more than one Router component initialized"
+        );
         // Get initial url from window.location.
         let path = integration.current_pathname();
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
@@ -203,10 +202,8 @@ where
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    ctx.on_cleanup(|| {
-        PATHNAME.with(|pathname| {
-            *pathname.borrow_mut() = None;
-        });
+    on_cleanup(cx, || {
+        PATHNAME.with(|pathname| *pathname.borrow_mut() = None)
     });
 
     // Listen to popstate event.
@@ -219,33 +216,16 @@ where
             pathname.set(path.to_string());
         }
     }));
-
-    let path = ctx.create_selector(move || {
-        pathname
-            .get()
-            .split('/')
-            .filter(|s| !s.is_empty())
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>()
-    });
-    let route_signal = ctx.create_memo(move || {
-        R::match_route(
-            path.get()
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>()
-                .as_slice(),
-        )
-    });
+    let route_signal = create_memo(cx, move || R::match_path(&pathname.get()));
     // Delegate click events from child <a> tags.
-    let tmp = view.take().unwrap_throw()(ctx, route_signal);
-    if let Some(node) = tmp.as_node() {
-        node.event(ctx, "click", integration.click_handler());
+    let view = view(cx, route_signal);
+    if let Some(node) = view.as_node() {
+        node.event(cx, "click", integration.click_handler());
     } else {
-        // TODO: support fragments and lazy nodes
-        panic!("render should return a single node");
+        // TODO: support fragments and dynamic nodes
+        unimplemented!("support fragments and dynamic nodes for Router")
     }
-    tmp
+    view
 }
 
 /// Props for [`StaticRouter`].
@@ -253,7 +233,7 @@ where
 pub struct StaticRouterProps<'a, R, F, G>
 where
     R: Route + 'a,
-    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     view: F,
@@ -265,13 +245,13 @@ where
 impl<'a, R, F, G> StaticRouterProps<'a, R, F, G>
 where
     R: Route,
-    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     G: GenericNode,
 {
     /// Create a new [`StaticRouterProps`].
-    pub fn new(route: R, render: F) -> Self {
+    pub fn new(route: R, view: F) -> Self {
         Self {
-            view: render,
+            view,
             route,
             _phantom: PhantomData,
         }
@@ -284,12 +264,12 @@ where
 /// the route preload to finish loading.
 #[component]
 pub fn StaticRouter<'a, G: Html, R, F>(
-    ctx: ScopeRef<'a>,
+    cx: Scope<'a>,
     props: StaticRouterProps<'a, R, F, G>,
 ) -> View<G>
 where
     R: Route + 'static,
-    F: Fn(ScopeRef<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
     let StaticRouterProps {
         view,
@@ -297,7 +277,7 @@ where
         _phantom,
     } = props;
 
-    view(ctx, ctx.create_signal(route))
+    view(cx, create_signal(cx, route))
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -311,7 +291,7 @@ pub fn navigate(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.borrow().is_some(),
-            "navigate can only be used with a BrowserRouter"
+            "navigate can only be used with a Router"
         );
 
         let pathname = pathname.borrow().clone().unwrap_throw();
@@ -340,7 +320,7 @@ pub fn navigate_replace(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.borrow().is_some(),
-            "navigate_replace can only be used with a BrowserRouter"
+            "navigate_replace can only be used with a Router"
         );
 
         let pathname = pathname.borrow().clone().unwrap_throw();
@@ -380,7 +360,7 @@ mod tests {
         }
 
         #[component]
-        fn Comp<G: Html>(ctx: ScopeRef, path: String) -> View<G> {
+        fn Comp<G: Html>(cx: Scope, path: String) -> View<G> {
             let route = Routes::match_route(
                 &path
                     .split('/')
@@ -388,18 +368,18 @@ mod tests {
                     .collect::<Vec<_>>(),
             );
 
-            view! { ctx,
+            view! { cx,
                 StaticRouter {
                     route: route,
-                    view: |ctx, route: &ReadSignal<Routes>| {
+                    view: |cx, route: &ReadSignal<Routes>| {
                         match route.get().as_ref() {
-                            Routes::Home => view! { ctx,
+                            Routes::Home => view! { cx,
                                 "Home"
                             },
-                            Routes::About => view! { ctx,
+                            Routes::About => view! { cx,
                                 "About"
                             },
-                            Routes::NotFound => view! { ctx,
+                            Routes::NotFound => view! { cx,
                                 "Not Found"
                             }
                         }
@@ -409,17 +389,17 @@ mod tests {
         }
 
         assert_eq!(
-            sycamore::render_to_string(|ctx| view! { ctx, Comp("/".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp("/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|ctx| view! { ctx, Comp("/about".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp("/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|ctx| view! { ctx, Comp("/404".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp("/404".to_string()) }),
             "Not Found"
         );
     }

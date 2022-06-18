@@ -1,13 +1,26 @@
-use sycamore::prelude::*;
+#![no_implicit_prelude]
+use ::sycamore::prelude::{component, Html, Scope, View};
 
 #[component]
-fn comp1<G: Html>(_ctx: ScopeRef) -> View<G> {
-    todo!();
+fn CompNoProps<G: Html>(_cx: Scope) -> View<G> {
+    ::std::todo!();
 }
 
 #[component]
-fn comp2<G: Html>(_ctx: ScopeRef) -> View<G> {
-    todo!();
+fn CompWithProps<G: Html>(_cx: Scope, prop: ::std::primitive::i32) -> View<G> {
+    let _ = prop;
+    ::std::todo!();
+}
+
+#[component]
+async fn AsyncCompNoProps<G: Html>(_cx: Scope<'_>) -> View<G> {
+    ::std::todo!();
+}
+
+#[component]
+async fn AsyncCompWithProps<G: Html>(_cx: Scope<'_>, prop: ::std::primitive::i32) -> View<G> {
+    let _ = prop;
+    ::std::todo!();
 }
 
 fn main() {}

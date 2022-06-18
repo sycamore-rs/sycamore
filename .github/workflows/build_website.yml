@@ -70,10 +70,13 @@ jobs:
       - name: Build rustdocs
         run: |
           cd packages/sycamore && cargo doc --no-deps --all-features
+          cd ../sycamore-core && cargo doc --no-deps --all-features
+          cd ../sycamore-futures && cargo doc --no-deps --all-features
           cd ../sycamore-macro && cargo doc --no-deps --all-features
           cd ../sycamore-reactive && cargo doc --no-deps --all-features
           cd ../sycamore-router && cargo doc --no-deps --all-features
           cd ../sycamore-router-macro && cargo doc --no-deps --all-features
+          cd ../sycamore-web && cargo doc --no-deps --all-features
           cd ../../
           cp -r target/doc website/dist/api
 

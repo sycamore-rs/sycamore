@@ -3,6 +3,7 @@
 use std::fmt;
 
 use syn::ext::IdentExt;
+use syn::parse::discouraged::Speculative;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Brace, Paren};
@@ -83,17 +84,24 @@ impl Parse for Element {
             while !content.is_empty() {
                 body.push(content.parse()?);
             }
+
+            // Check if dangerously_set_inner_html is also set.
+            let dangerously_set_inner_html_span = attrs.iter().find_map(|attr| {
+                (attr.ty == AttributeType::DangerouslySetInnerHtml).then(|| attr.span)
+            });
+            if let Some(span) = dangerously_set_inner_html_span {
+                if !body.is_empty() {
+                    return Err(syn::Error::new(
+                        span,
+                        content.error("children and dangerously_set_inner_html cannot be both set"),
+                    ));
+                }
+            }
+
             body
         } else {
             Vec::new()
         };
-
-        let has_dangerously_set_inner_html_attr = attrs
-            .iter()
-            .any(|attr| attr.ty == AttributeType::DangerouslySetInnerHtml);
-        if has_dangerously_set_inner_html_attr && !children.is_empty() {
-            return Err(input.error("children and dangerously_set_inner_html cannot be both set"));
-        }
 
         Ok(Self {
             tag,
@@ -128,10 +136,11 @@ impl Parse for ElementTag {
 
 impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
+        let span = input.span();
         let ty = input.parse()?;
         let _eqs: Token![=] = input.parse()?;
         let value = input.parse()?;
-        Ok(Self { ty, value })
+        Ok(Self { ty, value, span })
     }
 }
 
@@ -183,6 +192,12 @@ impl Parse for AttributeType {
                         event: event.to_string(),
                     })
                 }
+                "prop" => {
+                    let prop = input.call(Ident::parse_any)?;
+                    Ok(Self::Property {
+                        prop: prop.to_string(),
+                    })
+                }
                 "bind" => {
                     let prop = input.call(Ident::parse_any)?;
                     Ok(Self::Bind {
@@ -213,23 +228,22 @@ impl Parse for Component {
             Ok(Self::FnLike(FnLikeComponent { ident, args }))
         } else if input.peek(Brace) {
             // Parse element link component.
-            braced!(content in input);
+            let brace = braced!(content in input);
             let mut props = Punctuated::<FieldValue, Token![,]>::new();
             while !content.is_empty() {
-                if content.peek(Ident) && content.peek2(Token![:]) && !content.peek3(Token![:]) {
-                    // Parse component prop field.
-                    let field_value = content.parse()?;
-                    let comma_parsed = if content.peek(Token![,]) {
-                        let _comma: Token![,] = content.parse()?;
-                        true
-                    } else {
-                        false
-                    };
-                    if !content.is_empty() && !comma_parsed {
-                        content.parse::<Token![,]>()?; // Emit an error if there is no comma and not
-                                                       // eof.
+                let fork = content.fork();
+                if let Ok(value) = fork.parse() {
+                    if fork.peek(Brace) || ViewNode::peek_type(&fork).is_some() {
+                        break;
                     }
-                    props.push(field_value);
+                    content.advance_to(&fork);
+
+                    props.push_value(value);
+                    if content.is_empty() {
+                        break;
+                    }
+                    let punct = content.parse()?;
+                    props.push_punct(punct);
                 } else {
                     break;
                 }
@@ -246,6 +260,7 @@ impl Parse for Component {
             };
             Ok(Self::ElementLike(ElementLikeComponent {
                 ident,
+                brace,
                 props: props
                     .into_iter()
                     .map(|x| match x.member {

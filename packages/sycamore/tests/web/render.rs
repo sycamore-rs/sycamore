@@ -2,9 +2,9 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn lazy() {
-    create_scope_immediate(|ctx| {
-        let node: View<DomNode> = View::new_dyn(ctx, move || {
-            view! { ctx,
+    create_scope_immediate(|cx| {
+        let node: View<DomNode> = View::new_dyn(cx, move || {
+            view! { cx,
                 div {
                     "Test"
                 }
@@ -26,11 +26,14 @@ fn lazy() {
 
 #[wasm_bindgen_test]
 fn lazy_reactive() {
-    create_scope_immediate(|ctx| {
-        let template = ctx.create_signal(view! { ctx,
-            "1"
-        });
-        let node: View<DomNode> = View::new_dyn(ctx, || (*template.get()).clone());
+    create_scope_immediate(|cx| {
+        let template = create_signal(
+            cx,
+            view! { cx,
+                "1"
+            },
+        );
+        let node: View<DomNode> = View::new_dyn(cx, || (*template.get()).clone());
 
         sycamore::render_to(|_| node, &test_container());
         let test_container = document()
@@ -40,7 +43,7 @@ fn lazy_reactive() {
 
         assert_eq!(test_container.text_content().unwrap(), "1");
 
-        template.set(view! { ctx,
+        template.set(view! { cx,
             "2"
         });
         assert_eq!(test_container.text_content().unwrap(), "2");
@@ -49,10 +52,10 @@ fn lazy_reactive() {
 
 #[wasm_bindgen_test]
 fn lazy_in_fragment() {
-    create_scope_immediate(|ctx| {
-        let num = ctx.create_signal(0);
+    create_scope_immediate(|cx| {
+        let num = create_signal(cx, 0);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             "before"
             p { (num.get()) }
             "after"

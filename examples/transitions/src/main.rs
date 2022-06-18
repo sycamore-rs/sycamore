@@ -1,7 +1,7 @@
 use gloo_timers::future::TimeoutFuture;
 use rand::Rng;
 use sycamore::prelude::*;
-use sycamore::suspense::{ScopeUseTransition, Suspense};
+use sycamore::suspense::{use_transition, Suspense};
 
 #[derive(Debug, Clone, Copy)]
 enum Tab {
@@ -21,11 +21,11 @@ impl Tab {
 }
 
 #[component]
-async fn Child<G: Html>(ctx: ScopeRef<'_>, tab: Tab) -> View<G> {
+async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
     let delay_ms = rand::thread_rng().gen_range(200..500);
     TimeoutFuture::new(delay_ms).await;
 
-    view! { ctx,
+    view! { cx,
         div {
             p { "Content loaded after " (delay_ms) "ms" }
             p { (tab.content()) }
@@ -34,12 +34,12 @@ async fn Child<G: Html>(ctx: ScopeRef<'_>, tab: Tab) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
-    let tab = ctx.create_signal(Tab::One);
-    let transition = ctx.use_transition();
-    let update = move |x| transition.start(move || tab.set(x));
+fn App<G: Html>(cx: Scope) -> View<G> {
+    let tab = create_signal(cx, Tab::One);
+    let transition = use_transition(cx);
+    let update = move |x| transition.start(move || tab.set(x), || ());
 
-    view! { ctx,
+    view! { cx,
         div {
             p { "Suspense + Transitions" }
             p { "Transition state: " (transition.is_pending().then(|| "pending").unwrap_or("done")) }
@@ -47,15 +47,11 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
             button(on:click=move |_| update(Tab::Two)) { "Two" }
             button(on:click=move |_| update(Tab::Three)) { "Three" }
             Suspense {
-                fallback: view! { ctx, p { "Loading..." } },
-                children: Children::new(ctx, move |ctx| {
-                    view! { ctx,
-                        ({
-                            let tab = *tab.get();
-                            view! { ctx, Child(tab) }
-                        })
-                    }
-                }),
+                fallback: view! { cx, p { "Loading..." } },
+                ({
+                    let tab = *tab.get();
+                    view! { cx, Child(tab) }
+                })
             }
         }
     }
@@ -65,5 +61,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|ctx| view! { ctx, App {} });
+    sycamore::render(|cx| view! { cx, App {} });
 }

@@ -1,17 +1,20 @@
-#[cfg(all(feature = "experimental-hydrate", feature = "builder"))]
+#[cfg(all(feature = "hydrate"))]
 pub mod builder_hydrate;
 pub mod cleanup;
-#[cfg(feature = "experimental-hydrate")]
+#[cfg(feature = "hydrate")]
 pub mod hydrate;
 pub mod indexed;
 pub mod keyed;
 pub mod portal;
 pub mod reconcile;
 pub mod render;
+pub mod svg;
 
 use sycamore::prelude::*;
+use sycamore::web::html;
+use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
-use web_sys::{Document, Element, HtmlElement, Node, Window};
+use web_sys::{Document, Element, Event, HtmlElement, HtmlInputElement, Node, Window};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -66,8 +69,8 @@ fn empty_template() {
 #[wasm_bindgen_test]
 fn hello_world() {
     sycamore::render_to(
-        |ctx| {
-            view! { ctx,
+        |cx| {
+            view! { cx,
                 p { "Hello World!" }
             }
         },
@@ -88,8 +91,8 @@ fn hello_world_noderef() {
     let p_ref = NodeRef::new();
 
     sycamore::render_to(
-        |ctx| {
-            view! { ctx,
+        |cx| {
+            view! { cx,
                 p(ref=p_ref) { "Hello World!" }
             }
         },
@@ -109,8 +112,8 @@ fn hello_world_noderef() {
 fn interpolation() {
     let text = "Hello Sycamore!";
     sycamore::render_to(
-        |ctx| {
-            view! { ctx,
+        |cx| {
+            view! { cx,
                 p { (text) }
             }
         },
@@ -131,9 +134,9 @@ fn interpolation() {
 #[wasm_bindgen_test]
 fn template_interpolation() {
     sycamore::render_to(
-        |ctx| {
-            let text = view! { ctx, "Hello Sycamore!" };
-            view! { ctx,
+        |cx| {
+            let text = view! { cx, "Hello Sycamore!" };
+            view! { cx,
                 p {
                     (text)
                 }
@@ -154,14 +157,14 @@ fn template_interpolation() {
 
 #[wasm_bindgen_test]
 fn template_interpolation_if_else() {
-    create_scope_immediate(|ctx| {
-        let show = ctx.create_signal(true);
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let show = create_signal(cx, true);
+        let node = view! { cx,
             p {
                 (if *show.get() {
-                    view! { ctx, "Hello Sycamore!" }
+                    view! { cx, "Hello Sycamore!" }
                 } else {
-                    view! { ctx, }
+                    view! { cx, }
                 })
             }
         };
@@ -202,14 +205,14 @@ fn template_interpolation_if_else() {
 
 #[wasm_bindgen_test]
 fn template_interpolation_if_else_with_sibling() {
-    create_scope_immediate(|ctx| {
-        let show = ctx.create_signal(true);
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let show = create_signal(cx, true);
+        let node = view! { cx,
             div { "Before" }
             (if *show.get() {
-                view! { ctx, p { "Hello Sycamore!" } }
+                view! { cx, p { "Hello Sycamore!" } }
             } else {
-                view! { ctx, p { "" }}
+                view! { cx, p { "" }}
             })
         };
         sycamore::render_to(|_| node, &test_container());
@@ -249,10 +252,10 @@ fn template_interpolation_if_else_with_sibling() {
 
 #[wasm_bindgen_test]
 fn template_interpolation_nested_reactivity() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
-        let text = view! { ctx, p { (count.get() ) } };
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
+        let text = view! { cx, p { (count.get() ) } };
+        let node = view! { cx,
             p {
                 (text)
             }
@@ -269,10 +272,10 @@ fn template_interpolation_nested_reactivity() {
 
 #[wasm_bindgen_test]
 fn reactive_text() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             p { (count.get()) }
         };
 
@@ -288,10 +291,10 @@ fn reactive_text() {
 
 #[wasm_bindgen_test]
 fn reactive_text_do_not_destroy_previous_children() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             p { "Value: " (count.get()) }
         };
 
@@ -307,10 +310,10 @@ fn reactive_text_do_not_destroy_previous_children() {
 
 #[wasm_bindgen_test]
 fn reactive_attribute() {
-    create_scope_immediate(|ctx| {
-        let count = ctx.create_signal(0);
+    create_scope_immediate(|cx| {
+        let count = create_signal(cx, 0);
 
-        let node = view! { ctx,
+        let node = view! { cx,
             span(attribute=count.get())
         };
 
@@ -325,45 +328,81 @@ fn reactive_attribute() {
 }
 
 #[wasm_bindgen_test]
+fn reactive_property() {
+    create_scope_immediate(|cx| {
+        let indeterminate = create_signal(cx, true);
+
+        let node = view! { cx,
+            input(type="checkbox", prop:indeterminate=*indeterminate.get())
+        };
+
+        sycamore::render_to(|_| node, &test_container());
+        let input: web_sys::HtmlInputElement = document()
+            .query_selector("input")
+            .unwrap()
+            .unwrap()
+            .unchecked_into();
+
+        assert!(input.indeterminate());
+
+        indeterminate.set(false);
+        assert!(!input.indeterminate());
+    });
+}
+
+#[wasm_bindgen_test]
+fn static_property() {
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
+            input(prop:checked=true)
+        };
+
+        sycamore::render_to(|_| node, &test_container());
+        let input: web_sys::HtmlInputElement = document()
+            .query_selector("input")
+            .unwrap()
+            .unwrap()
+            .unchecked_into();
+
+        assert!(input.checked());
+    });
+}
+
+#[wasm_bindgen_test]
 #[ignore]
 fn two_way_bind_to_props() {
-    // create_scope_immediate(|ctx| {
-    //     let value = ctx.create_signal(String::new());
-    //     let value2 = value.clone();
+    create_scope_immediate(|cx| {
+        let value = create_signal(cx, String::new());
 
-    //     sycamore::render_to(
-    //         || {
-    //             cloned!((value) => view! {
-    //                 input(bind:value=value)
-    //                 p { (value2.get()) }
-    //             })
-    //         },
-    //         &test_container(),
-    //     );
+        let node = view! { cx,
+            input(bind:value=value)
+            p { (value.get()) }
+        };
 
-    //     let input = document()
-    //         .query_selector("input")
-    //         .unwrap()
-    //         .unwrap()
-    //         .unchecked_into::<HtmlInputElement>();
+        sycamore::render_to(|_| node, &test_container());
+        let input = document()
+            .query_selector("input")
+            .unwrap()
+            .unwrap()
+            .unchecked_into::<HtmlInputElement>();
 
-    //     value.set("abc".to_string());
-    //     assert_eq!(
-    //         js_sys::Reflect::get(&input, &"value".into()).unwrap(),
-    //         "abc"
-    //     );
+        value.set("abc".to_string());
+        assert_eq!(
+            js_sys::Reflect::get(&input, &"value".into()).unwrap(),
+            "abc"
+        );
 
-    //     js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
-    //     input.dispatch_event(&Event::new("input").unwrap()).unwrap();
-    //     assert_eq!(value.get().as_str(), "def");
-    // });
+        js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
+        input.dispatch_event(&Event::new("input").unwrap()).unwrap();
+        assert_eq!(value.get().as_str(), "def");
+    });
 }
 
 #[wasm_bindgen_test]
 fn noderefs() {
-    create_scope_immediate(|ctx| {
-        let noderef = ctx.create_node_ref();
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let noderef = create_node_ref(cx);
+        let node = view! { cx,
             div {
                 input(ref=noderef)
             }
@@ -381,8 +420,8 @@ fn noderefs() {
 
 #[wasm_bindgen_test]
 fn fragments() {
-    create_scope_immediate(|ctx| {
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
             p { "1" }
             p { "2" }
             p { "3" }
@@ -399,8 +438,8 @@ fn fragments() {
 
 #[wasm_bindgen_test]
 fn fragments_text_nodes() {
-    create_scope_immediate(|ctx| {
-        let node = view! { ctx,
+    create_scope_immediate(|cx| {
+        let node = view! { cx,
             "1"
             "2"
             "3"
@@ -418,13 +457,13 @@ fn fragments_text_nodes() {
 
 #[wasm_bindgen_test]
 fn dyn_fragment_reuse_nodes() {
-    create_scope_immediate(|ctx| {
-        let nodes = vec![view! { ctx, "1" }, view! { ctx, "2" }, view! { ctx, "3" }];
+    create_scope_immediate(|cx| {
+        let nodes = vec![view! { cx, "1" }, view! { cx, "2" }, view! { cx, "3" }];
 
         sycamore::render_to(
             {
                 let nodes = nodes.clone();
-                |_| View::new_dyn(ctx, move || View::new_fragment(nodes.clone()))
+                |_| View::new_dyn(cx, move || View::new_fragment(nodes.clone()))
             },
             &test_container(),
         );
@@ -437,4 +476,39 @@ fn dyn_fragment_reuse_nodes() {
         assert_eq!(p.text_content().unwrap(), "123");
         assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
     });
+}
+
+#[wasm_bindgen_test]
+fn dom_node_add_class_splits_at_whitespace() {
+    let node = DomNode::element::<html::div>();
+    node.add_class("my_class");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "my_class"
+    );
+    node.add_class("my_class");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "my_class"
+    );
+    node.remove_class("my_class");
+    node.add_class("hyphenated-class");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "hyphenated-class"
+    );
+    node.remove_class("hyphenated-class");
+    node.add_class("multiple classes");
+    assert_eq!(
+        node.inner_element()
+            .unchecked_into::<Element>()
+            .class_name(),
+        "multiple classes"
+    );
 }

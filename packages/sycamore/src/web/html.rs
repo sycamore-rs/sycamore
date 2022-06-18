@@ -2,11 +2,16 @@
 //!
 //! _Documentation sources: <https://developer.mozilla.org/en-US/>_
 
+pub use sycamore_web::on_mount;
+
+use crate::builder::ElementBuilder;
 use crate::generic_node::SycamoreElement;
+use crate::prelude::*;
 
 /// MBE for generating elements.
 macro_rules! define_elements {
     (
+        $ns:expr,
         $(
             $(#[$attr:meta])*
             $el:ident {
@@ -21,11 +26,18 @@ macro_rules! define_elements {
             #[allow(non_camel_case_types)]
             #[doc = concat!("Build a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element.")]
             $(#[$attr])*
-            pub struct $el;
+            pub struct $el {}
 
             impl SycamoreElement for $el {
                 const TAG_NAME: &'static str = stringify!($el);
-                const NAME_SPACE: Option<&'static str> = None;
+                const NAME_SPACE: Option<&'static str> = $ns;
+            }
+
+            #[allow(non_snake_case)]
+            #[doc = concat!("Create a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element builder.")]
+            $(#[$attr])*
+            pub fn $el<'a, G: GenericNode>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
+                ElementBuilder::new(move |_| G::element::<$el>())
             }
         )*
     };
@@ -33,6 +45,7 @@ macro_rules! define_elements {
 
 // A list of valid HTML5 elements (does not include removed or obsolete elements).
 define_elements! {
+    None,
     /// The `<a>` HTML element (or anchor element), with its `href` attribute, creates a hyperlink to web pages, files, email addresses, locations in the same page, or anything else a URL can address.
     ///
     /// Content within each `<a>` should indicate the link's destination. If the `href` attribute is present, pressing the enter key while focused on the `<a>` element will activate it.
@@ -48,6 +61,7 @@ define_elements! {
     bdi {},
     bdo {},
     blockquote {},
+    body {},
     br {},
     /// The `<button>` HTML element represents a clickable button, used to submit forms or anywhere in a document for accessible, standard button functionality.
     ///
@@ -84,7 +98,7 @@ define_elements! {
     form {},
     head {},
     header {},
-    hgorup {},
+    hgroup {},
     h1 {},
     h2 {},
     h3 {},
@@ -96,7 +110,7 @@ define_elements! {
     i {},
     iframe {},
     img {},
-    /// The `<input>` HTML element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and user agent. The <input> element is one of the most powerful and complex in all of HTML due to the sheer number of combinations of input types and attributes.
+    /// The `<input>` HTML element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and user agent. The `<input>` element is one of the most powerful and complex in all of HTML due to the sheer number of combinations of input types and attributes.
     input {},
     ins {},
     kbd {},
@@ -170,7 +184,6 @@ define_elements! {
     sub {},
     summary {},
     sup {},
-    svg {},
     table {},
     tbody {},
     td {},
@@ -189,4 +202,76 @@ define_elements! {
     var {},
     video {},
     wbr {},
+}
+
+// A list of valid SVG elements. Some elements are commented out because they conflict with the HTML
+// elements.
+define_elements! {
+    Some("http://www.w3.org/2000/svg"),
+    svg {},
+    // a,
+    animate {},
+    animateMotion {},
+    animateTransform {},
+    circle {},
+    clipPath {},
+    defs {},
+    desc {},
+    discard {},
+    ellipse {},
+    feBlend {},
+    feColorMatrix {},
+    feComponentTransfer {},
+    feComposite {},
+    feConvolveMatrix {},
+    feDiffuseLighting {},
+    feDisplacementMap {},
+    feDistantLight {},
+    feDropShadow {},
+    feFlood {},
+    feFuncA {},
+    feFuncB {},
+    feFuncG {},
+    feFuncR {},
+    feGaussianBlur {},
+    feImage {},
+    feMerge {},
+    feMergeNode {},
+    feMorphology {},
+    feOffset {},
+    fePointLight {},
+    feSpecularLighting {},
+    feSpotLight {},
+    feTile {},
+    feTurbulence {},
+    filter {},
+    foreignObject {},
+    g {},
+    hatch {},
+    hatchpath {},
+    image {},
+    line {},
+    linearGradient {},
+    marker {},
+    mask {},
+    metadata {},
+    mpath {},
+    path {},
+    pattern {},
+    polygon {},
+    polyline {},
+    radialGradient {},
+    rect {},
+    // script {},
+    set {},
+    stop {},
+    // style {},
+    switch {},
+    symbol {},
+    text {},
+    textPath {},
+    // title {},
+    tspan {},
+    r#use {},
+    view {},
 }

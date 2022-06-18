@@ -7,31 +7,24 @@ use sycamore::builder::prelude::*;
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
-    let name = ctx.create_signal(String::new());
-    h(div)
-        .c(h(h1)
+fn App<G: Html>(cx: Scope) -> View<G> {
+    let name = create_signal(cx, String::new());
+    div()
+        .c(h1()
             .t("Hello ")
             .dyn_if(
                 || !name.get().is_empty(),
-                || h(span).dyn_t(|| name.get().to_string()),
-                || h(span).t("World").view(ctx),
+                || span().dyn_t(|| name.get().to_string()),
+                || span().t("World"),
             )
             .t("!"))
-        .c(h(input).bind_value(name))
-        .c(h(button)
-            // This svg is from https://fonts.google.com/icons?selected=Material+Icons&icon.query=backspace
-            // with the height and width hacked to 12px to make the button look nice.
-            // Normally you would do height adjustments like this with CSS though.
-            .inner_html(include_str!("./backspace_black_24dp.svg"))
-            .t("Clear")
-            .on("click", |_| name.set("".to_string())))
-        .view(ctx)
+        .c(input().bind_value(name))
+        .view(cx)
 }
 
 fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|ctx| component(|| App(ctx, ())));
+    sycamore::render(|cx| component(|| App(cx)));
 }

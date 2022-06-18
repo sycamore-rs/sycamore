@@ -4,7 +4,7 @@ Any serious UI framework needs a way to compose and abstract UI elements. In Syc
 accomplished using components.
 
 Components in `sycamore` are simply functions slapped with the `#[component]` attribute that take a
-argument of type `ScopeRef` (a reactive scope). Component functions only run once (unlike React
+argument of type `Scope` (a reactive scope). Component functions only run once (unlike React
 where functional-components are called on every render). Think of it as a builder-pattern for
 constructing UI.
 
@@ -13,8 +13,8 @@ convention to name components using `PascalCase`.
 
 ```rust
 #[component]
-fn MyComponent<G: Html>(ctx: ScopeRef) -> View<G> {
-    view! { ctx,
+fn MyComponent<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
         // ...
     }
 }
@@ -23,7 +23,7 @@ fn MyComponent<G: Html>(ctx: ScopeRef) -> View<G> {
 To use the component from elsewhere, the `view!` macro has some special syntax.
 
 ```rust
-view! { ctx,
+view! { cx,
     MyComponent {
         // props...
     }
@@ -48,7 +48,7 @@ struct MyProps {
 The component can then be constructed by passing the properties to it from the `view!` macro.
 
 ```rust
-view! { ctx,
+view! { cx,
     MyComponent {
         name: "John Doe",
         email: "...",
@@ -74,7 +74,7 @@ struct MyProps<'a> {
 }
 
 #[component]
-fn MyComponent<'a, G: Html>(ctx: ScopeRef<'a>, props: MyProps<'a>) -> View<G> {
+fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     view! {
         div(class="my-component") {
             "Value: " (props.value.get())
@@ -82,7 +82,7 @@ fn MyComponent<'a, G: Html>(ctx: ScopeRef<'a>, props: MyProps<'a>) -> View<G> {
     }
 }
 
-let state = ctx.create_signal(0);
+let state = create_signal(cx, 0);
 view! {
     MyComponent {
         value: state
@@ -91,7 +91,7 @@ view! {
 state.set(1); // automatically updates value in MyComponent
 ```
 
-Note how the `'a` lifetime is used to ensure that the data lives as long as the `ScopeRef`.
+Note how the `'a` lifetime is used to ensure that the data lives as long as the `Scope`.
 
 ## Lifecycle
 
@@ -108,8 +108,8 @@ can also be used to schedule a callback when the component is destroyed.
 
 ```rust
 #[component]
-fn MyComponent(ctx: ScopeRef) -> View<G> {
-    ctx.on_cleanup(|| {
+fn MyComponent(cx: Scope) -> View<G> {
+    on_cleanup(cx, || {
         // Perform cleanup.
     });
     // ...

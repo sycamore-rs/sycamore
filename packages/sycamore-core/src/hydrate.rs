@@ -1,6 +1,7 @@
 //! Hydration support for Sycamore.
-
-pub mod web;
+//!
+//! This is backend-agnostic. If you are looking specifically for hydrating the DOM, see the
+//! `sycamore-web` crate.
 
 use std::cell::RefCell;
 
@@ -18,6 +19,43 @@ where
         // Save previous context to restore later.
         let prev = *context.borrow();
         *context.borrow_mut() = Some(HydrationRegistry::new());
+        let r = f();
+        *context.borrow_mut() = prev;
+        r
+    })
+}
+
+/// Run the async future inside a hydration context. If already inside a hydration context, creates
+/// a nested context.
+///
+/// Same as [`with_hydration_context`] but allows for async futures.
+pub async fn with_hydration_context_async<F, R>(f: F) -> R
+where
+    F: std::future::Future<Output = R>,
+{
+    let mut prev = None;
+    HYDRATION_CONTEXT.with(|context| {
+        // Save previous context to restore later.
+        prev = Some(*context.borrow());
+        *context.borrow_mut() = Some(HydrationRegistry::new());
+    });
+    let r = f.await;
+    HYDRATION_CONTEXT.with(|context| {
+        *context.borrow_mut() = prev.unwrap();
+    });
+    r
+}
+
+/// Run the closure without a hydration context. If called within an hydration context, the old
+/// hydration context is restored when the closure returns.
+pub fn with_no_hydration_context<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    HYDRATION_CONTEXT.with(|context| {
+        // Save previous context to restore later.
+        let prev = *context.borrow();
+        *context.borrow_mut() = None;
         let r = f();
         *context.borrow_mut() = prev;
         r

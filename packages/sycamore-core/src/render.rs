@@ -3,10 +3,9 @@
 use std::rc::Rc;
 
 use ahash::AHashMap;
-use wasm_bindgen::UnwrapThrowExt;
+use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
-use crate::reactive::*;
 use crate::view::{View, ViewType};
 
 /// Insert a [`GenericNode`] under `parent` at the specified `marker`. If `initial` is `Some(_)`,
@@ -24,18 +23,18 @@ use crate::view::{View, ViewType};
 ///   Even if the node to be inserted is the only child of `parent`, `multi` can still be set to
 ///   `false` but forgoes the optimizations.
 pub fn insert<G: GenericNode>(
-    ctx: ScopeRef<'_>,
+    cx: Scope<'_>,
     parent: &G,
     accessor: View<G>,
     initial: Option<View<G>>,
     marker: Option<&G>,
     multi: bool,
 ) {
-    insert_expression(ctx, parent, &accessor, initial, marker, false, multi);
+    insert_expression(cx, parent, &accessor, initial, marker, false, multi);
 }
 
 fn insert_expression<G: GenericNode>(
-    ctx: ScopeRef<'_>,
+    cx: Scope<'_>,
     parent: &G,
     value: &View<G>,
     mut current: Option<View<G>>,
@@ -54,7 +53,7 @@ fn insert_expression<G: GenericNode>(
         ViewType::Node(node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), marker, Some(node), multi);
-            } else if !multi && cfg!(feature = "experimental-hydrate") {
+            } else if !multi && cfg!(feature = "hydrate") {
                 // FIXME: This is an extremely ugly hack to get around the fact that current is None
                 // for text nodes when G is HydrateNode. This will cause the text node to be
                 // inserted twice when hydrating.
@@ -70,13 +69,13 @@ fn insert_expression<G: GenericNode>(
             let parent = parent.clone();
             let marker = marker.cloned();
             let f = f.clone();
-            ctx.create_effect_scoped(move |ctx| {
+            create_effect_scoped(cx, move |cx| {
                 let mut value = f.get();
                 while let ViewType::Dyn(f) = &value.inner {
                     value = f.get();
                 }
                 insert_expression(
-                    &ctx,
+                    cx,
                     &parent,
                     &value,
                     current.clone(),
@@ -95,12 +94,12 @@ fn insert_expression<G: GenericNode>(
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
-                ctx.create_effect_scoped(move |ctx| {
+                create_effect_scoped(cx, move |cx| {
                     let value = View::new_fragment(v.clone());
                     // This will call normalize_incoming_fragment again, but this time with the
                     // unwrap_fragment arg set to true.
                     insert_expression(
-                        &ctx,
+                        cx,
                         &parent,
                         &value,
                         current.clone(),
@@ -284,18 +283,18 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
                 after.clone()
             };
 
-            while b_start < b_end {
-                parent.insert_child_before(&b[b_start], node.as_ref());
-                b_start += 1;
+            for new_node in &b[b_start..b_end] {
+                parent.insert_child_before(new_node, node.as_ref());
             }
+            b_start = b_end;
         } else if b_end == b_start {
             // Remove.
-            while a_start < a_end {
-                if map.is_none() || !map.as_ref().unwrap_throw().contains_key(&a[a_start]) {
-                    parent.remove_child(&a[a_start]);
+            for node in &a[a_start..a_end] {
+                if map.is_none() || !map.as_ref().unwrap().contains_key(node) {
+                    parent.remove_child(node);
                 }
-                a_start += 1;
             }
+            a_start = a_end;
         } else if a[a_start] == b[b_start] {
             // Common prefix.
             a_start += 1;
@@ -306,44 +305,44 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
             b_end -= 1;
         } else if a[a_start] == b[b_end - 1] && b[b_start] == a[a_end - 1] {
             // Swap backwards.
-            a_end -= 1;
-            b_end -= 1;
-            let node = a[a_end].next_sibling();
+            let node = a[a_end - 1].next_sibling();
             parent.insert_child_before(&b[b_start], a[a_start].next_sibling().as_ref());
+            parent.insert_child_before(&b[b_end - 1], node.as_ref());
             a_start += 1;
             b_start += 1;
-            parent.insert_child_before(&b[b_end], node.as_ref());
-
+            a_end -= 1;
+            b_end -= 1;
             a[a_end] = b[b_end].clone();
         } else {
             // Fallback to map.
             if map.is_none() {
-                map = Some(AHashMap::with_capacity(b_end - b_start));
-                for (i, item) in b.iter().enumerate().take(b_end).skip(b_start) {
-                    map.as_mut().unwrap_throw().insert(item.clone(), i);
-                }
+                let tmp = b[b_start..b_end]
+                    .iter()
+                    .enumerate()
+                    .map(|(i, g)| (g.clone(), i))
+                    .collect();
+                map = Some(tmp);
             }
-            let map = map.as_ref().unwrap_throw();
+            let map = map.as_ref().unwrap();
 
-            let index = map.get(&a[a_start]);
-            if let Some(index) = index {
-                if b_start < *index && *index < b_end {
+            if let Some(&index) = map.get(&a[a_start]) {
+                if b_start < index && index < b_end {
                     let mut i = a_start;
                     let mut sequence = 1;
                     let mut t;
 
                     while i + 1 < a_end && i + 1 < b_end {
                         i += 1;
-                        t = map.get(&a[i]);
-                        if t.is_none() || *t.unwrap_throw() != *index + sequence {
+                        t = map.get(&a[i]).copied();
+                        if t != Some(index + sequence) {
                             break;
                         }
                         sequence += 1;
                     }
 
-                    if sequence > *index - b_start {
+                    if sequence > index - b_start {
                         let node = &a[a_start];
-                        while b_start < *index {
+                        while b_start < index {
                             parent.insert_child_before(&b[b_start], Some(node));
                             b_start += 1;
                         }
