@@ -189,7 +189,7 @@ impl<T> Signal<T> {
     /// ```
     pub fn set(&self, value: T) {
         self.set_silent(value);
-        self.0.emitter.trigger_subscribers();
+        self.trigger_subscribers();
     }
 
     /// Set the current value of the state wrapped in a [`Rc`]. Unlike [`Signal::set()`], this
@@ -212,7 +212,7 @@ impl<T> Signal<T> {
     /// ```
     pub fn set_rc(&self, value: Rc<T>) {
         self.set_rc_silent(value);
-        self.0.emitter.trigger_subscribers();
+        self.trigger_subscribers();
     }
 
     /// Set the current value of the state _without_ triggering subscribers.
@@ -311,7 +311,7 @@ impl<T: Default> Signal<T> {
     /// This will notify and update any effects and memos that depend on this value.
     pub fn take(&self) -> Rc<T> {
         let ret = self.0.value.take();
-        self.0.emitter.trigger_subscribers();
+        self.trigger_subscribers();
         ret
     }
 
