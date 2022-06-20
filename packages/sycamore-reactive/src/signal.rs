@@ -249,6 +249,17 @@ impl<T> Signal<T> {
         let setter = move |x| self.set(x);
         (getter, setter)
     }
+
+    /// Calls all the subscribers without modifying the state.
+    /// This can be useful when using patterns such as inner mutability where the state updated will
+    /// not be automatically triggered. In the general case, however, it is preferable to use
+    /// [`Signal::set()`] instead.
+    ///
+    /// This will also re-compute all the subscribers of this signal by calling all the dependency
+    /// callbacks.
+    pub fn trigger_subscribers(&self) {
+        self.0.emitter.trigger_subscribers()
+    }
 }
 
 /// A mutable reference for modifying a [`Signal`].
