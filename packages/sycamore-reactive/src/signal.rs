@@ -189,7 +189,7 @@ impl<T> Signal<T> {
     /// ```
     pub fn set(&self, value: T) {
         self.set_silent(value);
-        self.0.emitter.trigger_subscribers();
+        self.trigger_subscribers();
     }
 
     /// Set the current value of the state wrapped in a [`Rc`]. Unlike [`Signal::set()`], this
@@ -212,7 +212,7 @@ impl<T> Signal<T> {
     /// ```
     pub fn set_rc(&self, value: Rc<T>) {
         self.set_rc_silent(value);
-        self.0.emitter.trigger_subscribers();
+        self.trigger_subscribers();
     }
 
     /// Set the current value of the state _without_ triggering subscribers.
@@ -248,6 +248,17 @@ impl<T> Signal<T> {
         let getter = move || self.get();
         let setter = move |x| self.set(x);
         (getter, setter)
+    }
+
+    /// Calls all the subscribers without modifying the state.
+    /// This can be useful when using patterns such as inner mutability where the state updated will
+    /// not be automatically triggered. In the general case, however, it is preferable to use
+    /// [`Signal::set()`] instead.
+    ///
+    /// This will also re-compute all the subscribers of this signal by calling all the dependency
+    /// callbacks.
+    pub fn trigger_subscribers(&self) {
+        self.0.emitter.trigger_subscribers()
     }
 }
 
@@ -300,7 +311,7 @@ impl<T: Default> Signal<T> {
     /// This will notify and update any effects and memos that depend on this value.
     pub fn take(&self) -> Rc<T> {
         let ret = self.0.value.take();
-        self.0.emitter.trigger_subscribers();
+        self.trigger_subscribers();
         ret
     }
 
