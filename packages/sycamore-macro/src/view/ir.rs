@@ -85,6 +85,8 @@ pub enum AttributeType {
 }
 
 pub fn is_bool_attr(name: &str) -> bool {
+    // Boolean attributes list from the WHATWG attributes table:
+    // https://html.spec.whatwg.org/multipage/indices.html#attributes-3
     static BOOLEAN_ATTRIBUTES_SET: Lazy<HashSet<&str>> = Lazy::new(|| {
         vec![
             "allowfullscreen",
