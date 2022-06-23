@@ -1,5 +1,7 @@
 //! Futures support for reactive scopes.
 
+#![deny(missing_debug_implementations)]
+
 use std::pin::Pin;
 
 use futures::future::abortable;

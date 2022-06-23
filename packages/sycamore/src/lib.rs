@@ -32,6 +32,7 @@
 #![warn(rust_2018_idioms)]
 #![deny(clippy::trait_duplication_in_bounds)]
 #![deny(clippy::type_repetition_in_bounds)]
+#![deny(missing_debug_implementations)]
 
 // Alias self to `sycamore` to make it possible to use proc-macros within the `sycamore` crate.
 #[allow(unused_extern_crates)] // False positive

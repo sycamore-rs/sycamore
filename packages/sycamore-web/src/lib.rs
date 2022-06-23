@@ -8,6 +8,8 @@
 //! This crate is re-exported in the `sycamore` crate. It is recommended to use that instead of
 //! using this crate directly.
 
+#![deny(missing_debug_implementations)]
+
 mod dom_node;
 #[cfg(feature = "hydrate")]
 pub mod hydrate;

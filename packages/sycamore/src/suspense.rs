@@ -17,7 +17,7 @@ struct SuspenseState {
 }
 
 /// Props for [`Suspense`].
-#[derive(Prop)]
+#[derive(Prop, Debug)]
 pub struct SuspenseProps<'a, G: GenericNode> {
     /// The fallback [`View`] to display while the child nodes are being awaited.
     #[builder(default)]
@@ -129,7 +129,7 @@ pub async fn await_suspense<U>(cx: Scope<'_>, f: impl Future<Output = U>) -> U {
 
 /// A struct to handle transitions. Created using
 /// [`use_transition`].
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TransitionHandle<'a> {
     cx: Scope<'a>,
     is_pending: &'a Signal<bool>,

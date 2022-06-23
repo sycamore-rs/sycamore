@@ -1,6 +1,7 @@
 //! Reactive primitives for Sycamore.
 
 #![warn(missing_docs)]
+#![deny(missing_debug_implementations)]
 
 mod arena;
 mod context;
@@ -85,6 +86,11 @@ pub struct BoundedScope<'a, 'b: 'a> {
     /// `&'b` for covariance!
     _phantom: PhantomData<&'b ()>,
 }
+impl<'a, 'b: 'a> std::fmt::Debug for BoundedScope<'a, 'b> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BoundedScope").finish()
+    }
+}
 
 impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
     fn new(raw: &'a ScopeRaw<'a>) -> Self {
@@ -128,6 +134,11 @@ impl<'a> ScopeRaw<'a> {
 /// A handle that allows cleaning up a [`Scope`].
 pub struct ScopeDisposer<'a> {
     f: Box<dyn FnOnce() + 'a>,
+}
+impl<'a> std::fmt::Debug for ScopeDisposer<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ScopeDisposer").finish()
+    }
 }
 
 impl<'a> ScopeDisposer<'a> {

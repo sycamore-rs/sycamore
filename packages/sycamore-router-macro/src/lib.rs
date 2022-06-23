@@ -1,3 +1,5 @@
+#![deny(missing_debug_implementations)]
+
 mod parser;
 mod route;
 
