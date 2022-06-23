@@ -1,6 +1,7 @@
 //! The Sycamore Router.
 
 #![warn(missing_docs)]
+#![deny(missing_debug_implementations)]
 
 // Alias self to sycamore_router for proc-macros.
 extern crate self as sycamore_router;
@@ -34,7 +35,7 @@ pub trait Route: Sized {
 }
 
 /// Represents an URL segment or segments.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Segment {
     /// Match a specific segment.
     Param(String),
@@ -74,7 +75,7 @@ impl<'a> Capture<'a> {
 }
 
 /// A list of [`Segment`]s.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RoutePath {
     segments: Vec<Segment>,
 }

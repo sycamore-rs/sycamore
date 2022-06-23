@@ -62,7 +62,7 @@ pub async fn render_to_string_await_suspense(
 
 /// Props for [`NoHydrate`].
 #[cfg(feature = "hydrate")]
-#[derive(Prop)]
+#[derive(Prop, Debug)]
 pub struct NoHydrateProps<'a, G: GenericNode> {
     children: Children<'a, G>,
 }
@@ -103,7 +103,7 @@ pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> Vi
 
 /// Props for [`NoSsr`].
 #[cfg(feature = "hydrate")]
-#[derive(Prop)]
+#[derive(Prop, Debug)]
 pub struct NoSsrProps<'a, G: GenericNode> {
     children: Children<'a, G>,
 }

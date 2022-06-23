@@ -37,6 +37,13 @@ pub struct ElementBuilder<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a>(
     F,
     PhantomData<&'a ()>,
 );
+impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> std::fmt::Debug
+    for ElementBuilder<'a, G, F>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ElementBuilder").finish()
+    }
+}
 
 /// A trait that is implemented only for [`ElementBuilder`] and [`View`].
 /// This should be considered implementation details and should not be used.

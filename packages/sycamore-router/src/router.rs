@@ -30,7 +30,7 @@ thread_local! {
 /// A router integration that uses the
 /// [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) to keep the
 /// UI in sync with the URL.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HistoryIntegration {
     /// This field is to prevent downstream users from creating a new `HistoryIntegration` without
     /// the `new` method.
@@ -141,7 +141,7 @@ fn base_pathname() -> String {
 }
 
 /// Props for [`Router`].
-#[derive(Prop)]
+#[derive(Prop, Debug)]
 pub struct RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
@@ -229,7 +229,7 @@ where
 }
 
 /// Props for [`StaticRouter`].
-#[derive(Prop)]
+#[derive(Prop, Debug)]
 pub struct StaticRouterProps<'a, R, F, G>
 where
     R: Route + 'a,

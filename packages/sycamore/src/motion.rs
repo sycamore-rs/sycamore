@@ -157,6 +157,11 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
 
 /// A state that is interpolated when it is set.
 pub struct Tweened<'a, T: Lerp + Clone>(Rc<RefCell<TweenedInner<'a, T>>>);
+impl<'a, T: Lerp + Clone> std::fmt::Debug for Tweened<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Tweened").finish()
+    }
+}
 
 struct TweenedInner<'a, T: Lerp + Clone + 'a> {
     /// The [`Scope`] under which the tweened signal was created. We need to hold on to the

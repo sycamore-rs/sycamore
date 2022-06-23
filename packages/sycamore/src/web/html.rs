@@ -26,6 +26,7 @@ macro_rules! define_elements {
             #[allow(non_camel_case_types)]
             #[doc = concat!("Build a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element.")]
             $(#[$attr])*
+            #[derive(Debug)]
             pub struct $el {}
 
             impl SycamoreElement for $el {

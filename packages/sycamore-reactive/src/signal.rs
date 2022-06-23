@@ -15,6 +15,11 @@ pub(crate) type SignalEmitterInner = RefCell<IndexMap<EffectCallbackPtr, WeakEff
 /// A struct for managing subscriptions to signals.
 #[derive(Default, Clone)]
 pub struct SignalEmitter(pub(crate) Rc<SignalEmitterInner>);
+impl std::fmt::Debug for SignalEmitter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SignalEmitter").finish()
+    }
+}
 
 #[derive(Default, Clone)]
 pub(crate) struct WeakSignalEmitter(pub Weak<SignalEmitterInner>);
@@ -254,6 +259,7 @@ impl<T> Signal<T> {
 /// A mutable reference for modifying a [`Signal`].
 ///
 /// Construct this using the [`Signal::modify()`] method.
+#[derive(Debug)]
 pub struct Modify<'a, T>(Option<T>, &'a Signal<T>);
 
 impl<'a, T> Deref for Modify<'a, T> {
