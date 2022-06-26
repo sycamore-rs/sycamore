@@ -173,7 +173,7 @@ where
 }
 
 /// Props for [`RouterBase`].
-#[derive(Prop)]
+#[derive(Prop, Debug)]
 pub struct RouterBaseProps<'a, R, F, I, G>
 where
     R: Route + 'a,
