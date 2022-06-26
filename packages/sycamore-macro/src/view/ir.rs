@@ -85,43 +85,35 @@ pub enum AttributeType {
 }
 
 pub fn is_bool_attr(name: &str) -> bool {
+    // Boolean attributes list from the WHATWG attributes table:
+    // https://html.spec.whatwg.org/multipage/indices.html#attributes-3
     static BOOLEAN_ATTRIBUTES_SET: Lazy<HashSet<&str>> = Lazy::new(|| {
         vec![
+            "allowfullscreen",
             "async",
             "autofocus",
             "autoplay",
-            "border",
-            "challenge",
             "checked",
-            "compact",
-            "contenteditable",
             "controls",
             "default",
             "defer",
             "disabled",
-            "formNoValidate",
-            "frameborder",
+            "formnovalidate",
             "hidden",
-            "indeterminate",
+            "inert",
             "ismap",
+            "itemscope",
             "loop",
             "multiple",
             "muted",
-            "nohref",
-            "noresize",
-            "noshade",
+            "nomodule",
             "novalidate",
-            "nowrap",
             "open",
+            "playsinline",
             "readonly",
             "required",
             "reversed",
-            "scoped",
-            "scrolling",
-            "seamless",
             "selected",
-            "sortable",
-            "translate",
         ]
         .into_iter()
         .collect()
