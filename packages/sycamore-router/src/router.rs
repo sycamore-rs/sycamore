@@ -172,6 +172,40 @@ where
     }
 }
 
+/// Props for [`RouterBase`].
+#[derive(Prop)]
+pub struct RouterBaseProps<'a, R, F, I, G>
+where
+    R: Route + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration,
+    G: GenericNode,
+{
+    view: F,
+    integration: I,
+    route: R,
+    #[builder(default, setter(skip))]
+    _phantom: PhantomData<&'a G>,
+}
+
+impl<'a, R, F, I, G> RouterBaseProps<'a, R, F, I, G>
+where
+    R: Route + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration,
+    G: GenericNode,
+{
+    /// Create a new [`RouterBaseProps`].
+    pub fn new(integration: I, view: F, route: R) -> Self {
+        Self {
+            view,
+            integration,
+            route,
+            _phantom: PhantomData,
+        }
+    }
+}
+
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
@@ -181,9 +215,34 @@ where
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration + 'static,
 {
-    let RouterProps {
+    view! { cx,
+        RouterBase {
+            view: props.view,
+            integration: props.integration,
+            // The derive macro makes this the `#[not_found]` route (always present)
+            route: R::default(),
+        }
+    }
+}
+
+/// A lower-level router component that takes an instance of your [`Route`] type. This is designed for `struct` [`Route`]s, which can be used to store
+/// additional information along with routes.
+///
+/// This is a very specific use-case, and you probably actually want [`Router`]!
+#[component]
+pub fn RouterBase<'a, G: Html, R, F, I>(
+    cx: Scope<'a>,
+    props: RouterBaseProps<'a, R, F, I, G>,
+) -> View<G>
+where
+    R: Route + 'a,
+    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    I: Integration + 'static,
+{
+    let RouterBaseProps {
         view,
         integration,
+        route,
         _phantom,
     } = props;
     let integration = Rc::new(integration);
@@ -216,7 +275,7 @@ where
             pathname.set(path.to_string());
         }
     }));
-    let route_signal = create_memo(cx, move || R::match_path(&pathname.get()));
+    let route_signal = create_memo(cx, move || route.match_path(&pathname.get()));
     // Delegate click events from child <a> tags.
     let view = view(cx, route_signal);
     if let Some(node) = view.as_node() {
@@ -362,6 +421,9 @@ mod tests {
         #[component]
         fn Comp<G: Html>(cx: Scope, path: String) -> View<G> {
             let route = Routes::match_route(
+                // The user would never use this directly, so they'd never have to do this trick
+                // It doesn't matter which variant we provide here, it just needs to conform to `&self` (designed for `struct`s, as in Perseus' router)
+                &Routes::Home,
                 &path
                     .split('/')
                     .filter(|s| !s.is_empty())
