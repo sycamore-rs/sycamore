@@ -4,7 +4,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use sycamore_core::generic_node::{GenericNode, SycamoreElement};
-use sycamore_core::hydrate::{hydration_completed, with_hydration_context};
+use sycamore_core::hydrate::{get_current_id, hydration_completed, with_hydration_context};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -94,11 +94,19 @@ impl GenericNode for HydrateNode {
         let el = get_next_element();
         if let Some(el) = el {
             // If in debug mode, check that the hydrate element has the same tag as the argument.
-            debug_assert_eq!(
-                el.tag_name().to_ascii_lowercase(),
-                T::TAG_NAME,
-                "hydration error, mismatched element tag"
-            );
+            #[cfg(debug_assertions)]
+            if T::TAG_NAME != el.tag_name().to_ascii_lowercase() {
+                // Get the hydration key of the expected element.
+                let mut hk = get_current_id().unwrap();
+                hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
+                panic!(
+                        "hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
+                        T::TAG_NAME,
+                        el.tag_name().to_ascii_lowercase(),
+                        hk.0, hk.1
+                    );
+            }
+
             Self {
                 node: DomNode::from_web_sys(el.into()),
             }
