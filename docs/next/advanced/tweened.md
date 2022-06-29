@@ -7,7 +7,7 @@ interpolates a value from `0` to `100` over a period of `250ms`:
 use std::time::Duration;
 
 use sycamore::easing;
-use sycamore::motion::ScopeMotionExt;
+use sycamore::motion::create_tweened_signal;
 
 let tweened = create_tweened_signal(cx, 0.0f32, Duration::from_millis(250), easing::quad_out);
 
