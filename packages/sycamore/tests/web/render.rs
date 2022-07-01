@@ -12,15 +12,7 @@ fn lazy() {
         });
 
         sycamore::render_to(|_| node, &test_container());
-        assert_eq!(
-            document()
-                .query_selector("div")
-                .unwrap()
-                .unwrap()
-                .text_content()
-                .unwrap(),
-            "Test"
-        );
+        assert_text_content!(query("div"), "Test");
     });
 }
 
@@ -36,17 +28,14 @@ fn lazy_reactive() {
         let node: View<DomNode> = View::new_dyn(cx, || (*template.get()).clone());
 
         sycamore::render_to(|_| node, &test_container());
-        let test_container = document()
-            .query_selector("test-container")
-            .unwrap()
-            .unwrap();
+        let test_container = query("test-container");
 
-        assert_eq!(test_container.text_content().unwrap(), "1");
+        assert_text_content!(test_container, "1");
 
         template.set(view! { cx,
             "2"
         });
-        assert_eq!(test_container.text_content().unwrap(), "2");
+        assert_text_content!(test_container, "2");
     });
 }
 
@@ -62,15 +51,12 @@ fn lazy_in_fragment() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let test_container = document()
-            .query_selector("test-container")
-            .unwrap()
-            .unwrap();
+        let test_container = query("test-container");
 
-        assert_eq!(test_container.text_content().unwrap(), "before0after");
+        assert_text_content!(test_container, "before0after");
 
         num.set(1);
 
-        assert_eq!(test_container.text_content().unwrap(), "before1after");
+        assert_text_content!(test_container, "before1after");
     });
 }

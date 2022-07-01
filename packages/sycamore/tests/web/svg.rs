@@ -10,4 +10,8 @@ fn issue_391_svg_with_class_should_not_use_classname() {
         },
         &test_container(),
     );
+
+    let svg = query("svg");
+
+    assert_eq!(svg.get_attribute("class").unwrap(), "my-class");
 }
