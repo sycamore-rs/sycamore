@@ -10,21 +10,16 @@ pub mod reconcile;
 pub mod render;
 pub mod svg;
 
+mod utils;
+
 use sycamore::prelude::*;
 use sycamore::web::html;
+use utils::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
-use web_sys::{Document, Element, Event, HtmlElement, HtmlInputElement, Node, Window};
+use web_sys::{Element, Event, HtmlElement, HtmlInputElement};
 
 wasm_bindgen_test_configure!(run_in_browser);
-
-fn window() -> Window {
-    web_sys::window().unwrap()
-}
-
-fn document() -> Document {
-    window().document().unwrap()
-}
 
 /// Returns a [`Element`] referencing the test container with the contents cleared.
 fn test_container() -> Element {
@@ -43,10 +38,7 @@ fn test_container() -> Element {
             .unwrap();
     }
 
-    let container = document()
-        .query_selector("test-container#test-container")
-        .unwrap()
-        .unwrap();
+    let container = query("test-container#test-container");
 
     container.set_inner_html(""); // erase contents from previous test runs
 
@@ -56,14 +48,7 @@ fn test_container() -> Element {
 #[wasm_bindgen_test]
 fn empty_template() {
     sycamore::render_to(|_| View::empty(), &test_container());
-    assert_eq!(
-        document()
-            .query_selector("#test-container")
-            .unwrap()
-            .unwrap()
-            .inner_html(),
-        "<!---->"
-    );
+    assert_eq!(query("#test-container").inner_html(), "<!---->");
 }
 
 #[wasm_bindgen_test]
@@ -76,14 +61,7 @@ fn hello_world() {
         },
         &test_container(),
     );
-    assert_eq!(
-        &document()
-            .query_selector("p")
-            .unwrap()
-            .unwrap()
-            .outer_html(),
-        "<p>Hello World!</p>"
-    );
+    assert_eq!(query("p").outer_html(), "<p>Hello World!</p>");
 }
 
 #[wasm_bindgen_test]
@@ -120,15 +98,7 @@ fn interpolation() {
         &test_container(),
     );
 
-    assert_eq!(
-        document()
-            .query_selector("p")
-            .unwrap()
-            .unwrap()
-            .text_content()
-            .unwrap(),
-        "Hello Sycamore!"
-    );
+    assert_text_content!(query("p"), "Hello Sycamore!");
 }
 
 #[wasm_bindgen_test]
@@ -144,15 +114,7 @@ fn template_interpolation() {
         },
         &test_container(),
     );
-    assert_eq!(
-        document()
-            .query_selector("p")
-            .unwrap()
-            .unwrap()
-            .text_content()
-            .unwrap(),
-        "Hello Sycamore!"
-    );
+    assert_text_content!(query("p"), "Hello Sycamore!");
 }
 
 #[wasm_bindgen_test]
@@ -169,37 +131,13 @@ fn template_interpolation_if_else() {
             }
         };
         sycamore::render_to(|_| node, &test_container());
-        assert_eq!(
-            document()
-                .query_selector("p")
-                .unwrap()
-                .unwrap()
-                .text_content()
-                .unwrap(),
-            "Hello Sycamore!"
-        );
+        assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
-        assert_eq!(
-            document()
-                .query_selector("p")
-                .unwrap()
-                .unwrap()
-                .text_content()
-                .unwrap(),
-            ""
-        );
+        assert_text_content!(query("p"), "");
 
         show.set(true);
-        assert_eq!(
-            document()
-                .query_selector("p")
-                .unwrap()
-                .unwrap()
-                .text_content()
-                .unwrap(),
-            "Hello Sycamore!"
-        );
+        assert_text_content!(query("p"), "Hello Sycamore!");
     });
 }
 
@@ -216,37 +154,13 @@ fn template_interpolation_if_else_with_sibling() {
             })
         };
         sycamore::render_to(|_| node, &test_container());
-        assert_eq!(
-            document()
-                .query_selector("p")
-                .unwrap()
-                .unwrap()
-                .text_content()
-                .unwrap(),
-            "Hello Sycamore!"
-        );
+        assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
-        assert_eq!(
-            document()
-                .query_selector("p")
-                .unwrap()
-                .unwrap()
-                .text_content()
-                .unwrap(),
-            ""
-        );
+        assert_text_content!(query("p"), "");
 
         show.set(true);
-        assert_eq!(
-            document()
-                .query_selector("p")
-                .unwrap()
-                .unwrap()
-                .text_content()
-                .unwrap(),
-            "Hello Sycamore!"
-        );
+        assert_text_content!(query("p"), "Hello Sycamore!");
     });
 }
 
@@ -262,11 +176,11 @@ fn template_interpolation_nested_reactivity() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let p = document().query_selector("p").unwrap().unwrap();
-        assert_eq!(p.text_content().unwrap(), "0");
+        let p = query("p");
+        assert_text_content!(p, "0");
 
         count.set(1);
-        assert_eq!(p.text_content().unwrap(), "1");
+        assert_text_content!(p, "1");
     });
 }
 
@@ -280,12 +194,12 @@ fn reactive_text() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let p = document().query_selector("p").unwrap().unwrap();
+        let p = query("p");
 
-        assert_eq!(p.text_content().unwrap(), "0");
+        assert_text_content!(p, "0");
 
         count.set(1);
-        assert_eq!(p.text_content().unwrap(), "1");
+        assert_text_content!(p, "1");
     });
 }
 
@@ -299,12 +213,12 @@ fn reactive_text_do_not_destroy_previous_children() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let p = document().query_selector("p").unwrap().unwrap();
+        let p = query("p");
 
-        assert_eq!(p.text_content().unwrap(), "Value: 0");
+        assert_text_content!(p, "Value: 0");
 
         count.set(1);
-        assert_eq!(p.text_content().unwrap(), "Value: 1");
+        assert_text_content!(p, "Value: 1");
     });
 }
 
@@ -318,7 +232,7 @@ fn reactive_attribute() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let span = document().query_selector("span").unwrap().unwrap();
+        let span = query("span");
 
         assert_eq!(span.get_attribute("attribute").unwrap(), "0");
 
@@ -337,11 +251,7 @@ fn reactive_property() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let input: web_sys::HtmlInputElement = document()
-            .query_selector("input")
-            .unwrap()
-            .unwrap()
-            .unchecked_into();
+        let input: HtmlInputElement = query_into("input");
 
         assert!(input.indeterminate());
 
@@ -358,11 +268,7 @@ fn static_property() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let input: web_sys::HtmlInputElement = document()
-            .query_selector("input")
-            .unwrap()
-            .unwrap()
-            .unchecked_into();
+        let input: HtmlInputElement = query_into("input");
 
         assert!(input.checked());
     });
@@ -380,19 +286,12 @@ fn two_way_bind_to_props() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let input = document()
-            .query_selector("input")
-            .unwrap()
-            .unwrap()
-            .unchecked_into::<HtmlInputElement>();
+        let input: HtmlInputElement = query_into("input");
 
         value.set("abc".to_string());
-        assert_eq!(
-            js_sys::Reflect::get(&input, &"value".into()).unwrap(),
-            "abc"
-        );
+        assert_eq!(input.value(), "abc");
 
-        js_sys::Reflect::set(&input, &"value".into(), &"def".into()).unwrap();
+        input.set_value("def");
         input.dispatch_event(&Event::new("input").unwrap()).unwrap();
         assert_eq!(value.get().as_str(), "def");
     });
@@ -409,12 +308,9 @@ fn noderefs() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let input_ref = document().query_selector("input").unwrap().unwrap();
+        let input_ref = query("input");
 
-        assert_eq!(
-            Node::from(input_ref),
-            noderef.get::<DomNode>().unchecked_into()
-        );
+        assert_eq!(input_ref, noderef.get::<DomNode>().unchecked_into());
     });
 }
 
@@ -427,12 +323,8 @@ fn fragments() {
             p { "3" }
         };
         sycamore::render_to(|_| node, &test_container());
-        let test_container = document()
-            .query_selector("#test-container")
-            .unwrap()
-            .unwrap();
 
-        assert_eq!(test_container.text_content().unwrap(), "123");
+        assert_text_content!(query("#test-container"), "123");
     });
 }
 
@@ -446,12 +338,8 @@ fn fragments_text_nodes() {
         };
 
         sycamore::render_to(|_| node, &test_container());
-        let test_container = document()
-            .query_selector("#test-container")
-            .unwrap()
-            .unwrap();
 
-        assert_eq!(test_container.text_content().unwrap(), "123");
+        assert_text_content!(query("#test-container"), "123");
     });
 }
 
@@ -468,12 +356,9 @@ fn dyn_fragment_reuse_nodes() {
             &test_container(),
         );
 
-        let p = document()
-            .query_selector("#test-container")
-            .unwrap()
-            .unwrap();
+        let p = query("#test-container");
 
-        assert_eq!(p.text_content().unwrap(), "123");
+        assert_text_content!(p, "123");
         assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
     });
 }

@@ -131,35 +131,14 @@ mod dynamic {
 
             sycamore::hydrate_to(|_| v(cx, state), &c);
 
-            assert_eq!(
-                c.query_selector("p")
-                    .unwrap()
-                    .unwrap()
-                    .text_content()
-                    .unwrap(),
-                "0"
-            );
+            assert_text_content!(query("p"), "0");
 
             // Reactivity should work normally.
             state.set(1);
-            assert_eq!(
-                c.query_selector("p")
-                    .unwrap()
-                    .unwrap()
-                    .text_content()
-                    .unwrap(),
-                "1"
-            );
+            assert_text_content!(query("p"), "1");
 
             // P tag should still be the SSR-ed node, not a new node.
-            assert_eq!(
-                c.query_selector("p")
-                    .unwrap()
-                    .unwrap()
-                    .get_attribute("data-hk")
-                    .as_deref(),
-                Some("0.0")
-            );
+            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0.0"));
         });
     }
 }
@@ -189,24 +168,10 @@ mod dynamic_with_siblings {
 
             // Reactivity should work normally.
             state.set(1);
-            assert_eq!(
-                c.query_selector("p")
-                    .unwrap()
-                    .unwrap()
-                    .text_content()
-                    .unwrap(),
-                "Value: 1!"
-            );
+            assert_text_content!(query("p"), "Value: 1!");
 
             // P tag should still be the SSR-ed node, not a new node.
-            assert_eq!(
-                c.query_selector("p")
-                    .unwrap()
-                    .unwrap()
-                    .get_attribute("data-hk")
-                    .as_deref(),
-                Some("0.0")
-            );
+            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0.0"));
         });
     }
 }
@@ -236,24 +201,10 @@ mod dynamic_template {
 
             // Reactivity should work normally.
             state.set(view! { cx, span { "nested node" } });
-            assert_eq!(
-                c.query_selector("p")
-                    .unwrap()
-                    .unwrap()
-                    .text_content()
-                    .unwrap(),
-                "beforenested nodeafter"
-            );
+            assert_text_content!(query("p"), "beforenested nodeafter");
 
             // P tag should still be the SSR-ed node, not a new node.
-            assert_eq!(
-                c.query_selector("p")
-                    .unwrap()
-                    .unwrap()
-                    .get_attribute("data-hk")
-                    .as_deref(),
-                Some("0.0")
-            );
+            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0.0"));
         });
     }
 }
@@ -283,7 +234,7 @@ mod top_level_dynamic_with_siblings {
 
             // Reactivity should work normally.
             state.set(1);
-            assert_eq!(c.text_content().unwrap(), "Value: 1!");
+            assert_text_content!(c, "Value: 1!");
         });
     }
 }
