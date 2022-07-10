@@ -118,3 +118,36 @@ fn MyComponent(cx: Scope) -> View<G> {
     // ...
 }
 ```
+
+### Nested components
+
+You can also build components that can have sub components. We need to create a Props to support this.
+
+```rust
+#[derive(Prop)]
+pub struct MyComponentProps<'a, G: Html> {
+    children: Children<'a, G>,
+    class: String
+}
+
+#[allow(non_snake_case)]
+#[component]
+pub fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyComponentProps<'a, G>) -> View<G> {
+    let children = props.children.call(cx);
+    view! { cx,
+      div(class=props.class) {
+        (children)
+      }
+    }
+}
+
+view! {
+    MyComponent {
+        class: "my-class"
+        {
+            p { "My sub item 1" }
+            p { "My sub item 2" }
+        }
+    }
+}
+```
