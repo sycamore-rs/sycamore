@@ -12,6 +12,7 @@ In order for the `view!` macro to distinguish between regular elements and compo
 convention to name components using `PascalCase`.
 
 ```rust
+#[allow(non_snake_case)]
 #[component]
 fn MyComponent<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
@@ -73,6 +74,7 @@ struct MyProps<'a> {
     value: &'a ReadSignal<i32>,
 }
 
+#[allow(non_snake_case)]
 #[component]
 fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     view! {
@@ -107,6 +109,7 @@ The `on_cleanup` method schedules a callback to be called when the reactive scop
 can also be used to schedule a callback when the component is destroyed.
 
 ```rust
+#[allow(non_snake_case)]
 #[component]
 fn MyComponent(cx: Scope) -> View<G> {
     on_cleanup(cx, || {
