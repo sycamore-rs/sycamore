@@ -154,7 +154,7 @@ view! {
 
 ### Default props
 
-When your making a custom component but you don't need all of them all the time. You can add a default value to it.
+When you're making a custom component but you don't need all of them all the time. You can add a default value to it.
 
 ```rust
 #[derive(Prop)]
