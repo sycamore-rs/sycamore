@@ -151,3 +151,23 @@ view! {
     }
 }
 ```
+
+### Default props
+
+When your making a custom component but you don't need all of them all the time. You can add a default value to it.
+
+```rust
+#[derive(Prop)]
+struct MyProps {
+    name: String,
+    #[builder(default)]
+    email: String,
+}
+
+view! { cx,
+    MyComponent {
+        name: "John Doe",
+        // email can be left out and will have the default value. In case of a string "".
+    }
+}
+```
