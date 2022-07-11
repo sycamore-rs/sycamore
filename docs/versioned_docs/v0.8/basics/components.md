@@ -12,7 +12,6 @@ In order for the `view!` macro to distinguish between regular elements and compo
 convention to name components using `PascalCase`.
 
 ```rust
-#[allow(non_snake_case)]
 #[component]
 fn MyComponent<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
@@ -74,7 +73,6 @@ struct MyProps<'a> {
     value: &'a ReadSignal<i32>,
 }
 
-#[allow(non_snake_case)]
 #[component]
 fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     view! {
@@ -109,7 +107,6 @@ The `on_cleanup` method schedules a callback to be called when the reactive scop
 can also be used to schedule a callback when the component is destroyed.
 
 ```rust
-#[allow(non_snake_case)]
 #[component]
 fn MyComponent(cx: Scope) -> View<G> {
     on_cleanup(cx, || {
@@ -119,9 +116,9 @@ fn MyComponent(cx: Scope) -> View<G> {
 }
 ```
 
-### Nested components
+### Component children
 
-You can also build components that can have sub components. We need to create a Props to support this.
+Components can also be wrappers around other child views by adding the `children` field to our properties struct.
 
 ```rust
 #[derive(Prop)]
@@ -130,7 +127,6 @@ pub struct MyComponentProps<'a, G: Html> {
     class: String
 }
 
-#[allow(non_snake_case)]
 #[component]
 pub fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyComponentProps<'a, G>) -> View<G> {
     let children = props.children.call(cx);
@@ -143,7 +139,7 @@ pub fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyComponentProps<'a, G>) -
 
 view! {
     MyComponent {
-        class: "my-class"
+        class: "my-class",
         {
             p { "My sub item 1" }
             p { "My sub item 2" }
@@ -154,8 +150,7 @@ view! {
 
 ### Default props
 
-When you're making a custom component but you don't need all of them all the time. You can add a default value to it.
-
+Some property fields might have a default value. Use the `#[builder(default)]` attribute to allow omitting the property when constructing the component.
 ```rust
 #[derive(Prop)]
 struct MyProps {
@@ -167,7 +162,7 @@ struct MyProps {
 view! { cx,
     MyComponent {
         name: "John Doe",
-        // email can be left out and will have the default value. In case of a string "".
+        // Since `email` is left out, it will be set to the default value "".
     }
 }
 ```
