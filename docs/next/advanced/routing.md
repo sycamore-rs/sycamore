@@ -172,11 +172,21 @@ enum Nested {
 }
 
 #[derive(Route)]
+enum Admin {
+    #[to("/console")]
+    Console,
+    #[not_found]
+    NotFound,
+}
+
+#[derive(Route)]
 enum Routes {
     #[to("/")]
     Home,
     #[to("/route/<_..>")]
-    Route(Nested),
+    NestedRoute(Nested),
+    #[to("/admin/<_..>")]
+    AdminRoute(Admin),
     #[not_found]
     NotFound,
 }
