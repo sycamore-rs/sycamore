@@ -132,9 +132,9 @@ pub struct MyComponentProps<'a, G: Html> {
 pub fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyComponentProps<'a, G>) -> View<G> {
     let children = props.children.call(cx);
     view! { cx,
-      div(class=props.class) {
-        (children)
-      }
+        div(class=props.class) {
+            (children)
+        }
     }
 }
 
