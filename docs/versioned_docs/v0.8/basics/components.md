@@ -115,3 +115,54 @@ fn MyComponent(cx: Scope) -> View<G> {
     // ...
 }
 ```
+
+### Component children
+
+Components can also be wrappers around other child views by adding the `children` field to our properties struct.
+
+```rust
+#[derive(Prop)]
+pub struct MyComponentProps<'a, G: Html> {
+    children: Children<'a, G>,
+    class: String
+}
+
+#[component]
+pub fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyComponentProps<'a, G>) -> View<G> {
+    let children = props.children.call(cx);
+    view! { cx,
+        div(class=props.class) {
+            (children)
+        }
+    }
+}
+
+view! {
+    MyComponent {
+        class: "my-class",
+        {
+            p { "My sub item 1" }
+            p { "My sub item 2" }
+        }
+    }
+}
+```
+
+### Default props
+
+Some property fields might have a default value. Use the `#[builder(default)]` attribute to allow omitting the property when constructing the component.
+```rust
+#[derive(Prop)]
+struct MyProps {
+    name: String,
+    #[builder(default)]
+    email: String,
+}
+
+view! { cx,
+    MyComponent {
+        name: "John Doe",
+        // Since `email` is left out, it will be set to the default value "".
+    }
+}
+```
