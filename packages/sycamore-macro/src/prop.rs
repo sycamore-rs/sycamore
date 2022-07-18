@@ -354,13 +354,12 @@ mod struct_info {
             let arg_type = if field.builder_attr.setter.strip_option.is_some()
                 && field.builder_attr.setter.transform.is_none()
             {
-                let internal_type = field.type_from_inside_option().ok_or_else(|| {
+                field.type_from_inside_option().ok_or_else(|| {
                     Error::new_spanned(
                         &field_type,
                         "can't `strip_option` - field is not `Option<...>`",
                     )
-                })?;
-                internal_type
+                })?
             } else {
                 field_type
             };
@@ -1191,7 +1190,7 @@ mod util {
     }
 
     pub fn expr_to_single_string(expr: &syn::Expr) -> Option<String> {
-        if let syn::Expr::Path(path) = &*expr {
+        if let syn::Expr::Path(path) = expr {
             path_to_single_string(&path.path)
         } else {
             None

@@ -1,6 +1,6 @@
 //! The `view!` macro implementation.
 
-#![allow(clippy::eval_order_dependence)] // Needed when using `syn::parenthesized!`.
+#![allow(clippy::mixed_read_write_in_expression)] // Needed when using `syn::parenthesized!`.
 
 pub mod codegen;
 pub mod ir;
