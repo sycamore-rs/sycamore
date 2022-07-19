@@ -42,9 +42,9 @@ fn Hello<G: Html>(cx: Scope) -> View<G> {
 fn App<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         p { "Hydration" }
-        br
+        br {}
         Hello {}
-        br
+        br {}
         Counter {}
 
         sycamore::web::NoHydrate {

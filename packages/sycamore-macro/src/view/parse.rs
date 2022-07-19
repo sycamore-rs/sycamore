@@ -67,7 +67,9 @@ impl Parse for ViewNode {
 impl Parse for Element {
     fn parse(input: ParseStream) -> Result<Self> {
         let tag = input.parse()?;
+        let mut has_paren = false;
         let attrs = if input.peek(token::Paren) {
+            has_paren = true;
             let content;
             parenthesized!(content in input);
             content
@@ -77,31 +79,29 @@ impl Parse for Element {
         } else {
             Vec::new()
         };
-        let children = if input.peek(token::Brace) {
+        if !has_paren && !input.peek(Brace) {
+            return Err(input.error("expected either `(` or `{` after element tag"));
+        }
+        let mut children = Vec::new();
+        if input.peek(Brace) {
             let content;
             braced!(content in input);
-            let mut body = Vec::new();
             while !content.is_empty() {
-                body.push(content.parse()?);
+                children.push(content.parse()?);
             }
-
-            // Check if dangerously_set_inner_html is also set.
-            let dangerously_set_inner_html_span = attrs.iter().find_map(|attr| {
-                (attr.ty == AttributeType::DangerouslySetInnerHtml).then(|| attr.span)
-            });
-            if let Some(span) = dangerously_set_inner_html_span {
-                if !body.is_empty() {
-                    return Err(syn::Error::new(
-                        span,
-                        content.error("children and dangerously_set_inner_html cannot be both set"),
-                    ));
-                }
+        }
+        // Check if dangerously_set_inner_html is also set.
+        let dangerously_set_inner_html_span = attrs.iter().find_map(|attr| {
+            (attr.ty == AttributeType::DangerouslySetInnerHtml).then(|| attr.span)
+        });
+        if let Some(span) = dangerously_set_inner_html_span {
+            if !children.is_empty() {
+                return Err(syn::Error::new(
+                    span,
+                    "children and dangerously_set_inner_html cannot be both set",
+                ));
             }
-
-            body
-        } else {
-            Vec::new()
-        };
+        }
 
         Ok(Self {
             tag,
