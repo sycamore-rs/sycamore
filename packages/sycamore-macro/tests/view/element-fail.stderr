@@ -28,7 +28,7 @@ error: expected `=`
 11 |         let _: View<G> = view! { cx, button(a.b.c="123") };
    |                                              ^
 
-error: unexpected end of input, children and dangerously_set_inner_html cannot be both set
+error: children and dangerously_set_inner_html cannot be both set
   --> tests/view/element-fail.rs:14:15
    |
 14 |             p(dangerously_set_inner_html="<span>Test</span>") {
@@ -37,5 +37,5 @@ error: unexpected end of input, children and dangerously_set_inner_html cannot b
 error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
  --> tests/view/element-fail.rs:9:38
   |
-9 |         let _: View<G> = view! { cx, unknownelement };
+9 |         let _: View<G> = view! { cx, unknownelement {} };
   |                                      ^^^^^^^^^^^^^^ not found in `sycamore::web::html`

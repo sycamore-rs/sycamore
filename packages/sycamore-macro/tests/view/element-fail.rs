@@ -6,7 +6,7 @@ fn compile_fail<G: GenericNode>() {
         let _: View<G> = view! { cx, button(on:click) };
         let _: View<G> = view! { cx, button(prop:disabled) };
         let _: View<G> = view! { cx, button(unknown:directive="123") };
-        let _: View<G> = view! { cx, unknownelement };
+        let _: View<G> = view! { cx, unknownelement {} };
 
         let _: View<G> = view! { cx, button(a.b.c="123") };
 

@@ -56,7 +56,7 @@ fn main() {
             p { "Motion demo" }
             p { "request_animation_frame" }
             CreateRAF {}
-            br
+            br {}
             p { "Tweened signals" }
             Tweened {}
         }

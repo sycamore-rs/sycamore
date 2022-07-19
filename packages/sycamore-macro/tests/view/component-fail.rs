@@ -8,7 +8,7 @@ pub struct Prop {
 #[component]
 pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
     view! { cx,
-        div
+        div {}
     }
 }
 
@@ -16,7 +16,7 @@ pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
 #[component]
 fn Component<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
-        div
+        div {}
     }
 }
 
