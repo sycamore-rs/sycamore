@@ -51,7 +51,7 @@ fn self_closing_tag() {
     create_scope_immediate(|cx| {
         let node = view! { cx,
             div {
-                input
+                input {}
                 input(value="a")
             }
         };
