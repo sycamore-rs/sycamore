@@ -8,7 +8,7 @@ pub struct Prop {
 #[component]
 pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
     view! { cx,
-        div
+        div {}
     }
 }
 
@@ -33,7 +33,7 @@ pub async fn AsyncComponentWithPropDestructuring<'a, G: Html>(
 #[component]
 pub fn Component<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
-        div
+        div {}
     }
 }
 
@@ -51,7 +51,6 @@ fn compile_pass<G: Html>() {
                 Component()
             }
         };
-
         let _: View<G> = view! { cx,
             ComponentWithChildren {
                 Component {}
