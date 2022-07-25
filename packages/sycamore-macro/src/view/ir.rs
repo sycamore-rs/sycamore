@@ -122,20 +122,26 @@ pub fn is_bool_attr(name: &str) -> bool {
 }
 
 pub enum Component {
-    FnLike(FnLikeComponent),
-    ElementLike(ElementLikeComponent),
+    Legacy(LegacyComponent),
+    New(NewComponent),
 }
 
-pub struct FnLikeComponent {
+pub struct LegacyComponent {
     pub ident: Path,
     pub args: Punctuated<Expr, Token![,]>,
 }
 
-pub struct ElementLikeComponent {
+pub struct NewComponent {
     pub ident: Path,
-    pub brace: Brace,
-    pub props: Vec<(Ident, Expr)>,
+    pub props: Punctuated<ComponentProp, Token![,]>,
+    pub brace: Option<Brace>,
     pub children: Option<ViewRoot>,
+}
+
+pub struct ComponentProp {
+    pub name: Ident,
+    pub eq: Token![=],
+    pub value: Expr,
 }
 
 pub struct Text {

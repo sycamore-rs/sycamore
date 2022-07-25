@@ -30,7 +30,8 @@ fn compile_fail<G: Html>() {
 
         let _: View<G> = view! { cx, PropComponent() };
         let _: View<G> = view! { cx, PropComponent {} };
-        let _: View<G> = view! { cx, PropComponent { prop: 123 } };
+        let _: View<G> = view! { cx, PropComponent(prop=123) };
+        let _: View<G> = view! { cx, PropComponent { prop: "123" } }; // Legacy syntax.
     });
 }
 
