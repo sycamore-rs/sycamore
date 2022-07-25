@@ -1,41 +1,49 @@
-error: expected `=`
- --> tests/view/element-fail.rs:5:53
+error: unexpected end of input, expected either `(` or `{` after element tag
+ --> tests/view/element-fail.rs:5:26
   |
-5 |         let _: View<G> = view! { cx, button(disabled) };
-  |                                                     ^
+5 |         let _: View<G> = view! { cx, button };
+  |                          ^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected `=`
  --> tests/view/element-fail.rs:6:53
   |
-6 |         let _: View<G> = view! { cx, button(on:click) };
+6 |         let _: View<G> = view! { cx, button(disabled) };
   |                                                     ^
 
 error: expected `=`
- --> tests/view/element-fail.rs:7:58
+ --> tests/view/element-fail.rs:7:53
   |
-7 |         let _: View<G> = view! { cx, button(prop:disabled) };
+7 |         let _: View<G> = view! { cx, button(on:click) };
+  |                                                     ^
+
+error: expected `=`
+ --> tests/view/element-fail.rs:8:58
+  |
+8 |         let _: View<G> = view! { cx, button(prop:disabled) };
   |                                                          ^
 
 error: unknown directive `unknown`
- --> tests/view/element-fail.rs:8:45
+ --> tests/view/element-fail.rs:9:45
   |
-8 |         let _: View<G> = view! { cx, button(unknown:directive="123") };
+9 |         let _: View<G> = view! { cx, button(unknown:directive="123") };
   |                                             ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:11:46
+  --> tests/view/element-fail.rs:12:46
    |
-11 |         let _: View<G> = view! { cx, button(a.b.c="123") };
+12 |         let _: View<G> = view! { cx, button(a.b.c="123") };
    |                                              ^
 
 error: children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:14:15
+  --> tests/view/element-fail.rs:15:15
    |
-14 |             p(dangerously_set_inner_html="<span>Test</span>") {
+15 |             p(dangerously_set_inner_html="<span>Test</span>") {
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
- --> tests/view/element-fail.rs:9:38
-  |
-9 |         let _: View<G> = view! { cx, unknownelement {} };
-  |                                      ^^^^^^^^^^^^^^ not found in `sycamore::web::html`
+  --> tests/view/element-fail.rs:10:38
+   |
+10 |         let _: View<G> = view! { cx, unknownelement {} };
+   |                                      ^^^^^^^^^^^^^^ not found in `sycamore::web::html`
