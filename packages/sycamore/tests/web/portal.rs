@@ -20,8 +20,7 @@ fn test_portal() {
                 view! { cx,
                     (if *switch.get() {
                         view! { cx,
-                            Portal {
-                                selector: "#portal-target",
+                            Portal(selector="#portal-target") {
                                 "Hello from the other side!"
                             }
                         }

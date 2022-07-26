@@ -11,6 +11,6 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 
 fn main() {
     sycamore::render(|cx| {
-        view! { cx, App() }
+        view! { cx, App {} }
     });
 }

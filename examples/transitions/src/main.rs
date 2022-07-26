@@ -46,8 +46,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
             button(on:click=move |_| update(Tab::One)) { "One" }
             button(on:click=move |_| update(Tab::Two)) { "Two" }
             button(on:click=move |_| update(Tab::Three)) { "Three" }
-            Suspense {
-                fallback: view! { cx, p { "Loading..." } },
+            Suspense(fallback=view! { cx, p { "Loading..." } }) {
                 ({
                     let tab = *tab.get();
                     view! { cx, Child(tab) }

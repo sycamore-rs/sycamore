@@ -43,8 +43,7 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, Component {} };
 
         let prop = "prop";
-        let _: View<G> = view! { cx, PropComponent { prop: prop } };
-        let _: View<G> = view! { cx, PropComponent { prop } };
+        let _: View<G> = view! { cx, PropComponent(prop=prop) };
 
         let _: View<G> = view! { cx,
             ComponentWithChildren {

@@ -9,12 +9,12 @@ fn append() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -43,12 +43,12 @@ fn swap_rows() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -80,12 +80,12 @@ fn update_row() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -106,12 +106,12 @@ fn trigger_with_same_data() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -132,12 +132,12 @@ fn delete_row() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -162,12 +162,12 @@ fn delete_row_from_start() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -188,12 +188,12 @@ fn delete_row_from_end() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -214,12 +214,12 @@ fn clear() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -240,12 +240,12 @@ fn insert_front() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -276,12 +276,12 @@ fn nested_reactivity() {
 
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item.get()) }
                     },
-                }
+                )
             }
         };
 
@@ -309,13 +309,13 @@ fn fragment_template() {
 
         let node = view! { cx,
             div {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         span { "The value is: " }
                         strong { (item) }
                     },
-                }
+                )
             }
         };
 
@@ -359,12 +359,12 @@ fn template_top_level() {
         let count = create_signal(cx, vec![1, 2]);
 
         let node = view! { cx,
-            Indexed {
-                iterable: count,
-                view: |cx, item| view! { cx,
+            Indexed(
+                iterable=count,
+                view=|cx, item| view! { cx,
                     li { (item) }
                 },
-            }
+            )
         };
 
         sycamore::render_to(|_| node, &test_container());
@@ -392,12 +392,12 @@ fn template_dyn_top_level() {
 
         let node = view! { cx,
             div {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         (item)
                     },
-                }
+                )
             }
         };
 
@@ -428,18 +428,18 @@ fn template_with_other_nodes_at_same_level() {
         let node = view! { cx,
             ul {
                 li { "before" }
-                Indexed {
-                    iterable: vec1,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=vec1,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
-                Indexed {
-                    iterable: vec2,
-                    view: |cx, item| view! { cx,
+                )
+                Indexed(
+                    iterable=vec2,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
                 li { "after" }
             }
         };

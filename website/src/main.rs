@@ -95,13 +95,13 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
                     (if let Some(data) = data.get().as_ref() {
                         if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
                             view! { cx,
-                                content::Content {
-                                    data: data.clone(),
-                                    sidebar: (
+                                content::Content(
+                                    data=data.clone(),
+                                    sidebar=(
                                         "next".to_string(),
                                         cached_sidebar_data.1.clone(),
                                     ),
-                                }
+                                )
                             }
                         } else {
                             view! { cx, }
@@ -119,13 +119,13 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
                         if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
                             let version = version.clone();
                             view! { cx,
-                                content::Content {
-                                    data: data.clone(),
-                                    sidebar: (
+                                content::Content(
+                                    data=data.clone(),
+                                    sidebar=(
                                         version,
                                         cached_sidebar_data.1.clone(),
                                     ),
-                                }
+                                )
                             }
                         } else {
                             view! { cx, }
@@ -144,9 +144,9 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
                 view! { cx,
                     (if let Some(data) = data.get().as_ref() {
                         view! { cx,
-                            content::Content {
-                                data: data.clone(),
-                            }
+                            content::Content(
+                                data=data.clone(),
+                            )
                         }
                     } else {
                         view! { cx, }
@@ -207,10 +207,10 @@ fn App<G: Html>(cx: Scope) -> View<G> {
             } else {
                 view! { cx, link(rel="stylesheet", href="/static/light.css") }
             })
-            Router {
-                integration: HistoryIntegration::new(),
-                view: switch,
-            }
+            Router(
+                integration=HistoryIntegration::new(),
+                view=switch,
+            )
         }
     }
 }

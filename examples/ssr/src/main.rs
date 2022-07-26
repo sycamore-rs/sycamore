@@ -24,6 +24,6 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 }
 
 fn main() {
-    let s = sycamore::render_to_string(|cx| view! { cx, App() });
+    let s = sycamore::render_to_string(|cx| view! { cx, App {} });
     println!("{}", s);
 }

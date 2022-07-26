@@ -3,11 +3,10 @@
 use std::fmt;
 
 use syn::ext::IdentExt;
-use syn::parse::discouraged::Speculative;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Brace, Paren};
-use syn::{braced, parenthesized, token, Expr, FieldValue, Ident, LitStr, Result, Token};
+use syn::{braced, parenthesized, token, Expr, Ident, LitStr, Result, Token};
 
 use super::ir::*;
 
@@ -220,59 +219,46 @@ impl Parse for AttributeType {
 impl Parse for Component {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident = input.parse()?;
-        let content;
-        if input.peek(Paren) {
-            // Parse fn-like component.
-            parenthesized!(content in input);
-            let args = content.parse_terminated(Expr::parse)?;
-            Ok(Self::FnLike(FnLikeComponent { ident, args }))
-        } else if input.peek(Brace) {
-            // Parse element link component.
-            let brace = braced!(content in input);
-            let mut props = Punctuated::<FieldValue, Token![,]>::new();
-            while !content.is_empty() {
-                let fork = content.fork();
-                if let Ok(value) = fork.parse() {
-                    if fork.peek(Brace) || ViewNode::peek_type(&fork).is_some() {
-                        break;
-                    }
-                    content.advance_to(&fork);
 
-                    props.push_value(value);
-                    if content.is_empty() {
-                        break;
-                    }
-                    let punct = content.parse()?;
-                    props.push_punct(punct);
-                } else {
-                    break;
-                }
-            }
-            let children = if content.peek(Brace) {
-                // Parse view fragment as children
-                let children;
-                braced!(children in content);
-                Some(ViewRoot::parse(&children)?)
-            } else if ViewNode::peek_type(&content).is_some() {
-                Some(ViewRoot(vec![ViewNode::parse(&content)?]))
+        let mut props = Punctuated::new();
+        let mut brace = None;
+        let mut children = None;
+
+        if input.peek(Paren) {
+            // Parse props.
+            let content;
+            parenthesized!(content in input);
+            // Check if using legacy component syntax (not using `Prop` derive).
+            if !content.peek2(Token![=]) {
+                let args = content.parse_terminated(Expr::parse)?;
+                return Ok(Self::Legacy(LegacyComponent { ident, args }));
             } else {
-                None
-            };
-            Ok(Self::ElementLike(ElementLikeComponent {
-                ident,
-                brace,
-                props: props
-                    .into_iter()
-                    .map(|x| match x.member {
-                        syn::Member::Named(named) => (named, x.expr),
-                        syn::Member::Unnamed(_) => todo!("implement error handling"),
-                    })
-                    .collect(),
-                children,
-            }))
-        } else {
-            Err(input.error("expected either `(` or `{`"))
+                props = content.parse_terminated(ComponentProp::parse)?;
+            }
         }
+        if input.peek(Brace) {
+            // Parse children.
+            let content;
+            brace = Some(braced!(content in input));
+            children = Some(content.parse()?);
+        }
+
+        Ok(Self::New(NewComponent {
+            ident,
+            props,
+            brace,
+            children,
+        }))
+    }
+}
+
+impl Parse for ComponentProp {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Ok(Self {
+            name: input.parse()?,
+            eq: input.parse()?,
+            value: input.parse()?,
+        })
     }
 }
 

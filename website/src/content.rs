@@ -27,9 +27,9 @@ pub fn OutlineView<G: Html>(cx: Scope, outline: Vec<Outline>) -> View<G> {
 
     view! { cx,
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
-            Indexed {
-                iterable: create_signal(cx, outline),
-                view: |cx, item| {
+            Indexed(
+                iterable=create_signal(cx, outline),
+                view=|cx, item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
                         let name = x.name.clone();
@@ -63,7 +63,7 @@ pub fn OutlineView<G: Html>(cx: Scope, outline: Vec<Outline>) -> View<G> {
                         }
                     }
                 }
-            }
+            )
         }
     }
 }

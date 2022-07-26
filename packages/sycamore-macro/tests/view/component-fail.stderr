@@ -1,10 +1,8 @@
-error: unexpected end of input, expected either `(` or `{`
-  --> tests/view/component-fail.rs:28:26
+error: expected either `(` or `{` after element tag
+  --> tests/view/component-fail.rs:34:58
    |
-28 |         let _: View<G> = view! { cx, Component };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+34 |         let _: View<G> = view! { cx, PropComponent { prop: "123" } }; // Legacy syntax.
+   |                                                          ^
 
 error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
   --> tests/view/component-fail.rs:25:38
@@ -61,7 +59,7 @@ note: function defined here
    |        ^^^^^^^^^^^^^         ------------
 
 error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:33:60
+  --> tests/view/component-fail.rs:33:57
    |
-33 |         let _: View<G> = view! { cx, PropComponent { prop: 123 } };
-   |                                                            ^^^ expected `&str`, found integer
+33 |         let _: View<G> = view! { cx, PropComponent(prop=123) };
+   |                                                         ^^^ expected `&str`, found integer
