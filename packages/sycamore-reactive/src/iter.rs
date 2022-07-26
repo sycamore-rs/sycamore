@@ -28,9 +28,9 @@ pub fn map_keyed<'a, T, K, U>(
     key_fn: impl Fn(&T) -> K + 'a,
 ) -> &'a ReadSignal<Vec<U>>
 where
-    T: Eq + Clone + 'a,
+    T: PartialEq + Clone,
     K: Eq + Hash,
-    U: Clone + 'a,
+    U: Clone,
 {
     // Previous state used for diffing.
     let mut items = Rc::new(Vec::new());
@@ -211,7 +211,7 @@ pub fn map_indexed<'a, T, U>(
 ) -> &'a ReadSignal<Vec<U>>
 where
     T: PartialEq + Clone,
-    U: Clone + 'a,
+    U: Clone,
 {
     // Previous state used for diffing.
     let mut items = Rc::new(Vec::new());
