@@ -155,21 +155,21 @@ fn App<G: Html>(cx: Scope) -> View<G> {
                     div(class="col-md-6") { h1 { "Sycamore Keyed" } }
                     div(class="col-md-6") {
                         div(class="row") {
-                            Button { id: "run", text: "Create 1,000 rows", callback: Box::new(run) }
-                            Button { id: "runlots", text: "Create 10,000 rows", callback: Box::new(runlots) }
-                            Button { id: "add", text: "Append 1,000 rows", callback: Box::new(add) }
-                            Button { id: "update", text: "Update every 10th row", callback: Box::new(update) }
-                            Button { id: "clear", text: "Clear", callback: Box::new(clear) }
-                            Button { id: "swaprows", text: "Swap Rows", callback: Box::new(swaprows) }
+                            Button(id="run", text="Create 1,000 rows", callback=Box::new(run))
+                            Button(id="runlots", text="Create 10,000 rows", callback=Box::new(runlots))
+                            Button(id="add", text="Append 1,000 rows", callback=Box::new(add))
+                            Button(id="update", text="Update every 10th row", callback=Box::new(update))
+                            Button(id="clear", text="Clear", callback=Box::new(clear))
+                            Button(id="swaprows", text="Swap Rows", callback=Box::new(swaprows))
                         }
                     }
                 }
             }
             table(class="table table-hover table-striped test-data") {
                 tbody {
-                    Keyed {
-                        iterable: data,
-                        view: move |cx, row| {
+                    Keyed(
+                        iterable=data,
+                        view=move |cx, row| {
                             let is_selected = create_selector(cx, move || *selected.get() == Some(row.id));
                             let handle_click = move |_| selected.set(Some(row.id));
                             view! { cx,
@@ -187,8 +187,8 @@ fn App<G: Html>(cx: Scope) -> View<G> {
                                 }
                             }
                         },
-                        key: |row| row.id
-                    }
+                        key=|row| row.id
+                    )
                 }
             }
         }

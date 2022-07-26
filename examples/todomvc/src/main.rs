@@ -107,7 +107,7 @@ fn main() {
 
     sycamore::render(|cx| {
         view! { cx,
-            App()
+            App {}
         }
     });
 }
@@ -370,13 +370,13 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
             label(for="toggle-all")
 
             ul(class="todo-list") {
-                Keyed {
-                    iterable: filtered_todos,
-                    view: |cx, todo| view! { cx,
+                Keyed(
+                    iterable=filtered_todos,
+                    view=|cx, todo| view! { cx,
                         Item(todo)
                     },
-                    key: |todo| todo.get().id,
-                }
+                    key=|todo| todo.get().id,
+                )
             }
         }
     }

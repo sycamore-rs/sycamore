@@ -480,20 +480,16 @@ impl Codegen {
                     let value = props.iter().map(|x| &x.value);
                     let children_quoted = children
                         .as_ref()
-                        .and_then(|children| {
-                            if children.0.is_empty() {
-                                None
-                            } else {
-                                let children = self.view_root(children);
-                                Some(quote! {
-                                    .children(
-                                        ::sycamore::component::Children::new(#cx, move |#cx| {
-                                            #[allow(unused_variables)]
-                                            let #cx: ::sycamore::reactive::BoundedScope = #cx;
-                                            #children
-                                        })
-                                    )
-                                })
+                        .map(|children| {
+                            let children = self.view_root(children);
+                            quote! {
+                                .children(
+                                    ::sycamore::component::Children::new(#cx, move |#cx| {
+                                        #[allow(unused_variables)]
+                                        let #cx: ::sycamore::reactive::BoundedScope = #cx;
+                                        #children
+                                    })
+                                )
                             }
                         })
                         .unwrap_or_default();

@@ -29,20 +29,20 @@ fn App<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         p { "The famous cats of YouTube" }
         ul {
-            Indexed {
-                iterable: items,
-                view: |cx, Cat { id, name }| view! { cx,
+            Indexed(
+                iterable=items,
+                view=|cx, Cat { id, name }| view! { cx,
                     li {
                         a(href=format!("https://www.youtube.com/watch?v={id}")) {
                             (name)
                         }
                     }
                 }
-            }
+            )
         }
     }
 }
 
 fn main() {
-    sycamore::render(|cx| view! { cx, App() });
+    sycamore::render(|cx| view! { cx, App {} });
 }

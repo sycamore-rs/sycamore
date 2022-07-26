@@ -47,8 +47,7 @@ pub struct SuspenseProps<'a, G: GenericNode> {
 /// #[component]
 /// fn App<G: Html>(cx: Scope) -> View<G> {
 ///     view! { cx,
-///         Suspense {
-///             fallback: view! { cx, "Loading..." },
+///         Suspense(fallback=view! { cx, "Loading..." }) {
 ///             AsyncComp {}
 ///         }
 ///     }
@@ -178,8 +177,7 @@ mod tests {
         let view = provide_executor_scope(async {
             render_to_string_await_suspense(|cx| {
                 view! { cx,
-                    Suspense {
-                        fallback: view! { cx, "Loading..." },
+                    Suspense(fallback=view! { cx, "Loading..." }) {
                         Comp {}
                     }
                 }
@@ -199,15 +197,15 @@ mod tests {
                 let trigger = create_signal(cx, ());
                 let transition = use_transition(cx);
                 let _: View<SsrNode> = view! { cx,
-                    Suspense {
-                        children: Children::new(cx, move |cx| {
+                    Suspense(
+                        children=Children::new(cx, move |cx| {
                             create_effect(cx, move || {
                                 trigger.track();
                                 assert!(try_use_context::<SuspenseState>(cx).is_some());
                             });
                             view! { cx, }
                         })
-                    }
+                    )
                 };
                 let done = create_signal(cx, false);
                 transition.start(|| trigger.set(()), || done.set(true));

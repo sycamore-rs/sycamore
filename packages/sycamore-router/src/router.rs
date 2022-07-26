@@ -216,12 +216,12 @@ where
     I: Integration + 'static,
 {
     view! { cx,
-        RouterBase {
-            view: props.view,
-            integration: props.integration,
+        RouterBase(
+            view=props.view,
+            integration=props.integration,
             // The derive macro makes this the `#[not_found]` route (always present)
-            route: R::default(),
-        }
+            route=R::default(),
+        )
     }
 }
 
@@ -431,9 +431,9 @@ mod tests {
             );
 
             view! { cx,
-                StaticRouter {
-                    route: route,
-                    view: |cx, route: &ReadSignal<Routes>| {
+                StaticRouter(
+                    route=route,
+                    view=|cx, route: &ReadSignal<Routes>| {
                         match route.get().as_ref() {
                             Routes::Home => view! { cx,
                                 "Home"
@@ -446,7 +446,7 @@ mod tests {
                             }
                         }
                     },
-                }
+                )
             }
         }
 

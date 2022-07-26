@@ -83,12 +83,12 @@ fn indexed() {
         let count = create_signal(cx, vec![1, 2]);
         let node = view! { cx,
             ul {
-                Indexed {
-                    iterable: count,
-                    view: |cx, item| view! { cx,
+                Indexed(
+                    iterable=count,
+                    view=|cx, item| view! { cx,
                         li { (item) }
                     },
-                }
+                )
             }
         };
 

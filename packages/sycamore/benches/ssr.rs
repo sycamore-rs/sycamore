@@ -13,7 +13,7 @@ pub fn bench(c: &mut Criterion) {
                 }
             }
 
-            let _ssr = sycamore::render_to_string(|cx| view! { cx, App() });
+            let _ssr = sycamore::render_to_string(|cx| view! { cx, App {} });
         })
     });
 
