@@ -151,7 +151,7 @@ pub fn create_reducer<'a, U, Msg>(
         memo.set(reduce(&memo.get_untracked(), msg));
     };
 
-    (&*memo, dispatcher)
+    (memo, dispatcher)
 }
 
 #[cfg(test)]

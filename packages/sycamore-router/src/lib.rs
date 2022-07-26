@@ -102,7 +102,7 @@ impl RoutePath {
                 }
                 Segment::DynParam => {
                     if let Some(p) = paths.next() {
-                        captures.push(Capture::DynParam(*p));
+                        captures.push(Capture::DynParam(p));
                     } else {
                         return None;
                     }
@@ -187,7 +187,8 @@ where
 
 impl<T: Route> TryFromSegments for T {
     fn try_from_segments(segments: &[&str]) -> Option<Self> {
-        // It's fine to use `default()` here for the Perseus use-case (TODO is there any situation where this wouldn't be fine?)
+        // It's fine to use `default()` here for the Perseus use-case (TODO is there any situation
+        // where this wouldn't be fine?)
         Some(Self::match_route(&Self::default(), segments))
     }
 }
