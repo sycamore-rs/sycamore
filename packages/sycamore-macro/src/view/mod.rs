@@ -14,12 +14,12 @@ use syn::{parse_quote, Expr, Result, Token};
 use self::codegen::Codegen;
 use self::ir::*;
 
-pub struct WithcxArg<T> {
+pub struct WithCxArg<T> {
     cx: Expr,
     rest: T,
 }
 
-impl<T: Parse> Parse for WithcxArg<T> {
+impl<T: Parse> Parse for WithCxArg<T> {
     fn parse(input: ParseStream) -> Result<Self> {
         let cx = input.parse()?;
         let _comma: Token![,] = input.parse().map_err(|_| input.error("expected `,` (help: make sure you pass the cx variable to the macro as an argument)"))?;
@@ -28,7 +28,7 @@ impl<T: Parse> Parse for WithcxArg<T> {
     }
 }
 
-pub fn view_impl(view_root: WithcxArg<ViewRoot>) -> TokenStream {
+pub fn view_impl(view_root: WithCxArg<ViewRoot>) -> TokenStream {
     let cx = view_root.cx;
     let codegen_state = Codegen {
         cx: parse_quote!(#cx),
@@ -41,7 +41,7 @@ pub fn view_impl(view_root: WithcxArg<ViewRoot>) -> TokenStream {
     }}
 }
 
-pub fn node_impl(elem: WithcxArg<Element>) -> TokenStream {
+pub fn node_impl(elem: WithCxArg<Element>) -> TokenStream {
     let cx = elem.cx;
     let codegen_state = Codegen {
         cx: parse_quote!(#cx),
