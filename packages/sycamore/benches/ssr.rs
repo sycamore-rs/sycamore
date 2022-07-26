@@ -38,12 +38,12 @@ pub fn bench(c: &mut Criterion) {
 
                 view! { cx,
                     div(class="my-container") {
-                        Indexed {
-                            iterable: values,
-                            view: |cx, x| view! { cx,
+                        Indexed(
+                            iterable=values,
+                            view=|cx, x| view! { cx,
                                 ListItem(x)
                             }
-                        }
+                        )
                     }
                 }
             }
