@@ -37,7 +37,7 @@ where
     F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,
     K: Fn(&T) -> Key + 'a,
     Key: Clone + Hash + Eq,
-    T: Clone + Eq,
+    T: Clone + PartialEq,
 {
     let KeyedProps {
         iterable,
