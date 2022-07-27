@@ -84,6 +84,22 @@ impl SignalEmitter {
 }
 
 /// A read-only [`Signal`].
+///
+/// Unlike Rust's shared-reference (`&T`), the underlying data is not immutable. The data can be
+/// updated with the corresponding [`Signal`] (which has mutable access) and will show up in the
+/// `ReadSignal` as well.
+///
+/// A `ReadSignal` can be simply obtained by dereferencing a [`Signal`]. In fact, every [`Signal`]
+/// is a `ReadSignal` with additional write abilities!
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let signal: &Signal<i32> = create_signal(cx, 123);
+/// let read_signal: &ReadSignal<i32> = &*signal;
+/// # });
+/// ```
 pub struct ReadSignal<T> {
     value: RefCell<Rc<T>>,
     emitter: SignalEmitter,
@@ -165,11 +181,26 @@ impl<T> ReadSignal<T> {
     }
 }
 
-/// Reactive state that can be updated and subscribed to.
+/// A container of reactive state that can be updated and subscribed to.
+///
+/// # Example
+/// Creating a `Signal` requires a reactive [`Scope`]. Generally, you can use the `cx` parameter
+/// obtained from your component or from inside a [`create_effect_scoped`].
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let signal = create_signal(cx, 123);    // A signal of type `i32`.
+/// let signal = create_signal(cx, true);   // A signal of type `bool`.
+/// let signal = create_signal(cx, "abc");  // A signal of type `&str`.
+/// # });
+/// ```
 pub struct Signal<T>(ReadSignal<T>);
 
 impl<T> Signal<T> {
-    /// Create a new [`Signal`] with the specified value.
+    /// Create a new `Signal` with the specified value.
+    ///
+    /// This method is internal because it should not be possible to create a signal without a
+    /// reactive scope.
     pub(crate) fn new(value: T) -> Self {
         Self(ReadSignal {
             value: RefCell::new(Rc::new(value)),

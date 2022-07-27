@@ -28,6 +28,37 @@ where
 /// state change.
 ///
 /// For non keyed iteration, see [`Indexed`].
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// #[derive(Clone, PartialEq)]
+/// struct AnimalInfo {
+///     // The name of the animal.
+///     name: &'static str,
+///     // An unique id to identify the animal.
+///     id: u32,
+/// }
+///
+/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// let animals = create_signal(cx, vec![
+///     AnimalInfo { name: "Dog", id: 1 },
+///     AnimalInfo { name: "Cat", id: 2 },
+///     AnimalInfo { name: "Fish", id: 3 },
+/// ]);
+/// view! { cx,
+///     ul {
+///         Keyed(
+///             iterable=animals,
+///             view=|cx, animal| view! { cx,
+///                 li { (animal.name) }
+///             },
+///             key=|animal| animal.id,
+///         )
+///     }
+/// }
+/// # }
+/// ```
 #[component]
 pub fn Keyed<'a, G: GenericNode, T, F, K, Key>(
     cx: Scope<'a>,
@@ -65,6 +96,24 @@ where
 /// node on every state change.
 ///
 /// For keyed iteration, see [`Keyed`].
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// let fib = create_signal(cx, vec![0, 1, 1, 2, 3, 5, 8]);
+/// view! { cx,
+///     ul {
+///         Indexed(
+///             iterable=fib,
+///             view=|cx, x| view! { cx,
+///                 li { (x) }
+///             },
+///         )
+///     }
+/// }
+/// # }
+/// ```
 #[component]
 pub fn Indexed<'a, G: GenericNode, T, F>(cx: Scope<'a>, props: IndexedProps<'a, G, T, F>) -> View<G>
 where

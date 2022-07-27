@@ -21,6 +21,7 @@ pub fn view(view: TokenStream) -> TokenStream {
     view::view_impl(view_root).into()
 }
 
+/// Like [`view!`] but only creates a single raw node instead.
 /// ```
 /// use sycamore::prelude::*;
 ///
@@ -66,7 +67,7 @@ pub fn component(_attr: TokenStream, component: TokenStream) -> TokenStream {
         .into()
 }
 
-/// A derive macro for creating a builder-like API used in the [`view!`] macro.
+/// The derive macro for `Prop`. The macro creates a builder-like API used in the [`view!`] macro.
 #[proc_macro_derive(Prop, attributes(builder))]
 pub fn derive_prop(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

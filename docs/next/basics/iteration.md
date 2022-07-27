@@ -13,13 +13,13 @@ algorithm is used to determine which items need to be re-rendered according to t
 let count = create_signal(cx, vec![1, 2]);
 view! { cx,
     ul {
-        Keyed {
-            iterable: count,
-            view: |cx, x| view! { cx,
+        Keyed(
+            iterable=count,
+            view=|cx, x| view! { cx,
                 li { (x) }
             },
-            key: |x| *x,
-        }
+            key=|x| *x,
+        )
     }
 }
 ```
@@ -33,12 +33,12 @@ generally preferred over `Indexed` because it is more efficient in most scenario
 let count = create_signal(cx, vec![1, 2]);
 view! { cx,
     ul {
-        Indexed {
-            iterable: count,
-            view: |cx, x| view! { cx,
+        Indexed(
+            iterable=count,
+            view=|cx, x| view! { cx,
                 li { (x) }
             },
-        }
+        )
     }
 }
 ```

@@ -11,6 +11,7 @@ use sycamore_futures::spawn_local_scoped;
 
 use crate::prelude::*;
 
+/// Internal context state used by suspense.
 #[derive(Default)]
 struct SuspenseState {
     async_counts: RefCell<Vec<RcSignal<u32>>>,
@@ -126,8 +127,7 @@ pub async fn await_suspense<U>(cx: Scope<'_>, f: impl Future<Output = U>) -> U {
     ret
 }
 
-/// A struct to handle transitions. Created using
-/// [`use_transition`].
+/// A struct to handle transitions. Created using [`use_transition`].
 #[derive(Clone, Copy, Debug)]
 pub struct TransitionHandle<'a> {
     cx: Scope<'a>,

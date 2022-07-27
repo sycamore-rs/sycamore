@@ -225,8 +225,8 @@ where
     }
 }
 
-/// A lower-level router component that takes an instance of your [`Route`] type. This is designed for `struct` [`Route`]s, which can be used to store
-/// additional information along with routes.
+/// A lower-level router component that takes an instance of your [`Route`] type. This is designed
+/// for `struct` [`Route`]s, which can be used to store additional information along with routes.
 ///
 /// This is a very specific use-case, and you probably actually want [`Router`]!
 #[component]
@@ -422,7 +422,8 @@ mod tests {
         fn Comp<G: Html>(cx: Scope, path: String) -> View<G> {
             let route = Routes::match_route(
                 // The user would never use this directly, so they'd never have to do this trick
-                // It doesn't matter which variant we provide here, it just needs to conform to `&self` (designed for `struct`s, as in Perseus' router)
+                // It doesn't matter which variant we provide here, it just needs to conform to
+                // `&self` (designed for `struct`s, as in Perseus' router)
                 &Routes::Home,
                 &path
                     .split('/')

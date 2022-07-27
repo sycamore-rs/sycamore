@@ -9,7 +9,8 @@ use crate::parser::{route, RoutePathAst, SegmentAst};
 pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut quoted = TokenStream::new();
     let mut err_quoted = TokenStream::new();
-    // When the `#[not_found]` handler is found, this will store its name so we can use that as the `Default` implementation
+    // When the `#[not_found]` handler is found, this will store its name so we can use that as the
+    // `Default` implementation
     let mut error_handler_name = None;
 
     match &input.data {

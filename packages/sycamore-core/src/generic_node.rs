@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use sycamore_reactive::Scope;
 
-/// Represents an element.
+/// Represents an element (i.e. `div`, `p`, etc...).
 pub trait SycamoreElement {
     /// The tag name of the element.
     const TAG_NAME: &'static str;
