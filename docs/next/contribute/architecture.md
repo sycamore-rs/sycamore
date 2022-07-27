@@ -1,5 +1,7 @@
 # Project architecture
 
+TODO: Update this page as this is fairly outdated.
+
 All non proc-macro related code is in `/packages/sycamore`. Proc-macro related code is in
 `/packages/sycamore-macro`.
 
