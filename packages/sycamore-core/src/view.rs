@@ -10,33 +10,47 @@ use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
 
-/// Internal type for [`View`].
+/// Internal type for [`View`]. This is to prevent direct access to the different enum variants.
 #[derive(Clone)]
 pub(crate) enum ViewType<G: GenericNode> {
-    /// A DOM node.
+    /// A view node.
     Node(G),
     /// A dynamic [`View`].
     Dyn(RcSignal<View<G>>),
-    /// A fragment of [`View`]s.
+    /// A fragment (aka. list) of [`View`]s.
     #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
     Fragment(Rc<Box<[View<G>]>>),
 }
 
-/// Represents an UI view.
+/// Represents an UI view. Usually constructed using the `view!` macro or using the builder API.
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// # #[component]
+/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// let my_view: View<G> = view! { cx,
+///     div {
+///         p { "A view." }
+///     }
+/// };
+/// # my_view
+/// # }
+/// ```
 #[derive(Clone)]
 pub struct View<G: GenericNode> {
     pub(crate) inner: ViewType<G>,
 }
 
 impl<G: GenericNode> View<G> {
-    /// Create a new [`View`] from a [`GenericNode`].
+    /// Create a new [`View`] from a raw node.
     pub fn new_node(node: G) -> Self {
         Self {
             inner: ViewType::Node(node),
         }
     }
 
-    /// Create a new [`View`] from a [`FnMut`].
+    /// Create a new dynamic [`View`] from a [`FnMut`].
     pub fn new_dyn<'a>(cx: Scope<'a>, mut f: impl FnMut() -> View<G> + 'a) -> Self {
         let signal = create_ref(cx, RefCell::new(None::<RcSignal<View<G>>>));
         create_effect(cx, move || {
@@ -73,14 +87,17 @@ impl<G: GenericNode> View<G> {
         }
     }
 
-    /// Create a new [`View`] from a `Vec` of [`GenericNode`]s.
+    /// Create a new [`View`] fragment from a `Vec` of [`View`]s.
     pub fn new_fragment(fragment: Vec<View<G>>) -> Self {
         Self {
             inner: ViewType::Fragment(Rc::from(fragment.into_boxed_slice())),
         }
     }
 
-    /// Create a new [`View`] with a blank comment node
+    /// Create a new [`View`] with a blank marker node
+    ///
+    /// Note that this is different from an empty view fragment. Instead, this is a single marker
+    /// (dummy) node.
     pub fn empty() -> Self {
         Self::new_node(G::marker())
     }
@@ -112,7 +129,11 @@ impl<G: GenericNode> View<G> {
         }
     }
 
-    /// Returns `true` if the view is a single node.
+    /// Returns `true` if the view is a single node. Note that if the view is a fragment containing
+    /// only a single child node, this will still return `false`.
+    ///
+    /// To check whether the [`View`] only contains a single node, use `.flatten().len() == 1`
+    /// instead.
     pub fn is_node(&self) -> bool {
         matches!(
             self,
@@ -142,7 +163,10 @@ impl<G: GenericNode> View<G> {
         )
     }
 
-    /// Returns a `Vec` of nodes.
+    /// Returns a recursively _flattened_ `Vec` of raw nodes.
+    ///
+    /// If the current view is dynamic or is a fragment containing dynamic views, the dynamic views
+    /// will be accessed reactively.
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
             ViewType::Node(node) => vec![node],
@@ -171,18 +195,21 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 }
 
 /// Trait for describing how something should be rendered into DOM nodes.
+///
+/// A type implementing `IntoView` means that it can be converted into a [`View`]. This allows it to
+/// be directly interpolated in the `view!` macro.
 pub trait IntoView<G: GenericNode> {
-    /// Called during the initial render when creating the DOM nodes. Should return a
-    /// `Vec` of [`GenericNode`]s.
+    /// Called during the initial render when creating the DOM nodes. Should return a [`View`].
     fn create(&self) -> View<G>;
 }
 
 impl<G: GenericNode> IntoView<G> for View<G> {
+    /// Tautology of converting a [`View`] into a [`View`]. This allows us to interpolate views into
+    /// other views.
     fn create(&self) -> View<G> {
         self.clone()
     }
 }
-
 impl<G: GenericNode> IntoView<G> for &View<G> {
     fn create(&self) -> View<G> {
         (*self).clone()

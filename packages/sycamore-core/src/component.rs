@@ -22,6 +22,23 @@ pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
 }
 
 /// A trait that is implemented automatically by the `Prop` derive macro.
+///
+/// This is used when constructing components in the `view!` macro.
+///
+/// # Example
+/// Deriving an implementation and using the builder to construct an instance of the struct:
+/// ```
+/// # use sycamore::component::Prop;
+/// # use sycamore::prelude::*;
+/// #[derive(Prop)]
+/// struct ButtonProps {
+///     color: String,
+///     disabled: bool,
+/// }
+///
+/// let builder = <ButtonProps as Prop>::builder();
+/// let button_props = builder.color("red".to_string()).disabled(false).build();
+/// ```
 pub trait Prop {
     /// The type of the builder. This allows getting the builder type when the name is unknown (e.g.
     /// in a macro).
@@ -39,7 +56,40 @@ pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
     T::builder()
 }
 
-/// Component children.
+/// A special property type to allow the component to accept children.
+///
+/// Add a field called `children` of this type to your properties struct.
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// #[derive(Prop)]
+/// struct RowProps<'a, G: Html> {
+///     width: i32,
+///     children: Children<'a, G>,
+/// }
+///
+/// #[component]
+/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
+///     // Convert the `Children` into a `View<G>`.
+///     let children = props.children.call(cx);
+///     view! { cx,
+///         div {
+///             (children)
+///         }
+///     }
+/// }
+///
+/// # #[component]
+/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// // Using `Row` somewhere else in your app:
+/// view! { cx,
+///     Row(width=10) {
+///         p { "This is a child node." }
+///     }
+/// }
+/// # }
+/// ```
 pub struct Children<'a, G: GenericNode> {
     f: Box<dyn FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a>,
 }

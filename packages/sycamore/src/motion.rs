@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use crate::reactive::*;
 
-/// Type returned by `create_raf` and `create_raf_loop`.
+/// Type returned by [`create_raf`] and [`create_raf_loop`].
 type RafState<'a> = (RcSignal<bool>, &'a dyn Fn(), &'a dyn Fn());
 
 /// Schedule a callback to be called on each animation frame.
