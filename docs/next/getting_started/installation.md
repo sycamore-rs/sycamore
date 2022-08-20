@@ -17,8 +17,8 @@ rustup target add wasm32-unknown-unknown
 
 ### Minimum Supported Rust Version (MSRV) and Rust edition
 
-The minimum supported Rust toolchain is `v1.58.0`. Sycamore is not guaranteed to compile on an older
-version of Rust.
+The minimum supported Rust toolchain is `v1.63.0`. Sycamore is not guaranteed to (and probably
+won't) compile on older versions of Rust.
 
 Sycamore only works on Rust edition 2021. Even though most crates written in edition 2021 are
 backward compatible with older editions, this is not the case for Sycamore because Sycamore's
