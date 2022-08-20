@@ -55,10 +55,7 @@ where
             // TODO: do not clone T
             for new_item in new_items.iter().cloned() {
                 let mut tmp = None;
-                let new_disposer = create_child_scope(cx, |cx| {
-                    // SAFETY: f takes the same parameter as the argument to create_child_scope.
-                    tmp = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
-                });
+                let new_disposer = create_child_scope(cx, |cx| tmp = Some(map_fn(cx, new_item)));
                 mapped.push(tmp.unwrap());
                 disposers.push(Some(new_disposer));
             }
@@ -159,10 +156,8 @@ where
                     // Create new value.
                     let mut tmp = None;
                     let new_item = new_items[j].clone();
-                    let new_disposer = create_child_scope(cx, |cx| {
-                        // SAFETY: f takes the same parameter as the argument to create_child_scope.
-                        tmp = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
-                    });
+                    let new_disposer =
+                        create_child_scope(cx, |cx| tmp = Some(map_fn(cx, new_item)));
                     if mapped.len() > j {
                         mapped[j] = tmp.unwrap();
                         disposers[j] = Some(new_disposer);
@@ -249,17 +244,12 @@ where
 
                 let mut tmp = None;
                 if item.is_none() || eqs {
-                    let new_disposer = create_child_scope(cx, |cx| {
-                        // SAFETY: f takes the same parameter as the argument to
-                        // create_child_scope(cx, _).
-                        tmp = Some(map_fn(unsafe { mem::transmute(cx) }, new_item));
-                    });
+                    let new_disposer =
+                        create_child_scope(cx, |cx| tmp = Some(map_fn(cx, new_item)));
                     if item.is_none() {
-                        // SAFETY: tmp is written in create_child_scope.
                         mapped.push(tmp.unwrap());
                         disposers.push(new_disposer);
                     } else if eqs {
-                        // SAFETY: tmp is written in create_child_scope.
                         mapped[i] = tmp.unwrap();
                         let prev = mem::replace(&mut disposers[i], new_disposer);
                         unsafe {
@@ -280,7 +270,7 @@ where
             // In case the new set is shorter than the old, set the length of the mapped array.
             mapped.truncate(new_items.len());
 
-            // save a copy of the mapped items for the next update.
+            // Save a copy of the mapped items for the next update.
             items = Rc::clone(&new_items);
             debug_assert!([items.len(), mapped.len(), disposers.len()]
                 .iter()

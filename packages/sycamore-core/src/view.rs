@@ -73,9 +73,7 @@ impl<G: GenericNode> View<G> {
     ) -> Self {
         let signal = create_ref(cx, RefCell::new(None::<RcSignal<View<G>>>));
         create_effect_scoped(cx, move |cx| {
-            // SAFETY: `f` takes the same parameter as the child cx provided by
-            // `create_effect_scoped`.
-            let view = f(unsafe { std::mem::transmute(cx) });
+            let view = f(cx);
             if signal.borrow().is_some() {
                 signal.borrow().as_ref().unwrap().set(view);
             } else {
