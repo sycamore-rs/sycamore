@@ -42,7 +42,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div {
             p { "Suspense + Transitions" }
-            p { "Transition state: " (transition.is_pending().then(|| "pending").unwrap_or("done")) }
+            p { "Transition state: " (transition.is_pending().then_some("pending").unwrap_or("done")) }
             button(on:click=move |_| update(Tab::One)) { "One" }
             button(on:click=move |_| update(Tab::Two)) { "Two" }
             button(on:click=move |_| update(Tab::Three)) { "Three" }

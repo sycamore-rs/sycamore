@@ -243,7 +243,7 @@ impl GenericNode for SsrNode {
                         let index = children
                             .iter()
                             .enumerate()
-                            .find_map(|(i, child)| (child == reference).then(|| i))
+                            .find_map(|(i, child)| (child == reference).then_some(i))
                             .expect("reference node is not a child of this node");
                         children.insert(index, new_node.clone());
                     }
@@ -275,7 +275,7 @@ impl GenericNode for SsrNode {
         let index = children
             .iter()
             .enumerate()
-            .find_map(|(i, c)| (c == old).then(|| i))
+            .find_map(|(i, c)| (c == old).then_some(i))
             .expect("the node to be replaced is not a child of this node");
         *children[index].0.parent.borrow_mut() = Weak::new();
         children[index] = new.clone();
