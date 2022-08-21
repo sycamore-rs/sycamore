@@ -164,9 +164,7 @@ where
         }
         // Create a new nested scope and save the disposer.
         let new_disposer: Option<ScopeDisposer<'a>> = Some(create_child_scope(cx, |cx| {
-            // SAFETY: f takes the same parameter as the argument to
-            // self.create_child_scope(_).
-            f(unsafe { std::mem::transmute(cx) });
+            f(cx);
         }));
         disposer = new_disposer;
     });

@@ -91,7 +91,7 @@ impl Parse for Element {
         }
         // Check if dangerously_set_inner_html is also set.
         let dangerously_set_inner_html_span = attrs.iter().find_map(|attr| {
-            (attr.ty == AttributeType::DangerouslySetInnerHtml).then(|| attr.span)
+            (attr.ty == AttributeType::DangerouslySetInnerHtml).then_some(attr.span)
         });
         if let Some(span) = dangerously_set_inner_html_span {
             if !children.is_empty() {

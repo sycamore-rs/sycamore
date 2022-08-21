@@ -1,5 +1,3 @@
-#![allow(deprecated)] // TODO: remove usage of deprecated API.
-
 mod content;
 mod header;
 mod index;
@@ -71,7 +69,13 @@ fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> 
     let fetch_docs_data = move |url| {
         let data = create_resource(cx, docs_preload(url));
         if cached_sidebar_data.get().is_none()
-            || cached_sidebar_data.get().as_ref().as_ref().unwrap().0 != None
+            || cached_sidebar_data
+                .get()
+                .as_ref()
+                .as_ref()
+                .unwrap()
+                .0
+                .is_some()
         {
             // Update sidebar
             let cached_sidebar_data = cached_sidebar_data.clone();

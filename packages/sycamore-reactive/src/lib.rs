@@ -284,14 +284,7 @@ where
     let boxed = Box::new(child);
     let ptr = Box::into_raw(boxed);
 
-    let key = cx
-        .raw
-        .inner
-        .borrow_mut()
-        .child_scopes
-        // SAFETY: None of the fields of ptr are accessed through child_scopes therefore we can
-        // safely transmute the lifetime.
-        .insert(unsafe { std::mem::transmute(ptr) });
+    let key = cx.raw.inner.borrow_mut().child_scopes.insert(ptr);
 
     // SAFETY: the address of the cx lives as long as 'a because:
     // - It is allocated on the heap and therefore has a stable address.
