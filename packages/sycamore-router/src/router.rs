@@ -334,6 +334,22 @@ where
     R: Route + 'static,
     F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
+    view! { cx,
+        StaticRouterBase(props)
+    }
+}
+
+/// Implementation detail for [`StaticRouter`]. The extra component is needed to make sure hydration
+/// keys are consistent.
+#[component]
+fn StaticRouterBase<'a, G: Html, R, F>(
+    cx: Scope<'a>,
+    props: StaticRouterProps<'a, R, F, G>,
+) -> View<G>
+where
+    R: Route + 'static,
+    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+{
     let StaticRouterProps {
         view,
         route,
