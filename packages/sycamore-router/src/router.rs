@@ -276,13 +276,17 @@ where
         }
     }));
     let route_signal = create_memo(cx, move || route.match_path(&pathname.get()));
-    // Delegate click events from child <a> tags.
     let view = view(cx, route_signal);
+    // Delegate click events from child <a> tags.
     if let Some(node) = view.as_node() {
         node.event(cx, "click", integration.click_handler());
     } else {
-        // TODO: support fragments and dynamic nodes
-        unimplemented!("support fragments and dynamic nodes for Router")
+        let view = view.clone();
+        create_effect_scoped(cx, move |cx| {
+            for node in view.clone().flatten() {
+                node.event(cx, "click", integration.click_handler());
+            }
+        });
     }
     view
 }

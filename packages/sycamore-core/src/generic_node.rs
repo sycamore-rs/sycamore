@@ -128,6 +128,8 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn remove_self(&self);
 
     /// Add a event handler to the event `name`.
+    /// The event should be removed once the scope is disposed, as to prevent accessing scope
+    /// variables after the scope is disposed.
     fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F);
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
