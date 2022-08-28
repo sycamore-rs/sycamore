@@ -1,7 +1,7 @@
 [package]
 name = "sycamore-reactive"
 categories = ["gui", "wasm", "web-programming"]
-description = "Reactive primitives for sycamore"
+description = "Reactive primitives for Sycamore"
 edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive"]
