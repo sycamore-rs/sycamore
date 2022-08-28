@@ -28,7 +28,7 @@ the Sycamore book that has been updated to v0.8.
 
 ### No more clones!
 
-The motivation for this change is mostly about ergonomics. Sycamore used to surfer from a problem of
+The motivation for this change is mostly about ergonomics. Sycamore used to suffer from a problem of
 cloning signals and other variables into event handlers and closures. This was because these
 closures needed to be `'static` since we didn't know how long they needed to live.
 
