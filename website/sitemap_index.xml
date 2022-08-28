@@ -28,6 +28,7 @@
 <url><loc>https://sycamore-rs.netlify.app/docs/getting_started/faq</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/getting_started/hello_world</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/getting_started/installation</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/docs/migration_guides/0.7-to-0.8</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/sidebar</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/v0.5/advanced/advanced_reactivity</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/v0.5/advanced/css</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
@@ -119,14 +120,17 @@
 <url><loc>https://sycamore-rs.netlify.app/examples/components</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/context</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/counter</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/examples/hello-builder</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/hello-world</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/higher-order-components</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/http-request</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/examples/http-request-builder</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/hydrate</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/iteration</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/js-framework-benchmark</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/motion</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/ssr</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+<url><loc>https://sycamore-rs.netlify.app/examples/svg</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/timer</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/todomvc</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/examples/transitions</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
