@@ -96,7 +96,7 @@
             "items": [
                 {
                     "name": "v0.7 to v0.8",
-                    "href": "migration_guides/0.7-to-0.8"
+                    "href": "migration/0.7-to-0.8"
                 }
             ]
         },

@@ -37,8 +37,8 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
 
     let md = fs::read_to_string(path)?;
 
-    let mut outline_tmp = Vec::new();
-    let mut tmp = None;
+    let mut outline = Vec::new();
+    let mut current_heading = None;
 
     let mut code_block_buf = String::new();
     let mut inside_code_block = false;
@@ -49,7 +49,7 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
             if level == HeadingLevel::H1 {
                 Some(event)
             } else {
-                tmp = Some(Outline {
+                current_heading = Some(Outline {
                     name: String::new(),
                     children: Vec::new(),
                 });
@@ -60,16 +60,16 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
             if level == HeadingLevel::H1 {
                 Some(event)
             } else {
-                let tmp = tmp.take().unwrap();
-                let anchor = tmp.name.trim().to_lowercase().replace(' ', "-");
-                let name = tmp.name.clone();
+                let heading = current_heading.take().unwrap();
+                let anchor = heading.name.trim().to_lowercase().replace(' ', "-");
+                let name = heading.name.clone();
                 if level == HeadingLevel::H2 {
-                    outline_tmp.push(tmp);
+                    outline.push(heading);
                 } else {
-                    let l = outline_tmp
+                    let l = outline
                         .last_mut()
                         .expect("cannot have non level 2 heading at root");
-                    l.children.push(tmp);
+                    l.children.push(heading);
                 }
                 Some(Event::Html(CowStr::from(format!(
                     "<{level} id=\"{anchor}\">{name}</{level}>"
@@ -95,7 +95,7 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
                 syntect::html::ClassStyle::SpacedPrefixed { prefix: "s-" },
             );
             for line in LinesWithEndings::from(&code) {
-                html_generator.parse_html_for_line_which_includes_newline(line);
+                let _ = html_generator.parse_html_for_line_which_includes_newline(line);
             }
             let highlighted_html = html_generator.finalize();
 
@@ -108,8 +108,8 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
             if inside_code_block {
                 code_block_buf.push_str(text);
                 None
-            } else if tmp.is_some() {
-                tmp.as_mut().unwrap().name += text;
+            } else if let Some(current_heading) = &mut current_heading {
+                current_heading.name += text;
                 None
             } else {
                 Some(event)
@@ -121,10 +121,7 @@ fn parse(path: &Path) -> Result<MarkdownPage, Box<dyn Error>> {
     let mut html = String::new();
     push_html(&mut html, parser);
 
-    Ok(MarkdownPage {
-        html,
-        outline: outline_tmp,
-    })
+    Ok(MarkdownPage { html, outline })
 }
 
 fn build_dir(base: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
@@ -291,9 +288,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let light_theme = &ts.themes["InspiredGitHub"];
 
     let dark_css =
-        css_for_theme_with_class_style(dark_theme, ClassStyle::SpacedPrefixed { prefix: "s-" });
+        css_for_theme_with_class_style(dark_theme, ClassStyle::SpacedPrefixed { prefix: "s-" })?;
     let light_css =
-        css_for_theme_with_class_style(light_theme, ClassStyle::SpacedPrefixed { prefix: "s-" });
+        css_for_theme_with_class_style(light_theme, ClassStyle::SpacedPrefixed { prefix: "s-" })?;
     fs::write("../website/static/dark.css", dark_css)?;
     fs::write("../website/static/light.css", light_css)?;
     println!("Done.");
