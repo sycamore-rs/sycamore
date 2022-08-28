@@ -2,6 +2,11 @@ use sycamore::prelude::*;
 
 static POSTS: &[(&str, &str, &str)] = &[
     (
+        "Announcing Sycamore v0.8.0",
+        "Reactivity v2, better component props and children, async/await support, and more…        ",
+        "announcing-v0.8.0",
+    ),
+    (
         "A first look at Sycamore's new reactive primitives",
         "How the next version of Sycamore will be the most ergonomic yet",
         "new-reactive-primitives",
