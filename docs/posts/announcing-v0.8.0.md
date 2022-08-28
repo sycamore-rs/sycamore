@@ -203,7 +203,7 @@ editor.
 
 The old builder API needed a `.build()` for every node. The new builder API does this automatically
 behind the hood. The syntax has also been changed to be more concise and ergonomic. Check out the
-[book](docs/v0.8/basics/view#builder-syntax) for more information.
+[book](/docs/v0.8/basics/view#builder-syntax) for more information.
 
 ## More web utilities
 
