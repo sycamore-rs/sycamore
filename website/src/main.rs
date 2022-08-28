@@ -12,7 +12,8 @@ use sidebar::SidebarData;
 use sycamore::futures::{create_resource, spawn_local_scoped};
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router};
-const LATEST_MAJOR_VERSION: &str = "v0.7";
+
+const LATEST_MAJOR_VERSION: &str = "v0.8";
 const NEXT_VERSION: &str = "next";
 
 #[derive(Debug, Route)]

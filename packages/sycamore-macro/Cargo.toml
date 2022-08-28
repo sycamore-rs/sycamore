@@ -1,14 +1,14 @@
 [package]
 name = "sycamore-macro"
 categories = ["gui", "wasm", "web-programming"]
-description = "proc-macro crate for sycamore"
+description = "proc-macro crate for Sycamore"
 edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive"]
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.8.0-beta.7"
+version = "0.8.0"
 
 [lib]
 proc-macro = true

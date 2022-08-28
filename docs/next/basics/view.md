@@ -17,13 +17,13 @@ lot of elements in your app, there is a special terse syntax.
 ```rust
 view! { cx,
     // A simple div
-    div
+    div {}
     // A div with a class
     div(class="foo")
     // An empty paragraph
-    p
+    p {}
     // Custom elements!
-    my-custom-element
+    my-custom-element {}
 }
 ```
 

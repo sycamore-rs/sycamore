@@ -1,5 +1,67 @@
 # Changelog
 
+## ✨ **0.8.0** _(2022-08-28)_
+
+Release post: https://sycamore-rs.netlify.app/news/announcing-v0.8.0
+
+- #### ⚡️ Features
+
+  - [Add `.map()` utility to `Signal`.](https://github.com/sycamore-rs/sycamore/pull/326)
+  - [Reactive Primitives v2 🎉!](https://github.com/sycamore-rs/sycamore/pull/337) Read the
+    [blog post](https://sycamore-rs.netlify.app/news/new-reactive-primitives) for more information.
+  - [Suspense and async components.](https://github.com/sycamore-rs/sycamore/pull/345)
+  - [Async transitions.](https://github.com/sycamore-rs/sycamore/pull/353)
+  - [Type-checked HTML element tags.](https://github.com/sycamore-rs/sycamore/pull/354)
+  - [Builder API v2!](https://github.com/sycamore-rs/sycamore/pull/373)
+  - [SVG support.](https://github.com/sycamore-rs/sycamore/pull/389)
+  - [Implement `AddAssign` and friends for `Signal`.](https://github.com/sycamore-rs/sycamore/pull/397)
+  - [Add `Signal::modify` to mutate signal.](https://github.com/sycamore-rs/sycamore/pull/399)
+  - [Add `NoHydrate` and `NoSsr` utility components.](https://github.com/sycamore-rs/sycamore/pull/409)
+  - [Add `from_web_sys` function.](https://github.com/sycamore-rs/sycamore/pull/432)
+  - [Add `prop:` directive to `view!`](https://github.com/sycamore-rs/sycamore/pull/435)
+  - [Add `dangerously_set_inner_html` to the builder API.](https://github.com/sycamore-rs/sycamore/pull/378)
+  - [Print hydration key for hydration mismatch.](https://github.com/sycamore-rs/sycamore/pull/444)
+  - [New view syntax for components.](https://github.com/sycamore-rs/sycamore/pull/460) Unifies the
+    syntax used for setting attributes/props in elements and components.
+
+- #### 🛠 Fixes
+
+  - [Make `SsrNode` attribute order stable.](https://github.com/sycamore-rs/sycamore/pull/323)
+  - [Call cleanup callbacks in `map_keyed` and `map_indexed`](https://github.com/sycamore-rs/sycamore/pull/357)
+  - [Create a nested reactive scope if `cx` is used inside dyn expression.](https://github.com/sycamore-rs/sycamore/pull/364)
+  - [Fix and simplify `SsrNode` and `HydrateNode` codegen in `view!`.](https://github.com/sycamore-rs/sycamore/pull/392)
+  - [Fix hydration for top-level dynamic views.](https://github.com/sycamore-rs/sycamore/pull/374)
+  - [Fix setting `class` on SVG elements.](https://github.com/sycamore-rs/sycamore/pull/398)
+  - [Fix parsing of legacy components in child views.](https://github.com/sycamore-rs/sycamore/pull/417)
+  - [Fix destructuring in async component props.](https://github.com/sycamore-rs/sycamore/pull/419)
+  - [Add the `<body>` tag to the HTML elements list.](https://github.com/sycamore-rs/sycamore/pull/420)
+  - [Fix `scope_depth` to return `0` for root scope.](https://github.com/sycamore-rs/sycamore/pull/424)
+  - [Fix removing old nodes from parent.](https://github.com/sycamore-rs/sycamore/pull/428)
+  - [Remove Unit `()` implementation of `Prop`.](https://github.com/sycamore-rs/sycamore/pull/431)
+  - [Add `Debug` implementations to all public items.](https://github.com/sycamore-rs/sycamore/pull/441)
+  - [Fix boolean attribute list.](https://github.com/sycamore-rs/sycamore/pull/440)
+  - [Allow fragments and dynamic views in `Router`.](https://github.com/sycamore-rs/sycamore/pull/471)
+  - [Fix hydration error for `Router`.](https://github.com/sycamore-rs/sycamore/pull/472)
+
+- #### 🎁 Examples and Documentation
+
+  - [Add HTTP request example.](https://github.com/sycamore-rs/sycamore/pull/305)
+  - [Add HTTP request builder example.](https://github.com/sycamore-rs/sycamore/pull/418)
+  - [Add more docs in book about router and components.](https://github.com/sycamore-rs/sycamore/pull/451)
+
+- #### 🚅 Performance
+
+  - [Remove some allocations in `sycamore-reactive`.](https://github.com/sycamore-rs/sycamore/pull/422)
+
+- #### Internal
+
+  - [Update license to 2022.](https://github.com/sycamore-rs/sycamore/pull/328)
+  - [Make website responsive and mobile-friendly.](https://github.com/sycamore-rs/sycamore/pull/331)
+  - [Use in-tree `js-framework-benchmark` implementation for benchmarking.](https://github.com/sycamore-rs/sycamore/pull/355)
+  - [Split the `sycamore` crate into `sycamore-core` and `sycamore-web`.](https://github.com/sycamore-rs/sycamore/pull/416)
+  - [Simplify `reconcile_fragments` implementation.](https://github.com/sycamore-rs/sycamore/pull/423)
+  - [Update MSRV to 1.63 and remove some `unsafe`s from `sycamore-reactive`.](https://github.com/sycamore-rs/sycamore/pull/470)
+
 ## ✨ **0.7.1** _(2021-12-15)_
 
 - #### 🛠 Fixes

@@ -1,18 +1,18 @@
 [package]
 name = "sycamore-futures"
 categories = ["gui", "wasm", "web-programming"]
-description = "Futures, suspense, and async/await support for sycamore"
+description = "Futures, suspense, and async/await support for Sycamore"
 edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive"]
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.8.0-beta.7"
+version = "0.8.0"
 
 [dependencies]
 futures = "0.3.21"
-sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0-beta.7" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.29"

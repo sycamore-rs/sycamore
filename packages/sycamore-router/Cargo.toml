@@ -1,7 +1,6 @@
 [package]
-authors = ["Luke Chu <37006668+lukechu10@users.noreply.github.com>"]
 categories = ["gui", "wasm", "web-programming"]
-description = "Router for sycamore"
+description = "Router for Sycamore"
 edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive"]
@@ -9,13 +8,13 @@ license = "MIT"
 name = "sycamore-router"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.8.0-beta.7"
+version = "0.8.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sycamore = { path = "../sycamore", version = "0.8.0-beta.7" }
-sycamore-router-macro = { path = "../sycamore-router-macro", version = "0.8.0-beta.7" }
+sycamore = { path = "../sycamore", version = "0.8.0" }
+sycamore-router-macro = { path = "../sycamore-router-macro", version = "0.8.0" }
 wasm-bindgen = "0.2.79"
 
 [dependencies.web-sys]
