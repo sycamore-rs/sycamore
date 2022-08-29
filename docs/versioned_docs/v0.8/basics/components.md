@@ -4,9 +4,9 @@ Any serious UI framework needs a way to compose and abstract UI elements. In Syc
 accomplished using components.
 
 Components in `sycamore` are simply functions slapped with the `#[component]` attribute that take a
-argument of type `Scope` (a reactive scope). Component functions only run once (unlike React
-where functional-components are called on every render). Think of it as a builder-pattern for
-constructing UI.
+argument of type `Scope` (a reactive scope). Component functions only run once (unlike React where
+functional-components are called on every render). Think of it as a builder-pattern for constructing
+UI.
 
 In order for the `view!` macro to distinguish between regular elements and components, it is
 convention to name components using `PascalCase`.
@@ -24,9 +24,7 @@ To use the component from elsewhere, the `view!` macro has some special syntax.
 
 ```rust
 view! { cx,
-    MyComponent {
-        // props...
-    }
+    MyComponent {}
 }
 ```
 
@@ -49,10 +47,7 @@ The component can then be constructed by passing the properties to it from the `
 
 ```rust
 view! { cx,
-    MyComponent {
-        name: "John Doe",
-        email: "...",
-    }
+    MyComponent(name="John Doe", email="...")
 }
 ```
 
@@ -84,9 +79,7 @@ fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
 
 let state = create_signal(cx, 0);
 view! {
-    MyComponent {
-        value: state
-    }
+    MyComponent(value=state)
 }
 state.set(1); // automatically updates value in MyComponent
 ```
@@ -118,7 +111,8 @@ fn MyComponent(cx: Scope) -> View<G> {
 
 ### Component children
 
-Components can also be wrappers around other child views by adding the `children` field to our properties struct.
+Components can also be wrappers around other child views by adding the `children` field to our
+properties struct.
 
 ```rust
 #[derive(Prop)]
@@ -138,19 +132,18 @@ pub fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyComponentProps<'a, G>) -
 }
 
 view! {
-    MyComponent {
-        class: "my-class",
-        {
-            p { "My sub item 1" }
-            p { "My sub item 2" }
-        }
+    MyComponent(class="my-class") {
+        p { "My sub item 1" }
+        p { "My sub item 2" }
     }
 }
 ```
 
 ### Default props
 
-Some property fields might have a default value. Use the `#[builder(default)]` attribute to allow omitting the property when constructing the component.
+Some property fields might have a default value. Use the `#[builder(default)]` attribute to allow
+omitting the property when constructing the component.
+
 ```rust
 #[derive(Prop)]
 struct MyProps {
@@ -160,9 +153,7 @@ struct MyProps {
 }
 
 view! { cx,
-    MyComponent {
-        name: "John Doe",
-        // Since `email` is left out, it will be set to the default value "".
-    }
+    // Since the `email` prop is left out, it will be set to the default value of "".
+    MyComponent(name="John Doe")
 }
 ```

@@ -52,7 +52,7 @@ The `cx` variable represents the _reactive scope_. This is what basically keeps 
 and makes reactivity work. Don't worry too much about this now. You'll see this again in the
 [Reactivity](../basics/reactivity) section.
 
-There it is! Trunk just needs one thing to turn this into a website; a html source file to inject
+There it is! Trunk just needs one thing to turn this into a website: an html source file to inject
 the view into. Copy the following code to a file called `index.html` in the root of your crate
 (alongside `Cargo.toml`):
 
