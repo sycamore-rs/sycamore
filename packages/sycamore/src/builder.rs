@@ -84,7 +84,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a
 /// // etc...
 /// ```
 pub fn tag<'a, G: GenericNode>(
-    t: impl AsRef<str>,
+    t: impl AsRef<str> + 'a,
 ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
     ElementBuilder::new(move |_| G::element_from_tag(t.as_ref()))
 }
@@ -423,7 +423,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn c(
         self,
-        c: impl ElementBuilderOrView<'a, G>,
+        c: impl ElementBuilderOrView<'a, G> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(|cx, el| render::insert(cx, el, c.into_view(cx), None, None, true))
     }
