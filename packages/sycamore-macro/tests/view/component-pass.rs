@@ -23,6 +23,18 @@ pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<
 }
 
 #[component]
+pub fn NestedComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<'a, G>) -> View<G> {
+    let children = prop.children.call(cx);
+
+    view! { cx,
+        ComponentWithChildren {
+            (children)
+            Component {}
+        }
+    }
+}
+
+#[component]
 pub async fn AsyncComponentWithPropDestructuring<'a, G: Html>(
     cx: Scope<'a>,
     PropWithChildren { children }: PropWithChildren<'a, G>,
@@ -58,6 +70,12 @@ fn compile_pass<G: Html>() {
 
         let _: View<G> = view! { cx,
             AsyncComponentWithPropDestructuring {
+                Component {}
+            }
+        };
+
+        let _: View<G> = view! { cx,
+            NestedComponentWithChildren {
                 Component {}
             }
         };

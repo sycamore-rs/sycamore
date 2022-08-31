@@ -27,14 +27,14 @@ impl Codegen {
                     .iter()
                     .map(|node| {
                         let quoted = self.view_node(node);
-                        quote! { children.push(#quoted); }
+                        quote! { #quoted, }
                     })
                     .collect();
                 quote! {
                     ::sycamore::view::View::new_fragment({
-                        let mut children = ::std::vec::Vec::new();
-                        #append_nodes
-                        children
+                        ::std::vec![
+                            #append_nodes
+                        ]
                     })
                 }
             }
