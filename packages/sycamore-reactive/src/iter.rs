@@ -34,8 +34,12 @@ where
 {
     // Previous state used for diffing.
     let mut items = Rc::new(Vec::new());
+
     let mut mapped: Vec<U> = Vec::new();
+    let mut mapped_tmp: Vec<Option<U>> = Vec::new();
+
     let mut disposers: Vec<Option<ScopeDisposer<'a>>> = Vec::new();
+    let mut disposers_tmp: Vec<Option<ScopeDisposer<'a>>> = Vec::new();
 
     let signal = create_signal(cx, Vec::new());
 
@@ -45,18 +49,16 @@ where
         if new_items.is_empty() {
             // Fast path for removing all items.
             for dis in mem::take(&mut disposers) {
-                unsafe {
-                    dis.unwrap().dispose();
-                }
+                unsafe { dis.unwrap().dispose() };
             }
             mapped = Vec::new();
         } else if items.is_empty() {
             // Fast path for new create.
-            // TODO: do not clone T
+            mapped.reserve(new_items.len());
+            disposers.reserve(new_items.len());
+
             for new_item in new_items.iter().cloned() {
-                let mut tmp = None;
-                let new_disposer = create_child_scope(cx, |cx| tmp = Some(map_fn(cx, new_item)));
-                mapped.push(tmp.unwrap());
+                let new_disposer = create_child_scope(cx, |cx| mapped.push(map_fn(cx, new_item)));
                 disposers.push(Some(new_disposer));
             }
         } else {
@@ -65,14 +67,11 @@ where
                 "new_items.is_empty() and items.is_empty() are special cased"
             );
 
-            let mut temp = vec![None; new_items.len()];
-            let mut temp_disposers = {
-                let mut tmp = Vec::with_capacity(new_items.len());
-                for _ in 0..new_items.len() {
-                    tmp.push(None);
-                }
-                tmp
-            };
+            mapped_tmp.clear();
+            mapped_tmp.resize(new_items.len(), None);
+
+            disposers_tmp.clear();
+            disposers_tmp.resize_with(new_items.len(), || None);
 
             // Skip common prefix.
             let min_len = usize::min(items.len(), new_items.len());
@@ -90,13 +89,11 @@ where
             // Skip common suffix.
             let mut end = items.len();
             let mut new_end = new_items.len();
-            #[allow(clippy::suspicious_operation_groupings)]
-            // FIXME: make code clearer so that clippy won't complain
             while end > start && new_end > start && items[end - 1] == new_items[new_end - 1] {
                 end -= 1;
                 new_end -= 1;
-                temp[new_end] = Some(mapped[end].clone());
-                temp_disposers[new_end] = disposers[end].take();
+                mapped_tmp[new_end] = Some(mapped[end].clone());
+                disposers_tmp[new_end] = disposers[end].take();
             }
             debug_assert!(
                     if end != 0 && new_end != 0 {
@@ -128,29 +125,27 @@ where
                 let item = &items[i];
                 if let Some(j) = new_indices.get(&key_fn(item)).copied() {
                     // Moved. j is index of item in new_items.
-                    temp[j] = Some(mapped[i].clone());
-                    temp_disposers[j] = disposers[i].take();
+                    mapped_tmp[j] = Some(mapped[i].clone());
+                    disposers_tmp[j] = disposers[i].take();
                     new_indices_next[j - start].and_then(|j| new_indices.insert(key_fn(item), j));
                 } else {
                     // Create new.
-                    unsafe {
-                        disposers[i].take().unwrap().dispose();
-                    }
+                    unsafe { disposers[i].take().unwrap().dispose() };
                 }
             }
 
             // 2) Set all the new values, pulling from the moved array if copied, otherwise
             // entering the new value.
             for j in start..new_items.len() {
-                if matches!(temp.get(j), Some(Some(_))) {
+                if matches!(mapped_tmp.get(j), Some(Some(_))) {
                     // Pull from moved array.
                     if j >= mapped.len() {
                         debug_assert_eq!(mapped.len(), j);
-                        mapped.push(temp[j].clone().unwrap());
-                        disposers.push(temp_disposers[j].take());
+                        mapped.push(mapped_tmp[j].clone().unwrap());
+                        disposers.push(disposers_tmp[j].take());
                     } else {
-                        mapped[j] = temp[j].clone().unwrap();
-                        disposers[j] = temp_disposers[j].take();
+                        mapped[j] = mapped_tmp[j].clone().unwrap();
+                        disposers[j] = disposers_tmp[j].take();
                     }
                 } else {
                     // Create new value.
@@ -236,14 +231,13 @@ where
                 disposers.reserve(new_count);
             }
 
-            for (i, new_item) in new_items.iter().enumerate() {
-                let new_item = new_item.clone();
+            for (i, new_item) in new_items.iter().cloned().enumerate() {
                 let item = items.get(i);
                 // We lift the equality out of the else if branch to satisfy borrow checker.
                 let eqs = item != Some(&new_item);
 
-                let mut tmp = None;
                 if item.is_none() || eqs {
+                    let mut tmp = None;
                     let new_disposer =
                         create_child_scope(cx, |cx| tmp = Some(map_fn(cx, new_item)));
                     if item.is_none() {
