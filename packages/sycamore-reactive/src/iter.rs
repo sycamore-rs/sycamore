@@ -231,14 +231,13 @@ where
                 disposers.reserve(new_count);
             }
 
-            for (i, new_item) in new_items.iter().enumerate() {
-                let new_item = new_item.clone();
+            for (i, new_item) in new_items.iter().cloned().enumerate() {
                 let item = items.get(i);
                 // We lift the equality out of the else if branch to satisfy borrow checker.
                 let eqs = item != Some(&new_item);
 
-                let mut tmp = None;
                 if item.is_none() || eqs {
+                    let mut tmp = None;
                     let new_disposer =
                         create_child_scope(cx, |cx| tmp = Some(map_fn(cx, new_item)));
                     if item.is_none() {
