@@ -198,9 +198,9 @@ To display content based on the route that matches, we can use a `Router`.
 
 ```rust
 view! {
-    Router {
-        integration: HistoryIntegration::new(),
-        view: |cx, route: &ReadSignal<AppRoutes>| {
+    Router(
+        integration=HistoryIntegration::new(),
+        view=|cx, route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
@@ -217,7 +217,7 @@ view! {
                 }
             }
         }
-    }
+    )
 }
 ```
 
@@ -246,9 +246,9 @@ function.
 let route = AppRoutes::match_path(path);
 
 view! {
-    StaticRouter {
-        route: route,
-        view: |cx, route: &ReadSignal<AppRoutes>| {
+    StaticRouter(
+        route=route,
+        view=|cx, route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
@@ -265,7 +265,7 @@ view! {
                 }
             }
         }
-    }
+    )
 }
 ```
 
