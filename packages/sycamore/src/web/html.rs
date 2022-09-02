@@ -14,7 +14,7 @@ macro_rules! define_elements {
         $ns:expr,
         $(
             $(#[$attr:meta])*
-            $el:ident {
+            $el:ident $(($tag:expr))? {
                 $(
                     $(#[$attr_method:meta])*
                     $at:ident: $ty:path,
@@ -23,24 +23,58 @@ macro_rules! define_elements {
         )*
     ) => {
         $(
-            #[allow(non_camel_case_types)]
-            #[doc = concat!("Build a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element.")]
-            $(#[$attr])*
-            #[derive(Debug)]
-            pub struct $el {}
-
-            impl SycamoreElement for $el {
-                const TAG_NAME: &'static str = stringify!($el);
-                const NAME_SPACE: Option<&'static str> = $ns;
-            }
-
-            #[allow(non_snake_case)]
-            #[doc = concat!("Create a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element builder.")]
-            $(#[$attr])*
-            pub fn $el<'a, G: GenericNode>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-                ElementBuilder::new(move |_| G::element::<$el>())
+            define_element_impl! {
+                $ns,
+                #[doc = concat!("Build a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element.")]
+                $(#[$attr])*
+                $el $(($tag))* {
+                    $(
+                        $(#[attr])*
+                        $at: $ty
+                    )*
+                }
             }
         )*
+    };
+}
+
+macro_rules! define_element_impl {
+    (
+        $ns:expr,
+        $(#[$attr:meta])*
+        $el:ident($tag:expr) {
+            $(
+                $(#[$attr_method:meta])*
+                $at:ident: $ty:path,
+            )*
+        }
+    ) => {
+        #[allow(non_camel_case_types)]
+        $(#[$attr])*
+        #[derive(Debug)]
+        pub struct $el {}
+
+        impl SycamoreElement for $el {
+            const TAG_NAME: &'static str = $tag;
+            const NAME_SPACE: Option<&'static str> = $ns;
+        }
+
+        #[allow(non_snake_case)]
+        $(#[$attr])*
+        pub fn $el<'a, G: GenericNode>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
+            ElementBuilder::new(move |_| G::element::<$el>())
+        }
+    };
+    (
+        $ns:expr,
+        $(#[$attr:meta])*
+        $el:ident $rest:tt
+    ) => {
+        define_element_impl! {
+            $ns,
+            $(#[$attr])*
+            $el(stringify!($el)) $rest
+        }
     };
 }
 
@@ -210,7 +244,7 @@ define_elements! {
 define_elements! {
     Some("http://www.w3.org/2000/svg"),
     svg {},
-    // a,
+    svg_a("a") {},
     animate {},
     animateMotion {},
     animateTransform {},
@@ -263,15 +297,15 @@ define_elements! {
     polyline {},
     radialGradient {},
     rect {},
-    // script {},
+    svg_script("script") {},
     set {},
     stop {},
-    // style {},
+    svg_style("style") {},
     switch {},
     symbol {},
     text {},
     textPath {},
-    // title {},
+    svg_title("title") {},
     tspan {},
     r#use {},
     view {},
