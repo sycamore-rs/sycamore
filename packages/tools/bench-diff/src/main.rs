@@ -33,7 +33,7 @@ fn main() {
         let avg_val = if value_count > 0 {
             value_sum / value_count as f64
         } else {
-            0f64
+            -1f64
         };
 
         let mut entry = benchmark_results.entry(result.benchmark).or_default();
