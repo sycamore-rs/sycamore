@@ -11,7 +11,7 @@ repository = "https://github.com/sycamore-rs/sycamore"
 version = "0.8.0"
 
 [dependencies]
-ahash = "0.8.0"
+ahash = "0.7.6"
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0" }
 
 [dev-dependencies]
