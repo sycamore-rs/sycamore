@@ -19,7 +19,13 @@ pub struct PropWithChildren<'a, G: GenericNode> {
 
 #[component]
 pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<'a, G>) -> View<G> {
-    prop.children.call(cx)
+    let children = prop.children.call(cx);
+
+    view! { cx,
+        div {
+            (children)
+        }
+    }
 }
 
 #[component]
