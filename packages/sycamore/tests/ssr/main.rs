@@ -170,3 +170,37 @@ fn no_ssr_sub_tree_should_not_be_emitted_in_ssr() {
         r#"<div data-hk="0.0"><p data-hk="0.1">Rendered</p><!--#--><div data-hk="1.0"><!----></div><!--/--></div>"#
     );
 }
+
+mod svg {
+    use super::*;
+
+    #[test]
+    fn ssr_svg_elements() {
+        let out = sycamore::render_to_string(|cx| {
+            view! { cx,
+                svg(xmlns="http://www.w3.org/2000/svg") {
+                    rect(width=100, height=100, fill="red")
+                }
+            }
+        });
+        assert_eq!(
+            out,
+            r#"<svg data-hk="0.0" xmlns="http://www.w3.org/2000/svg"><rect data-hk="0.1" width="100" height="100" fill="red"></rect></svg>"#
+        );
+    }
+
+    #[test]
+    fn ssr_svg_elements_with_same_name_as_html_elements() {
+        let out = sycamore::render_to_string(|cx| {
+            view! { cx,
+                svg(xmlns="http://www.w3.org/2000/svg") {
+                    svg_a {} // Should render as "<a></a>"
+                }
+            }
+        });
+        assert_eq!(
+            out,
+            r#"<svg data-hk="0.0" xmlns="http://www.w3.org/2000/svg"><a data-hk="0.1"></a></svg>"#
+        );
+    }
+}
