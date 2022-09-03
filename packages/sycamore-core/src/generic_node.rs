@@ -10,7 +10,7 @@ pub trait SycamoreElement {
     /// The tag name of the element.
     const TAG_NAME: &'static str;
     /// The namespace of the element, or `None`, e.g. in the case of standard HTML5 elements.
-    const NAME_SPACE: Option<&'static str>;
+    const NAMESPACE: Option<&'static str>;
 }
 
 /// Abstraction over a rendering backend.

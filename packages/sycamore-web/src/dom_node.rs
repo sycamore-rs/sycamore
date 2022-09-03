@@ -150,7 +150,7 @@ impl GenericNode for DomNode {
     type PropertyType = JsValue;
 
     fn element<T: SycamoreElement>() -> Self {
-        let node = if let Some(ns) = T::NAME_SPACE {
+        let node = if let Some(ns) = T::NAMESPACE {
             document()
                 .create_element_ns(Some(ns), intern(T::TAG_NAME))
                 .unwrap_throw()
