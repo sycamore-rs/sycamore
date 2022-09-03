@@ -1,5 +1,14 @@
 # Changelog
 
+## ✨ **0.8.1** _(2022-09-03)_
+
+- #### 🛠 Fixes
+
+  - [Forward compatibility fix for breakage due to a soundness fix in rustc.](https://github.com/sycamore-rs/sycamore/pull/475)
+  - [Avoid possible shadowing of existing bindings in macro expansion.](https://github.com/sycamore-rs/sycamore/pull/477)
+  - [Reuse some allocations in `map_keyed` and `map_indexed`.](https://github.com/sycamore-rs/sycamore/pull/478)
+  - [Add workaround for SVG element tags that clash with HTML elements.](https://github.com/sycamore-rs/sycamore/pull/479)
+
 ## ✨ **0.8.0** _(2022-08-28)_
 
 Release post: https://sycamore-rs.netlify.app/news/announcing-v0.8.0
