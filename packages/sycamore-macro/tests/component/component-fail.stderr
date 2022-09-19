@@ -45,3 +45,11 @@ error: taking an unit tuple as props is useless
    |
 41 | fn CompWithUnitProps<G: Html>(_cx: Scope, prop: ()) -> View<G> {
    |                                                 ^^
+
+error: `self` parameter is only allowed in associated functions
+  --> tests/component/component-fail.rs:26:19
+   |
+26 | fn Comp5<G: Html>(self) -> View<G> {
+   |                   ^^^^ not semantically valid as function parameter
+   |
+   = note: associated functions are those in `impl` or `trait` definitions

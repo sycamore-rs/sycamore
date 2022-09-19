@@ -15,13 +15,16 @@ mod view;
 /// To learn more about the template syntax, see the chapter on
 /// [the `view!` macro](https://sycamore-rs.netlify.app/docs/basics/view) in the Sycamore Book.
 #[proc_macro]
-pub fn view(view: TokenStream) -> TokenStream {
-    let view_root = parse_macro_input!(view as view::WithCxArg<view::ir::ViewRoot>);
+pub fn view(input: TokenStream) -> TokenStream {
+    let view_root = parse_macro_input!(input as view::WithCxArg<view::ir::ViewRoot>);
 
     view::view_impl(view_root).into()
 }
 
 /// Like [`view!`] but only creates a single raw node instead.
+///
+/// # Example
+///
 /// ```
 /// use sycamore::prelude::*;
 ///
@@ -48,19 +51,16 @@ pub fn node(input: TokenStream) -> TokenStream {
 /// To learn more about components, see the chapter on
 /// [components](https://sycamore-rs.netlify.app/docs/basics/components) in the Sycamore Book.
 #[proc_macro_attribute]
-pub fn component(_attr: TokenStream, component: TokenStream) -> TokenStream {
-    let comp = {
-        let component = component.clone();
-        parse_macro_input!(component as component::ComponentFunction)
-    };
+pub fn component(args: TokenStream, item: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(args as component::ComponentArgs);
 
-    component::component_impl(comp)
+    component::component_impl(args, item.clone().into())
         .unwrap_or_else(|err| {
             // If proc-macro errors, emit the original function for better IDE support.
             let error_tokens = err.into_compile_error();
-            let component_tokens = proc_macro2::TokenStream::from(component);
+            let body_input = proc_macro2::TokenStream::from(item);
             quote! {
-                #component_tokens
+                #body_input
                 #error_tokens
             }
         })

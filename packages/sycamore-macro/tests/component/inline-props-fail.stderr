@@ -1,0 +1,11 @@
+error: component must take at least one argument of type `sycamore::reactive::Scope`
+ --> tests/component/inline-props-fail.rs:4:25
+  |
+4 | fn MissingScope<G: Html>() -> View<G> {
+  |                         ^^
+
+error[E0562]: `impl Trait` only allowed in function and inherent method return types, not in type
+ --> tests/component/inline-props-fail.rs:9:45
+  |
+9 | fn ImplTraitInArgs<G: Html>(cx: Scope, foo: impl std::fmt::Display) -> View<G> {
+  |                                             ^^^^^^^^^^^^^^^^^^^^^^
