@@ -20,7 +20,7 @@ impl Tab {
     }
 }
 
-#[component]
+#[component(inline_props)]
 async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
     let delay_ms = rand::thread_rng().gen_range(200..500);
     TimeoutFuture::new(delay_ms).await;
@@ -49,7 +49,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
             Suspense(fallback=view! { cx, p { "Loading..." } }) {
                 ({
                     let tab = *tab.get();
-                    view! { cx, Child(tab) }
+                    view! { cx, Child(tab=tab) }
                 })
             }
         }

@@ -41,17 +41,13 @@ static NOUNS: &[&str] = &[
     "pizza", "mouse", "keyboard",
 ];
 
-#[derive(Prop)]
-struct ButtonProps<'a> {
+#[component(inline_props)]
+fn Button<'a, G: Html>(
+    cx: Scope<'a>,
     id: &'static str,
     text: &'static str,
     callback: Box<dyn Fn() + 'a>,
-}
-
-#[component]
-fn Button<'a, G: Html>(cx: Scope<'a>, props: ButtonProps<'a>) -> View<G> {
-    let ButtonProps { id, text, callback } = props;
-
+) -> View<G> {
     view! { cx,
         div(class="col-sm-6 smallpad") {
             button(id=id, class="btn btn-primary btn-block", type="button", on:click=move |_| callback()) {

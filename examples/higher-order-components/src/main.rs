@@ -2,20 +2,25 @@
 
 use sycamore::prelude::*;
 
+#[derive(Prop)]
+pub struct MyComponentProps {
+    value: i32
+}
+
 #[component]
-fn MyComponent<G: Html>(cx: Scope, props: i32) -> View<G> {
+fn MyComponent<G: Html>(cx: Scope, props: MyComponentProps) -> View<G> {
     view! { cx,
-        (props)
+        (props.value)
     }
 }
 
 fn higher_order_component<G: Html>(
-    Comp: &dyn Fn(Scope, i32) -> View<G>,
+    Comp: &dyn Fn(Scope, MyComponentProps) -> View<G>,
 ) -> impl Fn(Scope) -> View<G> + '_ {
     move |cx| {
         view! { cx,
             div {
-                Comp(42)
+                Comp(value=42)
             }
         }
     }
@@ -25,7 +30,7 @@ fn main() {
     sycamore::render(|cx| {
         let EnhancedComponent = higher_order_component(&MyComponent);
         view! { cx,
-            EnhancedComponent()
+            EnhancedComponent {}
         }
     });
 }

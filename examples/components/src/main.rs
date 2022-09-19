@@ -1,13 +1,13 @@
 use sycamore::prelude::*;
 
-#[component]
-fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: &'a Signal<i32>) -> View<G> {
+#[component(inline_props)]
+fn MyComponent<'a, G: Html>(cx: Scope<'a>, value: &'a Signal<i32>) -> View<G> {
     view! { cx,
         div(class="my-component") {
             "My component"
             p {
                 "Value: "
-                (props.get())
+                (value.get())
             }
         }
     }
@@ -23,8 +23,8 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         div {
             "Component demo"
 
-            MyComponent(state)
-            MyComponent(state)
+            MyComponent(value=state)
+            MyComponent(value=state)
 
             button(on:click=increment) { "+" }
         }
