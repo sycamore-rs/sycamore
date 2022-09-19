@@ -6,16 +6,17 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
-    parse_quote, Expr, FnArg, Item, ItemFn, Pat, Result, ReturnType, Signature, Token, Type,
-    TypeTuple,
+    parse_quote, Error, Expr, FnArg, Ident, Item, ItemFn, Pat, PatIdent, Result, ReturnType,
+    Signature, Token, Type, TypeTuple,
 };
 
-pub struct ComponentFunction {
+pub struct ComponentFn {
     pub f: ItemFn,
 }
 
-impl Parse for ComponentFunction {
+impl Parse for ComponentFn {
     fn parse(input: ParseStream) -> Result<Self> {
+        // Parse macro body.
         let parsed: Item = input.parse()?;
 
         match parsed {
@@ -100,23 +101,20 @@ impl Parse for ComponentFunction {
 }
 
 struct AsyncCompInputs {
-    cx: syn::Ident,
-    sync_input: Punctuated<FnArg, syn::token::Comma>,
+    cx: Ident,
+    sync_input: Punctuated<FnArg, Token![,]>,
     async_args: Vec<Expr>,
 }
 
-fn async_comp_inputs_from_sig_inputs(
-    inputs: &Punctuated<FnArg, syn::token::Comma>,
-) -> AsyncCompInputs {
+fn async_comp_inputs_from_sig_inputs(inputs: &Punctuated<FnArg, Token![,]>) -> AsyncCompInputs {
     let mut sync_input = Punctuated::new();
-    let mut async_args = Vec::with_capacity(2);
+    let mut async_args = Vec::new();
 
-    #[inline]
     fn pat_ident_arm(
-        sync_input: &mut Punctuated<FnArg, syn::token::Comma>,
+        sync_input: &mut Punctuated<FnArg, Token![,]>,
         fn_arg: &FnArg,
-        id: &syn::PatIdent,
-    ) -> syn::Expr {
+        id: &PatIdent,
+    ) -> Expr {
         sync_input.push(fn_arg.clone());
         let ident = &id.ident;
         parse_quote! { #ident }
@@ -131,10 +129,10 @@ fn async_comp_inputs_from_sig_inputs(
             async_args.push(pat_ident_arm(&mut sync_input, cx_fn_arg, id));
             id.ident.clone()
         } else {
-            unreachable!("We check in parsing that the first argument is a Ident");
+            unreachable!("checked in parsing that the first argument is an Ident");
         }
     } else {
-        unreachable!("We check in parsing that the first argument is not a receiver");
+        unreachable!("checked in parsing that the first argument is not a receiver");
     };
 
     let prop_arg = inputs.next();
@@ -145,13 +143,13 @@ fn async_comp_inputs_from_sig_inputs(
                 // For the sync input we don't want a destructured pattern but just to take a
                 // `syn::PatType` (i.e. `props: MyPropStruct`) then the inner async function
                 // signature can have the destructured pattern and it will work correctly
-                // aslong as we provide our brand new ident that we used in the
+                // as long as we provide our brand new ident that we used in the
                 // `syn::PatIdent`.
-                let ident = syn::Ident::new("props", pat_struct.span());
-                // props are taken by value so no refs or mutability required here
+                let ident = Ident::new("props", pat_struct.span());
+                // Props are taken by value so no refs or mutability required here
                 // The destructured pattern can add mutability (if required) even without this
                 // set.
-                let pat_ident = syn::PatIdent {
+                let pat_ident = PatIdent {
                     attrs: vec![],
                     by_ref: None,
                     mutability: None,
@@ -185,9 +183,9 @@ fn async_comp_inputs_from_sig_inputs(
     }
 }
 
-impl ToTokens for ComponentFunction {
+impl ToTokens for ComponentFn {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let ComponentFunction { f } = self;
+        let ComponentFn { f } = self;
         let ItemFn {
             attrs,
             vis,
@@ -252,6 +250,113 @@ impl ToTokens for ComponentFunction {
     }
 }
 
-pub fn component_impl(comp: ComponentFunction) -> Result<TokenStream> {
-    Ok(comp.to_token_stream())
+/// Arguments to the `component` attribute proc-macro.
+pub struct ComponentArgs {
+    inline_props: Option<Ident>,
+}
+
+impl Parse for ComponentArgs {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let inline_props: Option<Ident> = input.parse()?;
+        if let Some(inline_props) = &inline_props {
+            // Check if the ident is correct.
+            if *inline_props != "inline_props" {
+                return Err(Error::new(inline_props.span(), "expected `inline_props`"));
+            }
+        }
+        Ok(Self { inline_props })
+    }
+}
+
+pub fn component_impl(args: ComponentArgs, item: TokenStream) -> Result<TokenStream> {
+    if args.inline_props.is_some() {
+        let mut item_fn = syn::parse::<ItemFn>(item.into())?;
+        let inline_props = inline_props_impl(&mut item_fn)?;
+        // TODO: don't parse the function twice.
+        let comp = syn::parse::<ComponentFn>(item_fn.to_token_stream().into())?;
+        Ok(quote! {
+            #inline_props
+            #comp
+        })
+    } else {
+        let comp = syn::parse::<ComponentFn>(item.into())?;
+        Ok(comp.to_token_stream())
+    }
+}
+
+/// Codegens the new prop struct and modifies the component body to accept this new struct as props.
+fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
+    let props_vis = &item.vis;
+    let props_struct_ident = format_ident!("{}_Props", item.sig.ident);
+
+    let inputs = item.sig.inputs.clone();
+    if inputs.is_empty() {
+        return Err(syn::Error::new(
+            item.sig.paren_token.span,
+            "component must take at least one argument of type `sycamore::reactive::Scope`",
+        ));
+    }
+    let props = inputs.into_iter().skip(1).collect::<Vec<_>>();
+
+    let generics = &item.sig.generics;
+    let generics_phantoms = generics.params.iter().enumerate().filter_map(|(i, param)| {
+        let phantom_ident = format_ident!("__phantom{i}");
+        match param {
+            syn::GenericParam::Type(ty) => {
+                let ty = &ty.ident;
+                Some(quote! {
+                    #[builder(default, setter(skip))]
+                    #phantom_ident: ::std::marker::PhantomData<#ty>
+                })
+            }
+            syn::GenericParam::Lifetime(lt) => {
+                let lt = &lt.lifetime;
+                Some(quote! {
+                    #[builder(default, setter(skip))]
+                    #phantom_ident: ::std::marker::PhantomData<&#lt ()>
+                })
+            }
+            syn::GenericParam::Const(_) => None,
+        }
+    });
+
+    let doc_comment = format!("Props for [`{}`].", item.sig.ident);
+
+    let ret = Ok(quote! {
+        #[allow(non_camel_case_types)]
+        #[doc = #doc_comment]
+        #[derive(::sycamore::Prop)]
+        #props_vis struct #props_struct_ident #generics {
+            #(#props,)*
+            #(#generics_phantoms,)*
+        }
+    });
+
+    // Rewrite component body.
+
+    // Get the ident (technically, patterns) of each prop.
+    let props_pats = props.iter().map(|arg| match arg {
+        FnArg::Receiver(_) => unreachable!("receiver cannot be a prop"),
+        FnArg::Typed(arg) => arg.pat.clone(),
+    });
+    // Rewrite function signature.
+    let props_struct_generics = generics.split_for_impl().1;
+    let cx = item.sig.inputs.first().cloned();
+    item.sig.inputs = cx
+        .into_iter()
+        .chain(std::iter::once(
+            parse_quote! { __props: #props_struct_ident #props_struct_generics },
+        ))
+        .collect();
+    // Rewrite function body.
+    let block = item.block.clone();
+    item.block = parse_quote! {{
+        let #props_struct_ident {
+            #(#props_pats,)*
+            ..
+        } = __props;
+        #block
+    }};
+
+    ret
 }

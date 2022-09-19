@@ -33,8 +33,8 @@ fn App<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div {
             "Context demo"
-            Counter()
-            Controls()
+            Counter {}
+            Controls {}
         }
     }
 }

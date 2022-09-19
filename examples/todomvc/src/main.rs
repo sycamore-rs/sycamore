@@ -211,7 +211,7 @@ pub fn Header<G: Html>(cx: Scope) -> View<G> {
     }
 }
 
-#[component]
+#[component(inline_props)]
 pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
     let app_state = use_context::<AppState>(cx);
     // Make `todo` live as long as the scope.
@@ -373,7 +373,7 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
                 Keyed(
                     iterable=filtered_todos,
                     view=|cx, todo| view! { cx,
-                        Item(todo)
+                        Item(todo=todo)
                     },
                     key=|todo| todo.get().id,
                 )
@@ -382,7 +382,7 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
     }
 }
 
-#[component]
+#[component(inline_props)]
 pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
     let app_state = use_context::<AppState>(cx);
     let selected = move || filter == *app_state.filter.get();
@@ -422,9 +422,9 @@ pub fn Footer<G: Html>(cx: Scope) -> View<G> {
                 span { " " (items_text()) " left" }
             }
             ul(class="filters") {
-                TodoFilter(Filter::All)
-                TodoFilter(Filter::Active)
-                TodoFilter(Filter::Completed)
+                TodoFilter(filter=Filter::All)
+                TodoFilter(filter=Filter::Active)
+                TodoFilter(filter=Filter::Completed)
             }
 
             (if *has_completed_todos.get() {
