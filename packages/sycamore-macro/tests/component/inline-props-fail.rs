@@ -12,4 +12,9 @@ fn ImplTraitInArgs<G: Html>(cx: Scope, foo: impl std::fmt::Display) -> View<G> {
     }
 }
 
+#[component(not_inline_props)]
+fn NotInlineProps<G: Html>(cx: Scope) -> View<G> {
+    view! { cx, }
+}
+
 fn main() {}
