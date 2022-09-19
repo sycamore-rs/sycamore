@@ -320,8 +320,11 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
         }
     });
 
+    let doc_comment = format!("Props for [`{}`].", item.sig.ident);
+
     let ret = Ok(quote! {
         #[allow(non_camel_case_types)]
+        #[doc = #doc_comment]
         #[derive(::sycamore::Prop)]
         #props_vis struct #props_struct_ident #generics {
             #(#props,)*
