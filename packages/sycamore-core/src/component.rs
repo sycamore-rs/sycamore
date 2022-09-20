@@ -1,5 +1,7 @@
 //! Utilities for components and component properties.
 
+use std::fmt;
+
 use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
@@ -93,8 +95,8 @@ pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
 pub struct Children<'a, G: GenericNode> {
     f: Box<dyn FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a>,
 }
-impl<'a, G: GenericNode> std::fmt::Debug for Children<'a, G> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<'a, G: GenericNode> fmt::Debug for Children<'a, G> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Children").finish()
     }
 }
@@ -105,6 +107,14 @@ where
 {
     fn from(f: F) -> Self {
         Self { f: Box::new(f) }
+    }
+}
+
+impl<'a, G: GenericNode> Default for Children<'a, G> {
+    fn default() -> Self {
+        Self {
+            f: Box::new(|_| View::default()),
+        }
     }
 }
 
