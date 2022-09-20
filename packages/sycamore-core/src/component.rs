@@ -110,6 +110,14 @@ where
     }
 }
 
+impl<'a, G: GenericNode> From<View<G>> for Children<'a, G> {
+    fn from(view: View<G>) -> Self {
+        Self {
+            f: Box::new(|_| view),
+        }
+    }
+}
+
 impl<'a, G: GenericNode> Default for Children<'a, G> {
     fn default() -> Self {
         Self {
