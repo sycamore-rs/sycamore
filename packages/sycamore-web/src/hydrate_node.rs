@@ -115,7 +115,7 @@ impl GenericNode for HydrateNode {
             }
         }
     }
-    
+
     /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
     /// node.
     fn element_from_tag(tag: &str) -> Self {
