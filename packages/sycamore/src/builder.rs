@@ -691,11 +691,12 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// ```
     pub fn bind_value(
         self,
-        sub: &'a Signal<String>,
+        sub: impl std::ops::Deref<Target = Signal<String>> + Clone,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |cx, el| {
             create_effect(cx, {
                 let el = el.clone();
+                let sub = sub.clone();
                 move || {
                     el.set_property("value", &sub.get().as_str().into());
                 }
@@ -732,11 +733,12 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// ```
     pub fn bind_checked(
         self,
-        sub: &'a Signal<bool>,
+        sub: impl std::ops::Deref<Target = Signal<bool>> + Clone,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |cx, el| {
             create_effect(cx, {
                 let el = el.clone();
+                let sub = sub.clone();
                 move || {
                     el.set_property("checked", &(*sub.get()).into());
                 }
