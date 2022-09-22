@@ -37,6 +37,12 @@ pub trait Html: GenericNode<EventType = Event, PropertyType = JsValue> {
     /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
     /// in the browser. It only means that it does not create DOM nodes.
     const IS_BROWSER: bool;
+
+    /// Convert this node into a raw [`web_sys::Node`].
+    ///
+    /// For certain backends, this is not possible (e.g. [`SsrNode`]). In that case, calling this
+    /// will panic at runtime.
+    fn to_web_sys(&self) -> web_sys::Node;
 }
 
 /// Create a generic `Html` node from a `web_sys::Node`.

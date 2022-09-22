@@ -353,6 +353,10 @@ impl GenericNode for DomNode {
 
 impl Html for DomNode {
     const IS_BROWSER: bool = true;
+
+    fn to_web_sys(&self) -> web_sys::Node {
+        self.inner_element()
+    }
 }
 
 /// Render a [`View`] into the DOM.
