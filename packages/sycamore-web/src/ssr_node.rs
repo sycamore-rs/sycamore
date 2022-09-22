@@ -351,6 +351,10 @@ impl GenericNode for SsrNode {
 
 impl Html for SsrNode {
     const IS_BROWSER: bool = false;
+
+    fn to_web_sys(&self) -> web_sys::Node {
+        panic!("SsrNode cannot be converted into web_sys::Node");
+    }
 }
 
 /// Write the [`SsrNode`] to a string buffer.

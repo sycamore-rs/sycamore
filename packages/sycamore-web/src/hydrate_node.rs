@@ -276,6 +276,10 @@ impl GenericNode for HydrateNode {
 
 impl Html for HydrateNode {
     const IS_BROWSER: bool = true;
+
+    fn to_web_sys(&self) -> web_sys::Node {
+        self.inner_element()
+    }
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
