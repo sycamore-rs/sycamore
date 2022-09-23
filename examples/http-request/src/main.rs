@@ -26,20 +26,30 @@ async fn fetch_visits(id: &str) -> Result<Visits, JsValue> {
 async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
     let id = "sycamore-visits-counter";
     let result = create_rc_signal(String::new());
-
+    let mut ok = true;
     match fetch_visits(id).await {
         Ok(visit) => result.set(visit.value.to_string()),
         Err(e) => {
             if let Some(err) = e.as_string() {
                 result.set(err);
             } else {
-                result.set("Network error".into());
+                result.set("Unexpected Network error!".into());
             }
+            ok = false;
         }
     };
 
     view! { cx,
         p {
+            span {
+                (if ok {
+                    "Request Ok"
+                } else {
+                    "Request Err"
+                })
+            }
+            br {}
+            br {}
             "Total visits: "
             span {
                 (*result.get())
