@@ -1,6 +1,5 @@
 use core::result::Result;
 use std::error::Error;
-
 use sycamore::reactive::RcSignal;
 use wasm_bindgen::JsValue;
 pub trait OptionToJsResult<T> {
