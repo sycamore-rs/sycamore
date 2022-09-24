@@ -1,11 +1,12 @@
-use log::Level;
+use log::{Level, info};
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
+use sycamore::futures::spawn_local;
 use sycamore::prelude::*;
 use sycamore::suspense::Suspense;
 use wasm_bindgen::prelude::*;
-mod error;
-use error::ResultToJsResult;
+mod utils;
+use utils::{SplitCloned, ToJsResult};
 
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://api.countapi.xyz/hit";
@@ -25,27 +26,75 @@ async fn fetch_visits(id: &str) -> Result<Visits, JsValue> {
 #[component]
 async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
     let id = "sycamore-visits-counter";
-    let result = create_rc_signal(String::new());
-    let mut ok = true;
-    match fetch_visits(id).await {
-        Ok(visit) => result.set(visit.value.to_string()),
-        Err(e) => {
-            if let Some(err) = e.as_string() {
-                result.set(err);
-            } else {
-                result.set("Unexpected Network error!".into());
+    // For more ergonomic using split_cloned;
+    let (fetching, cloned_fetching) = create_rc_signal(true).split_cloned();
+    let (result, cloned_result) = create_rc_signal(String::new()).split_cloned();
+    let (result_is_ok, cloned_result_is_ok) = create_rc_signal(true).split_cloned();
+
+    let fetch = move || {
+        // Reclone all the necessary stuff before spawning local async move.
+        let moved_fetching = cloned_fetching.clone();
+        let moved_result = cloned_result.clone();
+        let moved_result_is_ok = cloned_result_is_ok.clone();
+        spawn_local(async move {
+            info!("Start fetching...");
+            match fetch_visits(id).await {
+                Ok(visit) => moved_result.set(visit.value.to_string()), // Set result value
+                Err(e) => {
+                    // Notify that an error occured here.
+                    moved_result_is_ok.set(false);
+
+                    // Set error message
+                    if let Some(err) = e.as_string() {
+                        moved_result.set(err);
+                    } else {
+                        moved_result.set("Unexpected Network error!".into());
+                    }
+                }
             }
-            ok = false;
+            // Notify that we are done fetching.
+            info!("Done.");
+            moved_fetching.set(false);
+        });
+    };
+
+    // Fetch now at initialization
+    fetch();
+
+    let (fetching, moved_fetching) = fetching.split_cloned();
+
+    // Retry fetching here
+    let start_fetching = move |_| {
+        // Make sure to check fetching is completed before retrying.
+        if !*moved_fetching.get() {
+            // Notify that we are about to start fetching again.
+            moved_fetching.set(true);
+            fetch();
         }
     };
 
+    let (fetching, cloned_fetching) = fetching.split_cloned();
+
     view! { cx,
         p {
-            span {
-                (if ok {
-                    "Request Ok"
+            button (on:click=start_fetching) {
+                (if *cloned_fetching.get() {
+                    "fetching..."
                 } else {
-                    "Request Err"
+                    "retry?"
+                })
+            }
+            br {}
+            br {}
+            span {
+                (if !*fetching.get() {
+                    if *result_is_ok.get() {
+                        "Request Ok"
+                    } else {
+                        "Request Err"
+                    }
+                } else {
+                    ""
                 })
             }
             br {}
