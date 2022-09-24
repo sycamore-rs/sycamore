@@ -12,4 +12,3 @@ log = "0.4.14"
 reqwasm = "0.4.1"
 serde = "1.0.136"
 sycamore = { path = "../../packages/sycamore", features = ["suspense"] }
-wasm-bindgen = { version = "0.2.83" }
