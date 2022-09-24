@@ -1,5 +1,18 @@
 # Changelog
 
+## ✨ **0.8.2** _(2022-09-24)_
+
+- #### ⚡️ Features
+
+  - [Inline props.](https://github.com/sycamore-rs/sycamore/pull/486)
+  - [`Html::to_web_sys` method.](https://github.com/sycamore-rs/sycamore/pull/490)
+
+- #### 🛠 Fixes
+
+  - [Implement `Default` for `Children`.](https://github.com/sycamore-rs/sycamore/commit/d9c3fc6b9783be36b73097aff0137a90f0358214)
+  - [Implement `From<View>` for `Children`.](https://github.com/sycamore-rs/sycamore/commit/2210e94a66edaa5bf4305ef7bd06c0ca694fdff0)
+  - [Fix hydration of nodes created using `GenericNode::element_with_tag`.](https://github.com/sycamore-rs/sycamore/commit/aa4eccb7df767174530958fd3e4d1995b4d9a0df)
+
 ## ✨ **0.8.1** _(2022-09-03)_
 
 - #### 🛠 Fixes
