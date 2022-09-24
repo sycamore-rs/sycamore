@@ -1,12 +1,10 @@
 use log::{info, Level};
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
-use sycamore::futures::spawn_local;
+use std::error::Error;
+use sycamore::futures::spawn_local_scoped;
 use sycamore::prelude::*;
 use sycamore::suspense::Suspense;
-use wasm_bindgen::prelude::*;
-mod utils;
-use utils::{SplitCloned, ToJsResult};
 
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://api.countapi.xyz/hit";
@@ -16,69 +14,57 @@ struct Visits {
     value: u64,
 }
 
-async fn fetch_visits(id: &str) -> Result<Visits, JsValue> {
+async fn fetch_visits(id: &str) -> Result<Visits, Box<dyn Error>> {
     let url = format!("{}/{}/hits", API_BASE_URL, id);
-    let resp = Request::get(&url).send().await.into_js_result()?;
-    let body = resp.json::<Visits>().await.into_js_result()?;
+    let resp = Request::get(&url).send().await?;
+    let body = resp.json::<Visits>().await?;
     Ok(body)
 }
 
 #[component]
 async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
+    let error_message = create_signal(cx, String::new());
+    // Fetching default value is `true` since we are fetching on window load as well.
+    let fetching = create_signal(cx, true);
+    let fetch_is_error = create_signal(cx, false);
     let id = "sycamore-visits-counter";
-    // For more ergonomic using split_cloned;
-    let (fetching, cloned_fetching) = create_rc_signal(true).split_cloned();
-    let (result, cloned_result) = create_rc_signal(String::new()).split_cloned();
-    let (result_is_ok, cloned_result_is_ok) = create_rc_signal(true).split_cloned();
+    let visits = create_signal(cx, Visits::default());
 
     let fetch = move || {
-        // Reclone all the necessary stuff before spawning local async move.
-        let moved_fetching = cloned_fetching.clone();
-        let moved_result = cloned_result.clone();
-        let moved_result_is_ok = cloned_result_is_ok.clone();
-        spawn_local(async move {
+        spawn_local_scoped(cx, async {
             info!("Start fetching...");
             match fetch_visits(id).await {
-                Ok(visit) => moved_result.set(visit.value.to_string()), // Set result value
-                Err(e) => {
+                Ok(value) => visits.set(value), // Set new visits value
+                Err(value) => {
                     // Notify that an error occured here.
-                    moved_result_is_ok.set(false);
-
+                    fetch_is_error.set(true);
                     // Set error message
-                    if let Some(err) = e.as_string() {
-                        moved_result.set(err);
-                    } else {
-                        moved_result.set("Unexpected Network error!".into());
-                    }
+                    error_message.set(value.to_string());
                 }
             }
             // Notify that we are done fetching.
             info!("Done.");
-            moved_fetching.set(false);
+            fetching.set(false);
         });
     };
 
-    // Fetch now at initialization
+    // Fetch on window load
     fetch();
-
-    let (fetching, moved_fetching) = fetching.split_cloned();
 
     // Retry fetching here
     let start_fetching = move |_| {
         // Make sure to check fetching is completed before retrying.
-        if !*moved_fetching.get() {
+        if !*fetching.get() {
             // Notify that we are about to start fetching again.
-            moved_fetching.set(true);
+            fetching.set(true);
             fetch();
         }
     };
 
-    let (fetching, cloned_fetching) = fetching.split_cloned();
-
     view! { cx,
         p {
             button (on:click=start_fetching) {
-                (if *cloned_fetching.get() {
+                (if *fetching.get() {
                     "fetching..."
                 } else {
                     "retry?"
@@ -87,21 +73,13 @@ async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
             br {}
             br {}
             span {
-                (if !*fetching.get() {
-                    if *result_is_ok.get() {
-                        "Request Ok"
-                    } else {
-                        "Request Err"
-                    }
+                (if *fetch_is_error.get() {
+                    error_message.get().as_ref().into()
+                } else if *fetching.get() {
+                    "".into()
                 } else {
-                    ""
+                    format!("Total visits: {}", visits.get().value)
                 })
-            }
-            br {}
-            br {}
-            "Total visits: "
-            span {
-                (*result.get())
             }
         }
     }
@@ -109,11 +87,10 @@ async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let loading = view! { cx, "Loading..." };
     view! { cx,
         div {
             p { "Page Visit Counter" }
-            Suspense(fallback=loading) {
+            Suspense(fallback=view! { cx, "Loading..." }) {
                 VisitsCount {}
             }
         }
