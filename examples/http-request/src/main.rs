@@ -14,7 +14,7 @@ struct Visits {
     value: u64,
 }
 
-async fn fetch_visits(id: &str) -> Result<Visits, Box<dyn Error>> {
+async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
     let url = format!("{}/{}/hits", API_BASE_URL, id);
     let resp = Request::get(&url).send().await?;
     let body = resp.json::<Visits>().await?;
