@@ -1,4 +1,4 @@
-use log::{Level, info};
+use log::{info, Level};
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::futures::spawn_local;
