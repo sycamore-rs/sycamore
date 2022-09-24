@@ -1,7 +1,6 @@
 use log::{info, Level};
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use sycamore::futures::spawn_local_scoped;
 use sycamore::prelude::*;
 use sycamore::suspense::Suspense;
