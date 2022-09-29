@@ -56,7 +56,7 @@ macro_rules! define_element_impl {
 
         impl SycamoreElement for $el {
             const TAG_NAME: &'static str = $tag;
-            const NAME_SPACE: Option<&'static str> = $ns;
+            const NAMESPACE: Option<&'static str> = $ns;
         }
 
         #[allow(non_snake_case)]
