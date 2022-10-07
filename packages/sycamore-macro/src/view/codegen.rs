@@ -433,6 +433,7 @@ impl Codegen {
                     #[cfg(target_arch = "wasm32")]
                     ::sycamore::reactive::create_effect(#cx, {
                         let __el = ::std::clone::Clone::clone(&__el);
+                        let #expr = ::std::clone::Clone::clone(&#expr);
                         move ||::sycamore::generic_node::GenericNode::set_property(
                             &__el,
                             #prop,
@@ -440,9 +441,12 @@ impl Codegen {
                         )
                     });
                     ::sycamore::generic_node::GenericNode::event(&__el, #cx, #event_name,
-                        ::std::boxed::Box::new(|event: ::sycamore::rt::Event| {
+                    {
+                        let #expr = ::std::clone::Clone::clone(&#expr);
+                        ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
                             #expr.set(#convert_from_jsvalue_fn);
-                        }),
+                        })
+                    },
                     );
                 });
             }
