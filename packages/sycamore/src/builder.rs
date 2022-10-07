@@ -691,7 +691,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// ```
     pub fn bind_value(
         self,
-        sub: impl std::ops::Deref<Target = Signal<String>> + Clone,
+        sub: impl std::ops::Deref<Target = Signal<String>> + Clone + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |cx, el| {
             create_effect(cx, {
@@ -733,7 +733,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// ```
     pub fn bind_checked(
         self,
-        sub: impl std::ops::Deref<Target = Signal<bool>> + Clone,
+        sub: impl std::ops::Deref<Target = Signal<bool>> + Clone + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |cx, el| {
             create_effect(cx, {
