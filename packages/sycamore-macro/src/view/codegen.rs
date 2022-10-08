@@ -401,16 +401,18 @@ impl Codegen {
                 };
 
                 let convert_into_jsvalue_fn = match property_ty {
-                    JsPropertyType::Bool => {
-                        quote! { ::sycamore::rt::JsValue::from_bool(*#expr.get()) }
-                    }
-                    JsPropertyType::String => {
-                        quote! {
-                            ::sycamore::rt::JsValue::from_str(
-                                &::std::string::ToString::to_string(&#expr.get())
+                    JsPropertyType::Bool => quote! {
+                        ::sycamore::rt::JsValue::from_bool(
+                            *::sycamore::reactive::ReadSignal::get(&#expr)
+                        )
+                    },
+                    JsPropertyType::String => quote! {
+                        ::sycamore::rt::JsValue::from_str(
+                            &::std::string::ToString::to_string(
+                                &::sycamore::reactive::ReadSignal::get(&#expr),
                             )
-                        }
-                    }
+                        )
+                    },
                 };
 
                 let event_target_prop = quote! {
@@ -444,7 +446,7 @@ impl Codegen {
                     {
                         let #expr = ::std::clone::Clone::clone(&#expr);
                         ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                            #expr.set(#convert_from_jsvalue_fn);
+                            ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
                         })
                     },
                     );
