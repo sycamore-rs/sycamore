@@ -127,7 +127,7 @@ mod struct_info {
                 ref name,
                 ref builder_name,
                 ..
-            } = *self;
+            } = self;
             let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
             let all_fields_param = syn::GenericParam::Type(
                 syn::Ident::new("PropsFields", proc_macro2::Span::call_site()).into(),
@@ -270,7 +270,7 @@ mod struct_info {
         pub fn field_impl(&self, field: &FieldInfo) -> Result<TokenStream, Error> {
             let StructInfo {
                 ref builder_name, ..
-            } = *self;
+            } = self;
 
             let descructuring = self.included_fields().map(|f| {
                 if f.ordinal == field.ordinal {
@@ -282,7 +282,7 @@ mod struct_info {
             });
             let reconstructing = self.included_fields().map(|f| f.name);
 
-            let &FieldInfo {
+            let FieldInfo {
                 name: ref field_name,
                 ty: ref field_type,
                 ..
@@ -356,7 +356,7 @@ mod struct_info {
             {
                 field.type_from_inside_option().ok_or_else(|| {
                     Error::new_spanned(
-                        &field_type,
+                        field_type,
                         "can't `strip_option` - field is not `Option<...>`",
                     )
                 })?
@@ -537,7 +537,7 @@ mod struct_info {
                 ref name,
                 ref builder_name,
                 ..
-            } = *self;
+            } = self;
 
             let generics = self.modify_generics(|g| {
                 let index_after_lifetime_in_generics = g

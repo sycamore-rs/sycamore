@@ -138,7 +138,7 @@ fn build_dir(base: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
             let page = parse(entry.path())?;
             let output_dir: PathBuf = out_dir.join(output);
             let output_path: PathBuf = output_dir
-                .join(entry.path().strip_prefix(&base).unwrap())
+                .join(entry.path().strip_prefix(base).unwrap())
                 .with_extension("json");
 
             let output_json = serde_json::to_string(&page).unwrap();
@@ -163,7 +163,7 @@ fn generate_sitemap_for_dir(
         .map(|e| e.unwrap())
         .filter(|e| e.path().is_file())
     {
-        let path = entry.path().strip_prefix(&dir).unwrap().with_extension("");
+        let path = entry.path().strip_prefix(dir).unwrap().with_extension("");
         let path_str = path.iter().fold(String::new(), |acc, c| {
             format!("{}/{}", acc, c.to_str().unwrap())
         });
