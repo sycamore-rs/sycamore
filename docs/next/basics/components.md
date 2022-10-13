@@ -118,14 +118,14 @@ view! {
 
 ## Default props
 
-Some property fields might have a default value. Use the `#[builder(default)]` attribute to allow
+Some property fields might have a default value. Use the `#[prop(default)]` attribute to allow
 omitting the property when constructing the component.
 
 ```rust
 #[derive(Props)]
 struct MyProps {
     name: String,
-    #[builder(default)]
+    #[prop(default)]
     email: String,
 }
 

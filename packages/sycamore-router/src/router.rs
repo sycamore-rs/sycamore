@@ -151,7 +151,7 @@ where
 {
     view: F,
     integration: I,
-    #[builder(default, setter(skip))]
+    #[prop(default, setter(skip))]
     _phantom: PhantomData<&'a (R, G)>,
 }
 
@@ -184,7 +184,7 @@ where
     view: F,
     integration: I,
     route: R,
-    #[builder(default, setter(skip))]
+    #[prop(default, setter(skip))]
     _phantom: PhantomData<&'a G>,
 }
 
@@ -301,7 +301,7 @@ where
 {
     view: F,
     route: R,
-    #[builder(default, setter(skip))]
+    #[prop(default, setter(skip))]
     _phantom: PhantomData<&'a (R, G)>,
 }
 

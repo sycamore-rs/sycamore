@@ -71,7 +71,7 @@ pub fn OutlineView<G: Html>(cx: Scope, outline: Vec<Outline>) -> View<G> {
 #[derive(Props)]
 pub struct ContentProps {
     pub data: MarkdownPage,
-    #[builder(default, setter(strip_option))]
+    #[prop(default, setter(strip_option))]
     pub sidebar: Option<(String, SidebarData)>,
 }
 

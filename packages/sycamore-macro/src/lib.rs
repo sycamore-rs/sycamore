@@ -68,7 +68,7 @@ pub fn component(args: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// The derive macro for `Props`. The macro creates a builder-like API used in the [`view!`] macro.
-#[proc_macro_derive(Props, attributes(builder))]
+#[proc_macro_derive(Props, attributes(prop))]
 pub fn derive_props(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 

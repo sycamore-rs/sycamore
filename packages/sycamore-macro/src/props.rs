@@ -669,7 +669,7 @@ mod struct_info {
         pub fn new(attrs: &[syn::Attribute]) -> Result<TypeBuilderAttr, Error> {
             let mut result = TypeBuilderAttr::default();
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("builder") {
+                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
                     continue;
                 }
 
@@ -747,7 +747,7 @@ mod struct_info {
                         let call_func = quote!(#call_func);
                         Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group {}", call_func),
+                            format!("Illegal prop setting group {}", call_func),
                         )
                     })?;
                     match subsetting_name.as_str() {
@@ -759,7 +759,7 @@ mod struct_info {
                         }
                         _ => Err(Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group name {}", subsetting_name),
+                            format!("Illegal prop setting group name {}", subsetting_name),
                         )),
                     }
                 }
@@ -875,7 +875,7 @@ mod field_info {
     impl FieldBuilderAttr {
         pub fn with(mut self, attrs: &[syn::Attribute]) -> Result<Self, Error> {
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("builder") {
+                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
                     continue;
                 }
 
@@ -965,7 +965,7 @@ mod field_info {
                         let call_func = quote!(#call_func);
                         Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group {}", call_func),
+                            format!("Illegal prop setting group {}", call_func),
                         )
                     })?;
                     match subsetting_name.as_ref() {
@@ -977,7 +977,7 @@ mod field_info {
                         }
                         _ => Err(Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group name {}", subsetting_name),
+                            format!("Illegal prop setting group name {}", subsetting_name),
                         )),
                     }
                 }
@@ -1011,7 +1011,7 @@ mod field_info {
             if let (Some(skip), None) = (&self.setter.skip, &self.default) {
                 return Err(Error::new(
                     *skip,
-                    "#[builder(skip)] must be accompanied by default or default_code",
+                    "#[prop(skip)] must be accompanied by default or default_code",
                 ));
             }
 
