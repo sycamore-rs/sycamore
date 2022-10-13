@@ -2,7 +2,7 @@
 
 use sycamore::prelude::*;
 
-#[derive(Prop)]
+#[derive(Props)]
 pub struct MyComponentProps {
     value: i32,
 }

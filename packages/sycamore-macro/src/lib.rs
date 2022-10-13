@@ -7,7 +7,7 @@ use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 mod component;
-mod prop;
+mod props;
 mod view;
 
 /// A macro for ergonomically creating complex UI structures.
@@ -67,12 +67,12 @@ pub fn component(args: TokenStream, item: TokenStream) -> TokenStream {
         .into()
 }
 
-/// The derive macro for `Prop`. The macro creates a builder-like API used in the [`view!`] macro.
-#[proc_macro_derive(Prop, attributes(builder))]
-pub fn derive_prop(input: TokenStream) -> TokenStream {
+/// The derive macro for `Props`. The macro creates a builder-like API used in the [`view!`] macro.
+#[proc_macro_derive(Props, attributes(builder))]
+pub fn derive_props(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    prop::impl_derive_prop(&input)
+    props::impl_derive_props(&input)
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

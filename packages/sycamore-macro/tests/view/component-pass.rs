@@ -1,25 +1,25 @@
 use sycamore::prelude::*;
 
-#[derive(Prop)]
-pub struct Prop {
+#[derive(Props)]
+pub struct Props {
     prop: &'static str,
 }
 
 #[component]
-pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
+pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
     view! { cx,
         div {}
     }
 }
 
-#[derive(Prop)]
-pub struct PropWithChildren<'a, G: GenericNode> {
+#[derive(Props)]
+pub struct PropsWithChildren<'a, G: GenericNode> {
     children: Children<'a, G>,
 }
 
 #[component]
-pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<'a, G>) -> View<G> {
-    let children = prop.children.call(cx);
+pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, props: PropsWithChildren<'a, G>) -> View<G> {
+    let children = props.children.call(cx);
 
     view! { cx,
         div {
@@ -29,8 +29,8 @@ pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<
 }
 
 #[component]
-pub fn NestedComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<'a, G>) -> View<G> {
-    let children = prop.children.call(cx);
+pub fn NestedComponentWithChildren<'a, G: Html>(cx: Scope<'a>, props: PropsWithChildren<'a, G>) -> View<G> {
+    let children = props.children.call(cx);
 
     view! { cx,
         ComponentWithChildren {
@@ -41,9 +41,9 @@ pub fn NestedComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChi
 }
 
 #[component]
-pub async fn AsyncComponentWithPropDestructuring<'a, G: Html>(
+pub async fn AsyncComponentWithPropsDestructuring<'a, G: Html>(
     cx: Scope<'a>,
-    PropWithChildren { children }: PropWithChildren<'a, G>,
+    PropsWithChildren { children }: PropsWithChildren<'a, G>,
 ) -> View<G> {
     children.call(cx)
 }
@@ -61,7 +61,7 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, Component {} };
 
         let prop = "prop";
-        let _: View<G> = view! { cx, PropComponent(prop=prop) };
+        let _: View<G> = view! { cx, PropsComponent(prop=prop) };
 
         let _: View<G> = view! { cx,
             ComponentWithChildren {
@@ -75,7 +75,7 @@ fn compile_pass<G: Html>() {
         };
 
         let _: View<G> = view! { cx,
-            AsyncComponentWithPropDestructuring {
+            AsyncComponentWithPropsDestructuring {
                 Component {}
             }
         };

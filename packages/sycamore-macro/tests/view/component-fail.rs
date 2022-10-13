@@ -1,12 +1,12 @@
 use sycamore::prelude::*;
 
-#[derive(Prop)]
-pub struct Prop {
+#[derive(Props)]
+pub struct Props {
     prop: &'static str,
 }
 
 #[component]
-pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
+pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
     view! { cx,
         div {}
     }
@@ -28,10 +28,10 @@ fn compile_fail<G: Html>() {
         let _: View<G> = view! { cx, Component };
         let _: View<G> = view! { cx, Component(1) };
 
-        let _: View<G> = view! { cx, PropComponent() };
-        let _: View<G> = view! { cx, PropComponent {} };
-        let _: View<G> = view! { cx, PropComponent(prop=123) };
-        let _: View<G> = view! { cx, PropComponent { prop: "123" } }; // Legacy syntax.
+        let _: View<G> = view! { cx, PropsComponent() };
+        let _: View<G> = view! { cx, PropsComponent {} };
+        let _: View<G> = view! { cx, PropsComponent(prop=123) };
+        let _: View<G> = view! { cx, PropsComponent { prop: "123" } }; // Legacy syntax.
     });
 }
 

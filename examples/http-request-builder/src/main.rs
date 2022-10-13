@@ -1,7 +1,7 @@
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::builder::prelude::*;
-use sycamore::component::Prop;
+use sycamore::component::Props;
 use sycamore::prelude::*;
 use sycamore::suspense::{Suspense, SuspenseProps};
 
@@ -36,7 +36,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         .c(p().t("Page Visit Counter"))
         .c(Suspense(
             cx,
-            // Take advantage that structs that derive Prop have public builders even
+            // Take advantage that structs that derive `Props` have public builders even
             // if the fields are private and come from a different crate (in this case the Sycamore
             // crate).
             SuspenseProps::builder()

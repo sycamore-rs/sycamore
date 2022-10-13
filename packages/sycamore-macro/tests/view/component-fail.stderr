@@ -1,8 +1,8 @@
 error: expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:34:58
+  --> tests/view/component-fail.rs:34:59
    |
-34 |         let _: View<G> = view! { cx, PropComponent { prop: "123" } }; // Legacy syntax.
-   |                                                          ^
+34 |         let _: View<G> = view! { cx, PropsComponent { prop: "123" } }; // Legacy syntax.
+   |                                                           ^
 
 error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
   --> tests/view/component-fail.rs:25:38
@@ -35,48 +35,48 @@ help: remove the extra argument
 error[E0061]: this function takes 2 arguments but 1 argument was supplied
   --> tests/view/component-fail.rs:31:38
    |
-31 |         let _: View<G> = view! { cx, PropComponent() };
-   |                                      ^^^^^^^^^^^^^---- an argument of type `Prop` is missing
+31 |         let _: View<G> = view! { cx, PropsComponent() };
+   |                                      ^^^^^^^^^^^^^^---- an argument of type `Props` is missing
    |
 note: function defined here
   --> tests/view/component-fail.rs:9:8
    |
-9  | pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
-   |        ^^^^^^^^^^^^^         ------------
+9  | pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
+   |        ^^^^^^^^^^^^^^         ------------
 help: provide the argument
    |
-31 |         let _: View<G> = PropComponent(cx, /* Prop */);
-   |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+31 |         let _: View<G> = PropsComponent(cx, /* Props */);
+   |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 error[E0061]: this function takes 2 arguments but 1 argument was supplied
   --> tests/view/component-fail.rs:32:38
    |
-32 |         let _: View<G> = view! { cx, PropComponent {} };
-   |                                      ^^^^^^^^^^^^^----- an argument of type `Prop` is missing
+32 |         let _: View<G> = view! { cx, PropsComponent {} };
+   |                                      ^^^^^^^^^^^^^^----- an argument of type `Props` is missing
    |
 note: function defined here
   --> tests/view/component-fail.rs:9:8
    |
-9  | pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
-   |        ^^^^^^^^^^^^^         ------------
+9  | pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
+   |        ^^^^^^^^^^^^^^         ------------
 help: provide the argument
    |
-32 |         let _: View<G> = PropComponent(cx, /* Prop */);
-   |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+32 |         let _: View<G> = PropsComponent(cx, /* Props */);
+   |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:33:57
+  --> tests/view/component-fail.rs:33:58
    |
-33 |         let _: View<G> = view! { cx, PropComponent(prop=123) };
-   |                                                    ---- ^^^ expected `&str`, found integer
-   |                                                    |
-   |                                                    arguments to this function are incorrect
+33 |         let _: View<G> = view! { cx, PropsComponent(prop=123) };
+   |                                                     ---- ^^^ expected `&str`, found integer
+   |                                                     |
+   |                                                     arguments to this function are incorrect
    |
 note: associated function defined here
   --> tests/view/component-fail.rs:5:5
    |
-3  | #[derive(Prop)]
-   |          ----
-4  | pub struct Prop {
+3  | #[derive(Props)]
+   |          -----
+4  | pub struct Props {
 5  |     prop: &'static str,
    |     ^^^^

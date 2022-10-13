@@ -32,11 +32,11 @@ view! { cx,
 
 Components would be much more useful if they can accept data from the parent and render the given
 data. Luckily, we can do this with properties. To allow your component to accept properties, take a
-second argument with a type that implements the `Prop` trait. For convenience, you can automatically
-derive the `Prop` trait with a derive-macro.
+second argument with a type that implements the `Props` trait. For convenience, you can automatically
+derive the `Props` trait with a derive-macro.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps {
     name: String,
     email: String,
@@ -54,16 +54,16 @@ view! { cx,
 ## Reactive props
 
 Accepting data from the parent sure is nice but it would be even better if updating the data in the
-parent also updates the view in the child component! For components to automatically react to prop
+parent also updates the view in the child component! For components to automatically react to props
 changes, they should accept a signal. Most of the times, you'll want a `&ReadSignal` unless you want
 mutable access to the data in which case you should use a `&Signal`. This way, updating the signal
 will automatically update whatever is listening to it, even if it is inside the child component.
 
-Here is an example of a simple component that displays the value of its prop and that automatically
-updates the displayed value when the prop changes.
+Here is an example of a simple component that displays the value of its props and that automatically
+updates the displayed value when the props changes.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps<'a> {
     value: &'a ReadSignal<i32>,
 }
@@ -92,7 +92,7 @@ Components can also be wrappers around other child views by adding the `children
 properties struct.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 pub struct MyComponentProps<'a, G: Html> {
     children: Children<'a, G>,
     class: String
@@ -122,7 +122,7 @@ Some property fields might have a default value. Use the `#[builder(default)]` a
 omitting the property when constructing the component.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps {
     name: String,
     #[builder(default)]
@@ -145,7 +145,7 @@ automatically generated.
 
 ```rust
 // Manual method.
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps<'a> {
     value: &'a ReadSignal<i32>,
 }
