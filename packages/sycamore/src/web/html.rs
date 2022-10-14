@@ -307,6 +307,6 @@ define_elements! {
     textPath {},
     svg_title("title") {},
     tspan {},
-    r#use {},
+    r#use("use") {},
     view {},
 }
