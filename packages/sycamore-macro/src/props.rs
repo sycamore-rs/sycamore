@@ -1,4 +1,4 @@
-//! The `Prop` derive macro implementation.
+//! The `Props` derive macro implementation.
 //!
 //! _Credits: This code is mostly taken from <https://github.com/idanarye/rust-typed-builder>_
 
@@ -7,7 +7,7 @@ use quote::quote;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Error, Result};
 
-pub fn impl_derive_prop(ast: &DeriveInput) -> Result<TokenStream> {
+pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
     let data = match &ast.data {
         syn::Data::Struct(data) => match &data.fields {
             syn::Fields::Named(fields) => {
@@ -37,21 +37,21 @@ pub fn impl_derive_prop(ast: &DeriveInput) -> Result<TokenStream> {
             syn::Fields::Unnamed(_) => {
                 return Err(Error::new(
                     ast.span(),
-                    "Prop is not supported for tuple structs",
+                    "Props is not supported for tuple structs",
                 ))
             }
             syn::Fields::Unit => {
                 return Err(Error::new(
                     ast.span(),
-                    "Prop is not supported for unit structs",
+                    "Props is not supported for unit structs",
                 ))
             }
         },
         syn::Data::Enum(_) => {
-            return Err(Error::new(ast.span(), "Prop is not supported for enums"))
+            return Err(Error::new(ast.span(), "Props is not supported for enums"))
         }
         syn::Data::Union(_) => {
-            return Err(Error::new(ast.span(), "Prop is not supported for unions"))
+            return Err(Error::new(ast.span(), "Props is not supported for unions"))
         }
     };
     Ok(data)
@@ -130,7 +130,7 @@ mod struct_info {
             } = *self;
             let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
             let all_fields_param = syn::GenericParam::Type(
-                syn::Ident::new("PropFields", proc_macro2::Span::call_site()).into(),
+                syn::Ident::new("PropsFields", proc_macro2::Span::call_site()).into(),
             );
             let b_generics = self.modify_generics(|g| {
                 g.params.insert(0, all_fields_param.clone());
@@ -201,7 +201,7 @@ mod struct_info {
             let (b_generics_impl, b_generics_ty, b_generics_where_extras_predicates) =
                 b_generics.split_for_impl();
             let mut b_generics_where: syn::WhereClause = syn::parse2(quote! {
-                where PropFields: Clone
+                where PropsFields: Clone
             })?;
             if let Some(predicates) = b_generics_where_extras_predicates {
                 b_generics_where
@@ -210,7 +210,7 @@ mod struct_info {
             }
 
             Ok(quote! {
-                impl #impl_generics ::sycamore::component::Prop for #name #ty_generics #where_clause {
+                impl #impl_generics ::sycamore::component::Props for #name #ty_generics #where_clause {
                     type Builder = #builder_name #generics_with_empty;
                     #[doc = #builder_method_doc]
                     #[allow(dead_code, clippy::default_trait_access)]

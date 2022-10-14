@@ -141,7 +141,7 @@ fn async_comp_inputs_from_sig_inputs(inputs: &Punctuated<FnArg, Token![,]>) -> A
             Pat::Ident(id) => pat_ident_arm(&mut sync_input, prop_fn_arg, id),
             Pat::Struct(pat_struct) => {
                 // For the sync input we don't want a destructured pattern but just to take a
-                // `syn::PatType` (i.e. `props: MyPropStruct`) then the inner async function
+                // `syn::PatType` (i.e. `props: MyPropsStruct`) then the inner async function
                 // signature can have the destructured pattern and it will work correctly
                 // as long as we provide our brand new ident that we used in the
                 // `syn::PatIdent`.
@@ -200,7 +200,7 @@ impl ToTokens for ComponentFn {
             //
             // In order to support the struct destructured pattern for props we alter the existing
             // signature for the non-async component so that it is defined as a `Syn::PatType`
-            // (i.e. props: MyPropStruct) with a new `Syn::Ident` "props". We then use this ident
+            // (i.e. props: MyPropsStruct) with a new `Syn::Ident` "props". We then use this ident
             // again as an argument to the inner async function which has the user defined
             // destructured pattern which will work as expected.
             //
@@ -284,7 +284,8 @@ pub fn component_impl(args: ComponentArgs, item: TokenStream) -> Result<TokenStr
     }
 }
 
-/// Codegens the new prop struct and modifies the component body to accept this new struct as props.
+/// Codegens the new props struct and modifies the component body to accept this new struct as
+/// props.
 fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let props_vis = &item.vis;
     let props_struct_ident = format_ident!("{}_Props", item.sig.ident);
@@ -325,7 +326,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let ret = Ok(quote! {
         #[allow(non_camel_case_types)]
         #[doc = #doc_comment]
-        #[derive(::sycamore::Prop)]
+        #[derive(::sycamore::Props)]
         #props_vis struct #props_struct_ident #generics {
             #(#props,)*
             #(#generics_phantoms,)*

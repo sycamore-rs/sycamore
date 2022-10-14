@@ -23,36 +23,36 @@ pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
     }
 }
 
-/// A trait that is implemented automatically by the `Prop` derive macro.
+/// A trait that is implemented automatically by the `Props` derive macro.
 ///
 /// This is used when constructing components in the `view!` macro.
 ///
 /// # Example
 /// Deriving an implementation and using the builder to construct an instance of the struct:
 /// ```
-/// # use sycamore::component::Prop;
+/// # use sycamore::component::Props;
 /// # use sycamore::prelude::*;
-/// #[derive(Prop)]
+/// #[derive(Props)]
 /// struct ButtonProps {
 ///     color: String,
 ///     disabled: bool,
 /// }
 ///
-/// let builder = <ButtonProps as Prop>::builder();
+/// let builder = <ButtonProps as Props>::builder();
 /// let button_props = builder.color("red".to_string()).disabled(false).build();
 /// ```
-pub trait Prop {
+pub trait Props {
     /// The type of the builder. This allows getting the builder type when the name is unknown (e.g.
     /// in a macro).
     type Builder;
     /// Returns the builder for the type.
-    /// The builder should be automatically generated using the `Prop` derive macro.
+    /// The builder should be automatically generated using the `Props` derive macro.
     fn builder() -> Self::Builder;
 }
 
 /// Get the builder for the component function.
 #[doc(hidden)]
-pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
+pub fn element_like_component_builder<'a, T: Props + 'a, G: GenericNode>(
     _f: &impl FnOnce(Scope<'a>, T) -> View<G>,
 ) -> T::Builder {
     T::builder()
@@ -65,7 +65,7 @@ pub fn element_like_component_builder<'a, T: Prop + 'a, G: GenericNode>(
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
-/// #[derive(Prop)]
+/// #[derive(Props)]
 /// struct RowProps<'a, G: Html> {
 ///     width: i32,
 ///     children: Children<'a, G>,

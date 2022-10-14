@@ -141,7 +141,7 @@ fn base_pathname() -> String {
 }
 
 /// Props for [`Router`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
@@ -173,7 +173,7 @@ where
 }
 
 /// Props for [`RouterBase`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct RouterBaseProps<'a, R, F, I, G>
 where
     R: Route + 'a,
@@ -292,7 +292,7 @@ where
 }
 
 /// Props for [`StaticRouter`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct StaticRouterProps<'a, R, F, G>
 where
     R: Route + 'a,

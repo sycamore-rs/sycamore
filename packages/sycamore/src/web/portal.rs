@@ -8,7 +8,7 @@ use crate::component::Children;
 use crate::prelude::*;
 
 /// Props for [`Portal`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct PortalProps<'a, G>
 where
     G: GenericNode,

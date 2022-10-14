@@ -18,7 +18,7 @@ struct SuspenseState {
 }
 
 /// Props for [`Suspense`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct SuspenseProps<'a, G: GenericNode> {
     /// The fallback [`View`] to display while the child nodes are being awaited.
     #[builder(default)]

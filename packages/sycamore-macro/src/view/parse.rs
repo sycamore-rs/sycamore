@@ -228,7 +228,7 @@ impl Parse for Component {
             // Parse props.
             let content;
             parenthesized!(content in input);
-            // Check if using legacy component syntax (not using `Prop` derive).
+            // Check if using legacy component syntax (not using `Props` derive).
             if !content.peek2(Token![=]) {
                 let args = content.parse_terminated(Expr::parse)?;
                 return Ok(Self::Legacy(LegacyComponent { ident, args }));
