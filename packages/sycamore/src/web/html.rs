@@ -12,6 +12,7 @@ use crate::prelude::*;
 macro_rules! define_elements {
     (
         $ns:expr,
+        $doc:expr,
         $(
             $(#[$attr:meta])*
             $el:ident $(($tag:expr))? {
@@ -25,11 +26,12 @@ macro_rules! define_elements {
         $(
             define_element_impl! {
                 $ns,
-                #[doc = concat!("Build a [`<", stringify!($el), ">`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/", stringify!($el), ") element.")]
+                $doc,
+                $($tag)*,
                 $(#[$attr])*
-                $el $(($tag))* {
+                $el {
                     $(
-                        $(#[attr])*
+                        $(#[$attr_method])*
                         $at: $ty
                     )*
                 }
@@ -41,8 +43,9 @@ macro_rules! define_elements {
 macro_rules! define_element_impl {
     (
         $ns:expr,
+        $tag:expr,
         $(#[$attr:meta])*
-        $el:ident($tag:expr) {
+        $el:ident {
             $(
                 $(#[$attr_method:meta])*
                 $at:ident: $ty:path,
@@ -67,13 +70,31 @@ macro_rules! define_element_impl {
     };
     (
         $ns:expr,
+        $doc:expr,
+        $tag:expr,
         $(#[$attr:meta])*
         $el:ident $rest:tt
     ) => {
         define_element_impl! {
             $ns,
+            $tag,
+            #[doc = concat!("Build a [`<", $tag, ">`](", $doc, $tag, ") element.")]
             $(#[$attr])*
-            $el(stringify!($el)) $rest
+            $el $rest
+        }
+    };
+    (
+        $ns:expr,
+        $doc:expr,,
+        $(#[$attr:meta])*
+        $el:ident $rest:tt
+    ) => {
+        define_element_impl! {
+            $ns,
+            $doc,
+            stringify!($el),
+            $(#[$attr])*
+            $el $rest
         }
     };
 }
@@ -81,6 +102,7 @@ macro_rules! define_element_impl {
 // A list of valid HTML5 elements (does not include removed or obsolete elements).
 define_elements! {
     None,
+    "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/",
     /// The `<a>` HTML element (or anchor element), with its `href` attribute, creates a hyperlink to web pages, files, email addresses, locations in the same page, or anything else a URL can address.
     ///
     /// Content within each `<a>` should indicate the link's destination. If the `href` attribute is present, pressing the enter key while focused on the `<a>` element will activate it.
@@ -243,6 +265,7 @@ define_elements! {
 // elements.
 define_elements! {
     Some("http://www.w3.org/2000/svg"),
+    "https://developer.mozilla.org/en-US/docs/Web/SVG/Element/",
     svg {},
     svg_a("a") {},
     animate {},
