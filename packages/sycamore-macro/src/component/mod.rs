@@ -306,14 +306,14 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
             syn::GenericParam::Type(ty) => {
                 let ty = &ty.ident;
                 Some(quote! {
-                    #[builder(default, setter(skip))]
+                    #[prop(default, setter(skip))]
                     #phantom_ident: ::std::marker::PhantomData<#ty>
                 })
             }
             syn::GenericParam::Lifetime(lt) => {
                 let lt = &lt.lifetime;
                 Some(quote! {
-                    #[builder(default, setter(skip))]
+                    #[prop(default, setter(skip))]
                     #phantom_ident: ::std::marker::PhantomData<&#lt ()>
                 })
             }
