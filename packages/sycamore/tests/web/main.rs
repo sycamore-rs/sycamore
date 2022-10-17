@@ -315,12 +315,12 @@ fn noderefs() {
 }
 
 #[wasm_bindgen_test]
-fn noderef_reactivity_test(){
+fn noderef_reactivity_test() {
     create_scope_immediate(|cx| {
-        let counter : std::sync::Arc<_>  = std::cell::RefCell::new(0).into();
+        let counter: std::sync::Arc<_> = std::cell::RefCell::new(0).into();
         let counter1 = counter.clone();
         let node_ref = create_node_ref(cx);
-        
+
         let node1 = view! { cx,
             div {
                 input(ref=node_ref)
@@ -329,7 +329,7 @@ fn noderef_reactivity_test(){
 
         create_effect(cx, move || {
             node_ref.get::<DomNode>();
-            counter1.replace_with(|&mut x|x+ 1);
+            counter1.replace_with(|&mut x| x + 1);
         });
 
         sycamore::render_to(|_| node1, &test_container());
@@ -344,7 +344,6 @@ fn noderef_reactivity_test(){
         sycamore::render_to(|_| node2, &test_container());
 
         assert_eq!(*counter.borrow(), 2);
-
     });
 }
 
