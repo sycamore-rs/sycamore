@@ -383,7 +383,7 @@ impl Codegen {
                 enum JsPropertyType {
                     Bool,
                     String,
-                    Number
+                    Number,
                 }
 
                 let (event_name, property_ty) = match prop.as_str() {
