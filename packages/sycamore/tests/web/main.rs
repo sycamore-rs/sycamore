@@ -303,7 +303,7 @@ fn two_way_bind_to_value_as_number() {
         let value = create_signal(cx, 1.0);
 
         let node = view! { cx,
-            input(type="range", bind:valueAsNumber=value) //Note that type must be "range" or "number"
+            input(type="range", bind:valueAsNumber=value) // Note that type must be "range" or "number"
         };
 
         sycamore::render_to(|_| node, &test_container());
