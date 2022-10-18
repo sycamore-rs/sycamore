@@ -298,6 +298,27 @@ fn two_way_bind_to_props() {
 }
 
 #[wasm_bindgen_test]
+fn two_way_bind_to_value_as_number() {
+    create_scope_immediate(|cx| {
+        let value = create_signal(cx, 1.0);
+
+        let node = view! { cx,
+            input(type="range", bind:valueAsNumber=value) //Note that type must be "range" or "number"            
+        };
+
+        sycamore::render_to(|_| node, &test_container());
+        let input: HtmlInputElement = query_into("input");
+
+        value.set(2.0);
+        assert_eq!(input.value_as_number(), 2.0);
+
+        input.set_value_as_number(3.0);
+        input.dispatch_event(&Event::new("input").unwrap()).unwrap();
+        assert_eq!(*value.get(), 3.0);
+    });
+}
+
+#[wasm_bindgen_test]
 fn noderefs() {
     create_scope_immediate(|cx| {
         let noderef = create_node_ref(cx);

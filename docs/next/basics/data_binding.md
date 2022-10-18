@@ -22,7 +22,10 @@ instance, `value` uses the `on:input` event.
 
 Below is a table of supported properties and events that are listened to.
 
-| Property  | Event name | Signal type |
-| :-------- | :--------- | :---------- |
-| `value`   | `input`    | `String`    |
-| `checked` | `change`   | `bool`      |
+| Property        | Event name | Signal type |
+| :-------------- | :--------- | :---------- |
+| `value`         | `input`    | `String`    |
+| `valueAsNumber` | `input`    | `f64`       |
+| `checked`       | `change`   | `bool`      |
+
+Be aware that the `valueAsNumber` property will only work on `input` elements with type "range" or "number".
