@@ -315,6 +315,30 @@ fn noderefs() {
 }
 
 #[wasm_bindgen_test]
+fn noderef_reactivity_test() {
+    create_scope_immediate(|cx| {
+        let counter = create_signal(cx, 0);
+        let node_ref: &NodeRef<DomNode> = create_node_ref(cx);
+
+        let _ = view! { cx,
+            div(ref=node_ref)
+        };
+
+        create_effect(cx, move || {
+            node_ref.get::<DomNode>();
+            counter.set(*counter.get() + 1);
+        });
+        assert_eq!(*counter.get(), 1);
+
+        let _ = view! { cx,
+            div(ref=node_ref)
+        };
+
+        assert_eq!(*counter.get(), 2);
+    });
+}
+
+#[wasm_bindgen_test]
 fn fragments() {
     create_scope_immediate(|cx| {
         let node = view! { cx,
