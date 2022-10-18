@@ -308,6 +308,7 @@ fn two_way_bind_to_value_as_number() {
 
         sycamore::render_to(|_| node, &test_container());
         let input: HtmlInputElement = query_into("input");
+        assert_eq!(input.value_as_number(), 1.0);
 
         value.set(2.0);
         assert_eq!(input.value_as_number(), 2.0);
