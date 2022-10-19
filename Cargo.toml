@@ -23,6 +23,7 @@ members = [
   "examples/hello-world",
   "examples/higher-order-components",
   "examples/motion",
+  "examples/number-binding",
   "examples/ssr",
   "examples/svg",
   "examples/timer",

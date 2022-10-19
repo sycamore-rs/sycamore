@@ -383,10 +383,12 @@ impl Codegen {
                 enum JsPropertyType {
                     Bool,
                     String,
+                    Number,
                 }
 
                 let (event_name, property_ty) = match prop.as_str() {
                     "value" => ("input", JsPropertyType::String),
+                    "valueAsNumber" => ("input", JsPropertyType::Number),
                     "checked" => ("change", JsPropertyType::Bool),
                     _ => {
                         tokens.extend(
@@ -403,6 +405,11 @@ impl Codegen {
                 let convert_into_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => quote! {
                         ::sycamore::rt::JsValue::from_bool(
+                            *::sycamore::reactive::ReadSignal::get(&#expr)
+                        )
+                    },
+                    JsPropertyType::Number => quote! {
+                        ::sycamore::rt::JsValue::from_f64(
                             *::sycamore::reactive::ReadSignal::get(&#expr)
                         )
                     },
@@ -425,6 +432,9 @@ impl Codegen {
                 let convert_from_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => quote! {
                         ::sycamore::rt::JsValue::as_bool(&#event_target_prop).unwrap()
+                    },
+                    JsPropertyType::Number => quote! {
+                        ::sycamore::rt::JsValue::as_f64(&#event_target_prop).unwrap()
                     },
                     JsPropertyType::String => quote! {
                         ::sycamore::rt::JsValue::as_string(&#event_target_prop).unwrap()

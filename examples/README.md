@@ -35,6 +35,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 | [iteration](iteration)                             | Demonstration of how to iterate over data in UI                                                |
 | [js-framework-benchmark](js-framework-benchmark)   | Implementation of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) |
 | [motion](motion)                                   | Demonstration for using animation frames and tweened signals                                   |
+| [number-binding](number-binding)                   | Demonstration of binding the value of a range or number input                                  |
 | [ssr](ssr)                                         | Demonstration of server-side-rendering                                                         |
 | [svg](svg)                                         | Creating SVGs with the `view!` macro                                                           |
 | [timer](timer)                                     | Demonstration of using futures to auto-increment a counter                                     |
