@@ -414,32 +414,24 @@ fn dom_node_add_class_splits_at_whitespace() {
     let node = DomNode::element::<html::div>();
     node.add_class("my_class");
     assert_eq!(
-        node.to_web_sys()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "my_class"
     );
     node.add_class("my_class");
     assert_eq!(
-        node.to_web_sys()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "my_class"
     );
     node.remove_class("my_class");
     node.add_class("hyphenated-class");
     assert_eq!(
-        node.to_web_sys()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "hyphenated-class"
     );
     node.remove_class("hyphenated-class");
     node.add_class("multiple classes");
     assert_eq!(
-        node.to_web_sys()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "multiple classes"
     );
 }

@@ -5,7 +5,7 @@
 pub use sycamore_web::on_mount;
 
 use crate::builder::ElementBuilder;
-use crate::generic_node::{SycamoreElement, GenericNodeElements};
+use crate::generic_node::{GenericNodeElements, SycamoreElement};
 use crate::prelude::*;
 
 /// MBE for generating elements.

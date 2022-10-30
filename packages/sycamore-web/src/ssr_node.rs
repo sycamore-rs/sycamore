@@ -9,7 +9,7 @@ use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
 use once_cell::sync::Lazy;
-use sycamore_core::generic_node::{GenericNode, SycamoreElement, GenericNodeElements};
+use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
 use sycamore_core::hydrate::{get_next_id, with_hydration_context};
 use sycamore_core::view::View;
 use sycamore_reactive::*;
