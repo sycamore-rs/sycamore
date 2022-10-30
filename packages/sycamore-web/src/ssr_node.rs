@@ -107,10 +107,8 @@ impl SsrNode {
     ///
     /// Do not pass unsanitized user input to this function. When the node is rendered, no escaping
     /// will be performed which might lead to a XSS (Cross Site Scripting) attack.
-    pub fn raw_text_node(html: &str) -> Self {
-        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(
-            html.to_string(),
-        ))))
+    pub fn raw_text_node(html: Cow<'static, str>) -> Self {
+        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(html))))
     }
 }
 
@@ -128,10 +126,8 @@ impl GenericNode for SsrNode {
         Self::new(SsrNodeType::Text(RefCell::new(Text(text))))
     }
 
-    fn marker_with_text(text: &str) -> Self {
-        Self::new(SsrNodeType::Comment(RefCell::new(Comment(
-            text.to_string(),
-        ))))
+    fn marker_with_text(text: Cow<'static, str>) -> Self {
+        Self::new(SsrNodeType::Comment(RefCell::new(Comment(text))))
     }
 
     fn set_attribute(&self, name: &str, value: &str) {
@@ -303,14 +299,14 @@ impl GenericNode for SsrNode {
         }
     }
 
-    fn dangerously_set_inner_html(&self, html: &str) {
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>) {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(el) => {
                 el.borrow_mut().children = vec![SsrNode::raw_text_node(html)];
             }
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
             SsrNodeType::Text(_t) => panic!("cannot update inner text on text node"),
-            SsrNodeType::RawText(t) => t.borrow_mut().0 = html.to_string(),
+            SsrNodeType::RawText(t) => t.borrow_mut().0 = html,
         }
     }
 
@@ -337,14 +333,14 @@ impl GenericNodeElements for SsrNode {
         })))
     }
 
-    fn element_from_tag(tag: &str) -> Self {
+    fn element_from_tag(tag: Cow<'static, str>) -> Self {
         let hk = get_next_id();
         let mut attributes = IndexMap::new();
         if let Some(hk) = hk {
             attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
         }
         Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: Cow::Owned(tag.to_string()),
+            name: tag,
             attributes,
             children: Default::default(),
         })))
@@ -419,7 +415,7 @@ impl WriteToString for Element {
 
 /// A SSR comment node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct Comment(String);
+struct Comment(Cow<'static, str>);
 
 impl WriteToString for Comment {
     fn write_to_string(&self, s: &mut String) {
@@ -443,7 +439,7 @@ impl WriteToString for Text {
 
 /// Un-escaped text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct RawText(String);
+struct RawText(Cow<'static, str>);
 
 impl WriteToString for RawText {
     fn write_to_string(&self, s: &mut String) {

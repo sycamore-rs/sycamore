@@ -85,7 +85,7 @@ impl Codegen {
                 let __el = ::sycamore::generic_node::GenericNodeElements::element::<::sycamore::web::html::#id>();
             },
             ElementTag::Custom(tag_s) => quote! {
-                let __el = ::sycamore::generic_node::GenericNodeElements::element_from_tag(#tag_s);
+                let __el = ::sycamore::generic_node::GenericNodeElements::element_from_tag(::std::borrow::Cow::Borrowed(#tag_s));
             },
         };
 
@@ -135,9 +135,9 @@ impl Codegen {
                     let ssr_markers = quote! {
                         ::sycamore::generic_node::GenericNode::append_child(
                             &__el,
-                            &::sycamore::generic_node::GenericNode::marker_with_text("#"),
+                            &::sycamore::generic_node::GenericNode::marker_with_text(::std::borrow::Cow::Borrowed("#")),
                         );
-                        let __end_marker = ::sycamore::generic_node::GenericNode::marker_with_text("/");
+                        let __end_marker = ::sycamore::generic_node::GenericNode::marker_with_text(::std::borrow::Cow::Borrowed("/"));
                         ::sycamore::generic_node::GenericNode::append_child(&__el, &__end_marker);
                     };
 
@@ -335,7 +335,7 @@ impl Codegen {
                             move || {
                                 ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
                                     &__el,
-                                    #expr,
+                                    <_ as ::std::convert::Into<_>>::into(#expr),
                                 );
                             }
                         });
@@ -344,7 +344,7 @@ impl Codegen {
                     tokens.extend(quote! {
                         ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
                             &__el,
-                            #expr,
+                            <_ as ::std::convert::Into<_>>::into(#expr),
                         );
                     });
                 };

@@ -60,12 +60,12 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// want to push a new item to the end of the list. If the list is empty, a dummy node is
     /// needed to store the position of the component.
     fn marker() -> Self {
-        Self::marker_with_text("")
+        Self::marker_with_text("".into())
     }
 
     /// Create a marker (dummy) node with text content. For empty marker, prefer
     /// [`GenericNode::marker`] instead.
-    fn marker_with_text(text: &str) -> Self;
+    fn marker_with_text(text: Cow<'static, str>) -> Self;
 
     /// Sets an attribute on a node.
     fn set_attribute(&self, name: &str, value: &str);
@@ -134,7 +134,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Updates the inner html of the node.
     /// The html will not be parsed in non-browser environments. This means that accessing methods
     /// such as [`first_child`](GenericNode::first_child) will return `None`.
-    fn dangerously_set_inner_html(&self, html: &str);
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>);
 
     /// Create a deep clone of the node.
     #[must_use = "clone_node returns a new node"]
@@ -149,5 +149,5 @@ pub trait GenericNodeElements: GenericNode {
     fn element<T: SycamoreElement>() -> Self;
 
     /// Create a new element node from a tag string.
-    fn element_from_tag(tag: &str) -> Self;
+    fn element_from_tag(tag: Cow<'static, str>) -> Self;
 }

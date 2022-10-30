@@ -164,8 +164,8 @@ impl GenericNode for DomNode {
         }
     }
 
-    fn marker_with_text(text: &str) -> Self {
-        let node = document().create_comment(text).into();
+    fn marker_with_text(text: Cow<'static, str>) -> Self {
+        let node = document().create_comment(&text).into();
         DomNode {
             id: Default::default(),
             node,
@@ -309,8 +309,8 @@ impl GenericNode for DomNode {
         self.node.set_text_content(Some(&text));
     }
 
-    fn dangerously_set_inner_html(&self, html: &str) {
-        self.node.unchecked_ref::<Element>().set_inner_html(html);
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>) {
+        self.node.unchecked_ref::<Element>().set_inner_html(&html);
     }
 
     fn clone_node(&self) -> Self {
@@ -340,8 +340,11 @@ impl GenericNodeElements for DomNode {
         }
     }
 
-    fn element_from_tag(tag: &str) -> Self {
-        let node = document().create_element(intern(tag)).unwrap_throw().into();
+    fn element_from_tag(tag: Cow<'static, str>) -> Self {
+        let node = document()
+            .create_element(intern(&tag))
+            .unwrap_throw()
+            .into();
         DomNode {
             id: Default::default(),
             node,

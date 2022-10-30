@@ -87,9 +87,9 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a
 /// // etc...
 /// ```
 pub fn tag<'a, G: GenericNodeElements>(
-    t: impl AsRef<str> + 'a,
+    t: impl Into<Cow<'static, str>> + 'a,
 ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-    ElementBuilder::new(move |_| G::element_from_tag(t.as_ref()))
+    ElementBuilder::new(move |_| G::element_from_tag(t.into()))
 }
 
 impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
@@ -224,9 +224,9 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn dangerously_set_inner_html(
         self,
-        html: impl AsRef<str> + 'a,
+        html: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.dangerously_set_inner_html(html.as_ref()))
+        self.map(move |_, el| el.dangerously_set_inner_html(html.into()))
     }
 
     /// Dynamically set the inner html of the element.
@@ -248,12 +248,12 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         mut html: impl FnMut() -> U + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a>
     where
-        U: AsRef<str> + 'a,
+        U: Into<Cow<'static, str>> + 'a,
     {
         self.map(move |cx, el| {
             let el = el.clone();
             create_effect(cx, move || {
-                el.dangerously_set_inner_html(html().as_ref());
+                el.dangerously_set_inner_html(html().into());
             });
         })
     }
@@ -444,10 +444,10 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         #[cfg(feature = "ssr")]
         if TypeId::of::<G>() == TypeId::of::<crate::web::SsrNode>() {
             // If Server Side Rendering, insert beginning tag for hydration purposes.
-            el.append_child(&G::marker_with_text("#"));
+            el.append_child(&G::marker_with_text("#".into()));
             // Create end marker. This is needed to make sure that the node is inserted into the
             // right place.
-            let end_marker = G::marker_with_text("/");
+            let end_marker = G::marker_with_text("/".into());
             el.append_child(&end_marker);
             render::insert(
                 cx,
@@ -500,10 +500,10 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         #[cfg(feature = "ssr")]
         if TypeId::of::<G>() == TypeId::of::<crate::web::SsrNode>() {
             // If Server Side Rendering, insert beginning tag for hydration purposes.
-            el.append_child(&G::marker_with_text("#"));
+            el.append_child(&G::marker_with_text("#".into()));
             // Create end marker. This is needed to make sure that the node is inserted into the
             // right place.
-            let end_marker = G::marker_with_text("/");
+            let end_marker = G::marker_with_text("/".into());
             el.append_child(&end_marker);
             render::insert(
                 cx,

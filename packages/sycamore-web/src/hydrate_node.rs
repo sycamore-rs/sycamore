@@ -100,7 +100,7 @@ impl GenericNode for HydrateNode {
         }
     }
 
-    fn marker_with_text(text: &str) -> Self {
+    fn marker_with_text(text: Cow<'static, str>) -> Self {
         // TODO
         Self {
             node: DomNode::marker_with_text(text),
@@ -202,7 +202,7 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn dangerously_set_inner_html(&self, html: &str) {
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>) {
         self.node.dangerously_set_inner_html(html);
     }
 
@@ -245,7 +245,7 @@ impl GenericNodeElements for HydrateNode {
 
     /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
     /// node.
-    fn element_from_tag(tag: &str) -> Self {
+    fn element_from_tag(tag: Cow<'static, str>) -> Self {
         let el = get_next_element();
         if let Some(el) = el {
             // If in debug mode, check that the hydrate element has the same tag as the argument.
