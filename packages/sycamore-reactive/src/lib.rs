@@ -540,15 +540,6 @@ mod tests {
     }
 
     #[test]
-    fn can_store_disposer_in_own_signal() {
-        create_scope_immediate(|cx| {
-            let signal = create_signal(cx, None);
-            let disposer = create_child_scope(cx, |_cx| {});
-            signal.set(Some(disposer));
-        });
-    }
-
-    #[test]
     fn refs_are_dropped_on_dispose() {
         thread_local! {
             static COUNTER: Cell<u32> = Cell::new(0);
@@ -587,25 +578,6 @@ mod tests {
                                                           // access it in drop.
         });
 
-        unsafe { disposer.dispose() };
-    }
-
-    #[test]
-    fn access_previous_ref_in_drop() {
-        struct ReadRefOnDrop<'a> {
-            r: &'a i32,
-            expect: i32,
-        }
-        impl<'a> Drop for ReadRefOnDrop<'a> {
-            fn drop(&mut self) {
-                assert_eq!(*self.r, self.expect);
-            }
-        }
-
-        let disposer = create_scope(|cx| {
-            let r = create_ref(cx, 123);
-            create_ref(cx, ReadRefOnDrop { r, expect: 123 });
-        });
         unsafe { disposer.dispose() };
     }
 }

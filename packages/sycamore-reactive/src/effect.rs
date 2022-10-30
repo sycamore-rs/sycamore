@@ -73,10 +73,10 @@ pub fn create_effect<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) {
 }
 
 /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
-fn _create_effect<'a>(_cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
-    let effect = Rc::new(RefCell::new(None::<EffectState<'a>>));
+fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
+    // SAFETY: We do not access the scope in the Drop implementation for EffectState.
+    let effect = unsafe { create_ref_unsafe(cx, RefCell::new(None::<EffectState<'a>>)) };
     let cb = Rc::new(RefCell::new({
-        let effect = Rc::clone(&effect);
         move || {
             EFFECTS.with(|effects| {
                 // Record initial effect stack length to verify that it is the same after.
