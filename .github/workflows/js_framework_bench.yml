@@ -82,6 +82,9 @@ jobs:
 
       - name: Configure benchmarks
         run: node ./sycamore/packages/tools/configure_bench.js
+      
+      - name: Benchmark list
+        run: ls ./js-framework-benchmark/frameworks/keyed
 
       - name: Install js-framework-benchmark dependencies
         run: |
