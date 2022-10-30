@@ -52,7 +52,7 @@ impl Codegen {
             }
             ViewNode::Component(comp) => self.component(comp),
             ViewNode::Text(Text { value }) => quote! {
-                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(#value))
+                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
             ViewNode::Dyn(d @ Dyn { value }) => {
                 let needs_cx = d.needs_cx(&cx.to_string());
@@ -113,7 +113,7 @@ impl Codegen {
                         children.next_if(|x| matches!(x, ViewNode::Text(_)))
                     {
                         quote! {
-                            let __marker = ::sycamore::generic_node::GenericNode::text_node(#value);
+                            let __marker = ::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value));
                             ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
                             let __marker = ::std::option::Option::Some(&__marker);
                         }
@@ -221,13 +221,13 @@ impl Codegen {
                                 #intern
                                 ::sycamore::generic_node::GenericNode::append_child(
                                     &__el,
-                                    &::sycamore::generic_node::GenericNode::text_node(#value),
+                                    &::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)),
                                 );
                             },
                             // Only one child, directly set innerText instead of creating a text node.
                             false => quote! {
                                 #intern
-                                ::sycamore::generic_node::GenericNode::update_inner_text(&__el, #value);
+                                ::sycamore::generic_node::GenericNode::update_inner_text(&__el, ::std::borrow::Cow::Borrowed(#value));
                             },
                         });
                     }

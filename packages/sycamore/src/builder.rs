@@ -3,6 +3,7 @@
 //! This API is rendering-backend agnostic and can be used with any rendering backend, not just
 //! HTML.
 
+use std::borrow::Cow;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -382,8 +383,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     ///     .t("More text...")
     /// # .view(cx) }
     /// ```
-    pub fn t(self, text: &'a str) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(|_, el| el.append_child(&G::text_node(text)))
+    pub fn t(
+        self,
+        text: impl Into<Cow<'static, str>>,
+    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        self.map(|_, el| el.append_child(&G::text_node(text.into())))
     }
 
     /// Adds a dynamic text node.
@@ -406,7 +410,9 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self.map(|cx, el| {
             let memo = create_memo(cx, f);
             Self::dyn_c_internal(cx, el, move || {
-                View::new_node(G::text_node(memo.get().as_ref().as_ref()))
+                View::new_node(G::text_node(
+                    memo.get().as_ref().as_ref().to_string().into(),
+                ))
             });
         })
     }
@@ -823,8 +829,8 @@ where
 /// # }
 /// // etc...
 /// ```
-pub fn t<G: GenericNode>(t: impl AsRef<str>) -> View<G> {
-    View::new_node(G::text_node(t.as_ref()))
+pub fn t<G: GenericNode>(t: impl Into<Cow<'static, str>>) -> View<G> {
+    View::new_node(G::text_node(t.into()))
 }
 
 /// Construct a new top-level dynamic text [`View`].
@@ -837,9 +843,9 @@ pub fn t<G: GenericNode>(t: impl AsRef<str>) -> View<G> {
 /// dyn_t(cx, || "Hello!")
 /// # }
 /// ```
-pub fn dyn_t<'a, G: GenericNode, S: AsRef<str>>(
+pub fn dyn_t<'a, G: GenericNode, S: Into<Cow<'static, str>>>(
     cx: Scope<'a>,
     mut f: impl FnMut() -> S + 'a,
 ) -> View<G> {
-    View::new_dyn(cx, move || View::new_node(G::text_node(f().as_ref())))
+    View::new_dyn(cx, move || View::new_node(G::text_node(f().into())))
 }

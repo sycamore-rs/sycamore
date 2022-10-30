@@ -1,5 +1,6 @@
 //! Generic rendering backend.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::hash::Hash;
 
@@ -47,11 +48,11 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     const CLIENT_SIDE_HYDRATION: bool = false;
 
     /// Create a new text node.
-    fn text_node(text: &str) -> Self;
+    fn text_node(text: Cow<'static, str>) -> Self;
 
     /// Create a new text node from an integer.
     fn text_node_int(int: i32) -> Self {
-        Self::text_node(&int.to_string())
+        Self::text_node(int.to_string().into())
     }
 
     /// Create a marker (dummy) node. For `DomNode`, this is implemented by creating an empty
@@ -128,7 +129,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
-    fn update_inner_text(&self, text: &str);
+    fn update_inner_text(&self, text: Cow<'static, str>);
 
     /// Updates the inner html of the node.
     /// The html will not be parsed in non-browser environments. This means that accessing methods

@@ -1,5 +1,6 @@
 //! Rendering backend for the DOM.
 
+use std::borrow::Cow;
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -144,8 +145,8 @@ impl GenericNode for DomNode {
     type EventType = web_sys::Event;
     type PropertyType = JsValue;
 
-    fn text_node(text: &str) -> Self {
-        let node = document().create_text_node(text).into();
+    fn text_node(text: Cow<'static, str>) -> Self {
+        let node = document().create_text_node(&text).into();
         DomNode {
             id: Default::default(),
             node,
@@ -304,8 +305,8 @@ impl GenericNode for DomNode {
             .unwrap_throw();
     }
 
-    fn update_inner_text(&self, text: &str) {
-        self.node.set_text_content(Some(text));
+    fn update_inner_text(&self, text: Cow<'static, str>) {
+        self.node.set_text_content(Some(&text));
     }
 
     fn dangerously_set_inner_html(&self, html: &str) {

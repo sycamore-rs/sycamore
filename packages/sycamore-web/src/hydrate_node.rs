@@ -1,5 +1,6 @@
 //! Rendering backend for the DOM with hydration support.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -85,7 +86,7 @@ impl GenericNode for HydrateNode {
 
     /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
     /// node.
-    fn text_node(text: &str) -> Self {
+    fn text_node(text: Cow<'static, str>) -> Self {
         // TODO
         Self {
             node: DomNode::text_node(text),
@@ -196,7 +197,7 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn update_inner_text(&self, text: &str) {
+    fn update_inner_text(&self, text: Cow<'static, str>) {
         self.node.update_inner_text(text);
     }
 

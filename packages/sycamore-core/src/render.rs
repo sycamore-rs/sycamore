@@ -57,7 +57,7 @@ fn insert_expression<G: GenericNode>(
                 // FIXME: This is an extremely ugly hack to get around the fact that current is None
                 // for text nodes when G is HydrateNode. This will cause the text node to be
                 // inserted twice when hydrating.
-                parent.update_inner_text("");
+                parent.update_inner_text("".into());
                 parent.insert_child_before(node, None);
             } else {
                 parent.insert_child_before(node, marker);
@@ -162,7 +162,7 @@ pub fn clean_children<G: GenericNode>(
     multi: bool,
 ) {
     if !multi {
-        parent.update_inner_text("");
+        parent.update_inner_text("".into());
         if let Some(replacement) = replacement {
             parent.append_child(replacement);
         }

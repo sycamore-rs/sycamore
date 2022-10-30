@@ -124,8 +124,8 @@ impl GenericNode for SsrNode {
 
     const USE_HYDRATION_CONTEXT: bool = true;
 
-    fn text_node(text: &str) -> Self {
-        Self::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
+    fn text_node(text: Cow<'static, str>) -> Self {
+        Self::new(SsrNodeType::Text(RefCell::new(Text(text))))
     }
 
     fn marker_with_text(text: &str) -> Self {
@@ -294,11 +294,11 @@ impl GenericNode for SsrNode {
         // Noop. Events are attached on client side.
     }
 
-    fn update_inner_text(&self, text: &str) {
+    fn update_inner_text(&self, text: Cow<'static, str>) {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(el) => el.borrow_mut().children = vec![SsrNode::text_node(text)],
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
-            SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
+            SsrNodeType::Text(t) => t.borrow_mut().0 = text,
             SsrNodeType::RawText(_t) => panic!("cannot update inner text on raw text node"),
         }
     }
@@ -433,7 +433,7 @@ impl WriteToString for Comment {
 
 /// A SSR text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct Text(String);
+struct Text(Cow<'static, str>);
 
 impl WriteToString for Text {
     fn write_to_string(&self, s: &mut String) {
