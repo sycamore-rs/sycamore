@@ -121,7 +121,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn attr(
         self,
-        name: impl Into<Cow<'static, str>>,
+        name: impl Into<Cow<'static, str>> + 'a,
         value: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |_, el| el.set_attribute(name.into(), value.into()))
@@ -139,7 +139,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn bool_attr(
         self,
-        name: impl Into<Cow<'static, str>>,
+        name: impl Into<Cow<'static, str>> + 'a,
         value: bool,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |_, el| {
@@ -387,7 +387,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn t(
         self,
-        text: impl Into<Cow<'static, str>>,
+        text: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(|_, el| el.append_child(&G::text_node(text.into())))
     }
