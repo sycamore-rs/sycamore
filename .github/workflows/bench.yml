@@ -15,7 +15,7 @@ jobs:
           override: true
 
       - name: Checkout repository base
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.base_ref }}
 
@@ -23,8 +23,9 @@ jobs:
         run: cargo bench
 
       - name: Checkout repository head
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
+          repository: ${{ github.repository }}
           ref: ${{ github.head_ref }}
           clean: false # Do not remove benchmark results from base branch
 
