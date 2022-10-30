@@ -27,12 +27,13 @@ impl<'a> ScopeArena<'a> {
         // SAFETY: We know that the lifetime is `'static` so this is completely safe.
         unsafe { self.alloc_non_static(value) }
     }
+
     /// Allocate a value onto the arena. Returns a mutable reference that lasts as long as the arena
     /// itself.
     ///
     /// # Safety
     ///
-    /// TODO: describe dropck limitations.
+    /// See docs for [`create_ref`](crate::create_ref).
     #[allow(clippy::mut_from_ref)] // We return a new reference each time so this is a false-positive.
     pub unsafe fn alloc_non_static<T: 'a>(&'a self, value: T) -> &'a mut T {
         let boxed = bumpalo::boxed::Box::new_in(value, &self.bump);

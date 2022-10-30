@@ -362,10 +362,14 @@ pub fn create_ref<T: 'static>(cx: Scope, value: T) -> &T {
 /// let _ = outer.unwrap();
 /// # });
 /// ```
-/// 
+///
 /// # Safety
-/// 
-/// TODO: Explain why this is unsafe.
+///
+/// The allocated value must not access any value allocated on the scope in its `Drop`
+/// implementation.
+///
+/// This should almost never happen in the wild, but beware that accessing allocated data in `Drop`
+/// might cause an use-after-free because the accessed value might have been dropped already.
 pub unsafe fn create_ref_unsafe<'a, T: 'a>(cx: Scope<'a>, value: T) -> &'a T {
     cx.raw.arena.alloc_non_static(value)
 }
