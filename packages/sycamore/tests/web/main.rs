@@ -405,7 +405,7 @@ fn dyn_fragment_reuse_nodes() {
         let p = query("#test-container");
 
         assert_text_content!(p, "123");
-        assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
+        assert!(p.first_child() == nodes[0].as_node().map(|node| node.to_web_sys()));
     });
 }
 
@@ -414,14 +414,14 @@ fn dom_node_add_class_splits_at_whitespace() {
     let node = DomNode::element::<html::div>();
     node.add_class("my_class");
     assert_eq!(
-        node.inner_element()
+        node.to_web_sys()
             .unchecked_into::<Element>()
             .class_name(),
         "my_class"
     );
     node.add_class("my_class");
     assert_eq!(
-        node.inner_element()
+        node.to_web_sys()
             .unchecked_into::<Element>()
             .class_name(),
         "my_class"
@@ -429,7 +429,7 @@ fn dom_node_add_class_splits_at_whitespace() {
     node.remove_class("my_class");
     node.add_class("hyphenated-class");
     assert_eq!(
-        node.inner_element()
+        node.to_web_sys()
             .unchecked_into::<Element>()
             .class_name(),
         "hyphenated-class"
@@ -437,7 +437,7 @@ fn dom_node_add_class_splits_at_whitespace() {
     node.remove_class("hyphenated-class");
     node.add_class("multiple classes");
     assert_eq!(
-        node.inner_element()
+        node.to_web_sys()
             .unchecked_into::<Element>()
             .class_name(),
         "multiple classes"

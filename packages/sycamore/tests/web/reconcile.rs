@@ -26,7 +26,7 @@ fn insert_create_nodes() {
             None,
             true,
         );
-        assert_text_content!(parent.inner_element(), "123");
+        assert_text_content!(parent.to_web_sys(), "123");
     });
 }
 
@@ -43,10 +43,10 @@ fn reconcile_pop_nodes() {
     for node in &child_nodes {
         parent.append_child(node);
     }
-    assert_text_content!(parent.inner_element(), "123");
+    assert_text_content!(parent.to_web_sys(), "123");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &nodes[..2]);
-    assert_text_content!(parent.inner_element(), "12");
+    assert_text_content!(parent.to_web_sys(), "12");
 }
 
 #[wasm_bindgen_test]
@@ -62,14 +62,14 @@ fn reconcile_remove_nodes() {
     for node in &child_nodes {
         parent.append_child(node);
     }
-    assert_text_content!(parent.inner_element(), "123");
+    assert_text_content!(parent.to_web_sys(), "123");
 
     reconcile_fragments(
         &parent,
         &mut child_nodes.clone(),
         &[nodes[0].clone(), nodes[2].clone()],
     );
-    assert_text_content!(parent.inner_element(), "13");
+    assert_text_content!(parent.to_web_sys(), "13");
 }
 
 #[wasm_bindgen_test]
@@ -85,10 +85,10 @@ fn reconcile_append_nodes() {
     for node in &child_nodes {
         parent.append_child(node);
     }
-    assert_text_content!(parent.inner_element(), "12");
+    assert_text_content!(parent.to_web_sys(), "12");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &nodes);
-    assert_text_content!(parent.inner_element(), "123");
+    assert_text_content!(parent.to_web_sys(), "123");
 }
 
 #[wasm_bindgen_test]
@@ -104,14 +104,14 @@ fn reconcile_swap_nodes() {
     for node in &child_nodes {
         parent.append_child(node);
     }
-    assert_text_content!(parent.inner_element(), "123");
+    assert_text_content!(parent.to_web_sys(), "123");
 
     reconcile_fragments(
         &parent,
         &mut child_nodes.clone(),
         &[nodes[2].clone(), nodes[1].clone(), nodes[0].clone()],
     );
-    assert_text_content!(parent.inner_element(), "321");
+    assert_text_content!(parent.to_web_sys(), "321");
 }
 
 #[wasm_bindgen_test]
@@ -127,10 +127,10 @@ fn reconcile_clear_nodes() {
     for node in &child_nodes {
         parent.append_child(node);
     }
-    assert_text_content!(parent.inner_element(), "123");
+    assert_text_content!(parent.to_web_sys(), "123");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &[]);
-    assert_text_content!(parent.inner_element(), "");
+    assert_text_content!(parent.to_web_sys(), "");
 }
 
 #[wasm_bindgen_test]
@@ -150,13 +150,13 @@ fn clear_and_insert_with_other_nodes_at_same_level() {
     }
     parent.append_child(&after);
 
-    assert_text_content!(parent.inner_element(), "before123after");
+    assert_text_content!(parent.to_web_sys(), "before123after");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &[]);
-    assert_text_content!(parent.inner_element(), "beforeafter");
+    assert_text_content!(parent.to_web_sys(), "beforeafter");
 
     append_nodes(&parent, child_nodes, Some(&after));
-    assert_text_content!(parent.inner_element(), "before123after");
+    assert_text_content!(parent.to_web_sys(), "before123after");
 }
 
 #[wasm_bindgen_test]
@@ -176,10 +176,10 @@ fn clear_with_other_nodes_at_same_level() {
     }
     parent.append_child(&after);
 
-    assert_text_content!(parent.inner_element(), "before123after");
+    assert_text_content!(parent.to_web_sys(), "before123after");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &[]);
-    assert_text_content!(parent.inner_element(), "beforeafter");
+    assert_text_content!(parent.to_web_sys(), "beforeafter");
 }
 
 #[wasm_bindgen_test]
@@ -199,10 +199,10 @@ fn insert_with_other_nodes_at_same_level() {
     }
     parent.append_child(&after);
 
-    assert_text_content!(parent.inner_element(), "before123after");
+    assert_text_content!(parent.to_web_sys(), "before123after");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &child_nodes[..2]);
-    assert_text_content!(parent.inner_element(), "before12after");
+    assert_text_content!(parent.to_web_sys(), "before12after");
 }
 
 #[wasm_bindgen_test]
@@ -222,8 +222,8 @@ fn reconcile_with_other_nodes_at_same_level() {
     }
     parent.append_child(&after);
 
-    assert_text_content!(parent.inner_element(), "before123after");
+    assert_text_content!(parent.to_web_sys(), "before123after");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &child_nodes[..2]);
-    assert_text_content!(parent.inner_element(), "before12after");
+    assert_text_content!(parent.to_web_sys(), "before12after");
 }

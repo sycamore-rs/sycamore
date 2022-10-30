@@ -457,7 +457,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             use crate::utils::hydrate::web::*;
             // Get start and end markers.
             let el_hn = <dyn Any>::downcast_ref::<crate::web::HydrateNode>(el).unwrap();
-            let initial = get_next_marker(&el_hn.inner_element());
+            let initial = get_next_marker(&el_hn.to_web_sys());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
             let initial = ::std::mem::ManuallyDrop::new(initial);
             // SAFETY: This is safe because we already checked that the type is HydrateNode.
@@ -513,7 +513,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             use crate::utils::hydrate::web::*;
             // Get start and end markers.
             let el_hn = <dyn Any>::downcast_ref::<crate::web::HydrateNode>(el).unwrap();
-            let initial = get_next_marker(&el_hn.inner_element());
+            let initial = get_next_marker(&el_hn.to_web_sys());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
             let initial = ::std::mem::ManuallyDrop::new(initial);
             // SAFETY: This is safe because we already checked that the type is HydrateNode.

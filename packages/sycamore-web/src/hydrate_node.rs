@@ -25,11 +25,6 @@ pub struct HydrateNode {
 }
 
 impl HydrateNode {
-    /// Get the underlying [`web_sys::Node`].
-    pub fn inner_element(&self) -> Node {
-        self.node.inner_element()
-    }
-
     /// Cast the underlying [`web_sys::Node`] using [`JsCast`].
     pub fn unchecked_into<T: JsCast>(self) -> T {
         self.node.unchecked_into()
@@ -278,7 +273,7 @@ impl Html for HydrateNode {
     const IS_BROWSER: bool = true;
 
     fn to_web_sys(&self) -> web_sys::Node {
-        self.inner_element()
+        self.node.to_web_sys()
     }
 }
 

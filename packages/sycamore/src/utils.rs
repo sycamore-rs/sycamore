@@ -25,7 +25,7 @@ pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
         use std::ptr;
 
         if let Some(el) = <dyn Any>::downcast_ref::<HydrateNode>(_el) {
-            let initial = hydrate::web::get_next_marker(&el.inner_element());
+            let initial = hydrate::web::get_next_marker(&el.to_web_sys());
             // Do not drop the HydrateNode because it will be cast into a GenericNode.
             let initial = ManuallyDrop::new(initial);
             // SAFETY: This is safe because we already checked that the type is HydrateNode.
