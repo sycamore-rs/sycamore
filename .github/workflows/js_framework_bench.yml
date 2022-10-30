@@ -91,7 +91,7 @@ jobs:
           (cd webdriver-ts && npm ci)
           (cd webdriver-ts-results && npm ci)
 
-      - name: Start Server
+      - name: Start server
         run: cd ./js-framework-benchmark && npm start &
 
       - name: Build benchmark driver
@@ -99,7 +99,7 @@ jobs:
           (cd ./js-framework-benchmark/webdriver-ts && npm run compile)
         shell: bash {0} # Do not fail fast. webdriver-ts currently spits out errors for tsc.
 
-      - name: Benchmark
+      - name: Run benchmark
         run: cd ./js-framework-benchmark && npm run bench -- --headless
 
       - name: Results
