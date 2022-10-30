@@ -5,7 +5,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
-use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -143,32 +143,6 @@ fn document() -> web_sys::Document {
 impl GenericNode for DomNode {
     type EventType = web_sys::Event;
     type PropertyType = JsValue;
-
-    fn element<T: SycamoreElement>() -> Self {
-        let node = if let Some(ns) = T::NAMESPACE {
-            document()
-                .create_element_ns(Some(ns), intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        } else {
-            document()
-                .create_element(intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        };
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
-    fn element_from_tag(tag: &str) -> Self {
-        let node = document().create_element(intern(tag)).unwrap_throw().into();
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
 
     fn text_node(text: &str) -> Self {
         let node = document().create_text_node(text).into();
@@ -342,6 +316,34 @@ impl GenericNode for DomNode {
         Self {
             node: self.node.clone_node_with_deep(true).unwrap_throw(),
             id: Default::default(),
+        }
+    }
+}
+
+impl GenericNodeElements for DomNode {
+    fn element<T: SycamoreElement>() -> Self {
+        let node = if let Some(ns) = T::NAMESPACE {
+            document()
+                .create_element_ns(Some(ns), intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        } else {
+            document()
+                .create_element(intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        };
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    fn element_from_tag(tag: &str) -> Self {
+        let node = document().create_element(intern(tag)).unwrap_throw().into();
+        DomNode {
+            id: Default::default(),
+            node,
         }
     }
 }

@@ -7,6 +7,8 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
+use sycamore_core::generic_node::GenericNodeElements;
+
 use crate::component::component_scope;
 use crate::generic_node::GenericNode;
 use crate::noderef::NodeRef;
@@ -83,7 +85,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a
 /// # .view(cx) }
 /// // etc...
 /// ```
-pub fn tag<'a, G: GenericNode>(
+pub fn tag<'a, G: GenericNodeElements>(
     t: impl AsRef<str> + 'a,
 ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
     ElementBuilder::new(move |_| G::element_from_tag(t.as_ref()))

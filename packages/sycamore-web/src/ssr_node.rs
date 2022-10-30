@@ -9,7 +9,7 @@ use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
 use once_cell::sync::Lazy;
-use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::generic_node::{GenericNode, SycamoreElement, GenericNodeElements};
 use sycamore_core::hydrate::{get_next_id, with_hydration_context};
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -123,32 +123,6 @@ impl GenericNode for SsrNode {
     type PropertyType = JsValue;
 
     const USE_HYDRATION_CONTEXT: bool = true;
-
-    fn element<T: SycamoreElement>() -> Self {
-        let hk = get_next_id();
-        let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
-            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
-        }
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: Cow::Borrowed(T::TAG_NAME),
-            attributes,
-            children: Default::default(),
-        })))
-    }
-
-    fn element_from_tag(tag: &str) -> Self {
-        let hk = get_next_id();
-        let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
-            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
-        }
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: Cow::Owned(tag.to_string()),
-            attributes,
-            children: Default::default(),
-        })))
-    }
 
     fn text_node(text: &str) -> Self {
         Self::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
@@ -346,6 +320,34 @@ impl GenericNode for SsrNode {
             parent: RefCell::new(Weak::new()),
         };
         Self(Rc::new(inner))
+    }
+}
+
+impl GenericNodeElements for SsrNode {
+    fn element<T: SycamoreElement>() -> Self {
+        let hk = get_next_id();
+        let mut attributes = IndexMap::new();
+        if let Some(hk) = hk {
+            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
+        }
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
+            name: Cow::Borrowed(T::TAG_NAME),
+            attributes,
+            children: Default::default(),
+        })))
+    }
+
+    fn element_from_tag(tag: &str) -> Self {
+        let hk = get_next_id();
+        let mut attributes = IndexMap::new();
+        if let Some(hk) = hk {
+            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
+        }
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
+            name: Cow::Owned(tag.to_string()),
+            attributes,
+            children: Default::default(),
+        })))
     }
 }
 

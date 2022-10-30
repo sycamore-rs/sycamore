@@ -3,7 +3,7 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
 use sycamore_core::hydrate::{get_current_id, hydration_completed, with_hydration_context};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
@@ -82,62 +82,6 @@ impl GenericNode for HydrateNode {
 
     const USE_HYDRATION_CONTEXT: bool = true;
     const CLIENT_SIDE_HYDRATION: bool = true;
-
-    /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
-    /// node.
-    fn element<T: SycamoreElement>() -> Self {
-        let el = get_next_element();
-        if let Some(el) = el {
-            // If in debug mode, check that the hydrate element has the same tag as the argument.
-            #[cfg(debug_assertions)]
-            if T::TAG_NAME.to_ascii_lowercase() != el.tag_name().to_ascii_lowercase() {
-                // Get the hydration key of the expected element.
-                let mut hk = get_current_id().unwrap();
-                hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
-                panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
-                    T::TAG_NAME,
-                    el.tag_name().to_ascii_lowercase(),
-                    hk.0, hk.1
-                );
-            }
-
-            Self {
-                node: DomNode::from_web_sys(el.into()),
-            }
-        } else {
-            Self {
-                node: DomNode::element::<T>(),
-            }
-        }
-    }
-
-    /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
-    /// node.
-    fn element_from_tag(tag: &str) -> Self {
-        let el = get_next_element();
-        if let Some(el) = el {
-            // If in debug mode, check that the hydrate element has the same tag as the argument.
-            #[cfg(debug_assertions)]
-            if tag != el.tag_name().to_ascii_lowercase() {
-                // Get the hydration key of the expected element.
-                let mut hk = get_current_id().unwrap();
-                hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
-                panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
-                    tag,
-                    el.tag_name().to_ascii_lowercase(),
-                    hk.0, hk.1
-                );
-            }
-
-            Self {
-                node: DomNode::from_web_sys(el.into()),
-            }
-        } else {
-            Self {
-                node: DomNode::element_from_tag(tag),
-            }
-        }
-    }
 
     /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
     /// node.
@@ -265,6 +209,64 @@ impl GenericNode for HydrateNode {
     fn clone_node(&self) -> Self {
         Self {
             node: self.node.clone_node(),
+        }
+    }
+}
+
+impl GenericNodeElements for HydrateNode {
+    /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
+    /// node.
+    fn element<T: SycamoreElement>() -> Self {
+        let el = get_next_element();
+        if let Some(el) = el {
+            // If in debug mode, check that the hydrate element has the same tag as the argument.
+            #[cfg(debug_assertions)]
+            if T::TAG_NAME.to_ascii_lowercase() != el.tag_name().to_ascii_lowercase() {
+                // Get the hydration key of the expected element.
+                let mut hk = get_current_id().unwrap();
+                hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
+                panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
+                    T::TAG_NAME,
+                    el.tag_name().to_ascii_lowercase(),
+                    hk.0, hk.1
+                );
+            }
+
+            Self {
+                node: DomNode::from_web_sys(el.into()),
+            }
+        } else {
+            Self {
+                node: DomNode::element::<T>(),
+            }
+        }
+    }
+
+    /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
+    /// node.
+    fn element_from_tag(tag: &str) -> Self {
+        let el = get_next_element();
+        if let Some(el) = el {
+            // If in debug mode, check that the hydrate element has the same tag as the argument.
+            #[cfg(debug_assertions)]
+            if tag != el.tag_name().to_ascii_lowercase() {
+                // Get the hydration key of the expected element.
+                let mut hk = get_current_id().unwrap();
+                hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
+                panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
+                    tag,
+                    el.tag_name().to_ascii_lowercase(),
+                    hk.0, hk.1
+                );
+            }
+
+            Self {
+                node: DomNode::from_web_sys(el.into()),
+            }
+        } else {
+            Self {
+                node: DomNode::element_from_tag(tag),
+            }
         }
     }
 }

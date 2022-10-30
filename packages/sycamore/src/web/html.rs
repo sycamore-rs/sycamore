@@ -5,7 +5,7 @@
 pub use sycamore_web::on_mount;
 
 use crate::builder::ElementBuilder;
-use crate::generic_node::SycamoreElement;
+use crate::generic_node::{SycamoreElement, GenericNodeElements};
 use crate::prelude::*;
 
 /// MBE for generating elements.
@@ -64,7 +64,7 @@ macro_rules! define_element_impl {
 
         #[allow(non_snake_case)]
         $(#[$attr])*
-        pub fn $el<'a, G: GenericNode>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
+        pub fn $el<'a, G: GenericNodeElements>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
             ElementBuilder::new(move |_| G::element::<$el>())
         }
     };

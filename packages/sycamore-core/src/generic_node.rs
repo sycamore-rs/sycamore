@@ -46,12 +46,6 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Whether this rendering backend hydrates nodes on the client side.
     const CLIENT_SIDE_HYDRATION: bool = false;
 
-    /// Create a new element node.
-    fn element<T: SycamoreElement>() -> Self;
-
-    /// Create a new element node from a tag string.
-    fn element_from_tag(tag: &str) -> Self;
-
     /// Create a new text node.
     fn text_node(text: &str) -> Self;
 
@@ -144,4 +138,15 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a deep clone of the node.
     #[must_use = "clone_node returns a new node"]
     fn clone_node(&self) -> Self;
+}
+
+/// Extension trait for [`GenericNode`] to provide additional methods related to element creation.
+/// Not all backends need to implement this, but that means that you can only use components, not
+/// elements in `view!`.
+pub trait GenericNodeElements: GenericNode {
+    /// Create a new element node.
+    fn element<T: SycamoreElement>() -> Self;
+
+    /// Create a new element node from a tag string.
+    fn element_from_tag(tag: &str) -> Self;
 }
