@@ -121,10 +121,10 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn attr(
         self,
-        name: &'a str,
-        value: impl AsRef<str> + 'a,
+        name: impl Into<Cow<'static, str>>,
+        value: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.set_attribute(name, value.as_ref()))
+        self.map(move |_, el| el.set_attribute(name.into(), value.into()))
     }
 
     /// Set the boolean attribute of the element.
@@ -139,12 +139,12 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn bool_attr(
         self,
-        name: &'a str,
+        name: impl Into<Cow<'static, str>>,
         value: bool,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         self.map(move |_, el| {
             if value {
-                el.set_attribute(name, "");
+                el.set_attribute(name.into(), "".into());
             }
         })
     }
@@ -162,19 +162,20 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// input().dyn_attr("type", || Some(*input_type.get()))
     /// # .view(cx) }
     /// ```
-    pub fn dyn_attr<S: AsRef<str> + 'a>(
+    pub fn dyn_attr<S: Into<Cow<'static, str>> + 'a>(
         self,
-        name: &'a str,
+        name: impl Into<Cow<'static, str>>,
         mut value: impl FnMut() -> Option<S> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        let name = name.into();
         self.map(move |cx, el| {
             let el = el.clone();
             create_effect(cx, move || {
                 let value = value();
                 if let Some(value) = value {
-                    el.set_attribute(name, value.as_ref());
+                    el.set_attribute(name.clone(), value.into());
                 } else {
-                    el.remove_attribute(name);
+                    el.remove_attribute(name.clone());
                 }
             });
         })
@@ -193,16 +194,17 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn dyn_bool_attr(
         self,
-        name: &'a str,
+        name: impl Into<Cow<'static, str>>,
         mut value: impl FnMut() -> bool + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        let name = name.into();
         self.map(move |cx, el| {
             let el = el.clone();
             create_effect(cx, move || {
                 if value() {
-                    el.set_attribute(name, "");
+                    el.set_attribute(name.clone(), "".into());
                 } else {
-                    el.remove_attribute(name);
+                    el.remove_attribute(name.clone());
                 }
             });
         })
@@ -321,9 +323,9 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     pub fn id(
         self,
-        class: impl AsRef<str> + 'a,
+        class: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.set_attribute("id", class.as_ref()))
+        self.map(move |_, el| el.set_attribute("id".into(), class.into()))
     }
 
     /// Set a property on the element.

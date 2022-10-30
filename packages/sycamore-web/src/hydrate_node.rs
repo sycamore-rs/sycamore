@@ -108,17 +108,17 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn set_attribute(&self, name: &str, value: &str) {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
         self.node.set_attribute(name, value);
     }
 
     #[inline]
-    fn remove_attribute(&self, name: &str) {
+    fn remove_attribute(&self, name: Cow<'static, str>) {
         self.node.remove_attribute(name);
     }
 
     #[inline]
-    fn set_class_name(&self, value: &str) {
+    fn set_class_name(&self, value: Cow<'static, str>) {
         self.node.set_class_name(value);
     }
 

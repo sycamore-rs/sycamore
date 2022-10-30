@@ -12,6 +12,7 @@ pub mod svg;
 
 mod utils;
 
+use sycamore::generic_node::GenericNodeElements;
 use sycamore::prelude::*;
 use sycamore::web::html;
 use utils::*;

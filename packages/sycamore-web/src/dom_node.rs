@@ -172,31 +172,31 @@ impl GenericNode for DomNode {
         }
     }
 
-    fn set_attribute(&self, name: &str, value: &str) {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
         self.node
             .unchecked_ref::<Element>()
-            .set_attribute(intern(name), value)
+            .set_attribute(intern(&name), &value)
             .unwrap_throw();
     }
 
-    fn remove_attribute(&self, name: &str) {
+    fn remove_attribute(&self, name: Cow<'static, str>) {
         self.node
             .unchecked_ref::<Element>()
-            .remove_attribute(intern(name))
+            .remove_attribute(intern(&name))
             .unwrap_throw();
     }
 
-    fn set_class_name(&self, value: &str) {
+    fn set_class_name(&self, value: Cow<'static, str>) {
         if self
             .node
             .unchecked_ref::<ElementTrySetClassName>()
-            .try_set_class_name(value)
+            .try_set_class_name(&value)
             .is_err()
         {
             // Node is a SVG element.
             self.node
                 .unchecked_ref::<Element>()
-                .set_attribute("class", value)
+                .set_attribute("class", &value)
                 .unwrap_throw();
         }
     }

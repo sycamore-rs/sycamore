@@ -12,9 +12,9 @@ use super::*;
 fn insert_create_nodes() {
     create_scope_immediate(|cx| {
         let nodes = [
-            DomNode::text_node("1"),
-            DomNode::text_node("2"),
-            DomNode::text_node("3"),
+            DomNode::text_node("1".into()),
+            DomNode::text_node("2".into()),
+            DomNode::text_node("3".into()),
         ];
         let parent = DomNode::element::<html::div>();
 
@@ -33,9 +33,9 @@ fn insert_create_nodes() {
 #[wasm_bindgen_test]
 fn reconcile_pop_nodes() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
     let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
@@ -52,9 +52,9 @@ fn reconcile_pop_nodes() {
 #[wasm_bindgen_test]
 fn reconcile_remove_nodes() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
     let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
@@ -75,9 +75,9 @@ fn reconcile_remove_nodes() {
 #[wasm_bindgen_test]
 fn reconcile_append_nodes() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
     let parent = DomNode::element::<html::div>();
     let child_nodes = nodes[..2].to_vec();
@@ -94,9 +94,9 @@ fn reconcile_append_nodes() {
 #[wasm_bindgen_test]
 fn reconcile_swap_nodes() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
     let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
@@ -117,9 +117,9 @@ fn reconcile_swap_nodes() {
 #[wasm_bindgen_test]
 fn reconcile_clear_nodes() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
     let parent = DomNode::element::<html::div>();
     let child_nodes = nodes.to_vec();
@@ -136,12 +136,12 @@ fn reconcile_clear_nodes() {
 #[wasm_bindgen_test]
 fn clear_and_insert_with_other_nodes_at_same_level() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
-    let before = DomNode::text_node("before");
-    let after = DomNode::text_node("after");
+    let before = DomNode::text_node("before".into());
+    let after = DomNode::text_node("after".into());
     let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();
@@ -162,12 +162,12 @@ fn clear_and_insert_with_other_nodes_at_same_level() {
 #[wasm_bindgen_test]
 fn clear_with_other_nodes_at_same_level() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
-    let before = DomNode::text_node("before");
-    let after = DomNode::text_node("after");
+    let before = DomNode::text_node("before".into());
+    let after = DomNode::text_node("after".into());
     let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();
@@ -185,12 +185,12 @@ fn clear_with_other_nodes_at_same_level() {
 #[wasm_bindgen_test]
 fn insert_with_other_nodes_at_same_level() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
-    let before = DomNode::text_node("before");
-    let after = DomNode::text_node("after");
+    let before = DomNode::text_node("before".into());
+    let after = DomNode::text_node("after".into());
     let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();
@@ -208,12 +208,12 @@ fn insert_with_other_nodes_at_same_level() {
 #[wasm_bindgen_test]
 fn reconcile_with_other_nodes_at_same_level() {
     let nodes = [
-        DomNode::text_node("1"),
-        DomNode::text_node("2"),
-        DomNode::text_node("3"),
+        DomNode::text_node("1".into()),
+        DomNode::text_node("2".into()),
+        DomNode::text_node("3".into()),
     ];
-    let before = DomNode::text_node("before");
-    let after = DomNode::text_node("after");
+    let before = DomNode::text_node("before".into());
+    let after = DomNode::text_node("after".into());
     let parent = DomNode::element::<html::div>();
     parent.append_child(&before);
     let child_nodes = nodes.to_vec();

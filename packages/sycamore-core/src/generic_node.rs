@@ -68,16 +68,18 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn marker_with_text(text: Cow<'static, str>) -> Self;
 
     /// Sets an attribute on a node.
-    fn set_attribute(&self, name: &str, value: &str);
+    /// If the attribute does not exist, it is added. If the attribute already exists, the value is
+    /// overridden.
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>);
 
     /// Removes an attribute on a node.
-    fn remove_attribute(&self, name: &str);
+    fn remove_attribute(&self, name: Cow<'static, str>);
 
     /// Sets the `class` attribute on a node.
     /// This should have the same outcome as calling `set_attribute("class", value)`.
     /// For `DomNode`, this sets the `className` property directly which is about 2x faster (on
     /// Chrome).
-    fn set_class_name(&self, value: &str);
+    fn set_class_name(&self, value: Cow<'static, str>);
 
     /// Add a class to the element.
     /// If multiple classes are specified, delimited by spaces, all the classes should be added.

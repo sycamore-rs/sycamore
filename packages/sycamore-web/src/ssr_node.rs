@@ -130,19 +130,19 @@ impl GenericNode for SsrNode {
         Self::new(SsrNodeType::Comment(RefCell::new(Comment(text))))
     }
 
-    fn set_attribute(&self, name: &str, value: &str) {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
         self.unwrap_element()
             .borrow_mut()
             .attributes
-            .insert(name.to_string(), value.to_string());
+            .insert(name, value);
     }
 
-    fn remove_attribute(&self, name: &str) {
-        self.unwrap_element().borrow_mut().attributes.remove(name);
+    fn remove_attribute(&self, name: Cow<'static, str>) {
+        self.unwrap_element().borrow_mut().attributes.remove(&name);
     }
 
-    fn set_class_name(&self, value: &str) {
-        self.set_attribute("class", value);
+    fn set_class_name(&self, value: Cow<'static, str>) {
+        self.set_attribute("class".into(), value);
     }
 
     fn add_class(&self, class: &str) {
@@ -156,9 +156,9 @@ impl GenericNode for SsrNode {
 
             class_set.insert(class);
 
-            *classes = class_set.drain().collect::<Vec<_>>().join(" ");
+            *classes = class_set.drain().collect::<Vec<_>>().join(" ").into();
         } else {
-            attributes.insert("class".to_string(), class.to_owned());
+            attributes.insert("class".into(), class.to_string().into());
         }
     }
 
@@ -173,7 +173,7 @@ impl GenericNode for SsrNode {
 
             class_set.remove(class);
 
-            *classes = class_set.drain().collect::<Vec<_>>().join(" ");
+            *classes = class_set.drain().collect::<Vec<_>>().join(" ").into();
         }
     }
 
@@ -324,7 +324,7 @@ impl GenericNodeElements for SsrNode {
         let hk = get_next_id();
         let mut attributes = IndexMap::new();
         if let Some(hk) = hk {
-            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
+            attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
         }
         Self::new(SsrNodeType::Element(RefCell::new(Element {
             name: Cow::Borrowed(T::TAG_NAME),
@@ -337,7 +337,7 @@ impl GenericNodeElements for SsrNode {
         let hk = get_next_id();
         let mut attributes = IndexMap::new();
         if let Some(hk) = hk {
-            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
+            attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
         }
         Self::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag,
@@ -378,7 +378,7 @@ impl WriteToString for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 struct Element {
     name: Cow<'static, str>,
-    attributes: IndexMap<String, String>,
+    attributes: IndexMap<Cow<'static, str>, Cow<'static, str>>,
     children: Vec<SsrNode>,
 }
 
@@ -467,6 +467,7 @@ pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String
 
 #[cfg(test)]
 mod tests {
+    use sycamore::generic_node::GenericNodeElements;
     use sycamore::prelude::*;
     use sycamore::render_to_string;
     use sycamore::web::html;

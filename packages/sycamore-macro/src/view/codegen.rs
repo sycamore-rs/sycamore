@@ -271,14 +271,14 @@ impl Codegen {
                     // times.
                     quote! {
                         if ::std::cfg!(target_arch = "wasm32") {
-                            ::sycamore::rt::intern(#text)
+                            ::std::borrow::Cow::Borrowed(::sycamore::rt::intern(#text))
                         } else {
-                            #text
+                            ::std::borrow::Cow::Borrowed(#text)
                         }
                     }
                 } else {
                     quote! {
-                        &::std::string::ToString::to_string(&#expr)
+                        ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#expr))
                     }
                 };
                 let quoted_set_attribute = if is_class {
@@ -287,7 +287,7 @@ impl Codegen {
                     }
                 } else {
                     quote! {
-                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, #name, #quoted_text);
+                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), #quoted_text);
                     }
                 };
 
@@ -306,9 +306,9 @@ impl Codegen {
                 let name = name.to_string();
                 let quoted_set_attribute = quote! {
                     if #expr {
-                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, #name, "");
+                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), ::std::borrow::Cow::Borrowed(""));
                     } else {
-                        ::sycamore::generic_node::GenericNode::remove_attribute(&__el, #name);
+                        ::sycamore::generic_node::GenericNode::remove_attribute(&__el, ::std::borrow::Cow::Borrowed(#name));
                     }
                 };
 
