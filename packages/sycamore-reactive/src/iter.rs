@@ -21,7 +21,7 @@ use crate::*;
 /// * `key_fn` - A closure that returns an _unique_ key to each entry.
 ///
 ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
-pub fn map_keyed<'a, T, K, U>(
+pub fn map_keyed<'a, T, K, U: 'static>(
     cx: Scope<'a>,
     list: &'a ReadSignal<Vec<T>>,
     map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
@@ -194,7 +194,7 @@ where
 /// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a [`Signal`])
 ///   and therefore reactive.
 /// * `map_fn` - A closure that maps from the input type to the output type.
-pub fn map_indexed<'a, T, U>(
+pub fn map_indexed<'a, T, U: 'static>(
     cx: Scope<'a>,
     list: &'a ReadSignal<Vec<T>>,
     map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,

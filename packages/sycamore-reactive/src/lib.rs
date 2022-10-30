@@ -99,11 +99,6 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
             _phantom: PhantomData,
         }
     }
-
-    /// Alias for `self.raw.arena.alloc`.
-    fn alloc<T>(&self, value: T) -> &'a mut T {
-        self.raw.arena.alloc(value)
-    }
 }
 
 /// A type-alias for [`BoundedScope`] where both lifetimes are the same.
@@ -342,8 +337,37 @@ pub fn create_scope_immediate(f: impl for<'a> FnOnce(Scope<'a>)) {
 /// let _ = outer.unwrap();
 /// # });
 /// ```
-pub fn create_ref<T>(cx: Scope, value: T) -> &T {
+pub fn create_ref<T: 'static>(cx: Scope, value: T) -> &T {
     cx.raw.arena.alloc(value)
+}
+
+/// Allocate a new arbitrary value under the current [`Scope`].
+/// The allocated value lasts as long as the scope and cannot be used outside of the scope.
+///
+/// # Ref lifetime
+///
+/// The lifetime of the returned ref is the same as the [`Scope`].
+/// As such, the reference cannot escape the [`Scope`].
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let mut outer = None;
+/// let disposer = create_child_scope(cx, |cx| {
+///     let data = create_ref(cx, 0);
+///     let raw: &i32 = &data;
+///     outer = Some(raw);
+///     //           ^^^
+/// });
+/// disposer();
+/// let _ = outer.unwrap();
+/// # });
+/// ```
+/// 
+/// # Safety
+/// 
+/// TODO: Explain why this is unsafe.
+pub unsafe fn create_ref_unsafe<'a, T: 'a>(cx: Scope<'a>, value: T) -> &'a T {
+    cx.raw.arena.alloc_non_static(value)
 }
 
 /// Adds a callback that is called when the scope is destroyed.

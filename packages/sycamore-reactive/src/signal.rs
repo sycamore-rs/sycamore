@@ -164,7 +164,7 @@ impl<T> ReadSignal<T> {
     /// # });
     /// ```
     #[must_use]
-    pub fn map<'a, U>(
+    pub fn map<'a, U: 'static>(
         &'a self,
         cx: Scope<'a>,
         mut f: impl FnMut(&T) -> U + 'a,
@@ -435,7 +435,7 @@ impl<'a, T> AnyReadSignal<'a> for ReadSignal<T> {
 ///     outer = Some(signal);
 /// });
 /// ```
-pub fn create_signal<T>(cx: Scope, value: T) -> &Signal<T> {
+pub fn create_signal<T: 'static>(cx: Scope, value: T) -> &Signal<T> {
     let signal = Signal::new(value);
     create_ref(cx, signal)
 }
@@ -443,7 +443,7 @@ pub fn create_signal<T>(cx: Scope, value: T) -> &Signal<T> {
 /// Create a new [`Signal`] under the current [`Scope`] but with an initial value wrapped in a
 /// [`Rc`]. This is useful to avoid having to clone a value that is already wrapped in a [`Rc`] when
 /// creating a new signal. Otherwise, this is identical to [`create_signal`].
-pub fn create_signal_from_rc<T>(cx: Scope, value: Rc<T>) -> &Signal<T> {
+pub fn create_signal_from_rc<T: 'static>(cx: Scope, value: Rc<T>) -> &Signal<T> {
     let signal = Signal(ReadSignal {
         value: RefCell::new(value),
         emitter: Default::default(),

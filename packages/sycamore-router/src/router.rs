@@ -211,7 +211,7 @@ where
 #[component]
 pub fn Router<'a, G: Html, R, F, I>(cx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
 where
-    R: Route + 'a,
+    R: Route + 'static,
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration + 'static,
 {
@@ -235,7 +235,7 @@ pub fn RouterBase<'a, G: Html, R, F, I>(
     props: RouterBaseProps<'a, R, F, I, G>,
 ) -> View<G>
 where
-    R: Route + 'a,
+    R: Route + 'static,
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration + 'static,
 {
