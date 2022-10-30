@@ -106,7 +106,7 @@ jobs:
         shell: bash {0} # Do not fail fast. webdriver-ts currently spits out errors for tsc.
 
       - name: Run benchmark
-        run: cd ./js-framework-benchmark && npm run bench -- --headless
+        run: cd ./js-framework-benchmark && npm run bench -- --headless --framework keyed/sycamore keyed/sycamore-baseline keyed/wasm-bindgen
 
       - name: Results
         run: cd ./js-framework-benchmark && npm run results
