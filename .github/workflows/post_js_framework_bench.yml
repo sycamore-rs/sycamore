@@ -13,7 +13,7 @@ jobs:
 
     env:
       MSG_FOOTER: |
-        Workflow: [${{ github.workflow_run.id }}](/${{ github.repository }}/actions/runs/${{ github.workflow_run.id }})
+        Workflow: [${{ github.event.workflow_run.id }}](/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }})
         *Adding new commits will generate a new report*
 
     steps:
@@ -30,15 +30,15 @@ jobs:
     - name: Post results
       uses: actions/github-script@v6
       env:
-        COMMENT_ID: ${{ steps.create_comment.outputs.result }}
+        ISSUE_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
       with:
         script: |
           const fs = require('fs');
           const path = require('path');
           const benchResults = fs.readFileSync('bench-results/BENCH_RESULTS.txt');
 
-          github.rest.issues.updateComment({
-            comment_id: process.env.COMMENT_ID,
+          github.rest.issues.createComment({
+            issue_number: process.env.ISSUE_NUMBER,
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: benchResults + process.env.MSG_FOOTER,
