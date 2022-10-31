@@ -1,18 +1,18 @@
 name: Post comment for JS framework benchmark
 on:
   workflow_run:
-    workflows: ["JS framework benchmark"]
+    workflows: [JS framework benchmark]
     types:
       - completed
 
 jobs:
-  post-js-framework-benchmark-comment:
-    name: Post JS framework benchmark comment
+  post-js-framework-benchmark-comment-results:
+    name: Post JS framework benchmark results
     runs-on: ubuntu-latest
 
     env:
       MSG_FOOTER: |
-        Workflow: [${{ github.run_id }}](/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        Workflow: [${{ github.workflow_run.id }}](/${{ github.repository }}/actions/runs/${{ github.workflow_run.id }})
         *Adding new commits will generate a new report*
 
     steps:

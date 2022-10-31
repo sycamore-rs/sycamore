@@ -16,19 +16,6 @@ jobs:
       'performance'))
 
     steps:
-      # Create a message on the issue thread
-      - name: Post comment
-        uses: jungwinter/comment@v1
-        id: create_comment
-        with:
-          type: create
-          body: |
-            Started a benchmark for this pull request.
-            This comment will be updated with the results.
-            ${{ env.MSG_FOOTER }}
-          issue_number: ${{ github.event.number }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       # Install necessary tooling
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -110,13 +97,11 @@ jobs:
         run: |
           results=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json)
           echo "$results"
-
-      - name: Run results_diff
-        run: cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json &> BENCH_RESULTS.txt
+          echo "$results" &> BENCH_RESULTS.txt
       
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: bench-results
-          path: ./sycamore/packages/tools/bench-diff/BENCH_RESULTS.txt
+          path: BENCH_RESULTS.txt
           retention-days: 1
