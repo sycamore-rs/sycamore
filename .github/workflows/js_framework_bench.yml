@@ -78,6 +78,8 @@ jobs:
           (cd server && npm ci)
           (cd webdriver-ts && npm ci)
           (cd webdriver-ts-results && npm ci)
+          (cd frameworks/keyed/sycamore && npm install)
+          (cd frameworks/keyed/sycamore-baseline && npm install)
 
       - name: Start server
         run: cd ./js-framework-benchmark && npm start &
