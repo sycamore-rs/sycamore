@@ -10,7 +10,7 @@ on:
       - "**/*.rs"
 jobs:
   format:
-    name: cargo fmt
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

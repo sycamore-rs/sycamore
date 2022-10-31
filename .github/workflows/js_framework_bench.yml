@@ -1,4 +1,4 @@
-name: JS Framework Benchmark
+name: JS framework benchmark
 
 on:
   pull_request:
@@ -6,19 +6,14 @@ on:
     types: [labeled, synchronize]
 
 jobs:
-  bench:
-    name: Bench
+  js-bench:
+    name: JS framework benchmark
     runs-on: ubuntu-latest
 
     if: >-
       (github.event.action == 'labeled' && github.event.label.name == 'performance') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name,
       'performance'))
-
-    env:
-      MSG_FOOTER: |
-        Workflow: [${{ github.run_id }}](/${{ github.repository }}/actions/runs/${{ github.run_id }})
-        *Adding new commits will generate a new report*
 
     steps:
       # Create a message on the issue thread
@@ -113,36 +108,15 @@ jobs:
 
       - name: Log results
         run: |
-          msg=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json)
-          echo "$msg"
+          results=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json)
+          echo "$results"
 
       - name: Run results_diff
-        run: cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json &> bench.txt
-
-      - name: Read file contents
-        id: read_bench
-        uses: andstor/file-reader-action@v1
+        run: cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json &> BENCH_RESULTS.txt
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
         with:
-          path: ./sycamore/packages/tools/bench-diff/bench.txt
-
-      - name: Post results
-        uses: jungwinter/comment@v1
-        with:
-          type: edit
-          body: |
-            ${{ steps.read_bench.outputs.contents }}
-            ${{ env.MSG_FOOTER }}
-          comment_id: ${{ steps.create_comment.outputs.id }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Post failure
-        if: ${{ failure() }}
-        uses: jungwinter/comment@v1
-        with:
-          type: edit
-          body: |
-            **The benchmark failed to complete.**
-            Please see the workflow for more details.
-            ${{ env.MSG_FOOTER }}
-          comment_id: ${{ steps.create_comment.outputs.id }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: bench-results
+          path: ./sycamore/packages/tools/bench-diff/BENCH_RESULTS.txt
+          retention-days: 1

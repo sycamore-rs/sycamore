@@ -1,0 +1,44 @@
+name: Post comment for JS framework benchmark
+on:
+  workflow_run:
+    workflows: ["JS framework benchmark"]
+    types:
+      - completed
+
+jobs:
+  post-js-framework-benchmark-comment:
+    name: Post JS framework benchmark comment
+    runs-on: ubuntu-latest
+
+    env:
+      MSG_FOOTER: |
+        Workflow: [${{ github.run_id }}](/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        *Adding new commits will generate a new report*
+
+    steps:
+    - name: Download artifact
+      id: download-artifact
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: js_framework_bench.yml
+        run_id: ${{ github.event.workflow_run.id }}
+        name: bench-results
+        path: bench-results/
+
+    - name: Post results
+      uses: actions/github-script@v6
+      env:
+        COMMENT_ID: ${{ steps.create_comment.outputs.result }}
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const benchResults = fs.readDirSync(path.join(__dirname, 'bench-results/BENCH_RESULTS.txt'));
+
+          github.rest.issues.updateComment({
+            comment_id: process.env.COMMENT_ID,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: benchResults + process.env.MSG_FOOTER,
+          });
