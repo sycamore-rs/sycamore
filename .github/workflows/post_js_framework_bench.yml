@@ -35,7 +35,7 @@ jobs:
         script: |
           const fs = require('fs');
           const path = require('path');
-          const benchResults = fs.readDirSync('bench-results/BENCH_RESULTS.txt');
+          const benchResults = fs.readdirSync('bench-results/BENCH_RESULTS.txt');
 
           github.rest.issues.updateComment({
             comment_id: process.env.COMMENT_ID,
