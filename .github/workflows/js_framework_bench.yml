@@ -38,7 +38,7 @@ jobs:
           node-version: 16.x
 
       - name: Install chromedriver
-        uses: nanasess/setup-chromedriver@master
+        uses: nanasess/setup-chromedriver@v1
 
       # Checkout repositories into respective directories
       - uses: actions/checkout@v2
@@ -83,9 +83,7 @@ jobs:
         run: cd ./js-framework-benchmark && npm start &
 
       - name: Build benchmark driver
-        run: |
-          (cd ./js-framework-benchmark/webdriver-ts && npm run compile)
-        shell: bash {0} # Do not fail fast. webdriver-ts currently spits out errors for tsc.
+        run: cd ./js-framework-benchmark/webdriver-ts && npm run compile
 
       - name: Run benchmark
         run: cd ./js-framework-benchmark && npm run bench -- --headless --framework keyed/sycamore keyed/sycamore-baseline keyed/wasm-bindgen
