@@ -33,8 +33,8 @@ jobs:
         script: |
           const fs = require('fs');
           const path = require('path');
-          const benchResults = fs.readFileSync('bench-results/BENCH_RESULTS.txt');
-          const prNumber = fs.readFileSync('bench-results/PR_NUMBER.txt');
+          const benchResults = fs.readFileSync('bench-results/BENCH_RESULTS.txt', 'utf8');
+          const prNumber = fs.readFileSync('bench-results/PR_NUMBER.txt', 'utf8');
 
           console.log(benchResults);
           console.log("PR number", prNumber);
