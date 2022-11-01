@@ -29,13 +29,15 @@ jobs:
 
     - name: Post results
       uses: actions/github-script@v6
-      env:
-        ISSUE_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
       with:
         script: |
           const fs = require('fs');
           const path = require('path');
           const benchResults = fs.readFileSync('bench-results/BENCH_RESULTS.txt');
+          const prNumber = fs.readFileSync('bench-results/PR_NUMBER.txt');
+
+          console.log(benchResults);
+          console.log("PR number", prNumber);
 
           github.rest.issues.createComment({
             issue_number: process.env.ISSUE_NUMBER,
