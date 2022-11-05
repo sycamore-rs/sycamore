@@ -5,6 +5,7 @@ use sycamore_core::view::View;
 use wasm_bindgen::JsCast;
 use web_sys::{window, Comment, Element, Node};
 
+use crate::Html;
 use crate::hydrate_node::HydrateNode;
 
 const COMMENT_NODE_TYPE: u16 = 8;

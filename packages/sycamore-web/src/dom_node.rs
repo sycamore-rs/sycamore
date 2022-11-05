@@ -81,14 +81,6 @@ impl DomNode {
         }
         self.id.get()
     }
-
-    /// Create a new [`DomNode`] from a raw [`web_sys::Node`].
-    pub fn from_web_sys(node: Node) -> Self {
-        Self {
-            id: Default::default(),
-            node,
-        }
-    }
 }
 
 impl PartialEq for DomNode {
@@ -357,6 +349,13 @@ impl Html for DomNode {
 
     fn to_web_sys(&self) -> web_sys::Node {
         self.node.clone()
+    }
+
+    fn from_web_sys(node: Node) -> Self {
+        Self {
+            id: Default::default(),
+            node,
+        }
     }
 }
 

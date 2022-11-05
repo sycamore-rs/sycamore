@@ -35,13 +35,6 @@ impl HydrateNode {
     pub(super) fn get_node_id(&self) -> NodeId {
         self.node.get_node_id()
     }
-
-    /// Create a new [`DomNode`] from a raw [`web_sys::Node`].
-    pub fn from_web_sys(node: Node) -> Self {
-        Self {
-            node: DomNode::from_web_sys(node),
-        }
-    }
 }
 
 impl PartialEq for HydrateNode {
@@ -277,6 +270,12 @@ impl Html for HydrateNode {
 
     fn to_web_sys(&self) -> web_sys::Node {
         self.node.to_web_sys()
+    }
+
+    fn from_web_sys(node: Node) -> Self {
+        Self {
+            node: DomNode::from_web_sys(node),
+        }
     }
 }
 

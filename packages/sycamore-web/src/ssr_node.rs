@@ -354,6 +354,11 @@ impl Html for SsrNode {
     fn to_web_sys(&self) -> web_sys::Node {
         panic!("SsrNode cannot be converted into web_sys::Node");
     }
+
+    /// Calling this on a [`SsrNode`] will unconditionally panic in all circumstances.
+    fn from_web_sys(_: web_sys::Node) -> Self {
+        panic!("SsrNode cannot be converted from web_sys::Node");
+    }
 }
 
 /// Write the [`SsrNode`] to a string buffer.

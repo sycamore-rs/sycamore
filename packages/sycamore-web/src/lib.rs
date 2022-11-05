@@ -18,8 +18,6 @@ mod hydrate_node;
 #[cfg(feature = "ssr")]
 mod ssr_node;
 
-use std::any::{Any, TypeId};
-
 pub use dom_node::*;
 #[cfg(feature = "hydrate")]
 pub use hydrate_node::*;
@@ -45,46 +43,26 @@ pub trait Html:
     /// For certain backends, this is not possible (e.g. [`SsrNode`]). In that case, calling this
     /// will panic at runtime.
     fn to_web_sys(&self) -> web_sys::Node;
-}
 
-/// Create a generic `Html` node from a `web_sys::Node`.
-///
-/// # Panics
-/// When G is not either a `DomNode` or a `HydrateNode`.
-///
-/// # Examples
-///
-/// ```
-/// # fn create_raw_node() -> web_sys::Node {
-/// #     todo!()
-/// # }
-/// use sycamore::prelude::*;
-/// /// Create a `View` from a foreign `web_sys::Node`
-/// fn my_raw_node_view<G: Html>() -> View<G> {
-///     // `create_raw_node` is the logic behind creating the foreign web_sys node
-///     let raw_node: web_sys::Node = create_raw_node();
-///
-///     // convert a `web_sys::Node` into G
-///     let node = sycamore::web::from_web_sys(raw_node);
-///
-///     // return generic node in a `View`
-///     View::new_node(node)
-/// }
-/// ```
-pub fn from_web_sys<G: Html>(node: web_sys::Node) -> G {
-    let type_id = TypeId::of::<G>();
-
-    if TypeId::of::<DomNode>() == type_id {
-        let node = DomNode::from_web_sys(node);
-        return (&node as &dyn Any).downcast_ref().cloned().unwrap();
-    }
-    #[cfg(feature = "hydrate")]
-    if TypeId::of::<HydrateNode>() == type_id {
-        let node = HydrateNode::from_web_sys(node);
-        return (&node as &dyn Any).downcast_ref().cloned().unwrap();
-    }
-
-    panic!("expected GenericNode to either be a DomNode or a HydrateNode");
+    /// Convert a raw [`web_sys::Node`] into a [`GenericNode`].
+    ///
+    /// This is the inverse of [`to_web_sys`]. For certain backends, this is not possible (e.g.
+    /// [`SsrNode`]). In that case, calling this will panic at runtime.
+    ///
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sycamore::prelude::*;
+    /// # fn get_web_sys_node() -> web_sys::Node {
+    /// #     todo!()
+    /// # }
+    /// # fn my_raw_node_view<G: Html>() -> View<G> {
+    /// let raw_node: web_sys::Node = get_web_sys_node();
+    /// let node = G::from_web_sys(raw_node);
+    /// # }
+    /// ```
+    fn from_web_sys(node: web_sys::Node) -> Self;
 }
 
 /// Queue up a callback to be executed when the component is mounted.
