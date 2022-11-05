@@ -105,16 +105,12 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|cx| {
-        view! { cx,
-            App {}
-        }
-    });
+    sycamore::render(App);
 }
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    // Initialize application state
+    // Initialize application state from localStorage.
     let local_storage = web_sys::window()
         .unwrap()
         .local_storage()
@@ -122,18 +118,19 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         .expect("user has not enabled localStorage");
 
     let todos = if let Ok(Some(app_state)) = local_storage.get_item(KEY) {
-        serde_json::from_str(&app_state).unwrap_or_else(|_| create_rc_signal(Vec::new()))
+        serde_json::from_str(&app_state).unwrap_or_default()
     } else {
-        create_rc_signal(Vec::new())
+        Default::default()
     };
     let app_state = AppState {
         todos,
         filter: create_rc_signal(Filter::get_filter_from_hash()),
     };
-    provide_context(cx, app_state);
-    // Set up an effect that runs a function anytime app_state.todos changes
+    let app_state = provide_context(cx, app_state);
+
+    // Set up an effect that runs whenever app_state.todos changes to save the todos to
+    // localStorage.
     create_effect(cx, move || {
-        let app_state = use_context::<AppState>(cx);
         for todo in app_state.todos.get().iter() {
             todo.track();
         }
@@ -145,12 +142,20 @@ fn App<G: Html>(cx: Scope) -> View<G> {
             .unwrap();
     });
 
+    let todos_empty = create_selector(cx, || app_state.todos.get().is_empty());
+
     view! { cx,
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 Header {}
-                List {}
-                Footer {}
+                (if *todos_empty.get() {
+                    view! { cx, }
+                } else {
+                    view! { cx,
+                        List {}
+                        Footer {}
+                    }
+                })
             }
             Copyright {}
         }
@@ -177,23 +182,19 @@ pub fn Copyright<G: Html>(cx: Scope) -> View<G> {
 #[component]
 pub fn Header<G: Html>(cx: Scope) -> View<G> {
     let app_state = use_context::<AppState>(cx);
-    let value = create_signal(cx, String::new());
-    let input_ref = create_node_ref(cx);
+    let input_value = create_signal(cx, String::new());
 
-    let handle_submit = |event: Event| {
+    let handle_keyup = |event: Event| {
         let event: KeyboardEvent = event.unchecked_into();
 
         if event.key() == "Enter" {
-            let mut task = value.get().as_ref().clone();
+            let mut task = input_value.get().as_ref().clone();
             task = task.trim().to_string();
 
             if !task.is_empty() {
                 app_state.add_todo(task);
-                value.set("".to_string());
-                input_ref
-                    .get::<DomNode>()
-                    .unchecked_into::<HtmlInputElement>()
-                    .set_value("");
+                // Reset input field.
+                input_value.set("".to_string());
             }
         }
     };
@@ -201,11 +202,10 @@ pub fn Header<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         header(class="header") {
             h1 { "todos" }
-            input(ref=input_ref,
-                class="new-todo",
+            input(class="new-todo",
                 placeholder="What needs to be done?",
-                bind:value=value,
-                on:keyup=handle_submit,
+                bind:value=input_value,
+                on:keyup=handle_keyup,
             )
         }
     }
@@ -221,49 +221,36 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
     let completed = create_selector(cx, || todo.get().completed);
     let id = todo.get().id;
 
-    let editing = create_signal(cx, false);
+    let is_editing = create_signal(cx, false);
     let input_ref = create_node_ref(cx);
-    let value = create_signal(cx, "".to_string());
+    let input_value = create_signal(cx, "".to_string());
 
-    let handle_input = |event: Event| {
-        let target: HtmlInputElement = event.target().unwrap().unchecked_into();
-        value.set(target.value());
-    };
-
-    let toggle_completed = |_| {
-        todo.set(Todo {
-            completed: !todo.get().completed,
-            ..todo.get().as_ref().clone()
-        });
-    };
+    let toggle_completed = |_| todo.modify().completed = !todo.get().completed;
 
     let handle_dblclick = move |_| {
-        editing.set(true);
+        is_editing.set(true);
         input_ref
             .get::<DomNode>()
             .unchecked_into::<HtmlInputElement>()
             .focus()
             .unwrap();
-        value.set(title());
+        input_value.set(title());
     };
 
     let handle_blur = move || {
-        editing.set(false);
+        is_editing.set(false);
 
-        let mut value = value.get().as_ref().clone();
+        let mut value = input_value.get().as_ref().clone();
         value = value.trim().to_string();
 
         if value.is_empty() {
             app_state.remove_todo(id);
         } else {
-            todo.set(Todo {
-                title: value,
-                ..todo.get().as_ref().clone()
-            })
+            todo.modify().title = value;
         }
     };
 
-    let handle_submit = move |event: Event| {
+    let handle_keyup = move |event: Event| {
         let event: KeyboardEvent = event.unchecked_into();
         match event.key().as_str() {
             "Enter" => handle_blur(),
@@ -272,7 +259,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
                     .get::<DomNode>()
                     .unchecked_into::<HtmlInputElement>()
                     .set_value(&title());
-                editing.set(false);
+                is_editing.set(false);
             }
             _ => {}
         }
@@ -294,7 +281,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
         format!(
             "{} {}",
             if *completed.get() { "completed" } else { "" },
-            if *editing.get() { "editing" } else { "" }
+            if *is_editing.get() { "editing" } else { "" }
         )
     };
 
@@ -313,18 +300,17 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
                 button(class="destroy", on:click=handle_destroy)
             }
 
-            (if *editing.get() {
+            (if *is_editing.get() {
                 view! { cx,
                     input(ref=input_ref,
                         class="edit",
-                        prop:value=&todo.get().title,
+                        bind:value=input_value,
                         on:blur=move |_| handle_blur(),
-                        on:keyup=handle_submit,
-                        on:input=handle_input,
+                        on:keyup=handle_keyup,
                     )
                 }
             } else {
-                View::empty()
+                view! { cx, }
             })
         }
     }
