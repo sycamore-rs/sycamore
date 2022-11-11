@@ -239,12 +239,12 @@ impl<T> Signal<T> {
     /// let state = create_signal(cx, 0);
     /// assert_eq!(*state.get(), 0);
     ///
-    /// state.change(|n| n + 1);
+    /// state.set_fn(|n| n + 1);
     /// assert_eq!(*state.get(), 1);
     /// # });
     /// ```
-    pub fn change<F: Fn(&T) -> T>(&self, change_fn: F) {
-        self.set(change_fn(&self.get_untracked()));
+    pub fn set_fn<F: Fn(&T) -> T>(&self, func: F) {
+        self.set(func(&self.get_untracked()));
     }
 
     /// Set the current value of the state wrapped in a [`Rc`]. Unlike [`Signal::set()`], this
@@ -280,8 +280,8 @@ impl<T> Signal<T> {
     /// Set the value of the state using a function that receives the current value _without_ triggering subscribers.
     ///
     /// Make sure you know what you are doing because this can make state inconsistent.
-    pub fn change_silent<F: Fn(&T) -> T>(&self, change_fn: F) {
-        self.set_silent(change_fn(&self.get_untracked()));
+    pub fn set_fn_silent<F: Fn(&T) -> T>(&self, func: F) {
+        self.set_silent(func(&self.get_untracked()));
     }
 
     /// Set the current value of the state wrapped in a [`Rc`] _without_ triggering subscribers.
@@ -663,7 +663,7 @@ mod tests {
             state.set(1);
             assert_eq!(*state.get(), 1);
 
-            state.change(|n| n + 1);
+            state.set_fn(|n| n + 1);
             assert_eq!(*state.get(), 2);
         });
     }
@@ -690,7 +690,7 @@ mod tests {
             state.set_silent(1);
             assert_eq!(*double.get(), 0); // double value is unchanged.
 
-            state.change_silent(|n| n + 1);
+            state.set_fn_silent(|n| n + 1);
             assert_eq!(*double.get(), 0); // double value is unchanged.
         });
     }
