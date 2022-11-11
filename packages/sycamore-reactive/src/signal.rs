@@ -280,8 +280,8 @@ impl<T> Signal<T> {
     /// Set the value of the state using a function that receives the current value _without_ triggering subscribers.
     ///
     /// Make sure you know what you are doing because this can make state inconsistent.
-    pub fn set_fn_silent<F: Fn(&T) -> T>(&self, func: F) {
-        self.set_silent(func(&self.get_untracked()));
+    pub fn set_fn_silent<F: Fn(&T) -> T>(&self, f: F) {
+        self.set_silent(f(&self.get_untracked()));
     }
 
     /// Set the current value of the state wrapped in a [`Rc`] _without_ triggering subscribers.
