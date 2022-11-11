@@ -243,8 +243,8 @@ impl<T> Signal<T> {
     /// assert_eq!(*state.get(), 1);
     /// # });
     /// ```
-    pub fn set_fn<F: Fn(&T) -> T>(&self, func: F) {
-        self.set(func(&self.get_untracked()));
+    pub fn set_fn<F: Fn(&T) -> T>(&self, f: F) {
+        self.set(f(&self.get_untracked()));
     }
 
     /// Set the current value of the state wrapped in a [`Rc`]. Unlike [`Signal::set()`], this
