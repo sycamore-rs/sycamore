@@ -254,13 +254,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
         let event: KeyboardEvent = event.unchecked_into();
         match event.key().as_str() {
             "Enter" => handle_blur(),
-            "Escape" => {
-                input_ref
-                    .get::<DomNode>()
-                    .unchecked_into::<HtmlInputElement>()
-                    .set_value(&title());
-                is_editing.set(false);
-            }
+            "Escape" => is_editing.set(false),
             _ => {}
         }
     };
