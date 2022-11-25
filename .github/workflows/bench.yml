@@ -1,4 +1,4 @@
-name: Bench
+name: Benchmark
 
 on: [pull_request]
 
