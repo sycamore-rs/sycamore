@@ -11,10 +11,10 @@ repository = "https://github.com/sycamore-rs/sycamore"
 version = "0.8.1"
 
 [dependencies]
-ahash = "0.8.0"
-bumpalo = { version = "3.11.0", features = ["boxed"] }
-indexmap = "1.9.1"
-serde = { version = "1.0.145", optional = true }
+ahash = "0.8.2"
+bumpalo = { version = "3.11.1", features = ["boxed"] }
+indexmap = "1.9.2"
+serde = { version = "1.0.147", optional = true }
 slotmap = "1.0.6"
 smallvec = { version = "1.10.0", features = ["const_generics"] }
 
