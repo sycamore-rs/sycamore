@@ -99,11 +99,6 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
             _phantom: PhantomData,
         }
     }
-
-    /// Alias for `self.raw.arena.alloc`.
-    fn alloc<T>(&self, value: T) -> &'a mut T {
-        self.raw.arena.alloc(value)
-    }
 }
 
 /// A type-alias for [`BoundedScope`] where both lifetimes are the same.
@@ -342,8 +337,41 @@ pub fn create_scope_immediate(f: impl for<'a> FnOnce(Scope<'a>)) {
 /// let _ = outer.unwrap();
 /// # });
 /// ```
-pub fn create_ref<T>(cx: Scope, value: T) -> &T {
+pub fn create_ref<T: 'static>(cx: Scope, value: T) -> &T {
     cx.raw.arena.alloc(value)
+}
+
+/// Allocate a new arbitrary value under the current [`Scope`].
+/// The allocated value lasts as long as the scope and cannot be used outside of the scope.
+///
+/// # Ref lifetime
+///
+/// The lifetime of the returned ref is the same as the [`Scope`].
+/// As such, the reference cannot escape the [`Scope`].
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let mut outer = None;
+/// let disposer = create_child_scope(cx, |cx| {
+///     let data = create_ref(cx, 0);
+///     let raw: &i32 = &data;
+///     outer = Some(raw);
+///     //           ^^^
+/// });
+/// disposer();
+/// let _ = outer.unwrap();
+/// # });
+/// ```
+///
+/// # Safety
+///
+/// The allocated value must not access any value allocated on the scope in its `Drop`
+/// implementation.
+///
+/// This should almost never happen in the wild, but beware that accessing allocated data in `Drop`
+/// might cause an use-after-free because the accessed value might have been dropped already.
+pub unsafe fn create_ref_unsafe<'a, T: 'a>(cx: Scope<'a>, value: T) -> &'a T {
+    cx.raw.arena.alloc_non_static(value)
 }
 
 /// Adds a callback that is called when the scope is destroyed.
@@ -512,15 +540,6 @@ mod tests {
     }
 
     #[test]
-    fn can_store_disposer_in_own_signal() {
-        create_scope_immediate(|cx| {
-            let signal = create_signal(cx, None);
-            let disposer = create_child_scope(cx, |_cx| {});
-            signal.set(Some(disposer));
-        });
-    }
-
-    #[test]
     fn refs_are_dropped_on_dispose() {
         thread_local! {
             static COUNTER: Cell<u32> = Cell::new(0);
@@ -559,25 +578,6 @@ mod tests {
                                                           // access it in drop.
         });
 
-        unsafe { disposer.dispose() };
-    }
-
-    #[test]
-    fn access_previous_ref_in_drop() {
-        struct ReadRefOnDrop<'a> {
-            r: &'a i32,
-            expect: i32,
-        }
-        impl<'a> Drop for ReadRefOnDrop<'a> {
-            fn drop(&mut self) {
-                assert_eq!(*self.r, self.expect);
-            }
-        }
-
-        let disposer = create_scope(|cx| {
-            let r = create_ref(cx, 123);
-            create_ref(cx, ReadRefOnDrop { r, expect: 123 });
-        });
         unsafe { disposer.dispose() };
     }
 }

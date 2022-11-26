@@ -279,7 +279,7 @@ fn nested_reactivity() {
             cx,
             vec![1, 2, 3]
                 .into_iter()
-                .map(|x| create_signal(cx, x))
+                .map(|x| create_rc_signal(x))
                 .collect(),
         );
 
@@ -303,11 +303,7 @@ fn nested_reactivity() {
         count.get()[0].set(4);
         assert_text_content!(p, "423");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.push(create_signal(cx, 5));
-            tmp
-        });
+        count.modify().push(create_rc_signal(5));
         assert_text_content!(p, "4235");
     });
 }

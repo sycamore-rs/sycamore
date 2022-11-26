@@ -69,13 +69,13 @@ impl<'a> EffectState<'a> {
 /// # });
 /// ```
 pub fn create_effect<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) {
-    let f = cx.alloc(f);
-    _create_effect(cx, f)
+    _create_effect(cx, Box::new(f))
 }
 
 /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
-fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
-    let effect = &*cx.alloc(RefCell::new(None::<EffectState<'a>>));
+fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
+    // SAFETY: We do not access the scope in the Drop implementation for EffectState.
+    let effect = unsafe { create_ref_unsafe(cx, RefCell::new(None::<EffectState<'a>>)) };
     let cb = Rc::new(RefCell::new({
         move || {
             EFFECTS.with(|effects| {

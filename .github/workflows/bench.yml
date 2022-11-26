@@ -25,6 +25,7 @@ jobs:
       - name: Checkout repository head
         uses: actions/checkout@v2
         with:
+          repository: ${{ github.repository }}
           ref: ${{ github.head_ref }}
           clean: false # Do not remove benchmark results from base branch
 
