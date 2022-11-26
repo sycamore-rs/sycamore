@@ -35,5 +35,6 @@ members = [
   "website",
 
   # Tools
+  "packages/tools/bench",
   "packages/tools/bench-diff",
 ]
