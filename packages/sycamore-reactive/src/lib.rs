@@ -16,10 +16,10 @@ use std::marker::PhantomData;
 use std::mem;
 use std::rc::{Rc, Weak};
 
-use hashbrown::HashMap;
 use arena::*;
 pub use context::*;
 pub use effect::*;
+use hashbrown::HashMap;
 use indexmap::IndexMap;
 pub use iter::*;
 pub use memo::*;
