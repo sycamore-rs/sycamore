@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::mem;
 use std::rc::Rc;
 
-use ahash::AHashMap;
+use hashbrown::HashMap;
 
 use crate::*;
 
@@ -107,7 +107,7 @@ where
 
             // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
             // natural order.
-            let mut new_indices = AHashMap::with_capacity(new_end - start);
+            let mut new_indices = HashMap::with_capacity(new_end - start);
 
             // Indexes for new_indices_next are shifted by start because values at 0..start are
             // always None.
