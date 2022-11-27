@@ -164,7 +164,7 @@ impl<T> ReadSignal<T> {
     /// # });
     /// ```
     #[must_use]
-    pub fn map<'a, U>(
+    pub fn map<'a, U: 'static>(
         &'a self,
         cx: Scope<'a>,
         mut f: impl FnMut(&T) -> U + 'a,
@@ -228,6 +228,25 @@ impl<T> Signal<T> {
         self.trigger_subscribers();
     }
 
+    /// Set the value of the state using a function that receives the current value.
+    ///
+    /// This will notify and update any effects and memos that depend on this value.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_signal(cx, 0);
+    /// assert_eq!(*state.get(), 0);
+    ///
+    /// state.set_fn(|n| n + 1);
+    /// assert_eq!(*state.get(), 1);
+    /// # });
+    /// ```
+    pub fn set_fn<F: Fn(&T) -> T>(&self, f: F) {
+        self.set(f(&self.get_untracked()));
+    }
+
     /// Set the current value of the state wrapped in a [`Rc`]. Unlike [`Signal::set()`], this
     /// method accepts the value wrapped in a [`Rc`] because the underlying storage is already using
     /// [`Rc`], thus preventing an unnecessary clone.
@@ -256,6 +275,13 @@ impl<T> Signal<T> {
     /// Make sure you know what you are doing because this can make state inconsistent.
     pub fn set_silent(&self, value: T) {
         self.set_rc_silent(Rc::new(value));
+    }
+
+    /// Set the value of the state using a function that receives the current value _without_ triggering subscribers.
+    ///
+    /// Make sure you know what you are doing because this can make state inconsistent.
+    pub fn set_fn_silent<F: Fn(&T) -> T>(&self, f: F) {
+        self.set_silent(f(&self.get_untracked()));
     }
 
     /// Set the current value of the state wrapped in a [`Rc`] _without_ triggering subscribers.
@@ -435,7 +461,7 @@ impl<'a, T> AnyReadSignal<'a> for ReadSignal<T> {
 ///     outer = Some(signal);
 /// });
 /// ```
-pub fn create_signal<T>(cx: Scope, value: T) -> &Signal<T> {
+pub fn create_signal<T: 'static>(cx: Scope, value: T) -> &Signal<T> {
     let signal = Signal::new(value);
     create_ref(cx, signal)
 }
@@ -443,7 +469,7 @@ pub fn create_signal<T>(cx: Scope, value: T) -> &Signal<T> {
 /// Create a new [`Signal`] under the current [`Scope`] but with an initial value wrapped in a
 /// [`Rc`]. This is useful to avoid having to clone a value that is already wrapped in a [`Rc`] when
 /// creating a new signal. Otherwise, this is identical to [`create_signal`].
-pub fn create_signal_from_rc<T>(cx: Scope, value: Rc<T>) -> &Signal<T> {
+pub fn create_signal_from_rc<T: 'static>(cx: Scope, value: Rc<T>) -> &Signal<T> {
     let signal = Signal(ReadSignal {
         value: RefCell::new(value),
         emitter: Default::default(),
@@ -636,6 +662,9 @@ mod tests {
 
             state.set(1);
             assert_eq!(*state.get(), 1);
+
+            state.set_fn(|n| n + 1);
+            assert_eq!(*state.get(), 2);
         });
     }
 
@@ -659,6 +688,9 @@ mod tests {
 
             assert_eq!(*double.get(), 0);
             state.set_silent(1);
+            assert_eq!(*double.get(), 0); // double value is unchanged.
+
+            state.set_fn_silent(|n| n + 1);
             assert_eq!(*double.get(), 0); // double value is unchanged.
         });
     }

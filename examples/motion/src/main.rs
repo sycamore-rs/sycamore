@@ -13,8 +13,8 @@ fn CreateRAF<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div {
             p { (state.get()) " frames" }
-            button(on:click=|_| start()) { "Start" }
-            button(on:click=|_| stop()) { "Stop" }
+            button(on:click=move |_| start()) { "Start" }
+            button(on:click=move |_| stop()) { "Stop" }
         }
     }
 }

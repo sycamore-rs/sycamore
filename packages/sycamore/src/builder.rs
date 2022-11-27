@@ -405,7 +405,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     ///     .dyn_t(|| name.get().to_string())
     /// # .view(cx) }
     /// ```
-    pub fn dyn_t<S: AsRef<str> + 'a>(
+    pub fn dyn_t<S: AsRef<str> + 'static>(
         self,
         f: impl FnMut() -> S + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {

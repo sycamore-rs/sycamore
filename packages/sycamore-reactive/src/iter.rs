@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::mem;
 use std::rc::Rc;
 
-use ahash::AHashMap;
+use hashbrown::HashMap;
 
 use crate::*;
 
@@ -21,7 +21,7 @@ use crate::*;
 /// * `key_fn` - A closure that returns an _unique_ key to each entry.
 ///
 ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
-pub fn map_keyed<'a, T, K, U>(
+pub fn map_keyed<'a, T, K, U: 'static>(
     cx: Scope<'a>,
     list: &'a ReadSignal<Vec<T>>,
     map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,
@@ -107,7 +107,7 @@ where
 
             // 0) Prepare a map of indices in newItems. Scan backwards so we encounter them in
             // natural order.
-            let mut new_indices = AHashMap::with_capacity(new_end - start);
+            let mut new_indices = HashMap::with_capacity(new_end - start);
 
             // Indexes for new_indices_next are shifted by start because values at 0..start are
             // always None.
@@ -194,7 +194,7 @@ where
 /// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a [`Signal`])
 ///   and therefore reactive.
 /// * `map_fn` - A closure that maps from the input type to the output type.
-pub fn map_indexed<'a, T, U>(
+pub fn map_indexed<'a, T, U: 'static>(
     cx: Scope<'a>,
     list: &'a ReadSignal<Vec<T>>,
     map_fn: impl for<'child_lifetime> Fn(BoundedScope<'child_lifetime, 'a>, T) -> U + 'a,

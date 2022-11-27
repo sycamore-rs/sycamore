@@ -157,7 +157,8 @@ impl<'a> TransitionHandle<'a> {
 pub fn use_transition(cx: Scope<'_>) -> &TransitionHandle<'_> {
     let is_pending = create_signal(cx, false);
 
-    create_ref(cx, TransitionHandle { cx, is_pending })
+    // SAFETY: We do not access any referenced data in the Drop implementation for TransitionHandle.
+    unsafe { create_ref_unsafe(cx, TransitionHandle { cx, is_pending }) }
 }
 
 #[cfg(all(test, feature = "ssr", not(miri)))]

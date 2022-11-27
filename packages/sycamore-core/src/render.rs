@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use ahash::AHashMap;
+use hashbrown::HashMap;
 use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
@@ -265,7 +265,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     let mut b_end = b_len;
     let mut a_start = 0;
     let mut b_start = 0;
-    let mut map = None::<AHashMap<G, usize>>;
+    let mut map = None::<HashMap<G, usize>>;
 
     // Last node in a.
     let after = a[a_end - 1].next_sibling();
