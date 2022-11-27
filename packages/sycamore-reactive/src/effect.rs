@@ -1,6 +1,6 @@
 //! Side effects.
 
-use ahash::AHashSet;
+use hashbrown::HashSet;
 
 use crate::*;
 
@@ -17,7 +17,7 @@ pub(crate) struct EffectState<'a> {
     /// The callback when the effect is re-executed.
     cb: Rc<RefCell<dyn FnMut() + 'a>>,
     /// A list of dependencies that can trigger this effect.
-    dependencies: AHashSet<EffectDependency>,
+    dependencies: HashSet<EffectDependency>,
 }
 
 /// Implements reference equality for [`WeakSignalEmitter`]s.
@@ -122,7 +122,7 @@ fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
     // Initialize initial effect state.
     *effect.borrow_mut() = Some(EffectState {
         cb: cb.clone(),
-        dependencies: AHashSet::new(),
+        dependencies: HashSet::new(),
     });
 
     // Initial callback call to get everything started.

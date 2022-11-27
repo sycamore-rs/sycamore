@@ -16,10 +16,10 @@ use std::marker::PhantomData;
 use std::mem;
 use std::rc::{Rc, Weak};
 
-use ahash::AHashMap;
 use arena::*;
 pub use context::*;
 pub use effect::*;
+use hashbrown::HashMap;
 use indexmap::IndexMap;
 pub use iter::*;
 pub use memo::*;
@@ -47,7 +47,7 @@ struct ScopeInner<'a> {
     /// usually read and rarely created. Making this heap allocated when prevent blowing up the
     /// size of the [`ScopeInner`] struct when most of the times, this field is unneeded.
     #[allow(clippy::box_collection)]
-    contexts: Option<Box<AHashMap<TypeId, &'a dyn Any>>>,
+    contexts: Option<Box<HashMap<TypeId, &'a dyn Any>>>,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }

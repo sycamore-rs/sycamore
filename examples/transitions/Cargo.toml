@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 console_error_panic_hook = "0.1.7"
 console_log = "0.2.0"
-getrandom = { version = "0.2.5", features = ["js"] }
-gloo-timers = { version = "0.2.3", features = ["futures"] }
-log = "0.4.14"
+getrandom = { version = "0.2.8", features = ["js"] }
+gloo-timers = { version = "0.2.4", features = ["futures"] }
+log = "0.4.17"
 rand = "0.8.5"
 sycamore = { path = "../../packages/sycamore", features = ["suspense"] }
