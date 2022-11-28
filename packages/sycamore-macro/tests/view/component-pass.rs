@@ -87,6 +87,7 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, ComponentWithChildren() { Component {} } };
         let _: View<G> = view! { cx, ComponentWithChildren {} };
         let _: View<G> = view! { cx, ComponentWithChildren() };
+        let _: View<G> = view! { cx, ComponentWithChildren() {} };
 
         let _: View<G> = view! { cx,
             AsyncComponentWithPropsDestructuring {
