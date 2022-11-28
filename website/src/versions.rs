@@ -1,5 +1,6 @@
 use sycamore::prelude::*;
 
+#[derive(Clone, Copy)]
 enum VersionedDocsLink {
     Some(&'static str),
     None,
@@ -33,10 +34,11 @@ const VERSIONS: &[(&str, VersionedDocsLink)] = &[
     ("v0.5.0-beta.0", VersionedDocsLink::None),
 ];
 
-#[component]
+#[component(inline_props)]
 fn VersionedDocsLink<G: Html>(
     cx: Scope,
-    (name, versioned_docs_link): (&'static str, &'static VersionedDocsLink),
+    name: &'static str,
+    versioned_docs_link: VersionedDocsLink,
 ) -> View<G> {
     match versioned_docs_link {
         VersionedDocsLink::Some(link) => view! { cx,
@@ -87,12 +89,13 @@ pub fn Versions<G: Html>(cx: Scope) -> View<G> {
 
     let versions = VERSIONS
         .iter()
+        .copied()
         .map(|(name, versioned_docs_link)| {
             view! { cx,
                 li {
                     h2(class="text-2xl font-light") { (name) }
                     div(class="flex flex-col divide-y dark:divide-gray-500 text-gray-600 dark:text-gray-300") {
-                        VersionedDocsLink((name, versioned_docs_link))
+                        VersionedDocsLink(name=name, versioned_docs_link=versioned_docs_link)
                     }
                 }
             }
