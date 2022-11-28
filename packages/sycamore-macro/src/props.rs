@@ -797,7 +797,8 @@ mod field_info {
             if let Some(ref name) = field.ident {
                 // If this field is the `children` field, make it implicitly have a default value.
                 if name == "children" {
-                    field_defaults.default = Some(syn::parse_quote! { ::std::default::Default::default() });
+                    field_defaults.default =
+                        Some(syn::parse_quote! { ::std::default::Default::default() });
                 }
 
                 Ok(FieldInfo {
