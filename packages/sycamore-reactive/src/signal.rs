@@ -277,7 +277,8 @@ impl<T> Signal<T> {
         self.set_rc_silent(Rc::new(value));
     }
 
-    /// Set the value of the state using a function that receives the current value _without_ triggering subscribers.
+    /// Set the value of the state using a function that receives the current value _without_
+    /// triggering subscribers.
     ///
     /// Make sure you know what you are doing because this can make state inconsistent.
     pub fn set_fn_silent<F: Fn(&T) -> T>(&self, f: F) {

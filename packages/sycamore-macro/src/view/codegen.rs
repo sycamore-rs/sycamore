@@ -12,6 +12,7 @@ use crate::view::ir::*;
 
 /// A struct for keeping track of the state when emitting Rust code.
 pub struct Codegen {
+    pub elements_mod_path: syn::Path,
     pub cx: Ident,
 }
 
@@ -73,6 +74,7 @@ impl Codegen {
     }
 
     pub fn element(&self, elem: &Element) -> TokenStream {
+        let elements_mod_path = &self.elements_mod_path;
         let cx = &self.cx;
         let Element {
             tag,
@@ -82,7 +84,7 @@ impl Codegen {
 
         let quote_tag = match tag {
             ElementTag::Builtin(id) => quote! {
-                let __el = ::sycamore::generic_node::GenericNodeElements::element::<::sycamore::web::html::#id>();
+                let __el = ::sycamore::generic_node::GenericNodeElements::element::<#elements_mod_path::#id>();
             },
             ElementTag::Custom(tag_s) => quote! {
                 let __el = ::sycamore::generic_node::GenericNodeElements::element_from_tag(::std::borrow::Cow::Borrowed(#tag_s));
