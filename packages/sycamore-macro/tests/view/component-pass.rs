@@ -1,5 +1,12 @@
 use sycamore::prelude::*;
 
+#[component]
+pub fn Component<G: Html>(cx: Scope) -> View<G> {
+    view! { cx,
+        div {}
+    }
+}
+
 #[derive(Props)]
 pub struct Props {
     prop: &'static str,
@@ -61,13 +68,6 @@ pub async fn AsyncComponentWithPropsDestructuring<'a, G: Html>(
     children.call(cx)
 }
 
-#[component]
-pub fn Component<G: Html>(cx: Scope) -> View<G> {
-    view! { cx,
-        div {}
-    }
-}
-
 fn compile_pass<G: Html>() {
     create_scope_immediate(|cx| {
         let _: View<G> = view! { cx, Component() };
@@ -80,16 +80,13 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, AllDefaultPropsComponent() };
         let _: View<G> = view! { cx, AllDefaultPropsComponent {} };
 
-        let _: View<G> = view! { cx,
-            ComponentWithChildren {
-                Component()
-            }
-        };
-        let _: View<G> = view! { cx,
-            ComponentWithChildren {
-                Component {}
-            }
-        };
+        let _: View<G> = view! { cx, ComponentWithChildren { Component() } };
+        let _: View<G> = view! { cx, ComponentWithChildren { div {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren { div {} div {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren { Component {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren() { Component {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren {} };
+        let _: View<G> = view! { cx, ComponentWithChildren() };
 
         let _: View<G> = view! { cx,
             AsyncComponentWithPropsDestructuring {
