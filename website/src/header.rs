@@ -103,13 +103,11 @@ pub fn HamburgerMenu<G: Html>(cx: Scope) -> View<G> {
             on:click=toggle
         ) {
             NavLinks {}
-            (if let Some(sidebar) = sidebar.get().as_ref().clone() {
+            (if let Some((version, data)) = sidebar.get().as_ref().clone() {
                 view! { cx,
                     div(class="opacity-25 mx-2 p-px my-2 bg-current")
                     div(class="w-full"){
-                        crate::sidebar::Sidebar({
-                            (sidebar.0.unwrap_or_else(||"next".to_string()), sidebar.1)
-                        })
+                        crate::sidebar::Sidebar(version=version.unwrap_or_else(|| "next".to_string()), data=data)
                     }
                 }
             } else {

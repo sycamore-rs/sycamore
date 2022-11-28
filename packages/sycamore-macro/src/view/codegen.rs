@@ -475,54 +475,44 @@ impl Codegen {
 
     pub fn component(&self, comp: &Component) -> TokenStream {
         let cx = &self.cx;
-        match comp {
-            Component::Legacy(comp) => {
-                let LegacyComponent { ident, args } = comp;
-                quote! { ::sycamore::component::component_scope(move || #ident(#cx, #args)) }
+        let Component {
+            ident,
+            props,
+            children,
+            ..
+        } = comp;
+        if props.is_empty() && (children.is_none() || children.as_ref().unwrap().0.is_empty()) {
+            quote! {
+               ::sycamore::component::component_scope(move || #ident(#cx))
             }
-            Component::New(comp) => {
-                let NewComponent {
-                    ident,
-                    props,
-                    children,
-                    ..
-                } = comp;
-                if props.is_empty()
-                    && (children.is_none() || children.as_ref().unwrap().0.is_empty())
-                {
+        } else {
+            let name = props.iter().map(|x| &x.name);
+            let value = props.iter().map(|x| &x.value);
+            let children_quoted = children
+                .as_ref()
+                .map(|children| {
+                    let children = self.view_root(children);
                     quote! {
-                       ::sycamore::component::component_scope(move || #ident(#cx))
+                        .children(
+                            ::sycamore::component::Children::new(#cx, move |#cx| {
+                                #[allow(unused_variables)]
+                                let #cx: ::sycamore::reactive::BoundedScope = #cx;
+                                #children
+                            })
+                        )
                     }
-                } else {
-                    let name = props.iter().map(|x| &x.name);
-                    let value = props.iter().map(|x| &x.value);
-                    let children_quoted = children
-                        .as_ref()
-                        .map(|children| {
-                            let children = self.view_root(children);
-                            quote! {
-                                .children(
-                                    ::sycamore::component::Children::new(#cx, move |#cx| {
-                                        #[allow(unused_variables)]
-                                        let #cx: ::sycamore::reactive::BoundedScope = #cx;
-                                        #children
-                                    })
-                                )
-                            }
-                        })
-                        .unwrap_or_default();
-                    quote! {{
-                        let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
-                        ::sycamore::component::component_scope(move || __component(
-                            #cx,
-                            ::sycamore::component::element_like_component_builder(__component)
-                                #(.#name(#value))*
-                                #children_quoted
-                                .build()
-                        ))
-                    }}
-                }
-            }
+                })
+                .unwrap_or_default();
+            quote! {{
+                let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
+                ::sycamore::component::component_scope(move || __component(
+                    #cx,
+                    ::sycamore::component::element_like_component_builder(__component)
+                        #(.#name(#value))*
+                        #children_quoted
+                        .build()
+                ))
+            }}
         }
     }
 }

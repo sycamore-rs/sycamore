@@ -335,7 +335,7 @@ where
     F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
     view! { cx,
-        StaticRouterBase(props)
+        StaticRouterBase(view=props.view, route=props.route)
     }
 }
 
@@ -438,7 +438,7 @@ mod tests {
             NotFound,
         }
 
-        #[component]
+        #[component(inline_props)]
         fn Comp<G: Html>(cx: Scope, path: String) -> View<G> {
             let route = Routes::match_route(
                 // The user would never use this directly, so they'd never have to do this trick
@@ -472,17 +472,17 @@ mod tests {
         }
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp("/".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp(path="/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp("/about".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp(path="/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp("/404".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp(path="/404".to_string()) }),
             "Not Found"
         );
     }

@@ -18,8 +18,8 @@ pub struct SidebarData {
     sections: Vec<SidebarSection>,
 }
 
-#[component]
-pub fn Sidebar<G: Html>(cx: Scope, (version, data): (String, SidebarData)) -> View<G> {
+#[component(inline_props)]
+pub fn Sidebar<G: Html>(cx: Scope, version: String, data: SidebarData) -> View<G> {
     let sections = data
         .sections
         .into_iter()
