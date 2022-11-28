@@ -13,6 +13,19 @@ pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
 }
 
 #[derive(Props)]
+pub struct AllDefaultProps {
+    #[prop(default)]
+    prop: u32,
+}
+
+#[component]
+pub fn AllDefaultPropsComponent<G: Html>(cx: Scope, _props: AllDefaultProps) -> View<G> {
+    view! { cx,
+        div {}
+    }
+}
+
+#[derive(Props)]
 pub struct PropsWithChildren<'a, G: GenericNode> {
     children: Children<'a, G>,
 }
@@ -62,6 +75,10 @@ fn compile_pass<G: Html>() {
 
         let prop = "prop";
         let _: View<G> = view! { cx, PropsComponent(prop=prop) };
+
+        let _: View<G> = view! { cx, AllDefaultPropsComponent(prop=123) };
+        let _: View<G> = view! { cx, AllDefaultPropsComponent() };
+        let _: View<G> = view! { cx, AllDefaultPropsComponent {} };
 
         let _: View<G> = view! { cx,
             ComponentWithChildren {
