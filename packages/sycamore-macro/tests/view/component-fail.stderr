@@ -28,15 +28,16 @@ note: function defined here
 17 | fn Component<G: Html>(cx: Scope) -> View<G> {
    |    ^^^^^^^^^         -
 help: remove the extra argument
+  --> $WORKSPACE/packages/sycamore/src/web/mod.rs
    |
-29 |         let _: View<G> = Component(cx);
-   |                          ~~~~~~~~~~~~~
+   |         Component(cx)
+   |
 
 error[E0061]: this function takes 2 arguments but 1 argument was supplied
   --> tests/view/component-fail.rs:31:38
    |
 31 |         let _: View<G> = view! { cx, PropsComponent() };
-   |                                      ^^^^^^^^^^^^^^---- an argument of type `Props` is missing
+   |                          ------------^^^^^^^^^^^^^^---- an argument of type `Props` is missing
    |
 note: function defined here
   --> tests/view/component-fail.rs:9:8
@@ -44,15 +45,16 @@ note: function defined here
 9  | pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
    |        ^^^^^^^^^^^^^^         ------------
 help: provide the argument
+  --> $WORKSPACE/packages/sycamore/src/web/mod.rs
    |
-31 |         let _: View<G> = PropsComponent(cx, /* Props */);
-   |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   |         PropsComponent(cx, /* Props */)
+   |
 
 error[E0061]: this function takes 2 arguments but 1 argument was supplied
   --> tests/view/component-fail.rs:32:38
    |
 32 |         let _: View<G> = view! { cx, PropsComponent {} };
-   |                                      ^^^^^^^^^^^^^^----- an argument of type `Props` is missing
+   |                          ------------^^^^^^^^^^^^^^----- an argument of type `Props` is missing
    |
 note: function defined here
   --> tests/view/component-fail.rs:9:8
@@ -60,9 +62,10 @@ note: function defined here
 9  | pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
    |        ^^^^^^^^^^^^^^         ------------
 help: provide the argument
+  --> $WORKSPACE/packages/sycamore/src/web/mod.rs
    |
-32 |         let _: View<G> = PropsComponent(cx, /* Props */);
-   |                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   |         PropsComponent(cx, /* Props */)
+   |
 
 error[E0308]: mismatched types
   --> tests/view/component-fail.rs:33:58
