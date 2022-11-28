@@ -31,7 +31,10 @@ fn DarkModeToggle<G: Html>(cx: Scope) -> View<G> {
                 if *dark_mode.get() { "dark" } else { "light" },
             )
             .unwrap();
-        document_element.style().set_property("overflow", "").unwrap();
+        document_element
+            .style()
+            .set_property("overflow", "")
+            .unwrap();
     });
 
     view! { cx,
