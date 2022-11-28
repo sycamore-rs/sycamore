@@ -18,5 +18,5 @@ sycamore-router = { path = "../packages/sycamore-router" }
 wasm-bindgen = "0.2.83"
 
 [dependencies.web-sys]
-features = ["MediaQueryList", "Storage", "Window"]
+features = ["CssStyleDeclaration", "MediaQueryList", "Storage", "Window"]
 version = "0.3.60"

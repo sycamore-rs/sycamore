@@ -1,4 +1,6 @@
 use sycamore::prelude::*;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlElement;
 
 use crate::sidebar::SidebarData;
 use crate::DarkMode;
@@ -10,6 +12,27 @@ fn DarkModeToggle<G: Html>(cx: Scope) -> View<G> {
 
     let DarkMode(dark_mode) = use_context::<DarkMode>(cx);
     let toggle = |_| dark_mode.set(!*dark_mode.get());
+
+    // Update color-scheme when `dark_mode` changes.
+    create_effect(cx, || {
+        let document = web_sys::window().unwrap().document().unwrap();
+        let document_element = document
+            .document_element()
+            .unwrap()
+            .unchecked_into::<HtmlElement>();
+        document_element
+            .style()
+            .set_property("overflow", "hidden")
+            .unwrap();
+        document.body().unwrap().client_width(); // Trigger reflow.
+        document_element
+            .set_attribute(
+                "data-color-scheme",
+                if *dark_mode.get() { "dark" } else { "light" },
+            )
+            .unwrap();
+        document_element.style().set_property("overflow", "").unwrap();
+    });
 
     view! { cx,
         button(
