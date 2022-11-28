@@ -792,11 +792,10 @@ mod field_info {
         pub fn new(
             ordinal: usize,
             field: &syn::Field,
-            field_defaults: FieldBuilderAttr,
+            mut field_defaults: FieldBuilderAttr,
         ) -> Result<FieldInfo, Error> {
             if let Some(ref name) = field.ident {
                 // If this field is the `children` field, make it implicitly have a default value.
-                let mut field_defaults = field_defaults.clone();
                 if name == "children" {
                     field_defaults.default = Some(syn::parse_quote! { ::std::default::Default::default() });
                 }
