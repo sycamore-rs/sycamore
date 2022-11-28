@@ -136,7 +136,7 @@ pub fn Content<G: Html>(
                     } else {
                         view! { cx, }
                     })
-                    div(dangerously_set_inner_html=&html)
+                    div(dangerously_set_inner_html=html.clone())
                 }
             }
             div(class="flex-none hidden lg:block lg:w-44 fixed right-0 top-0 pt-12 max-h-full overflow-y-auto") {

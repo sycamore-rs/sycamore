@@ -105,8 +105,8 @@ This will expand to something approximately like:
 ```rust
 let state = create_signal(cx, 0);
 {
-    let element = GenericNode::element(p);
-    let text = GenericNode::text(String::new() /* placeholder */);
+    let element = G::element(p);
+    let text = G::text(String::new() /* placeholder */);
     create_effect(cx, move || {
         // Update text when `state` changes.
         text.update_text(Some(&state.get()));

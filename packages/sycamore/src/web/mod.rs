@@ -9,6 +9,45 @@ pub use sycamore_web::*;
 #[allow(unused_imports)]
 use crate::prelude::*;
 
+/// A macro for ergonomically creating complex UI layouts in HTML.
+///
+/// To learn more about the view syntax, see [the chapter on views](https://sycamore-rs.netlify.app/docs/basics/view)
+/// in the Sycamore Book.
+#[macro_export]
+macro_rules! html_view {
+    ($($t:tt)*) => {
+        $crate::view_with_elements!($crate::web::html, $($t)*)
+    };
+}
+
+/// Like [`view!`] but only creates a single raw node instead.
+///
+/// # Example
+///
+/// ```
+/// use sycamore::prelude::*;
+///
+/// #[component]
+/// pub fn MyComponent<G: Html>(cx: Scope) -> View<G> {
+///     let cool_button: G = node! { cx, button { "The coolest 😎" } };
+///
+///     cool_button.set_property("myProperty", &"Epic!".into());
+///
+///     View::new_node(cool_button)
+/// }
+/// ```
+#[macro_export]
+macro_rules! html_node {
+    ($($t:tt)*) => {
+        $crate::node_with_elements!($crate::web::html, $($t)*)
+    };
+}
+
+#[doc(hidden)]
+pub mod macros {
+    pub use crate::{html_node as node, html_view as view};
+}
+
 /// Render a [`View`] into a static [`String`]. Useful
 /// for rendering to a string on the server side.
 ///

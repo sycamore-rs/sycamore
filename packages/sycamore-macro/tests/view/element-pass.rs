@@ -1,6 +1,6 @@
 use sycamore::prelude::*;
 
-fn compile_pass<G: GenericNode>() {
+fn compile_pass<G: Html>() {
     create_scope_immediate(|cx| {
         let _: View<G> = view! { cx, p {} };
         let _: View<G> = view! { cx, custom-element {} };
