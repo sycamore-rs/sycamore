@@ -60,6 +60,8 @@ pub trait Html:
     /// # fn my_raw_node_view<G: Html>() -> View<G> {
     /// let raw_node: web_sys::Node = get_web_sys_node();
     /// let node = G::from_web_sys(raw_node);
+    /// let view = View::new_node(node);
+    /// # view
     /// # }
     /// ```
     fn from_web_sys(node: web_sys::Node) -> Self;
