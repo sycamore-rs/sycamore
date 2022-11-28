@@ -4,84 +4,75 @@ error: expected either `(` or `{` after element tag
 34 |         let _: View<G> = view! { cx, PropsComponent { prop: "123" } }; // Legacy syntax.
    |                                                           ^
 
-error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
+error[E0425]: cannot find value `UnknownComponent` in this scope
   --> tests/view/component-fail.rs:25:38
    |
 25 |         let _: View<G> = view! { cx, UnknownComponent() };
    |                                      ^^^^^^^^^^^^^^^^ not found in this scope
 
-error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
+error[E0425]: cannot find value `UnknownComponent` in this scope
   --> tests/view/component-fail.rs:26:38
    |
 26 |         let _: View<G> = view! { cx, UnknownComponent {} };
    |                                      ^^^^^^^^^^^^^^^^ not found in this scope
 
-error[E0593]: function is expected to take 2 arguments, but it takes 1 argument
-  --> tests/view/component-fail.rs:29:26
-   |
-17 | fn Component<G: Html>(cx: Scope) -> View<G> {
-   | ------------------------------------------- takes 1 argument
-...
-29 |         let _: View<G> = view! { cx, Component(prop=1) };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected function that takes 2 arguments
-   |
-note: required by a bound in `element_like_component_builder`
-  --> $WORKSPACE/packages/sycamore-core/src/component.rs
-   |
-   |     _f: &impl FnOnce(Scope<'a>, T) -> View<G>,
-   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `element_like_component_builder`
-   = note: this error originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0061]: this function takes 1 argument but 2 arguments were supplied
-  --> tests/view/component-fail.rs:29:26
+error[E0599]: no method named `prop` found for struct `UnitBuilder` in the current scope
+  --> tests/view/component-fail.rs:29:48
    |
 29 |         let _: View<G> = view! { cx, Component(prop=1) };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument unexpected
-   |
-note: function defined here
-  --> tests/view/component-fail.rs:17:4
-   |
-17 | fn Component<G: Html>(cx: Scope) -> View<G> {
-   |    ^^^^^^^^^         -
-   = note: this error originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: remove the extra argument
-  --> $WORKSPACE/packages/sycamore/src/web/mod.rs
-   |
-   |         $crate::view_with_elements!($crate::web::html, $($t)*)(cx)
-   |
+   |                                                ^^^^ method not found in `UnitBuilder`
 
-error[E0061]: this function takes 2 arguments but 1 argument was supplied
-  --> tests/view/component-fail.rs:31:38
+warning: use of deprecated associated function `PropsBuilder::<((),)>::build`: Missing required field prop
+  --> tests/view/component-fail.rs:31:26
    |
 31 |         let _: View<G> = view! { cx, PropsComponent() };
-   |                          ------------^^^^^^^^^^^^^^---- an argument of type `Props` is missing
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-note: function defined here
-  --> tests/view/component-fail.rs:9:8
+   = note: `#[warn(deprecated)]` on by default
+   = note: this warning originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0061]: this function takes 1 argument but 0 arguments were supplied
+  --> tests/view/component-fail.rs:31:26
    |
-9  | pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
-   |        ^^^^^^^^^^^^^^         ------------
+31 |         let _: View<G> = view! { cx, PropsComponent() };
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ an argument of type `PropsBuilder_Error_Missing_required_field_prop` is missing
+   |
+note: associated function defined here
+  --> tests/view/component-fail.rs:3:10
+   |
+3  | #[derive(Props)]
+   |          -^^^^
+   = note: this error originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: provide the argument
   --> $WORKSPACE/packages/sycamore/src/web/mod.rs
    |
-   |         PropsComponent(cx, /* Props */)
+   |         $crate::view_with_elements!($crate::web::html, $($t)*)(/* PropsBuilder_Error_Missing_required_field_prop */)
    |
 
-error[E0061]: this function takes 2 arguments but 1 argument was supplied
-  --> tests/view/component-fail.rs:32:38
+warning: use of deprecated associated function `PropsBuilder::<((),)>::build`: Missing required field prop
+  --> tests/view/component-fail.rs:32:26
    |
 32 |         let _: View<G> = view! { cx, PropsComponent {} };
-   |                          ------------^^^^^^^^^^^^^^----- an argument of type `Props` is missing
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-note: function defined here
-  --> tests/view/component-fail.rs:9:8
+   = note: this warning originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0061]: this function takes 1 argument but 0 arguments were supplied
+  --> tests/view/component-fail.rs:32:26
    |
-9  | pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
-   |        ^^^^^^^^^^^^^^         ------------
+32 |         let _: View<G> = view! { cx, PropsComponent {} };
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ an argument of type `PropsBuilder_Error_Missing_required_field_prop` is missing
+   |
+note: associated function defined here
+  --> tests/view/component-fail.rs:3:10
+   |
+3  | #[derive(Props)]
+   |          -^^^^
+   = note: this error originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: provide the argument
   --> $WORKSPACE/packages/sycamore/src/web/mod.rs
    |
-   |         PropsComponent(cx, /* Props */)
+   |         $crate::view_with_elements!($crate::web::html, $($t)*)(/* PropsBuilder_Error_Missing_required_field_prop */)
    |
 
 error[E0308]: mismatched types

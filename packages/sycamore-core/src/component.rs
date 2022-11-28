@@ -50,10 +50,49 @@ pub trait Props {
     fn builder() -> Self::Builder;
 }
 
+/// Make sure that the `Props` trait is implemented for `()` so that components without props can be
+/// thought as accepting props of type `()`.
+impl Props for () {
+    type Builder = UnitBuilder;
+    fn builder() -> Self::Builder {
+        UnitBuilder
+    }
+}
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct UnitBuilder;
+
+impl UnitBuilder {
+    pub fn build(self) {}
+}
+
+/// A trait that is automatically implemented by all components.
+pub trait Component<'a, T: Props, G: GenericNode, S> {
+    /// Instantiate the component with the given props and reactive scope.
+    fn create(self, cx: Scope<'a>, props: T) -> View<G>;
+}
+impl<'a, F, T: Props, G: GenericNode> Component<'a, T, G, ((),)> for F
+where
+    F: FnOnce(Scope<'a>, T) -> View<G>,
+{
+    fn create(self, cx: Scope<'a>, props: T) -> View<G> {
+        self(cx, props)
+    }
+}
+impl<'a, F, G: GenericNode> Component<'a, (), G, ()> for F
+where
+    F: FnOnce(Scope<'a>) -> View<G>,
+{
+    fn create(self, cx: Scope<'a>, _props: ()) -> View<G> {
+        self(cx)
+    }
+}
+
 /// Get the builder for the component function.
 #[doc(hidden)]
-pub fn element_like_component_builder<'a, T: Props + 'a, G: GenericNode>(
-    _f: &impl FnOnce(Scope<'a>, T) -> View<G>,
+pub fn element_like_component_builder<'a, G: GenericNode, T: Props, S>(
+    _f: &impl Component<'a, T, G, S>,
 ) -> T::Builder {
     T::builder()
 }

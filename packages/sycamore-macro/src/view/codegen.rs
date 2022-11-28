@@ -481,38 +481,35 @@ impl Codegen {
             children,
             ..
         } = comp;
-        if props.is_empty() && (children.is_none() || children.as_ref().unwrap().0.is_empty()) {
-            quote! {
-               ::sycamore::component::component_scope(move || #ident(#cx))
-            }
-        } else {
-            let name = props.iter().map(|x| &x.name);
-            let value = props.iter().map(|x| &x.value);
-            let children_quoted = children
-                .as_ref()
-                .map(|children| {
-                    let children = self.view_root(children);
-                    quote! {
-                        .children(
-                            ::sycamore::component::Children::new(#cx, move |#cx| {
-                                #[allow(unused_variables)]
-                                let #cx: ::sycamore::reactive::BoundedScope = #cx;
-                                #children
-                            })
-                        )
-                    }
-                })
-                .unwrap_or_default();
-            quote! {{
-                let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
-                ::sycamore::component::component_scope(move || __component(
-                    #cx,
-                    ::sycamore::component::element_like_component_builder(__component)
-                        #(.#name(#value))*
-                        #children_quoted
-                        .build()
-                ))
-            }}
-        }
+
+        let name = props.iter().map(|x| &x.name);
+        let value = props.iter().map(|x| &x.value);
+        let children_quoted = children
+            .as_ref()
+            .filter(|children| !children.0.is_empty())
+            .map(|children| {
+                let children = self.view_root(children);
+                quote! {
+                    .children(
+                        ::sycamore::component::Children::new(#cx, move |#cx| {
+                            #[allow(unused_variables)]
+                            let #cx: ::sycamore::reactive::BoundedScope = #cx;
+                            #children
+                        })
+                    )
+                }
+            })
+            .unwrap_or_default();
+        quote! {{
+            let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
+            ::sycamore::component::component_scope(move || ::sycamore::component::Component::create(
+                __component,
+                #cx,
+                ::sycamore::component::element_like_component_builder(__component)
+                    #(.#name(#value))*
+                    #children_quoted
+                    .build()
+            ))
+        }}
     }
 }
