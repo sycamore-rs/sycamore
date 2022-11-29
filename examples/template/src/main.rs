@@ -1,11 +1,11 @@
 use gloo_timers::future::TimeoutFuture;
 use sycamore::futures::spawn_local_scoped;
-use sycamore::generic_node::{instantiate_template_universal, Template, TemplateId, TemplateShape};
+use sycamore::generic_node::{Template, TemplateId, TemplateShape};
 use sycamore::prelude::*;
 use sycamore::utils::render::insert;
 
 #[component]
-fn App(cx: Scope) -> View<DomNode> {
+fn App<G: Html>(cx: Scope) -> View<G> {
     let state = create_signal(cx, 0);
 
     spawn_local_scoped(cx, async move {
@@ -24,14 +24,25 @@ fn App(cx: Scope) -> View<DomNode> {
                 TemplateShape::Text("Hello World!"),
                 TemplateShape::DynMarker,
                 TemplateShape::Text("Goodbye!"),
+                TemplateShape::Element {
+                    ident: "button",
+                    ns: None,
+                    children: &[TemplateShape::Text("Click me.")],
+                    flag: true,
+                },
             ],
             flag: false,
         },
     };
-    let result = instantiate_template_universal(template);
-    let dynamic = View::new_dyn(cx, move || view! { cx, (state.get()) });
-    let _0 = &result.dyn_markers[0];
-    insert(cx, &_0.parent, dynamic, None, _0.before.as_ref(), _0.multi);
+    let result = G::instantiate_template(template);
+
+    let dynamic_values = vec![View::new_dyn(cx, move || view! { cx, p { (state.get()) } })];
+    for (m, value) in result.dyn_markers.iter().zip(dynamic_values.into_iter()) {
+        insert(cx, &m.parent, value, None, m.before.as_ref(), m.multi);
+    }
+    result.flagged_nodes[0].event(cx, "click", |_| {
+        state.set(*state.get() * 2);
+    });
     View::new_node(result.root)
 }
 

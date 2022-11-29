@@ -152,6 +152,17 @@ pub trait GenericNodeElements: GenericNode {
 
     /// Create a new element node from a tag string.
     fn element_from_tag(tag: Cow<'static, str>) -> Self;
+
+    /// Instantiate a template by creating nodes to match the template structure. Returns the root
+    /// node along with a list of flagged nodes and dynamic markers.
+    ///
+    /// By default, this will call [`instantiate_template_universal`]. However, this method can be
+    /// overridden for specific node types to provide a more optimized implementation. For example,
+    /// `SsrNode` could render the template to a static HTML string and then cache the result for
+    /// reduced allocations and string formatting.
+    fn instantiate_template(template: Template) -> TemplateResult<Self> {
+        instantiate_template_universal(template)
+    }
 }
 
 /// The "shape" of the template, i.e. what the structure of the template looks like. This is
