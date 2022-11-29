@@ -19,9 +19,9 @@ use crate::view::{View, ViewType};
 ///   directly before `marker`. If `marker` is `None`, `accessor` will be appended at the end of
 ///   `parent`.
 /// * `multi` - A boolean flag indicating whether the node to be inserted is the only child of
-///   `parent`. Setting this to `true` will enable certain optimizations when clearing the node.
-///   Even if the node to be inserted is the only child of `parent`, `multi` can still be set to
-///   `false` but forgoes the optimizations.
+///   `parent`. Setting this to `false` will enable an optimization when clearing the node. Even if
+///   the node to be inserted is the only child of `parent`, `multi` can still be set to `true` but
+///   forgoes the optimization.
 pub fn insert<G: GenericNode>(
     cx: Scope<'_>,
     parent: &G,
@@ -154,6 +154,8 @@ fn insert_expression<G: GenericNode>(
 /// * `marker` - If `marker` is `None`, all the nodes from `parent` are removed regardless of
 ///   `current`. This behavior will likely change in the future.
 /// * `replacement` - An optional replacement node for the removed nodes.
+/// * `multi` - If set to `false`, this will use a more efficient `innerText = ""` to clear instead
+///   of removing child nodes one by one.
 pub fn clean_children<G: GenericNode>(
     parent: &G,
     current: Vec<G>,

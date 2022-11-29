@@ -27,6 +27,7 @@ members = [
   "examples/number-binding",
   "examples/ssr",
   "examples/svg",
+  "examples/template",
   "examples/timer",
   "examples/todomvc",
   "examples/transitions",

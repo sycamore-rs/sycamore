@@ -153,3 +153,136 @@ pub trait GenericNodeElements: GenericNode {
     /// Create a new element node from a tag string.
     fn element_from_tag(tag: Cow<'static, str>) -> Self;
 }
+
+/// The "shape" of the template, i.e. what the structure of the template looks like. This is
+/// basically the view with holes where the dynamic parts are and flags so that these holes can be
+/// filled in later.
+#[derive(Debug)]
+pub enum TemplateShape {
+    Element {
+        ident: &'static str,
+        ns: Option<&'static str>,
+        children: &'static [TemplateShape],
+        flag: bool,
+    },
+    Text(&'static str),
+    /// A dynamic view "hole". This is where a dynamic view should be inserted.
+    DynMarker,
+}
+
+/// An unique identifier for an instantiated template.
+#[derive(Debug)]
+pub struct TemplateId(pub u32);
+
+/// A template that can be instantiated.
+#[derive(Debug)]
+pub struct Template {
+    pub id: TemplateId,
+    pub shape: TemplateShape,
+}
+
+/// Result of a template instantiation.
+#[derive(Debug)]
+pub struct TemplateResult<G> {
+    pub root: G,
+    pub flagged_nodes: Vec<G>,
+    pub dyn_markers: Vec<DynMarkerResult<G>>,
+}
+
+/// Info extracted from a dynamic marker in a template.
+#[derive(Debug)]
+pub struct DynMarkerResult<G> {
+    pub parent: G,
+    pub before: Option<G>,
+    pub multi: bool,
+}
+
+fn instantiate_element_universal_impl<G: GenericNodeElements>(
+    template: &TemplateShape,
+    flagged_nodes: &mut Vec<G>,
+    dyn_markers: &mut Vec<DynMarkerResult<G>>,
+) -> G {
+    match template {
+        TemplateShape::Element {
+            ident,
+            ns,
+            children,
+            flag,
+        } => {
+            let node = if let Some(_ns) = ns {
+                todo!()
+            } else {
+                G::element_from_tag((*ident).into())
+            };
+            let multi = children.len() != 1;
+            if *flag {
+                flagged_nodes.push(node.clone());
+            }
+            for child in *children {
+                instantiate_template_universal_impl(
+                    &node,
+                    child,
+                    flagged_nodes,
+                    dyn_markers,
+                    multi,
+                );
+            }
+            node
+        }
+        _ => panic!("expected an element"),
+    }
+}
+
+fn instantiate_template_universal_impl<G: GenericNodeElements>(
+    parent: &G,
+    template: &TemplateShape,
+    flagged_nodes: &mut Vec<G>,
+    dyn_markers: &mut Vec<DynMarkerResult<G>>,
+    multi: bool,
+) {
+    match template {
+        TemplateShape::Element { .. } => {
+            let node = instantiate_element_universal_impl(template, flagged_nodes, dyn_markers);
+            parent.append_child(&node);
+        }
+        TemplateShape::Text(text) => {
+            let node = G::text_node((*text).into());
+            parent.append_child(&node);
+        }
+        TemplateShape::DynMarker => {
+            if multi {
+                let start = G::marker();
+                parent.append_child(&start);
+                let end = G::marker();
+                parent.append_child(&end);
+                dyn_markers.push(DynMarkerResult {
+                    parent: parent.clone(),
+                    before: Some(end),
+                    multi,
+                });
+            } else {
+                dyn_markers.push(DynMarkerResult {
+                    parent: parent.clone(),
+                    before: None,
+                    multi,
+                });
+            }
+        }
+    }
+}
+
+/// Instantiate a template by creating nodes to match the template structure. Returns the root node
+/// along with a list of flagged nodes and dynamic markers.
+pub fn instantiate_template_universal<G: GenericNodeElements>(
+    template: Template,
+) -> TemplateResult<G> {
+    let mut flagged_nodes = Vec::new();
+    let mut dyn_markers = Vec::new();
+    let root =
+        instantiate_element_universal_impl(&template.shape, &mut flagged_nodes, &mut dyn_markers);
+    TemplateResult {
+        root,
+        flagged_nodes,
+        dyn_markers,
+    }
+}
