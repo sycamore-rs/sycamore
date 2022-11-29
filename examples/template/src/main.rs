@@ -2,11 +2,10 @@ use gloo_timers::future::TimeoutFuture;
 use sycamore::futures::spawn_local_scoped;
 use sycamore::generic_node::{Template, TemplateId, TemplateShape};
 use sycamore::prelude::*;
-use sycamore::utils::render::insert;
 
 #[component]
 fn App<G: Html>(cx: Scope) -> View<G> {
-    let state = create_signal(cx, 0);
+    let mut state = create_signal(cx, 0i64);
 
     spawn_local_scoped(cx, async move {
         loop {
@@ -34,14 +33,12 @@ fn App<G: Html>(cx: Scope) -> View<G> {
             flag: false,
         },
     };
+    let dyn_values = vec![View::new_dyn(cx, move || view! { cx, p { (state.get()) } })];
     let result = G::instantiate_template(template);
+    G::apply_dyn_values_to_template(cx, &result.dyn_markers, dyn_values);
 
-    let dynamic_values = vec![View::new_dyn(cx, move || view! { cx, p { (state.get()) } })];
-    for (m, value) in result.dyn_markers.iter().zip(dynamic_values.into_iter()) {
-        insert(cx, &m.parent, value, None, m.before.as_ref(), m.multi);
-    }
-    result.flagged_nodes[0].event(cx, "click", |_| {
-        state.set(*state.get() * 2);
+    result.flagged_nodes[0].event(cx, "click", move |_| {
+        state *= 2;
     });
     View::new_node(result.root)
 }

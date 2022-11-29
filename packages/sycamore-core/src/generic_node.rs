@@ -6,6 +6,9 @@ use std::hash::Hash;
 
 use sycamore_reactive::Scope;
 
+use crate::render::insert;
+use crate::view::View;
+
 /// Represents an element (i.e. `div`, `p`, etc...).
 pub trait SycamoreElement {
     /// The tag name of the element.
@@ -162,6 +165,24 @@ pub trait GenericNodeElements: GenericNode {
     /// reduced allocations and string formatting.
     fn instantiate_template(template: Template) -> TemplateResult<Self> {
         instantiate_template_universal(template)
+    }
+
+    /// Insert the dynamic values into the template at the dynamic markers.
+    fn apply_dyn_values_to_template(
+        cx: Scope,
+        dyn_markers: &Vec<DynMarkerResult<Self>>,
+        dyn_values: Vec<View<Self>>,
+    ) {
+        if dyn_markers.len() != dyn_values.len() {
+            panic!(
+                "The number of dynamic markers ({}) does not match the number of dynamic values ({}).",
+                dyn_markers.len(),
+                dyn_values.len()
+            );
+        }
+        for (m, value) in dyn_markers.iter().zip(dyn_values.into_iter()) {
+            insert(cx, &m.parent, value, None, m.before.as_ref(), m.multi);
+        }
     }
 }
 

@@ -32,7 +32,9 @@ use crate::web::Html;
 pub mod prelude {
     pub use super::{component, dyn_t, fragment, t, tag};
     #[cfg(feature = "web")]
-    pub use crate::web::html::*;
+    pub use crate::web::html::html_tags::builder::*;
+    #[cfg(feature = "web")]
+    pub use crate::web::html::svg_tags::builder::*;
 }
 
 /// A factory for building [`View`]s.
