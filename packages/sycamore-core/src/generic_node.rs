@@ -195,6 +195,7 @@ pub enum TemplateShape {
         ident: &'static str,
         ns: Option<&'static str>,
         children: &'static [TemplateShape],
+        attributes: &'static [(&'static str, &'static str)],
         flag: bool,
     },
     Text(&'static str),
@@ -239,6 +240,7 @@ fn instantiate_element_universal_impl<G: GenericNodeElements>(
             ident,
             ns,
             children,
+            attributes,
             flag,
         } => {
             let node = if let Some(_ns) = ns {
@@ -249,6 +251,9 @@ fn instantiate_element_universal_impl<G: GenericNodeElements>(
             let multi = children.len() != 1;
             if *flag {
                 flagged_nodes.push(node.clone());
+            }
+            for (name, value) in *attributes {
+                node.set_attribute((*name).into(), (*value).into());
             }
             for child in *children {
                 instantiate_template_universal_impl(

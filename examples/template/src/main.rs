@@ -27,19 +27,22 @@ fn App<G: Html>(cx: Scope) -> View<G> {
                     ident: "button",
                     ns: None,
                     children: &[TemplateShape::Text("Click me.")],
+                    attributes: &[],
                     flag: true,
                 },
             ],
+            attributes: &[],
             flag: false,
         },
     };
     let dyn_values = vec![View::new_dyn(cx, move || view! { cx, p { (state.get()) } })];
     let result = G::instantiate_template(template);
     G::apply_dyn_values_to_template(cx, &result.dyn_markers, dyn_values);
-
+    
     result.flagged_nodes[0].event(cx, "click", move |_| {
         state *= 2;
     });
+
     View::new_node(result.root)
 }
 
