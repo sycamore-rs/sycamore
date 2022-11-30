@@ -18,27 +18,6 @@ pub enum ViewNode {
     Dyn(Dyn),
 }
 
-impl ViewNode {
-    /// Node is dynamic if the node is a component or a splice that is not a simple path.
-    /// # Example
-    /// ```ignore
-    /// view! { MyComponent() } // is_dynamic = true
-    /// view! { (state.get()) } // is_dynamic = true
-    /// view! { (state) } // is_dynamic = false
-    /// ```
-    pub fn is_dynamic(&self) -> bool {
-        match self {
-            ViewNode::Element(_) => false,
-            ViewNode::Component(_) => true,
-            ViewNode::Text(_) => false,
-            ViewNode::Dyn(Dyn {
-                value: Expr::Lit(_) | Expr::Path(_) | Expr::Closure(_),
-            }) => false,
-            ViewNode::Dyn(_) => true,
-        }
-    }
-}
-
 pub enum NodeType {
     Element,
     Component,
