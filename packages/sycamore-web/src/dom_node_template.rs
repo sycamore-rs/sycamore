@@ -12,10 +12,11 @@ use web_sys::{HtmlTemplateElement, Node};
 use crate::{document, Html, VOID_ELEMENTS};
 
 /// A list of steps to perform when instantiating a template.
+#[derive(Debug)]
 pub struct Walk(pub Vec<WalkSteps>);
 
 /// Instructions for the walker to perform.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum WalkSteps {
     /// Point to the next sibling.
     NextSibling,

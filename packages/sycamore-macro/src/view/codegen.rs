@@ -36,32 +36,46 @@ impl Codegen {
         }
     }
 
-    /// Generate a `View` using `Template`s.
+    /// Generate a `View` from a `ViewNode`. If the root is an element, create a `Template`.
     pub fn view_node(&self, view_node: &ViewNode) -> TokenStream {
-        let cx = &self.cx;
-        let template_id = rand::random::<u32>();
+        match view_node {
+            ViewNode::Element(_) => {
+                let cx = &self.cx;
+                let template_id = rand::random::<u32>();
 
-        let mut codegen = CodegenTemplate::new(self.elements_mod_path.clone(), self.cx.clone());
+                let mut codegen =
+                    CodegenTemplate::new(self.elements_mod_path.clone(), self.cx.clone());
 
-        let shape = codegen.node(view_node);
-        let dyn_values = codegen.dyn_values;
-        let flagged_nodes_quoted = codegen.flagged_nodes_quoted;
-        quote! {{
-            use sycamore::generic_node::SycamoreElement as _;
+                let shape = codegen.node(view_node);
+                let dyn_values = codegen.dyn_values;
+                let flagged_nodes_quoted = codegen.flagged_nodes_quoted;
+                quote! {{
+                    use ::sycamore::generic_node::SycamoreElement as _;
 
-            static __TEMPLATE: ::sycamore::generic_node::Template = ::sycamore::generic_node::Template {
-                id: ::sycamore::generic_node::TemplateId(#template_id),
-                shape: #shape,
-            };
+                    static __TEMPLATE: ::sycamore::generic_node::Template = ::sycamore::generic_node::Template {
+                        id: ::sycamore::generic_node::TemplateId(#template_id),
+                        shape: #shape,
+                    };
 
-            let __dyn_values = vec![#(#dyn_values),*];
-            let __result = ::sycamore::generic_node::__instantiate_template(&__TEMPLATE);
-            ::sycamore::generic_node::__apply_dyn_values_to_template(#cx, &__result.dyn_markers, __dyn_values);
-            let __flagged = __result.flagged_nodes;
-            #flagged_nodes_quoted
+                    let __dyn_values = vec![#(#dyn_values),*];
+                    let __result = ::sycamore::generic_node::__instantiate_template(&__TEMPLATE);
+                    ::sycamore::generic_node::__apply_dyn_values_to_template(#cx, &__result.dyn_markers, __dyn_values);
+                    let __flagged = __result.flagged_nodes;
+                    #flagged_nodes_quoted
 
-            View::new_node(__result.root)
-        }}
+                    ::sycamore::view::View::new_node(__result.root)
+                }}
+            }
+            ViewNode::Component(component) => {
+                impl_component(&self.elements_mod_path, &self.cx, component)
+            }
+            ViewNode::Text(Text { value }) => quote! {
+                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(#value))
+            },
+            ViewNode::Dyn(Dyn { value }) => quote! {
+                ::sycamore::view::View::new_dyn(move || #value)
+            },
+        }
     }
 }
 
@@ -103,16 +117,22 @@ impl CodegenTemplate {
             children,
         } = element;
 
-        let children = children
-            .iter()
-            .map(|child| self.node(child))
-            .collect::<Vec<_>>();
         let attrs = attrs
             .iter()
             .map(|attr| self.attribute(attr))
             .collect::<Vec<_>>();
         let flag = attrs.iter().any(|(_, flag)| *flag);
         let attrs = attrs.into_iter().filter_map(|(attr, _)| attr);
+
+        if flag {
+            self.flag_counter += 1;
+        }
+        // We run codegen for children after attrs to make sure that we have the correct flag
+        // counter.
+        let children = children
+            .iter()
+            .map(|child| self.node(child))
+            .collect::<Vec<_>>();
 
         let ret = match tag {
             ElementTag::Builtin(tag) => quote! {{
@@ -135,10 +155,6 @@ impl CodegenTemplate {
                 }
             },
         };
-
-        if flag {
-            self.flag_counter += 1;
-        }
 
         ret
     }
@@ -368,48 +384,8 @@ impl CodegenTemplate {
 
     fn component(&mut self, component: &Component) -> TokenStream {
         // Add a DynMarker and set the component as a dyn value.
-        let cx = &self.cx;
-        let Component {
-            ident,
-            props,
-            children,
-            ..
-        } = component;
-
-        let name = props.iter().map(|x| &x.name);
-        let value = props.iter().map(|x| &x.value);
-        let children_quoted = children
-            .as_ref()
-            .filter(|children| !children.0.is_empty())
-            .map(|children| {
-                let codegen = Codegen {
-                    elements_mod_path: self.elements_mod_path.clone(),
-                    cx: self.cx.clone(),
-                };
-                let children = codegen.view_root(children);
-                quote! {
-                    .children(
-                        ::sycamore::component::Children::new(#cx, move |#cx| {
-                            #[allow(unused_variables)]
-                            let #cx: ::sycamore::reactive::BoundedScope = #cx;
-                            #children
-                        })
-                    )
-                }
-            })
-            .unwrap_or_default();
-        let component_view = quote! {{
-            let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
-            ::sycamore::component::component_scope(move || ::sycamore::component::Component::create(
-                __component,
-                #cx,
-                ::sycamore::component::element_like_component_builder(__component)
-                    #(.#name(#value))*
-                    #children_quoted
-                    .build()
-            ))
-        }};
-        self.dyn_values.push(component_view);
+        self.dyn_values
+            .push(impl_component(&self.elements_mod_path, &self.cx, component));
         quote! {
             ::sycamore::generic_node::TemplateShape::DynMarker
         }
@@ -443,4 +419,47 @@ impl CodegenTemplate {
             ::sycamore::generic_node::TemplateShape::DynMarker
         }
     }
+}
+
+fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Component) -> TokenStream {
+    let Component {
+        ident,
+        props,
+        children,
+        ..
+    } = component;
+
+    let name = props.iter().map(|x| &x.name);
+    let value = props.iter().map(|x| &x.value);
+    let children_quoted = children
+        .as_ref()
+        .filter(|children| !children.0.is_empty())
+        .map(|children| {
+            let codegen = Codegen {
+                elements_mod_path: elements_mod_path.clone(),
+                cx: cx.clone(),
+            };
+            let children = codegen.view_root(children);
+            quote! {
+                .children(
+                    ::sycamore::component::Children::new(#cx, move |#cx| {
+                        #[allow(unused_variables)]
+                        let #cx: ::sycamore::reactive::BoundedScope = #cx;
+                        #children
+                    })
+                )
+            }
+        })
+        .unwrap_or_default();
+    quote! {{
+        let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
+        ::sycamore::component::component_scope(move || ::sycamore::component::Component::create(
+            __component,
+            #cx,
+            ::sycamore::component::element_like_component_builder(__component)
+                #(.#name(#value))*
+                #children_quoted
+                .build()
+        ))
+    }}
 }
