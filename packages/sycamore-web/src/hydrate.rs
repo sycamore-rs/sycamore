@@ -20,6 +20,10 @@ pub fn get_next_element() -> Option<Element> {
             .unwrap()
             .query_selector(&format!("[data-hk=\"{}.{}\"]", hk.0, hk.1))
             .unwrap()
+            .map(|e| {
+                e.remove_attribute("data-hk");
+                e
+            })
     } else {
         None
     }
