@@ -18,8 +18,6 @@ mod hydrate_node;
 #[cfg(feature = "ssr")]
 mod ssr_node;
 
-use std::collections::HashSet;
-
 pub use dom_node::*;
 #[cfg(feature = "hydrate")]
 pub use hydrate_node::*;
@@ -70,7 +68,7 @@ pub trait Html:
     fn from_web_sys(node: web_sys::Node) -> Self;
 }
 
-static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
     vec![
         "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
         "source", "track", "wbr", "command", "keygen", "menuitem",

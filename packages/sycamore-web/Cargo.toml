@@ -11,6 +11,7 @@ repository = "https://github.com/sycamore-rs/sycamore"
 version = "0.8.2"
 
 [dependencies]
+hashbrown = "0.13.1"
 html-escape = "0.2.12"
 indexmap = "1.9.2"
 js-sys = "0.3.60"
