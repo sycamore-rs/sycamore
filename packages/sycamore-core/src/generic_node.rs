@@ -181,7 +181,7 @@ pub trait GenericNodeElements: GenericNode {
             );
         }
         for (m, value) in dyn_markers.iter().zip(dyn_values.into_iter()) {
-            insert(cx, &m.parent, value, None, m.before.as_ref(), m.multi);
+            insert(cx, &m.parent, value, m.initial.clone(), m.before.as_ref(), m.multi);
         }
     }
 }
@@ -216,7 +216,7 @@ pub struct Template {
 
 /// Result of a template instantiation.
 #[derive(Debug)]
-pub struct TemplateResult<G> {
+pub struct TemplateResult<G: GenericNode> {
     pub root: G,
     pub flagged_nodes: Vec<G>,
     pub dyn_markers: Vec<DynMarkerResult<G>>,
@@ -224,9 +224,10 @@ pub struct TemplateResult<G> {
 
 /// Info extracted from a dynamic marker in a template.
 #[derive(Debug)]
-pub struct DynMarkerResult<G> {
+pub struct DynMarkerResult<G: GenericNode> {
     pub parent: G,
     pub before: Option<G>,
+    pub initial: Option<View<G>>,
     pub multi: bool,
 }
 
@@ -311,12 +312,14 @@ fn instantiate_template_universal_impl<G: GenericNodeElements>(
                 dyn_markers.push(DynMarkerResult {
                     parent: parent.clone(),
                     before: Some(end),
+                    initial: None,
                     multi,
                 });
             } else {
                 dyn_markers.push(DynMarkerResult {
                     parent: parent.clone(),
                     before: None,
+                    initial: None,
                     multi,
                 });
             }

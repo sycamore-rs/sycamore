@@ -11,6 +11,7 @@
 #![deny(missing_debug_implementations)]
 
 mod dom_node;
+mod dom_node_template;
 #[cfg(feature = "hydrate")]
 pub mod hydrate;
 #[cfg(feature = "hydrate")]
@@ -110,4 +111,13 @@ pub fn on_mount<'a>(cx: Scope<'a>, f: impl Fn() + 'a) {
         let closure = create_ref(cx, Closure::wrap(boxed));
         queue_microtask(closure);
     }
+}
+
+/// Get `window.document`.
+pub(crate) fn document() -> web_sys::Document {
+    thread_local! {
+        /// Cache document since it is frequently accessed to prevent going through js-interop.
+        static DOCUMENT: web_sys::Document = web_sys::window().unwrap_throw().document().unwrap_throw();
+    };
+    DOCUMENT.with(|document| document.clone())
 }

@@ -57,6 +57,18 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 
 fn main() {
     console_error_panic_hook::set_once();
+    console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(App);
+    let string = sycamore::render_to_string(App);
+    log::info!("{string}");
+
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .body()
+        .unwrap()
+        .set_inner_html(&string);
+
+    sycamore::hydrate(App);
 }

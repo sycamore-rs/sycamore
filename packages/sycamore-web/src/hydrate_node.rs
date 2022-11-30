@@ -4,7 +4,9 @@ use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
+use sycamore_core::generic_node::{
+    GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
+};
 use sycamore_core::hydrate::{get_current_id, hydration_completed, with_hydration_context};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
@@ -14,6 +16,9 @@ use wasm_bindgen::JsCast;
 use web_sys::Node;
 
 use crate::dom_node::{DomNode, NodeId};
+use crate::dom_node_template::{
+    add_new_cached_template, execute_walk, try_get_cached_template, WalkResult,
+};
 use crate::hydrate::get_next_element;
 use crate::Html;
 
@@ -261,6 +266,37 @@ impl GenericNodeElements for HydrateNode {
             Self {
                 node: DomNode::element_from_tag(tag),
             }
+        }
+    }
+
+    /// For performance reasons, we will render this template to an HTML string and then cache it.
+    ///
+    /// We can then cerate an HTML template element and clone it to create a new instance.
+    fn instantiate_template(template: &Template) -> TemplateResult<HydrateNode> {
+        if let Some(cached) = try_get_cached_template(template.id) {
+            let root = if hydration_completed() {
+                cached.clone_template_content()
+            } else {
+                get_next_element()
+                    .expect("node with hydration key not found")
+                    .into()
+            };
+
+            // Execute the walk sequence.
+            let WalkResult {
+                flagged_nodes,
+                dyn_markers,
+            } = execute_walk(&cached.walk, &root, true);
+
+            TemplateResult {
+                root: HydrateNode::from_web_sys(root),
+                flagged_nodes,
+                dyn_markers,
+            }
+        } else {
+            add_new_cached_template(&template);
+            // Now that the cached template has been created, we can use it.
+            Self::instantiate_template(template)
         }
     }
 }
