@@ -354,7 +354,7 @@ impl GenericNodeElements for DomNode {
         /// A list of steps to perform when instantiating a template.
         struct Walk(Vec<WalkSteps>);
         /// Instructions for the walker to perform.
-        #[derive(Clone, Copy)]
+        #[derive(Clone)]
         enum WalkSteps {
             /// Point to the next sibling.
             NextSibling,
@@ -366,7 +366,7 @@ impl GenericNodeElements for DomNode {
             /// Flag the current node.
             Flag,
             /// Mark the current node as the end tag of a dynamic fragment.
-            DynMarker,
+            DynMarker { last: bool, multi: bool },
         }
 
         struct CachedTemplateResult {
@@ -396,8 +396,8 @@ impl GenericNodeElements for DomNode {
                 let mut stack = Vec::new();
                 let mut cur = Some(root.clone());
 
-                for &step in &cached.walk.0 {
-                    match step {
+                for step in &cached.walk.0 {
+                    match step.clone() {
                         WalkSteps::NextSibling => {
                             cur = cur.and_then(|node| node.next_sibling());
                         }
@@ -411,11 +411,15 @@ impl GenericNodeElements for DomNode {
                         WalkSteps::Flag => {
                             flagged_nodes.push(DomNode::from_web_sys(cur.clone().unwrap()));
                         }
-                        WalkSteps::DynMarker => {
+                        WalkSteps::DynMarker { last, multi } => {
                             dyn_markers.push(DynMarkerResult {
                                 parent: DomNode::from_web_sys(stack.last().unwrap().clone()),
-                                before: cur.clone().map(DomNode::from_web_sys),
-                                multi: true,
+                                before: if last {
+                                    None
+                                } else {
+                                    cur.clone().map(DomNode::from_web_sys)
+                                },
+                                multi,
                             });
                         }
                     }
@@ -435,6 +439,8 @@ impl GenericNodeElements for DomNode {
                     template: &TemplateShape,
                     buf: &mut String,
                     walk: &mut Vec<WalkSteps>,
+                    multi: bool,
+                    last: bool,
                 ) {
                     match template {
                         TemplateShape::Element {
@@ -465,9 +471,18 @@ impl GenericNodeElements for DomNode {
                                 walk.push(WalkSteps::FirstChild);
 
                                 buf.push('>');
-                                for child in *children {
-                                    render_template_to_string(child, buf, walk);
-                                    walk.push(WalkSteps::NextSibling);
+                                let multi = children.len() != 1;
+                                for i in 0..children.len() {
+                                    render_template_to_string(
+                                        &children[i],
+                                        buf,
+                                        walk,
+                                        multi,
+                                        i == children.len() - 1,
+                                    );
+                                    if i != children.len() - 1 {
+                                        walk.push(WalkSteps::NextSibling);
+                                    }
                                 }
                                 buf.push_str("</");
                                 buf.push_str(ident);
@@ -480,13 +495,18 @@ impl GenericNodeElements for DomNode {
                             html_escape::encode_text_minimal_to_string(text, buf);
                         }
                         TemplateShape::DynMarker => {
-                            walk.push(WalkSteps::DynMarker);
-                            buf.push_str("<!->")
+                            if last {
+                                walk.push(WalkSteps::DynMarker { last, multi })
+                            } else {
+                                walk.push(WalkSteps::DynMarker { last, multi });
+                                buf.push_str("<!->")
+                            }
                         }
                     }
                 }
 
-                render_template_to_string(&template.shape, &mut buf, &mut walk);
+                render_template_to_string(&template.shape, &mut buf, &mut walk, false, false);
+                intern(&buf);
 
                 let template_elem = document().create_element("template").unwrap_throw();
                 template_elem.set_inner_html(&buf);
