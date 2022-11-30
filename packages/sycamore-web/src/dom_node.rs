@@ -354,7 +354,7 @@ impl GenericNodeElements for DomNode {
         /// A list of steps to perform when instantiating a template.
         struct Walk(Vec<WalkSteps>);
         /// Instructions for the walker to perform.
-        #[derive(Debug, Clone, Copy)]
+        #[derive(Clone, Copy)]
         enum WalkSteps {
             /// Point to the next sibling.
             NextSibling,
