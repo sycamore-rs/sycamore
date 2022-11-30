@@ -181,9 +181,34 @@ pub trait GenericNodeElements: GenericNode {
             );
         }
         for (m, value) in dyn_markers.iter().zip(dyn_values.into_iter()) {
-            insert(cx, &m.parent, value, m.initial.clone(), m.before.as_ref(), m.multi);
+            insert(
+                cx,
+                &m.parent,
+                value,
+                m.initial.clone(),
+                m.before.as_ref(),
+                m.multi,
+            );
         }
     }
+}
+
+/// Internal method to allow the proc-macro to call `G::instantiate_template` without knowing what
+/// `G` is.
+#[doc(hidden)]
+pub fn __instantiate_template<G: GenericNodeElements>(template: &Template) -> TemplateResult<G> {
+    G::instantiate_template(template)
+}
+
+/// Internal method to allow the proc-macro to call `G::apply_dyn_values_to_template` without
+/// knowing what `G` is.
+#[doc(hidden)]
+pub fn __apply_dyn_values_to_template<G: GenericNodeElements>(
+    cx: Scope,
+    dyn_markers: &Vec<DynMarkerResult<G>>,
+    dyn_values: Vec<View<G>>,
+) {
+    G::apply_dyn_values_to_template(cx, dyn_markers, dyn_values)
 }
 
 /// The "shape" of the template, i.e. what the structure of the template looks like. This is
@@ -192,10 +217,10 @@ pub trait GenericNodeElements: GenericNode {
 #[derive(Debug)]
 pub enum TemplateShape {
     Element {
-        ident: &'static str,
+        tag: &'static str,
         ns: Option<&'static str>,
         children: &'static [TemplateShape],
-        attributes: &'static [(&'static str, &'static str)],
+        attributes: &'static [(&'static str, Cow<'static, str>)],
         flag: bool,
     },
     Text(&'static str),
@@ -245,7 +270,7 @@ fn instantiate_element_universal_impl<G: GenericNodeElements>(
 ) -> G {
     match template {
         TemplateShape::Element {
-            ident,
+            tag: ident,
             ns,
             children,
             attributes,
@@ -261,7 +286,7 @@ fn instantiate_element_universal_impl<G: GenericNodeElements>(
                 flagged_nodes.push(node.clone());
             }
             for (name, value) in *attributes {
-                node.set_attribute((*name).into(), (*value).into());
+                node.set_attribute((*name).into(), value.clone());
             }
             for child in *children {
                 instantiate_template_universal_impl(

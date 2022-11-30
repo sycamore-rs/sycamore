@@ -139,7 +139,7 @@ pub fn render_template_to_string(
 ) {
     match template {
         TemplateShape::Element {
-            ident,
+            tag: ident,
             ns: _,
             children,
             attributes,

@@ -53,20 +53,21 @@ pub fn view_impl(view_root: WithArgs<ViewRoot>) -> TokenStream {
     }}
 }
 
-pub fn node_impl(elem: WithArgs<Element>) -> TokenStream {
-    let WithArgs {
-        elements_mod_path,
-        cx,
-        rest: elem,
-    } = elem;
-    let codegen_state = Codegen {
-        elements_mod_path,
-        cx: parse_quote!(#cx),
-    };
-    let quoted = codegen_state.element(&elem);
-    quote! {{
-        #[allow(unused_variables)]
-        let #cx: ::sycamore::reactive::BoundedScope = #cx; // Make sure that cx is used.
-        #quoted
-    }}
+pub fn node_impl(_elem: WithArgs<Element>) -> TokenStream {
+    // let WithArgs {
+    //     elements_mod_path,
+    //     cx,
+    //     rest: elem,
+    // } = elem;
+    // let codegen_state = Codegen {
+    //     elements_mod_path,
+    //     cx: parse_quote!(#cx),
+    // };
+    // let quoted = codegen_state.element(&elem);
+    // quote! {{
+    //     #[allow(unused_variables)]
+    //     let #cx: ::sycamore::reactive::BoundedScope = #cx; // Make sure that cx is used.
+    //     #quoted
+    // }}
+    todo!();
 }

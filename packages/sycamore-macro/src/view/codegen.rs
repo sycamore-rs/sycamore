@@ -6,7 +6,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{Expr, ExprLit, Ident, Lit};
+use syn::{Expr, ExprLit, Ident, Lit, LitBool};
 
 use crate::view::ir::*;
 
@@ -24,17 +24,11 @@ impl Codegen {
             },
             [node] => self.view_node(node),
             nodes => {
-                let append_nodes: TokenStream = nodes
-                    .iter()
-                    .map(|node| {
-                        let quoted = self.view_node(node);
-                        quote! { #quoted, }
-                    })
-                    .collect();
+                let nodes = nodes.iter().map(|node| self.view_node(node));
                 quote! {
                     ::sycamore::view::View::new_fragment({
                         ::std::vec![
-                            #append_nodes
+                            #(#nodes),*
                         ]
                     })
                 }
@@ -42,324 +36,216 @@ impl Codegen {
         }
     }
 
+    /// Generate a `View` using `Template`s.
     pub fn view_node(&self, view_node: &ViewNode) -> TokenStream {
         let cx = &self.cx;
-        match view_node {
-            ViewNode::Element(elem) => {
-                let elem = self.element(elem);
-                quote! {
-                    ::sycamore::view::View::new_node(#elem)
-                }
-            }
-            ViewNode::Component(comp) => self.component(comp),
-            ViewNode::Text(Text { value }) => quote! {
-                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
-            },
-            ViewNode::Dyn(d @ Dyn { value }) => {
-                let needs_cx = d.needs_cx(&cx.to_string());
-                match needs_cx {
-                    true => quote! {
-                        ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx|
-                            ::sycamore::view::IntoView::create(&(#value))
-                        )
-                    },
-                    false => quote! {
-                        ::sycamore::view::View::new_dyn(#cx, move ||
-                            ::sycamore::view::IntoView::create(&(#value))
-                        )
-                    },
-                }
-            }
+        let template_id = rand::random::<u32>();
+
+        let mut codegen = CodegenTemplate::new(self.elements_mod_path.clone(), self.cx.clone());
+
+        let shape = codegen.node(view_node);
+        let dyn_values = codegen.dyn_values;
+        let flagged_nodes_quoted = codegen.flagged_nodes_quoted;
+        quote! {{
+            use sycamore::generic_node::SycamoreElement as _;
+
+            static __TEMPLATE: ::sycamore::generic_node::Template = ::sycamore::generic_node::Template {
+                id: ::sycamore::generic_node::TemplateId(#template_id),
+                shape: #shape,
+            };
+
+            let __dyn_values = vec![#(#dyn_values),*];
+            let __result = ::sycamore::generic_node::__instantiate_template(&__TEMPLATE);
+            ::sycamore::generic_node::__apply_dyn_values_to_template(#cx, &__result.dyn_markers, __dyn_values);
+            let __flagged = __result.flagged_nodes;
+            #flagged_nodes_quoted
+
+            View::new_node(__result.root)
+        }}
+    }
+}
+
+/// Codegen a `TemplateShape`.
+struct CodegenTemplate {
+    elements_mod_path: syn::Path,
+    cx: Ident,
+    flag_counter: usize,
+    flagged_nodes_quoted: TokenStream,
+    dyn_values: Vec<TokenStream>,
+}
+
+impl CodegenTemplate {
+    fn new(elements_mod_path: syn::Path, cx: Ident) -> Self {
+        Self {
+            elements_mod_path,
+            cx,
+            flag_counter: 0,
+            flagged_nodes_quoted: TokenStream::new(),
+            dyn_values: Vec::new(),
         }
     }
 
-    pub fn element(&self, elem: &Element) -> TokenStream {
-        let elements_mod_path = &self.elements_mod_path;
-        let cx = &self.cx;
+    fn node(&mut self, node: &ViewNode) -> TokenStream {
+        match node {
+            ViewNode::Element(element) => self.element(element),
+            ViewNode::Component(component) => self.component(component),
+            ViewNode::Text(text) => self.text(text),
+            ViewNode::Dyn(dyn_node) => self.dyn_marker(dyn_node),
+        }
+    }
+
+    fn element(&mut self, element: &Element) -> TokenStream {
+        let elements_mod_path = self.elements_mod_path.clone();
+
         let Element {
             tag,
             attrs,
             children,
-        } = elem;
+        } = element;
 
-        let quote_tag = match tag {
-            ElementTag::Builtin(id) => quote! {
-                let __el = ::sycamore::generic_node::GenericNodeElements::element::<#elements_mod_path::#id>();
-            },
-            ElementTag::Custom(tag_s) => quote! {
-                let __el = ::sycamore::generic_node::GenericNodeElements::element_from_tag(::std::borrow::Cow::Borrowed(#tag_s));
+        let children = children
+            .iter()
+            .map(|child| self.node(child))
+            .collect::<Vec<_>>();
+        let attrs = attrs
+            .iter()
+            .map(|attr| self.attribute(attr))
+            .collect::<Vec<_>>();
+        let flag = attrs.iter().any(|(_, flag)| *flag);
+        let attrs = attrs.into_iter().filter_map(|(attr, _)| attr);
+
+        let ret = match tag {
+            ElementTag::Builtin(tag) => quote! {{
+                type __tag = #elements_mod_path::#tag;
+                ::sycamore::generic_node::TemplateShape::Element {
+                    tag: __tag::TAG_NAME,
+                    ns: __tag::NAMESPACE,
+                    children: &[#(#children),*],
+                    attributes: &[#(#attrs),*],
+                    flag: #flag,
+                }
+            }},
+            ElementTag::Custom(tag) => quote! {
+                ::sycamore::generic_node::TemplateShape::Element {
+                    tag: #tag,
+                    ns: ::std::option::Option::None,
+                    children: &[#(#children),*],
+                    attributes: &[#(#attrs),*],
+                    flag: #flag,
+                }
             },
         };
 
-        let quote_attrs: TokenStream = attrs.iter().map(|attr| self.attribute(attr)).collect();
+        if flag {
+            self.flag_counter += 1;
+        }
 
-        let quote_children = {
-            let multi = children.len() >= 2;
-            let mut children = children.iter().peekable();
-            let mut quoted = TokenStream::new();
-            while let Some(child) = children.next() {
-                let is_dyn = child.is_dynamic();
-                if is_dyn {
-                    let codegen_ssr_markers = cfg!(feature = "ssr") && multi;
-                    let mut marker_is_some = true;
-                    let marker = if let Some(ViewNode::Element(elem)) =
-                        children.next_if(|x| matches!(x, ViewNode::Element(_)))
-                    {
-                        let elem = self.element(elem);
-                        quote! {
-                            let __marker = #elem;
-                            ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
-                            let __marker = ::std::option::Option::Some(&__marker);
-                        }
-                    } else if let Some(ViewNode::Text(Text { value })) =
-                        children.next_if(|x| matches!(x, ViewNode::Text(_)))
-                    {
-                        quote! {
-                            let __marker = ::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value));
-                            ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
-                            let __marker = ::std::option::Option::Some(&__marker);
-                        }
-                    } else if children.peek().is_none() {
-                        marker_is_some = false;
-                        quote! {
-                            let __marker = ::std::option::Option::None;
-                        }
-                    } else {
-                        quote! {
-                            let __marker = ::sycamore::generic_node::GenericNode::marker();
-                            ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
-                            let __marker = ::std::option::Option::Some(&__marker);
-                        }
-                    };
-                    let marker_or_none = marker_is_some.then(|| marker.clone()).unwrap_or_default();
-
-                    let initial = quote! { ::sycamore::utils::initial_node(&__el) };
-                    let ssr_markers = quote! {
-                        ::sycamore::generic_node::GenericNode::append_child(
-                            &__el,
-                            &::sycamore::generic_node::GenericNode::marker_with_text(::std::borrow::Cow::Borrowed("#")),
-                        );
-                        let __end_marker = ::sycamore::generic_node::GenericNode::marker_with_text(::std::borrow::Cow::Borrowed("/"));
-                        ::sycamore::generic_node::GenericNode::append_child(&__el, &__end_marker);
-                    };
-
-                    quoted.extend(match child {
-                        ViewNode::Component(comp) => {
-                            let comp = self.component(comp);
-                            let quoted = quote! {
-                                #marker
-                                ::sycamore::utils::render::insert(#cx, &__el, __comp, __initial, __marker, #multi);
-                            };
-                            codegen_ssr_markers.then(|| quote! {
-                                let __comp = #comp;
-                                let __initial = #initial;
-                                if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::web::SsrNode>() {
-                                    #ssr_markers
-                                    ::sycamore::utils::render::insert(#cx, &__el, __comp, __initial, Some(&__end_marker), #multi);
-                                    #marker_or_none
-                                } else { #quoted }
-                            }).unwrap_or(quote! {
-                                let __comp = #comp;
-                                let __initial = #initial;
-                                #quoted
-                            })
-                        }
-                        ViewNode::Dyn(d @ Dyn { value}) => {
-                            let needs_cx = d.needs_cx(&self.cx.to_string());
-                            let view_quoted = match needs_cx {
-                                true => quote! {
-                                    ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx|
-                                        ::sycamore::view::IntoView::create(&(#value))
-                                    )
-                                },
-                                false => quote! {
-                                    ::sycamore::view::View::new_dyn(#cx, move ||
-                                        ::sycamore::view::IntoView::create(&(#value))
-                                    )
-                                }
-                            };
-                            let quoted = quote! {
-                                #marker
-                                ::sycamore::utils::render::insert(#cx, &__el, __view, __initial, __marker, #multi);
-                            };
-                            codegen_ssr_markers.then(|| quote! {
-                                let __view = #view_quoted;
-                                let __initial = #initial;
-                                if ::std::any::Any::type_id(&__el) == ::std::any::TypeId::of::<::sycamore::web::SsrNode>() {
-                                    #ssr_markers
-                                    ::sycamore::utils::render::insert(
-                                        #cx, &__el, __view, __initial, Some(&__end_marker), #multi
-                                    );
-                                    #marker_or_none
-                                } else { #quoted }
-                            }).unwrap_or(quote! {
-                                let __view = #view_quoted;
-                                let __initial = #initial;
-                                #quoted
-                            })
-                        },
-                        _ => unreachable!("only component and dyn node can be dynamic"),
-                    });
-
-                    // Do not perform non dynamic codegen.
-                    continue;
-                }
-                match child {
-                    ViewNode::Element(elem) => quoted.extend({
-                        let elem = self.element(elem);
-                        quote! {
-                            ::sycamore::generic_node::GenericNode::append_child(&__el, &#elem);
-                        }
-                    }),
-                    ViewNode::Component(_) => unreachable!("component is always dynamic"),
-                    ViewNode::Text(Text { value }) => {
-                        let intern = quote! {
-                            // Since this is static text, intern it as it will likely be constructed many times.
-                            #[cfg(target_arch = "wasm32")]
-                            ::sycamore::rt::intern(#value);
-                        };
-                        quoted.extend(match multi {
-                            true => quote! {
-                                #intern
-                                ::sycamore::generic_node::GenericNode::append_child(
-                                    &__el,
-                                    &::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)),
-                                );
-                            },
-                            // Only one child, directly set innerText instead of creating a text node.
-                            false => quote! {
-                                #intern
-                                ::sycamore::generic_node::GenericNode::update_inner_text(&__el, ::std::borrow::Cow::Borrowed(#value));
-                            },
-                        });
-                    }
-                    ViewNode::Dyn(Dyn { value }) => quoted.extend(quote! {
-                        ::sycamore::utils::render::insert(#cx, &__el,
-                            ::sycamore::view::IntoView::create(&(#value)),
-                            None, None, #multi
-                        );
-                    }),
-                }
-            }
-            quoted
-        };
-
-        quote! {{
-            #quote_tag
-            #quote_attrs
-            #quote_children
-            __el
-        }}
+        ret
     }
 
-    pub fn attribute(&self, attr: &Attribute) -> TokenStream {
+    fn attribute(&mut self, attr: &Attribute) -> (Option<TokenStream>, bool) {
         let cx = &self.cx;
-        let mut tokens = TokenStream::new();
+        let flag_counter = self.flag_counter;
+
         let expr = &attr.value;
 
         let is_dynamic = !matches!(expr, Expr::Lit(ExprLit { .. }));
 
         match &attr.ty {
             AttributeType::Str { name } => {
-                let name = name.to_string();
-                // Use `set_class_name` instead of `set_attribute` for better performance.
-                let is_class = name == "class";
                 let quoted_text = if let Expr::Lit(ExprLit {
                     lit: Lit::Str(text),
                     ..
                 }) = expr
                 {
-                    // Since this is static text, intern it as it will likely be constructed many
-                    // times.
-                    quote! {
-                        if ::std::cfg!(target_arch = "wasm32") {
-                            ::std::borrow::Cow::Borrowed(::sycamore::rt::intern(#text))
-                        } else {
-                            ::std::borrow::Cow::Borrowed(#text)
-                        }
-                    }
+                    quote! { ::std::borrow::Cow::Borrowed(#text) }
                 } else {
-                    quote! {
-                        ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#expr))
-                    }
-                };
-                let quoted_set_attribute = if is_class {
-                    quote! {
-                        ::sycamore::generic_node::GenericNode::set_class_name(&__el, #quoted_text);
-                    }
-                } else {
-                    quote! {
-                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), #quoted_text);
-                    }
+                    quote! { ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#expr)) }
                 };
 
                 if is_dynamic {
-                    tokens.extend(quote! {
-                        ::sycamore::reactive::create_effect(#cx, {
-                            let __el = ::std::clone::Clone::clone(&__el);
-                            move || { #quoted_set_attribute }
+                    self.flagged_nodes_quoted.extend(quote! {
+                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                        ::sycamore::reactive::create_effect(#cx, move || {
+                            ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), #quoted_text);
                         });
                     });
+                    (None, true)
                 } else {
-                    tokens.extend(quote! { #quoted_set_attribute });
-                };
+                    (Some(quote! { (#name, #quoted_text) }), false)
+                }
             }
             AttributeType::Bool { name } => {
-                let name = name.to_string();
-                let quoted_set_attribute = quote! {
-                    if #expr {
-                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), ::std::borrow::Cow::Borrowed(""));
-                    } else {
-                        ::sycamore::generic_node::GenericNode::remove_attribute(&__el, ::std::borrow::Cow::Borrowed(#name));
-                    }
-                };
-
                 if is_dynamic {
-                    tokens.extend(quote! {
-                        ::sycamore::reactive::create_effect(#cx, {
-                            let __el = ::std::clone::Clone::clone(&__el);
-                            move || {
-                                #quoted_set_attribute
-                            }
-                        });
+                    let quoted_set_attribute = quote! {
+                        if #expr {
+                            ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), ::std::borrow::Cow::Borrowed(""));
+                        } else {
+                            ::sycamore::generic_node::GenericNode::remove_attribute(&__el, ::std::borrow::Cow::Borrowed(#name));
+                        }
+                    };
+                    self.flagged_nodes_quoted.extend(quote! {
+                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                        ::sycamore::reactive::create_effect(#cx, move || { #quoted_set_attribute });
                     });
+                    (None, true)
                 } else {
-                    tokens.extend(quote! {
-                        #quoted_set_attribute
-                    });
-                };
+                    if let Expr::Lit(ExprLit {
+                        lit: Lit::Bool(LitBool { value, .. }),
+                        ..
+                    }) = expr
+                    {
+                        let stringified = match value {
+                            true => "true",
+                            false => "false",
+                        };
+                        (
+                            Some(quote! { (#name, ::std::borrow::Cow::Borrowed(#stringified)) }),
+                            false,
+                        )
+                    } else {
+                        // Wrong type. Produce a type error.
+                        (
+                            Some(
+                                quote! { (#name, { let _e: ::std::primitive::bool = #expr; ::std::borrow::Cow::Borrowed("") }) },
+                            ),
+                            false,
+                        )
+                    }
+                }
             }
             AttributeType::DangerouslySetInnerHtml => {
                 if is_dynamic {
-                    tokens.extend(quote! {
-                        ::sycamore::reactive::create_effect(#cx, {
-                            let __el = ::std::clone::Clone::clone(&__el);
-                            move || {
-                                ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
-                                    &__el,
-                                    <_ as ::std::convert::Into<_>>::into(#expr),
-                                );
-                            }
+                    self.flagged_nodes_quoted.extend(quote! {
+                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                        ::sycamore::reactive::create_effect(#cx, move || {
+                            ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
+                                &__el,
+                                <_ as ::std::convert::Into<_>>::into(#expr),
+                            );
                         });
                     });
+                    (None, true)
                 } else {
-                    tokens.extend(quote! {
+                    self.flagged_nodes_quoted.extend(quote! {
                         ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
-                            &__el,
+                            &__flagged[#flag_counter],
                             <_ as ::std::convert::Into<_>>::into(#expr),
                         );
                     });
-                };
+                    (None, true)
+                }
             }
             AttributeType::Event { event } => {
-                tokens.extend(quote! {
+                self.flagged_nodes_quoted.extend(quote! {
                     ::sycamore::generic_node::GenericNode::event(
-                        &__el,
+                        &__flagged[#flag_counter],
                         #cx,
                         #event,
                         #expr,
                     );
                 });
+                (None, true)
             }
             AttributeType::Property { prop } => {
                 let set_property = quote! {
@@ -369,16 +255,20 @@ impl Codegen {
                         &::std::convert::Into::<::sycamore::rt::JsValue>::into(#expr)
                     );
                 };
+
                 if is_dynamic {
-                    tokens.extend(quote! {
-                        ::sycamore::reactive::create_effect(#cx, {
-                            let __el = ::std::clone::Clone::clone(&__el);
-                            move || { #set_property }
-                        });
+                    self.flagged_nodes_quoted.extend(quote! {
+                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                        ::sycamore::reactive::create_effect(#cx, move || { #set_property });
                     });
                 } else {
-                    tokens.extend(set_property);
+                    self.flagged_nodes_quoted.extend(quote! {
+                        let __el = &__flagged[#flag_counter];
+                        #set_property
+                    });
                 }
+
+                (None, true)
             }
             AttributeType::Bind { prop } => {
                 #[derive(Clone, Copy)]
@@ -393,14 +283,14 @@ impl Codegen {
                     "valueAsNumber" => ("input", JsPropertyType::Number),
                     "checked" => ("change", JsPropertyType::Bool),
                     _ => {
-                        tokens.extend(
+                        self.flagged_nodes_quoted.extend(
                             syn::Error::new(
                                 prop.span(),
                                 format!("property `{}` is not supported with `bind:`", prop),
                             )
                             .to_compile_error(),
                         );
-                        return tokens;
+                        return (None, false);
                     }
                 };
 
@@ -443,7 +333,8 @@ impl Codegen {
                     },
                 };
 
-                tokens.extend(quote! {
+                self.flagged_nodes_quoted.extend(quote! {
+                    let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                     #[cfg(target_arch = "wasm32")]
                     ::sycamore::reactive::create_effect(#cx, {
                         let __el = ::std::clone::Clone::clone(&__el);
@@ -455,32 +346,35 @@ impl Codegen {
                         )
                     });
                     ::sycamore::generic_node::GenericNode::event(&__el, #cx, #event_name,
-                    {
-                        let #expr = ::std::clone::Clone::clone(&#expr);
-                        ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                            ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
-                        })
-                    },
+                        {
+                            let #expr = ::std::clone::Clone::clone(&#expr);
+                            ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
+                                ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
+                            })
+                        },
                     );
                 });
+
+                (None, true)
             }
             AttributeType::Ref => {
-                tokens.extend(quote! {{
-                    ::sycamore::noderef::NodeRef::set(&#expr, ::std::clone::Clone::clone(&__el));
-                }});
+                self.flagged_nodes_quoted.extend(quote! {
+                    ::sycamore::noderef::NodeRef::set(&#expr, ::std::clone::Clone::clone(&__flagged[#flag_counter]));
+                });
+                (None, true)
             }
         }
-        tokens
     }
 
-    pub fn component(&self, comp: &Component) -> TokenStream {
+    fn component(&mut self, component: &Component) -> TokenStream {
+        // Add a DynMarker and set the component as a dyn value.
         let cx = &self.cx;
         let Component {
             ident,
             props,
             children,
             ..
-        } = comp;
+        } = component;
 
         let name = props.iter().map(|x| &x.name);
         let value = props.iter().map(|x| &x.value);
@@ -488,7 +382,11 @@ impl Codegen {
             .as_ref()
             .filter(|children| !children.0.is_empty())
             .map(|children| {
-                let children = self.view_root(children);
+                let codegen = Codegen {
+                    elements_mod_path: self.elements_mod_path.clone(),
+                    cx: self.cx.clone(),
+                };
+                let children = codegen.view_root(children);
                 quote! {
                     .children(
                         ::sycamore::component::Children::new(#cx, move |#cx| {
@@ -500,7 +398,7 @@ impl Codegen {
                 }
             })
             .unwrap_or_default();
-        quote! {{
+        let component_view = quote! {{
             let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
             ::sycamore::component::component_scope(move || ::sycamore::component::Component::create(
                 __component,
@@ -510,6 +408,39 @@ impl Codegen {
                     #children_quoted
                     .build()
             ))
-        }}
+        }};
+        self.dyn_values.push(component_view);
+        quote! {
+            ::sycamore::generic_node::TemplateShape::DynMarker
+        }
+    }
+
+    fn text(&mut self, Text { value }: &Text) -> TokenStream {
+        quote! {
+            ::sycamore::generic_node::TemplateShape::Text(#value)
+        }
+    }
+
+    fn dyn_marker(&mut self, dyn_node @ Dyn { value }: &Dyn) -> TokenStream {
+        let cx = &self.cx;
+        let needs_cx = dyn_node.needs_cx(&cx.to_string());
+
+        let dyn_node = match needs_cx {
+            true => quote! {
+                ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx|
+                    ::sycamore::view::IntoView::create(&(#value))
+                )
+            },
+            false => quote! {
+                ::sycamore::view::View::new_dyn(#cx, move ||
+                    ::sycamore::view::IntoView::create(&(#value))
+                )
+            },
+        };
+        self.dyn_values.push(dyn_node);
+
+        quote! {
+            ::sycamore::generic_node::TemplateShape::DynMarker
+        }
     }
 }

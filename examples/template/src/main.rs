@@ -8,32 +8,32 @@ fn App<G: Html>(cx: Scope) -> View<G> {
     static TEMPLATE: Template = Template {
         id: TemplateId(0),
         shape: TemplateShape::Element {
-            ident: "div",
+            tag: "div",
             ns: None,
             children: &[
                 TemplateShape::Element {
-                    ident: "p",
+                    tag: "p",
                     ns: None,
                     children: &[TemplateShape::Text("Value: "), TemplateShape::DynMarker],
                     attributes: &[],
                     flag: false,
                 },
                 TemplateShape::Element {
-                    ident: "button",
+                    tag: "button",
                     ns: None,
                     children: &[TemplateShape::Text("+")],
                     attributes: &[],
                     flag: true,
                 },
                 TemplateShape::Element {
-                    ident: "button",
+                    tag: "button",
                     ns: None,
                     children: &[TemplateShape::Text("-")],
                     attributes: &[],
                     flag: true,
                 },
                 TemplateShape::Element {
-                    ident: "button",
+                    tag: "button",
                     ns: None,
                     children: &[TemplateShape::Text("Reset")],
                     attributes: &[],
