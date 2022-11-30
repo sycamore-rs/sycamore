@@ -6,5 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gloo-timers = { version = "0.2.4", features = ["futures"] }
-sycamore = { path = "../../packages/sycamore", features = ["suspense"] }
+console_error_panic_hook = "0.1.7"
+sycamore = { path = "../../packages/sycamore" }

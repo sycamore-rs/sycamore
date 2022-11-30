@@ -1,20 +1,24 @@
 //! Rendering backend for the DOM.
 
 use std::borrow::Cow;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
+use sycamore_core::generic_node::{
+    DynMarkerResult, GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateId,
+    TemplateResult, TemplateShape,
+};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
-use web_sys::{Comment, Document, Element, Node, Text};
+use web_sys::{Comment, Document, Element, HtmlTemplateElement, Node, Text};
 
-use crate::Html;
+use crate::{Html, VOID_ELEMENTS};
 
 #[wasm_bindgen]
 extern "C" {
@@ -341,6 +345,162 @@ impl GenericNodeElements for DomNode {
             id: Default::default(),
             node,
         }
+    }
+
+    /// For performance reasons, we will render this template to an HTML string and then cache it.
+    ///
+    /// We can then cerate an HTML template element and clone it to create a new instance.
+    fn instantiate_template(template: &Template) -> TemplateResult<DomNode> {
+        /// A list of steps to perform when instantiating a template.
+        struct Walk(Vec<WalkSteps>);
+        /// Instructions for the walker to perform.
+        #[derive(Debug, Clone, Copy)]
+        enum WalkSteps {
+            /// Point to the next sibling.
+            NextSibling,
+            /// Point to the first child of current node.
+            FirstChild,
+            /// Point to the parent of the current node.
+            /// This will pop the current node off the stack.
+            Parent,
+            /// Flag the current node.
+            Flag,
+            /// Mark the current node as the end tag of a dynamic fragment.
+            DynMarker,
+        }
+
+        struct CachedTemplateResult {
+            template_elem: HtmlTemplateElement,
+            walk: Walk,
+        }
+
+        thread_local! {
+            static TEMPLATE_CACHE: RefCell<HashMap<TemplateId, CachedTemplateResult>> = RefCell::new(HashMap::new());
+        }
+
+        TEMPLATE_CACHE.with(|cache| {
+            if cache.borrow().get(&template.id).is_some() {
+                let cache = cache.borrow();
+                let cached = cache.get(&template.id).unwrap();
+                let root = cached
+                    .template_elem
+                    .content()
+                    .clone_node_with_deep(true)
+                    .unwrap_throw()
+                    .first_child()
+                    .unwrap_throw();
+
+                // Execute the walk sequence.
+                let mut flagged_nodes = Vec::new();
+                let mut dyn_markers = Vec::new();
+                let mut stack = Vec::new();
+                let mut cur = Some(root.clone());
+
+                for &step in &cached.walk.0 {
+                    match step {
+                        WalkSteps::NextSibling => {
+                            cur = cur.and_then(|node| node.next_sibling());
+                        }
+                        WalkSteps::FirstChild => {
+                            stack.push(cur.clone().unwrap());
+                            cur = cur.as_ref().unwrap().first_child();
+                        }
+                        WalkSteps::Parent => {
+                            cur = stack.pop();
+                        }
+                        WalkSteps::Flag => {
+                            flagged_nodes.push(DomNode::from_web_sys(cur.clone().unwrap()));
+                        }
+                        WalkSteps::DynMarker => {
+                            dyn_markers.push(DynMarkerResult {
+                                parent: DomNode::from_web_sys(stack.last().unwrap().clone()),
+                                before: cur.clone().map(DomNode::from_web_sys),
+                                multi: true,
+                            });
+                        }
+                    }
+                }
+
+                TemplateResult {
+                    root: DomNode::from_web_sys(root),
+                    flagged_nodes,
+                    dyn_markers,
+                }
+            } else {
+                // No cached template found. Create a new cached template and use it.
+                let mut buf = String::new();
+                let mut walk = Vec::new();
+
+                fn render_template_to_string(
+                    template: &TemplateShape,
+                    buf: &mut String,
+                    walk: &mut Vec<WalkSteps>,
+                ) {
+                    match template {
+                        TemplateShape::Element {
+                            ident,
+                            ns: _,
+                            children,
+                            attributes,
+                            flag,
+                        } => {
+                            if *flag {
+                                walk.push(WalkSteps::Flag);
+                            }
+
+                            buf.push('<');
+                            buf.push_str(ident);
+                            for (name, value) in *attributes {
+                                buf.push(' ');
+                                buf.push_str(name);
+                                buf.push_str("=\"");
+                                html_escape::encode_double_quoted_attribute_to_string(value, buf);
+                                buf.push('"');
+                            }
+
+                            // Check if self-closing tag (void-element).
+                            if children.is_empty() && VOID_ELEMENTS.contains(ident) {
+                                buf.push_str("/>");
+                            } else {
+                                walk.push(WalkSteps::FirstChild);
+
+                                buf.push('>');
+                                for child in *children {
+                                    render_template_to_string(child, buf, walk);
+                                    walk.push(WalkSteps::NextSibling);
+                                }
+                                buf.push_str("</");
+                                buf.push_str(ident);
+                                buf.push('>');
+
+                                walk.push(WalkSteps::Parent);
+                            }
+                        }
+                        TemplateShape::Text(text) => {
+                            html_escape::encode_text_minimal_to_string(text, buf);
+                        }
+                        TemplateShape::DynMarker => {
+                            walk.push(WalkSteps::DynMarker);
+                            buf.push_str("<!->")
+                        }
+                    }
+                }
+
+                render_template_to_string(&template.shape, &mut buf, &mut walk);
+
+                let template_elem = document().create_element("template").unwrap_throw();
+                template_elem.set_inner_html(&buf);
+                cache.borrow_mut().insert(
+                    template.id,
+                    CachedTemplateResult {
+                        template_elem: template_elem.unchecked_into(),
+                        walk: Walk(walk),
+                    },
+                );
+                // Now that the cached template has been created, we can use it.
+                Self::instantiate_template(template)
+            }
+        })
     }
 }
 

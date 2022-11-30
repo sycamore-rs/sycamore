@@ -8,23 +8,13 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
-use once_cell::sync::Lazy;
 use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
 use sycamore_core::hydrate::{get_next_id, with_hydration_context};
 use sycamore_core::view::View;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 
-use crate::Html;
-
-static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-    vec![
-        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
-        "source", "track", "wbr", "command", "keygen", "menuitem",
-    ]
-    .into_iter()
-    .collect()
-});
+use crate::{Html, VOID_ELEMENTS};
 
 /// Inner representation for [`SsrNode`].
 #[derive(Debug, Clone)]

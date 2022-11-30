@@ -163,8 +163,8 @@ pub trait GenericNodeElements: GenericNode {
     /// overridden for specific node types to provide a more optimized implementation. For example,
     /// `SsrNode` could render the template to a static HTML string and then cache the result for
     /// reduced allocations and string formatting.
-    fn instantiate_template(template: Template) -> TemplateResult<Self> {
-        instantiate_template_universal(template)
+    fn instantiate_template(template: &Template) -> TemplateResult<Self> {
+        instantiate_template_universal(&template)
     }
 
     /// Insert the dynamic values into the template at the dynamic markers.
@@ -204,7 +204,7 @@ pub enum TemplateShape {
 }
 
 /// An unique identifier for an instantiated template.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TemplateId(pub u32);
 
 /// A template that can be instantiated.
@@ -311,7 +311,7 @@ fn instantiate_template_universal_impl<G: GenericNodeElements>(
 /// Instantiate a template by creating nodes to match the template structure. Returns the root node
 /// along with a list of flagged nodes and dynamic markers.
 pub fn instantiate_template_universal<G: GenericNodeElements>(
-    template: Template,
+    template: &Template,
 ) -> TemplateResult<G> {
     let mut flagged_nodes = Vec::new();
     let mut dyn_markers = Vec::new();
