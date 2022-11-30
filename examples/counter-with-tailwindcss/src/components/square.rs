@@ -10,7 +10,7 @@ pub fn Square<'a, G: Html>(cx: Scope<'a>, value: &'a ReadSignal<i32>) -> View<G>
         }
         (if *negative.get() {
             view! { cx,
-                h3(class="text-xl text-red-700") {
+                h3(class="text-l text-red-700") {
                     "Warning: base is negative"
                 }
             }
