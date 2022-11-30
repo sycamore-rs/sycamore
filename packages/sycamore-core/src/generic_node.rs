@@ -164,7 +164,7 @@ pub trait GenericNodeElements: GenericNode {
     /// `SsrNode` could render the template to a static HTML string and then cache the result for
     /// reduced allocations and string formatting.
     fn instantiate_template(template: &Template) -> TemplateResult<Self> {
-        instantiate_template_universal(&template)
+        instantiate_template_universal(&template, InstantiateUniversalOpts::default())
     }
 
     /// Insert the dynamic values into the template at the dynamic markers.
@@ -230,10 +230,17 @@ pub struct DynMarkerResult<G> {
     pub multi: bool,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct InstantiateUniversalOpts {
+    pub start_marker: Option<&'static str>,
+    pub end_marker: Option<&'static str>,
+}
+
 fn instantiate_element_universal_impl<G: GenericNodeElements>(
     template: &TemplateShape,
     flagged_nodes: &mut Vec<G>,
     dyn_markers: &mut Vec<DynMarkerResult<G>>,
+    opts: InstantiateUniversalOpts,
 ) -> G {
     match template {
         TemplateShape::Element {
@@ -262,6 +269,7 @@ fn instantiate_element_universal_impl<G: GenericNodeElements>(
                     flagged_nodes,
                     dyn_markers,
                     multi,
+                    opts,
                 );
             }
             node
@@ -276,10 +284,12 @@ fn instantiate_template_universal_impl<G: GenericNodeElements>(
     flagged_nodes: &mut Vec<G>,
     dyn_markers: &mut Vec<DynMarkerResult<G>>,
     multi: bool,
+    opts: InstantiateUniversalOpts,
 ) {
     match template {
         TemplateShape::Element { .. } => {
-            let node = instantiate_element_universal_impl(template, flagged_nodes, dyn_markers);
+            let node =
+                instantiate_element_universal_impl(template, flagged_nodes, dyn_markers, opts);
             parent.append_child(&node);
         }
         TemplateShape::Text(text) => {
@@ -288,9 +298,15 @@ fn instantiate_template_universal_impl<G: GenericNodeElements>(
         }
         TemplateShape::DynMarker => {
             if multi {
-                let start = G::marker();
+                let start = match opts.start_marker {
+                    Some(text) => G::marker_with_text(text.into()),
+                    None => G::marker(),
+                };
                 parent.append_child(&start);
-                let end = G::marker();
+                let end = match opts.end_marker {
+                    Some(text) => G::marker_with_text(text.into()),
+                    None => G::marker(),
+                };
                 parent.append_child(&end);
                 dyn_markers.push(DynMarkerResult {
                     parent: parent.clone(),
@@ -312,11 +328,16 @@ fn instantiate_template_universal_impl<G: GenericNodeElements>(
 /// along with a list of flagged nodes and dynamic markers.
 pub fn instantiate_template_universal<G: GenericNodeElements>(
     template: &Template,
+    opts: InstantiateUniversalOpts,
 ) -> TemplateResult<G> {
     let mut flagged_nodes = Vec::new();
     let mut dyn_markers = Vec::new();
-    let root =
-        instantiate_element_universal_impl(&template.shape, &mut flagged_nodes, &mut dyn_markers);
+    let root = instantiate_element_universal_impl(
+        &template.shape,
+        &mut flagged_nodes,
+        &mut dyn_markers,
+        opts,
+    );
     TemplateResult {
         root,
         flagged_nodes,

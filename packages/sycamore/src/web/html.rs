@@ -5,8 +5,8 @@
 use sycamore::prelude::*;
 pub use sycamore_web::on_mount;
 
-pub use self::svg_tags::*;
 pub use self::html_tags::*;
+pub use self::svg_tags::*;
 use crate::builder::ElementBuilder;
 use crate::generic_node::{GenericNodeElements, SycamoreElement};
 

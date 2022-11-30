@@ -8,7 +8,10 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
+use sycamore_core::generic_node::{
+    instantiate_template_universal, GenericNode, GenericNodeElements, InstantiateUniversalOpts,
+    SycamoreElement, Template, TemplateResult,
+};
 use sycamore_core::hydrate::{get_next_id, with_hydration_context};
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -311,29 +314,36 @@ impl GenericNode for SsrNode {
 
 impl GenericNodeElements for SsrNode {
     fn element<T: SycamoreElement>() -> Self {
-        let hk = get_next_id();
-        let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
-            attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
-        }
         Self::new(SsrNodeType::Element(RefCell::new(Element {
             name: Cow::Borrowed(T::TAG_NAME),
-            attributes,
+            attributes: Default::default(),
             children: Default::default(),
         })))
     }
 
     fn element_from_tag(tag: Cow<'static, str>) -> Self {
-        let hk = get_next_id();
-        let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
-            attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
-        }
         Self::new(SsrNodeType::Element(RefCell::new(Element {
             name: tag,
-            attributes,
+            attributes: Default::default(),
             children: Default::default(),
         })))
+    }
+
+    fn instantiate_template(template: &Template) -> TemplateResult<SsrNode> {
+        let result: TemplateResult<SsrNode> = instantiate_template_universal(
+            template,
+            InstantiateUniversalOpts {
+                start_marker: Some("#"),
+                end_marker: Some("/"),
+            },
+        );
+        let hk = get_next_id();
+        if let Some(hk) = hk {
+            result
+                .root
+                .set_attribute("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
+        }
+        result
     }
 }
 
