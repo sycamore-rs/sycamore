@@ -6,4 +6,4 @@ command_arguments = ["-c", "if [ ! -e tailwind.css ]; then touch tailwind.css; f
 [[hooks]]
 stage = "build"
 command = "sh"
-command_arguments = ["-c", "tailwindcss -mo tailwind.css"]
+command_arguments = ["-c", "if command -v tailwindcss; then tailwindcss -mo tailwind.css; else echo Warning: tailwindcss executable not found; fi"]
