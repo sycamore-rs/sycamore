@@ -7,7 +7,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sycamore = { path = "../../sycamore" }
+sycamore = { path = "../../sycamore", features = ["ssr"] }
 
 [dev-dependencies]
 criterion = "0.4.0"
@@ -19,4 +19,3 @@ name = "reactivity"
 [[bench]]
 harness = false
 name = "ssr"
-required-features = ["sycamore/ssr"]
