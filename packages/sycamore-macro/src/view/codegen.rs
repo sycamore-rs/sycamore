@@ -57,7 +57,7 @@ impl Codegen {
                         shape: #shape,
                     };
 
-                    let __dyn_values = vec![#(#dyn_values),*];
+                    let __dyn_values = ::std::vec![#(#dyn_values),*];
                     let __result = ::sycamore::generic_node::__instantiate_template(&__TEMPLATE);
                     ::sycamore::generic_node::__apply_dyn_values_to_template(#cx, &__result.dyn_markers, __dyn_values);
                     let __flagged = __result.flagged_nodes;
@@ -169,26 +169,30 @@ impl CodegenTemplate {
 
         match &attr.ty {
             AttributeType::Str { name } => {
-                let quoted_text = if let Expr::Lit(ExprLit {
+                if let Expr::Lit(ExprLit {
                     lit: Lit::Str(text),
                     ..
                 }) = expr
                 {
-                    quote! { ::std::borrow::Cow::Borrowed(#text) }
+                    (
+                        Some(quote! { (#name, ::std::borrow::Cow::Borrowed(#text)) }),
+                        false,
+                    )
                 } else {
-                    quote! { ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#expr)) }
-                };
-
-                if is_dynamic {
-                    self.flagged_nodes_quoted.extend(quote! {
-                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                        ::sycamore::reactive::create_effect(#cx, move || {
-                            ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), #quoted_text);
+                    let text = quote! { ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#expr)) };
+                    if is_dynamic {
+                        self.flagged_nodes_quoted.extend(quote! {
+                            let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                            ::sycamore::reactive::create_effect(#cx, move || {
+                                ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), #text);
+                            });
                         });
-                    });
+                    } else {
+                        self.flagged_nodes_quoted.extend(quote! {
+                            ::sycamore::generic_node::GenericNode::set_attribute(&__flagged[#flag_counter], ::std::borrow::Cow::Borrowed(#name), #text);
+                        });
+                    }
                     (None, true)
-                } else {
-                    (Some(quote! { (#name, #quoted_text) }), false)
                 }
             }
             AttributeType::Bool { name } => {
