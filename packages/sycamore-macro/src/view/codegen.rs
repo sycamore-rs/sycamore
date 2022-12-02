@@ -38,9 +38,9 @@ impl Codegen {
 
     /// Generate a `View` from a `ViewNode`. If the root is an element, create a `Template`.
     pub fn view_node(&self, view_node: &ViewNode) -> TokenStream {
+        let cx = &self.cx;
         match view_node {
             ViewNode::Element(_) => {
-                let cx = &self.cx;
                 let template_id = rand::random::<u32>();
 
                 let mut codegen =
@@ -73,7 +73,7 @@ impl Codegen {
                 ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(#value))
             },
             ViewNode::Dyn(Dyn { value }) => quote! {
-                ::sycamore::view::View::new_dyn(move || #value)
+                ::sycamore::view::View::new_dyn(#cx, move || #value)
             },
         }
     }
