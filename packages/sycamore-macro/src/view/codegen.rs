@@ -351,7 +351,6 @@ impl CodegenTemplate {
                     {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                         ::sycamore::reactive::create_effect(#cx, {
-                            let __el = ::std::clone::Clone::clone(&__el);
                             let #expr = ::std::clone::Clone::clone(&#expr);
                             move ||::sycamore::generic_node::GenericNode::set_property(
                                 &__el,
@@ -359,15 +358,15 @@ impl CodegenTemplate {
                                 &#convert_into_jsvalue_fn,
                             )
                         });
-                        ::sycamore::generic_node::GenericNode::event(&__el, #cx, #event_name,
-                            {
-                                let #expr = ::std::clone::Clone::clone(&#expr);
-                                ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                                    ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
-                                })
-                            },
-                        );
                     }
+                    ::sycamore::generic_node::GenericNode::event(&__flagged[#flag_counter], #cx, #event_name,
+                        {
+                            let #expr = ::std::clone::Clone::clone(&#expr);
+                            ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
+                                ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
+                            })
+                        },
+                    );
                 });
 
                 (None, true)
