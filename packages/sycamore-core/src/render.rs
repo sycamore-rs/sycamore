@@ -59,13 +59,12 @@ fn insert_expression<G: GenericNode>(
                 // inserted twice when hydrating.
                 parent.update_inner_text("".into());
                 parent.insert_child_before(node, None);
+            } else if marker.is_none() {
+                parent.append_child(node);
             } else {
-                if marker.is_none() {
-                    parent.append_child(node);
-                } else {
-                    parent.insert_child_before(node, marker);
-                }
+                parent.insert_child_before(node, marker);
             }
+
             // The new node should be inserted into parent.
             debug_assert_eq!(node.parent_node().as_ref(), Some(parent));
         }

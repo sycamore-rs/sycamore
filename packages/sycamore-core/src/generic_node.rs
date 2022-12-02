@@ -164,7 +164,7 @@ pub trait GenericNodeElements: GenericNode {
     /// `SsrNode` could render the template to a static HTML string and then cache the result for
     /// reduced allocations and string formatting.
     fn instantiate_template(template: &Template) -> TemplateResult<Self> {
-        instantiate_template_universal(&template, InstantiateUniversalOpts::default())
+        instantiate_template_universal(template, InstantiateUniversalOpts::default())
     }
 
     /// Insert the dynamic values into the template at the dynamic markers.

@@ -294,7 +294,7 @@ impl GenericNodeElements for HydrateNode {
                 dyn_markers,
             }
         } else {
-            add_new_cached_template(&template);
+            add_new_cached_template(template);
             // Now that the cached template has been created, we can use it.
             Self::instantiate_template(template)
         }

@@ -205,29 +205,27 @@ impl CodegenTemplate {
                         ::sycamore::reactive::create_effect(#cx, move || { #quoted_set_attribute });
                     });
                     (None, true)
+                } else if let Expr::Lit(ExprLit {
+                    lit: Lit::Bool(LitBool { value, .. }),
+                    ..
+                }) = expr
+                {
+                    let stringified = match value {
+                        true => "true",
+                        false => "false",
+                    };
+                    (
+                        Some(quote! { (#name, ::std::borrow::Cow::Borrowed(#stringified)) }),
+                        false,
+                    )
                 } else {
-                    if let Expr::Lit(ExprLit {
-                        lit: Lit::Bool(LitBool { value, .. }),
-                        ..
-                    }) = expr
-                    {
-                        let stringified = match value {
-                            true => "true",
-                            false => "false",
-                        };
-                        (
-                            Some(quote! { (#name, ::std::borrow::Cow::Borrowed(#stringified)) }),
-                            false,
-                        )
-                    } else {
-                        // Wrong type. Produce a type error.
-                        (
-                            Some(
-                                quote! { (#name, { let _e: ::std::primitive::bool = #expr; ::std::borrow::Cow::Borrowed("") }) },
-                            ),
-                            false,
-                        )
-                    }
+                    // Wrong type. Produce a type error.
+                    (
+                        Some(
+                            quote! { (#name, { let _e: ::std::primitive::bool = #expr; ::std::borrow::Cow::Borrowed("") }) },
+                        ),
+                        false,
+                    )
                 }
             }
             AttributeType::DangerouslySetInnerHtml => {
