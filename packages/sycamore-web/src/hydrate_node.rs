@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 use sycamore_core::generic_node::{
     GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
 };
-use sycamore_core::hydrate::{get_current_id, hydration_completed, with_hydration_context};
+use sycamore_core::hydrate::{hydration_completed, with_hydration_context};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -222,7 +222,7 @@ impl GenericNodeElements for HydrateNode {
             #[cfg(debug_assertions)]
             if T::TAG_NAME.to_ascii_lowercase() != el.tag_name().to_ascii_lowercase() {
                 // Get the hydration key of the expected element.
-                let mut hk = get_current_id().unwrap();
+                let mut hk = sycamore_core::hydrate::get_current_id().unwrap();
                 hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
                 panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
                     T::TAG_NAME,
@@ -250,7 +250,7 @@ impl GenericNodeElements for HydrateNode {
             #[cfg(debug_assertions)]
             if tag != el.tag_name().to_ascii_lowercase() {
                 // Get the hydration key of the expected element.
-                let mut hk = get_current_id().unwrap();
+                let mut hk = sycamore_core::hydrate::get_current_id().unwrap();
                 hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
                 panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
                     tag,
