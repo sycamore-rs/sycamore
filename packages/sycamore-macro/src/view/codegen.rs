@@ -70,10 +70,10 @@ impl Codegen {
                 impl_component(&self.elements_mod_path, &self.cx, component)
             }
             ViewNode::Text(Text { value }) => quote! {
-                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(#value))
+                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
             ViewNode::Dyn(Dyn { value }) => quote! {
-                ::sycamore::view::View::new_dyn(#cx, move || #value)
+                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::IntoView::create(&(#value)))
             },
         }
     }
@@ -403,14 +403,10 @@ impl CodegenTemplate {
 
         let dyn_node = match needs_cx {
             true => quote! {
-                ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx|
-                    ::sycamore::view::IntoView::create(&(#value))
-                )
+                ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::IntoView::create(&(#value)))
             },
             false => quote! {
-                ::sycamore::view::View::new_dyn(#cx, move ||
-                    ::sycamore::view::IntoView::create(&(#value))
-                )
+                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::IntoView::create(&(#value)))
             },
         };
         self.dyn_values.push(dyn_node);
