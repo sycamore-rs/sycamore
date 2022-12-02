@@ -266,23 +266,18 @@ impl CodegenTemplate {
                 (None, true)
             }
             AttributeType::Property { prop } => {
-                let set_property = quote! {
-                    ::sycamore::generic_node::GenericNode::set_property(
-                        &__el,
-                        #prop,
-                        &::std::convert::Into::<::sycamore::rt::JsValue>::into(#expr)
-                    );
-                };
+                let value = quote! { ::std::convert::Into::<::sycamore::rt::JsValue>::into(#expr) };
 
                 if is_dynamic {
                     self.flagged_nodes_quoted.extend(quote! {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                        ::sycamore::reactive::create_effect(#cx, move || { #set_property });
+                        ::sycamore::reactive::create_effect(#cx, move ||
+                            ::sycamore::generic_node::GenericNode::set_property(&__el, #prop, &#value)
+                        );
                     });
                 } else {
                     self.flagged_nodes_quoted.extend(quote! {
-                        let __el = &__flagged[#flag_counter];
-                        #set_property
+                        ::sycamore::generic_node::GenericNode::set_property(&__flagged[#flag_counter], #prop, &#value);
                     });
                 }
 
