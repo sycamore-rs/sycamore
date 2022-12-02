@@ -72,13 +72,7 @@ pub fn execute_walk<G: Html>(walk: &Walk, root: &Node, hydrate_mode: bool) -> Wa
     let mut stack = Vec::new();
     let mut cur = Some(root.clone());
 
-    let hydration_completed = sycamore_core::hydrate::hydration_completed();
     for step in &walk.0 {
-        if let Some(cur) = &cur {
-            web_sys::console::log_1(&cur.into());
-        }
-        web_sys::console::log_1(&format!("{:?}", step).into());
-
         match *step {
             WalkSteps::NextSibling => {
                 cur = cur.and_then(|node| node.next_sibling());
