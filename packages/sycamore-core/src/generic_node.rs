@@ -156,6 +156,14 @@ pub trait GenericNodeElements: GenericNode {
     /// Create a new element node from a tag string.
     fn element_from_tag(tag: Cow<'static, str>) -> Self;
 
+    /// Create a new namespaced element node from a tag string and a namespace string.
+    ///
+    /// The default implementation simply throws away the namespace and creates a normal element.
+    /// This behavior can be overridden by backends that support namespaces.
+    fn element_from_tag_namespace(tag: Cow<'static, str>, _namespace: Cow<'static, str>) -> Self {
+        Self::element_from_tag(tag)
+    }
+
     /// Instantiate a template by creating nodes to match the template structure. Returns the root
     /// node along with a list of flagged nodes and dynamic markers.
     ///
@@ -276,8 +284,8 @@ fn instantiate_element_universal_impl<G: GenericNodeElements>(
             attributes,
             flag,
         } => {
-            let node = if let Some(_ns) = ns {
-                todo!()
+            let node = if let Some(ns) = ns {
+                G::element_from_tag_namespace((*ident).into(), (*ns).into())
             } else {
                 G::element_from_tag((*ident).into())
             };

@@ -340,6 +340,17 @@ impl GenericNodeElements for DomNode {
         }
     }
 
+    fn element_from_tag_namespace(tag: Cow<'static, str>, namespace: Cow<'static, str>) -> Self {
+        let node = document()
+            .create_element_ns(Some(intern(&namespace)), intern(&tag))
+            .unwrap_throw()
+            .into();
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
     /// For performance reasons, we will render this template to an HTML string and then cache it.
     ///
     /// We can then cerate an HTML template element and clone it to create a new instance.
