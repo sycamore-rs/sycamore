@@ -142,10 +142,7 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn append_child(&self, child: &Self) {
-        if hydration_completed() {
-            // Do not append nodes during hydration as that will result in duplicate text nodes.
-            self.node.append_child(&child.node);
-        }
+        self.node.append_child(&child.node);
     }
 
     #[inline]
@@ -300,19 +297,21 @@ impl GenericNodeElements for HydrateNode {
     /// We can then cerate an HTML template element and clone it to create a new instance.
     fn instantiate_template(template: &Template) -> TemplateResult<HydrateNode> {
         if let Some(cached) = try_get_cached_template(template.id) {
-            let root = if hydration_completed() {
-                cached.clone_template_content()
-            } else {
+            let hydrate_mode = !hydration_completed();
+
+            let root = if hydrate_mode {
                 get_next_element()
                     .expect("node with hydration key not found")
                     .into()
+            } else {
+                cached.clone_template_content()
             };
 
             // Execute the walk sequence.
             let WalkResult {
                 flagged_nodes,
                 dyn_markers,
-            } = execute_walk(&cached.walk, &root, true);
+            } = execute_walk(&cached.walk, &root, hydrate_mode);
 
             TemplateResult {
                 root: HydrateNode::from_web_sys(root),

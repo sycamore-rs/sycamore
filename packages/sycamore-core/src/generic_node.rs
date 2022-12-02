@@ -178,7 +178,7 @@ pub trait GenericNodeElements: GenericNode {
     /// Insert the dynamic values into the template at the dynamic markers.
     fn apply_dyn_values_to_template(
         cx: Scope,
-        dyn_markers: &Vec<DynMarkerResult<Self>>,
+        dyn_markers: &[DynMarkerResult<Self>],
         dyn_values: Vec<View<Self>>,
     ) {
         if dyn_markers.len() != dyn_values.len() {
@@ -213,7 +213,7 @@ pub fn __instantiate_template<G: GenericNodeElements>(template: &Template) -> Te
 #[doc(hidden)]
 pub fn __apply_dyn_values_to_template<G: GenericNodeElements>(
     cx: Scope,
-    dyn_markers: &Vec<DynMarkerResult<G>>,
+    dyn_markers: &[DynMarkerResult<G>],
     dyn_values: Vec<View<G>>,
 ) {
     G::apply_dyn_values_to_template(cx, dyn_markers, dyn_values)

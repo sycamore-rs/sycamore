@@ -347,25 +347,27 @@ impl CodegenTemplate {
                 };
 
                 self.flagged_nodes_quoted.extend(quote! {
-                    let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                     #[cfg(target_arch = "wasm32")]
-                    ::sycamore::reactive::create_effect(#cx, {
-                        let __el = ::std::clone::Clone::clone(&__el);
-                        let #expr = ::std::clone::Clone::clone(&#expr);
-                        move ||::sycamore::generic_node::GenericNode::set_property(
-                            &__el,
-                            #prop,
-                            &#convert_into_jsvalue_fn,
-                        )
-                    });
-                    ::sycamore::generic_node::GenericNode::event(&__el, #cx, #event_name,
-                        {
+                    {
+                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                        ::sycamore::reactive::create_effect(#cx, {
+                            let __el = ::std::clone::Clone::clone(&__el);
                             let #expr = ::std::clone::Clone::clone(&#expr);
-                            ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                                ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
-                            })
-                        },
-                    );
+                            move ||::sycamore::generic_node::GenericNode::set_property(
+                                &__el,
+                                #prop,
+                                &#convert_into_jsvalue_fn,
+                            )
+                        });
+                        ::sycamore::generic_node::GenericNode::event(&__el, #cx, #event_name,
+                            {
+                                let #expr = ::std::clone::Clone::clone(&#expr);
+                                ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
+                                    ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
+                                })
+                            },
+                        );
+                    }
                 });
 
                 (None, true)

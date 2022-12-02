@@ -53,12 +53,6 @@ fn insert_expression<G: GenericNode>(
         ViewType::Node(node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), marker, Some(node), multi);
-            } else if !multi && cfg!(feature = "hydrate") {
-                // FIXME: This is an extremely ugly hack to get around the fact that current is None
-                // for text nodes when G is HydrateNode. This will cause the text node to be
-                // inserted twice when hydrating.
-                parent.update_inner_text("".into());
-                parent.insert_child_before(node, None);
             } else if marker.is_none() {
                 parent.append_child(node);
             } else {

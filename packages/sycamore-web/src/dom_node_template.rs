@@ -16,7 +16,7 @@ use crate::{document, Html, VOID_ELEMENTS};
 pub struct Walk(pub Vec<WalkSteps>);
 
 /// Instructions for the walker to perform.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum WalkSteps {
     /// Point to the next sibling.
     NextSibling,
@@ -72,8 +72,14 @@ pub fn execute_walk<G: Html>(walk: &Walk, root: &Node, hydrate_mode: bool) -> Wa
     let mut stack = Vec::new();
     let mut cur = Some(root.clone());
 
+    let hydration_completed = sycamore_core::hydrate::hydration_completed();
     for step in &walk.0 {
-        match step.clone() {
+        if let Some(cur) = &cur {
+            web_sys::console::log_1(&cur.into());
+        }
+        web_sys::console::log_1(&format!("{:?}", step).into());
+
+        match *step {
             WalkSteps::NextSibling => {
                 cur = cur.and_then(|node| node.next_sibling());
             }
@@ -89,26 +95,40 @@ pub fn execute_walk<G: Html>(walk: &Walk, root: &Node, hydrate_mode: bool) -> Wa
             }
             WalkSteps::DynMarker { last, multi } => {
                 if hydrate_mode {
-                    let _start = cur.clone().unwrap();
-                    let mut initial = Vec::new();
-                    // Find end node.
-                    fn is_end_node(node: &Node) -> bool {
-                        node.node_type() == Node::COMMENT_NODE
-                            && node.node_value().as_deref() == Some("/")
-                    }
-                    cur = cur.and_then(|node| node.next_sibling());
-                    while cur.is_some() && !is_end_node(cur.as_ref().unwrap()) {
-                        initial.push(View::new_node(G::from_web_sys(cur.clone().unwrap())));
+                    if multi {
+                        fn is_end_node(node: &Node) -> bool {
+                            node.node_type() == Node::COMMENT_NODE
+                                && node.node_value().as_deref() == Some("/")
+                        }
+                        let _start = cur.as_ref().expect("hydration start marker not found");
+                        let mut initial = Vec::new();
+                        // Find end node.
                         cur = cur.and_then(|node| node.next_sibling());
+                        while cur.is_some() && !is_end_node(cur.as_ref().unwrap()) {
+                            initial.push(View::new_node(G::from_web_sys(cur.clone().unwrap())));
+                            cur = cur.and_then(|node| node.next_sibling());
+                        }
+                        // We should have reached the end node now.
+                        debug_assert!(cur.is_some(), "hydration end marker not found");
+                        dyn_markers.push(DynMarkerResult {
+                            parent: G::from_web_sys(stack.last().unwrap().clone()),
+                            before: cur.clone().map(G::from_web_sys),
+                            initial: Some(View::new_fragment(initial)),
+                            multi,
+                        });
+                    } else {
+                        let mut initial = Vec::new();
+                        while let Some(next) = cur {
+                            initial.push(View::new_node(G::from_web_sys(next.clone())));
+                            cur = next.next_sibling();
+                        }
+                        dyn_markers.push(DynMarkerResult {
+                            parent: G::from_web_sys(stack.last().unwrap().clone()),
+                            before: cur.clone().map(G::from_web_sys),
+                            initial: Some(View::new_fragment(initial)),
+                            multi,
+                        });
                     }
-                    // We should have reached the end node now.
-                    debug_assert!(cur.is_some(), "hydration end marker not found");
-                    dyn_markers.push(DynMarkerResult {
-                        parent: G::from_web_sys(stack.last().unwrap().clone()),
-                        before: cur.clone().map(G::from_web_sys),
-                        initial: Some(View::new_fragment(initial)),
-                        multi,
-                    });
                 } else {
                     dyn_markers.push(DynMarkerResult {
                         parent: G::from_web_sys(stack.last().unwrap().clone()),
