@@ -2,7 +2,7 @@
 
 use std::cell::UnsafeCell;
 
-use bumpalo::Bump;
+// use bumpalo::Bump;
 use smallvec::SmallVec;
 
 /// The size of the [`SmallVec`] inline data.
@@ -14,7 +14,8 @@ impl<T> ReallyAny for T {}
 
 #[derive(Default)]
 pub(crate) struct ScopeArena<'a> {
-    bump: Bump,
+    // TODO: Add back once https://github.com/fitzgen/bumpalo/pull/188 is released in bumpalo
+    // bump: Bump,
     // We need to store the raw pointers because otherwise the values won't be dropped.
     inner: UnsafeCell<SmallVec<[*mut (dyn ReallyAny + 'a); SCOPE_ARENA_STACK_SIZE]>>,
 }
@@ -24,8 +25,8 @@ impl<'a> ScopeArena<'a> {
     /// itself.
     #[allow(clippy::mut_from_ref)] // We return a new reference each time so this is a false-positive.
     pub fn alloc<T: 'a>(&'a self, value: T) -> &'a mut T {
-        let boxed = bumpalo::boxed::Box::new_in(value, &self.bump);
-        let ptr = bumpalo::boxed::Box::into_raw(boxed);
+        let boxed = Box::new(value);
+        let ptr = Box::into_raw(boxed);
         unsafe {
             // SAFETY: The only place where self.inner.get() is mutably borrowed is right here.
             // It is impossible to have two alloc() calls on the same ScopeArena at the same time so
@@ -51,7 +52,7 @@ impl<'a> ScopeArena<'a> {
     pub unsafe fn dispose(&self) {
         for &ptr in (*self.inner.get()).iter().rev() {
             // SAFETY: the ptr was allocated in Self::alloc using bumpalo::boxed::Box::into_raw.
-            let boxed: bumpalo::boxed::Box<dyn ReallyAny> = bumpalo::boxed::Box::from_raw(ptr);
+            let boxed: Box<dyn ReallyAny> = Box::from_raw(ptr);
             // Call the drop code for the allocated value.
             drop(boxed);
         }

@@ -110,15 +110,7 @@ where
 
 /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
 pub fn scope_depth(cx: Scope) -> u32 {
-    let mut depth = 0;
-    let mut current = cx.raw;
-
-    // SAFETY: 'current.parent' necessarily lives longer than 'current'.
-    while let Some(next) = current.parent.map(|x| unsafe { &*x }) {
-        current = next;
-        depth += 1;
-    }
-    depth
+    cx.raw.inner.borrow().depth
 }
 
 #[cfg(test)]

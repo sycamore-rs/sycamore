@@ -422,4 +422,56 @@ mod tests {
             trigger.set(());
         });
     }
+
+    #[test]
+    fn inner_signal_triggering_outer_effect() {
+        create_scope_immediate(|cx| {
+            let one = create_signal(cx, ());
+
+            create_effect_scoped(cx, move |cx| {
+                println!("-outer");
+                let two = create_signal(cx, ());
+                create_effect_scoped(cx, move |cx| {
+                    println!("---inner");
+                    one.track();
+                    two.set(());
+                    println!("---end inner");
+                    on_cleanup(cx, || println!("...inner cleanup"));
+                });
+                two.track();
+                println!("-end outer");
+                on_cleanup(cx, || println!(".outer cleanup"));
+            });
+
+            one.set(());
+        });
+    }
+
+    #[test]
+    fn inner_rc_signal_triggering_outer_effect() {
+        create_scope_immediate(|cx| {
+            let one = create_rc_signal(());
+
+            let one_clone = one.clone();
+            create_effect_scoped(cx, move |cx| {
+                println!("-outer");
+                let two = create_rc_signal(());
+
+                let one_clone = one_clone.clone();
+                let two_clone = two.clone();
+                create_effect_scoped(cx, move |cx| {
+                    println!("---inner");
+                    one_clone.track();
+                    two_clone.set(());
+                    println!("---end inner");
+                    on_cleanup(cx, || println!("...inner cleanup"));
+                });
+                two.track();
+                println!("-end outer");
+                on_cleanup(cx, || println!(".outer cleanup"));
+            });
+
+            one.set(());
+        });
+    }
 }

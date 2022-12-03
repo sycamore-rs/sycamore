@@ -48,6 +48,9 @@ struct ScopeInner<'a> {
     /// size of the [`ScopeInner`] struct when most of the times, this field is unneeded.
     #[allow(clippy::box_collection)]
     contexts: Option<Box<AHashMap<TypeId, &'a dyn Any>>>,
+    /// The depth of the current scope. The root scope has a depth of 0. Any child scopes have a
+    /// depth of N + 1 where N is the depth of the parent scope.
+    depth: u32,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }
@@ -112,7 +115,7 @@ pub type Scope<'a> = BoundedScope<'a, 'a>;
 impl<'a> ScopeRaw<'a> {
     /// Create a new [`ScopeRaw`]. This function is deliberately not `pub` because it should not be
     /// possible to access a [`ScopeRaw`] directly on the stack.
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(depth: u32) -> Self {
         // Even though the initialization code below is same as deriving Default::default(), we
         // can't do that because accessing a raw Scope outside of a scope closure breaks
         // safety contracts.
@@ -123,6 +126,7 @@ impl<'a> ScopeRaw<'a> {
                 cleanups: Default::default(),
                 child_scopes: Default::default(),
                 contexts: None,
+                depth,
                 _phantom: Default::default(),
             }),
             arena: Default::default(),
@@ -175,7 +179,7 @@ impl<'a> ScopeDisposer<'a> {
     }
 }
 
-/// Creates a reactive scope.
+/// Creates a root reactive scope.
 ///
 /// Returns a disposer function which will release the memory owned by the [`Scope`].
 /// Failure to call the disposer function will result in a memory leak.
@@ -209,7 +213,7 @@ impl<'a> ScopeDisposer<'a> {
 /// ```
 #[must_use = "not calling the disposer function will result in a memory leak"]
 pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(Scope<'a>)) -> ScopeDisposer<'disposer> {
-    let cx = ScopeRaw::new();
+    let cx = ScopeRaw::new(0);
     let boxed = Box::new(cx);
     let ptr = Box::into_raw(boxed);
     // SAFETY: Safe because heap allocated value has stable address.
@@ -277,7 +281,8 @@ pub fn create_child_scope<'a, F>(cx: Scope<'a>, f: F) -> ScopeDisposer<'a>
 where
     F: for<'child_lifetime> FnOnce(BoundedScope<'child_lifetime, 'a>),
 {
-    let mut child = ScopeRaw::new();
+    let parent_depth = scope_depth(cx);
+    let mut child = ScopeRaw::new(parent_depth + 1);
     // SAFETY: The only fields that are accessed on self from child is `context` which does not
     // have any lifetime annotations.
     child.parent = Some(unsafe { std::mem::transmute(cx.raw as *const _) });
@@ -291,7 +296,7 @@ where
     // - self.child_cx is append only. That means that the Box<cx> will not be dropped until Self is
     //   dropped.
     f(unsafe { Scope::new(&*ptr) });
-    //                      ^^^ -> `ptr` is still accessible here after call to f.
+    //                          ^^^ -> `ptr` is still accessible here after call to f.
     ScopeDisposer::new(move || unsafe {
         let cx = cx.raw.inner.borrow_mut().child_scopes.remove(key).unwrap();
         // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
