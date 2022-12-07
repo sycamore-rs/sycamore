@@ -1,3 +1,4 @@
+use sycamore::generic_node::GenericNodeElements;
 use sycamore::prelude::*;
 use sycamore::web::html;
 

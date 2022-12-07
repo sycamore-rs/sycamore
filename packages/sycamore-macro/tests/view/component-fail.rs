@@ -26,7 +26,7 @@ fn compile_fail<G: Html>() {
         let _: View<G> = view! { cx, UnknownComponent {} };
 
         let _: View<G> = view! { cx, Component };
-        let _: View<G> = view! { cx, Component(1) };
+        let _: View<G> = view! { cx, Component(prop=1) };
 
         let _: View<G> = view! { cx, PropsComponent() };
         let _: View<G> = view! { cx, PropsComponent {} };

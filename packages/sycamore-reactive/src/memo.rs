@@ -45,7 +45,7 @@ use crate::*;
 /// assert_eq!(*double.get(), 2);
 /// # });
 /// ```
-pub fn create_memo<'a, U: 'a>(cx: Scope<'a>, f: impl FnMut() -> U + 'a) -> &'a ReadSignal<U> {
+pub fn create_memo<'a, U: 'static>(cx: Scope<'a>, f: impl FnMut() -> U + 'a) -> &'a ReadSignal<U> {
     create_selector_with(cx, f, |_, _| false)
 }
 
@@ -69,7 +69,7 @@ pub fn create_memo<'a, U: 'a>(cx: Scope<'a>, f: impl FnMut() -> U + 'a) -> &'a R
 /// assert_eq!(*double.get(), 2);
 /// # });
 /// ```
-pub fn create_selector<'a, U: PartialEq + 'a>(
+pub fn create_selector<'a, U: PartialEq + 'static>(
     cx: Scope<'a>,
     f: impl FnMut() -> U + 'a,
 ) -> &'a ReadSignal<U> {
@@ -85,22 +85,25 @@ pub fn create_selector<'a, U: PartialEq + 'a>(
 ///
 /// To use the type's [`PartialEq`] implementation instead of a custom function, use
 /// [`create_selector`].
-pub fn create_selector_with<'a, U: 'a>(
+pub fn create_selector_with<'a, U: 'static>(
     cx: Scope<'a>,
     mut f: impl FnMut() -> U + 'a,
     eq_f: impl Fn(&U, &U) -> bool + 'a,
 ) -> &'a ReadSignal<U> {
-    let signal: &Cell<Option<&Signal<U>>> = create_ref(cx, Cell::new(None));
+    let signal: Rc<Cell<Option<&Signal<U>>>> = Rc::new(Cell::new(None));
 
-    create_effect(cx, move || {
-        let new = f();
-        if let Some(signal) = signal.get() {
-            // Check if new value is different from old value.
-            if !eq_f(&new, &*signal.get_untracked()) {
-                signal.set(new)
+    create_effect(cx, {
+        let signal = Rc::clone(&signal);
+        move || {
+            let new = f();
+            if let Some(signal) = signal.get() {
+                // Check if new value is different from old value.
+                if !eq_f(&new, &*signal.get_untracked()) {
+                    signal.set(new)
+                }
+            } else {
+                signal.set(Some(create_signal(cx, new)))
             }
-        } else {
-            signal.set(Some(create_signal(cx, new)))
         }
     });
 
@@ -140,7 +143,7 @@ pub fn create_selector_with<'a, U: 'a>(
 /// assert_eq!(*state.get(), 0);
 /// # });
 /// ```
-pub fn create_reducer<'a, U, Msg>(
+pub fn create_reducer<'a, U: 'static, Msg>(
     cx: Scope<'a>,
     initial: U,
     reduce: impl Fn(&U, Msg) -> U + 'a,

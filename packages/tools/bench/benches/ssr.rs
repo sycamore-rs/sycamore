@@ -19,7 +19,7 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
-            #[component]
+            #[component(inline_props)]
             fn ListItem<G: Html>(cx: Scope, value: i32) -> View<G> {
                 view! { cx,
                     p {
@@ -41,7 +41,7 @@ pub fn bench(c: &mut Criterion) {
                         Indexed(
                             iterable=values,
                             view=|cx, x| view! { cx,
-                                ListItem(x)
+                                ListItem(value=x)
                             }
                         )
                     }

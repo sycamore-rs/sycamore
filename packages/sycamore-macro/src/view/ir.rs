@@ -32,7 +32,7 @@ impl ViewNode {
             ViewNode::Component(_) => true,
             ViewNode::Text(_) => false,
             ViewNode::Dyn(Dyn {
-                value: Expr::Lit(_) | Expr::Path(_),
+                value: Expr::Lit(_) | Expr::Path(_) | Expr::Closure(_),
             }) => false,
             ViewNode::Dyn(_) => true,
         }
@@ -121,17 +121,7 @@ pub fn is_bool_attr(name: &str) -> bool {
     BOOLEAN_ATTRIBUTES_SET.contains(name)
 }
 
-pub enum Component {
-    Legacy(LegacyComponent),
-    New(NewComponent),
-}
-
-pub struct LegacyComponent {
-    pub ident: Path,
-    pub args: Punctuated<Expr, Token![,]>,
-}
-
-pub struct NewComponent {
+pub struct Component {
     pub ident: Path,
     pub props: Punctuated<ComponentProp, Token![,]>,
     pub brace: Option<Brace>,

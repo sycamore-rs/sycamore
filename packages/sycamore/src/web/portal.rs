@@ -37,7 +37,7 @@ pub fn Portal<'a, G: Html>(cx: Scope<'a>, props: PortalProps<'a, G>) -> View<G> 
                 .append_child(
                     &<dyn Any>::downcast_ref::<DomNode>(child)
                         .unwrap_throw()
-                        .inner_element(),
+                        .to_web_sys(),
                 )
                 .unwrap_throw();
         }
@@ -48,7 +48,7 @@ pub fn Portal<'a, G: Html>(cx: Scope<'a>, props: PortalProps<'a, G>) -> View<G> 
                     .remove_child(
                         &<dyn Any>::downcast_ref::<DomNode>(child)
                             .unwrap_throw()
-                            .inner_element(),
+                            .to_web_sys(),
                     )
                     .unwrap_throw();
             }

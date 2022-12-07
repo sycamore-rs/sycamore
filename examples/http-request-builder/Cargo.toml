@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 console_error_panic_hook = "0.1.7"
 console_log = "0.2.0"
-log = "0.4.14"
-reqwasm = "0.4.1"
-serde = "1.0.136"
+log = "0.4.17"
+reqwasm = "0.5.0"
+serde = "1.0.147"
 sycamore = { path = "../../packages/sycamore", features = ["suspense"] }

@@ -1,11 +1,12 @@
 //! Rendering backend for the DOM.
 
+use std::borrow::Cow;
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
-use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -63,11 +64,6 @@ pub struct DomNode {
 }
 
 impl DomNode {
-    /// Get the underlying [`web_sys::Node`].
-    pub fn inner_element(&self) -> Node {
-        self.node.clone()
-    }
-
     /// Cast the underlying [`web_sys::Node`] using [`JsCast`].
     pub fn unchecked_into<T: JsCast>(self) -> T {
         self.node.unchecked_into()
@@ -84,14 +80,6 @@ impl DomNode {
             }
         }
         self.id.get()
-    }
-
-    /// Create a new [`DomNode`] from a raw [`web_sys::Node`].
-    pub fn from_web_sys(node: Node) -> Self {
-        Self {
-            id: Default::default(),
-            node,
-        }
     }
 }
 
@@ -149,34 +137,8 @@ impl GenericNode for DomNode {
     type EventType = web_sys::Event;
     type PropertyType = JsValue;
 
-    fn element<T: SycamoreElement>() -> Self {
-        let node = if let Some(ns) = T::NAMESPACE {
-            document()
-                .create_element_ns(Some(ns), intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        } else {
-            document()
-                .create_element(intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        };
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
-    fn element_from_tag(tag: &str) -> Self {
-        let node = document().create_element(intern(tag)).unwrap_throw().into();
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
-    fn text_node(text: &str) -> Self {
-        let node = document().create_text_node(text).into();
+    fn text_node(text: Cow<'static, str>) -> Self {
+        let node = document().create_text_node(&text).into();
         DomNode {
             id: Default::default(),
             node,
@@ -194,39 +156,39 @@ impl GenericNode for DomNode {
         }
     }
 
-    fn marker_with_text(text: &str) -> Self {
-        let node = document().create_comment(text).into();
+    fn marker_with_text(text: Cow<'static, str>) -> Self {
+        let node = document().create_comment(&text).into();
         DomNode {
             id: Default::default(),
             node,
         }
     }
 
-    fn set_attribute(&self, name: &str, value: &str) {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
         self.node
             .unchecked_ref::<Element>()
-            .set_attribute(intern(name), value)
+            .set_attribute(intern(&name), &value)
             .unwrap_throw();
     }
 
-    fn remove_attribute(&self, name: &str) {
+    fn remove_attribute(&self, name: Cow<'static, str>) {
         self.node
             .unchecked_ref::<Element>()
-            .remove_attribute(intern(name))
+            .remove_attribute(intern(&name))
             .unwrap_throw();
     }
 
-    fn set_class_name(&self, value: &str) {
+    fn set_class_name(&self, value: Cow<'static, str>) {
         if self
             .node
             .unchecked_ref::<ElementTrySetClassName>()
-            .try_set_class_name(value)
+            .try_set_class_name(&value)
             .is_err()
         {
             // Node is a SVG element.
             self.node
                 .unchecked_ref::<Element>()
-                .set_attribute("class", value)
+                .set_attribute("class", &value)
                 .unwrap_throw();
         }
     }
@@ -335,12 +297,12 @@ impl GenericNode for DomNode {
             .unwrap_throw();
     }
 
-    fn update_inner_text(&self, text: &str) {
-        self.node.set_text_content(Some(text));
+    fn update_inner_text(&self, text: Cow<'static, str>) {
+        self.node.set_text_content(Some(&text));
     }
 
-    fn dangerously_set_inner_html(&self, html: &str) {
-        self.node.unchecked_ref::<Element>().set_inner_html(html);
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>) {
+        self.node.unchecked_ref::<Element>().set_inner_html(&html);
     }
 
     fn clone_node(&self) -> Self {
@@ -351,11 +313,49 @@ impl GenericNode for DomNode {
     }
 }
 
+impl GenericNodeElements for DomNode {
+    fn element<T: SycamoreElement>() -> Self {
+        let node = if let Some(ns) = T::NAMESPACE {
+            document()
+                .create_element_ns(Some(ns), intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        } else {
+            document()
+                .create_element(intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        };
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    fn element_from_tag(tag: Cow<'static, str>) -> Self {
+        let node = document()
+            .create_element(intern(&tag))
+            .unwrap_throw()
+            .into();
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+}
+
 impl Html for DomNode {
     const IS_BROWSER: bool = true;
 
     fn to_web_sys(&self) -> web_sys::Node {
-        self.inner_element()
+        self.node.clone()
+    }
+
+    fn from_web_sys(node: Node) -> Self {
+        Self {
+            id: Default::default(),
+            node,
+        }
     }
 }
 
