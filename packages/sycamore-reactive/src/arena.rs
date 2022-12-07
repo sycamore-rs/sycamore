@@ -37,8 +37,8 @@ impl<'a> ScopeArena<'a> {
     /// See docs for [`create_ref`](crate::create_ref).
     #[allow(clippy::mut_from_ref)] // We return a new reference each time so this is a false-positive.
     pub unsafe fn alloc_non_static<T: 'a>(&'a self, value: T) -> &'a mut T {
-        let boxed = bumpalo::boxed::Box::new_in(value, &self.bump);
-        let ptr = bumpalo::boxed::Box::into_raw(boxed);
+        let boxed = Box::new(value);
+        let ptr = Box::into_raw(boxed);
         // SAFETY: The only place where self.inner.get() is mutably borrowed is right here.
         // It is impossible to have two alloc() calls on the same ScopeArena at the same time so
         // the mutable reference here is effectively unique.
