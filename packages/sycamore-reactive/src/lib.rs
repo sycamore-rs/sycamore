@@ -141,15 +141,20 @@ impl<'a> ScopeRaw<'a> {
     /// Recursively check if this scope or any child scope is drop-locked.
     fn is_drop_locked_recursive(&self) -> bool {
         if self.inner.borrow().lock_drop {
-            return true;
+            true
+        } else {
+            self.is_child_scopes_drop_locked_recursive()
         }
-        for &child in self.inner.borrow().child_scopes.values() {
-            // SAFETY: We are not accessing any values with a lifetime.
-            if unsafe { &*child }.is_drop_locked_recursive() {
-                return true;
-            }
-        }
-        false
+    }
+
+    /// Recursively check if this scope or any child scope is drop-locked.
+    fn is_child_scopes_drop_locked_recursive(&self) -> bool {
+        // SAFETY: We are not accessing any values with a lifetime.
+        self.inner
+            .borrow()
+            .child_scopes
+            .values()
+            .any(|&child| unsafe { &*child }.is_drop_locked_recursive())
     }
 }
 

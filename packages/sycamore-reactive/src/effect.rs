@@ -1,5 +1,7 @@
 //! Side effects.
 
+use std::panic::Location;
+
 use ahash::AHashSet;
 
 use crate::*;
@@ -158,19 +160,22 @@ fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
 /// });
 /// # });
 /// ```
+#[track_caller]
 pub fn create_effect_scoped<'a, F>(cx: Scope<'a>, mut f: F)
 where
     F: for<'child_lifetime> FnMut(BoundedScope<'child_lifetime, 'a>) + 'a,
 {
+    let location = Location::caller();
+
     let mut disposer: Option<ScopeDisposer<'a>> = None;
     create_effect(cx, move || {
-        if cx.raw.is_drop_locked_recursive() {
-            panic!("cannot re-run the effect if it is currently running")
-        }
         // We run the disposer inside the effect, after effect dependencies have been cleared.
         // This is to make sure that if the effect subscribes to its own signal, there is no
         // use-after-free during the clear dependencies phase.
         if let Some(disposer) = disposer.take() {
+            if cx.raw.is_child_scopes_drop_locked_recursive() {
+                panic!("cannot re-run the effect if it is currently running (at {location})")
+            }
             // SAFETY: we are not accessing the scope after the effect has been dropped.
             unsafe { disposer.dispose() };
         }
