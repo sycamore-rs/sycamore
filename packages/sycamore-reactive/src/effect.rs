@@ -91,8 +91,12 @@ fn _create_effect<'a>(cx: Scope<'a>, f: &'a mut (dyn FnMut() + 'a)) {
                 effects
                     .borrow_mut()
                     .push((tmp_effect as *mut EffectState<'a>).cast::<EffectState<'static>>());
+                // We want to drop-lock the parent scope during the call to `f` so that the child
+                // scope remains alive during the whole call.
+                cx.raw.inner.borrow_mut().lock_drop = true;
                 // Now we can call the user-provided function.
                 f();
+                cx.raw.inner.borrow_mut().lock_drop = false;
                 // Pop the effect from the effect stack.
                 // This ends the mutable borrow of `tmp_effect`.
                 effects.borrow_mut().pop().unwrap();
@@ -171,13 +175,9 @@ where
             unsafe { disposer.dispose() };
         }
         // Create a new nested scope and save the disposer.
-        // We want to drop-lock the parent scope during the call to `f` so that the child scope
-        // remains alive during the whole call.
-        cx.raw.inner.borrow_mut().lock_drop = true;
         let new_disposer = Some(create_child_scope(cx, |cx| {
             f(cx);
         }));
-        cx.raw.inner.borrow_mut().lock_drop = false;
         disposer = new_disposer;
     });
 }
@@ -437,23 +437,18 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "cannot re-run the effect if it is currently running")]
+    #[cfg_attr(miri, ignore)]
     fn inner_signal_triggering_outer_effect() {
         create_scope_immediate(|cx| {
             let one = create_signal(cx, ());
 
             create_effect_scoped(cx, move |cx| {
-                println!("-outer");
                 let two = create_signal(cx, ());
-                create_effect_scoped(cx, move |cx| {
-                    println!("---inner");
+                create_effect(cx, move || {
                     one.track();
                     two.set(());
-                    println!("---end inner");
-                    on_cleanup(cx, || println!("...inner cleanup"));
                 });
                 two.track();
-                println!("-end outer");
-                on_cleanup(cx, || println!(".outer cleanup"));
             });
 
             one.set(());
@@ -462,27 +457,22 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "cannot re-run the effect if it is currently running")]
+    #[cfg_attr(miri, ignore)]
     fn inner_rc_signal_triggering_outer_effect() {
         create_scope_immediate(|cx| {
             let one = create_rc_signal(());
 
             let one_clone = one.clone();
             create_effect_scoped(cx, move |cx| {
-                println!("-outer");
                 let two = create_rc_signal(());
 
                 let one_clone = one_clone.clone();
                 let two_clone = two.clone();
-                create_effect_scoped(cx, move |cx| {
-                    println!("---inner");
+                create_effect(cx, move || {
                     one_clone.track();
                     two_clone.set(());
-                    println!("---end inner");
-                    on_cleanup(cx, || println!("...inner cleanup"));
                 });
                 two.track();
-                println!("-end outer");
-                on_cleanup(cx, || println!(".outer cleanup"));
             });
 
             one.set(());

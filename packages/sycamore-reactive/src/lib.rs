@@ -144,6 +144,7 @@ impl<'a> ScopeRaw<'a> {
             return true;
         }
         for &child in self.inner.borrow().child_scopes.values() {
+            // SAFETY: We are not accessing any values with a lifetime.
             if unsafe { &*child }.is_drop_locked_recursive() {
                 return true;
             }
