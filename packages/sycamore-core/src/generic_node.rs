@@ -1,7 +1,7 @@
 //! Generic rendering backend.
 
 use std::borrow::Cow;
-use std::fmt;
+use std::fmt::{self, Debug, Formatter};
 use std::hash::Hash;
 
 use sycamore_reactive::Scope;
@@ -264,17 +264,51 @@ pub struct DynMarkerResult<G: GenericNode> {
     pub multi: bool,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct InstantiateUniversalOpts {
+pub struct InstantiateUniversalOpts<G: GenericNodeElements> {
     pub start_marker: Option<&'static str>,
     pub end_marker: Option<&'static str>,
+    pub create_element: fn(Cow<'static, str>) -> G,
+    pub create_element_ns: fn(Cow<'static, str>, Cow<'static, str>) -> G,
 }
+
+impl<G: GenericNodeElements> Default for InstantiateUniversalOpts<G> {
+    fn default() -> Self {
+        Self {
+            start_marker: None,
+            end_marker: None,
+            create_element: G::element_from_tag,
+            create_element_ns: G::element_from_tag_namespace,
+        }
+    }
+}
+
+impl<G: GenericNodeElements> Debug for InstantiateUniversalOpts<G> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InstantiateUniversalOpts")
+            .field("start_marker", &self.start_marker)
+            .field("end_marker", &self.end_marker)
+            .finish()
+    }
+}
+
+impl<G: GenericNodeElements> Clone for InstantiateUniversalOpts<G> {
+    fn clone(&self) -> Self {
+        Self {
+            start_marker: self.start_marker,
+            end_marker: self.end_marker,
+            create_element: self.create_element,
+            create_element_ns: self.create_element_ns,
+        }
+    }
+}
+
+impl<G: GenericNodeElements> Copy for InstantiateUniversalOpts<G> {}
 
 fn instantiate_element_universal_impl<G: GenericNodeElements>(
     template: &TemplateShape,
     flagged_nodes: &mut Vec<G>,
     dyn_markers: &mut Vec<DynMarkerResult<G>>,
-    opts: InstantiateUniversalOpts,
+    opts: InstantiateUniversalOpts<G>,
 ) -> G {
     match template {
         TemplateShape::Element {
@@ -285,9 +319,9 @@ fn instantiate_element_universal_impl<G: GenericNodeElements>(
             flag,
         } => {
             let node = if let Some(ns) = ns {
-                G::element_from_tag_namespace((*ident).into(), (*ns).into())
+                (opts.create_element_ns)((*ident).into(), (*ns).into())
             } else {
-                G::element_from_tag((*ident).into())
+                (opts.create_element)((*ident).into())
             };
             let multi = children.len() != 1;
             if *flag {
@@ -318,7 +352,7 @@ fn instantiate_template_universal_impl<G: GenericNodeElements>(
     flagged_nodes: &mut Vec<G>,
     dyn_markers: &mut Vec<DynMarkerResult<G>>,
     multi: bool,
-    opts: InstantiateUniversalOpts,
+    opts: InstantiateUniversalOpts<G>,
 ) {
     match template {
         TemplateShape::Element { .. } => {
@@ -364,7 +398,7 @@ fn instantiate_template_universal_impl<G: GenericNodeElements>(
 /// along with a list of flagged nodes and dynamic markers.
 pub fn instantiate_template_universal<G: GenericNodeElements>(
     template: &Template,
-    opts: InstantiateUniversalOpts,
+    opts: InstantiateUniversalOpts<G>,
 ) -> TemplateResult<G> {
     let mut flagged_nodes = Vec::new();
     let mut dyn_markers = Vec::new();

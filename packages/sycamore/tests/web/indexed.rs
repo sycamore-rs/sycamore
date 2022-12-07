@@ -268,10 +268,7 @@ fn nested_reactivity() {
     create_scope_immediate(|cx| {
         let count = create_signal(
             cx,
-            vec![1, 2, 3]
-                .into_iter()
-                .map(|x| create_rc_signal(x))
-                .collect(),
+            vec![1, 2, 3].into_iter().map(create_rc_signal).collect(),
         );
 
         let node = view! { cx,

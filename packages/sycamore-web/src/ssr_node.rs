@@ -63,6 +63,19 @@ impl SsrNode {
         }))
     }
 
+    /// Create a new element without hydration keys or another other special attributes.
+    fn new_element_raw(
+        tag: Cow<'static, str>,
+        attributes: IndexMap<Cow<'static, str>, Cow<'static, str>>,
+        children: Vec<Self>,
+    ) -> Self {
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
+            name: tag,
+            attributes,
+            children,
+        })))
+    }
+
     fn set_parent(&self, parent: Weak<SsrNodeInner>) {
         if let Some(old_parent) = self.parent_node() {
             old_parent.try_remove_child(self);
@@ -314,19 +327,15 @@ impl GenericNode for SsrNode {
 
 impl GenericNodeElements for SsrNode {
     fn element<T: SycamoreElement>() -> Self {
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: Cow::Borrowed(T::TAG_NAME),
-            attributes: Default::default(),
-            children: Default::default(),
-        })))
+        Self::element_from_tag(T::TAG_NAME.into())
     }
 
     fn element_from_tag(tag: Cow<'static, str>) -> Self {
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: tag,
-            attributes: Default::default(),
-            children: Default::default(),
-        })))
+        let mut attributes = IndexMap::new();
+        if let Some(hk) = get_next_id() {
+            attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
+        }
+        Self::new_element_raw(tag, attributes, Vec::new())
     }
 
     fn instantiate_template(template: &Template) -> TemplateResult<SsrNode> {
@@ -335,6 +344,8 @@ impl GenericNodeElements for SsrNode {
             InstantiateUniversalOpts {
                 start_marker: Some("#"),
                 end_marker: Some("/"),
+                create_element: |tag| Self::new_element_raw(tag, IndexMap::new(), Vec::new()),
+                create_element_ns: |tag, _| Self::new_element_raw(tag, IndexMap::new(), Vec::new()),
             },
         );
         let hk = get_next_id();
