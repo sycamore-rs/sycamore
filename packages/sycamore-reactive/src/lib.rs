@@ -51,6 +51,9 @@ struct ScopeInner<'a> {
     /// The depth of the current scope. The root scope has a depth of 0. Any child scopes have a
     /// depth of N + 1 where N is the depth of the parent scope.
     depth: u32,
+    /// If this is true, this will prevent the scope from being dropped.
+    /// This is set when an effect is running to prevent an use-after-free.
+    lock_drop: bool,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }
@@ -127,11 +130,25 @@ impl<'a> ScopeRaw<'a> {
                 child_scopes: Default::default(),
                 contexts: None,
                 depth,
+                lock_drop: false,
                 _phantom: Default::default(),
             }),
             arena: Default::default(),
             parent: None,
         }
+    }
+
+    /// Recursively check if this scope or any child scope is drop-locked.
+    fn is_drop_locked_recursive(&self) -> bool {
+        if self.inner.borrow().lock_drop {
+            return true;
+        }
+        for &child in self.inner.borrow().child_scopes.values() {
+            if unsafe { &*child }.is_drop_locked_recursive() {
+                return true;
+            }
+        }
+        false
     }
 }
 
@@ -160,6 +177,8 @@ impl<'a> ScopeDisposer<'a> {
     /// # Safety
     ///
     /// `dispose` should not be called inside the `create_scope` or `create_child_scope` closure.
+    ///
+    /// This should also not be called if the scope or any child scope is drop-locked.
     ///
     /// # Drop order
     ///
@@ -283,9 +302,7 @@ where
 {
     let parent_depth = scope_depth(cx);
     let mut child = ScopeRaw::new(parent_depth + 1);
-    // SAFETY: The only fields that are accessed on self from child is `context` which does not
-    // have any lifetime annotations.
-    child.parent = Some(unsafe { std::mem::transmute(cx.raw as *const _) });
+    child.parent = Some(cx.raw as *const _);
     let boxed = Box::new(child);
     let ptr = Box::into_raw(boxed);
 
