@@ -48,6 +48,12 @@ struct ScopeInner<'a> {
     /// size of the [`ScopeInner`] struct when most of the times, this field is unneeded.
     #[allow(clippy::box_collection)]
     contexts: Option<Box<HashMap<TypeId, &'a dyn Any>>>,
+    /// The depth of the current scope. The root scope has a depth of 0. Any child scopes have a
+    /// depth of N + 1 where N is the depth of the parent scope.
+    depth: u32,
+    /// If this is true, this will prevent the scope from being dropped.
+    /// This is set when an effect is running to prevent an use-after-free.
+    lock_drop: bool,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }
@@ -107,7 +113,7 @@ pub type Scope<'a> = BoundedScope<'a, 'a>;
 impl<'a> ScopeRaw<'a> {
     /// Create a new [`ScopeRaw`]. This function is deliberately not `pub` because it should not be
     /// possible to access a [`ScopeRaw`] directly on the stack.
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(depth: u32) -> Self {
         // Even though the initialization code below is same as deriving Default::default(), we
         // can't do that because accessing a raw Scope outside of a scope closure breaks
         // safety contracts.
@@ -118,11 +124,32 @@ impl<'a> ScopeRaw<'a> {
                 cleanups: Default::default(),
                 child_scopes: Default::default(),
                 contexts: None,
+                depth,
+                lock_drop: false,
                 _phantom: Default::default(),
             }),
             arena: Default::default(),
             parent: None,
         }
+    }
+
+    /// Recursively check if this scope or any child scope is drop-locked.
+    fn is_drop_locked_recursive(&self) -> bool {
+        if self.inner.borrow().lock_drop {
+            true
+        } else {
+            self.is_child_scopes_drop_locked_recursive()
+        }
+    }
+
+    /// Recursively check if this scope or any child scope is drop-locked.
+    fn is_child_scopes_drop_locked_recursive(&self) -> bool {
+        // SAFETY: We are not accessing any values with a lifetime.
+        self.inner
+            .borrow()
+            .child_scopes
+            .values()
+            .any(|&child| unsafe { &*child }.is_drop_locked_recursive())
     }
 }
 
@@ -152,6 +179,8 @@ impl<'a> ScopeDisposer<'a> {
     ///
     /// `dispose` should not be called inside the `create_scope` or `create_child_scope` closure.
     ///
+    /// This should also not be called if the scope or any child scope is drop-locked.
+    ///
     /// # Drop order
     ///
     /// Fields are dropped in the following order:
@@ -170,7 +199,7 @@ impl<'a> ScopeDisposer<'a> {
     }
 }
 
-/// Creates a reactive scope.
+/// Creates a root reactive scope.
 ///
 /// Returns a disposer function which will release the memory owned by the [`Scope`].
 /// Failure to call the disposer function will result in a memory leak.
@@ -204,7 +233,7 @@ impl<'a> ScopeDisposer<'a> {
 /// ```
 #[must_use = "not calling the disposer function will result in a memory leak"]
 pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(Scope<'a>)) -> ScopeDisposer<'disposer> {
-    let cx = ScopeRaw::new();
+    let cx = ScopeRaw::new(0);
     let boxed = Box::new(cx);
     let ptr = Box::into_raw(boxed);
     // SAFETY: Safe because heap allocated value has stable address.
@@ -272,10 +301,9 @@ pub fn create_child_scope<'a, F>(cx: Scope<'a>, f: F) -> ScopeDisposer<'a>
 where
     F: for<'child_lifetime> FnOnce(BoundedScope<'child_lifetime, 'a>),
 {
-    let mut child = ScopeRaw::new();
-    // SAFETY: The only fields that are accessed on self from child is `context` which does not
-    // have any lifetime annotations.
-    child.parent = Some(unsafe { std::mem::transmute(cx.raw as *const _) });
+    let parent_depth = scope_depth(cx);
+    let mut child = ScopeRaw::new(parent_depth + 1);
+    child.parent = Some(cx.raw as *const _);
     let boxed = Box::new(child);
     let ptr = Box::into_raw(boxed);
 
@@ -286,7 +314,7 @@ where
     // - self.child_cx is append only. That means that the Box<cx> will not be dropped until Self is
     //   dropped.
     f(unsafe { Scope::new(&*ptr) });
-    //                      ^^^ -> `ptr` is still accessible here after call to f.
+    //                          ^^^ -> `ptr` is still accessible here after call to f.
     ScopeDisposer::new(move || unsafe {
         let cx = cx.raw.inner.borrow_mut().child_scopes.remove(key).unwrap();
         // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer

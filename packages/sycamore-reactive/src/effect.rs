@@ -1,5 +1,7 @@
 //! Side effects.
 
+use std::panic::Location;
+
 use hashbrown::HashSet;
 
 use crate::*;
@@ -83,17 +85,24 @@ fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
                 let initial_effect_stack_len = effects.borrow().len();
 
                 // Take effect out.
-                let mut tmp_effect = effect.take().unwrap();
+                let mut effect_borrow_mut = effect.borrow_mut();
+                let tmp_effect = effect_borrow_mut.as_mut().unwrap();
                 tmp_effect.clear_dependencies();
 
                 // Push the effect onto the effect stack so that it is visible by signals.
                 effects
                     .borrow_mut()
-                    .push((&mut tmp_effect as *mut EffectState<'a>).cast::<EffectState<'static>>());
+                    .push((tmp_effect as *mut EffectState<'a>).cast::<EffectState<'static>>());
+                // We want to drop-lock the parent scope during the call to `f` so that the child
+                // scope remains alive during the whole call.
+                cx.raw.inner.borrow_mut().lock_drop = true;
                 // Now we can call the user-provided function.
                 f();
+                cx.raw.inner.borrow_mut().lock_drop = false;
                 // Pop the effect from the effect stack.
+                // This ends the mutable borrow of `tmp_effect`.
                 effects.borrow_mut().pop().unwrap();
+
                 // The raw pointer pushed onto `effects` is dead and can no longer be accessed.
                 // We can now access `effect` directly again.
 
@@ -110,9 +119,6 @@ fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
                         }));
                     }
                 }
-
-                // Get the effect state back into the Rc
-                *effect.borrow_mut() = Some(tmp_effect);
 
                 debug_assert_eq!(effects.borrow().len(), initial_effect_stack_len);
             });
@@ -138,6 +144,11 @@ fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
 /// Items created within the scope cannot escape outside the effect because that can result in
 /// an use-after-free.
 ///
+/// # Panics
+///
+/// Panics if the effect is re-run while it is currently running. This is to prevent use-after-free
+/// where the old effect scope is dropped while it is still running.
+///
 /// # Example
 /// ```
 /// # use sycamore_reactive::*;
@@ -149,21 +160,27 @@ fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
 /// });
 /// # });
 /// ```
+#[track_caller]
 pub fn create_effect_scoped<'a, F>(cx: Scope<'a>, mut f: F)
 where
     F: for<'child_lifetime> FnMut(BoundedScope<'child_lifetime, 'a>) + 'a,
 {
+    let location = Location::caller();
+
     let mut disposer: Option<ScopeDisposer<'a>> = None;
     create_effect(cx, move || {
         // We run the disposer inside the effect, after effect dependencies have been cleared.
         // This is to make sure that if the effect subscribes to its own signal, there is no
         // use-after-free during the clear dependencies phase.
         if let Some(disposer) = disposer.take() {
+            if cx.raw.is_child_scopes_drop_locked_recursive() {
+                panic!("cannot re-run the effect if it is currently running (at {location})")
+            }
             // SAFETY: we are not accessing the scope after the effect has been dropped.
             unsafe { disposer.dispose() };
         }
         // Create a new nested scope and save the disposer.
-        let new_disposer: Option<ScopeDisposer<'a>> = Some(create_child_scope(cx, |cx| {
+        let new_disposer = Some(create_child_scope(cx, |cx| {
             f(cx);
         }));
         disposer = new_disposer;
@@ -420,6 +437,50 @@ mod tests {
                 }
             });
             trigger.set(());
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot re-run the effect if it is currently running")]
+    #[cfg_attr(miri, ignore)]
+    fn inner_signal_triggering_outer_effect() {
+        create_scope_immediate(|cx| {
+            let one = create_signal(cx, ());
+
+            create_effect_scoped(cx, move |cx| {
+                let two = create_signal(cx, ());
+                create_effect(cx, move || {
+                    one.track();
+                    two.set(());
+                });
+                two.track();
+            });
+
+            one.set(());
+        });
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot re-run the effect if it is currently running")]
+    #[cfg_attr(miri, ignore)]
+    fn inner_rc_signal_triggering_outer_effect() {
+        create_scope_immediate(|cx| {
+            let one = create_rc_signal(());
+
+            let one_clone = one.clone();
+            create_effect_scoped(cx, move |cx| {
+                let two = create_rc_signal(());
+
+                let one_clone = one_clone.clone();
+                let two_clone = two.clone();
+                create_effect(cx, move || {
+                    one_clone.track();
+                    two_clone.set(());
+                });
+                two.track();
+            });
+
+            one.set(());
         });
     }
 }
