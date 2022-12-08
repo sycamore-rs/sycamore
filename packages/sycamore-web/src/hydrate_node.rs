@@ -82,24 +82,19 @@ impl GenericNode for HydrateNode {
     const USE_HYDRATION_CONTEXT: bool = true;
     const CLIENT_SIDE_HYDRATION: bool = true;
 
-    /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
-    /// node.
     fn text_node(text: Cow<'static, str>) -> Self {
-        // TODO
         Self {
             node: DomNode::text_node(text),
         }
     }
 
     fn marker() -> Self {
-        // TODO
         Self {
             node: DomNode::marker(),
         }
     }
 
     fn marker_with_text(text: Cow<'static, str>) -> Self {
-        // TODO
         Self {
             node: DomNode::marker_with_text(text),
         }

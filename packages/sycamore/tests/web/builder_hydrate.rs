@@ -16,7 +16,7 @@ mod hello_world {
     fn ssr() {
         check(
             &sycamore::render_to_string(v),
-            expect!["<p>Hello World!</p>"],
+            expect![[r#"<p data-hk="0.0">Hello World!</p>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -41,7 +41,7 @@ mod hydrate_recursive {
     fn ssr() {
         check(
             &sycamore::render_to_string(v),
-            expect!["<div><p>Nested</p></div>"],
+            expect![[r#"<div data-hk="0.0"><p data-hk="0.1">Nested</p></div>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -66,7 +66,7 @@ mod multiple_nodes_at_same_depth {
     fn ssr() {
         check(
             &sycamore::render_to_string(v),
-            expect!["<div><p>First</p><p>Second</p></div>"],
+            expect![[r#"<div data-hk="0.0"><p data-hk="0.1">First</p><p data-hk="0.2">Second</p></div>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -91,7 +91,7 @@ mod top_level_fragment {
     fn ssr() {
         check(
             &sycamore::render_to_string(v),
-            expect!["<p>First</p><p>Second</p>"],
+            expect![[r#"<p data-hk="0.0">First</p><p data-hk="0.1">Second</p>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -116,7 +116,7 @@ mod dynamic {
     fn ssr() {
         check(
             &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
-            expect!["<p><!--#-->0<!--/--></p>"],
+            expect![[r#"<p data-hk="0.0"><!--#-->0<!--/--></p>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -154,7 +154,7 @@ mod dynamic_with_siblings {
     fn ssr() {
         check(
             &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
-            expect!["<p>Value: <!--#-->0<!--/-->!</p>"],
+            expect![[r#"<p data-hk="0.0">Value: <!--#-->0<!--/-->!</p>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -190,7 +190,7 @@ mod dynamic_template {
     fn ssr() {
         check(
             &sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" }))),
-            expect!["<p>before<!--#-->text<!--/-->after</p>"],
+            expect![[r#"<p data-hk="0.0">before<!--#-->text<!--/-->after</p>"#]],
         );
     }
     #[wasm_bindgen_test]
