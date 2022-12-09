@@ -127,7 +127,7 @@ fn template_interpolation_if_else() {
                 (if *show.get() {
                     view! { cx, "Hello Sycamore!" }
                 } else {
-                    view! { cx, }
+                    view! { cx, "Hidden" }
                 })
             }
         };
@@ -135,7 +135,7 @@ fn template_interpolation_if_else() {
         assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
-        assert_text_content!(query("p"), "");
+        assert_text_content!(query("p"), "Hidden");
 
         show.set(true);
         assert_text_content!(query("p"), "Hello Sycamore!");
@@ -151,14 +151,14 @@ fn template_interpolation_if_else_with_sibling() {
             (if *show.get() {
                 view! { cx, p { "Hello Sycamore!" } }
             } else {
-                view! { cx, p { "" }}
+                view! { cx, p { "Hidden" }}
             })
         };
         sycamore::render_to(|_| node, &test_container());
         assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
-        assert_text_content!(query("p"), "");
+        assert_text_content!(query("p"), "Hidden");
 
         show.set(true);
         assert_text_content!(query("p"), "Hello Sycamore!");

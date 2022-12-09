@@ -90,17 +90,13 @@ pub fn Content<G: Html>(
 
     view! { cx,
         div(class="flex w-full") {
-            (if show_sidebar {
-                view! { cx,
-                    div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
-                        div(class="p-3"){
-                            crate::sidebar::Sidebar(version=sidebar.clone().unwrap().0, data=sidebar.clone().unwrap().1)
-                        }
+            (show_sidebar.then(|| view! { cx,
+                div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
+                    div(class="p-3"){
+                        crate::sidebar::Sidebar(version=sidebar.clone().unwrap().0, data=sidebar.clone().unwrap().1)
                     }
                 }
-            } else {
-                view! { cx, }
-            })
+            }))
             div(class="flex-1 overflow-hidden max-w-screen-xl mx-auto") {
                 div(
                     class=format!("content min-w-0 px-4 mb-2 lg:mr-44 {}",

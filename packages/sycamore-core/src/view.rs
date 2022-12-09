@@ -201,7 +201,7 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 ///
 /// Types such as `String`, `&str`, `i32`, and `bool` implement this trait. They will be stringified
 /// using the [`ToString`] trait and then converted into a text node.
-/// 
+///
 /// ```
 /// # use sycamore::prelude::*;
 ///
