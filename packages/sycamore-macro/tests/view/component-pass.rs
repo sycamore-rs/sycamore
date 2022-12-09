@@ -33,12 +33,29 @@ pub fn AllDefaultPropsComponent<G: Html>(cx: Scope, _props: AllDefaultProps) -> 
 }
 
 #[derive(Props)]
+pub struct OptionalProps {
+    #[prop(default, setter(strip_option))]
+    optional: Option<u32>,
+    implicit: Option<u32>,
+}
+
+#[component]
+pub fn OptionalPropsComponent<G: Html>(cx: Scope, _props: OptionalProps) -> View<G> {
+    view! { cx,
+        div {}
+    }
+}
+
+#[derive(Props)]
 pub struct PropsWithChildren<'a, G: GenericNode> {
     children: Children<'a, G>,
 }
 
 #[component]
-pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, props: PropsWithChildren<'a, G>) -> View<G> {
+pub fn ComponentWithChildren<'a, G: Html>(
+    cx: Scope<'a>,
+    props: PropsWithChildren<'a, G>,
+) -> View<G> {
     let children = props.children.call(cx);
 
     view! { cx,
@@ -49,7 +66,10 @@ pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, props: PropsWithChildre
 }
 
 #[component]
-pub fn NestedComponentWithChildren<'a, G: Html>(cx: Scope<'a>, props: PropsWithChildren<'a, G>) -> View<G> {
+pub fn NestedComponentWithChildren<'a, G: Html>(
+    cx: Scope<'a>,
+    props: PropsWithChildren<'a, G>,
+) -> View<G> {
     let children = props.children.call(cx);
 
     view! { cx,
@@ -79,6 +99,12 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, AllDefaultPropsComponent(prop=123) };
         let _: View<G> = view! { cx, AllDefaultPropsComponent() };
         let _: View<G> = view! { cx, AllDefaultPropsComponent {} };
+
+        let _: View<G> = view! { cx, OptionalPropsComponent(optional=123) };
+        let _: View<G> = view! { cx, OptionalPropsComponent(implicit=123) };
+        let _: View<G> = view! { cx, OptionalPropsComponent(optional=123, implicit=123) };
+        let _: View<G> = view! { cx, OptionalPropsComponent() };
+        let _: View<G> = view! { cx, OptionalPropsComponent {} };
 
         let _: View<G> = view! { cx, ComponentWithChildren { Component() } };
         let _: View<G> = view! { cx, ComponentWithChildren { div {} } };

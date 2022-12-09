@@ -777,6 +777,7 @@ mod field_info {
 
     use super::util::{
         expr_to_single_string, ident_to_type, path_to_single_string, strip_raw_ident_prefix,
+        type_from_inside_option,
     };
 
     #[derive(Debug)]
@@ -792,12 +793,21 @@ mod field_info {
         pub fn new(
             ordinal: usize,
             field: &syn::Field,
-            mut field_defaults: FieldBuilderAttr,
+            field_defaults: FieldBuilderAttr,
         ) -> Result<FieldInfo, Error> {
             if let Some(ref name) = field.ident {
-                // If this field is the `children` field, make it implicitly have a default value.
-                if name == "children" {
-                    field_defaults.default =
+                let mut builder_attr = field_defaults.with(&field.attrs)?;
+
+                let strip_option_auto = builder_attr.setter.strip_option.is_some()
+                    || !builder_attr.ignore_option && type_from_inside_option(&field.ty).is_some();
+                if builder_attr.setter.strip_option.is_none() && strip_option_auto {
+                    builder_attr.default =
+                        Some(syn::parse_quote!(::std::default::Default::default()));
+                    builder_attr.setter.strip_option = Some(field.ty.span());
+                } else if name == "children" {
+                    // If this field is the `children` field, make it implicitly have a default
+                    // value.
+                    builder_attr.default =
                         Some(syn::parse_quote! { ::std::default::Default::default() });
                 }
 
@@ -809,7 +819,7 @@ mod field_info {
                         Span::call_site(),
                     ),
                     ty: &field.ty,
-                    builder_attr: field_defaults.with(&field.attrs)?,
+                    builder_attr,
                 })
             } else {
                 Err(Error::new(field.span(), "Nameless field in struct"))
@@ -836,36 +846,14 @@ mod field_info {
         }
 
         pub fn type_from_inside_option(&self) -> Option<&syn::Type> {
-            let path = if let syn::Type::Path(type_path) = self.ty {
-                if type_path.qself.is_some() {
-                    return None;
-                } else {
-                    &type_path.path
-                }
-            } else {
-                return None;
-            };
-            let segment = path.segments.last()?;
-            if segment.ident != "Option" {
-                return None;
-            }
-            let generic_params =
-                if let syn::PathArguments::AngleBracketed(generic_params) = &segment.arguments {
-                    generic_params
-                } else {
-                    return None;
-                };
-            if let syn::GenericArgument::Type(ty) = generic_params.args.first()? {
-                Some(ty)
-            } else {
-                None
-            }
+            type_from_inside_option(self.ty)
         }
     }
 
     #[derive(Debug, Default, Clone)]
     pub struct FieldBuilderAttr {
         pub default: Option<syn::Expr>,
+        pub ignore_option: bool,
         pub setter: SetterSettings,
     }
 
@@ -998,6 +986,10 @@ mod field_info {
                         match name.as_str() {
                             "default" => {
                                 self.default = None;
+                                Ok(())
+                            }
+                            "optional" => {
+                                self.ignore_option = true;
                                 Ok(())
                             }
                             _ => Err(Error::new_spanned(path, "Unknown setting".to_owned())),
@@ -1272,5 +1264,32 @@ mod util {
             name.replace_range(0..2, "");
         }
         name
+    }
+
+    pub fn type_from_inside_option(ty: &syn::Type) -> Option<&syn::Type> {
+        let path = if let syn::Type::Path(type_path) = ty {
+            if type_path.qself.is_some() {
+                return None;
+            } else {
+                &type_path.path
+            }
+        } else {
+            return None;
+        };
+        let segment = path.segments.last()?;
+        if segment.ident != "Option" {
+            return None;
+        }
+        let generic_params =
+            if let syn::PathArguments::AngleBracketed(generic_params) = &segment.arguments {
+                generic_params
+            } else {
+                return None;
+            };
+        if let syn::GenericArgument::Type(ty) = generic_params.args.first()? {
+            Some(ty)
+        } else {
+            None
+        }
     }
 }
