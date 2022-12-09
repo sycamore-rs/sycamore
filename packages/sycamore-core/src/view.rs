@@ -1,9 +1,10 @@
 //! Abstractions for representing UI views.
 
-use std::any::Any;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use sycamore_reactive::*;
 
@@ -193,78 +194,143 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 
 /// Trait for describing how something should be rendered into DOM nodes.
 ///
-/// A type implementing `IntoView` means that it can be converted into a [`View`]. This allows it to
+/// A type implementing `ToView` means that it can be converted into a [`View`]. This allows it to
 /// be directly interpolated in the `view!` macro.
-pub trait IntoView<G: GenericNode> {
+///
+/// # Examples
+///
+/// Types such as `String`, `&str`, `i32`, and `bool` implement this trait. They will be stringified
+/// using the [`ToString`] trait and then converted into a text node.
+/// 
+/// ```
+/// # use sycamore::prelude::*;
+///
+/// # fn Component<G: Html>(cx: Scope) -> View<G> {
+/// let text = "Hello!";
+/// view! { cx,
+///     (text)
+/// }
+/// # }
+/// ```
+///
+/// Another type that implements this trait is `Option<View<G>>`. If the value is `Some`, it will be
+/// unwrapped. If the value is `None`, an empty view will be created.
+///
+/// ```
+/// # use sycamore::prelude::*;
+///
+/// # fn Component<G: Html>(cx: Scope) -> View<G> {
+/// let show = true;
+/// view! { cx,
+///     (show.then(|| view! { cx, "Hello!" }))
+/// }
+/// # }
+/// ```
+pub trait ToView<G: GenericNode> {
     /// Called during the initial render when creating the DOM nodes. Should return a [`View`].
-    fn create(&self) -> View<G>;
+    fn to_view(&self) -> View<G>;
 }
 
-impl<G: GenericNode> IntoView<G> for View<G> {
+impl<G: GenericNode> ToView<G> for View<G> {
     /// Tautology of converting a [`View`] into a [`View`]. This allows us to interpolate views into
     /// other views.
-    fn create(&self) -> View<G> {
+    fn to_view(&self) -> View<G> {
         self.clone()
     }
 }
-impl<G: GenericNode> IntoView<G> for &View<G> {
-    fn create(&self) -> View<G> {
-        (*self).clone()
+
+impl<T, G: GenericNode> ToView<G> for Option<T>
+where
+    T: ToView<G>,
+{
+    fn to_view(&self) -> View<G> {
+        match self {
+            Some(v) => v.to_view(),
+            None => View::empty(),
+        }
     }
 }
 
-impl<T: fmt::Display + 'static, G: GenericNode> IntoView<G> for T {
-    fn create(&self) -> View<G> {
-        // Workaround for specialization.
-        // Inspecting the type is optimized away at compile time.
+impl<T, G: GenericNode> ToView<G> for [T]
+where
+    T: ToView<G>,
+{
+    fn to_view(&self) -> View<G> {
+        View::new_fragment(self.iter().map(ToView::to_view).collect())
+    }
+}
 
-        // TODO: add this back in to prevent unnecessary cloning of strings.
-        // macro_rules! specialize_strings {
-        //     ($($t: ty),*) => {
-        //         $(
-        //             if let Ok(s) = <_ as Any>::downcast::<$t>(self) {
-        //                 return View::new_node(G::text_node(s.into()));
-        //             }
-        //         )*
-        //     }
-        // }
+impl<G: GenericNode> ToView<G> for &'static str {
+    fn to_view(&self) -> View<G> {
+        View::new_node(G::text_node((*self).into()))
+    }
+}
+impl<G: GenericNode> ToView<G> for Cow<'static, str> {
+    fn to_view(&self) -> View<G> {
+        View::new_node(G::text_node(self.clone()))
+    }
+}
 
-        macro_rules! specialize_num {
-            ($($t: ty),*) => {
-                $(
-                    if let Some(&n) = <dyn Any>::downcast_ref::<$t>(self) {
-                        return View::new_node(G::text_node_int(n as i32));
-                    }
-                )*
+macro_rules! impl_to_view_text_to_string {
+    ($t:ty) => {
+        impl<G: GenericNode> ToView<G> for $t {
+            fn to_view(&self) -> View<G> {
+                View::new_node(G::text_node(self.to_string().into()))
             }
         }
+    };
+}
 
-        macro_rules! specialize_big_num {
-            ($($t: ty),*) => {
-                $(
-                    if let Some(&n) = <dyn Any>::downcast_ref::<$t>(self) {
-                        if n <= i32::MAX as $t {
-                            return View::new_node(G::text_node_int(n as i32));
-                        } else {
-                            return View::new_node(G::text_node(n.to_string().into()));
-                        }
-                    }
-                )*
-            }
-        }
+impl_to_view_text_to_string!(String);
 
-        // Strings and string slices.
-        // TODO: see above.
-        // specialize_strings!(&str, String, Rc<str>, Rc<String>, Cow<'_, str>);
+impl_to_view_text_to_string!(bool);
+impl_to_view_text_to_string!(char);
+impl_to_view_text_to_string!(u8);
+impl_to_view_text_to_string!(u16);
+impl_to_view_text_to_string!(u32);
+impl_to_view_text_to_string!(u64);
+impl_to_view_text_to_string!(u128);
+impl_to_view_text_to_string!(usize);
+impl_to_view_text_to_string!(i8);
+impl_to_view_text_to_string!(i16);
+impl_to_view_text_to_string!(i32);
+impl_to_view_text_to_string!(i64);
+impl_to_view_text_to_string!(i128);
+impl_to_view_text_to_string!(isize);
+impl_to_view_text_to_string!(f32);
+impl_to_view_text_to_string!(f64);
 
-        // Numbers that are smaller than can be represented by an `i32` use fast-path by passing
-        // value directly to JS. Note that `u16` and `u32` cannot be represented by an `i32`
-        specialize_num!(i8, i16, i32, u8);
-        // Number that are bigger than an `i32`.
-        specialize_big_num!(i64, i128, isize, u16, u32, u64, u128, usize);
+impl<T, G: GenericNode> ToView<G> for &T
+where
+    T: ToView<G>,
+{
+    fn to_view(&self) -> View<G> {
+        (*self).to_view()
+    }
+}
+impl<T, G: GenericNode> ToView<G> for Box<T>
+where
+    T: ToView<G>,
+{
+    fn to_view(&self) -> View<G> {
+        self.as_ref().to_view()
+    }
+}
 
-        // Generic slow-path.
-        let t = self.to_string();
-        View::new_node(G::text_node(t.into()))
+impl<T, G: GenericNode> ToView<G> for Rc<T>
+where
+    T: ToView<G>,
+{
+    fn to_view(&self) -> View<G> {
+        self.as_ref().to_view()
+    }
+}
+
+impl<T, G: GenericNode> ToView<G> for Arc<T>
+where
+    T: ToView<G>,
+{
+    fn to_view(&self) -> View<G> {
+        self.as_ref().to_view()
     }
 }
