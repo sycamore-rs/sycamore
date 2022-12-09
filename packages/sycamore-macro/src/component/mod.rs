@@ -224,8 +224,8 @@ impl ToTokens for ComponentFn {
                 ..sig.clone()
             };
             tokens.extend(quote! {
-                #[allow(non_snake_case)]
                 #(#attrs)*
+                #[::sycamore::component]
                 #vis #non_async_sig {
                     #[allow(non_snake_case)]
                     #inner_sig #block
@@ -245,7 +245,7 @@ impl ToTokens for ComponentFn {
             tokens.extend(quote! {
                 #[allow(non_snake_case)]
                 #f
-            });
+            })
         }
     }
 }

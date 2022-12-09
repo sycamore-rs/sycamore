@@ -12,6 +12,7 @@ use crate::view::ir::*;
 
 /// A struct for keeping track of the state when emitting Rust code.
 pub struct Codegen {
+    pub elements_mod_path: syn::Path,
     pub cx: Ident,
 }
 
@@ -52,7 +53,7 @@ impl Codegen {
             }
             ViewNode::Component(comp) => self.component(comp),
             ViewNode::Text(Text { value }) => quote! {
-                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(#value))
+                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
             ViewNode::Dyn(d @ Dyn { value }) => {
                 let needs_cx = d.needs_cx(&cx.to_string());
@@ -73,6 +74,7 @@ impl Codegen {
     }
 
     pub fn element(&self, elem: &Element) -> TokenStream {
+        let elements_mod_path = &self.elements_mod_path;
         let cx = &self.cx;
         let Element {
             tag,
@@ -82,10 +84,10 @@ impl Codegen {
 
         let quote_tag = match tag {
             ElementTag::Builtin(id) => quote! {
-                let __el = ::sycamore::generic_node::GenericNode::element::<::sycamore::web::html::#id>();
+                let __el = ::sycamore::generic_node::GenericNodeElements::element::<#elements_mod_path::#id>();
             },
             ElementTag::Custom(tag_s) => quote! {
-                let __el = ::sycamore::generic_node::GenericNode::element_from_tag(#tag_s);
+                let __el = ::sycamore::generic_node::GenericNodeElements::element_from_tag(::std::borrow::Cow::Borrowed(#tag_s));
             },
         };
 
@@ -113,7 +115,7 @@ impl Codegen {
                         children.next_if(|x| matches!(x, ViewNode::Text(_)))
                     {
                         quote! {
-                            let __marker = ::sycamore::generic_node::GenericNode::text_node(#value);
+                            let __marker = ::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value));
                             ::sycamore::generic_node::GenericNode::append_child(&__el, &__marker);
                             let __marker = ::std::option::Option::Some(&__marker);
                         }
@@ -135,9 +137,9 @@ impl Codegen {
                     let ssr_markers = quote! {
                         ::sycamore::generic_node::GenericNode::append_child(
                             &__el,
-                            &::sycamore::generic_node::GenericNode::marker_with_text("#"),
+                            &::sycamore::generic_node::GenericNode::marker_with_text(::std::borrow::Cow::Borrowed("#")),
                         );
-                        let __end_marker = ::sycamore::generic_node::GenericNode::marker_with_text("/");
+                        let __end_marker = ::sycamore::generic_node::GenericNode::marker_with_text(::std::borrow::Cow::Borrowed("/"));
                         ::sycamore::generic_node::GenericNode::append_child(&__el, &__end_marker);
                     };
 
@@ -221,13 +223,13 @@ impl Codegen {
                                 #intern
                                 ::sycamore::generic_node::GenericNode::append_child(
                                     &__el,
-                                    &::sycamore::generic_node::GenericNode::text_node(#value),
+                                    &::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)),
                                 );
                             },
                             // Only one child, directly set innerText instead of creating a text node.
                             false => quote! {
                                 #intern
-                                ::sycamore::generic_node::GenericNode::update_inner_text(&__el, #value);
+                                ::sycamore::generic_node::GenericNode::update_inner_text(&__el, ::std::borrow::Cow::Borrowed(#value));
                             },
                         });
                     }
@@ -271,14 +273,14 @@ impl Codegen {
                     // times.
                     quote! {
                         if ::std::cfg!(target_arch = "wasm32") {
-                            ::sycamore::rt::intern(#text)
+                            ::std::borrow::Cow::Borrowed(::sycamore::rt::intern(#text))
                         } else {
-                            #text
+                            ::std::borrow::Cow::Borrowed(#text)
                         }
                     }
                 } else {
                     quote! {
-                        &::std::string::ToString::to_string(&#expr)
+                        ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#expr))
                     }
                 };
                 let quoted_set_attribute = if is_class {
@@ -287,7 +289,7 @@ impl Codegen {
                     }
                 } else {
                     quote! {
-                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, #name, #quoted_text);
+                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), #quoted_text);
                     }
                 };
 
@@ -306,9 +308,9 @@ impl Codegen {
                 let name = name.to_string();
                 let quoted_set_attribute = quote! {
                     if #expr {
-                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, #name, "");
+                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), ::std::borrow::Cow::Borrowed(""));
                     } else {
-                        ::sycamore::generic_node::GenericNode::remove_attribute(&__el, #name);
+                        ::sycamore::generic_node::GenericNode::remove_attribute(&__el, ::std::borrow::Cow::Borrowed(#name));
                     }
                 };
 
@@ -335,7 +337,7 @@ impl Codegen {
                             move || {
                                 ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
                                     &__el,
-                                    #expr,
+                                    <_ as ::std::convert::Into<_>>::into(#expr),
                                 );
                             }
                         });
@@ -344,7 +346,7 @@ impl Codegen {
                     tokens.extend(quote! {
                         ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
                             &__el,
-                            #expr,
+                            <_ as ::std::convert::Into<_>>::into(#expr),
                         );
                     });
                 };
@@ -394,7 +396,7 @@ impl Codegen {
                         tokens.extend(
                             syn::Error::new(
                                 prop.span(),
-                                &format!("property `{}` is not supported with `bind:`", prop),
+                                format!("property `{}` is not supported with `bind:`", prop),
                             )
                             .to_compile_error(),
                         );
@@ -473,54 +475,41 @@ impl Codegen {
 
     pub fn component(&self, comp: &Component) -> TokenStream {
         let cx = &self.cx;
-        match comp {
-            Component::Legacy(comp) => {
-                let LegacyComponent { ident, args } = comp;
-                quote! { ::sycamore::component::component_scope(move || #ident(#cx, #args)) }
-            }
-            Component::New(comp) => {
-                let NewComponent {
-                    ident,
-                    props,
-                    children,
-                    ..
-                } = comp;
-                if props.is_empty()
-                    && (children.is_none() || children.as_ref().unwrap().0.is_empty())
-                {
-                    quote! {
-                       ::sycamore::component::component_scope(move || #ident(#cx))
-                    }
-                } else {
-                    let name = props.iter().map(|x| &x.name);
-                    let value = props.iter().map(|x| &x.value);
-                    let children_quoted = children
-                        .as_ref()
-                        .map(|children| {
-                            let children = self.view_root(children);
-                            quote! {
-                                .children(
-                                    ::sycamore::component::Children::new(#cx, move |#cx| {
-                                        #[allow(unused_variables)]
-                                        let #cx: ::sycamore::reactive::BoundedScope = #cx;
-                                        #children
-                                    })
-                                )
-                            }
+        let Component {
+            ident,
+            props,
+            children,
+            ..
+        } = comp;
+
+        let name = props.iter().map(|x| &x.name);
+        let value = props.iter().map(|x| &x.value);
+        let children_quoted = children
+            .as_ref()
+            .filter(|children| !children.0.is_empty())
+            .map(|children| {
+                let children = self.view_root(children);
+                quote! {
+                    .children(
+                        ::sycamore::component::Children::new(#cx, move |#cx| {
+                            #[allow(unused_variables)]
+                            let #cx: ::sycamore::reactive::BoundedScope = #cx;
+                            #children
                         })
-                        .unwrap_or_default();
-                    quote! {{
-                        let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
-                        ::sycamore::component::component_scope(move || __component(
-                            #cx,
-                            ::sycamore::component::element_like_component_builder(__component)
-                                #(.#name(#value))*
-                                #children_quoted
-                                .build()
-                        ))
-                    }}
+                    )
                 }
-            }
-        }
+            })
+            .unwrap_or_default();
+        quote! {{
+            let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
+            ::sycamore::component::component_scope(move || ::sycamore::component::Component::create(
+                __component,
+                #cx,
+                ::sycamore::component::element_like_component_builder(__component)
+                    #(.#name(#value))*
+                    #children_quoted
+                    .build()
+            ))
+        }}
     }
 }

@@ -6,7 +6,7 @@ use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Brace, Paren};
-use syn::{braced, parenthesized, token, Expr, Ident, LitStr, Result, Token};
+use syn::{braced, parenthesized, token, Ident, LitStr, Result, Token};
 
 use super::ir::*;
 
@@ -228,13 +228,7 @@ impl Parse for Component {
             // Parse props.
             let content;
             parenthesized!(content in input);
-            // Check if using legacy component syntax (not using `Props` derive).
-            if !content.peek2(Token![=]) {
-                let args = content.parse_terminated(Expr::parse)?;
-                return Ok(Self::Legacy(LegacyComponent { ident, args }));
-            } else {
-                props = content.parse_terminated(ComponentProp::parse)?;
-            }
+            props = content.parse_terminated(ComponentProp::parse)?;
         }
         if input.peek(Brace) {
             // Parse children.
@@ -243,12 +237,12 @@ impl Parse for Component {
             children = Some(content.parse()?);
         }
 
-        Ok(Self::New(NewComponent {
+        Ok(Self {
             ident,
             props,
             brace,
             children,
-        }))
+        })
     }
 }
 

@@ -1,5 +1,6 @@
 //! Generic rendering backend.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::hash::Hash;
 
@@ -46,18 +47,12 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Whether this rendering backend hydrates nodes on the client side.
     const CLIENT_SIDE_HYDRATION: bool = false;
 
-    /// Create a new element node.
-    fn element<T: SycamoreElement>() -> Self;
-
-    /// Create a new element node from a tag string.
-    fn element_from_tag(tag: &str) -> Self;
-
     /// Create a new text node.
-    fn text_node(text: &str) -> Self;
+    fn text_node(text: Cow<'static, str>) -> Self;
 
     /// Create a new text node from an integer.
     fn text_node_int(int: i32) -> Self {
-        Self::text_node(&int.to_string())
+        Self::text_node(int.to_string().into())
     }
 
     /// Create a marker (dummy) node. For `DomNode`, this is implemented by creating an empty
@@ -65,24 +60,26 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// want to push a new item to the end of the list. If the list is empty, a dummy node is
     /// needed to store the position of the component.
     fn marker() -> Self {
-        Self::marker_with_text("")
+        Self::marker_with_text("".into())
     }
 
     /// Create a marker (dummy) node with text content. For empty marker, prefer
     /// [`GenericNode::marker`] instead.
-    fn marker_with_text(text: &str) -> Self;
+    fn marker_with_text(text: Cow<'static, str>) -> Self;
 
     /// Sets an attribute on a node.
-    fn set_attribute(&self, name: &str, value: &str);
+    /// If the attribute does not exist, it is added. If the attribute already exists, the value is
+    /// overridden.
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>);
 
     /// Removes an attribute on a node.
-    fn remove_attribute(&self, name: &str);
+    fn remove_attribute(&self, name: Cow<'static, str>);
 
     /// Sets the `class` attribute on a node.
     /// This should have the same outcome as calling `set_attribute("class", value)`.
     /// For `DomNode`, this sets the `className` property directly which is about 2x faster (on
     /// Chrome).
-    fn set_class_name(&self, value: &str);
+    fn set_class_name(&self, value: Cow<'static, str>);
 
     /// Add a class to the element.
     /// If multiple classes are specified, delimited by spaces, all the classes should be added.
@@ -134,14 +131,25 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
-    fn update_inner_text(&self, text: &str);
+    fn update_inner_text(&self, text: Cow<'static, str>);
 
     /// Updates the inner html of the node.
     /// The html will not be parsed in non-browser environments. This means that accessing methods
     /// such as [`first_child`](GenericNode::first_child) will return `None`.
-    fn dangerously_set_inner_html(&self, html: &str);
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>);
 
     /// Create a deep clone of the node.
     #[must_use = "clone_node returns a new node"]
     fn clone_node(&self) -> Self;
+}
+
+/// Extension trait for [`GenericNode`] to provide additional methods related to element creation.
+/// Not all backends need to implement this, but that means that you can only use components, not
+/// elements in `view!`.
+pub trait GenericNodeElements: GenericNode {
+    /// Create a new element node.
+    fn element<T: SycamoreElement>() -> Self;
+
+    /// Create a new element node from a tag string.
+    fn element_from_tag(tag: Cow<'static, str>) -> Self;
 }

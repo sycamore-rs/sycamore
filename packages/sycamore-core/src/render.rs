@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use ahash::AHashMap;
+use hashbrown::HashMap;
 use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
@@ -57,7 +57,7 @@ fn insert_expression<G: GenericNode>(
                 // FIXME: This is an extremely ugly hack to get around the fact that current is None
                 // for text nodes when G is HydrateNode. This will cause the text node to be
                 // inserted twice when hydrating.
-                parent.update_inner_text("");
+                parent.update_inner_text("".into());
                 parent.insert_child_before(node, None);
             } else {
                 parent.insert_child_before(node, marker);
@@ -162,7 +162,7 @@ pub fn clean_children<G: GenericNode>(
     multi: bool,
 ) {
     if !multi {
-        parent.update_inner_text("");
+        parent.update_inner_text("".into());
         if let Some(replacement) = replacement {
             parent.append_child(replacement);
         }
@@ -265,7 +265,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     let mut b_end = b_len;
     let mut a_start = 0;
     let mut b_start = 0;
-    let mut map = None::<AHashMap<G, usize>>;
+    let mut map = None::<HashMap<G, usize>>;
 
     // Last node in a.
     let after = a[a_end - 1].next_sibling();

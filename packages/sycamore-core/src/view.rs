@@ -1,7 +1,6 @@
 //! Abstractions for representing UI views.
 
 use std::any::Any;
-use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
@@ -219,15 +218,16 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoView<G> for T {
         // Workaround for specialization.
         // Inspecting the type is optimized away at compile time.
 
-        macro_rules! specialize_as_ref_to_str {
-            ($($t: ty),*) => {
-                $(
-                    if let Some(s) = <dyn Any>::downcast_ref::<$t>(self) {
-                        return View::new_node(G::text_node(s.as_ref()));
-                    }
-                )*
-            }
-        }
+        // TODO: add this back in to prevent unnecessary cloning of strings.
+        // macro_rules! specialize_strings {
+        //     ($($t: ty),*) => {
+        //         $(
+        //             if let Ok(s) = <_ as Any>::downcast::<$t>(self) {
+        //                 return View::new_node(G::text_node(s.into()));
+        //             }
+        //         )*
+        //     }
+        // }
 
         macro_rules! specialize_num {
             ($($t: ty),*) => {
@@ -246,7 +246,7 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoView<G> for T {
                         if n <= i32::MAX as $t {
                             return View::new_node(G::text_node_int(n as i32));
                         } else {
-                            return View::new_node(G::text_node(&n.to_string()));
+                            return View::new_node(G::text_node(n.to_string().into()));
                         }
                     }
                 )*
@@ -254,7 +254,8 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoView<G> for T {
         }
 
         // Strings and string slices.
-        specialize_as_ref_to_str!(&str, String, Rc<str>, Rc<String>, Cow<'_, str>);
+        // TODO: see above.
+        // specialize_strings!(&str, String, Rc<str>, Rc<String>, Cow<'_, str>);
 
         // Numbers that are smaller than can be represented by an `i32` use fast-path by passing
         // value directly to JS. Note that `u16` and `u32` cannot be represented by an `i32`
@@ -264,6 +265,6 @@ impl<T: fmt::Display + 'static, G: GenericNode> IntoView<G> for T {
 
         // Generic slow-path.
         let t = self.to_string();
-        View::new_node(G::text_node(&t))
+        View::new_node(G::text_node(t.into()))
     }
 }

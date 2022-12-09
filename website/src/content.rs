@@ -17,7 +17,7 @@ pub struct Outline {
     children: Vec<Outline>,
 }
 
-#[component]
+#[component(inline_props)]
 pub fn OutlineView<G: Html>(cx: Scope, outline: Vec<Outline>) -> View<G> {
     web_sys::window()
         .unwrap()
@@ -94,7 +94,7 @@ pub fn Content<G: Html>(
                 view! { cx,
                     div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
                         div(class="p-3"){
-                            crate::sidebar::Sidebar(sidebar.clone().unwrap())
+                            crate::sidebar::Sidebar(version=sidebar.clone().unwrap().0, data=sidebar.clone().unwrap().1)
                         }
                     }
                 }
@@ -136,11 +136,11 @@ pub fn Content<G: Html>(
                     } else {
                         view! { cx, }
                     })
-                    div(dangerously_set_inner_html=&html)
+                    div(dangerously_set_inner_html=html.clone())
                 }
             }
             div(class="flex-none hidden lg:block lg:w-44 fixed right-0 top-0 pt-12 max-h-full overflow-y-auto") {
-                OutlineView(outline)
+                OutlineView(outline=outline)
             }
         }
     }

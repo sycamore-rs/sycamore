@@ -802,8 +802,13 @@ mod field_info {
                     || !builder_attr.ignore_option && type_from_inside_option(&field.ty).is_some();
                 if builder_attr.setter.strip_option.is_none() && strip_option_auto {
                     builder_attr.default =
-                        Some(syn::parse(quote!(::std::default::Default::default()).into()).unwrap());
+                        Some(syn::parse_quote!(::std::default::Default::default()));
                     builder_attr.setter.strip_option = Some(field.ty.span());
+                }
+                else if name == "children" {
+                    // If this field is the `children` field, make it implicitly have a default value.
+                    builder_attr.default =
+                        Some(syn::parse_quote! { ::std::default::Default::default() });
                 }
 
                 Ok(FieldInfo {
