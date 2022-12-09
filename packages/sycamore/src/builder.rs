@@ -32,7 +32,9 @@ use crate::web::Html;
 pub mod prelude {
     pub use super::{component, dyn_t, fragment, t, tag};
     #[cfg(feature = "web")]
-    pub use crate::web::html::*;
+    pub use crate::web::html::html_tags::builder::*;
+    #[cfg(feature = "web")]
+    pub use crate::web::html::svg_tags::builder::*;
 }
 
 /// A factory for building [`View`]s.
@@ -389,7 +391,19 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         text: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(|_, el| el.append_child(&G::text_node(text.into())))
+        #[allow(unused_imports)]
+        use std::any::TypeId;
+        // Only create a text node if we are not hydrating.
+        #[cfg(feature = "hydrate")]
+        return self.map(|_, el| {
+            if TypeId::of::<G>() != TypeId::of::<crate::web::HydrateNode>()
+                || sycamore_core::hydrate::hydration_completed()
+            {
+                el.append_child(&G::text_node(text.into()));
+            }
+        });
+        #[cfg(not(feature = "hydrate"))]
+        return self.map(|_, el| el.append_child(&G::text_node(text.into())));
     }
 
     /// Adds a dynamic text node.

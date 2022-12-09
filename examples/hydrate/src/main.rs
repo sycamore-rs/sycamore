@@ -19,12 +19,13 @@ fn Counter<G: Html>(cx: Scope) -> View<G> {
 #[component]
 fn Hello<G: Html>(cx: Scope) -> View<G> {
     let name = create_signal(cx, String::new());
+    let is_empty = create_selector(cx, || !name.get().is_empty());
 
     view! { cx,
         div {
             p {
                 "Hello "
-                (if *create_selector(cx, || !name.get().is_empty()).get() {
+                (if *is_empty.get() {
                     view! { cx,
                         span { (name.get()) }
                     }

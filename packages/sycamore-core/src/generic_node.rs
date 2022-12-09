@@ -1,10 +1,13 @@
 //! Generic rendering backend.
 
 use std::borrow::Cow;
-use std::fmt;
+use std::fmt::{self, Debug, Formatter};
 use std::hash::Hash;
 
 use sycamore_reactive::Scope;
+
+use crate::render::insert;
+use crate::view::View;
 
 /// Represents an element (i.e. `div`, `p`, etc...).
 pub trait SycamoreElement {
@@ -152,4 +155,262 @@ pub trait GenericNodeElements: GenericNode {
 
     /// Create a new element node from a tag string.
     fn element_from_tag(tag: Cow<'static, str>) -> Self;
+
+    /// Create a new namespaced element node from a tag string and a namespace string.
+    ///
+    /// The default implementation simply throws away the namespace and creates a normal element.
+    /// This behavior can be overridden by backends that support namespaces.
+    fn element_from_tag_namespace(tag: Cow<'static, str>, _namespace: Cow<'static, str>) -> Self {
+        Self::element_from_tag(tag)
+    }
+
+    /// Instantiate a template by creating nodes to match the template structure. Returns the root
+    /// node along with a list of flagged nodes and dynamic markers.
+    ///
+    /// By default, this will call [`instantiate_template_universal`]. However, this method can be
+    /// overridden for specific node types to provide a more optimized implementation. For example,
+    /// `SsrNode` could render the template to a static HTML string and then cache the result for
+    /// reduced allocations and string formatting.
+    fn instantiate_template(template: &Template) -> TemplateResult<Self> {
+        instantiate_template_universal(template, InstantiateUniversalOpts::default())
+    }
+
+    /// Insert the dynamic values into the template at the dynamic markers.
+    fn apply_dyn_values_to_template(
+        cx: Scope,
+        dyn_markers: &[DynMarkerResult<Self>],
+        dyn_values: Vec<View<Self>>,
+    ) {
+        if dyn_markers.len() != dyn_values.len() {
+            panic!(
+                "The number of dynamic markers ({}) does not match the number of dynamic values ({}).",
+                dyn_markers.len(),
+                dyn_values.len()
+            );
+        }
+        for (m, value) in dyn_markers.iter().zip(dyn_values.into_iter()) {
+            insert(
+                cx,
+                &m.parent,
+                value,
+                m.initial.clone(),
+                m.before.as_ref(),
+                m.multi,
+            );
+        }
+    }
+}
+
+/// Internal method to allow the proc-macro to call `G::instantiate_template` without knowing what
+/// `G` is.
+#[doc(hidden)]
+pub fn __instantiate_template<G: GenericNodeElements>(template: &Template) -> TemplateResult<G> {
+    G::instantiate_template(template)
+}
+
+/// Internal method to allow the proc-macro to call `G::apply_dyn_values_to_template` without
+/// knowing what `G` is.
+#[doc(hidden)]
+pub fn __apply_dyn_values_to_template<G: GenericNodeElements>(
+    cx: Scope,
+    dyn_markers: &[DynMarkerResult<G>],
+    dyn_values: Vec<View<G>>,
+) {
+    G::apply_dyn_values_to_template(cx, dyn_markers, dyn_values)
+}
+
+/// The "shape" of the template, i.e. what the structure of the template looks like. This is
+/// basically the view with holes where the dynamic parts are and flags so that these holes can be
+/// filled in later.
+#[derive(Debug)]
+pub enum TemplateShape {
+    Element {
+        tag: &'static str,
+        ns: Option<&'static str>,
+        children: &'static [TemplateShape],
+        attributes: &'static [(&'static str, Cow<'static, str>)],
+        flag: bool,
+    },
+    Text(&'static str),
+    /// A dynamic view "hole". This is where a dynamic view should be inserted.
+    DynMarker,
+}
+
+/// An unique identifier for an instantiated template.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TemplateId(pub u32);
+
+/// A template that can be instantiated.
+#[derive(Debug)]
+pub struct Template {
+    pub id: TemplateId,
+    pub shape: TemplateShape,
+}
+
+/// Result of a template instantiation.
+#[derive(Debug)]
+pub struct TemplateResult<G: GenericNode> {
+    pub root: G,
+    pub flagged_nodes: Vec<G>,
+    pub dyn_markers: Vec<DynMarkerResult<G>>,
+}
+
+/// Info extracted from a dynamic marker in a template.
+#[derive(Debug)]
+pub struct DynMarkerResult<G: GenericNode> {
+    pub parent: G,
+    pub before: Option<G>,
+    pub initial: Option<View<G>>,
+    pub multi: bool,
+}
+
+pub struct InstantiateUniversalOpts<G: GenericNodeElements> {
+    pub start_marker: Option<&'static str>,
+    pub end_marker: Option<&'static str>,
+    pub create_element: fn(Cow<'static, str>) -> G,
+    pub create_element_ns: fn(Cow<'static, str>, Cow<'static, str>) -> G,
+}
+
+impl<G: GenericNodeElements> Default for InstantiateUniversalOpts<G> {
+    fn default() -> Self {
+        Self {
+            start_marker: None,
+            end_marker: None,
+            create_element: G::element_from_tag,
+            create_element_ns: G::element_from_tag_namespace,
+        }
+    }
+}
+
+impl<G: GenericNodeElements> Debug for InstantiateUniversalOpts<G> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InstantiateUniversalOpts")
+            .field("start_marker", &self.start_marker)
+            .field("end_marker", &self.end_marker)
+            .finish()
+    }
+}
+
+impl<G: GenericNodeElements> Clone for InstantiateUniversalOpts<G> {
+    fn clone(&self) -> Self {
+        Self {
+            start_marker: self.start_marker,
+            end_marker: self.end_marker,
+            create_element: self.create_element,
+            create_element_ns: self.create_element_ns,
+        }
+    }
+}
+
+impl<G: GenericNodeElements> Copy for InstantiateUniversalOpts<G> {}
+
+fn instantiate_element_universal_impl<G: GenericNodeElements>(
+    template: &TemplateShape,
+    flagged_nodes: &mut Vec<G>,
+    dyn_markers: &mut Vec<DynMarkerResult<G>>,
+    opts: InstantiateUniversalOpts<G>,
+) -> G {
+    match template {
+        TemplateShape::Element {
+            tag: ident,
+            ns,
+            children,
+            attributes,
+            flag,
+        } => {
+            let node = if let Some(ns) = ns {
+                (opts.create_element_ns)((*ident).into(), (*ns).into())
+            } else {
+                (opts.create_element)((*ident).into())
+            };
+            let multi = children.len() != 1;
+            if *flag {
+                flagged_nodes.push(node.clone());
+            }
+            for (name, value) in *attributes {
+                node.set_attribute((*name).into(), value.clone());
+            }
+            for child in *children {
+                instantiate_template_universal_impl(
+                    &node,
+                    child,
+                    flagged_nodes,
+                    dyn_markers,
+                    multi,
+                    opts,
+                );
+            }
+            node
+        }
+        _ => panic!("expected an element"),
+    }
+}
+
+fn instantiate_template_universal_impl<G: GenericNodeElements>(
+    parent: &G,
+    template: &TemplateShape,
+    flagged_nodes: &mut Vec<G>,
+    dyn_markers: &mut Vec<DynMarkerResult<G>>,
+    multi: bool,
+    opts: InstantiateUniversalOpts<G>,
+) {
+    match template {
+        TemplateShape::Element { .. } => {
+            let node =
+                instantiate_element_universal_impl(template, flagged_nodes, dyn_markers, opts);
+            parent.append_child(&node);
+        }
+        TemplateShape::Text(text) => {
+            let node = G::text_node((*text).into());
+            parent.append_child(&node);
+        }
+        TemplateShape::DynMarker => {
+            if multi {
+                let start = match opts.start_marker {
+                    Some(text) => G::marker_with_text(text.into()),
+                    None => G::marker(),
+                };
+                parent.append_child(&start);
+                let end = match opts.end_marker {
+                    Some(text) => G::marker_with_text(text.into()),
+                    None => G::marker(),
+                };
+                parent.append_child(&end);
+                dyn_markers.push(DynMarkerResult {
+                    parent: parent.clone(),
+                    before: Some(end),
+                    initial: None,
+                    multi,
+                });
+            } else {
+                dyn_markers.push(DynMarkerResult {
+                    parent: parent.clone(),
+                    before: None,
+                    initial: None,
+                    multi,
+                });
+            }
+        }
+    }
+}
+
+/// Instantiate a template by creating nodes to match the template structure. Returns the root node
+/// along with a list of flagged nodes and dynamic markers.
+pub fn instantiate_template_universal<G: GenericNodeElements>(
+    template: &Template,
+    opts: InstantiateUniversalOpts<G>,
+) -> TemplateResult<G> {
+    let mut flagged_nodes = Vec::new();
+    let mut dyn_markers = Vec::new();
+    let root = instantiate_element_universal_impl(
+        &template.shape,
+        &mut flagged_nodes,
+        &mut dyn_markers,
+        opts,
+    );
+    TemplateResult {
+        root,
+        flagged_nodes,
+        dyn_markers,
+    }
 }

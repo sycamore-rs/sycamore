@@ -118,7 +118,7 @@ mod dynamic {
     fn ssr() {
         check(
             &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
-            expect![[r##"<p data-hk="0.0"><!--#-->0<!--/--></p>"##]],
+            expect![[r#"<p data-hk="0.0"><!--#-->0<!--/--></p>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -156,7 +156,7 @@ mod dynamic_with_siblings {
     fn ssr() {
         check(
             &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
-            expect![[r##"<p data-hk="0.0">Value: <!--#-->0<!--/-->!</p>"##]],
+            expect![[r#"<p data-hk="0.0">Value: <!--#-->0<!--/-->!</p>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -192,7 +192,7 @@ mod dynamic_template {
     fn ssr() {
         check(
             &sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" }))),
-            expect![[r##"<p data-hk="0.0">before<!--#-->text<!--/-->after</p>"##]],
+            expect![[r#"<p data-hk="0.0">before<!--#-->text<!--/-->after</p>"#]],
         );
     }
     #[wasm_bindgen_test]

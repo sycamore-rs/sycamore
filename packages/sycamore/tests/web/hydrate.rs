@@ -40,7 +40,7 @@ mod hydrate_recursive {
     fn ssr() {
         check(
             &sycamore::render_to_string(v),
-            expect![[r#"<div data-hk="0.0"><p data-hk="0.1">Nested</p></div>"#]],
+            expect![[r#"<div data-hk="0.0"><p>Nested</p></div>"#]],
         );
     }
     #[wasm_bindgen_test]
@@ -65,9 +65,7 @@ mod multiple_nodes_at_same_depth {
     fn ssr() {
         check(
             &sycamore::render_to_string(v),
-            expect![[
-                r#"<div data-hk="0.0"><p data-hk="0.1">First</p><p data-hk="0.2">Second</p></div>"#
-            ]],
+            expect![[r#"<div data-hk="0.0"><p>First</p><p>Second</p></div>"#]],
         );
     }
     #[wasm_bindgen_test]

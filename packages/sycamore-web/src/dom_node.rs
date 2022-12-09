@@ -6,7 +6,9 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
+use sycamore_core::generic_node::{
+    GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
+};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -14,7 +16,10 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Document, Element, Node, Text};
 
-use crate::Html;
+use crate::dom_node_template::{
+    add_new_cached_template, execute_walk, try_get_cached_template, WalkResult,
+};
+use crate::{document, Html};
 
 #[wasm_bindgen]
 extern "C" {
@@ -123,14 +128,6 @@ impl fmt::Debug for DomNode {
         };
         f.debug_tuple("DomNode").field(&outer_html).finish()
     }
-}
-
-fn document() -> web_sys::Document {
-    thread_local! {
-        /// Cache document since it is frequently accessed to prevent going through js-interop.
-        static DOCUMENT: web_sys::Document = web_sys::window().unwrap_throw().document().unwrap_throw();
-    };
-    DOCUMENT.with(|document| document.clone())
 }
 
 impl GenericNode for DomNode {
@@ -340,6 +337,42 @@ impl GenericNodeElements for DomNode {
         DomNode {
             id: Default::default(),
             node,
+        }
+    }
+
+    fn element_from_tag_namespace(tag: Cow<'static, str>, namespace: Cow<'static, str>) -> Self {
+        let node = document()
+            .create_element_ns(Some(intern(&namespace)), intern(&tag))
+            .unwrap_throw()
+            .into();
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    /// For performance reasons, we will render this template to an HTML string and then cache it.
+    ///
+    /// We can then cerate an HTML template element and clone it to create a new instance.
+    fn instantiate_template(template: &Template) -> TemplateResult<DomNode> {
+        if let Some(cached) = try_get_cached_template(template.id) {
+            let root = cached.clone_template_content();
+
+            // Execute the walk sequence.
+            let WalkResult {
+                flagged_nodes,
+                dyn_markers,
+            } = execute_walk(&cached.walk, &root, false);
+
+            TemplateResult {
+                root: DomNode::from_web_sys(root),
+                flagged_nodes,
+                dyn_markers,
+            }
+        } else {
+            add_new_cached_template(template);
+            // Now that the cached template has been created, we can use it.
+            Self::instantiate_template(template)
         }
     }
 }

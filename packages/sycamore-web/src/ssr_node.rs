@@ -8,23 +8,16 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
-use once_cell::sync::Lazy;
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
+use sycamore_core::generic_node::{
+    instantiate_template_universal, GenericNode, GenericNodeElements, InstantiateUniversalOpts,
+    SycamoreElement, Template, TemplateResult,
+};
 use sycamore_core::hydrate::{get_next_id, with_hydration_context};
 use sycamore_core::view::View;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 
-use crate::Html;
-
-static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-    vec![
-        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
-        "source", "track", "wbr", "command", "keygen", "menuitem",
-    ]
-    .into_iter()
-    .collect()
-});
+use crate::{Html, VOID_ELEMENTS};
 
 /// Inner representation for [`SsrNode`].
 #[derive(Debug, Clone)]
@@ -68,6 +61,19 @@ impl SsrNode {
             ty: Rc::new(ty),
             parent: RefCell::new(Weak::new()), // no parent
         }))
+    }
+
+    /// Create a new element without hydration keys or another other special attributes.
+    fn new_element_raw(
+        tag: Cow<'static, str>,
+        attributes: IndexMap<Cow<'static, str>, Cow<'static, str>>,
+        children: Vec<Self>,
+    ) -> Self {
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
+            name: tag,
+            attributes,
+            children,
+        })))
     }
 
     fn set_parent(&self, parent: Weak<SsrNodeInner>) {
@@ -321,29 +327,34 @@ impl GenericNode for SsrNode {
 
 impl GenericNodeElements for SsrNode {
     fn element<T: SycamoreElement>() -> Self {
-        let hk = get_next_id();
-        let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
-            attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
-        }
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: Cow::Borrowed(T::TAG_NAME),
-            attributes,
-            children: Default::default(),
-        })))
+        Self::element_from_tag(T::TAG_NAME.into())
     }
 
     fn element_from_tag(tag: Cow<'static, str>) -> Self {
-        let hk = get_next_id();
         let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
+        if let Some(hk) = get_next_id() {
             attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
         }
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: tag,
-            attributes,
-            children: Default::default(),
-        })))
+        Self::new_element_raw(tag, attributes, Vec::new())
+    }
+
+    fn instantiate_template(template: &Template) -> TemplateResult<SsrNode> {
+        let result: TemplateResult<SsrNode> = instantiate_template_universal(
+            template,
+            InstantiateUniversalOpts {
+                start_marker: Some("#"),
+                end_marker: Some("/"),
+                create_element: |tag| Self::new_element_raw(tag, IndexMap::new(), Vec::new()),
+                create_element_ns: |tag, _| Self::new_element_raw(tag, IndexMap::new(), Vec::new()),
+            },
+        );
+        let hk = get_next_id();
+        if let Some(hk) = hk {
+            result
+                .root
+                .set_attribute("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
+        }
+        result
     }
 }
 

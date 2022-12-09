@@ -149,7 +149,7 @@ fn ssr_no_hydrate_sub_tree() {
     });
     assert_eq!(
         out,
-        r#"<div data-hk="0.0"><p data-hk="0.1">Hydrated</p><!--#--><div data-hk="1.0"><p>But not this</p></div><!--/--></div>"#
+        r#"<div data-hk="0.0"><p>Hydrated</p><!--#--><div data-hk="1.0"><p>But not this</p></div><!--/--></div>"#
     );
 }
 
@@ -167,7 +167,7 @@ fn no_ssr_sub_tree_should_not_be_emitted_in_ssr() {
     });
     assert_eq!(
         out,
-        r#"<div data-hk="0.0"><p data-hk="0.1">Rendered</p><!--#--><div data-hk="1.0"><!----></div><!--/--></div>"#
+        r#"<div data-hk="0.0"><p>Rendered</p><!--#--><div data-hk="1.0"><!----></div><!--/--></div>"#
     );
 }
 
@@ -185,7 +185,7 @@ mod svg {
         });
         assert_eq!(
             out,
-            r#"<svg data-hk="0.0" xmlns="http://www.w3.org/2000/svg"><rect data-hk="0.1" width="100" height="100" fill="red"></rect></svg>"#
+            r#"<svg xmlns="http://www.w3.org/2000/svg" data-hk="0.0"><rect fill="red" width="100" height="100"></rect></svg>"#
         );
     }
 
@@ -200,7 +200,7 @@ mod svg {
         });
         assert_eq!(
             out,
-            r#"<svg data-hk="0.0" xmlns="http://www.w3.org/2000/svg"><a data-hk="0.1"></a></svg>"#
+            r#"<svg xmlns="http://www.w3.org/2000/svg" data-hk="0.0"><a></a></svg>"#
         );
     }
 }

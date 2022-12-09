@@ -121,8 +121,6 @@ pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> Vi
 
     let node_ref = create_node_ref(cx);
     let v = view! { cx,
-        // TODO: remove wrapper `div`. We currently cannot do that because otherwise
-        // the node won't get inserted into the DOM.
         div(ref=node_ref) {}
     };
     if G::CLIENT_SIDE_HYDRATION && !hydrate::hydration_completed() {
@@ -166,8 +164,6 @@ pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
         props.children.call(cx)
     };
     view! { cx,
-        // TODO: remove wrapper `div`. We currently cannot do that because otherwise
-        // the node won't get inserted into the DOM.
         div { (node) }
     }
 }

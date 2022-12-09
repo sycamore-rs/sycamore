@@ -4,8 +4,10 @@ use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
-use sycamore_core::hydrate::{get_current_id, hydration_completed, with_hydration_context};
+use sycamore_core::generic_node::{
+    GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
+};
+use sycamore_core::hydrate::{hydration_completed, with_hydration_context};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
@@ -14,6 +16,9 @@ use wasm_bindgen::JsCast;
 use web_sys::Node;
 
 use crate::dom_node::{DomNode, NodeId};
+use crate::dom_node_template::{
+    add_new_cached_template, execute_walk, try_get_cached_template, WalkResult,
+};
 use crate::hydrate::get_next_element;
 use crate::Html;
 
@@ -77,24 +82,19 @@ impl GenericNode for HydrateNode {
     const USE_HYDRATION_CONTEXT: bool = true;
     const CLIENT_SIDE_HYDRATION: bool = true;
 
-    /// When hydrating, instead of creating a new node, this will attempt to hydrate an existing
-    /// node.
     fn text_node(text: Cow<'static, str>) -> Self {
-        // TODO
         Self {
             node: DomNode::text_node(text),
         }
     }
 
     fn marker() -> Self {
-        // TODO
         Self {
             node: DomNode::marker(),
         }
     }
 
     fn marker_with_text(text: Cow<'static, str>) -> Self {
-        // TODO
         Self {
             node: DomNode::marker_with_text(text),
         }
@@ -137,10 +137,7 @@ impl GenericNode for HydrateNode {
 
     #[inline]
     fn append_child(&self, child: &Self) {
-        if hydration_completed() {
-            // Do not append nodes during hydration as that will result in duplicate text nodes.
-            self.node.append_child(&child.node);
-        }
+        self.node.append_child(&child.node);
     }
 
     #[inline]
@@ -217,7 +214,7 @@ impl GenericNodeElements for HydrateNode {
             #[cfg(debug_assertions)]
             if T::TAG_NAME.to_ascii_lowercase() != el.tag_name().to_ascii_lowercase() {
                 // Get the hydration key of the expected element.
-                let mut hk = get_current_id().unwrap();
+                let mut hk = sycamore_core::hydrate::get_current_id().unwrap();
                 hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
                 panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
                     T::TAG_NAME,
@@ -245,7 +242,7 @@ impl GenericNodeElements for HydrateNode {
             #[cfg(debug_assertions)]
             if tag != el.tag_name().to_ascii_lowercase() {
                 // Get the hydration key of the expected element.
-                let mut hk = get_current_id().unwrap();
+                let mut hk = sycamore_core::hydrate::get_current_id().unwrap();
                 hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
                 panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
                     tag,
@@ -261,6 +258,65 @@ impl GenericNodeElements for HydrateNode {
             Self {
                 node: DomNode::element_from_tag(tag),
             }
+        }
+    }
+
+    fn element_from_tag_namespace(tag: Cow<'static, str>, namespace: Cow<'static, str>) -> Self {
+        let el = get_next_element();
+        if let Some(el) = el {
+            // If in debug mode, check that the hydrate element has the same tag as the argument.
+            #[cfg(debug_assertions)]
+            if tag != el.tag_name().to_ascii_lowercase() {
+                // Get the hydration key of the expected element.
+                let mut hk = sycamore_core::hydrate::get_current_id().unwrap();
+                hk.1 -= 1; // Decrement the element id because we called get_next_id previously.
+                panic!("hydration error, mismatched element tag\nexpected {}, found {}\noccurred at element with hydration key {}.{}",
+                    tag,
+                    el.tag_name().to_ascii_lowercase(),
+                    hk.0, hk.1
+                );
+            }
+
+            Self {
+                node: DomNode::from_web_sys(el.into()),
+            }
+        } else {
+            Self {
+                node: DomNode::element_from_tag_namespace(tag, namespace),
+            }
+        }
+    }
+
+    /// For performance reasons, we will render this template to an HTML string and then cache it.
+    ///
+    /// We can then cerate an HTML template element and clone it to create a new instance.
+    fn instantiate_template(template: &Template) -> TemplateResult<HydrateNode> {
+        if let Some(cached) = try_get_cached_template(template.id) {
+            let hydrate_mode = !hydration_completed();
+
+            let root = if hydrate_mode {
+                get_next_element()
+                    .expect("node with hydration key not found")
+                    .into()
+            } else {
+                cached.clone_template_content()
+            };
+
+            // Execute the walk sequence.
+            let WalkResult {
+                flagged_nodes,
+                dyn_markers,
+            } = execute_walk(&cached.walk, &root, hydrate_mode);
+
+            TemplateResult {
+                root: HydrateNode::from_web_sys(root),
+                flagged_nodes,
+                dyn_markers,
+            }
+        } else {
+            add_new_cached_template(template);
+            // Now that the cached template has been created, we can use it.
+            Self::instantiate_template(template)
         }
     }
 }
