@@ -391,7 +391,19 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         text: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(|_, el| el.append_child(&G::text_node(text.into())))
+        #[allow(unused_imports)]
+        use std::any::TypeId;
+        // Only create a text node if we are not hydrating.
+        #[cfg(feature = "hydrate")]
+        return self.map(|_, el| {
+            if TypeId::of::<G>() != TypeId::of::<crate::web::HydrateNode>()
+                || sycamore_core::hydrate::hydration_completed()
+            {
+                el.append_child(&G::text_node(text.into()));
+            }
+        });
+        #[cfg(not(feature = "hydrate"))]
+        return self.map(|_, el| el.append_child(&G::text_node(text.into())));
     }
 
     /// Adds a dynamic text node.
