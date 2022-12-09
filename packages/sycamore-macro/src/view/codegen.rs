@@ -134,7 +134,7 @@ impl CodegenTemplate {
             .map(|child| self.node(child))
             .collect::<Vec<_>>();
 
-        let ret = match tag {
+        match tag {
             ElementTag::Builtin(tag) => quote! {{
                 type __tag = #elements_mod_path::#tag;
                 ::sycamore::generic_node::TemplateShape::Element {
@@ -154,9 +154,7 @@ impl CodegenTemplate {
                     flag: #flag,
                 }
             },
-        };
-
-        ret
+        }
     }
 
     fn attribute(&mut self, attr: &Attribute) -> (Option<TokenStream>, bool) {
