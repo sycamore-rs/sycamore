@@ -334,3 +334,33 @@ where
         self.as_ref().to_view()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use sycamore::prelude::*;
+    use sycamore::view::ToView;
+
+    #[test]
+    fn to_view_tautology() {
+        let view = View::new_node(SsrNode::text_node("Hello!".into()));
+        assert_eq!(view.to_view().as_node(), view.as_node());
+    }
+
+    #[test]
+    fn to_view_option() {
+        let option = Some("Hello!");
+        let view = option.to_view();
+        assert!(view.as_node().is_some());
+        let string = sycamore::render_to_string(|_| view);
+        assert_eq!(string, "Hello!");
+    }
+
+    #[test]
+    fn to_view_fragment() {
+        let fragment = vec!["Hello", " ", "World!"];
+        let view = fragment.to_view();
+        assert!(view.as_fragment().is_some());
+        let string = sycamore::render_to_string(|_| view);
+        assert_eq!(string, "Hello World!");
+    }
+}
