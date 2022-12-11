@@ -40,7 +40,7 @@ jobs:
           console.log("PR number", prNumber);
 
           github.rest.issues.createComment({
-            issue_number: process.env.ISSUE_NUMBER,
+            issue_number: prNumber,
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: benchResults + process.env.MSG_FOOTER,
