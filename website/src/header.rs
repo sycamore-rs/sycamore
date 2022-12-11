@@ -137,7 +137,7 @@ pub fn HamburgerMenu<G: Html>(cx: Scope) -> View<G> {
                     }
                 }
             } else {
-                View::empty()
+                view! { cx, }
             })
         }
     }

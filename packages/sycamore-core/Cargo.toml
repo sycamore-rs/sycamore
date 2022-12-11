@@ -15,7 +15,7 @@ hashbrown = "0.13.1"
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0" }
 
 [dev-dependencies]
-sycamore = { path = "../sycamore" }
+sycamore = { path = "../sycamore", features = ["ssr"] }
 
 [features]
 default = []

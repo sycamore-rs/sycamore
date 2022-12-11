@@ -14,7 +14,7 @@ use sycamore_core::view::View;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
-use web_sys::{Comment, Document, Element, Node, Text};
+use web_sys::{Comment, Element, Node, Text};
 
 use crate::dom_node_template::{
     add_new_cached_template, execute_walk, try_get_cached_template, WalkResult,
@@ -34,11 +34,6 @@ extern "C" {
     type ElementTrySetClassName;
     #[wasm_bindgen(method, catch, setter, js_name = "className")]
     fn try_set_class_name(this: &ElementTrySetClassName, class_name: &str) -> Result<(), JsValue>;
-
-    #[wasm_bindgen(extends = Document)]
-    type DocumentCreateTextNodeInt;
-    #[wasm_bindgen(method, js_name = "createTextNode")]
-    pub fn create_text_node_int(this: &DocumentCreateTextNodeInt, num: i32) -> web_sys::Text;
 }
 
 /// An unique id for every node.
@@ -136,17 +131,6 @@ impl GenericNode for DomNode {
 
     fn text_node(text: Cow<'static, str>) -> Self {
         let node = document().create_text_node(&text).into();
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
-    fn text_node_int(int: i32) -> Self {
-        let node = document()
-            .unchecked_into::<DocumentCreateTextNodeInt>()
-            .create_text_node_int(int)
-            .into();
         DomNode {
             id: Default::default(),
             node,

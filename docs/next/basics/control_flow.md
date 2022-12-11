@@ -28,10 +28,11 @@ every time `name` is changed. Rather, we only want it to be created when `name` 
 
 ```rust
 let name = create_signal(cx, String::new());
+let is_empty = create_selector(cx, || !name.get().is_empty());
 
 view! { cx,
     h1 {
-        (if *create_selector(cx, || !name.get().is_empty()).get() {
+        (if *is_empty.get() {
             view! { cx, span { (name.get()) } }
         } else {
             view! { cx, span { "World" } }

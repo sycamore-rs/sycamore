@@ -148,14 +148,10 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 Header {}
-                (if *todos_empty.get() {
-                    view! { cx, }
-                } else {
-                    view! { cx,
-                        List {}
-                        Footer {}
-                    }
-                })
+                ((!*todos_empty.get()).then(|| view! { cx,
+                    List {}
+                    Footer {}
+                }))
             }
             Copyright {}
         }
@@ -294,18 +290,14 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
                 button(class="destroy", on:click=handle_destroy)
             }
 
-            (if *is_editing.get() {
-                view! { cx,
-                    input(ref=input_ref,
-                        class="edit",
-                        bind:value=input_value,
-                        on:blur=move |_| handle_blur(),
-                        on:keyup=handle_keyup,
-                    )
-                }
-            } else {
-                view! { cx, }
-            })
+            (is_editing.get().then(|| view! { cx,
+                input(ref=input_ref,
+                    class="edit",
+                    bind:value=input_value,
+                    on:blur=move |_| handle_blur(),
+                    on:keyup=handle_keyup,
+                )
+            }))
         }
     }
 }
@@ -407,15 +399,11 @@ pub fn Footer<G: Html>(cx: Scope) -> View<G> {
                 TodoFilter(filter=Filter::Completed)
             }
 
-            (if *has_completed_todos.get() {
-                view! { cx,
-                    button(class="clear-completed", on:click=handle_clear_completed) {
-                        "Clear completed"
-                    }
+            (has_completed_todos.get().then(|| view! { cx,
+                button(class="clear-completed", on:click=handle_clear_completed) {
+                    "Clear completed"
                 }
-            } else {
-                view! { cx, }
-            })
+            }))
         }
     }
 }

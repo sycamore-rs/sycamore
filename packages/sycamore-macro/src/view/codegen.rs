@@ -73,7 +73,7 @@ impl Codegen {
                 ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
             ViewNode::Dyn(Dyn { value }) => quote! {
-                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::IntoView::create(&(#value)))
+                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
             },
         }
     }
@@ -399,10 +399,10 @@ impl CodegenTemplate {
 
         let dyn_node = match needs_cx {
             true => quote! {
-                ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::IntoView::create(&(#value)))
+                ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::ToView::to_view(&(#value)))
             },
             false => quote! {
-                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::IntoView::create(&(#value)))
+                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
             },
         };
         self.dyn_values.push(dyn_node);
