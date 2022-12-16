@@ -822,6 +822,17 @@ mod tests {
     }
 
     #[test]
+    fn result_signal() {
+        create_scope_immediate(|cx| {
+            let state = create_res_signal(cx, Ok(0));
+            assert_eq!(state.get_res(), Ok(Rc::new(0)));
+
+            state.set_res(Err(1));
+            assert_eq!(state.get_res(), Err(Rc::new(1)));
+        });
+    }
+
+    #[test]
     fn signal_composition() {
         create_scope_immediate(|cx| {
             let state = create_signal(cx, 0);
@@ -857,6 +868,30 @@ mod tests {
             assert_eq!(*readonly.get(), 0);
             state.set(1);
             assert_eq!(*readonly.get(), 1);
+        });
+    }
+
+    #[test]
+    fn read_opt_signal() {
+        create_scope_immediate(|cx| {
+            let state = create_opt_signal(cx, Some(0));
+            let readonly: &ReadSignal<Option<Rc<i32>>> = state.deref();
+
+            assert_eq!(readonly.get_opt(), Some(Rc::new(0)));
+            state.set_opt(Some(1));
+            assert_eq!(readonly.get_opt(), Some(Rc::new(1)));
+        });
+    }
+
+    #[test]
+    fn read_res_signal() {
+        create_scope_immediate(|cx| {
+            let state = create_res_signal(cx, Ok(0));
+            let readonly: &ReadSignal<Result<Rc<i32>, Rc<i32>>> = state.deref();
+
+            assert_eq!(readonly.get_res(), Ok(Rc::new(0)));
+            state.set_res(Err(1));
+            assert_eq!(readonly.get_res(), Err(Rc::new(1)));
         });
     }
 
