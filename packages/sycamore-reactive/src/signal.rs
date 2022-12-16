@@ -222,7 +222,7 @@ impl<T, E> ReadSignal<Result<Rc<T>, Rc<E>>> {
     /// # });
     /// ```
     #[must_use = "to only subscribe the signal without using the value, use .track() instead"]
-    pub fn get_opt(&self) -> Result<Rc<T>, Rc<E>> {
+    pub fn get_res(&self) -> Result<Rc<T>, Rc<E>> {
         self.get()
             .as_ref()
             .as_ref()
@@ -416,7 +416,7 @@ impl<T, E> Signal<Result<Rc<T>, Rc<E>>> {
     /// assert_eq!(state.get_opt(), Some(Rc::new(1)));
     /// # });
     /// ```
-    pub fn set_opt(&self, value: Result<T, E>) {
+    pub fn set_res(&self, value: Result<T, E>) {
         self.set(value.map(Rc::new).map_err(Rc::new))
     }
 }
