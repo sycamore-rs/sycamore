@@ -181,6 +181,56 @@ impl<T> ReadSignal<T> {
     }
 }
 
+impl<T> ReadSignal<Option<Rc<T>>> {
+    /// Get the current value of the state. When called inside a reactive scope, calling this will
+    /// add itself to the scope's dependencies.
+    /// Unpacks the [`Option`] inside the signal.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use std::rc::Rc;
+    /// # use sycamore_reactive::*;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_opt_signal(cx, Some(0));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(0)));
+    ///
+    /// state.set_opt(Some(1));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(1)));
+    /// # });
+    /// ```
+    #[must_use = "to only subscribe the signal without using the value, use .track() instead"]
+    pub fn get_opt(&self) -> Option<Rc<T>> {
+        self.get().as_ref().as_ref().map(Clone::clone)
+    }
+}
+
+impl<T, E> ReadSignal<Result<Rc<T>, Rc<E>>> {
+    /// Get the current value of the state. When called inside a reactive scope, calling this will
+    /// add itself to the scope's dependencies.
+    /// Unpacks the [`Result`] inside the signal.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use std::rc::Rc;
+    /// # use sycamore_reactive::*;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_opt_signal(cx, Some(0));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(0)));
+    ///
+    /// state.set_opt(Some(1));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(1)));
+    /// # });
+    /// ```
+    #[must_use = "to only subscribe the signal without using the value, use .track() instead"]
+    pub fn get_opt(&self) -> Result<Rc<T>, Rc<E>> {
+        self.get()
+            .as_ref()
+            .as_ref()
+            .map(Clone::clone)
+            .map_err(Clone::clone)
+    }
+}
+
 /// A container of reactive state that can be updated and subscribed to.
 ///
 /// # Example
@@ -325,6 +375,52 @@ impl<T> Signal<T> {
     }
 }
 
+impl<T> Signal<Option<Rc<T>>> {
+    /// Set the current value of the state.
+    /// Will wrap the value in an `Rc` before setting it.
+    ///
+    /// This will notify and update any effects and memos that depend on this value.
+    ///
+    /// # Example
+    /// ```
+    /// # use std::rc::Rc;
+    /// # use sycamore_reactive::*;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_opt_signal(cx, Some(0));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(0)));
+    ///
+    /// state.set_opt(Some(1));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(1)));
+    /// # });
+    /// ```
+    pub fn set_opt(&self, value: Option<T>) {
+        self.set(value.map(Rc::new))
+    }
+}
+
+impl<T, E> Signal<Result<Rc<T>, Rc<E>>> {
+    /// Set the current value of the state.
+    /// Will wrap the value and error in an `Rc` before setting it.
+    ///
+    /// This will notify and update any effects and memos that depend on this value.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # use std::rc::Rc;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_opt_signal(cx, Some(0));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(0)));
+    ///
+    /// state.set_opt(Some(1));
+    /// assert_eq!(state.get_opt(), Some(Rc::new(1)));
+    /// # });
+    /// ```
+    pub fn set_opt(&self, value: Result<T, E>) {
+        self.set(value.map(Rc::new).map_err(Rc::new))
+    }
+}
+
 /// A mutable reference for modifying a [`Signal`].
 ///
 /// Construct this using the [`Signal::modify()`] method.
@@ -465,6 +561,51 @@ impl<'a, T> AnyReadSignal<'a> for ReadSignal<T> {
 pub fn create_signal<T: 'static>(cx: Scope, value: T) -> &Signal<T> {
     let signal = Signal::new(value);
     create_ref(cx, signal)
+}
+
+/// Create a new [`Signal`] under the current [`Scope`].
+/// The created signal lasts as long as the scope and cannot be used outside of the scope.
+/// Wraps the value in an [`Rc`] before creating the signal.
+///
+/// # Signal lifetime
+///
+/// The lifetime of the returned signal is the same as the [`Scope`].
+/// As such, the signal cannot escape the [`Scope`].
+///
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// let mut outer = None;
+/// create_scope_immediate(|cx| {
+///     let signal = create_opt_signal(cx, 0);
+///     outer = Some(signal);
+/// });
+/// ```
+pub fn create_opt_signal<T: 'static>(cx: Scope, value: Option<T>) -> &Signal<Option<Rc<T>>> {
+    create_signal(cx, value.map(Rc::new))
+}
+
+/// Create a new [`Signal`] under the current [`Scope`].
+/// The created signal lasts as long as the scope and cannot be used outside of the scope.
+/// Wraps the value and error in an [`Rc`] before creating the signal.
+///
+/// # Signal lifetime
+///
+/// The lifetime of the returned signal is the same as the [`Scope`].
+/// As such, the signal cannot escape the [`Scope`].
+///
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// let mut outer = None;
+/// create_scope_immediate(|cx| {
+///     let signal = create_opt_signal(cx, 0);
+///     outer = Some(signal);
+/// });
+/// ```
+pub fn create_res_signal<T: 'static, E: 'static>(
+    cx: Scope,
+    value: Result<T, E>,
+) -> &Signal<Result<Rc<T>, Rc<E>>> {
+    create_signal(cx, value.map(Rc::new).map_err(Rc::new))
 }
 
 /// Create a new [`Signal`] under the current [`Scope`] but with an initial value wrapped in a
@@ -666,6 +807,17 @@ mod tests {
 
             state.set_fn(|n| n + 1);
             assert_eq!(*state.get(), 2);
+        });
+    }
+
+    #[test]
+    fn option_signal() {
+        create_scope_immediate(|cx| {
+            let state = create_opt_signal(cx, Some(0));
+            assert_eq!(state.get_opt(), Some(Rc::new(0)));
+
+            state.set_opt(Some(1));
+            assert_eq!(state.get_opt(), Some(Rc::new(1)));
         });
     }
 
