@@ -460,6 +460,7 @@ impl CodegenTemplate {
                                 {
                                     ::sycamore::reactive::create_effect(#cx, {
                                         let signal = ::std::clone::Clone::clone(&signal);
+                                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                                         move ||::sycamore::generic_node::GenericNode::set_property(
                                             &__el,
                                             prop,
@@ -486,6 +487,7 @@ impl CodegenTemplate {
                                 {
                                     ::sycamore::reactive::create_effect(#cx, {
                                         let signal = ::std::clone::Clone::clone(&signal);
+                                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                                         move ||::sycamore::generic_node::GenericNode::set_property(
                                             &__el,
                                             prop,
@@ -512,11 +514,12 @@ impl CodegenTemplate {
                                 {
                                     ::sycamore::reactive::create_effect(#cx, {
                                         let signal = ::std::clone::Clone::clone(&signal);
+                                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                                         move ||::sycamore::generic_node::GenericNode::set_property(
                                             &__el,
                                             prop,
                                             &::sycamore::rt::JsValue::from_str(
-                                                *::sycamore::reactive::ReadSignal::get(&signal)
+                                                &*::sycamore::reactive::ReadSignal::get(&signal)
                                             ),
                                         )
                                     });
