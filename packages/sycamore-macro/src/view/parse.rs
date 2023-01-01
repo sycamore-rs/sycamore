@@ -248,11 +248,24 @@ impl Parse for Component {
 
 impl Parse for ComponentProp {
     fn parse(input: ParseStream) -> Result<Self> {
-        Ok(Self {
-            name: input.parse()?,
-            eq: input.parse()?,
-            value: input.parse()?,
-        })
+        let name_or_prefix: Ident = input.parse()?;
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![:]) {
+            let _colon = input.parse::<Token![:]>()?;
+            Ok(Self {
+                prefix: Some(name_or_prefix),
+                name: input.parse()?,
+                eq: input.parse()?,
+                value: input.parse()?,
+            })
+        } else {
+            Ok(Self {
+                prefix: None,
+                name: name_or_prefix,
+                eq: input.parse()?,
+                value: input.parse()?,
+            })
+        }
     }
 }
 
