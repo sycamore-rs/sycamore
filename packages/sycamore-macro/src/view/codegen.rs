@@ -592,11 +592,11 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
 
     let prop_names = props
         .iter()
-        .filter(|prop| !prop.prefix.is_some())
+        .filter(|prop| prop.prefix.is_none())
         .map(|x| format_ident!("{}", &x.name));
     let prop_values = props
         .iter()
-        .filter(|prop| !prop.prefix.is_some())
+        .filter(|prop| prop.prefix.is_none())
         .map(|x| &x.value);
 
     let attributes = props
@@ -605,7 +605,7 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         .map(|prop| (&prop.prefix, &prop.name, &prop.value));
     let attribute_entries_quoted = attributes
         .map(|(prefix, name, value)| {
-            let value = to_attribute_value(prefix.as_ref().unwrap(), &name, value)?;
+            let value = to_attribute_value(prefix.as_ref().unwrap(), name, value)?;
             let name_str = name.to_string();
             Ok(quote! {
                 attributes.insert(::std::borrow::Cow::Borrowed(#name_str), #value)
@@ -668,7 +668,7 @@ fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenS
         "on" => Ok(quote!(::sycamore::component::AttributeValue::Event(#name, Box::new(#value)))),
         "prop" => Err(syn::Error::new_spanned(
             name,
-            format!("Attribute type 'prop' is not supported for passthrough"),
+            "Attribute type 'prop' is not supported for passthrough",
         )),
         "bind" => match name {
             "value" => {
@@ -698,20 +698,18 @@ fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenS
                         quote!(::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(#value.map(|value| value.to_string()))),
                     )
                 }
-            } else if is_bool_attr(&name.to_string()) {
+            } else if is_bool_attr(name) {
                 if matches!(value, Expr::Lit(_)) {
                     Ok(quote!(::sycamore::component::AttributeValue::Bool(#value)))
                 } else {
                     Ok(quote!(::sycamore::component::AttributeValue::DynamicBool(#value)))
                 }
+            } else if matches!(value, Expr::Lit(_)) {
+                Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
             } else {
-                if matches!(value, Expr::Lit(_)) {
-                    Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
-                } else {
-                    Ok(
-                        quote!(::sycamore::component::AttributeValue::DynamicStr(#value.map(|value| value.to_string()))),
-                    )
-                }
+                Ok(
+                    quote!(::sycamore::component::AttributeValue::DynamicStr(#value.map(|value| value.to_string()))),
+                )
             }
         }
         _ => Err(syn::Error::new_spanned(
