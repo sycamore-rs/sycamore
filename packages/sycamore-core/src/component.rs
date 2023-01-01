@@ -1,11 +1,11 @@
 //! Utilities for components and component properties.
 
-use std::fmt;
+use std::{borrow::Cow, collections::HashMap, fmt};
 
 use sycamore_reactive::*;
 
-use crate::generic_node::GenericNode;
 use crate::view::View;
+use crate::{generic_node::GenericNode, noderef::NodeRef};
 
 /// Runs the given closure inside a new component scope. In other words, this does the following:
 /// * If hydration is enabled, create a new hydration context.
@@ -174,5 +174,39 @@ impl<'a, G: GenericNode> Children<'a, G> {
     /// Create a new [`Children`] from a closure.
     pub fn new(_cx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }
+    }
+}
+
+pub enum AttributeValue<'cx, G: GenericNode> {
+    Str(&'static str),
+    DynamicStr(&'cx ReadSignal<String>),
+    Bool(bool),
+    DynamicBool(&'cx ReadSignal<bool>),
+    DangerouslySetInnerHtml(String),
+    DynamicDangerouslySetInnerHtml(&'cx ReadSignal<String>),
+    // TODO: Allow events
+    Event(&'static str, Box<dyn FnMut(G::EventType)>),
+    // TODO: Allow bind
+    BindBool(&'static str, &'cx Signal<bool>),
+    BindNumber(&'static str, &'cx Signal<f64>),
+    BindString(&'static str, &'cx Signal<String>),
+    // TODO: Allow Property
+    Ref(&'cx NodeRef<G>),
+}
+
+impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AttributeValue").finish()
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct Attributes<'cx, G: GenericNode> {
+    attrs: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>,
+}
+
+impl<'cx, G: GenericNode> Attributes<'cx, G> {
+    pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>) -> Self {
+        Self { attrs: attributes }
     }
 }
