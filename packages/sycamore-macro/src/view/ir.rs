@@ -61,6 +61,8 @@ pub enum AttributeType {
     Property { prop: String },
     /// Syntax: `ref`.
     Ref,
+    /// Syntax: ..attributes
+    Spread,
 }
 
 pub fn is_bool_attr(name: &str) -> bool {

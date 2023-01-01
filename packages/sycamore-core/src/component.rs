@@ -1,6 +1,11 @@
 //! Utilities for components and component properties.
 
-use std::{borrow::Cow, collections::HashMap, fmt};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    fmt,
+    ops::{Deref, DerefMut},
+};
 
 use sycamore_reactive::*;
 
@@ -184,9 +189,7 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     DynamicBool(&'cx ReadSignal<bool>),
     DangerouslySetInnerHtml(String),
     DynamicDangerouslySetInnerHtml(&'cx ReadSignal<String>),
-    // TODO: Allow events
     Event(&'static str, Box<dyn FnMut(G::EventType)>),
-    // TODO: Allow bind
     BindBool(&'static str, &'cx Signal<bool>),
     BindNumber(&'static str, &'cx Signal<f64>),
     BindString(&'static str, &'cx Signal<String>),
@@ -208,5 +211,19 @@ pub struct Attributes<'cx, G: GenericNode> {
 impl<'cx, G: GenericNode> Attributes<'cx, G> {
     pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>) -> Self {
         Self { attrs: attributes }
+    }
+}
+
+impl<'cx, G: GenericNode> Deref for Attributes<'cx, G> {
+    type Target = HashMap<Cow<'static, str>, AttributeValue<'cx, G>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.attrs
+    }
+}
+
+impl<'cx, G: GenericNode> DerefMut for Attributes<'cx, G> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.attrs
     }
 }

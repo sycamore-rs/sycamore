@@ -137,7 +137,9 @@ impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
         let span = input.span();
         let ty = input.parse()?;
-        let _eqs: Token![=] = input.parse()?;
+        if !matches!(ty, AttributeType::Spread { .. }) {
+            let _eqs: Token![=] = input.parse()?;
+        }
         let value = input.parse()?;
         Ok(Self { ty, value, span })
     }
@@ -175,43 +177,49 @@ impl Parse for AttributeType {
             }
         }
 
-        let ident: AttributeName = input.parse()?;
-        let name = ident.to_string();
-
-        if name == "ref" {
-            Ok(Self::Ref)
-        } else if name == "dangerously_set_inner_html" {
-            Ok(Self::DangerouslySetInnerHtml)
-        } else if input.peek(Token![:]) {
-            let _colon: Token![:] = input.parse()?;
-            match name.as_str() {
-                "on" => {
-                    let event = input.call(Ident::parse_any)?;
-                    Ok(Self::Event {
-                        event: event.to_string(),
-                    })
-                }
-                "prop" => {
-                    let prop = input.call(Ident::parse_any)?;
-                    Ok(Self::Property {
-                        prop: prop.to_string(),
-                    })
-                }
-                "bind" => {
-                    let prop = input.call(Ident::parse_any)?;
-                    Ok(Self::Bind {
-                        prop: prop.to_string(),
-                    })
-                }
-                _ => Err(syn::Error::new_spanned(
-                    ident.tag,
-                    format!("unknown directive `{}`", name),
-                )),
-            }
-        } else if is_bool_attr(&name) {
-            Ok(Self::Bool { name })
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![..]) {
+            let _2dot = input.parse::<Token![..]>()?;
+            Ok(Self::Spread)
         } else {
-            Ok(Self::Str { name })
+            let ident: AttributeName = input.parse()?;
+            let name = ident.to_string();
+
+            if name == "ref" {
+                Ok(Self::Ref)
+            } else if name == "dangerously_set_inner_html" {
+                Ok(Self::DangerouslySetInnerHtml)
+            } else if input.peek(Token![:]) {
+                let _colon: Token![:] = input.parse()?;
+                match name.as_str() {
+                    "on" => {
+                        let event = input.call(Ident::parse_any)?;
+                        Ok(Self::Event {
+                            event: event.to_string(),
+                        })
+                    }
+                    "prop" => {
+                        let prop = input.call(Ident::parse_any)?;
+                        Ok(Self::Property {
+                            prop: prop.to_string(),
+                        })
+                    }
+                    "bind" => {
+                        let prop = input.call(Ident::parse_any)?;
+                        Ok(Self::Bind {
+                            prop: prop.to_string(),
+                        })
+                    }
+                    _ => Err(syn::Error::new_spanned(
+                        ident.tag,
+                        format!("unknown directive `{}`", name),
+                    )),
+                }
+            } else if is_bool_attr(&name) {
+                Ok(Self::Bool { name })
+            } else {
+                Ok(Self::Str { name })
+            }
         }
     }
 }

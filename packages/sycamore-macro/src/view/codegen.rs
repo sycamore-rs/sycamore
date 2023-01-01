@@ -375,6 +375,172 @@ impl CodegenTemplate {
                 });
                 (None, true)
             }
+            AttributeType::Spread => {
+                self.flagged_nodes_quoted.extend(quote! {
+                    let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                    for (name, value) in #expr.drain() {
+                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                        let name = name.to_owned();
+                        match value {
+                            ::sycamore::component::AttributeValue::Str(s) => {
+                                ::sycamore::reactive::create_effect(#cx, {
+                                    let name = name.clone();
+                                    move ||::sycamore::generic_node::GenericNode::set_attribute(
+                                        &__el,
+                                        name.clone(),
+                                        ::std::borrow::Cow::Borrowed(s)
+                                    )
+                                });
+                            }
+                            ::sycamore::component::AttributeValue::DynamicStr(s) => {
+                                ::sycamore::reactive::create_effect(#cx, {
+                                    let name = name.clone();
+                                    move ||::sycamore::generic_node::GenericNode::set_attribute(
+                                        &__el,
+                                        name.clone(),
+                                        ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&s))
+                                    )
+                                });
+                            },
+                            ::sycamore::component::AttributeValue::Bool(value) => {
+                                let stringified = match value {
+                                    true => "true",
+                                    false => "false",
+                                };
+                                ::sycamore::reactive::create_effect(#cx, {
+                                    let name = name.clone();
+                                    move ||::sycamore::generic_node::GenericNode::set_attribute(
+                                        &__el,
+                                        name.clone(),
+                                        ::std::borrow::Cow::Borrowed(stringified)
+                                    )
+                                });
+                            },
+                            ::sycamore::component::AttributeValue::DynamicBool(value) => {
+                                ::sycamore::reactive::create_effect(#cx, {
+                                    let name = name.clone();
+                                    move || if *value.get() {
+                                        ::sycamore::generic_node::GenericNode::set_attribute(&__el, name.clone(), ::std::borrow::Cow::Borrowed(""));
+                                    } else {
+                                        ::sycamore::generic_node::GenericNode::remove_attribute(&__el, name.clone());
+                                    }
+                                });
+                            },
+                            ::sycamore::component::AttributeValue::DangerouslySetInnerHtml(value) => {
+                                ::sycamore::reactive::create_effect(#cx, {
+                                    let value = value.clone();
+                                    move || {
+                                        ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
+                                            &__el,
+                                            <_ as ::std::convert::Into<_>>::into(value.clone())
+                                        )
+                                    }
+                                });
+                            }
+                            ::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(value) => {
+                                ::sycamore::reactive::create_effect(#cx, {
+                                    move || {
+                                        ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
+                                            &__el,
+                                            ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&value))
+                                        );
+                                    }
+                                });
+                            }
+                            ::sycamore::component::AttributeValue::Event(event, handler) => {
+                                ::sycamore::generic_node::GenericNode::boxed_event(
+                                    &__el,
+                                    #cx,
+                                    event,
+                                    handler,
+                                );
+                            }
+                            ::sycamore::component::AttributeValue::BindBool(prop, signal) => {
+                                #[cfg(target_arch = "wasm32")]
+                                {
+                                    ::sycamore::reactive::create_effect(#cx, {
+                                        let signal = ::std::clone::Clone::clone(&signal);
+                                        move ||::sycamore::generic_node::GenericNode::set_property(
+                                            &__el,
+                                            prop,
+                                            &::sycamore::rt::JsValue::from_bool(
+                                                *::sycamore::reactive::ReadSignal::get(&signal)
+                                            ),
+                                        )
+                                    });
+                                }
+                                ::sycamore::generic_node::GenericNode::event(&__el, #cx, "change",
+                                    {
+                                        let signal = ::std::clone::Clone::clone(&signal);
+                                        ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
+                                            ::sycamore::reactive::Signal::set(&signal, ::sycamore::rt::JsValue::as_bool(&::sycamore::rt::Reflect::get(
+                                                &event.target().unwrap(),
+                                                &::std::convert::Into::<::sycamore::rt::JsValue>::into(prop)
+                                            ).unwrap()).unwrap());
+                                        })
+                                    },
+                                );
+                            }
+                            ::sycamore::component::AttributeValue::BindNumber(prop, signal) => {
+                                #[cfg(target_arch = "wasm32")]
+                                {
+                                    ::sycamore::reactive::create_effect(#cx, {
+                                        let signal = ::std::clone::Clone::clone(&signal);
+                                        move ||::sycamore::generic_node::GenericNode::set_property(
+                                            &__el,
+                                            prop,
+                                            &::sycamore::rt::JsValue::from_f64(
+                                                *::sycamore::reactive::ReadSignal::get(&signal)
+                                            ),
+                                        )
+                                    });
+                                }
+                                ::sycamore::generic_node::GenericNode::event(&__el, #cx, "input",
+                                    {
+                                        let signal = ::std::clone::Clone::clone(&signal);
+                                        ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
+                                            ::sycamore::reactive::Signal::set(&signal, ::sycamore::rt::JsValue::as_f64(&::sycamore::rt::Reflect::get(
+                                                &event.target().unwrap(),
+                                                &::std::convert::Into::<::sycamore::rt::JsValue>::into(prop)
+                                            ).unwrap()).unwrap());
+                                        })
+                                    },
+                                );
+                            }
+                            ::sycamore::component::AttributeValue::BindString(prop, signal) => {
+                                #[cfg(target_arch = "wasm32")]
+                                {
+                                    ::sycamore::reactive::create_effect(#cx, {
+                                        let signal = ::std::clone::Clone::clone(&signal);
+                                        move ||::sycamore::generic_node::GenericNode::set_property(
+                                            &__el,
+                                            prop,
+                                            &::sycamore::rt::JsValue::from_str(
+                                                *::sycamore::reactive::ReadSignal::get(&signal)
+                                            ),
+                                        )
+                                    });
+                                }
+                                ::sycamore::generic_node::GenericNode::event(&__el, #cx, "input",
+                                    {
+                                        let signal = ::std::clone::Clone::clone(&signal);
+                                        ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
+                                            ::sycamore::reactive::Signal::set(&signal, ::sycamore::rt::JsValue::as_string(&::sycamore::rt::Reflect::get(
+                                                &event.target().unwrap(),
+                                                &::std::convert::Into::<::sycamore::rt::JsValue>::into(prop)
+                                            ).unwrap()).unwrap());
+                                        })
+                                    },
+                                );
+                            }
+                            ::sycamore::component::AttributeValue::Ref(value) => {
+                                ::sycamore::noderef::NodeRef::set(&value, ::std::clone::Clone::clone(&__el));
+                            }
+                        };
+                    }
+                });
+                (None, true)
+            }
         }
     }
 
