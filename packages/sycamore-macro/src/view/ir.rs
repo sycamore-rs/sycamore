@@ -111,7 +111,7 @@ pub struct Component {
 
 pub struct ComponentProp {
     pub prefix: Option<Ident>,
-    pub name: Ident,
+    pub name: String,
     pub eq: Token![=],
     pub value: Expr,
 }

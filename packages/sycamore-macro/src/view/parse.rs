@@ -256,20 +256,51 @@ impl Parse for Component {
 
 impl Parse for ComponentProp {
     fn parse(input: ParseStream) -> Result<Self> {
+        pub struct AttributeName {
+            tag: Ident,
+            extended: Vec<(Token![-], Ident)>,
+        }
+
+        impl Parse for AttributeName {
+            fn parse(input: ParseStream) -> Result<Self> {
+                let tag = input.call(Ident::parse_any)?;
+                let mut extended = Vec::new();
+                while input.peek(Token![-]) {
+                    extended.push((input.parse()?, input.parse()?));
+                }
+
+                Ok(Self { tag, extended })
+            }
+        }
+
+        impl fmt::Display for AttributeName {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                let AttributeName { tag, extended } = self;
+
+                write!(f, "{}", tag)?;
+                for (_, ident) in extended {
+                    write!(f, "-{}", ident)?;
+                }
+
+                Ok(())
+            }
+        }
+
         let name_or_prefix: Ident = input.parse()?;
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![:]) {
             let _colon = input.parse::<Token![:]>()?;
+            let name: AttributeName = input.parse()?;
             Ok(Self {
                 prefix: Some(name_or_prefix),
-                name: input.parse()?,
+                name: name.to_string(),
                 eq: input.parse()?,
                 value: input.parse()?,
             })
         } else {
             Ok(Self {
                 prefix: None,
-                name: name_or_prefix,
+                name: name_or_prefix.to_string(),
                 eq: input.parse()?,
                 value: input.parse()?,
             })

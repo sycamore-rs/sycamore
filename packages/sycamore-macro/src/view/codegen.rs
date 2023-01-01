@@ -4,7 +4,7 @@
 //! of some internal state during the entire codegen.
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::spanned::Spanned;
 use syn::{Expr, ExprLit, Ident, Lit, LitBool};
 
@@ -590,7 +590,7 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
     let prop_names = props
         .iter()
         .filter(|prop| !prop.prefix.is_some())
-        .map(|x| &x.name);
+        .map(|x| format_ident!("{}", &x.name));
     let prop_values = props
         .iter()
         .filter(|prop| !prop.prefix.is_some())
@@ -602,7 +602,7 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         .map(|prop| (&prop.prefix, &prop.name, &prop.value));
     let attribute_entries_quoted = attributes
         .map(|(prefix, name, value)| {
-            let value = to_attribute_value(prefix.as_ref().unwrap(), name, value)?;
+            let value = to_attribute_value(prefix.as_ref().unwrap(), &name, value)?;
             let name_str = name.to_string();
             Ok(quote! {
                 attributes.insert(::std::borrow::Cow::Borrowed(#name_str), #value)
@@ -660,39 +660,28 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
     }}
 }
 
-fn to_attribute_value(
-    prefix: &Ident,
-    name: &Ident,
-    value: &Expr,
-) -> Result<TokenStream, syn::Error> {
+fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenStream, syn::Error> {
     match prefix.to_string().as_str() {
-        "on" => {
-            let event = name.to_string();
-            Ok(quote!(::sycamore::component::AttributeValue::Event(#event, Box::new(#value))))
-        }
+        "on" => Ok(quote!(::sycamore::component::AttributeValue::Event(#name, Box::new(#value)))),
         "prop" => Err(syn::Error::new_spanned(
             name,
             format!("Attribute type 'prop' is not supported for passthrough"),
         )),
-        "bind" => {
-            let prop = name.to_string();
-
-            match prop.as_str() {
-                "value" => {
-                    Ok(quote!(::sycamore::component::AttributeValue::BindString("value", #value)))
-                }
-                "valueAsNumber" => Ok(
-                    quote!(::sycamore::component::AttributeValue::BindNumber("valueAsNumber", #value)),
-                ),
-                "checked" => {
-                    Ok(quote!(::sycamore::component::AttributeValue::BindBool("checked", #value)))
-                }
-                _ => Err(syn::Error::new(
-                    name.span(),
-                    format!("property `{}` is not supported with `bind:`", prop),
-                )),
+        "bind" => match name {
+            "value" => {
+                Ok(quote!(::sycamore::component::AttributeValue::BindString("value", #value)))
             }
-        }
+            "valueAsNumber" => Ok(
+                quote!(::sycamore::component::AttributeValue::BindNumber("valueAsNumber", #value)),
+            ),
+            "checked" => {
+                Ok(quote!(::sycamore::component::AttributeValue::BindBool("checked", #value)))
+            }
+            _ => Err(syn::Error::new(
+                name.span(),
+                format!("property `{}` is not supported with `bind:`", name),
+            )),
+        },
         "attr" => {
             if name == "ref" {
                 Ok(quote!(::sycamore::component::AttributeValue::Ref(#value)))
