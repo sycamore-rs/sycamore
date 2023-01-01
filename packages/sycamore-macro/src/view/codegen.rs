@@ -421,8 +421,45 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         ..
     } = component;
 
-    let name = props.iter().map(|x| &x.name);
-    let value = props.iter().map(|x| &x.value);
+    let prop_names = props
+        .iter()
+        .filter(|prop| !prop.prefix.is_some())
+        .map(|x| &x.name);
+    let prop_values = props
+        .iter()
+        .filter(|prop| !prop.prefix.is_some())
+        .map(|x| &x.value);
+
+    let attributes = props
+        .iter()
+        .filter(|prop| prop.prefix.is_some())
+        .map(|prop| (&prop.prefix, &prop.name, &prop.value));
+    let attribute_entries_quoted = attributes
+        .map(|(prefix, name, value)| {
+            let value = to_attribute_value(prefix.as_ref().unwrap(), name, value)?;
+            let name_str = name.to_string();
+            Ok(quote! {
+                attributes.insert(::std::borrow::Cow::Borrowed(#name_str), #value)
+            })
+        })
+        .collect::<Result<Vec<_>, syn::Error>>()
+        .map_err(|err| err.to_compile_error());
+    let attributes_quoted = if let Ok(attributes) = attribute_entries_quoted {
+        if !attributes.is_empty() {
+            quote! {
+                .attributes({
+                    let mut attributes = ::std::collections::HashMap::default();
+                    #(#attributes;)*
+                    ::sycamore::component::Attributes::new(attributes)
+                })
+            }
+        } else {
+            quote!()
+        }
+    } else {
+        quote!()
+    };
+
     let children_quoted = children
         .as_ref()
         .filter(|children| !children.0.is_empty())
@@ -449,9 +486,79 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
             __component,
             #cx,
             ::sycamore::component::element_like_component_builder(__component)
-                #(.#name(#value))*
+                #(.#prop_names(#prop_values))*
                 #children_quoted
+                #attributes_quoted
                 .build()
         ))
     }}
+}
+
+fn to_attribute_value(
+    prefix: &Ident,
+    name: &Ident,
+    value: &Expr,
+) -> Result<TokenStream, syn::Error> {
+    match prefix.to_string().as_str() {
+        "on" => {
+            let event = name.to_string();
+            Ok(quote!(::sycamore::component::AttributeValue::Event(#event, Box::new(#value))))
+        }
+        "prop" => Err(syn::Error::new_spanned(
+            name,
+            format!("Attribute type 'prop' is not supported for passthrough"),
+        )),
+        "bind" => {
+            let prop = name.to_string();
+
+            match prop.as_str() {
+                "value" => {
+                    Ok(quote!(::sycamore::component::AttributeValue::BindString("value", #value)))
+                }
+                "valueAsNumber" => Ok(
+                    quote!(::sycamore::component::AttributeValue::BindNumber("valueAsNumber", #value)),
+                ),
+                "checked" => {
+                    Ok(quote!(::sycamore::component::AttributeValue::BindBool("checked", #value)))
+                }
+                _ => Err(syn::Error::new(
+                    name.span(),
+                    format!("property `{}` is not supported with `bind:`", prop),
+                )),
+            }
+        }
+        "attr" => {
+            if name == "ref" {
+                Ok(quote!(::sycamore::component::AttributeValue::Ref(#value)))
+            } else if name == "dangerously_set_inner_html" {
+                if matches!(value, Expr::Lit(_)) {
+                    Ok(
+                        quote!(::sycamore::component::AttributeValue::DangerouslySetInnerHtml(#value.to_string())),
+                    )
+                } else {
+                    Ok(
+                        quote!(::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(#value.map(|value| value.to_string()))),
+                    )
+                }
+            } else if is_bool_attr(&name.to_string()) {
+                if matches!(value, Expr::Lit(_)) {
+                    Ok(quote!(::sycamore::component::AttributeValue::Bool(#value)))
+                } else {
+                    Ok(quote!(::sycamore::component::AttributeValue::DynamicBool(#value)))
+                }
+            } else {
+                if matches!(value, Expr::Lit(_)) {
+                    Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
+                } else {
+                    Ok(
+                        quote!(::sycamore::component::AttributeValue::DynamicStr(#value.map(|value| value.to_string()))),
+                    )
+                }
+            }
+        }
+        _ => Err(syn::Error::new_spanned(
+            name,
+            format!("unknown directive `{}`", name),
+        )),
+    }
 }
