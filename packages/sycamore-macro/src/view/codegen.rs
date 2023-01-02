@@ -695,7 +695,7 @@ fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenS
                     )
                 } else {
                     Ok(
-                        quote!(::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(#value.map(|value| value.to_string()))),
+                        quote!(::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(Box::new(#value))),
                     )
                 }
             } else if is_bool_attr(name) {
@@ -707,9 +707,7 @@ fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenS
             } else if matches!(value, Expr::Lit(_)) {
                 Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
             } else {
-                Ok(
-                    quote!(::sycamore::component::AttributeValue::DynamicStr(#value.map(|value| value.to_string()))),
-                )
+                Ok(quote!(::sycamore::component::AttributeValue::DynamicStr(Box::new(#value))))
             }
         }
         _ => Err(syn::Error::new_spanned(

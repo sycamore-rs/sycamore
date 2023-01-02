@@ -3,7 +3,7 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
-    fmt,
+    fmt::{self, Display},
     ops::{Deref, DerefMut},
 };
 
@@ -184,11 +184,11 @@ impl<'a, G: GenericNode> Children<'a, G> {
 
 pub enum AttributeValue<'cx, G: GenericNode> {
     Str(&'static str),
-    DynamicStr(&'cx ReadSignal<String>),
+    DynamicStr(Box<dyn Display>),
     Bool(bool),
     DynamicBool(&'cx ReadSignal<bool>),
     DangerouslySetInnerHtml(String),
-    DynamicDangerouslySetInnerHtml(&'cx ReadSignal<String>),
+    DynamicDangerouslySetInnerHtml(Box<dyn Display>),
     Event(&'static str, Box<dyn FnMut(G::EventType)>),
     BindBool(&'static str, &'cx Signal<bool>),
     BindNumber(&'static str, &'cx Signal<f64>),
@@ -203,9 +203,17 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Attributes<'cx, G: GenericNode> {
     attrs: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>,
+}
+
+impl<'cx, G: GenericNode> Default for Attributes<'cx, G> {
+    fn default() -> Self {
+        Self {
+            attrs: Default::default(),
+        }
+    }
 }
 
 impl<'cx, G: GenericNode> Attributes<'cx, G> {
