@@ -1,40 +1,42 @@
 error: expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:34:59
+  --> tests/view/component-fail.rs:48:59
    |
-34 |         let _: View<G> = view! { cx, PropsComponent { prop: "123" } }; // Legacy syntax.
+48 |         let _: View<G> = view! { cx, PropsComponent { prop: "123" } }; // Legacy syntax.
    |                                                           ^
 
 error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:25:38
+  --> tests/view/component-fail.rs:39:38
    |
-25 |         let _: View<G> = view! { cx, UnknownComponent() };
+39 |         let _: View<G> = view! { cx, UnknownComponent() };
    |                                      ^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:26:38
+  --> tests/view/component-fail.rs:40:38
    |
-26 |         let _: View<G> = view! { cx, UnknownComponent {} };
+40 |         let _: View<G> = view! { cx, UnknownComponent {} };
    |                                      ^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0599]: no method named `prop` found for struct `UnitBuilder` in the current scope
-  --> tests/view/component-fail.rs:29:48
+  --> tests/view/component-fail.rs:43:26
    |
-29 |         let _: View<G> = view! { cx, Component(prop=1) };
-   |                                                ^^^^ method not found in `UnitBuilder`
+43 |         let _: View<G> = view! { cx, Component(prop=1) };
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `UnitBuilder`
+   |
+   = note: this error originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 warning: use of deprecated associated function `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:31:26
+  --> tests/view/component-fail.rs:45:26
    |
-31 |         let _: View<G> = view! { cx, PropsComponent() };
+45 |         let _: View<G> = view! { cx, PropsComponent() };
    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(deprecated)]` on by default
    = note: this warning originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this function takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:31:26
+  --> tests/view/component-fail.rs:45:26
    |
-31 |         let _: View<G> = view! { cx, PropsComponent() };
+45 |         let _: View<G> = view! { cx, PropsComponent() };
    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ an argument of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: associated function defined here
@@ -50,17 +52,17 @@ help: provide the argument
    |
 
 warning: use of deprecated associated function `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:32:26
+  --> tests/view/component-fail.rs:46:26
    |
-32 |         let _: View<G> = view! { cx, PropsComponent {} };
+46 |         let _: View<G> = view! { cx, PropsComponent {} };
    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this warning originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this function takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:32:26
+  --> tests/view/component-fail.rs:46:26
    |
-32 |         let _: View<G> = view! { cx, PropsComponent {} };
+46 |         let _: View<G> = view! { cx, PropsComponent {} };
    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ an argument of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: associated function defined here
@@ -76,12 +78,13 @@ help: provide the argument
    |
 
 error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:33:58
+  --> tests/view/component-fail.rs:47:58
    |
-33 |         let _: View<G> = view! { cx, PropsComponent(prop=123) };
-   |                                                     ---- ^^^ expected `&str`, found integer
-   |                                                     |
-   |                                                     arguments to this function are incorrect
+47 |         let _: View<G> = view! { cx, PropsComponent(prop=123) };
+   |                          --------------------------------^^^---
+   |                          |                               |
+   |                          |                               expected `&str`, found integer
+   |                          arguments to this function are incorrect
    |
 note: associated function defined here
   --> tests/view/component-fail.rs:5:5
@@ -91,4 +94,18 @@ note: associated function defined here
 4  | pub struct Props {
 5  |     prop: &'static str,
    |     ^^^^
-   
+
+error[E0308]: mismatched types
+  --> tests/view/component-fail.rs:49:69
+   |
+49 |         let _: View<G> = view! { cx, AttributesComponent(attr:class=123) }; // Wrong type
+   |                          -------------------------------------------^^^---
+   |                          |                                          |
+   |                          |                                          expected `&str`, found integer
+   |                          arguments to this enum variant are incorrect
+   |
+note: tuple variant defined here
+  --> $WORKSPACE/packages/sycamore-core/src/component.rs
+   |
+   |     Str(&'static str),
+   |     ^^^
