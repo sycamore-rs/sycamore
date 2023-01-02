@@ -193,7 +193,7 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     BindBool(&'static str, &'cx Signal<bool>),
     BindNumber(&'static str, &'cx Signal<f64>),
     BindString(&'static str, &'cx Signal<String>),
-    // TODO: Allow Property
+    Property(&'static str, G::PropertyType),
     Ref(&'cx NodeRef<G>),
 }
 

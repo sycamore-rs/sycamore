@@ -383,14 +383,11 @@ impl CodegenTemplate {
                         let name = name.to_owned();
                         match value {
                             ::sycamore::component::AttributeValue::Str(s) => {
-                                ::sycamore::reactive::create_effect(#cx, {
-                                    let name = name.clone();
-                                    move ||::sycamore::generic_node::GenericNode::set_attribute(
-                                        &__el,
-                                        name.clone(),
-                                        ::std::borrow::Cow::Borrowed(s)
-                                    )
-                                });
+                                ::sycamore::generic_node::GenericNode::set_attribute(
+                                    &__el,
+                                    name.clone(),
+                                    ::std::borrow::Cow::Borrowed(s)
+                                );
                             }
                             ::sycamore::component::AttributeValue::DynamicStr(s) => {
                                 ::sycamore::reactive::create_effect(#cx, {
@@ -407,14 +404,11 @@ impl CodegenTemplate {
                                     true => "true",
                                     false => "false",
                                 };
-                                ::sycamore::reactive::create_effect(#cx, {
-                                    let name = name.clone();
-                                    move ||::sycamore::generic_node::GenericNode::set_attribute(
-                                        &__el,
-                                        name.clone(),
-                                        ::std::borrow::Cow::Borrowed(stringified)
-                                    )
-                                });
+                                ::sycamore::generic_node::GenericNode::set_attribute(
+                                    &__el,
+                                    name.clone(),
+                                    ::std::borrow::Cow::Borrowed(stringified)
+                                );
                             },
                             ::sycamore::component::AttributeValue::DynamicBool(value) => {
                                 ::sycamore::reactive::create_effect(#cx, {
@@ -427,15 +421,10 @@ impl CodegenTemplate {
                                 });
                             },
                             ::sycamore::component::AttributeValue::DangerouslySetInnerHtml(value) => {
-                                ::sycamore::reactive::create_effect(#cx, {
-                                    let value = value.clone();
-                                    move || {
-                                        ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
-                                            &__el,
-                                            <_ as ::std::convert::Into<_>>::into(value.clone())
-                                        )
-                                    }
-                                });
+                                ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
+                                    &__el,
+                                    <_ as ::std::convert::Into<_>>::into(value.clone())
+                                );
                             }
                             ::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(value) => {
                                 ::sycamore::reactive::create_effect(#cx, {
@@ -534,6 +523,11 @@ impl CodegenTemplate {
                                             ).unwrap()).unwrap());
                                         })
                                     },
+                                );
+                            }
+                            ::sycamore::component::AttributeValue::Property(prop, value) => {
+                                ::sycamore::reactive::create_effect(#cx, move ||
+                                    ::sycamore::generic_node::GenericNode::set_property(&__el, prop, &value)
                                 );
                             }
                             ::sycamore::component::AttributeValue::Ref(value) => {
@@ -666,10 +660,7 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
 fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenStream, syn::Error> {
     match prefix.to_string().as_str() {
         "on" => Ok(quote!(::sycamore::component::AttributeValue::Event(#name, Box::new(#value)))),
-        "prop" => Err(syn::Error::new_spanned(
-            name,
-            "Attribute type 'prop' is not supported for passthrough",
-        )),
+        "prop" => Ok(quote!(::sycamore::component::AttributeValue::Property(#name, #value))),
         "bind" => match name {
             "value" => {
                 Ok(quote!(::sycamore::component::AttributeValue::BindString("value", #value)))
