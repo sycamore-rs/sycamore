@@ -91,3 +91,4 @@ note: associated function defined here
 4  | pub struct Props {
 5  |     prop: &'static str,
    |     ^^^^
+   

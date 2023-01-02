@@ -182,18 +182,32 @@ impl<'a, G: GenericNode> Children<'a, G> {
     }
 }
 
+/// The value of a passthrough attribute.
+/// The default for unknown attributes is [`AttributeValue::Str`] or [`AttributeValue::DynamicStr`]
 pub enum AttributeValue<'cx, G: GenericNode> {
+    /// A string literal value. Example: `attr:id = "test"`
     Str(&'static str),
+    /// A dynamic string value from a variable. Example: `attr:id = id_signal`
     DynamicStr(Box<dyn Display>),
+    /// A boolean literal value. Example: `attr:disabled = true`
     Bool(bool),
+    /// A reactive boolean value. Example: `attr:disabled = disabled_signal`
     DynamicBool(&'cx ReadSignal<bool>),
+    /// Dangerously set inner HTML with a literal string value.
     DangerouslySetInnerHtml(String),
+    /// Dangerously set inner HTML with a dynamic value.
     DynamicDangerouslySetInnerHtml(Box<dyn Display>),
+    /// An event binding
     Event(&'static str, Box<dyn FnMut(G::EventType)>),
+    /// A binding to a boolean value
     BindBool(&'static str, &'cx Signal<bool>),
+    /// A binding to a numeric value
     BindNumber(&'static str, &'cx Signal<f64>),
+    /// A binding to a string value
     BindString(&'static str, &'cx Signal<String>),
+    /// A property value.
     Property(&'static str, G::PropertyType),
+    /// A [`NodeRef`] value.
     Ref(&'cx NodeRef<G>),
 }
 
@@ -203,6 +217,42 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
     }
 }
 
+/// A special property type to allow the component to accept passthrough attributes.
+/// This can be useful if your component wraps an HTML element, i.e. accessible component libraries.
+///
+/// Add a field called `attributes` of this type to your properties struct.
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// #[derive(Props)]
+/// struct RowProps<'a, G: Html> {
+///     width: i32,
+///     children: Children<'a, G>,
+///     attributes: Attributes<'a, G>,
+/// }
+///
+/// #[component]
+/// fn Row<'a, G: Html>(cx: Scope<'a>, mut props: RowProps<'a, G>) -> View<G> {
+///     let children = props.children.call(cx);
+///     // Spread the `Attributes` onto the div.
+///     view! { cx,
+///         div(..props.attributes) {
+///             (children)
+///         }
+///     }
+/// }
+///
+/// # #[component]
+/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// // Using `Row` somewhere else in your app:
+/// view! { cx,
+///     Row(width=10, attr:id = "row1", attr:class = "bg-neutral-400") {
+///         p { "This is a child node." }
+///     }
+/// }
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct Attributes<'cx, G: GenericNode> {
     attrs: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>,
@@ -217,6 +267,7 @@ impl<'cx, G: GenericNode> Default for Attributes<'cx, G> {
 }
 
 impl<'cx, G: GenericNode> Attributes<'cx, G> {
+    // Creates a new [`Attributes`] struct from a map of keys and values.
     pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>) -> Self {
         Self { attrs: attributes }
     }
