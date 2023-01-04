@@ -11,7 +11,9 @@ pub fn Index<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div(class="pb-10 mx-4") {
             div(class="flex flex-col items-center w-full mb-10") {
-                h1(class="text-5xl font-extrabold mt-20 pb-5 \
+                img(src="/logo.svg", alt="logo", class="w-32 h-32 mt-10")
+
+                h1(class="text-5xl font-extrabold pb-5 \
                     bg-gradient-to-r from-orange-300 to-red-400 text-transparent bg-clip-text") {
                     "Sycamore"
                 }
