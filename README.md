@@ -1,4 +1,9 @@
-# Sycamore
+<div align="center">
+  <img src="https://user-images.githubusercontent.com/37006668/210620713-562cda3d-9eaa-40c6-a22a-e5d9bd11b425.svg" width="200" />
+
+  <h1>Sycamore</h1>
+</div>
+
 
 [![Crates.io](https://img.shields.io/crates/v/sycamore)](https://crates.io/crates/sycamore)
 [![docs.rs](https://img.shields.io/docsrs/sycamore?color=blue&label=docs.rs)](https://docs.rs/sycamore)
