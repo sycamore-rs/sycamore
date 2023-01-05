@@ -417,6 +417,8 @@ macro_rules! define_events {
         )*
     ) => {
         $(
+            #[doc = concat!("The ", stringify!($ev), " event.")]
+            #[doc = stringify!($event)]
             $(#[$attr])*
             #[allow(non_camel_case_types)]
             #[allow(missing_docs)]
@@ -437,9 +439,9 @@ pub mod ev {
     use web_sys::*;
 
     define_events! {
-        // =========================================================
-        // WindowEventHandlersEventMap
-        // =========================================================
+        /*
+        WindowEventHandlersEventMap
+        */
         afterprint: Event,
         beforeprint: Event,
         beforeunload: BeforeUnloadEvent,
@@ -457,13 +459,11 @@ pub mod ev {
         rejectionhandled: PromiseRejectionEvent,
         storage: StorageEvent,
         unhandledrejection: PromiseRejectionEvent,
-        // #[does_not_bubble]
         unload: Event,
 
-        // =========================================================
-        // GlobalEventHandlersEventMap
-        // =========================================================
-        // #[does_not_bubble]
+        /*
+        GlobalEventHandlersEventMap
+        */
         abort: UiEvent,
         animationcancel: AnimationEvent,
         animationend: AnimationEvent,
@@ -471,7 +471,6 @@ pub mod ev {
         animationstart: AnimationEvent,
         auxclick: MouseEvent,
         beforeinput: InputEvent,
-        // #[does_not_bubble]
         blur: FocusEvent,
         canplay: Event,
         canplaythrough: Event,
@@ -494,13 +493,9 @@ pub mod ev {
         durationchange: Event,
         emptied: Event,
         ended: Event,
-        // #[does_not_bubble]
         error: ErrorEvent,
-        // #[does_not_bubble]
         focus: FocusEvent,
-        // #[does_not_bubble]
         focusin: FocusEvent,
-        // #[does_not_bubble]
         focusout: FocusEvent,
         formdata: Event, // web_sys does not include `FormDataEvent`
         gotpointercapture: PointerEvent,
@@ -509,11 +504,9 @@ pub mod ev {
         keydown: KeyboardEvent,
         keypress: KeyboardEvent,
         keyup: KeyboardEvent,
-        // #[does_not_bubble]
         load: Event,
         loadeddata: Event,
         loadedmetadata: Event,
-        // #[does_not_bubble]
         loadstart: Event,
         lostpointercapture: PointerEvent,
         mousedown: MouseEvent,
@@ -534,12 +527,10 @@ pub mod ev {
         pointerout: PointerEvent,
         pointerover: PointerEvent,
         pointerup: PointerEvent,
-        // #[does_not_bubble]
         progress: ProgressEvent,
         ratechange: Event,
         reset: Event,
         resize: UiEvent,
-        // #[does_not_bubble]
         scroll: Event,
         securitypolicyviolation: SecurityPolicyViolationEvent,
         seeked: Event,
@@ -569,24 +560,24 @@ pub mod ev {
         webkittransitionend: Event,
         wheel: WheelEvent,
 
-        // =========================================================
-        // WindowEventMap
-        // =========================================================
+        /*
+        WindowEventMap
+        */
         DOMContentLoaded: Event,
         devicemotion: DeviceMotionEvent,
         deviceorientation: DeviceOrientationEvent,
         orientationchange: Event,
 
-        // =========================================================
-        // DocumentAndElementEventHandlersEventMap
-        // =========================================================
+        /*
+        DocumentAndElementEventHandlersEventMap
+        */
         copy: Event, // ClipboardEvent is unstable
         cut: Event, // ClipboardEvent is unstable
         paste: Event, // ClipboardEvent is unstable
 
-        // =========================================================
-        // DocumentEventMap
-        // =========================================================
+        /*
+        DocumentEventMap
+        */
         fullscreenchange: Event,
         fullscreenerror: Event,
         pointerlockchange: Event,
