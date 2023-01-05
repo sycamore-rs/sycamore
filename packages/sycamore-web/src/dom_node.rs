@@ -271,7 +271,7 @@ impl GenericNode for DomNode {
         // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
         // preventing the handler from ever being accessed after its lifetime.
         let handler: Box<dyn FnMut(Self::EventType) + 'static> =
-            unsafe { std::mem::transmute(handler) };
+            unsafe { std::mem::transmute(boxed) };
         let closure = create_ref(cx, Closure::wrap(handler));
         self.node
             .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
