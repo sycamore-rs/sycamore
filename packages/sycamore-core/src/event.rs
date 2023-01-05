@@ -4,8 +4,6 @@ use std::future::Future;
 
 use sycamore_reactive::Scope;
 
-use crate::generic_node::GenericNode;
-
 /// A trait that is implemented for all event handlers.
 pub trait EventHandler<'a, T, Ev, S>
 where
@@ -25,10 +23,9 @@ where
 }
 
 #[cfg(feature = "suspense")]
-impl<'a, G, Ev, F, Fut> EventHandler<'a, G, Ev, ((),)> for F
+impl<'a, T, Ev, F, Fut> EventHandler<'a, T, Ev, ((), ())> for F
 where
-    G: GenericNode,
-    Ev: EventDescriptor<G>,
+    Ev: EventDescriptor<T>,
     F: FnMut(Ev::EventData) -> Fut,
     Fut: Future<Output = ()> + 'a,
 {
