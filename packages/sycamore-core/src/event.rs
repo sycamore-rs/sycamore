@@ -1,5 +1,6 @@
 //! Abstractions for events and event handlers.
 
+#[cfg(feature = "suspense")]
 use std::future::Future;
 
 use sycamore_reactive::Scope;

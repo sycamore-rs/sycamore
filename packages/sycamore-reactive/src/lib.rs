@@ -19,7 +19,6 @@ use std::rc::{Rc, Weak};
 use arena::*;
 pub use context::*;
 pub use effect::*;
-use hashbrown::HashMap;
 use indexmap::IndexMap;
 pub use iter::*;
 pub use memo::*;
@@ -43,11 +42,12 @@ struct ScopeInner<'a> {
     /// Contexts that are allocated on the current [`Scope`].
     /// See the [`mod@context`] module.
     ///
-    /// Note that the `AHashMap` is wrapped with an `Option<Box<_>>`. This is because contexts are
+    /// Note that the `Vec` is wrapped with an `Option<Box<_>>`. This is because contexts are
     /// usually read and rarely created. Making this heap allocated when prevent blowing up the
     /// size of the [`ScopeInner`] struct when most of the times, this field is unneeded.
     #[allow(clippy::box_collection)]
-    contexts: Option<Box<HashMap<TypeId, &'a dyn Any>>>,
+    #[allow(clippy::type_complexity)]
+    contexts: Option<Box<Vec<(TypeId, &'a dyn Any)>>>,
     /// The depth of the current scope. The root scope has a depth of 0. Any child scopes have a
     /// depth of N + 1 where N is the depth of the parent scope.
     depth: u32,
