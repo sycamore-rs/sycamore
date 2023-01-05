@@ -83,7 +83,7 @@ pub fn apply_attribute<'cx, G: GenericNode<EventType = Event>>(
             });
         }
         AttributeValue::DangerouslySetInnerHtml(value) => {
-            el.dangerously_set_inner_html(value.clone().into());
+            el.dangerously_set_inner_html(value.into());
         }
         AttributeValue::DynamicDangerouslySetInnerHtml(value) => {
             create_effect(cx, {
@@ -105,10 +105,8 @@ pub fn apply_attribute<'cx, G: GenericNode<EventType = Event>>(
                 });
             }
             el.event(cx, "change", {
-                let signal = signal.clone();
                 Box::new(move |event: Event| {
-                    Signal::set(
-                        &signal,
+                    signal.set(
                         JsValue::as_bool(
                             &Reflect::get(&event.target().unwrap(), &prop.into()).unwrap(),
                         )
@@ -127,10 +125,8 @@ pub fn apply_attribute<'cx, G: GenericNode<EventType = Event>>(
                 });
             }
             el.event(cx, "input", {
-                let signal = signal.clone();
                 Box::new(move |event: Event| {
-                    Signal::set(
-                        &signal,
+                    signal.set(
                         JsValue::as_f64(
                             &Reflect::get(&event.target().unwrap(), &prop.into()).unwrap(),
                         )
@@ -164,7 +160,7 @@ pub fn apply_attribute<'cx, G: GenericNode<EventType = Event>>(
             create_effect(cx, move || el.set_property(prop, &value));
         }
         AttributeValue::Ref(value) => {
-            NodeRef::set(&value, el.clone());
+            value.set(el);
         }
     };
 }
