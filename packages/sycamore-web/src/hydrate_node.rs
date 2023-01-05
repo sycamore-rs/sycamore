@@ -202,16 +202,6 @@ impl GenericNode for HydrateNode {
             node: self.node.clone_node(),
         }
     }
-
-    #[inline]
-    fn boxed_event<'a>(
-        &self,
-        cx: Scope<'a>,
-        name: &str,
-        handler: Box<dyn FnMut(Self::EventType) + 'a>,
-    ) {
-        self.node.boxed_event(cx, name, handler)
-    }
 }
 
 impl GenericNodeElements for HydrateNode {

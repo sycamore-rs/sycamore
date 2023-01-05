@@ -437,7 +437,7 @@ impl CodegenTemplate {
                                 });
                             }
                             ::sycamore::component::AttributeValue::Event(event, handler) => {
-                                ::sycamore::generic_node::GenericNode::boxed_event(
+                                ::sycamore::generic_node::GenericNode::event(
                                     &__el,
                                     #cx,
                                     event,

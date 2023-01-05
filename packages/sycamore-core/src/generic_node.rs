@@ -127,17 +127,6 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// variables after the scope is disposed.
     fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F);
 
-    /// Add a event handler to the event `name`.
-    /// The event should be removed once the scope is disposed, as to prevent accessing scope
-    /// variables after the scope is disposed.
-    /// This is the boxed version in case the handler is already boxed
-    fn boxed_event<'a>(
-        &self,
-        cx: Scope<'a>,
-        name: &str,
-        handler: Box<dyn FnMut(Self::EventType) + 'a>,
-    );
-
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
     fn update_inner_text(&self, text: Cow<'static, str>);
