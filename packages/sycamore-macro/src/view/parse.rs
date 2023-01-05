@@ -187,9 +187,7 @@ impl Parse for AttributeType {
             match name.as_str() {
                 "on" => {
                     let event = input.call(Ident::parse_any)?;
-                    Ok(Self::Event {
-                        event: event.to_string(),
-                    })
+                    Ok(Self::Event { event })
                 }
                 "prop" => {
                     let prop = input.call(Ident::parse_any)?;

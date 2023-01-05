@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
+use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::{
     GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
 };
@@ -76,7 +77,7 @@ impl fmt::Debug for HydrateNode {
 }
 
 impl GenericNode for HydrateNode {
-    type EventType = web_sys::Event;
+    type AnyEventData = JsValue;
     type PropertyType = JsValue;
 
     const USE_HYDRATION_CONTEXT: bool = true;
@@ -182,8 +183,18 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F) {
-        self.node.event(cx, name, handler);
+    fn event<
+        'a,
+        Ev: EventDescriptor<Self::AnyEventData>,
+        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
+        S,
+    >(
+        &self,
+        cx: Scope<'a>,
+        ev: Ev,
+        handler: F,
+    ) {
+        self.node.event(cx, ev, handler);
     }
 
     #[inline]

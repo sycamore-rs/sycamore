@@ -12,6 +12,7 @@ version = "0.8.2"
 
 [dependencies]
 hashbrown = "0.13.1"
+sycamore-futures = { path = "../sycamore-futures", version = "0.8.0", optional = true }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0" }
 
 [dev-dependencies]
@@ -20,3 +21,4 @@ sycamore = { path = "../sycamore", features = ["ssr"] }
 [features]
 default = []
 hydrate = []
+suspense = ["sycamore-futures"]
