@@ -187,7 +187,7 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     /// A string literal value. Example: `attr:id = "test"`
     Str(&'static str),
     /// A dynamic string value from a variable. Example: `attr:id = id_signal`
-    DynamicStr(Box<dyn FnMut() -> String>),
+    DynamicStr(Box<dyn FnMut() -> String + 'cx>),
     /// A boolean literal value. Example: `attr:disabled = true`
     Bool(bool),
     /// A reactive boolean value. Example: `attr:disabled = disabled_signal`
