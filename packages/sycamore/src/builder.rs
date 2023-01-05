@@ -651,7 +651,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// # fn _test<G: Html>(cx: Scope) -> View<G> {
     /// button()
     ///     .t("My button")
-    ///     .on("click", |_| web_sys::console::log_1(&"Clicked".into()))
+    ///     .on(ev::click, |_| web_sys::console::log_1(&"Clicked".into()))
     /// # .view(cx) }
     /// ```
     pub fn on<Ev: EventDescriptor<G::AnyEventData>, S>(
