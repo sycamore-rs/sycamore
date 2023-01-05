@@ -1,6 +1,7 @@
 //! Arena allocator for [`Scope`](crate::Scope).
 
 use std::cell::UnsafeCell;
+use std::mem::needs_drop;
 
 // use bumpalo::Bump;
 use smallvec::SmallVec;
@@ -16,8 +17,9 @@ impl<T> ReallyAny for T {}
 pub(crate) struct ScopeArena<'a> {
     // TODO: Add back once https://github.com/fitzgen/bumpalo/pull/188 is released in bumpalo
     // bump: Bump,
-    // We need to store the raw pointers because otherwise the values won't be dropped.
-    inner: UnsafeCell<SmallVec<[*mut (dyn ReallyAny + 'a); SCOPE_ARENA_STACK_SIZE]>>,
+    /// A list of pointers pointing into the arena. When the arena is dropped, the pointed data
+    /// will also be dropped.
+    drop_list: UnsafeCell<SmallVec<[*mut (dyn ReallyAny + 'a); SCOPE_ARENA_STACK_SIZE]>>,
 }
 
 impl<'a> ScopeArena<'a> {
@@ -39,11 +41,14 @@ impl<'a> ScopeArena<'a> {
     pub unsafe fn alloc_non_static<T: 'a>(&'a self, value: T) -> &'a mut T {
         let boxed = Box::new(value);
         let ptr = Box::into_raw(boxed);
-        // SAFETY: The only place where self.inner.get() is mutably borrowed is right here.
-        // It is impossible to have two alloc() calls on the same ScopeArena at the same time so
-        // the mutable reference here is effectively unique.
-        let inner_exclusive = &mut *self.inner.get();
-        inner_exclusive.push(ptr);
+
+        if needs_drop::<T>() {
+            // SAFETY: The only place where self.inner.get() is mutably borrowed is right here.
+            // It is impossible to have two alloc() calls on the same ScopeArena at the same time so
+            // the mutable reference here is effectively unique.
+            let inner_exclusive = &mut *self.drop_list.get();
+            inner_exclusive.push(ptr);
+        }
 
         // SAFETY: the address of the ptr lives as long as 'a because:
         // - It is allocated on the heap and therefore has a stable address.
@@ -60,14 +65,14 @@ impl<'a> ScopeArena<'a> {
     ///
     /// If a [`ScopeArena`] has already been disposed, calling it again does nothing.
     pub unsafe fn dispose(&self) {
-        for &ptr in (*self.inner.get()).iter().rev() {
+        for &ptr in (*self.drop_list.get()).iter().rev() {
             // SAFETY: the ptr was allocated in Self::alloc using bumpalo::boxed::Box::into_raw.
             let boxed: Box<dyn ReallyAny> = Box::from_raw(ptr);
             // Call the drop code for the allocated value.
             drop(boxed);
         }
         // Clear the inner Vec to prevent dangling references.
-        drop(std::mem::take(&mut *self.inner.get()));
+        drop(std::mem::take(&mut *self.drop_list.get()));
     }
 }
 
