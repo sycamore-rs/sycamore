@@ -41,6 +41,7 @@ where
 pub trait EventDescriptor<T>: 'static {
     /// The type of the event data that is passed to the event handler.
     type EventData: From<T> + Into<T>;
+
     /// The name of the event.
     const EVENT_NAME: &'static str;
 }
