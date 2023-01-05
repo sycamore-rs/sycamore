@@ -420,7 +420,7 @@ macro_rules! define_events {
             $(#[$attr])*
             #[allow(non_camel_case_types)]
             #[allow(missing_docs)]
-            #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+            #[derive(Debug)]
             pub struct $ev;
             impl EventDescriptor<JsValue> for $ev {
                 type EventData = $ev_ty;
