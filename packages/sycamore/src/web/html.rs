@@ -9,6 +9,7 @@ pub use self::html_tags::*;
 pub use self::svg_tags::*;
 use crate::builder::ElementBuilder;
 use crate::generic_node::{GenericNodeElements, SycamoreElement};
+pub use sycamore_core::event::EventDescriptor;
 
 /// Macro for generating element definitions.
 macro_rules! define_elements {
