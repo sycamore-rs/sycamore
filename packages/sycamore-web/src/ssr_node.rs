@@ -307,6 +307,15 @@ impl GenericNode for SsrNode {
         // Noop. Events are attached on client side.
     }
 
+    fn untyped_event<'a>(
+        &self,
+        _cx: Scope<'a>,
+        _event: Cow<'_, str>,
+        _handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
+        // Noop. Events are attached on client side.
+    }
+
     fn update_inner_text(&self, text: Cow<'static, str>) {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(el) => el.borrow_mut().children = vec![SsrNode::text_node(text)],

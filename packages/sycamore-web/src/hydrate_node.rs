@@ -197,6 +197,15 @@ impl GenericNode for HydrateNode {
         self.node.event(cx, ev, handler);
     }
 
+    fn untyped_event<'a>(
+        &self,
+        cx: Scope<'a>,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
+        self.node.untyped_event(cx, event, handler);
+    }
+
     #[inline]
     fn update_inner_text(&self, text: Cow<'static, str>) {
         self.node.update_inner_text(text);

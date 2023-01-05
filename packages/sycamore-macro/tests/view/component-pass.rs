@@ -132,7 +132,7 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, AttributesComponent(attr:class = "test") {} };
         let str_signal = create_signal(cx, String::new());
         let _: View<G> = view! { cx, AttributesComponent(bind:value = str_signal) {} };
-        let on_click = |_: G::EventType| {};
+        let on_click = |_| {};
         let _: View<G> = view! { cx, AttributesComponent(on:click = on_click) {} };
 
         let _: View<G> = view! { cx,

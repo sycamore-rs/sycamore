@@ -293,6 +293,22 @@ impl GenericNode for DomNode {
             .unwrap_throw();
     }
 
+    fn untyped_event<'a>(
+        &self,
+        cx: Scope<'a>,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
+        // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
+        // preventing the handler from ever being accessed after its lifetime.
+        let handler: Box<dyn FnMut(Self::AnyEventData) + 'static> =
+            unsafe { std::mem::transmute(handler) };
+        let closure = create_ref(cx, Closure::wrap(handler));
+        self.node
+            .add_event_listener_with_callback(&event, closure.as_ref().unchecked_ref())
+            .unwrap_throw();
+    }
+
     fn update_inner_text(&self, text: Cow<'static, str>) {
         self.node.set_text_content(Some(&text));
     }

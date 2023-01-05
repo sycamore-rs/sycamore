@@ -5,7 +5,7 @@
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::spanned::Spanned;
+use syn::{spanned::Spanned, Path};
 use syn::{Expr, ExprLit, Ident, Lit, LitBool};
 
 use crate::view::ir::*;
@@ -72,19 +72,9 @@ impl Codegen {
             ViewNode::Text(Text { value }) => quote! {
                 ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
-            ViewNode::Dyn(dyn_node @ Dyn { value }) => {
-                let cx = &self.cx;
-                let needs_cx = dyn_node.needs_cx(&cx.to_string());
-
-                match needs_cx {
-                    true => quote! {
-                        ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::ToView::to_view(&(#value)))
-                    },
-                    false => quote! {
-                        ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
-                    },
-                }
-            }
+            ViewNode::Dyn(Dyn { value }) => quote! {
+                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
+            },
         }
     }
 }
@@ -368,8 +358,8 @@ impl CodegenTemplate {
                             )
                         });
                     }
-                    ::sycamore::generic_node::GenericNode::event(&__flagged[#flag_counter], #cx,
-                        #elements_mod_path::ev::#event_name,
+                    ::sycamore::generic_node::GenericNode::event(
+                        &__flagged[#flag_counter], #cx, #elements_mod_path::ev::#event_name,
                         {
                             let #expr = ::std::clone::Clone::clone(&#expr);
                             ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
@@ -458,7 +448,8 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         .map(|prop| (&prop.prefix, &prop.name, &prop.value));
     let attribute_entries_quoted = attributes
         .map(|(prefix, name, value)| {
-            let value = to_attribute_value(prefix.as_ref().unwrap(), name, value)?;
+            let value =
+                to_attribute_value(prefix.as_ref().unwrap(), name, value, cx, elements_mod_path)?;
             let name_str = name.to_string();
             Ok(quote! {
                 attributes.insert(::std::borrow::Cow::Borrowed(#name_str), #value)
@@ -516,9 +507,22 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
     }}
 }
 
-fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenStream, syn::Error> {
+fn to_attribute_value(
+    prefix: &Ident,
+    name: &str,
+    value: &Expr,
+    cx: &Ident,
+    elements_mod_path: &Path,
+) -> Result<TokenStream, syn::Error> {
     match prefix.to_string().as_str() {
-        "on" => Ok(quote!(::sycamore::component::AttributeValue::Event(#name, Box::new(#value)))),
+        "on" => {
+            let event = format_ident!("{name}");
+
+            Ok(quote!(::sycamore::component::AttributeValue::Event(
+                #name,
+                ::sycamore::utils::erase_handler::<#elements_mod_path::ev::#event, _, _>(#cx, #value)
+            )))
+        }
         "prop" => Ok(quote!(::sycamore::component::AttributeValue::Property(#name, #value))),
         "bind" => match name {
             "value" => {

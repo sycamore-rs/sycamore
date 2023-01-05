@@ -143,6 +143,13 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
         handler: F,
     );
 
+    fn untyped_event<'a>(
+        &self,
+        cx: Scope<'a>,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    );
+
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.
     fn update_inner_text(&self, text: Cow<'static, str>);
