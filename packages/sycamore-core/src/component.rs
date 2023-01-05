@@ -273,20 +273,6 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     }
 }
 
-impl<'cx, G: GenericNode> Deref for Attributes<'cx, G> {
-    type Target = HashMap<Cow<'static, str>, AttributeValue<'cx, G>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.attrs
-    }
-}
-
-impl<'cx, G: GenericNode> DerefMut for Attributes<'cx, G> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.attrs
-    }
-}
-
 impl<'cx, G: GenericNode> Attributes<'cx, G> {
     /// Read the string value of an attribute. Returns `Option::None` if the attribute is missing
     /// or not a string.
@@ -366,9 +352,27 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
         }
     }
 
+    /// Exclude a set of keys from the attributes.
     pub fn exclude_keys(&mut self, keys: &[&str]) {
         for &key in keys {
             self.remove(key);
         }
+    }
+
+    /// Get an attribute value if it exists.
+    pub fn get(&self, key: &str) -> Option<&AttributeValue<'cx, G>> {
+        self.attrs.get(key)
+    }
+
+    /// Remove an attribute value and return its previous value
+    pub fn remove(&mut self, key: &str) -> Option<AttributeValue<'cx, G>> {
+        self.attrs.remove(key)
+    }
+
+    /// INTERNAL: used in the `view!` macro to apply attributes
+    pub fn drain(
+        &mut self,
+    ) -> impl Iterator<Item = (Cow<'static, str>, AttributeValue<'cx, G>)> + '_ {
+        self.attrs.drain()
     }
 }
