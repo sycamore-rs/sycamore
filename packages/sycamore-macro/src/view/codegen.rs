@@ -389,13 +389,13 @@ impl CodegenTemplate {
                                     ::std::borrow::Cow::Borrowed(s)
                                 );
                             }
-                            ::sycamore::component::AttributeValue::DynamicStr(s) => {
+                            ::sycamore::component::AttributeValue::DynamicStr(mut s) => {
                                 ::sycamore::reactive::create_effect(#cx, {
                                     let name = name.clone();
                                     move ||::sycamore::generic_node::GenericNode::set_attribute(
                                         &__el,
                                         name.clone(),
-                                        ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&s))
+                                        ::std::borrow::Cow::Owned(s())
                                     )
                                 });
                             },
@@ -698,7 +698,9 @@ fn to_attribute_value(prefix: &Ident, name: &str, value: &Expr) -> Result<TokenS
             } else if matches!(value, Expr::Lit(_)) {
                 Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
             } else {
-                Ok(quote!(::sycamore::component::AttributeValue::DynamicStr(Box::new(#value))))
+                Ok(quote!(::sycamore::component::AttributeValue::DynamicStr(
+                    Box::new(|| ::std::string::ToString::to_string(#value))
+                )))
             }
         }
         _ => Err(syn::Error::new_spanned(

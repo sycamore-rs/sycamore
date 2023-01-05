@@ -4,7 +4,6 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fmt::{self, Display},
-    ops::{Deref, DerefMut},
 };
 
 use sycamore_reactive::*;
@@ -188,7 +187,7 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     /// A string literal value. Example: `attr:id = "test"`
     Str(&'static str),
     /// A dynamic string value from a variable. Example: `attr:id = id_signal`
-    DynamicStr(Box<dyn Display>),
+    DynamicStr(Box<dyn FnMut() -> String>),
     /// A boolean literal value. Example: `attr:disabled = true`
     Bool(bool),
     /// A reactive boolean value. Example: `attr:disabled = disabled_signal`
@@ -276,10 +275,10 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
 impl<'cx, G: GenericNode> Attributes<'cx, G> {
     /// Read the string value of an attribute. Returns `Option::None` if the attribute is missing
     /// or not a string.
-    pub fn get_str(&self, key: &str) -> Option<Cow<'static, str>> {
-        match self.get(key)? {
+    pub fn get_str(&mut self, key: &str) -> Option<Cow<'static, str>> {
+        match self.attrs.get_mut(key)? {
             AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
-            AttributeValue::DynamicStr(s) => Some(Cow::Owned(s.to_string())),
+            AttributeValue::DynamicStr(s) => Some(Cow::Owned(s())),
             _ => None,
         }
     }
@@ -289,7 +288,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     pub fn remove_str(&mut self, key: &str) -> Option<Cow<'static, str>> {
         match self.remove(key)? {
             AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
-            AttributeValue::DynamicStr(s) => Some(Cow::Owned(s.to_string())),
+            AttributeValue::DynamicStr(mut s) => Some(Cow::Owned(s())),
             _ => None,
         }
     }
