@@ -28,11 +28,10 @@ pub use ssr_node::*;
 use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
-use web_sys::Event;
 
 /// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
 pub trait Html:
-    GenericNode<EventType = Event, PropertyType = JsValue> + GenericNodeElements
+    GenericNode<AnyEventData = JsValue, PropertyType = JsValue> + GenericNodeElements
 {
     /// A boolean indicating whether this node is rendered in a browser context.
     ///

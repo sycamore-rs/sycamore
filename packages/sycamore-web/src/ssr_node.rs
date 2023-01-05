@@ -8,6 +8,7 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
+use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::{
     instantiate_template_universal, GenericNode, GenericNodeElements, InstantiateUniversalOpts,
     SycamoreElement, Template, TemplateResult,
@@ -120,10 +121,10 @@ impl SsrNode {
 
 impl GenericNode for SsrNode {
     /// Although [`SsrNode`] is intended to be used on the server-side instead of in the browser,
-    /// the event type is still [`web_sys::Event`] because it must support the same API as
+    /// the event type is still [`JsValue`] because it must support the same API as
     /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
     /// anyways, it's okay to do this.
-    type EventType = web_sys::Event;
+    type AnyEventData = JsValue;
     type PropertyType = JsValue;
 
     const USE_HYDRATION_CONTEXT: bool = true;
@@ -292,7 +293,17 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, _cx: Scope<'a>, _name: &str, _handler: F) {
+    fn event<
+        'a,
+        Ev: EventDescriptor<Self::AnyEventData>,
+        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
+        S,
+    >(
+        &self,
+        _cx: Scope<'a>,
+        _ev: Ev,
+        _handler: F,
+    ) {
         // Noop. Events are attached on client side.
     }
 

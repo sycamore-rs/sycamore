@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
+use sycamore::web::html::ev;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
@@ -20,7 +21,7 @@ pub trait Integration {
 
     /// Get the click handler that is run when links are clicked.
 
-    fn click_handler(&self) -> Box<dyn Fn(web_sys::Event)>;
+    fn click_handler(&self) -> Box<dyn Fn(web_sys::MouseEvent)>;
 }
 
 thread_local! {
@@ -62,7 +63,7 @@ impl Integration for HistoryIntegration {
         closure.forget();
     }
 
-    fn click_handler(&self) -> Box<dyn Fn(web_sys::Event)> {
+    fn click_handler(&self) -> Box<dyn Fn(web_sys::MouseEvent)> {
         Box::new(|ev| {
             if let Some(a) = ev
                 .target()
@@ -279,12 +280,12 @@ where
     let view = view(cx, route_signal);
     // Delegate click events from child <a> tags.
     if let Some(node) = view.as_node() {
-        node.event(cx, "click", integration.click_handler());
+        node.event(cx, ev::click, integration.click_handler());
     } else {
         let view = view.clone();
         create_effect_scoped(cx, move |cx| {
             for node in view.clone().flatten() {
-                node.event(cx, "click", integration.click_handler());
+                node.event(cx, ev::click, integration.click_handler());
             }
         });
     }
