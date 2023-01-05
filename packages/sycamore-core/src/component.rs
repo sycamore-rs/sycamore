@@ -194,7 +194,7 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     /// A reactive boolean value. Example: `attr:disabled = disabled_signal`
     DynamicBool(&'cx ReadSignal<bool>),
     /// Dangerously set inner HTML with a literal string value.
-    DangerouslySetInnerHtml(String),
+    DangerouslySetInnerHtml(&'static str),
     /// Dangerously set inner HTML with a dynamic value.
     DynamicDangerouslySetInnerHtml(Box<dyn Display>),
     /// An event binding
@@ -284,5 +284,91 @@ impl<'cx, G: GenericNode> Deref for Attributes<'cx, G> {
 impl<'cx, G: GenericNode> DerefMut for Attributes<'cx, G> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.attrs
+    }
+}
+
+impl<'cx, G: GenericNode> Attributes<'cx, G> {
+    /// Read the string value of an attribute. Returns `Option::None` if the attribute is missing
+    /// or not a string.
+    pub fn get_str(&self, key: &str) -> Option<Cow<'static, str>> {
+        match self.get(key)? {
+            AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
+            AttributeValue::DynamicStr(s) => Some(Cow::Owned(s.to_string())),
+            _ => None,
+        }
+    }
+
+    /// Remove an attribute and return the string value of it. Returns `Option::None` if the
+    /// attribute is missing or not a string.
+    pub fn remove_str(&mut self, key: &str) -> Option<Cow<'static, str>> {
+        match self.remove(key)? {
+            AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
+            AttributeValue::DynamicStr(s) => Some(Cow::Owned(s.to_string())),
+            _ => None,
+        }
+    }
+
+    /// Read the boolean value of an attribute. Returns `Option::None` if the attribute is missing
+    /// or not a boolean.
+    pub fn get_bool(&self, key: &str) -> Option<bool> {
+        match self.get(key)? {
+            AttributeValue::Bool(b) => Some(*b),
+            AttributeValue::DynamicBool(b) => Some(*b.get()),
+            _ => None,
+        }
+    }
+
+    /// Remove an attribute and return the boolean value of it. Returns `Option::None` if the
+    /// attribute is missing or not a boolean.
+    pub fn remove_bool(&mut self, key: &str) -> Option<bool> {
+        match self.remove(key)? {
+            AttributeValue::Bool(b) => Some(b),
+            AttributeValue::DynamicBool(b) => Some(*b.get()),
+            _ => None,
+        }
+    }
+
+    /// Fetch the `dangerously_set_inner_html` attribute from the attributes if it exists.
+    pub fn get_dangerously_set_inner_html(&self) -> Option<Cow<'static, str>> {
+        match self.get("dangerously_set_inner_html")? {
+            AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),
+            AttributeValue::DynamicDangerouslySetInnerHtml(html) => {
+                Some(Cow::Owned(html.to_string()))
+            }
+            _ => None,
+        }
+    }
+
+    /// Remove the `dangerously_set_inner_html` attribute from the attributes and return its previous value.
+    pub fn remove_dangerously_set_inner_html(&mut self) -> Option<Cow<'static, str>> {
+        match self.remove("dangerously_set_inner_html")? {
+            AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),
+            AttributeValue::DynamicDangerouslySetInnerHtml(html) => {
+                Some(Cow::Owned(html.to_string()))
+            }
+            _ => None,
+        }
+    }
+
+    /// Fetch the ref from the attributes if it exists.
+    pub fn get_ref(&self) -> Option<&'cx NodeRef<G>> {
+        match self.get("ref")? {
+            AttributeValue::Ref(node_ref) => Some(*node_ref),
+            _ => None,
+        }
+    }
+
+    /// Remove the `ref` from the attributes and return its previous value.
+    pub fn remove_ref(&mut self) -> Option<&'cx NodeRef<G>> {
+        match self.remove("ref")? {
+            AttributeValue::Ref(node_ref) => Some(node_ref),
+            _ => None,
+        }
+    }
+
+    pub fn exclude_keys(&mut self, keys: &[&str]) {
+        for &key in keys {
+            self.remove(key);
+        }
     }
 }
