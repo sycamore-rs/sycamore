@@ -8,6 +8,7 @@ use std::iter::FromIterator;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
+use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::GenericNodeElements;
 
 use crate::component::component_scope;
@@ -16,6 +17,7 @@ use crate::noderef::NodeRef;
 use crate::reactive::*;
 use crate::utils::render;
 use crate::view::View;
+use crate::web::html::ev;
 #[cfg(feature = "web")]
 use crate::web::Html;
 
@@ -31,6 +33,8 @@ use crate::web::Html;
 /// ```
 pub mod prelude {
     pub use super::{component, dyn_t, fragment, t, tag};
+    #[cfg(feature = "web")]
+    pub use crate::web::html::ev;
     #[cfg(feature = "web")]
     pub use crate::web::html::html_tags::builder::*;
     #[cfg(feature = "web")]
@@ -647,15 +651,15 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// # fn _test<G: Html>(cx: Scope) -> View<G> {
     /// button()
     ///     .t("My button")
-    ///     .on("click", |_| web_sys::console::log_1(&"Clicked".into()))
+    ///     .on(ev::click, |_| web_sys::console::log_1(&"Clicked".into()))
     /// # .view(cx) }
     /// ```
-    pub fn on(
+    pub fn on<Ev: EventDescriptor<G::AnyEventData>, S>(
         self,
-        name: &'a str,
-        handler: impl Fn(G::EventType) + 'a,
+        ev: Ev,
+        handler: impl EventHandler<'a, G::AnyEventData, Ev, S> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |cx, el| el.event(cx, name, Box::new(handler)))
+        self.map(move |cx, el| el.event(cx, ev, handler))
     }
 
     /// Get a hold of the raw element by using a [`NodeRef`].
@@ -727,7 +731,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
             });
             el.event(
                 cx,
-                "input",
+                ev::input,
                 Box::new(move |e: web_sys::Event| {
                     let val = js_sys::Reflect::get(
                         &e.target().expect("missing target on input event"),
@@ -769,7 +773,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
             });
             el.event(
                 cx,
-                "change",
+                ev::change,
                 Box::new(move |e: web_sys::Event| {
                     let val = js_sys::Reflect::get(
                         &e.target().expect("missing target on change event"),

@@ -54,7 +54,7 @@ pub enum AttributeType {
     /// Syntax: `dangerously_set_inner_html`.
     DangerouslySetInnerHtml,
     /// Syntax: `on:<event>`.
-    Event { event: String },
+    Event { event: Ident },
     /// Syntax: `bind:<prop>`.
     Bind { prop: String },
     /// Syntax: `prop:<prop>`.

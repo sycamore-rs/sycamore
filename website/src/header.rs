@@ -66,9 +66,8 @@ fn Nav<G: Html>(cx: Scope) -> View<G> {
                     // Brand section
                     div(class="ml-0 sm:ml-3 inline-block flex-initial") {
                         div(class="flex space-x-4") {
-                            a(href="/#", class="py-2 px-3 text-sm text-white font-medium \
-                            bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
-                                "Sycamore"
+                            a(href="/#") {
+                                img(src="/logo.svg", class="h-10 w-10")
                             }
                         }
                     }

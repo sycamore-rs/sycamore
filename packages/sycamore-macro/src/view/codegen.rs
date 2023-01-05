@@ -72,9 +72,19 @@ impl Codegen {
             ViewNode::Text(Text { value }) => quote! {
                 ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
-            ViewNode::Dyn(Dyn { value }) => quote! {
-                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
-            },
+            ViewNode::Dyn(dyn_node @ Dyn { value }) => {
+                let cx = &self.cx;
+                let needs_cx = dyn_node.needs_cx(&cx.to_string());
+
+                match needs_cx {
+                    true => quote! {
+                        ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::ToView::to_view(&(#value)))
+                    },
+                    false => quote! {
+                        ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
+                    },
+                }
+            }
         }
     }
 }
@@ -159,6 +169,7 @@ impl CodegenTemplate {
 
     fn attribute(&mut self, attr: &Attribute) -> (Option<TokenStream>, bool) {
         let cx = &self.cx;
+        let elements_mod_path = &self.elements_mod_path;
         let flag_counter = self.flag_counter;
 
         let expr = &attr.value;
@@ -257,7 +268,7 @@ impl CodegenTemplate {
                     ::sycamore::generic_node::GenericNode::event(
                         &__flagged[#flag_counter],
                         #cx,
-                        #event,
+                        #elements_mod_path::ev::#event,
                         #expr,
                     );
                 });
@@ -290,9 +301,9 @@ impl CodegenTemplate {
                 }
 
                 let (event_name, property_ty) = match prop.as_str() {
-                    "value" => ("input", JsPropertyType::String),
-                    "valueAsNumber" => ("input", JsPropertyType::Number),
-                    "checked" => ("change", JsPropertyType::Bool),
+                    "value" => (quote! { input }, JsPropertyType::String),
+                    "valueAsNumber" => (quote! { input }, JsPropertyType::Number),
+                    "checked" => (quote! { change }, JsPropertyType::Bool),
                     _ => {
                         self.flagged_nodes_quoted.extend(
                             syn::Error::new(
@@ -357,7 +368,8 @@ impl CodegenTemplate {
                             )
                         });
                     }
-                    ::sycamore::generic_node::GenericNode::event(&__flagged[#flag_counter], #cx, #event_name,
+                    ::sycamore::generic_node::GenericNode::event(&__flagged[#flag_counter], #cx,
+                        #elements_mod_path::ev::#event_name,
                         {
                             let #expr = ::std::clone::Clone::clone(&#expr);
                             ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
