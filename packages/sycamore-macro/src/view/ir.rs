@@ -61,6 +61,8 @@ pub enum AttributeType {
     Property { prop: String },
     /// Syntax: `ref`.
     Ref,
+    /// Syntax: ..attributes
+    Spread,
 }
 
 pub fn is_bool_attr(name: &str) -> bool {
@@ -108,7 +110,8 @@ pub struct Component {
 }
 
 pub struct ComponentProp {
-    pub name: Ident,
+    pub prefix: Option<Ident>,
+    pub name: String,
     pub eq: Token![=],
     pub value: Expr,
 }
