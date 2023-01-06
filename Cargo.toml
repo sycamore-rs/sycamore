@@ -30,6 +30,7 @@ members = [
   "examples/timer",
   "examples/todomvc",
   "examples/transitions",
+  "examples/attributes-passthrough",
 
   # Website
   "docs",
