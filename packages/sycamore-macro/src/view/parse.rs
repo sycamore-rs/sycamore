@@ -152,7 +152,9 @@ impl Parse for AttributeType {
             let _2dot = input.parse::<Token![..]>()?;
             Ok(Self::Spread)
         } else {
-            let ident: AttributeName = input.parse()?;
+            let ident: AttributeName = input
+                .parse()
+                .map_err(|_| input.error("expected ident or .."))?;
             let name = ident.to_string();
 
             if name == "ref" {
