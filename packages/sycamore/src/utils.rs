@@ -61,7 +61,7 @@ where
 }
 
 /// Apply an `AttributeValue` to an element. Used by the `view!` macro.s
-pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue>>(
+pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType = JsValue>>(
     cx: Scope<'cx>,
     el: G,
     name: Cow<'static, str>,
