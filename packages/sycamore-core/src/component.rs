@@ -252,6 +252,7 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
 /// }
 /// # }
 /// ```
+#[derive(Debug)]
 pub struct Attributes<'cx, G: GenericNode> {
     attrs: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>,
 }
