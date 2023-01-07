@@ -261,9 +261,14 @@ impl Parse for ComponentProp {
         if lookahead.peek(Token![:]) {
             let _colon = input.parse::<Token![:]>()?;
             let name: AttributeName = input.parse()?;
+            let full_name = if name_or_prefix == "attr" {
+                name.to_string()
+            } else {
+                format!("{name_or_prefix}:{name}")
+            };
             Ok(Self {
                 prefix: Some(name_or_prefix),
-                name: name.to_string(),
+                name: full_name,
                 eq: input.parse()?,
                 value: input.parse()?,
             })
