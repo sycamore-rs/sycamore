@@ -2,6 +2,7 @@
 
 use std::{
     borrow::Cow,
+    cell::{Ref, RefCell},
     collections::HashMap,
     fmt::{self, Display},
 };
@@ -254,13 +255,13 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
 /// ```
 #[derive(Debug)]
 pub struct Attributes<'cx, G: GenericNode> {
-    attrs: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>,
+    attrs: RefCell<HashMap<Cow<'static, str>, AttributeValue<'cx, G>>>,
 }
 
 impl<'cx, G: GenericNode> Default for Attributes<'cx, G> {
     fn default() -> Self {
         Self {
-            attrs: Default::default(),
+            attrs: RefCell::new(Default::default()),
         }
     }
 }
@@ -268,15 +269,17 @@ impl<'cx, G: GenericNode> Default for Attributes<'cx, G> {
 impl<'cx, G: GenericNode> Attributes<'cx, G> {
     // Creates a new [`Attributes`] struct from a map of keys and values.
     pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>) -> Self {
-        Self { attrs: attributes }
+        Self {
+            attrs: RefCell::new(attributes),
+        }
     }
 }
 
 impl<'cx, G: GenericNode> Attributes<'cx, G> {
     /// Read the string value of an attribute. Returns `Option::None` if the attribute is missing
     /// or not a string.
-    pub fn get_str(&mut self, key: &str) -> Option<Cow<'static, str>> {
-        match self.attrs.get_mut(key)? {
+    pub fn get_str(&self, key: &str) -> Option<Cow<'static, str>> {
+        match self.attrs.borrow_mut().get_mut(key)? {
             AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
             AttributeValue::DynamicStr(s) => Some(Cow::Owned(s())),
             _ => None,
@@ -285,7 +288,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
 
     /// Remove an attribute and return the string value of it. Returns `Option::None` if the
     /// attribute is missing or not a string.
-    pub fn remove_str(&mut self, key: &str) -> Option<Cow<'static, str>> {
+    pub fn remove_str(&self, key: &str) -> Option<Cow<'static, str>> {
         match self.remove(key)? {
             AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
             AttributeValue::DynamicStr(mut s) => Some(Cow::Owned(s())),
@@ -296,7 +299,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     /// Read the boolean value of an attribute. Returns `Option::None` if the attribute is missing
     /// or not a boolean.
     pub fn get_bool(&self, key: &str) -> Option<bool> {
-        match self.get(key)? {
+        match &*self.get(key)? {
             AttributeValue::Bool(b) => Some(*b),
             AttributeValue::DynamicBool(b) => Some(*b.get()),
             _ => None,
@@ -315,7 +318,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
 
     /// Fetch the `dangerously_set_inner_html` attribute from the attributes if it exists.
     pub fn get_dangerously_set_inner_html(&self) -> Option<Cow<'static, str>> {
-        match self.get("dangerously_set_inner_html")? {
+        match &*self.get("dangerously_set_inner_html")? {
             AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),
             AttributeValue::DynamicDangerouslySetInnerHtml(html) => {
                 Some(Cow::Owned(html.to_string()))
@@ -336,11 +339,12 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     }
 
     /// Fetch the ref from the attributes if it exists.
-    pub fn get_ref(&self) -> Option<&'cx NodeRef<G>> {
-        match self.get("ref")? {
+    pub fn get_ref(&self) -> Option<Ref<NodeRef<G>>> {
+        Ref::filter_map(self.get("ref")?, |value| match value {
             AttributeValue::Ref(node_ref) => Some(*node_ref),
             _ => None,
-        }
+        })
+        .ok()
     }
 
     /// Remove the `ref` from the attributes and return its previous value.
@@ -359,19 +363,17 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     }
 
     /// Get an attribute value if it exists.
-    pub fn get(&self, key: &str) -> Option<&AttributeValue<'cx, G>> {
-        self.attrs.get(key)
+    pub fn get(&self, key: &str) -> Option<Ref<AttributeValue<'cx, G>>> {
+        Ref::filter_map(self.attrs.borrow(), |attrs| attrs.get(key)).ok()
     }
 
     /// Remove an attribute value and return its previous value
-    pub fn remove(&mut self, key: &str) -> Option<AttributeValue<'cx, G>> {
-        self.attrs.remove(key)
+    pub fn remove(&self, key: &str) -> Option<AttributeValue<'cx, G>> {
+        self.attrs.borrow_mut().remove(key)
     }
 
     /// INTERNAL: used in the `view!` macro to apply attributes
-    pub fn drain(
-        &mut self,
-    ) -> impl Iterator<Item = (Cow<'static, str>, AttributeValue<'cx, G>)> + '_ {
-        self.attrs.drain()
+    pub fn drain(&self) -> Vec<(Cow<'static, str>, AttributeValue<'cx, G>)> {
+        self.attrs.borrow_mut().drain().collect()
     }
 }

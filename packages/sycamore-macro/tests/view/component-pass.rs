@@ -96,7 +96,7 @@ pub struct AttributesProps<'cx, G: Html> {
 #[component]
 pub fn AttributesComponent<'cx, G: Html>(
     cx: Scope<'cx>,
-    AttributesProps { mut attributes }: AttributesProps<'cx, G>,
+    AttributesProps { attributes }: AttributesProps<'cx, G>,
 ) -> View<G> {
     view! { cx,
         input(..attributes) {}
