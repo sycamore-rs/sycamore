@@ -10,7 +10,7 @@ pub struct AccessibleInputProps<'cx, G: Html> {
 #[component]
 fn AccessibleSearchBox<'cx, G: Html>(
     cx: Scope<'cx>,
-    mut props: AccessibleInputProps<'cx, G>,
+    props: AccessibleInputProps<'cx, G>,
 ) -> View<G> {
     props
         .attributes

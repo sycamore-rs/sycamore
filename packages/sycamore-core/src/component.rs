@@ -233,7 +233,7 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
 /// }
 ///
 /// #[component]
-/// fn Row<'a, G: Html>(cx: Scope<'a>, mut props: RowProps<'a, G>) -> View<G> {
+/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
 ///     let children = props.children.call(cx);
 ///     // Spread the `Attributes` onto the div.
 ///     view! { cx,
@@ -308,7 +308,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
 
     /// Remove an attribute and return the boolean value of it. Returns `Option::None` if the
     /// attribute is missing or not a boolean.
-    pub fn remove_bool(&mut self, key: &str) -> Option<bool> {
+    pub fn remove_bool(&self, key: &str) -> Option<bool> {
         match self.remove(key)? {
             AttributeValue::Bool(b) => Some(b),
             AttributeValue::DynamicBool(b) => Some(*b.get()),
@@ -328,7 +328,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     }
 
     /// Remove the `dangerously_set_inner_html` attribute from the attributes and return its previous value.
-    pub fn remove_dangerously_set_inner_html(&mut self) -> Option<Cow<'static, str>> {
+    pub fn remove_dangerously_set_inner_html(&self) -> Option<Cow<'static, str>> {
         match self.remove("dangerously_set_inner_html")? {
             AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),
             AttributeValue::DynamicDangerouslySetInnerHtml(html) => {
@@ -348,7 +348,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     }
 
     /// Remove the `ref` from the attributes and return its previous value.
-    pub fn remove_ref(&mut self) -> Option<&'cx NodeRef<G>> {
+    pub fn remove_ref(&self) -> Option<&'cx NodeRef<G>> {
         match self.remove("ref")? {
             AttributeValue::Ref(node_ref) => Some(node_ref),
             _ => None,
@@ -356,7 +356,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     }
 
     /// Exclude a set of keys from the attributes.
-    pub fn exclude_keys(&mut self, keys: &[&str]) {
+    pub fn exclude_keys(&self, keys: &[&str]) {
         for &key in keys {
             self.remove(key);
         }
