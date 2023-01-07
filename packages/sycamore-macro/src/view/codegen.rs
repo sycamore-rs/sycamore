@@ -560,13 +560,15 @@ fn to_attribute_value(
                 if matches!(value, Expr::Lit(_)) {
                     Ok(quote!(::sycamore::component::AttributeValue::Bool(#value)))
                 } else {
-                    Ok(quote!(::sycamore::component::AttributeValue::DynamicBool(#value)))
+                    Ok(quote!(::sycamore::component::AttributeValue::DynamicBool(
+                        Box::new(move || ::std::convert::Into::<bool>::into(#value))
+                    )))
                 }
             } else if matches!(value, Expr::Lit(_)) {
                 Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
             } else {
                 Ok(quote!(::sycamore::component::AttributeValue::DynamicStr(
-                    Box::new(|| ::std::string::ToString::to_string(#value))
+                    Box::new(move || ::std::string::ToString::to_string(#value))
                 )))
             }
         }

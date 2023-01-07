@@ -191,8 +191,8 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     DynamicStr(Box<dyn FnMut() -> String + 'cx>),
     /// A boolean literal value. Example: `attr:disabled = true`
     Bool(bool),
-    /// A reactive boolean value. Example: `attr:disabled = disabled_signal`
-    DynamicBool(&'cx ReadSignal<bool>),
+    /// A dynamic boolean value from a variable. Example: `attr:disabled = disabled_signal`
+    DynamicBool(Box<dyn FnMut() -> bool + 'cx>),
     /// Dangerously set inner HTML with a literal string value.
     DangerouslySetInnerHtml(&'static str),
     /// Dangerously set inner HTML with a dynamic value.
@@ -299,9 +299,9 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     /// Read the boolean value of an attribute. Returns `Option::None` if the attribute is missing
     /// or not a boolean.
     pub fn get_bool(&self, key: &str) -> Option<bool> {
-        match &*self.get(key)? {
+        match self.attrs.borrow_mut().get_mut(key)? {
             AttributeValue::Bool(b) => Some(*b),
-            AttributeValue::DynamicBool(b) => Some(*b.get()),
+            AttributeValue::DynamicBool(b) => Some(b()),
             _ => None,
         }
     }
@@ -311,7 +311,7 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     pub fn remove_bool(&self, key: &str) -> Option<bool> {
         match self.remove(key)? {
             AttributeValue::Bool(b) => Some(b),
-            AttributeValue::DynamicBool(b) => Some(*b.get()),
+            AttributeValue::DynamicBool(mut b) => Some(b()),
             _ => None,
         }
     }

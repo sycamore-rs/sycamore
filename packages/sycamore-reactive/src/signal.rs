@@ -566,6 +566,23 @@ impl<T: Display> Display for ReadSignal<T> {
     }
 }
 
+/* Into<bool> implementation */
+
+impl From<RcSignal<bool>> for bool {
+    fn from(signal: RcSignal<bool>) -> bool {
+        *signal.get()
+    }
+}
+impl From<&Signal<bool>> for bool {
+    fn from(signal: &Signal<bool>) -> bool {
+        *signal.get()
+    }
+}
+impl From<&ReadSignal<bool>> for bool {
+    fn from(signal: &ReadSignal<bool>) -> bool {
+        *signal.get()
+    }
+}
 /* Debug implementations */
 
 impl<T: Debug> Debug for RcSignal<T> {

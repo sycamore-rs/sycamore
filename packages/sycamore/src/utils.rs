@@ -84,11 +84,11 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
             };
             el.set_attribute(name.clone(), Cow::Borrowed(stringified));
         }
-        AttributeValue::DynamicBool(value) => {
+        AttributeValue::DynamicBool(mut value) => {
             create_effect(cx, {
                 let name = name.clone();
                 move || {
-                    if *value.get() {
+                    if value() {
                         el.set_attribute(name.clone(), Cow::Borrowed(""));
                     } else {
                         el.remove_attribute(name.clone());
