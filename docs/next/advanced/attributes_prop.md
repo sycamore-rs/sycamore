@@ -11,7 +11,6 @@ of that type to your props,
 ```rust
 #[derive(Props)]
 struct Props {
-    #[prop(default)]
     attributes: Attributes<'cx, G>
 }
 ```

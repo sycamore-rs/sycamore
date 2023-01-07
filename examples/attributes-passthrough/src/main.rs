@@ -3,7 +3,6 @@ use sycamore::prelude::*;
 #[derive(Props)]
 pub struct AccessibleInputProps<'cx, G: Html> {
     label_id: &'static str,
-    #[prop(default)]
     attributes: Attributes<'cx, G>,
     children: Children<'cx, G>,
 }
