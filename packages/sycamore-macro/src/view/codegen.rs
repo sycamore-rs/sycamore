@@ -448,9 +448,13 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         .map(|prop| (&prop.prefix, &prop.name, &prop.value));
     let attribute_entries_quoted = attributes
         .map(|(prefix, name, value)| {
-            let value =
-                to_attribute_value(prefix.as_ref().unwrap(), name, value, cx, elements_mod_path)?;
-            let name_str = name.to_string();
+            let prefix = prefix.as_ref().unwrap();
+            let value = to_attribute_value(prefix, name, value, cx, elements_mod_path)?;
+            let name_str = if prefix == "attr" {
+                name.to_string()
+            } else {
+                format!("{prefix}:{name}")
+            };
             Ok(quote! {
                 attributes.insert(::std::borrow::Cow::Borrowed(#name_str), #value)
             })
