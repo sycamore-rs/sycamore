@@ -151,10 +151,8 @@ impl Parse for AttributeType {
         if lookahead.peek(Token![..]) {
             let _2dot = input.parse::<Token![..]>()?;
             Ok(Self::Spread)
-        } else {
-            let ident: AttributeName = input
-                .parse()
-                .map_err(|_| input.error("expected ident or .."))?;
+        } else if lookahead.peek(Ident::peek_any) {
+            let ident: AttributeName = input.parse()?;
             let name = ident.to_string();
 
             if name == "ref" {
@@ -190,6 +188,8 @@ impl Parse for AttributeType {
             } else {
                 Ok(Self::Str { name })
             }
+        } else {
+            Err(input.error("expected ident or .."))
         }
     }
 }
