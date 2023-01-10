@@ -99,10 +99,8 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
             el.dangerously_set_inner_html(value.into());
         }
         AttributeValue::DynamicDangerouslySetInnerHtml(value) => {
-            create_effect(cx, {
-                move || {
-                    el.dangerously_set_inner_html(Cow::Owned(value.to_string()));
-                }
+            create_effect(cx, move || {
+                el.dangerously_set_inner_html(Cow::Owned(value.to_string()));
             });
         }
         AttributeValue::Event(event, handler) => {
