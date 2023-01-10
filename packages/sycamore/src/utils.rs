@@ -57,6 +57,8 @@ where
     Ev: EventDescriptor<JsValue>,
 {
     let boxed: Box<dyn FnMut(JsValue)> = Box::new(move |e: JsValue| handler.call(cx, e.into()));
+    // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
+    // preventing the handler from ever being accessed after its lifetime.
     unsafe { mem::transmute(boxed) }
 }
 
