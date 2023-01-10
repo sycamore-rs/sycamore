@@ -293,20 +293,6 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<
-        'a,
-        Ev: EventDescriptor<Self::AnyEventData>,
-        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
-        S,
-    >(
-        &self,
-        _cx: Scope<'a>,
-        _ev: Ev,
-        _handler: F,
-    ) {
-        // Noop. Events are attached on client side.
-    }
-
     fn untyped_event<'a>(
         &self,
         _cx: Scope<'a>,

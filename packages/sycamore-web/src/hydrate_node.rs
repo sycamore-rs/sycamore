@@ -183,21 +183,6 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn event<
-        'a,
-        Ev: EventDescriptor<Self::AnyEventData>,
-        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
-        S,
-    >(
-        &self,
-        cx: Scope<'a>,
-        ev: Ev,
-        handler: F,
-    ) {
-        self.node.event(cx, ev, handler);
-    }
-
-    #[inline]
     fn untyped_event<'a>(
         &self,
         cx: Scope<'a>,
