@@ -135,8 +135,7 @@ fn compile_pass<G: Html>() {
         let on_click = |_| {};
         let _: View<G> = view! { cx, AttributesComponent(on:click = on_click) {} };
         let bool_signal = create_signal(cx, false);
-        let _: View<G> =
-            view! { cx, AttributesComponent(attr:disabled = false, attr:checked = bool_signal) };
+        let _: View<G> = view! { cx, AttributesComponent(attr:disabled = false, attr:checked = *bool_signal.get()) };
 
         let _: View<G> = view! { cx,
             AsyncComponentWithPropsDestructuring {
