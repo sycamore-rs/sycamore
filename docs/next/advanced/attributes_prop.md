@@ -1,4 +1,4 @@
-# `Passing Attributes to a wrapped element`
+# Passing Attributes to a wrapped element
 
 When you're working on code for your own website, props are a great way to pass customizable values
 to a component. If you need to customize an additional attribute on your HTML element, just add a
@@ -25,7 +25,7 @@ view! { cx,
 
 Any attributes set by the user are now passed through onto your `p` element.
 
-## `Setting attributes`
+## Setting attributes
 
 The user can set attributes by prefixing them with `attr:`. Event handlers or bindings are also
 automatically passed through.
@@ -39,7 +39,7 @@ view! { cx,
 Attributes are still fully type checked when the user sets them and will throw compiler errors
 if the value doesn't fit the attribute.
 
-## `Accessing and modifying attributes`
+## Accessing and modifying attributes
 
 `Attributes` exposes a number of ways of accessing attributes. In addition to `get` and `remove`,
 which return a general attribute value, typed versions of each method are available for strings,
