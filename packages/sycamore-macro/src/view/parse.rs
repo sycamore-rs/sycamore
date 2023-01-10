@@ -189,7 +189,7 @@ impl Parse for AttributeType {
                 Ok(Self::Str { name })
             }
         } else {
-            Err(input.error("expected ident or .."))
+            Err(lookahead.error())
         }
     }
 }
