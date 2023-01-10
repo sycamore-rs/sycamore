@@ -4,7 +4,6 @@ use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::{
     GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
 };

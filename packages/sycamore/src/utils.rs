@@ -11,7 +11,7 @@ pub mod hydrate {
     pub use sycamore_web::hydrate as web;
 }
 
-use std::{borrow::Cow, mem};
+use std::borrow::Cow;
 
 use js_sys::Reflect;
 use sycamore_core::event::{EventDescriptor, EventHandler};

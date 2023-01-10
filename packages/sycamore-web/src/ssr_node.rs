@@ -8,7 +8,6 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
-use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::{
     instantiate_template_universal, GenericNode, GenericNodeElements, InstantiateUniversalOpts,
     SycamoreElement, Template, TemplateResult,

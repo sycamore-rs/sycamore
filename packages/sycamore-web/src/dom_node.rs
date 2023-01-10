@@ -6,7 +6,6 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
-use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::{
     GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
 };
