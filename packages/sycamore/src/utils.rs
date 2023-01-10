@@ -77,11 +77,9 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
             });
         }
         AttributeValue::Bool(value) => {
-            let stringified = match value {
-                true => "true",
-                false => "false",
-            };
-            el.set_attribute(name.clone(), Cow::Borrowed(stringified));
+            if value {
+                el.set_attribute(name.clone(), Cow::Borrowed(""));
+            }
         }
         AttributeValue::DynamicBool(mut value) => {
             create_effect(cx, {
