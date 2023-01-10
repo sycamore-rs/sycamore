@@ -51,15 +51,12 @@ pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
 pub fn erase_handler<'a, Ev, Handler, S>(
     cx: Scope<'a>,
     mut handler: Handler,
-) -> Box<dyn FnMut(JsValue) + 'static>
+) -> Box<dyn FnMut(JsValue) + 'a>
 where
     Handler: EventHandler<'a, JsValue, Ev, S> + 'a,
     Ev: EventDescriptor<JsValue>,
 {
-    let boxed: Box<dyn FnMut(JsValue)> = Box::new(move |e: JsValue| handler.call(cx, e.into()));
-    // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
-    // preventing the handler from ever being accessed after its lifetime.
-    unsafe { mem::transmute(boxed) }
+    Box::new(move |e: JsValue| handler.call(cx, e.into()))
 }
 
 /// Apply an `AttributeValue` to an element. Used by the `view!` macro.s

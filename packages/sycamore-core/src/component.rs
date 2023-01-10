@@ -196,7 +196,7 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     /// Dangerously set inner HTML with a dynamic value.
     DynamicDangerouslySetInnerHtml(Box<dyn Display>),
     /// An event binding
-    Event(&'static str, Box<dyn FnMut(G::AnyEventData)>),
+    Event(&'static str, Box<dyn FnMut(G::AnyEventData) + 'cx>),
     /// A binding to a boolean value
     BindBool(&'static str, &'cx Signal<bool>),
     /// A binding to a numeric value
