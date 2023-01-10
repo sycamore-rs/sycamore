@@ -72,9 +72,19 @@ impl Codegen {
             ViewNode::Text(Text { value }) => quote! {
                 ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
-            ViewNode::Dyn(Dyn { value }) => quote! {
-                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
-            },
+            ViewNode::Dyn(dyn_node @ Dyn { value }) => {
+                let cx = &self.cx;
+                let needs_cx = dyn_node.needs_cx(&cx.to_string());
+
+                match needs_cx {
+                    true => quote! {
+                        ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::ToView::to_view(&(#value)))
+                    },
+                    false => quote! {
+                        ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
+                    },
+                }
+            }
         }
     }
 }
