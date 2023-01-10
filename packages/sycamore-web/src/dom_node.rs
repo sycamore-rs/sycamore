@@ -267,32 +267,6 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event<
-        'a,
-        Ev: EventDescriptor<Self::AnyEventData>,
-        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
-        S,
-    >(
-        &self,
-        cx: Scope<'a>,
-        _ev: Ev,
-        mut handler: F,
-    ) {
-        let boxed: Box<dyn FnMut(Self::AnyEventData)> =
-            Box::new(move |ev| handler.call(cx, ev.into()));
-        // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
-        // preventing the handler from ever being accessed after its lifetime.
-        let handler: Box<dyn FnMut(Self::AnyEventData) + 'static> =
-            unsafe { std::mem::transmute(boxed) };
-        let closure = create_ref(cx, Closure::wrap(handler));
-        self.node
-            .add_event_listener_with_callback(
-                intern(Ev::EVENT_NAME),
-                closure.as_ref().unchecked_ref(),
-            )
-            .unwrap_throw();
-    }
-
     fn untyped_event<'a>(
         &self,
         cx: Scope<'a>,

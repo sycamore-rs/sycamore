@@ -139,9 +139,13 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     >(
         &self,
         cx: Scope<'a>,
-        ev: Ev,
-        handler: F,
-    );
+        _ev: Ev,
+        mut handler: F,
+    ) {
+        let boxed: Box<dyn FnMut(Self::AnyEventData)> =
+            Box::new(move |ev| handler.call(cx, ev.into()));
+        self.untyped_event(cx, Cow::Borrowed(Ev::EVENT_NAME), boxed)
+    }
 
     fn untyped_event<'a>(
         &self,

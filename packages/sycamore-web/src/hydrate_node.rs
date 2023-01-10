@@ -197,6 +197,7 @@ impl GenericNode for HydrateNode {
         self.node.event(cx, ev, handler);
     }
 
+    #[inline]
     fn untyped_event<'a>(
         &self,
         cx: Scope<'a>,
