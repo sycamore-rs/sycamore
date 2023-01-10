@@ -1,7 +1,7 @@
 //! Utilities for components and component properties.
 
 use std::borrow::Cow;
-use std::cell:{Ref, RefCell};
+use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 

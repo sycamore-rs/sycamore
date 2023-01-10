@@ -571,7 +571,7 @@ fn to_attribute_value(
                     Ok(quote!(::sycamore::component::AttributeValue::Bool(#value)))
                 } else {
                     Ok(quote!(::sycamore::component::AttributeValue::DynamicBool(
-                        Box::new(move || ::std::convert::Into::<bool>::into(#value))
+                        Box::new(move || #value)
                     )))
                 }
             } else if matches!(value, Expr::Lit(_)) {
