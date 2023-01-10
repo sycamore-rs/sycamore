@@ -59,7 +59,7 @@ where
     Box::new(move |e: JsValue| handler.call(cx, e.into()))
 }
 
-/// Apply an `AttributeValue` to an element. Used by the `view!` macro.s
+/// Apply an `AttributeValue` to an element. Used by the `view!` macro.
 pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType = JsValue>>(
     cx: Scope<'cx>,
     el: G,
