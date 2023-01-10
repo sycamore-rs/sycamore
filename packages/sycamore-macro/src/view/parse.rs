@@ -257,8 +257,7 @@ impl Parse for Component {
 impl Parse for ComponentProp {
     fn parse(input: ParseStream) -> Result<Self> {
         let name_or_prefix: Ident = input.parse()?;
-        let lookahead = input.lookahead1();
-        if lookahead.peek(Token![:]) {
+        if input.peek(Token![:]) {
             let _colon = input.parse::<Token![:]>()?;
             let name: AttributeName = input.parse()?;
             Ok(Self {
