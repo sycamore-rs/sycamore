@@ -1,11 +1,9 @@
 //! Utilities for components and component properties.
 
-use std::{
-    borrow::Cow,
-    cell::{Ref, RefCell},
-    collections::HashMap,
-    fmt::{self, Display},
-};
+use std::borrow::Cow;
+use std::cell:{Ref, RefCell};
+use std::collections::HashMap;
+use std::fmt::{self, Display};
 
 use sycamore_reactive::*;
 
