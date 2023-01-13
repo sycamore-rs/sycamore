@@ -18,9 +18,10 @@ use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_core::render;
 use wasm_bindgen::JsValue;
 
+use crate::generic_node::GenericNode;
 use crate::prelude::*;
 use crate::rt::Event;
-use crate::{generic_node::GenericNode, web::html::ev};
+use crate::web::html::ev;
 
 /// If `el` is a `HydrateNode`, use `get_next_marker` to get the initial node value.
 pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {

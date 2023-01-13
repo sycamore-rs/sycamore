@@ -3,13 +3,13 @@
 //! _Documentation sources: <https://developer.mozilla.org/en-US/>_
 
 use sycamore::prelude::*;
+pub use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_web::on_mount;
 
 pub use self::html_tags::*;
 pub use self::svg_tags::*;
 use crate::builder::ElementBuilder;
 use crate::generic_node::{GenericNodeElements, SycamoreElement};
-pub use sycamore_core::event::{EventDescriptor, EventHandler};
 
 /// Macro for generating element definitions.
 macro_rules! define_elements {
@@ -435,9 +435,10 @@ macro_rules! define_events {
 
 /// HTML events definitions.
 pub mod ev {
-    use crate::web::html::EventDescriptor;
     use wasm_bindgen::JsValue;
     use web_sys::*;
+
+    use crate::web::html::EventDescriptor;
 
     define_events! {
         /*

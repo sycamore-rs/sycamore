@@ -7,8 +7,9 @@ use std::fmt::{self, Display};
 
 use sycamore_reactive::*;
 
+use crate::generic_node::GenericNode;
+use crate::noderef::NodeRef;
 use crate::view::View;
-use crate::{generic_node::GenericNode, noderef::NodeRef};
 
 /// Runs the given closure inside a new component scope. In other words, this does the following:
 /// * If hydration is enabled, create a new hydration context.
@@ -325,7 +326,8 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
         }
     }
 
-    /// Remove the `dangerously_set_inner_html` attribute from the attributes and return its previous value.
+    /// Remove the `dangerously_set_inner_html` attribute from the attributes and return its
+    /// previous value.
     pub fn remove_dangerously_set_inner_html(&self) -> Option<Cow<'static, str>> {
         match self.remove("dangerously_set_inner_html")? {
             AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),

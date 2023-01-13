@@ -805,8 +805,8 @@ mod field_info {
                         Some(syn::parse_quote!(::std::default::Default::default()));
                     builder_attr.setter.strip_option = Some(field.ty.span());
                 } else if name == "children" || name == "attributes" {
-                    // If this field is the `children` or `attributes` field, make it implicitly have a default
-                    // value.
+                    // If this field is the `children` or `attributes` field, make it implicitly
+                    // have a default value.
                     builder_attr.default =
                         Some(syn::parse_quote! { ::std::default::Default::default() });
                 }
