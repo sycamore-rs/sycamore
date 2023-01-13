@@ -8,7 +8,6 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
-use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::{
     instantiate_template_universal, GenericNode, GenericNodeElements, InstantiateUniversalOpts,
     SycamoreElement, Template, TemplateResult,
@@ -293,16 +292,11 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<
-        'a,
-        Ev: EventDescriptor<Self::AnyEventData>,
-        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
-        S,
-    >(
+    fn untyped_event<'a>(
         &self,
         _cx: Scope<'a>,
-        _ev: Ev,
-        _handler: F,
+        _event: Cow<'_, str>,
+        _handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
     ) {
         // Noop. Events are attached on client side.
     }

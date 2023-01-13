@@ -31,15 +31,15 @@ error: unknown directive `unknown`
   |                                             ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:12:46
+  --> tests/view/element-fail.rs:13:46
    |
-12 |         let _: View<G> = view! { cx, button(a.b.c="123") };
+13 |         let _: View<G> = view! { cx, button(a.b.c="123") };
    |                                              ^
 
 error: children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:15:15
+  --> tests/view/element-fail.rs:16:15
    |
-15 |             p(dangerously_set_inner_html="<span>Test</span>") {
+16 |             p(dangerously_set_inner_html="<span>Test</span>") {
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0412]: cannot find type `unknownelement` in module `$crate::web::html`
@@ -47,3 +47,9 @@ error[E0412]: cannot find type `unknownelement` in module `$crate::web::html`
    |
 10 |         let _: View<G> = view! { cx, unknownelement {} };
    |                                      ^^^^^^^^^^^^^^ not found in `$crate::web::html`
+
+error[E0425]: cannot find value `unknown_attributes` in this scope
+  --> tests/view/element-fail.rs:11:44
+   |
+11 |         let _: View<G> = view! { cx, div(..unknown_attributes) {} };
+   |                                            ^^^^^^^^^^^^^^^^^^ not found in this scope

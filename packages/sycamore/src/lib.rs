@@ -82,7 +82,7 @@ pub use web::{render, render_get_scope, render_to};
 pub mod prelude {
     pub use sycamore_macro::*;
 
-    pub use crate::component::Children;
+    pub use crate::component::{AttributeValue, Attributes, Children};
     pub use crate::flow::*;
     pub use crate::generic_node::GenericNode;
     pub use crate::noderef::{create_node_ref, NodeRef};

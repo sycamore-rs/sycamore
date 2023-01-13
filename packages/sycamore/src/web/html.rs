@@ -9,6 +9,7 @@ pub use self::html_tags::*;
 pub use self::svg_tags::*;
 use crate::builder::ElementBuilder;
 use crate::generic_node::{GenericNodeElements, SycamoreElement};
+pub use sycamore_core::event::{EventDescriptor, EventHandler};
 
 /// Macro for generating element definitions.
 macro_rules! define_elements {
@@ -434,7 +435,7 @@ macro_rules! define_events {
 
 /// HTML events definitions.
 pub mod ev {
-    use sycamore_core::event::EventDescriptor;
+    use crate::web::html::EventDescriptor;
     use wasm_bindgen::JsValue;
     use web_sys::*;
 

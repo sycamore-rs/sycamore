@@ -4,7 +4,6 @@ use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core::event::{EventDescriptor, EventHandler};
 use sycamore_core::generic_node::{
     GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
 };
@@ -183,18 +182,13 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn event<
-        'a,
-        Ev: EventDescriptor<Self::AnyEventData>,
-        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
-        S,
-    >(
+    fn untyped_event<'a>(
         &self,
         cx: Scope<'a>,
-        ev: Ev,
-        handler: F,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
     ) {
-        self.node.event(cx, ev, handler);
+        self.node.untyped_event(cx, event, handler);
     }
 
     #[inline]

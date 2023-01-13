@@ -4,8 +4,8 @@
 //! of some internal state during the entire codegen.
 
 use proc_macro2::TokenStream;
-use quote::quote;
-use syn::spanned::Spanned;
+use quote::{format_ident, quote};
+use syn::{spanned::Spanned, Path};
 use syn::{Expr, ExprLit, Ident, Lit, LitBool};
 
 use crate::view::ir::*;
@@ -368,8 +368,8 @@ impl CodegenTemplate {
                             )
                         });
                     }
-                    ::sycamore::generic_node::GenericNode::event(&__flagged[#flag_counter], #cx,
-                        #elements_mod_path::ev::#event_name,
+                    ::sycamore::generic_node::GenericNode::event(
+                        &__flagged[#flag_counter], #cx, #elements_mod_path::ev::#event_name,
                         {
                             let #expr = ::std::clone::Clone::clone(&#expr);
                             ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
@@ -384,6 +384,16 @@ impl CodegenTemplate {
             AttributeType::Ref => {
                 self.flagged_nodes_quoted.extend(quote! {
                     ::sycamore::noderef::NodeRef::set(&#expr, ::std::clone::Clone::clone(&__flagged[#flag_counter]));
+                });
+                (None, true)
+            }
+            AttributeType::Spread => {
+                self.flagged_nodes_quoted.extend(quote! {
+                    let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                    for (name, value) in #expr.drain() {
+                        let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                        ::sycamore::utils::apply_attribute(#cx, __el, ::std::clone::Clone::clone(&name), value);
+                    }
                 });
                 (None, true)
             }
@@ -433,8 +443,50 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         ..
     } = component;
 
-    let name = props.iter().map(|x| &x.name);
-    let value = props.iter().map(|x| &x.value);
+    let prop_names = props
+        .iter()
+        .filter(|prop| prop.prefix.is_none())
+        .map(|x| format_ident!("{}", &x.name));
+    let prop_values = props
+        .iter()
+        .filter(|prop| prop.prefix.is_none())
+        .map(|x| &x.value);
+
+    let attributes = props
+        .iter()
+        .filter(|prop| prop.prefix.is_some())
+        .map(|prop| (&prop.prefix, &prop.name, &prop.value));
+    let attribute_entries_quoted = attributes
+        .map(|(prefix, name, value)| {
+            let prefix = prefix.as_ref().unwrap();
+            let value = to_attribute_value(prefix, name, value, cx, elements_mod_path)?;
+            let name_str = if prefix == "attr" {
+                name.to_string()
+            } else {
+                format!("{prefix}:{name}")
+            };
+            Ok(quote! {
+                attributes.insert(::std::borrow::Cow::Borrowed(#name_str), #value)
+            })
+        })
+        .collect::<Result<Vec<_>, syn::Error>>()
+        .map_err(|err| err.to_compile_error());
+    let attributes_quoted = if let Ok(attributes) = attribute_entries_quoted {
+        if !attributes.is_empty() {
+            quote! {
+                .attributes({
+                    let mut attributes = ::std::collections::HashMap::default();
+                    #(#attributes;)*
+                    ::sycamore::component::Attributes::new(attributes)
+                })
+            }
+        } else {
+            quote!()
+        }
+    } else {
+        quote!()
+    };
+
     let children_quoted = children
         .as_ref()
         .filter(|children| !children.0.is_empty())
@@ -461,9 +513,78 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
             __component,
             #cx,
             ::sycamore::component::element_like_component_builder(__component)
-                #(.#name(#value))*
+                #(.#prop_names(#prop_values))*
                 #children_quoted
+                #attributes_quoted
                 .build()
         ))
     }}
+}
+
+fn to_attribute_value(
+    prefix: &Ident,
+    name: &str,
+    value: &Expr,
+    cx: &Ident,
+    elements_mod_path: &Path,
+) -> Result<TokenStream, syn::Error> {
+    match prefix.to_string().as_str() {
+        "on" => {
+            let event = format_ident!("{name}");
+
+            Ok(quote!(::sycamore::component::AttributeValue::Event(
+                #name,
+                ::sycamore::utils::erase_handler::<#elements_mod_path::ev::#event, _, _>(#cx, #value)
+            )))
+        }
+        "prop" => Ok(quote!(::sycamore::component::AttributeValue::Property(#name, #value))),
+        "bind" => match name {
+            "value" => {
+                Ok(quote!(::sycamore::component::AttributeValue::BindString("value", #value)))
+            }
+            "valueAsNumber" => Ok(
+                quote!(::sycamore::component::AttributeValue::BindNumber("valueAsNumber", #value)),
+            ),
+            "checked" => {
+                Ok(quote!(::sycamore::component::AttributeValue::BindBool("checked", #value)))
+            }
+            _ => Err(syn::Error::new(
+                name.span(),
+                format!("property `{}` is not supported with `bind:`", name),
+            )),
+        },
+        "attr" => {
+            if name == "ref" {
+                Ok(quote!(::sycamore::component::AttributeValue::Ref(#value)))
+            } else if name == "dangerously_set_inner_html" {
+                if matches!(value, Expr::Lit(_)) {
+                    Ok(
+                        quote!(::sycamore::component::AttributeValue::DangerouslySetInnerHtml(#value.to_string())),
+                    )
+                } else {
+                    Ok(
+                        quote!(::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(Box::new(#value))),
+                    )
+                }
+            } else if is_bool_attr(name) {
+                if matches!(value, Expr::Lit(_)) {
+                    Ok(quote!(::sycamore::component::AttributeValue::Bool(#value)))
+                } else {
+                    Ok(quote!(::sycamore::component::AttributeValue::DynamicBool(
+                        Box::new(move || #value)
+                    )))
+                }
+            } else if matches!(value, Expr::Lit(_)) {
+                Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
+            } else {
+                Ok(quote!(::sycamore::component::AttributeValue::DynamicStr(
+                    Box::new(move || ::std::string::ToString::to_string(#value))
+                )))
+            }
+        }
+        _ => Err(syn::Error::new_spanned(
+            name,
+            format!("unknown directive `{}`", name),
+        )),
+    }
 }
