@@ -1,0 +1,21 @@
+[package]
+name = "sycamore-web2"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hashbrown = "0.13.2"
+html-escape = { version = "0.2.13", optional = true }
+indexmap = "1.9.2"
+once_cell = "1.17.0"
+sycamore-core2 = { version = "0.1.0", path = "../sycamore-core2" }
+sycamore-reactive = { version = "0.8.1", path = "../sycamore-reactive" }
+wasm-bindgen = "0.2.83"
+web-sys = "0.3.60"
+
+[features]
+default = ["dom"]
+dom = []
+ssr = ["html-escape"]
