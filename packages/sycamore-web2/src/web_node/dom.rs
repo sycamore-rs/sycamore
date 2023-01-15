@@ -5,6 +5,7 @@ use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
+use sycamore_core2::generic_node::SycamoreElement;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
@@ -120,6 +121,7 @@ impl fmt::Debug for DomNode {
     }
 }
 
+/// `GenericNode` methods.
 impl DomNode {
     pub fn text_node(text: Cow<'static, str>) -> Self {
         let node = document().create_text_node(&text).into();
@@ -228,6 +230,52 @@ impl DomNode {
         Self {
             node: self.node.clone_node_with_deep(true).unwrap_throw(),
             id: Default::default(),
+        }
+    }
+}
+
+/// `GenericNodeElements` methods.
+impl DomNode {
+    pub fn element<T: SycamoreElement>() -> Self {
+        let node = if let Some(ns) = T::NAMESPACE {
+            document()
+                .create_element_ns(Some(ns), intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        } else {
+            document()
+                .create_element(intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        };
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    pub fn element_from_tag(tag: Cow<'static, str>) -> Self {
+        let node = document()
+            .create_element(intern(&tag))
+            .unwrap_throw()
+            .into();
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    pub fn element_from_tag_namespace(
+        tag: Cow<'static, str>,
+        namespace: Cow<'static, str>,
+    ) -> Self {
+        let node = document()
+            .create_element_ns(Some(intern(&namespace)), intern(&tag))
+            .unwrap_throw()
+            .into();
+        DomNode {
+            id: Default::default(),
+            node,
         }
     }
 }

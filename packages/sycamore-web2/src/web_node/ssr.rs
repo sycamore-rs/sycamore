@@ -6,6 +6,7 @@ use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
+use sycamore_core2::generic_node::SycamoreElement;
 
 use crate::VOID_ELEMENTS;
 
@@ -106,9 +107,8 @@ impl SsrNode {
     }
 }
 
+/// `GenericNode` methods.
 impl SsrNode {
-    const USE_HYDRATION_CONTEXT: bool = true;
-
     pub fn text_node(text: Cow<'static, str>) -> Self {
         Self::new(SsrNodeType::Text(RefCell::new(Text(text))))
     }
@@ -259,6 +259,24 @@ impl SsrNode {
             parent: RefCell::new(Weak::new()),
         };
         Self(Rc::new(inner))
+    }
+}
+
+/// `GenericNodeElements` methods.
+impl SsrNode {
+    pub fn element<T: SycamoreElement>() -> Self {
+        Self::element_from_tag(T::TAG_NAME.into())
+    }
+
+    pub fn element_from_tag(tag: Cow<'static, str>) -> Self {
+        Self::new_element_raw(tag, IndexMap::default(), Vec::new())
+    }
+
+    pub fn element_from_tag_namespace(
+        tag: Cow<'static, str>,
+        _namespace: Cow<'static, str>,
+    ) -> Self {
+        Self::element_from_tag(tag)
     }
 }
 

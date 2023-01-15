@@ -2,12 +2,9 @@
 
 use sycamore_core2::render::insert;
 use sycamore_core2::view::View;
-use sycamore_reactive::{
-    create_scope, create_scope_immediate, provide_context, use_context, Scope,
-};
+use sycamore_reactive::{create_scope, provide_context, use_context, Scope};
 use wasm_bindgen::UnwrapThrowExt;
 
-use crate::hydrate::HydrationState;
 use crate::web_node::WebNode;
 
 /// Keeps track of which environment we are currently in, either the web-browser's DOM or
@@ -67,6 +64,8 @@ fn render_to_with_scope(
 #[must_use]
 #[cfg(feature = "ssr")]
 pub fn render_to_string(f: impl FnOnce(Scope) -> View<WebNode>) -> String {
+    use sycamore_reactive::create_scope_immediate;
+
     let mut ret = String::new();
     create_scope_immediate(|cx| ret = render_to_string_with_scope(cx, f));
     ret
@@ -79,6 +78,7 @@ pub fn render_to_string_with_scope(
     cx: Scope,
     f: impl FnOnce(Scope<'_>) -> View<WebNode>,
 ) -> String {
+    use crate::hydrate::HydrationState;
     use crate::web_node::ssr::WriteToString;
 
     // Provide the environment context.

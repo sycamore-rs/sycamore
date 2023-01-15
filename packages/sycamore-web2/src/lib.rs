@@ -21,7 +21,8 @@ pub fn document() -> web_sys::Document {
     window().document().unwrap_throw()
 }
 
-static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
+#[doc(hidden)]
+pub static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
     vec![
         "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
         "source", "track", "wbr", "command", "keygen", "menuitem",

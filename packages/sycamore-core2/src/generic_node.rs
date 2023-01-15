@@ -119,16 +119,16 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 /// elements in `view!`.
 pub trait GenericNodeElements: GenericNode {
     /// Create a new element node.
-    fn element<T: SycamoreElement>() -> Self;
+    fn element<T: SycamoreElement>(cx: Scope) -> Self;
 
     /// Create a new element node from a tag string.
-    fn element_from_tag(tag: Cow<'static, str>) -> Self;
+    fn element_from_tag(cx: Scope, tag: Cow<'static, str>) -> Self;
 
     /// Create a new namespaced element node from a tag string and a namespace string.
     ///
     /// The default implementation simply throws away the namespace and creates a normal element.
     /// This behavior can be overridden by backends that support namespaces.
-    fn element_from_tag_namespace(tag: Cow<'static, str>, _namespace: Cow<'static, str>) -> Self {
-        Self::element_from_tag(tag)
+    fn element_from_tag_namespace(cx: Scope, tag: Cow<'static, str>, _namespace: Cow<'static, str>) -> Self {
+        Self::element_from_tag(cx, tag)
     }
 }

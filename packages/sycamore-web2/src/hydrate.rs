@@ -77,7 +77,7 @@ impl HydrationState {
     }
 
     /// Create a new default hydration state.
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             current_component_id: 0.into(),
             max_component_id: 0.into(),
