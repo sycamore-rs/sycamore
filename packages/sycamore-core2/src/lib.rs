@@ -11,7 +11,7 @@
 
 pub mod attributes;
 pub mod component;
-pub mod event;
+pub mod elements;
 pub mod generic_node;
 pub mod noderef;
 pub mod render;
