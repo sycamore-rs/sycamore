@@ -6,6 +6,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use sycamore_core2::generic_node::SycamoreElement;
+use sycamore_reactive::{create_ref, Scope};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
@@ -277,5 +278,26 @@ impl DomNode {
             id: Default::default(),
             node,
         }
+    }
+
+    pub fn add_event_listener<'a>(
+        &self,
+        cx: Scope<'a>,
+        name: &str,
+        listener: Box<dyn FnMut(JsValue) + 'a>,
+    ) {
+        // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
+        // preventing the handler from ever being accessed after its lifetime.
+        let listener: Box<dyn FnMut(JsValue) + 'static> = unsafe { std::mem::transmute(listener) };
+        let closure = create_ref(cx, Closure::wrap(listener));
+        self.node
+            .add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
+            .unwrap_throw();
+    }
+}
+
+impl DomNode {
+    pub fn set_property(&self, name: &str, value: JsValue) {
+        assert!(js_sys::Reflect::set(&self.node, &name.into(), &value).unwrap_throw());
     }
 }

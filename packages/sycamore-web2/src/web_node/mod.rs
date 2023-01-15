@@ -11,6 +11,7 @@ use std::hash::{Hash, Hasher};
 
 use sycamore_core2::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
 use sycamore_reactive::Scope;
+use wasm_bindgen::JsValue;
 
 use crate::render::{get_render_env, RenderEnv};
 
@@ -240,6 +241,8 @@ impl GenericNode for WebNode {
 
 #[allow(unreachable_patterns)]
 impl GenericNodeElements for WebNode {
+    type AnyEventData = JsValue;
+
     fn element<T: SycamoreElement>(cx: Scope) -> Self {
         match get_render_env(cx) {
             #[cfg(feature = "dom")]
@@ -275,6 +278,31 @@ impl GenericNodeElements for WebNode {
                 Self::from_ssr_node(ssr::SsrNode::element_from_tag_namespace(tag, namespace))
             }
             _ => panic!("feature not enabled for render env"),
+        }
+    }
+
+    fn add_event_listener<'a>(
+        &self,
+        cx: Scope<'a>,
+        name: &str,
+        listener: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
+        match &self.0 {
+            #[cfg(feature = "dom")]
+            WebNodeInner::Dom(node) => node.add_event_listener(cx, name, listener),
+            #[cfg(feature = "ssr")]
+            WebNodeInner::Ssr(node) => node.add_event_listener(cx, name, listener),
+        }
+    }
+}
+
+impl WebNode {
+    pub fn set_property(&self, name: &str, value: JsValue) {
+        match &self.0 {
+            #[cfg(feature = "dom")]
+            WebNodeInner::Dom(node) => node.set_property(name, value),
+            #[cfg(feature = "ssr")]
+            WebNodeInner::Ssr(node) => node.set_property(name, value),
         }
     }
 }

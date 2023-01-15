@@ -9,11 +9,10 @@
 
 #![deny(missing_debug_implementations)]
 
+pub mod attributes;
 pub mod component;
 pub mod event;
 pub mod generic_node;
-#[cfg(feature = "hydrate")]
-pub mod hydrate;
 pub mod noderef;
 pub mod render;
 pub mod view;

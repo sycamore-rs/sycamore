@@ -118,6 +118,8 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 /// Not all backends need to implement this, but that means that you can only use components, not
 /// elements in `view!`.
 pub trait GenericNodeElements: GenericNode {
+    type AnyEventData;
+
     /// Create a new element node.
     fn element<T: SycamoreElement>(cx: Scope) -> Self;
 
@@ -128,7 +130,14 @@ pub trait GenericNodeElements: GenericNode {
     ///
     /// The default implementation simply throws away the namespace and creates a normal element.
     /// This behavior can be overridden by backends that support namespaces.
-    fn element_from_tag_namespace(cx: Scope, tag: Cow<'static, str>, _namespace: Cow<'static, str>) -> Self {
+    fn element_from_tag_namespace(
+        cx: Scope,
+        tag: Cow<'static, str>,
+        _namespace: Cow<'static, str>,
+    ) -> Self {
         Self::element_from_tag(cx, tag)
     }
+
+    /// Attach a (type-erased) event listener to this element.
+    fn add_event_listener<'a>(&self, cx: Scope<'a>, name: &str, listener: Box<dyn FnMut(Self::AnyEventData) + 'a>);
 }

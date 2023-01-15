@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 hashbrown = "0.13.1"
 sycamore-futures = { path = "../sycamore-futures", version = "0.8.0", optional = true }
-sycamore-reactive = { version = "0.8.1", path = "../sycamore-reactive" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.1" }
 
 [dev-dependencies]
 sycamore = { path = "../sycamore", features = ["ssr"] }

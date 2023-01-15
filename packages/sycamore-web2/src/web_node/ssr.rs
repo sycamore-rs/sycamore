@@ -7,6 +7,8 @@ use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
 use sycamore_core2::generic_node::SycamoreElement;
+use sycamore_reactive::Scope;
+use wasm_bindgen::JsValue;
 
 use crate::VOID_ELEMENTS;
 
@@ -277,6 +279,16 @@ impl SsrNode {
         _namespace: Cow<'static, str>,
     ) -> Self {
         Self::element_from_tag(tag)
+    }
+
+    pub fn add_event_listener<'a>(&self, _: Scope<'a>, _: &str, _: Box<dyn FnMut(JsValue) + 'a>) {
+        // no-op. Events do nothing on the server-side.
+    }
+}
+
+impl SsrNode {
+    pub fn set_property(&self, _name: &str, _value: JsValue) {
+        // no-op. Properties do nothing on the server-side.
     }
 }
 
