@@ -15,11 +15,13 @@ pub mod props;
 
 fn test() {
     create_scope_immediate(|cx| {
-        let node = button(cx, ((events::on::click, |e| {}),));
+        // let node = button(cx, ((events::on::click, |e| {}),));
+        let node = button(cx, ((attr::attr::class, "bg-red-500"),));
+        let view = crate::View::new_node(node);
     });
 }
 
-fn button<'a>(cx: Scope<'a>, attrs: impl AttrList<'a, WebNode>) -> WebNode {
+fn button<'a, S>(cx: Scope<'a>, attrs: impl AttrList<'a, WebNode, S>) -> WebNode {
     let el = WebNode::element_from_tag(cx, "button".into());
     attrs.apply_all(cx, &el);
     el

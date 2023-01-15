@@ -21,7 +21,7 @@ impl<'a, T: Into<JsValue>> ApplyAttr<'a, WebNode, T> for PropAttr {
 }
 
 impl<'a, T: Into<JsValue> + 'a> ApplyAttrDyn<'a, WebNode, T> for PropAttr {
-    fn apply(self, cx: Scope<'a>, el: &WebNode, mut value: Box<dyn FnMut() -> T + 'a>) {
+    fn apply_dyn(self, cx: Scope<'a>, el: &WebNode, mut value: Box<dyn FnMut() -> T + 'a>) {
         let el = el.clone();
         create_effect(cx, move || {
             el.set_property(self.name, value().into());
