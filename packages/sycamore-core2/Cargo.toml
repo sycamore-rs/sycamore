@@ -12,3 +12,7 @@ sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.1" }
 
 [dev-dependencies]
 sycamore = { path = "../sycamore", features = ["ssr"] }
+
+[features]
+default = []
+hydrate = []

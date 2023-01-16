@@ -17,14 +17,8 @@ use crate::view::View;
 /// * Call the closure `f` passed to this function.
 #[doc(hidden)]
 pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
-    if G::USE_HYDRATION_CONTEXT {
-        #[cfg(feature = "hydrate")]
-        return crate::hydrate::hydrate_component(|| untrack(f));
-        #[cfg(not(feature = "hydrate"))]
-        return untrack(f);
-    } else {
-        untrack(f)
-    }
+    // TODO: hydration?
+    untrack(f)
 }
 
 /// A trait that is implemented automatically by the `Props` derive macro.

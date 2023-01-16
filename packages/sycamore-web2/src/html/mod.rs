@@ -21,7 +21,7 @@ pub fn test() {
         let node = elements::button(cx)
             .with(attr::class, "bg-red-500")
             .with(on::click, |_| {})
-            .into_element();
+            .finish();
         let view = crate::View::new_node(node);
 
         let _ = view;

@@ -29,11 +29,6 @@ use sycamore_reactive::Scope;
 /// [`GenericNode`]s should be cheaply cloneable (usually backed by a [`Rc`](std::rc::Rc) or other
 /// reference counted container) and preserve reference equality.
 pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
-    /// Whether this rendering backend needs the hydration registry.
-    const USE_HYDRATION_CONTEXT: bool = false;
-    /// Whether this rendering backend hydrates nodes on the client side.
-    const CLIENT_SIDE_HYDRATION: bool = false;
-
     /// Create a new text node.
     fn text_node(cx: Scope, text: Cow<'static, str>) -> Self;
 
@@ -104,6 +99,10 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Create a deep clone of the node.
     #[must_use = "clone_node returns a new node"]
     fn clone_node(&self) -> Self;
+
+    /// A callback that is called after a element is finished building with
+    /// [`ElementBuilder::finish`](crate::elements::ElementBuilder::finish).
+    fn finish_element(&mut self) {}
 }
 
 /// Extension trait for [`GenericNode`] to provide additional methods related to element creation.

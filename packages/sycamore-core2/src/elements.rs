@@ -13,10 +13,15 @@ use crate::view::{ToView, View};
 /// [`GenericNode`] rendering backend.
 pub trait TypedElement<G: GenericNode> {}
 
-/// A struct for keeping track for element-building.
+/// Builder-pattern for elements.
 pub struct ElementBuilder<'a, G: GenericNode, E: TypedElement<G>> {
     cx: Scope<'a>,
+    /// The element that is being built.
     el: G,
+    /// Whether the element needs a hydration marker. In SSR, an extra `data-hk` attribute is
+    /// added. In client-side hydration, all elements without a hydration marker are ignored.
+    #[cfg(feature = "hydrate")]
+    needs_hydration_marker: bool,
     _marker: std::marker::PhantomData<E>,
 }
 
@@ -25,22 +30,33 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     ///
     /// The input is untyped, so it is possible to construct an `ElementBuilder` of any element type
     /// with this method, regardless of the actual type of the underlying element.
-    pub fn new(cx: Scope<'a>, element: G) -> Self {
+    pub fn new(cx: Scope<'a>, el: G) -> Self {
         Self {
             cx,
-            el: element,
+            el,
+            #[cfg(feature = "hydrate")]
+            needs_hydration_marker: false,
             _marker: std::marker::PhantomData,
         }
     }
 
     /// Consumes the [`ElementBuilder`] and returns the element.
-    pub fn into_element(self) -> G {
+    pub fn finish(mut self) -> G {
+        self.el.finish_element();
         self.el
     }
 
     /// Consumes the [`ElementBuilder`] and returns a newly constructed [`View`].
     pub fn view(self) -> View<G> {
-        View::new_node(self.el)
+        View::new_node(self.finish())
+    }
+
+    /// Mark this element as dynamic. This sets the `needs_hydration_marker` flag to true.
+    fn mark_dyn(&mut self) {
+        #[cfg(feature = "hydrate")]
+        {
+            self.needs_hydration_marker = true;
+        }
     }
 
     /// Applies an attribute to the element.
@@ -51,9 +67,9 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     /// # use sycamore::prelude::*;
     /// # fn _test<G: Html>(cx: Scope) -> View<G> {
     /// p(cx)
-    /// .with(attr::class, "hello-text")
-    /// .child("Hello, World!")
-    /// # .view()
+    ///     .with(attr::class, "hello-text")
+    ///     .child("Hello, World!")
+    /// # .view() }
     /// ```
     pub fn with<Value, Attr: ApplyAttr<'a, G, Value, E>>(self, attr: Attr, value: Value) -> Self {
         attr.apply(self.cx, &self.el, value);
@@ -62,10 +78,11 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
 
     /// Applies an attribute to the element.
     pub fn with_dyn<Value, Attr: ApplyAttrDyn<'a, G, Value, E>>(
-        self,
+        mut self,
         attr: Attr,
         value: impl FnMut() -> Value + 'a,
     ) -> Self {
+        self.mark_dyn();
         attr.apply_dyn(self.cx, &self.el, Box::new(value));
         self
     }
@@ -82,12 +99,25 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     /// )
     /// # .view() }
     /// ```
-    pub fn child(self, c: impl ToView<G>) -> Self {
+    pub fn child(mut self, c: impl ToView<G>) -> Self {
         let view = c.to_view(self.cx);
-        // TODO: hydration?
+        if !view.is_node() {
+            self.mark_dyn();
+        }
         render::insert(self.cx, &self.el, view, None, None, true);
 
         self
+    }
+
+    /// Cast this [`ElementBuilder`] to a type-erased [`ElementBuilder`].
+    pub fn as_any(self) -> ElementBuilder<'a, G, AnyElement> {
+        ElementBuilder {
+            cx: self.cx,
+            el: self.el,
+            #[cfg(feature = "hydrate")]
+            needs_hydration_marker: self.needs_hydration_marker,
+            _marker: std::marker::PhantomData,
+        }
     }
 }
 
