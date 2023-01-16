@@ -15,7 +15,51 @@ sycamore-core2 = { version = "0.1.0", path = "../sycamore-core2" }
 sycamore-futures = { version = "0.8.0", path = "../sycamore-futures", optional = true }
 sycamore-reactive = { version = "0.8.1", path = "../sycamore-reactive" }
 wasm-bindgen = "0.2.83"
-web-sys = "0.3.60"
+
+[dependencies.web-sys]
+version = "0.3.60"
+features = [
+    "console",
+    "Comment",
+    "Document",
+    "DocumentFragment",
+    "DomTokenList",
+    "Element",
+    "HtmlElement",
+    "HtmlInputElement",
+    "HtmlCollection",
+    "Node",
+    "NodeList",
+    "Text",
+    "Window",
+    # Events
+    "AnimationEvent",
+    "BeforeUnloadEvent",
+    "CompositionEvent",
+    "DeviceMotionEvent",
+    "DeviceOrientationEvent",
+    "DragEvent",
+    "ErrorEvent",
+    "Event",
+    "FocusEvent",
+    "GamepadEvent",
+    "HashChangeEvent",
+    "InputEvent",
+    "KeyboardEvent",
+    "MessageEvent",
+    "MouseEvent",
+    "PageTransitionEvent",
+    "PointerEvent",
+    "PopStateEvent",
+    "ProgressEvent",
+    "PromiseRejectionEvent",
+    "SecurityPolicyViolationEvent",
+    "StorageEvent",
+    "SubmitEvent",
+    "TouchEvent",
+    "TransitionEvent",
+    "WheelEvent",
+]
 
 [features]
 default = ["dom"]

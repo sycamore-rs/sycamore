@@ -33,7 +33,7 @@ impl<'a, T: Into<JsValue> + 'a, E: TypedElement<WebNode>> ApplyAttrDyn<'a, WebNo
 }
 
 impl prop {
-    pub fn custom(name: &'static str) -> PropAttr {
+    pub const fn custom(name: &'static str) -> PropAttr {
         PropAttr { name }
     }
 }

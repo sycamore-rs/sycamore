@@ -16,25 +16,7 @@ members = [
   "packages/sycamore-web2",
 
   # Examples
-  "examples/components",
-  "examples/context",
-  "examples/counter",
-  "examples/http-request",
-  "examples/http-request-builder",
-  "examples/hydrate",
-  "examples/iteration",
-  "examples/js-framework-benchmark",
-  "examples/hello-builder",
-  "examples/hello-world",
-  "examples/higher-order-components",
-  "examples/motion",
-  "examples/number-binding",
-  "examples/ssr",
-  "examples/svg",
-  "examples/timer",
-  "examples/todomvc",
-  "examples/transitions",
-  "examples/attributes-passthrough",
+  "examples/*",
 
   # Website
   "docs",

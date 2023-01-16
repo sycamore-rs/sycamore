@@ -11,6 +11,9 @@ use sycamore_reactive::Scope;
 
 use crate::web_node::WebNode;
 
+/// A marker trait implemented for all SVG elements.
+pub trait SvgElement: TypedElement<WebNode> {}
+
 /// Macro for generating element definitions.
 macro_rules! define_elements {
     (
@@ -39,6 +42,38 @@ macro_rules! define_elements {
                     )*
                 }
             }
+        )*
+    };
+    (
+        impl $trait_id:ty,
+        $ns:expr,
+        $doc:expr,
+        $(
+            $(#[$attr:meta])*
+            $el:ident $(($tag:expr))? {
+                $(
+                    $(#[$attr_method:meta])*
+                    $at:ident: $ty:path,
+                )*
+            },
+        )*
+    ) => {
+        define_elements! {
+            $ns,
+            $doc,
+            $(
+                $(#[$attr])*
+                $el $(($tag))? {
+                    $(
+                        $(#[$attr_method])*
+                        $at: $ty
+                    )*
+                },
+            )*
+        }
+
+        $(
+            impl $trait_id for $el {}
         )*
     };
 }
@@ -266,6 +301,7 @@ define_elements! {
 // A list of valid SVG elements. Some elements are prefixed with `svg`  because they conflict with
 // the HTML element identifiers.
 define_elements! {
+    impl SvgElement,
     Some("http://www.w3.org/2000/svg"),
     "https://developer.mozilla.org/en-US/docs/Web/SVG/Element/",
 

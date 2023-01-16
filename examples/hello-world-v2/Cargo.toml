@@ -1,0 +1,11 @@
+[package]
+name = "hello-world-v2"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sycamore-core2 = { path = "../../packages/sycamore-core2" }
+sycamore-reactive = { path = "../../packages/sycamore-reactive" }
+sycamore-web2 = { path = "../../packages/sycamore-web2" }

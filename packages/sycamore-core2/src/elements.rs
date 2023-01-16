@@ -6,6 +6,8 @@ use sycamore_reactive::Scope;
 
 use crate::attributes::{ApplyAttr, ApplyAttrDyn};
 use crate::generic_node::GenericNode;
+use crate::render;
+use crate::view::{ToView, View};
 
 /// A marker trait that is implemented by elements that can be used with the specified
 /// [`GenericNode`] rendering backend.
@@ -14,7 +16,7 @@ pub trait TypedElement<G: GenericNode> {}
 /// A struct for keeping track for element-building.
 pub struct ElementBuilder<'a, G: GenericNode, E: TypedElement<G>> {
     cx: Scope<'a>,
-    element: G,
+    el: G,
     _marker: std::marker::PhantomData<E>,
 }
 
@@ -26,19 +28,35 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     pub fn new(cx: Scope<'a>, element: G) -> Self {
         Self {
             cx,
-            element,
+            el: element,
             _marker: std::marker::PhantomData,
         }
     }
 
     /// Consumes the [`ElementBuilder`] and returns the element.
     pub fn into_element(self) -> G {
-        self.element
+        self.el
+    }
+
+    /// Consumes the [`ElementBuilder`] and returns a newly constructed [`View`].
+    pub fn view(self) -> View<G> {
+        View::new_node(self.el)
     }
 
     /// Applies an attribute to the element.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// p(cx)
+    /// .with(attr::class, "hello-text")
+    /// .child("Hello, World!")
+    /// # .view()
+    /// ```
     pub fn with<Value, Attr: ApplyAttr<'a, G, Value, E>>(self, attr: Attr, value: Value) -> Self {
-        attr.apply(self.cx, &self.element, value);
+        attr.apply(self.cx, &self.el, value);
         self
     }
 
@@ -48,17 +66,35 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         attr: Attr,
         value: impl FnMut() -> Value + 'a,
     ) -> Self {
-        attr.apply_dyn(self.cx, &self.element, Box::new(value));
+        attr.apply_dyn(self.cx, &self.el, Box::new(value));
         self
     }
 
-    // pub fn children()
+    /// Insert a child node under this element. The inserted child is static by default.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore::builder::prelude::*;
+    /// # use sycamore::prelude::*;
+    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// div(cx).child(
+    ///     h1().child("I am a child")
+    /// )
+    /// # .view() }
+    /// ```
+    pub fn child(self, c: impl ToView<G>) -> Self {
+        let view = c.to_view(self.cx);
+        // TODO: hydration?
+        render::insert(self.cx, &self.el, view, None, None, true);
+
+        self
+    }
 }
 
 impl<'a, G: GenericNode, E: TypedElement<G>> fmt::Debug for ElementBuilder<'a, G, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ElementBuilder")
-            .field("element", &self.element)
+            .field("element", &self.el)
             .finish()
     }
 }
