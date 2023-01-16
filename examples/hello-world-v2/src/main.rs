@@ -33,5 +33,8 @@ fn app(cx: Scope) -> View {
 }
 
 fn main() {
+    wasm_logger::init(wasm_logger::Config::default());
+    let ssr = sycamore_web2::render::render_to_string(app);
+    log::info!("{ssr}");
     sycamore_web2::render::render(app);
 }

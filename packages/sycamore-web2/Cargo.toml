@@ -64,5 +64,8 @@ features = [
 [features]
 default = ["dom"]
 dom = []
-ssr = ["html-escape"]
+hydrate = []
+ssr = ["hydrate", "html-escape"]
 suspense = ["sycamore-futures"]
+
+silence_dom_ssr_features_error = []

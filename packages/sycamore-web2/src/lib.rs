@@ -9,6 +9,18 @@
 //! [`WebNode`](crate::web_node::WebNode) is the central part of this crate. This is an
 //! implementation of a Sycamore rendering backend for rendering your Sycamore app to HTML, whether
 //! it be using the browser's DOM or to a static HTML string.
+//!
+//! # Feature Flags
+//!
+//! - `dom`: Enables rendering `WebNode`s to the browser DOM.
+//! - `hydrate`: Enables hydration of existing DOM nodes (usually in conjunction with SSR).
+//! - `ssr`: Enables rendering `WebNode`s to a static HTML string.
+//! - `suspense`: Enables support for futures/suspense integration.
+//!
+//! - `silence_dom_ssr_features_error`: By default, if both the `dom` and `ssr` features are
+//!   enabled, a compile-time error is emitted. This is for code-bloat reasons when deploying to
+//!   WASM. If you did intend to enable both features, you can silence this error by enabling this
+//!   feature.
 
 use once_cell::sync::Lazy;
 use sycamore_reactive::{create_ref, use_scope_status, Scope};
@@ -77,3 +89,13 @@ pub fn on_mount<'a>(cx: Scope<'a>, f: impl Fn() + 'a) {
         queue_microtask(closure);
     }
 }
+
+#[cfg(all(
+    not(feature = "silence_dom_ssr_features_error"),
+    feature = "dom",
+    feature = "ssr"
+))]
+compile_error!(
+    "You should usually only enable either the `dom` feature or the `ssr` feature but not both.
+If you did intend to enable both features at the same time, you can enable the `silence_dom_ssr_features_error` feature to silence this error."
+);

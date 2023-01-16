@@ -102,7 +102,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 
     /// A callback that is called after a element is finished building with
     /// [`ElementBuilder::finish`](crate::elements::ElementBuilder::finish).
-    fn finish_element(&mut self) {}
+    fn finish_element(&mut self, _cx: Scope) {}
 }
 
 /// Extension trait for [`GenericNode`] to provide additional methods related to element creation.

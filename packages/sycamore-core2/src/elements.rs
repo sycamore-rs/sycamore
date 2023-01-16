@@ -42,7 +42,7 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
 
     /// Consumes the [`ElementBuilder`] and returns the element.
     pub fn finish(mut self) -> G {
-        self.el.finish_element();
+        self.el.finish_element(self.cx);
         self.el
     }
 

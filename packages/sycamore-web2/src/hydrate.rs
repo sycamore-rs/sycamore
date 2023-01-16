@@ -1,6 +1,7 @@
 //! Hydration utilities for Sycamore.
 
 use std::cell::Cell;
+use std::fmt;
 
 use sycamore_reactive::*;
 use wasm_bindgen::JsCast;
@@ -23,6 +24,12 @@ impl HydrationKey {
     /// Get the view id.
     pub fn view_id(self) -> u32 {
         self.1
+    }
+}
+
+impl fmt::Display for HydrationKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}", self.0, self.1)
     }
 }
 
@@ -84,6 +91,24 @@ impl HydrationState {
             current_view_id: 0.into(),
             active: true.into(),
         }
+    }
+}
+
+/// Retrieves the [`HydrationState`] from the [`Scope`] context.
+///
+/// # Panics
+///
+/// This will panic if the [`HydrationState`] is not in the context.
+pub(crate) fn use_hydration_state(cx: Scope) -> &HydrationState {
+    use_context::<HydrationState>(cx)
+}
+
+/// Returns `true` if the app is being hydrated.
+pub fn is_hydrating(cx: Scope) -> bool {
+    if let Some(h_state) = try_use_context::<HydrationState>(cx) {
+        h_state.active.get()
+    } else {
+        false
     }
 }
 
