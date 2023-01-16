@@ -9,7 +9,7 @@ use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core2::generic_node::{GenericNode, GenericNodeElements, SycamoreElement};
+use sycamore_core2::generic_node::{GenericNode, GenericNodeElements};
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 
@@ -242,16 +242,6 @@ impl GenericNode for WebNode {
 #[allow(unreachable_patterns)]
 impl GenericNodeElements for WebNode {
     type AnyEventData = JsValue;
-
-    fn element<T: SycamoreElement>(cx: Scope) -> Self {
-        match get_render_env(cx) {
-            #[cfg(feature = "dom")]
-            RenderEnv::Dom => Self::from_dom_node(dom::DomNode::element::<T>()),
-            #[cfg(feature = "ssr")]
-            RenderEnv::Ssr => Self::from_ssr_node(ssr::SsrNode::element::<T>()),
-            _ => panic!("feature not enabled for render env"),
-        }
-    }
 
     fn element_from_tag(cx: Scope, tag: Cow<'static, str>) -> Self {
         match get_render_env(cx) {

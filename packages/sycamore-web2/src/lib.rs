@@ -3,11 +3,17 @@
 //! This crate adds web support to the Sycamore UI framework. This includes both client-side
 //! rendering to the DOM (using `wasm-bindgen` and `web-sys`) and server-side-rendering to render
 //! your web app to a static HTML string.
+//!
+//! # `WebNode`
+//!
+//! [`WebNode`](crate::web_node::WebNode) is the central part of this crate. This is an
+//! implementation of a Sycamore rendering backend for rendering your Sycamore app to HTML, whether
+//! it be using the browser's DOM or to a static HTML string.
 
 use once_cell::sync::Lazy;
-use sycamore_reactive::{Scope, use_scope_status, create_ref};
-use wasm_bindgen::UnwrapThrowExt;
+use sycamore_reactive::{create_ref, use_scope_status, Scope};
 use wasm_bindgen::prelude::{wasm_bindgen, Closure};
+use wasm_bindgen::UnwrapThrowExt;
 
 pub mod html;
 pub mod hydrate;

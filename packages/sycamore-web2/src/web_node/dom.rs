@@ -5,7 +5,6 @@ use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core2::generic_node::SycamoreElement;
 use sycamore_reactive::{create_ref, Scope};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
@@ -237,24 +236,6 @@ impl DomNode {
 
 /// `GenericNodeElements` methods.
 impl DomNode {
-    pub fn element<T: SycamoreElement>() -> Self {
-        let node = if let Some(ns) = T::NAMESPACE {
-            document()
-                .create_element_ns(Some(ns), intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        } else {
-            document()
-                .create_element(intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        };
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
     pub fn element_from_tag(tag: Cow<'static, str>) -> Self {
         let node = document()
             .create_element(intern(&tag))

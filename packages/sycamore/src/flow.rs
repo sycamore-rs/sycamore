@@ -1,4 +1,4 @@
-//! Iteration utility components for [view!](crate::view!).
+//! Iteration utility components for views.
 //!
 //! Iteration can be either _"keyed"_ or _"non keyed"_.
 //! Use the [`Keyed`] and [`Indexed`] utility components respectively.

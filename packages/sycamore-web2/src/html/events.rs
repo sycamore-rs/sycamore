@@ -1,15 +1,17 @@
 //! Definitions for events that can be used with the [`on`] directive.
 
+#![allow(non_camel_case_types)]
+
 use sycamore_core2::attributes::ApplyAttr;
+use sycamore_core2::elements::TypedElement;
 use sycamore_core2::generic_node::GenericNodeElements;
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
-use web_sys::MouseEvent;
+use web_sys::*;
 
 use crate::web_node::WebNode;
 
 /// Attribute directive for attaching an event listener to an element.
-#[allow(non_camel_case_types)]
 pub struct on;
 
 /// A trait that is implemented for all event handlers.
@@ -58,14 +60,178 @@ impl<T> OnAttr<T> {
     }
 }
 
-impl<'a, T: From<JsValue>, F: FnMut(T) + 'a> ApplyAttr<'a, WebNode, F> for OnAttr<T> {
+impl<'a, T: From<JsValue>, F: FnMut(T) + 'a, E: TypedElement<WebNode>> ApplyAttr<'a, WebNode, F, E>
+    for OnAttr<T>
+{
     fn apply(self, cx: Scope<'a>, el: &WebNode, mut value: F) {
         let type_erased = Box::new(move |ev: JsValue| value(ev.into()));
         el.add_event_listener(cx, self.name, type_erased);
     }
 }
 
-#[allow(non_upper_case_globals)]
-impl on {
-    pub const click: OnAttr<MouseEvent> = OnAttr::new("click");
+/// Macro for defining event types.
+macro_rules! define_events {
+    (
+        $(
+            $(#[$attr:meta])*
+            $ev:ident : $ev_ty:ty,
+        )*
+    ) => {
+        #[allow(non_upper_case_globals)]
+        impl on {
+            $(
+                #[doc = concat!("The ", stringify!($ev), " event.")]
+                $(#[$attr])*
+                pub const $ev: OnAttr<$ev_ty> = OnAttr::new(stringify!($ev));
+            )*
+        }
+    };
+}
+
+define_events! {
+    /*
+    WindowEventHandlersEventMap
+    */
+    afterprint: Event,
+    beforeprint: Event,
+    beforeunload: BeforeUnloadEvent,
+    gamepadconnected: GamepadEvent,
+    gamepaddisconnected: GamepadEvent,
+    hashchange: HashChangeEvent,
+    languagechange: Event,
+    message: MessageEvent,
+    messageerror: MessageEvent,
+    offline: Event,
+    online: Event,
+    pagehide: PageTransitionEvent,
+    pageshow: PageTransitionEvent,
+    popstate: PopStateEvent,
+    rejectionhandled: PromiseRejectionEvent,
+    storage: StorageEvent,
+    unhandledrejection: PromiseRejectionEvent,
+    unload: Event,
+
+    /*
+    GlobalEventHandlersEventMap
+    */
+    abort: UiEvent,
+    animationcancel: AnimationEvent,
+    animationend: AnimationEvent,
+    animationiteration: AnimationEvent,
+    animationstart: AnimationEvent,
+    auxclick: MouseEvent,
+    beforeinput: InputEvent,
+    blur: FocusEvent,
+    canplay: Event,
+    canplaythrough: Event,
+    change: Event,
+    click: MouseEvent,
+    close: Event,
+    compositionend: CompositionEvent,
+    compositionstart: CompositionEvent,
+    compositionupdate: CompositionEvent,
+    contextmenu: MouseEvent,
+    cuechange: Event,
+    dblclick: MouseEvent,
+    drag: DragEvent,
+    dragend: DragEvent,
+    dragenter: DragEvent,
+    dragleave: DragEvent,
+    dragover: DragEvent,
+    dragstart: DragEvent,
+    drop: DragEvent,
+    durationchange: Event,
+    emptied: Event,
+    ended: Event,
+    error: ErrorEvent,
+    focus: FocusEvent,
+    focusin: FocusEvent,
+    focusout: FocusEvent,
+    formdata: Event, // web_sys does not include `FormDataEvent`
+    gotpointercapture: PointerEvent,
+    input: Event,
+    invalid: Event,
+    keydown: KeyboardEvent,
+    keypress: KeyboardEvent,
+    keyup: KeyboardEvent,
+    load: Event,
+    loadeddata: Event,
+    loadedmetadata: Event,
+    loadstart: Event,
+    lostpointercapture: PointerEvent,
+    mousedown: MouseEvent,
+    mouseenter: MouseEvent,
+    mouseleave: MouseEvent,
+    mousemove: MouseEvent,
+    mouseout: MouseEvent,
+    mouseover: MouseEvent,
+    mouseup: MouseEvent,
+    pause: Event,
+    play: Event,
+    playing: Event,
+    pointercancel: PointerEvent,
+    pointerdown: PointerEvent,
+    pointerenter: PointerEvent,
+    pointerleave: PointerEvent,
+    pointermove: PointerEvent,
+    pointerout: PointerEvent,
+    pointerover: PointerEvent,
+    pointerup: PointerEvent,
+    progress: ProgressEvent,
+    ratechange: Event,
+    reset: Event,
+    resize: UiEvent,
+    scroll: Event,
+    securitypolicyviolation: SecurityPolicyViolationEvent,
+    seeked: Event,
+    seeking: Event,
+    select: Event,
+    selectionchange: Event,
+    selectstart: Event,
+    slotchange: Event,
+    stalled: Event,
+    submit: SubmitEvent,
+    suspend: Event,
+    timeupdate: Event,
+    toggle: Event,
+    touchcancel: TouchEvent,
+    touchend: TouchEvent,
+    touchmove: TouchEvent,
+    touchstart: TouchEvent,
+    transitioncancel: TransitionEvent,
+    transitionend: TransitionEvent,
+    transitionrun: TransitionEvent,
+    transitionstart: TransitionEvent,
+    volumechange: Event,
+    waiting: Event,
+    webkitanimationend: Event,
+    webkitanimationiteration: Event,
+    webkitanimationstart: Event,
+    webkittransitionend: Event,
+    wheel: WheelEvent,
+
+    /*
+    WindowEventMap
+    */
+    DOMContentLoaded: Event,
+    devicemotion: DeviceMotionEvent,
+    deviceorientation: DeviceOrientationEvent,
+    orientationchange: Event,
+
+    /*
+    DocumentAndElementEventHandlersEventMap
+    */
+    copy: Event, // ClipboardEvent is unstable
+    cut: Event, // ClipboardEvent is unstable
+    paste: Event, // ClipboardEvent is unstable
+
+    /*
+    DocumentEventMap
+    */
+    fullscreenchange: Event,
+    fullscreenerror: Event,
+    pointerlockchange: Event,
+    pointerlockerror: Event,
+    readystatechange: Event,
+    visibilitychange: Event,
 }

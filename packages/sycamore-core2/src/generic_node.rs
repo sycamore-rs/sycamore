@@ -6,14 +6,6 @@ use std::hash::Hash;
 
 use sycamore_reactive::Scope;
 
-/// Represents an element (i.e. `div`, `p`, etc...).
-pub trait SycamoreElement {
-    /// The tag name of the element.
-    const TAG_NAME: &'static str;
-    /// The namespace of the element, or `None`, e.g. in the case of standard HTML5 elements.
-    const NAMESPACE: Option<&'static str>;
-}
-
 /// Abstraction over a rendering backend.
 ///
 /// You would probably use this trait as a trait bound when you want to accept any rendering
@@ -120,9 +112,6 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
 pub trait GenericNodeElements: GenericNode {
     type AnyEventData;
 
-    /// Create a new element node.
-    fn element<T: SycamoreElement>(cx: Scope) -> Self;
-
     /// Create a new element node from a tag string.
     fn element_from_tag(cx: Scope, tag: Cow<'static, str>) -> Self;
 
@@ -139,5 +128,10 @@ pub trait GenericNodeElements: GenericNode {
     }
 
     /// Attach a (type-erased) event listener to this element.
-    fn add_event_listener<'a>(&self, cx: Scope<'a>, name: &str, listener: Box<dyn FnMut(Self::AnyEventData) + 'a>);
+    fn add_event_listener<'a>(
+        &self,
+        cx: Scope<'a>,
+        name: &str,
+        listener: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    );
 }

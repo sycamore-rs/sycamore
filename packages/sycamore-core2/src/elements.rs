@@ -37,13 +37,13 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     }
 
     /// Applies an attribute to the element.
-    pub fn with<Value, Attr: ApplyAttr<'a, G, Value>>(self, attr: Attr, value: Value) -> Self {
+    pub fn with<Value, Attr: ApplyAttr<'a, G, Value, E>>(self, attr: Attr, value: Value) -> Self {
         attr.apply(self.cx, &self.element, value);
         self
     }
 
     /// Applies an attribute to the element.
-    pub fn with_dyn<Value, Attr: ApplyAttrDyn<'a, G, Value>>(
+    pub fn with_dyn<Value, Attr: ApplyAttrDyn<'a, G, Value, E>>(
         self,
         attr: Attr,
         value: impl FnMut() -> Value + 'a,

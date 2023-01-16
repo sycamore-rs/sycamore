@@ -2,10 +2,6 @@
 //!
 //! This crate should not be used directly. Instead, use the `sycamore` crate which re-exports this
 //! crate.
-//!
-//! # Feature Flags
-//!
-//! - `hydrate` - Enables the hydration API.
 
 #![deny(missing_debug_implementations)]
 

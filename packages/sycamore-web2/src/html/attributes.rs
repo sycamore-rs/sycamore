@@ -1,13 +1,17 @@
-//! Definition for HTML attributes that can be used with the [`attr`] directive or with nothing at
+//! Definitions for HTML attributes that can be used with the [`attr`] directive or with nothing at
 //! all (which uses [`attr`] by default).
 
+#![allow(non_camel_case_types)]
+
 use sycamore_core2::attributes::{ApplyAttr, ApplyAttrDyn};
+use sycamore_core2::elements::TypedElement;
 use sycamore_core2::generic_node::GenericNode;
 use sycamore_reactive::{create_effect, Scope};
 
 use crate::web_node::WebNode;
 
-#[allow(non_camel_case_types)]
+/// The default attribute directive. This is the one that is used if no other attribute directive is
+/// specified.
 pub struct attr;
 
 pub struct BaseAttr {
@@ -20,13 +24,13 @@ impl BaseAttr {
     }
 }
 
-impl<'a, T: ToString> ApplyAttr<'a, WebNode, T> for BaseAttr {
+impl<'a, T: ToString, E: TypedElement<WebNode>> ApplyAttr<'a, WebNode, T, E> for BaseAttr {
     fn apply(self, _cx: Scope<'a>, el: &WebNode, value: T) {
         el.set_attribute(self.name.into(), value.to_string().into());
     }
 }
 
-impl<'a, T: ToString + 'a> ApplyAttrDyn<'a, WebNode, T> for BaseAttr {
+impl<'a, T: ToString + 'a, E: TypedElement<WebNode>> ApplyAttrDyn<'a, WebNode, T, E> for BaseAttr {
     fn apply_dyn(self, cx: Scope<'a>, el: &WebNode, mut value: Box<dyn FnMut() -> T + 'a>) {
         let el = el.clone();
         create_effect(cx, move || {
@@ -35,6 +39,7 @@ impl<'a, T: ToString + 'a> ApplyAttrDyn<'a, WebNode, T> for BaseAttr {
     }
 }
 
+/// Global attributes definitions.
 #[allow(non_upper_case_globals)]
 impl attr {
     pub const class: BaseAttr = BaseAttr::new("class");

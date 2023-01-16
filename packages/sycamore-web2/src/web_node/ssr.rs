@@ -6,7 +6,6 @@ use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
-use sycamore_core2::generic_node::SycamoreElement;
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 
@@ -266,10 +265,6 @@ impl SsrNode {
 
 /// `GenericNodeElements` methods.
 impl SsrNode {
-    pub fn element<T: SycamoreElement>() -> Self {
-        Self::element_from_tag(T::TAG_NAME.into())
-    }
-
     pub fn element_from_tag(tag: Cow<'static, str>) -> Self {
         Self::new_element_raw(tag, IndexMap::default(), Vec::new())
     }
