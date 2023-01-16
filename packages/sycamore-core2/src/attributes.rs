@@ -1,7 +1,5 @@
 //! General utilities for working with attributes.
 
-use std::marker::PhantomData;
-
 use paste::paste;
 use sycamore_reactive::Scope;
 

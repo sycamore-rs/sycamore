@@ -1,10 +1,23 @@
 //! Definition of all the HTML elements.
 
-use sycamore_core2::generic_node::SycamoreElement;
+use sycamore_core2::elements::{ElementBuilder, TypedElement};
+use sycamore_core2::generic_node::{GenericNodeElements, SycamoreElement};
+use sycamore_reactive::Scope;
+
+use crate::web_node::WebNode;
 
 // use crate::builder::ElementBuilder;
-pub use self::html_tags::*;
-pub use self::svg_tags::*;
+// pub use self::html_tags::*;
+// pub use self::svg_tags::*;
+
+#[allow(non_camel_case_types)]
+pub struct button;
+impl TypedElement<WebNode> for button {}
+impl button {
+    pub fn new(cx: Scope) -> ElementBuilder<WebNode, Self> {
+        ElementBuilder::new(cx, WebNode::element_from_tag(cx, "button".into()))
+    }
+}
 
 /// Macro for generating element definitions.
 macro_rules! define_elements {

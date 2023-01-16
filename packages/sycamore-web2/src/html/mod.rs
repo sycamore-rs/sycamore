@@ -2,29 +2,26 @@
 //!
 //! _Documentation sources: <https://developer.mozilla.org/en-US/>_
 
-use sycamore_core2::attributes::AttrList;
-use sycamore_core2::generic_node::GenericNodeElements;
-use sycamore_reactive::{create_scope_immediate, Scope};
-
-use crate::web_node::WebNode;
+use sycamore_reactive::create_scope_immediate;
 
 pub mod attr;
 pub mod elements;
 pub mod events;
 pub mod props;
 
-fn test() {
+pub fn test() {
     create_scope_immediate(|cx| {
-        // let node = button(cx, ((events::on::click, |e| {}),));
-        let node = button(cx, ((attr::attr::class, "bg-red-500"),));
-        let view = crate::View::new_node(node);
-    });
-}
+        use attr::attr;
+        use events::on;
 
-fn button<'a, S>(cx: Scope<'a>, attrs: impl AttrList<'a, WebNode, S>) -> WebNode {
-    let el = WebNode::element_from_tag(cx, "button".into());
-    attrs.apply_all(cx, &el);
-    el
+        let node = elements::button::new(cx)
+            .with(attr::class, "bg-red-500")
+            .with(on::click, |_| {})
+            .into_element();
+        let view = crate::View::new_node(node);
+
+        let _ = view;
+    });
 }
 
 /// Macro for defining event types.
