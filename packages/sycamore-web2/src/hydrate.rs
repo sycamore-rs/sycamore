@@ -5,7 +5,7 @@ use std::fmt;
 
 use sycamore_reactive::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, Node};
+use web_sys::{Comment, Element, HtmlElement, Node};
 
 /// A hydration key. This is used to identify a dynamic node that needs to be hydrated.
 ///
@@ -24,6 +24,11 @@ impl HydrationKey {
     /// Get the element id.
     pub fn element_id(self) -> u32 {
         self.1
+    }
+
+    /// Create a blank, invalid, hydration key.
+    pub fn null() -> Self {
+        Self(0, 0)
     }
 }
 
@@ -61,13 +66,12 @@ impl HydrationState {
     /// Increments the element id and returns a new hydration key.
     #[must_use]
     pub fn next_key(&self) -> HydrationKey {
-        let hk = HydrationKey(
-            self.current_component_id.get(),
-            self.current_element_id.get(),
-        );
         self.current_element_id
             .set(self.current_element_id.get() + 1);
-        hk
+        HydrationKey(
+            self.current_component_id.get(),
+            self.current_element_id.get(),
+        )
     }
 
     /// Get the current hydration key.
@@ -150,6 +154,46 @@ impl HydrationCtx {
     pub fn get_element_by_key(&self, hk: HydrationKey) -> Option<&Node> {
         self.els.get(&hk)
     }
+}
+
+/// Gets the next node surrounded by `<!#>` and `<!/>`. Removes the start node so that next call
+/// will return next marked nodes.
+pub fn get_next_markers(el: &HtmlElement) -> Option<Vec<Node>> {
+    // A Vec of nodes that are between the start and end markers.
+    let mut buf: Vec<Node> = Vec::new();
+    // `true` if between start and end markers. Nodes that are visited when start is true are
+    // added to buf.
+    let mut start = false;
+    let mut start_marker = None;
+    // Iterate through the children of parent.
+    let children = el.child_nodes();
+    for child in (0..children.length()).filter_map(|i| children.get(i)) {
+        if child.node_type() == Node::COMMENT_NODE {
+            let v = child.node_value();
+            if v.as_deref() == Some("#") {
+                start = true; // Start hydration marker.
+                start_marker = Some(child);
+
+                // NOTE: we can't delete the start node now because that would mess up with the
+                // node indexes.
+            } else if v.as_deref() == Some("/") {
+                if start {
+                    // Delete start marker. This will ensure that the next time this function is
+                    // called, the same span of nodes will not be returned.
+                    start_marker.unwrap().unchecked_into::<Comment>().remove();
+
+                    // End of node span. Return accumulated nodes in buf.
+                    return Some(buf);
+                } else {
+                    // Still inside a span. Continue.
+                    buf.push(child);
+                }
+            }
+        } else if start {
+            buf.push(child);
+        }
+    }
+    None
 }
 
 /// Retrieves the [`HydrationState`] from the [`Scope`] context.

@@ -6,7 +6,6 @@ use sycamore_reactive::Scope;
 
 use crate::attributes::{ApplyAttr, ApplyAttrDyn};
 use crate::generic_node::GenericNode;
-use crate::render;
 use crate::view::{ToView, View};
 
 /// A marker trait that is implemented by elements that can be used with the specified
@@ -38,21 +37,13 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         }
     }
 
-    pub fn new_or_get(cx: Scope<'a>, el: impl Fn() -> G) -> Self {
-        if let Some(el) = G::get_next_element(cx) {
-            Self {
-                cx,
-                el,
-                is_dyn: false,
-                _marker: std::marker::PhantomData,
-            }
-        } else {
-            Self {
-                cx,
-                el: el(),
-                is_dyn: false,
-                _marker: std::marker::PhantomData,
-            }
+    pub fn new(cx: Scope<'a>, f: impl Fn() -> G) -> Self {
+        let el = G::get_next_element(cx, f);
+        Self {
+            cx,
+            el,
+            is_dyn: false,
+            _marker: std::marker::PhantomData,
         }
     }
 
@@ -124,7 +115,7 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         if !view.is_node() {
             self.mark_dyn();
         }
-        render::insert(self.cx, &self.el, view, None, None, true);
+        self.el.builder_insert(self.cx, view);
 
         self
     }

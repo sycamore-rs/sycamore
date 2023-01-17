@@ -10,10 +10,13 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use sycamore_core2::generic_node::{GenericNode, GenericNodeElements};
+use sycamore_core2::view::View;
 use sycamore_reactive::Scope;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
-use crate::hydrate::{is_hydrating, use_hydration_ctx, use_hydration_state};
+use crate::hydrate::{
+    get_next_markers, is_hydrating, use_hydration_ctx, use_hydration_state, HydrationKey,
+};
 use crate::render::{get_render_env, RenderEnv};
 
 pub struct WebNode(WebNodeInner);
@@ -255,25 +258,21 @@ impl GenericNode for WebNode {
         }
     }
 
-    fn finish_element(&mut self, cx: Scope, is_dyn: bool) {
+    fn finish_element(&mut self, cx: Scope, _is_dyn: bool) {
         #[cfg(feature = "hydrate")]
         if is_hydrating(cx) {
-            let hk = use_hydration_state(cx).current_key();
-
-            if is_dyn {
-                match &mut self.0 {
-                    // If we are in SSR mode, add a `data-hk` attribute to the element.
-                    #[cfg(feature = "ssr")]
-                    WebNodeInner::Ssr(node) => {
-                        node.set_attribute("data-hk".into(), hk.to_string().into());
-                    }
-                    _ => {}
+            match &mut self.0 {
+                // If we are in SSR mode, add a `data-hk` attribute to the element.
+                #[cfg(feature = "ssr")]
+                WebNodeInner::Ssr(node) => {
+                    node.set_attribute("data-hk".into(), node.0.hk.get().to_string().into());
                 }
+                _ => {}
             }
         }
     }
 
-    fn get_next_element(cx: Scope) -> Option<Self> {
+    fn get_next_element(cx: Scope, f: impl Fn() -> Self) -> Self {
         // If we are hydrating on the client-side, get the next element from the hydration state.
         // Otherwise, return `None`.
         #[cfg(feature = "hydrate")]
@@ -286,19 +285,62 @@ impl GenericNode for WebNode {
                         .get_element_by_key(hk)
                         .cloned()
                         .map(Self::from_web_sys)
+                        .unwrap_or_else(f)
                 } else {
-                    None
+                    f()
                 }
             }
 
             RenderEnv::Ssr => {
                 // Increment the hydration key to stay in sync with client.
-                let _ = use_hydration_state(cx).next_key();
-                None
+                let hk = use_hydration_state(cx).next_key();
+                let el = f();
+                el.as_ssr_node().unwrap().0.hk.set(hk);
+                el
             }
         }
         #[cfg(not(feature = "hydrate"))]
-        None
+        f()
+    }
+
+    fn builder_insert(&self, cx: Scope, view: View<Self>) {
+        match &self.0 {
+            WebNodeInner::Dom(_) => {
+                if is_hydrating(cx) {
+                    // If it is a static, we don't need to insert it again.
+                    // Otherwise, find the start and end markers and insert the view between them.
+                    if !view.is_node() {
+                        let initial = get_next_markers(&self.to_web_sys().unchecked_into());
+                        let initial = initial.map(|nodes| {
+                            View::new_fragment(
+                                nodes
+                                    .into_iter()
+                                    .map(Self::from_web_sys)
+                                    .map(View::new_node)
+                                    .collect(),
+                            )
+                        });
+                        sycamore_core2::render::insert(cx, self, view, initial, None, true);
+                    }
+                } else {
+                    sycamore_core2::render::insert(cx, self, view, None, None, true);
+                }
+            }
+            WebNodeInner::Ssr(_) => {
+                if view.is_node() {
+                    sycamore_core2::render::insert(cx, self, view, None, None, true);
+                } else {
+                    // Insert start and finish tags.
+                    let start_tag = Self::marker_with_text(cx, "#".into());
+                    let end_tag = Self::marker_with_text(cx, "/".into());
+                    self.append_child(&start_tag);
+                    self.append_child(&end_tag);
+
+                    // Insert the view.
+                    sycamore_core2::render::insert(cx, self, view, None, Some(&end_tag), true);
+                }
+            }
+        }
     }
 }
 
@@ -311,7 +353,9 @@ impl GenericNodeElements for WebNode {
             #[cfg(feature = "dom")]
             RenderEnv::Dom => Self::from_dom_node(dom::DomNode::element_from_tag(tag)),
             #[cfg(feature = "ssr")]
-            RenderEnv::Ssr => Self::from_ssr_node(ssr::SsrNode::element_from_tag(tag)),
+            RenderEnv::Ssr => {
+                Self::from_ssr_node(ssr::SsrNode::element_from_tag(tag, HydrationKey::null())) // FIXME: hk null
+            }
             _ => panic!("feature not enabled for render env"),
         }
     }
@@ -327,9 +371,11 @@ impl GenericNodeElements for WebNode {
                 Self::from_dom_node(dom::DomNode::element_from_tag_namespace(tag, namespace))
             }
             #[cfg(feature = "ssr")]
-            RenderEnv::Ssr => {
-                Self::from_ssr_node(ssr::SsrNode::element_from_tag_namespace(tag, namespace))
-            }
+            RenderEnv::Ssr => Self::from_ssr_node(ssr::SsrNode::element_from_tag_namespace(
+                tag,
+                namespace,
+                HydrationKey::null(),
+            )), // FIXME: hk null
             _ => panic!("feature not enabled for render env"),
         }
     }

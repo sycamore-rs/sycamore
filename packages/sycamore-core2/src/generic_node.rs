@@ -6,6 +6,8 @@ use std::hash::Hash;
 
 use sycamore_reactive::Scope;
 
+use crate::view::View;
+
 /// Abstraction over a rendering backend.
 ///
 /// You would probably use this trait as a trait bound when you want to accept any rendering
@@ -108,8 +110,12 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// [`ElementBuilder`](crate::elements::ElementBuilder).
     ///
     /// By default, this returns `None` which means that a new element will be created from scratch.
-    fn get_next_element(_cx: Scope) -> Option<Self> {
-        None
+    fn get_next_element(_cx: Scope, f: impl Fn() -> Self) -> Self {
+        f()
+    }
+
+    fn builder_insert(&self, cx: Scope, view: View<Self>) {
+        crate::render::insert(cx, self, view, None, None, true);
     }
 }
 

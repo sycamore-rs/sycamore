@@ -1,7 +1,7 @@
 //! Internal implementation for SSR.
 
 use std::borrow::Cow;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::hash::{Hash, Hasher};
 use std::rc::{Rc, Weak};
 
@@ -9,6 +9,7 @@ use indexmap::map::IndexMap;
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 
+use crate::hydrate::HydrationKey;
 use crate::VOID_ELEMENTS;
 
 /// Inner representation for [`SsrNode`].
@@ -21,15 +22,16 @@ enum SsrNodeType {
 }
 
 #[derive(Debug, Clone)]
-struct SsrNodeInner {
+pub(crate) struct SsrNodeInner {
     ty: Rc<SsrNodeType>,
+    pub(crate) hk: Cell<HydrationKey>,
     /// No parent if `Weak::upgrade` returns `None`.
     parent: RefCell<Weak<SsrNodeInner>>,
 }
 
 /// Rendering backend for Server Side Rendering, aka. SSR.
 #[derive(Debug, Clone)]
-pub struct SsrNode(Rc<SsrNodeInner>);
+pub struct SsrNode(pub(crate) Rc<SsrNodeInner>);
 
 impl PartialEq for SsrNode {
     fn eq(&self, other: &Self) -> bool {
@@ -46,9 +48,10 @@ impl Hash for SsrNode {
 }
 
 impl SsrNode {
-    fn new(ty: SsrNodeType) -> Self {
+    fn new(ty: SsrNodeType, hk: HydrationKey) -> Self {
         Self(Rc::new(SsrNodeInner {
             ty: Rc::new(ty),
+            hk: Cell::new(hk),
             parent: RefCell::new(Weak::new()), // no parent
         }))
     }
@@ -58,12 +61,16 @@ impl SsrNode {
         tag: Cow<'static, str>,
         attributes: IndexMap<Cow<'static, str>, Cow<'static, str>>,
         children: Vec<Self>,
+        hk: HydrationKey,
     ) -> Self {
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: tag,
-            attributes,
-            children,
-        })))
+        Self::new(
+            SsrNodeType::Element(RefCell::new(Element {
+                name: tag,
+                attributes,
+                children,
+            })),
+            hk,
+        )
     }
 
     fn set_parent(&self, parent: Weak<SsrNodeInner>) {
@@ -104,18 +111,27 @@ impl SsrNode {
     /// Do not pass unsanitized user input to this function. When the node is rendered, no escaping
     /// will be performed which might lead to a XSS (Cross Site Scripting) attack.
     pub fn raw_text_node(html: Cow<'static, str>) -> Self {
-        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(html))))
+        SsrNode::new(
+            SsrNodeType::RawText(RefCell::new(RawText(html))),
+            HydrationKey::null(),
+        )
     }
 }
 
 /// `GenericNode` methods.
 impl SsrNode {
     pub fn text_node(text: Cow<'static, str>) -> Self {
-        Self::new(SsrNodeType::Text(RefCell::new(Text(text))))
+        Self::new(
+            SsrNodeType::Text(RefCell::new(Text(text))),
+            HydrationKey::null(),
+        )
     }
 
     pub fn marker_with_text(text: Cow<'static, str>) -> Self {
-        Self::new(SsrNodeType::Comment(RefCell::new(Comment(text))))
+        Self::new(
+            SsrNodeType::Comment(RefCell::new(Comment(text))),
+            HydrationKey::null(),
+        )
     }
 
     pub fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
@@ -258,6 +274,7 @@ impl SsrNode {
         let inner = SsrNodeInner {
             ty: Rc::new(self.0.ty.as_ref().clone()),
             parent: RefCell::new(Weak::new()),
+            hk: self.0.hk.clone(),
         };
         Self(Rc::new(inner))
     }
@@ -265,15 +282,16 @@ impl SsrNode {
 
 /// `GenericNodeElements` methods.
 impl SsrNode {
-    pub fn element_from_tag(tag: Cow<'static, str>) -> Self {
-        Self::new_element_raw(tag, IndexMap::default(), Vec::new())
+    pub fn element_from_tag(tag: Cow<'static, str>, hk: HydrationKey) -> Self {
+        Self::new_element_raw(tag, IndexMap::default(), Vec::new(), hk)
     }
 
     pub fn element_from_tag_namespace(
         tag: Cow<'static, str>,
         _namespace: Cow<'static, str>,
+        hk: HydrationKey,
     ) -> Self {
-        Self::element_from_tag(tag)
+        Self::element_from_tag(tag, hk)
     }
 
     pub fn add_event_listener<'a>(&self, _: Scope<'a>, _: &str, _: Box<dyn FnMut(JsValue) + 'a>) {
