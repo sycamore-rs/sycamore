@@ -16,8 +16,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         product.set(multiply(*a.get(), *b.get()));
     });
 
-    view! {
-        cx,
+    view! { cx,
         input(type="number", bind:valueAsNumber=a)
         span {"*"}
         input(type="number", bind:valueAsNumber=b)
@@ -28,8 +27,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 
 fn main() {
     sycamore::render(|cx| {
-        view! {
-            cx,
+        view! { cx,
             App
         }
     });
