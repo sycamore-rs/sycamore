@@ -18,10 +18,10 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 
     view! { cx,
         input(type="number", bind:valueAsNumber=a)
-        span {"*"}
+        span { "*" }
         input(type="number", bind:valueAsNumber=b)
-        span {"="}
-        span {(*product.get())}
+        span { "=" }
+        span { (*product.get()) }
     }
 }
 
