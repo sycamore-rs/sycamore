@@ -53,16 +53,32 @@ macro_rules! define_attributes {
     (
         $(
             $(#[$attr:meta])*
-            $id:ident : $ty:ty,
+            $id:ident $(($name:literal))? : $ty:ty,
         )*
     ) => {
         impl attr {
             $(
-                $(#[$attr])*
-                pub const $id: HtmlAttr<$ty> = HtmlAttr::new(Cow::Borrowed(stringify!($id)));
+                define_attributes! {
+                    $(#[$attr])*
+                    $id $(($name))? : $ty
+                }
             )*
         }
     };
+    (
+        $(#[$attr:meta])*
+        $id:ident : $ty:ty
+    ) => {
+        $(#[$attr])*
+        pub const $id: HtmlAttr<$ty> = HtmlAttr::new(Cow::Borrowed(stringify!($id)));
+    };
+    (
+        $(#[$attr:meta])*
+        $id:ident($name:literal) : $ty:ty
+    ) => {
+        $(#[$attr])*
+        pub const $id: HtmlAttr<$ty> = HtmlAttr::new(Cow::Borrowed($name));
+    }
 }
 
 // Global attributes.
@@ -205,7 +221,7 @@ define_attributes! {
     // id: String,
     ideographic: String,
     image_rendering: String,
-    _in: String,
+    _in("in"): String,
     in2: String,
     intercept: String,
     k: String,
@@ -326,7 +342,7 @@ define_attributes! {
     to: String,
     transform: String,
     transform_origin: String,
-    _type: String,
+    _type("type"): String,
     u1: String,
     u2: String,
     underline_position: String,

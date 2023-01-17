@@ -29,12 +29,30 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     ///
     /// The input is untyped, so it is possible to construct an `ElementBuilder` of any element type
     /// with this method, regardless of the actual type of the underlying element.
-    pub fn new(cx: Scope<'a>, el: G) -> Self {
+    pub fn from_element(cx: Scope<'a>, el: G) -> Self {
         Self {
             cx,
             el,
             is_dyn: false,
             _marker: std::marker::PhantomData,
+        }
+    }
+
+    pub fn new_or_get(cx: Scope<'a>, el: impl Fn() -> G) -> Self {
+        if let Some(el) = G::get_next_element(cx) {
+            Self {
+                cx,
+                el,
+                is_dyn: false,
+                _marker: std::marker::PhantomData,
+            }
+        } else {
+            Self {
+                cx,
+                el: el(),
+                is_dyn: false,
+                _marker: std::marker::PhantomData,
+            }
         }
     }
 
@@ -101,8 +119,8 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     /// )
     /// # .view() }
     /// ```
-    pub fn child(mut self, c: impl ToView<G>) -> Self {
-        let view = c.to_view(self.cx);
+    pub fn child<S>(mut self, c: impl ElementBuilderOrView<G, S>) -> Self {
+        let view = c.into_view(self.cx);
         if !view.is_node() {
             self.mark_dyn();
         }
@@ -127,6 +145,24 @@ impl<'a, G: GenericNode, E: TypedElement<G>> fmt::Debug for ElementBuilder<'a, G
         f.debug_struct("ElementBuilder")
             .field("element", &self.el)
             .finish()
+    }
+}
+
+/// A trait that allows either [`ElementBuilder`] or any type that implements
+/// [`ToView`] to be used as a child.
+pub trait ElementBuilderOrView<G: GenericNode, S> {
+    fn into_view(self, cx: Scope) -> View<G>;
+}
+impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilderOrView<G, ()>
+    for ElementBuilder<'a, G, E>
+{
+    fn into_view(self, _cx: Scope) -> View<G> {
+        self.view()
+    }
+}
+impl<G: GenericNode, T: ToView<G>> ElementBuilderOrView<G, ((),)> for T {
+    fn into_view(self, cx: Scope) -> View<G> {
+        self.to_view(cx)
     }
 }
 

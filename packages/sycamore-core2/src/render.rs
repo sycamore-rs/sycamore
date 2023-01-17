@@ -191,9 +191,9 @@ pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option
 /// Returns whether the normalized `Vec<G>` is dynamic (and should be rendered in an effect).
 ///
 /// # Params
-/// * `v` - The [`Vec`] to write the output to.
-/// * `fragment` - The `Vec<Template<G>>` to normalize.
-/// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
+/// * `v` - The buffer to write the output to.
+/// * `fragment` - The `&[View<G>]` to normalize.
+/// * `unwrap` - If `true`, unwraps `fragment` without setting `dynamic` to true. In most cases,
 ///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
     v: &mut Vec<View<G>>,
@@ -202,9 +202,9 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
 ) -> bool {
     let mut dynamic = false;
 
-    for template in fragment {
-        match &template.inner {
-            ViewType::Node(_) => v.push(template.clone()),
+    for view in fragment {
+        match &view.inner {
+            ViewType::Node(_) => v.push(view.clone()),
             ViewType::Dyn(f) if unwrap => {
                 let mut value = f.get().as_ref().clone();
                 while let ViewType::Dyn(f) = &value.inner {
@@ -220,7 +220,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
             }
             ViewType::Dyn(_) => {
                 // Not unwrap
-                v.push(template.clone());
+                v.push(view.clone());
                 dynamic = true;
             }
             ViewType::Fragment(fragment) => {
@@ -251,10 +251,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     {
         for (i, node) in a.iter().enumerate() {
             if node.parent_node().as_ref() != Some(parent) {
-                panic!(
-                    "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
-                    i, node
-                );
+                panic!("node at index {i} in existing nodes list is not a child of parent.\nnode = {node:#?}");
             }
         }
     }

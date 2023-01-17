@@ -59,7 +59,8 @@ impl HydrationState {
     }
 
     /// Increments the element id and returns a new hydration key.
-    pub fn increment_element_id(&self) -> HydrationKey {
+    #[must_use]
+    pub fn next_key(&self) -> HydrationKey {
         let hk = HydrationKey(
             self.current_component_id.get(),
             self.current_element_id.get(),
@@ -69,9 +70,17 @@ impl HydrationState {
         hk
     }
 
-    /// Increments the component id and resets the view id.
-    /// Runs the provided closure and restores the previous state.
-    pub fn increment_component_id<T>(&self, f: impl FnOnce() -> T) -> T {
+    /// Get the current hydration key.
+    pub fn current_key(&self) -> HydrationKey {
+        HydrationKey(
+            self.current_component_id.get(),
+            self.current_element_id.get(),
+        )
+    }
+
+    /// Increments the component id and resets the element id. Runs the provided closure and
+    /// restores the previous state.
+    pub fn enter_component<T>(&self, f: impl FnOnce() -> T) -> T {
         let old_component_id = self.current_component_id.get();
         let old_element_id = self.current_element_id.get();
 
@@ -98,28 +107,10 @@ impl HydrationState {
     }
 }
 
-/// Retrieves the [`HydrationState`] from the [`Scope`] context.
-///
-/// # Panics
-///
-/// This will panic if the [`HydrationState`] is not in the context.
-pub(crate) fn use_hydration_state(cx: Scope) -> &HydrationState {
-    use_context::<HydrationState>(cx)
-}
-
-/// Returns `true` if the app is being hydrated.
-pub fn is_hydrating(cx: Scope) -> bool {
-    if let Some(h_state) = try_use_context::<HydrationState>(cx) {
-        h_state.active.get()
-    } else {
-        false
-    }
-}
-
 /// The hydration context. This collects the root node and all dynamic nodes that need to be
 /// hydrated so that they can be accessed later.
 #[derive(Debug)]
-pub struct HydrateCtx {
+pub struct HydrationCtx {
     /// The root element where the app is mounted.
     pub root: Element,
     /// The dynamic elements that need to be hydrated.
@@ -127,7 +118,7 @@ pub struct HydrateCtx {
     pub els: hashbrown::HashMap<HydrationKey, Node>,
 }
 
-impl HydrateCtx {
+impl HydrationCtx {
     // Uses query_selector_all to get all elements with the `data-hk` attribute under the `root` and
     // returns a new `HydrateCtx`.
     pub fn new_from_root(root: Element) -> Self {
@@ -156,7 +147,36 @@ impl HydrateCtx {
     }
 
     /// Get an element by its hydration key.
-    pub fn get_element(&self, hk: HydrationKey) -> Option<&Node> {
+    pub fn get_element_by_key(&self, hk: HydrationKey) -> Option<&Node> {
         self.els.get(&hk)
+    }
+}
+
+/// Retrieves the [`HydrationState`] from the [`Scope`] context.
+///
+/// # Panics
+///
+/// This will panic if the [`HydrationState`] is not in the context.
+pub(crate) fn use_hydration_state(cx: Scope) -> &HydrationState {
+    use_context::<HydrationState>(cx)
+}
+
+/// Retrieves the [`HydrateCtx`] from the [`Scope`] context.
+///
+/// # Panics
+///
+/// This will panic if the [`HydrateCtx`] is not in the context.
+pub(crate) fn use_hydration_ctx(cx: Scope) -> &HydrationCtx {
+    use_context::<HydrationCtx>(cx)
+}
+
+/// Returns `true` if the app is being hydrated.
+/// Note that this will return `true` on the server as well, since the hydration machinery is used
+/// there.
+pub fn is_hydrating(cx: Scope) -> bool {
+    if let Some(h_state) = try_use_context::<HydrationState>(cx) {
+        h_state.active.get()
+    } else {
+        false
     }
 }

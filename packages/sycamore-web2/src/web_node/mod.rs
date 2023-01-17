@@ -13,7 +13,7 @@ use sycamore_core2::generic_node::{GenericNode, GenericNodeElements};
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 
-use crate::hydrate::{is_hydrating, use_hydration_state};
+use crate::hydrate::{is_hydrating, use_hydration_ctx, use_hydration_state};
 use crate::render::{get_render_env, RenderEnv};
 
 pub struct WebNode(WebNodeInner);
@@ -28,6 +28,18 @@ impl WebNode {
         Self(WebNodeInner::Dom(dom::DomNode::from_web_sys(root)))
     }
 
+    /// Get the underlying [`web_sys::Node`].
+    ///
+    /// # Panics
+    ///
+    /// This will panic if the node is a SSR node.
+    #[cfg(feature = "dom")]
+    pub fn to_web_sys(&self) -> web_sys::Node {
+        self.as_dom_node()
+            .expect("can not convert a SSR node to a web_sys::Node")
+            .to_web_sys()
+    }
+
     /// Get the underlying [`dom::DomNode`] or `None` if it is a SSR node.
     #[cfg(feature = "dom")]
     pub fn as_dom_node(&self) -> Option<&dom::DomNode> {
@@ -38,6 +50,7 @@ impl WebNode {
         }
     }
 
+    /// Get the underlying [`ssr::SsrNode`] or `None` if it is a DOM node.
     #[cfg(feature = "ssr")]
     pub fn as_ssr_node(&self) -> Option<&ssr::SsrNode> {
         match &self.0 {
@@ -47,17 +60,20 @@ impl WebNode {
         }
     }
 
+    /// Create a new [`WebNode`] from a [`dom::DomNode`].
     #[cfg(feature = "dom")]
     pub fn from_dom_node(node: dom::DomNode) -> Self {
         Self(WebNodeInner::Dom(node))
     }
 
+    /// Create a new [`WebNode`] from a [`ssr::SsrNode`].
     #[cfg(feature = "ssr")]
     pub fn from_ssr_node(node: ssr::SsrNode) -> Self {
         Self(WebNodeInner::Ssr(node))
     }
 }
 
+/// Internal implementation of [`WebNode`].
 enum WebNodeInner {
     #[cfg(feature = "dom")]
     Dom(dom::DomNode),
@@ -242,7 +258,7 @@ impl GenericNode for WebNode {
     fn finish_element(&mut self, cx: Scope, is_dyn: bool) {
         #[cfg(feature = "hydrate")]
         if is_hydrating(cx) {
-            let hk = use_hydration_state(cx).increment_element_id();
+            let hk = use_hydration_state(cx).current_key();
 
             if is_dyn {
                 match &mut self.0 {
@@ -255,6 +271,34 @@ impl GenericNode for WebNode {
                 }
             }
         }
+    }
+
+    fn get_next_element(cx: Scope) -> Option<Self> {
+        // If we are hydrating on the client-side, get the next element from the hydration state.
+        // Otherwise, return `None`.
+        #[cfg(feature = "hydrate")]
+        match get_render_env(cx) {
+            RenderEnv::Dom => {
+                if is_hydrating(cx) {
+                    let hk = use_hydration_state(cx).next_key();
+                    let h_ctx = use_hydration_ctx(cx);
+                    h_ctx
+                        .get_element_by_key(hk)
+                        .cloned()
+                        .map(Self::from_web_sys)
+                } else {
+                    None
+                }
+            }
+
+            RenderEnv::Ssr => {
+                // Increment the hydration key to stay in sync with client.
+                let _ = use_hydration_state(cx).next_key();
+                None
+            }
+        }
+        #[cfg(not(feature = "hydrate"))]
+        None
     }
 }
 
@@ -334,9 +378,9 @@ impl Clone for WebNode {
     fn clone(&self) -> Self {
         match &self.0 {
             #[cfg(feature = "dom")]
-            WebNodeInner::Dom(node) => Self::from_dom_node(node.clone_node()),
+            WebNodeInner::Dom(node) => Self::from_dom_node(node.clone()),
             #[cfg(feature = "ssr")]
-            WebNodeInner::Ssr(node) => Self::from_ssr_node(node.clone_node()),
+            WebNodeInner::Ssr(node) => Self::from_ssr_node(node.clone()),
         }
     }
 }

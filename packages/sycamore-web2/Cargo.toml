@@ -64,7 +64,7 @@ features = [
 [features]
 default = ["dom"]
 dom = []
-hydrate = []
+hydrate = ["sycamore-core2/hydrate"]
 ssr = ["hydrate", "html-escape"]
 suspense = ["sycamore-futures"]
 

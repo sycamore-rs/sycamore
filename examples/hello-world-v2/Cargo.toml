@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+console_error_panic_hook = "0.1.7"
 log = "0.4.17"
 sycamore-core2 = { path = "../../packages/sycamore-core2" }
 sycamore-reactive = { path = "../../packages/sycamore-reactive" }
@@ -14,4 +15,5 @@ sycamore-web2 = { path = "../../packages/sycamore-web2", features = [
     "ssr",
     "silence_dom_ssr_features_error",
 ] }
+wasm-bindgen = "0.2.83"
 wasm-logger = "0.2.0"

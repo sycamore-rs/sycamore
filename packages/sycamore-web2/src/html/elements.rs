@@ -96,12 +96,13 @@ macro_rules! define_element_impl {
         impl TypedElement<WebNode> for $el {}
         $(#[$attr])*
         pub fn $el(cx: Scope) -> ElementBuilder<WebNode, $el> {
-            let node = if let Some(ns) = $ns {
-                WebNode::element_from_tag_namespace(cx, $tag.into(), Cow::Borrowed(ns))
-            } else {
-                WebNode::element_from_tag(cx, $tag.into())
-            };
-            ElementBuilder::new(cx, node)
+            ElementBuilder::new_or_get(cx, || {
+                if let Some(ns) = $ns {
+                    WebNode::element_from_tag_namespace(cx, $tag.into(), Cow::Borrowed(ns))
+                } else {
+                    WebNode::element_from_tag(cx, $tag.into())
+                }
+            })
         }
     };
     (

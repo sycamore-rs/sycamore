@@ -77,6 +77,10 @@ impl DomNode {
             node,
         }
     }
+
+    pub fn to_web_sys(&self) -> Node {
+        self.node.clone()
+    }
 }
 
 impl PartialEq for DomNode {
