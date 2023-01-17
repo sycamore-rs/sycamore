@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-#[wasm_bindgen(module = "/js/functions.js")]
+#[wasm_bindgen(module = "/js/index.js")]
 extern "C" {
     fn multiply(a: f64, b: f64) -> f64;
 }
