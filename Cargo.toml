@@ -31,6 +31,7 @@ members = [
   "examples/todomvc",
   "examples/transitions",
   "examples/attributes-passthrough",
+  "examples/js-snippets",
 
   # Website
   "docs",
