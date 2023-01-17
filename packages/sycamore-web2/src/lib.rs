@@ -20,7 +20,8 @@
 //! - `silence_dom_ssr_features_error`: By default, if both the `dom` and `ssr` features are
 //!   enabled, a compile-time error is emitted. This is for code-bloat reasons when deploying to
 //!   WASM. If you did intend to enable both features, you can silence this error by enabling this
-//!   feature.
+//!   feature. (This is also convenient for `cargo test` as we can test everything all-together
+//!   using `--all-features`).
 
 use once_cell::sync::Lazy;
 use sycamore_reactive::{create_ref, use_scope_status, Scope};

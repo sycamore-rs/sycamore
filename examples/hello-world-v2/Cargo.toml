@@ -12,5 +12,6 @@ sycamore-reactive = { path = "../../packages/sycamore-reactive" }
 sycamore-web2 = { path = "../../packages/sycamore-web2", features = [
     "dom",
     "ssr",
+    "silence_dom_ssr_features_error",
 ] }
 wasm-logger = "0.2.0"

@@ -13,7 +13,7 @@ use sycamore_core2::generic_node::{GenericNode, GenericNodeElements};
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 
-use crate::hydrate::{use_hydration_state, is_hydrating};
+use crate::hydrate::{is_hydrating, use_hydration_state};
 use crate::render::{get_render_env, RenderEnv};
 
 pub struct WebNode(WebNodeInner);
@@ -239,9 +239,9 @@ impl GenericNode for WebNode {
         }
     }
 
-    fn finish_element(&mut self, cx: Scope) {
+    fn finish_element(&mut self, cx: Scope, is_dyn: bool) {
         #[cfg(feature = "hydrate")]
-        if is_hydrating(cx) {
+        if is_dyn && is_hydrating(cx) {
             let hk = use_hydration_state(cx).increment_view_id();
 
             // If we are in SSR mode, add a `data-hk` attribute to the element.

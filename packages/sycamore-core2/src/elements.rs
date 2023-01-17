@@ -18,10 +18,9 @@ pub struct ElementBuilder<'a, G: GenericNode, E: TypedElement<G>> {
     cx: Scope<'a>,
     /// The element that is being built.
     el: G,
-    /// Whether the element needs a hydration marker. In SSR, an extra `data-hk` attribute is
-    /// added. In client-side hydration, all elements without a hydration marker are ignored.
-    #[cfg(feature = "hydrate")]
-    needs_hydration_marker: bool,
+    /// Whether the element is dynamic. In SSR, an extra `data-hk` attribute is
+    /// added. In client-side hydration, all elements that are not dynamic ignored.
+    is_dyn: bool,
     _marker: std::marker::PhantomData<E>,
 }
 
@@ -34,15 +33,14 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         Self {
             cx,
             el,
-            #[cfg(feature = "hydrate")]
-            needs_hydration_marker: false,
+            is_dyn: false,
             _marker: std::marker::PhantomData,
         }
     }
 
     /// Consumes the [`ElementBuilder`] and returns the element.
     pub fn finish(mut self) -> G {
-        self.el.finish_element(self.cx);
+        self.el.finish_element(self.cx, self.is_dyn);
         self.el
     }
 
@@ -51,12 +49,9 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         View::new_node(self.finish())
     }
 
-    /// Mark this element as dynamic. This sets the `needs_hydration_marker` flag to true.
+    /// Mark this element as dynamic. This sets the `is_dyn` flag to true.
     fn mark_dyn(&mut self) {
-        #[cfg(feature = "hydrate")]
-        {
-            self.needs_hydration_marker = true;
-        }
+        self.is_dyn = true;
     }
 
     /// Applies an attribute to the element.
@@ -114,8 +109,7 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         ElementBuilder {
             cx: self.cx,
             el: self.el,
-            #[cfg(feature = "hydrate")]
-            needs_hydration_marker: self.needs_hydration_marker,
+            is_dyn: self.is_dyn,
             _marker: std::marker::PhantomData,
         }
     }
