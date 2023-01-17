@@ -57,6 +57,7 @@ fn bind_to_element<'a, Ev: From<JsValue> + Into<JsValue>, T>(
 impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
     ApplyAttr<'a, WebNode, &'a Signal<bool>, E> for BindAttr<bool, Ev>
 {
+    const NEEDS_HYDRATE: bool = true;
     fn apply(self, cx: Scope<'a>, el: &WebNode, value: &'a Signal<bool>) {
         bind_to_element(
             cx,
@@ -73,6 +74,7 @@ impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
 impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
     ApplyAttr<'a, WebNode, &'a Signal<f64>, E> for BindAttr<f64, Ev>
 {
+    const NEEDS_HYDRATE: bool = true;
     fn apply(self, cx: Scope<'a>, el: &WebNode, value: &'a Signal<f64>) {
         bind_to_element(
             cx,
@@ -89,6 +91,7 @@ impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
 impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
     ApplyAttr<'a, WebNode, &'a Signal<String>, E> for BindAttr<String, Ev>
 {
+    const NEEDS_HYDRATE: bool = true;
     fn apply(self, cx: Scope<'a>, el: &WebNode, value: &'a Signal<String>) {
         bind_to_element(
             cx,

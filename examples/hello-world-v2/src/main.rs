@@ -9,10 +9,11 @@ fn app(cx: Scope) -> View {
         p(cx)
             .with(attr::class, "test")
             .child("Hello World!")
-            .child("This is a test!")
+            .child(p(cx).child("Nested!").view())
             .view(),
         button(cx)
             .with(attr::class, "btn")
+            .with(on::click, |_| log::info!("clicked!"))
             .child("Click me!")
             .view(),
         svg(cx)

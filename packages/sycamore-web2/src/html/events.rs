@@ -63,6 +63,7 @@ impl<T> OnAttr<T> {
 impl<'a, T: From<JsValue>, F: FnMut(T) + 'a, E: TypedElement<WebNode>> ApplyAttr<'a, WebNode, F, E>
     for OnAttr<T>
 {
+    const NEEDS_HYDRATE: bool = true;
     fn apply(self, cx: Scope<'a>, el: &WebNode, mut value: F) {
         let type_erased = Box::new(move |ev: JsValue| value(ev.into()));
         el.add_event_listener(cx, self.name, type_erased);

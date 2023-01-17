@@ -66,7 +66,14 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     ///     .child("Hello, World!")
     /// # .view() }
     /// ```
-    pub fn with<Value, Attr: ApplyAttr<'a, G, Value, E>>(self, attr: Attr, value: Value) -> Self {
+    pub fn with<Value, Attr: ApplyAttr<'a, G, Value, E>>(
+        mut self,
+        attr: Attr,
+        value: Value,
+    ) -> Self {
+        if Attr::NEEDS_HYDRATE {
+            self.mark_dyn();
+        }
         attr.apply(self.cx, &self.el, value);
         self
     }

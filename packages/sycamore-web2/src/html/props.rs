@@ -16,6 +16,7 @@ pub struct PropAttr {
 }
 
 impl<'a, T: Into<JsValue>, E: TypedElement<WebNode>> ApplyAttr<'a, WebNode, T, E> for PropAttr {
+    const NEEDS_HYDRATE: bool = true;
     fn apply(self, _cx: Scope<'a>, el: &WebNode, value: T) {
         el.set_property(self.name, value.into());
     }

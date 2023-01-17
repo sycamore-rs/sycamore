@@ -241,16 +241,18 @@ impl GenericNode for WebNode {
 
     fn finish_element(&mut self, cx: Scope, is_dyn: bool) {
         #[cfg(feature = "hydrate")]
-        if is_dyn && is_hydrating(cx) {
-            let hk = use_hydration_state(cx).increment_view_id();
+        if is_hydrating(cx) {
+            let hk = use_hydration_state(cx).increment_element_id();
 
-            // If we are in SSR mode, add a `data-hk` attribute to the element.
-            match &mut self.0 {
-                #[cfg(feature = "ssr")]
-                WebNodeInner::Ssr(node) => {
-                    node.set_attribute("data-hk".into(), hk.to_string().into());
+            if is_dyn {
+                match &mut self.0 {
+                    // If we are in SSR mode, add a `data-hk` attribute to the element.
+                    #[cfg(feature = "ssr")]
+                    WebNodeInner::Ssr(node) => {
+                        node.set_attribute("data-hk".into(), hk.to_string().into());
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }

@@ -10,8 +10,8 @@ use web_sys::{Element, Node};
 /// A hydration key. This is used to identify a dynamic node that needs to be hydrated.
 ///
 /// This is represented as a pair of `u32`s. The first `u32` is the component id and the second
-/// `u32` is the view id. Each time a component is rendered, the component id is incremented, and
-/// each time a view is created (using `view!`), the view id is incremented.
+/// `u32` is the element id. Each time a component is rendered, the component id is incremented, and
+/// each time an element is created, the element id is incremented.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct HydrationKey(u32, u32);
 
@@ -21,8 +21,8 @@ impl HydrationKey {
         self.0
     }
 
-    /// Get the view id.
-    pub fn view_id(self) -> u32 {
+    /// Get the element id.
+    pub fn element_id(self) -> u32 {
         self.1
     }
 }
@@ -39,7 +39,7 @@ impl fmt::Display for HydrationKey {
 pub struct HydrationState {
     current_component_id: Cell<u32>,
     max_component_id: Cell<u32>,
-    current_view_id: Cell<u32>,
+    current_element_id: Cell<u32>,
     /// If this is `false`, then the app should behave as if it is not being hydrated.
     active: Cell<bool>,
 }
@@ -58,10 +58,14 @@ impl HydrationState {
         }
     }
 
-    /// Increments the view id and returns a new hydration key.
-    pub fn increment_view_id(&self) -> HydrationKey {
-        let hk = HydrationKey(self.current_component_id.get(), self.current_view_id.get());
-        self.current_view_id.set(self.current_view_id.get() + 1);
+    /// Increments the element id and returns a new hydration key.
+    pub fn increment_element_id(&self) -> HydrationKey {
+        let hk = HydrationKey(
+            self.current_component_id.get(),
+            self.current_element_id.get(),
+        );
+        self.current_element_id
+            .set(self.current_element_id.get() + 1);
         hk
     }
 
@@ -69,17 +73,17 @@ impl HydrationState {
     /// Runs the provided closure and restores the previous state.
     pub fn increment_component_id<T>(&self, f: impl FnOnce() -> T) -> T {
         let old_component_id = self.current_component_id.get();
-        let old_view_id = self.current_view_id.get();
+        let old_element_id = self.current_element_id.get();
 
         self.current_component_id
             .set(self.max_component_id.get() + 1);
         self.max_component_id.set(self.max_component_id.get() + 1);
-        self.current_view_id.set(0);
+        self.current_element_id.set(0);
 
         let ret = f();
 
         self.current_component_id.set(old_component_id);
-        self.current_view_id.set(old_view_id);
+        self.current_element_id.set(old_element_id);
         ret
     }
 
@@ -88,7 +92,7 @@ impl HydrationState {
         Self {
             current_component_id: 0.into(),
             max_component_id: 0.into(),
-            current_view_id: 0.into(),
+            current_element_id: 0.into(),
             active: true.into(),
         }
     }
