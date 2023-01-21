@@ -247,6 +247,26 @@ impl<T> Signal<T> {
         self.set(f(&self.get_untracked()));
     }
 
+    /// Set the value of the state using a function that can mutate the value.
+    ///
+    /// This will notify and update any effects and memos that depend on this value.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_scope_immediate(|cx| {
+    /// let state = create_signal(cx, vec![]);
+    /// assert_eq!(*state.get(), vec![]);
+    ///
+    /// state.set_fn_mut(|&mut v| v.push(1));
+    /// assert_eq!(*state.get(), vec![1]);
+    /// # });
+    /// ```
+    pub fn set_fn_mut<F: FnMut(&mut T)>(&self, f: &mut F) {
+        f(&mut self.0.value.borrow_mut());
+        self.trigger_subscribers();
+    }
+
     /// Set the current value of the state wrapped in a [`Rc`]. Unlike [`Signal::set()`], this
     /// method accepts the value wrapped in a [`Rc`] because the underlying storage is already using
     /// [`Rc`], thus preventing an unnecessary clone.
@@ -666,6 +686,9 @@ mod tests {
 
             state.set_fn(|n| n + 1);
             assert_eq!(*state.get(), 2);
+
+            state.set_fn_mut(&mut |n: &mut _| *n = 5);
+            assert_eq!(*state.get(), 5);
         });
     }
 
