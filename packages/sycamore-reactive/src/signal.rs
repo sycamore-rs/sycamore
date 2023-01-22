@@ -722,6 +722,13 @@ mod tests {
             assert_eq!(double(), 0);
             state.set(1);
             assert_eq!(double(), 2);
+
+            let state = create_signal(cx, vec![1]);
+            let sum = state.map(cx, |v| v.iter().sum::<isize>());
+            assert_eq!(*sum.get(), 1);
+            state.set_fn_mut(|v| v.push(1));
+            assert_eq!(*state.get(), vec![1, 1]);
+            assert_eq!(*sum.get(), 2);
         });
     }
 
