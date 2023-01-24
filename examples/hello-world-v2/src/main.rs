@@ -1,6 +1,5 @@
 use sycamore_core2::view::ToView;
 use sycamore_reactive::*;
-use sycamore_web2::html::elements::*;
 use sycamore_web2::html::*;
 use sycamore_web2::*;
 use wasm_bindgen::JsCast;
