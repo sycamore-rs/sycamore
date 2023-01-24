@@ -83,14 +83,31 @@ pub trait GlobalAttributes: AsNode<WebNode> + Sized {
         accesskey: String,
         autocapitalize: String,
         autofocus: bool,
+        /// The `class` global attribute is a space-separated list of the case-sensitive classes of the element.
+        /// Classes allow CSS and JavaScript to select and access specific elements via the class selectors or functions
+        /// like the DOM method `document.getElementsByClassName`.
         class: String,
+        /// The `contenteditable` global attribute is an enumerated attribute indicating if the element should be editable by the user.
+        /// If so, the browser modifies its widget to allow editing.
+        ///
+        /// The attribute must take one of the following values:
+        /// * `true` or an _empty string_, which indicates that the element is editable.
+        /// * `false`, which indicates that the element is not editable.
+        ///
+        /// If this attribute is missing or its value is invalid, its value is inherited from its parent element: so the element is editable if its parent is editable.
+        ///
+        /// Note that although its allowed values include `true` and `false`, this attribute is an enumerated one and not a Boolean one.
         contenteditable: String,
         contextmenu: String,
         dir: String,
         draggable: String,
         enterkeyhint: String,
         exportparts: String,
+        /// The `hidden` global attribute is an enumerated attribute indicating that the browser should not render the contents of the element.
+        /// For example, it can be used to hide elements of the page that can't be used until the login process has been completed.
         hidden: bool,
+        /// The `id` global attribute defines an identifier (ID) which must be unique in the whole document.
+        /// Its purpose is to identify the element when linking (using a fragment identifier), scripting, or styling (with CSS).
         id: String,
         inert: bool,
         inputmode: String,
@@ -106,6 +123,8 @@ pub trait GlobalAttributes: AsNode<WebNode> + Sized {
         role: String,
         slot: String,
         spellcheck: String,
+        /// The `style` global attribute contains CSS styling declarations to be applied to the element. Note that it is recommended for styles to be defined in a separate file or files.
+        /// This attribute and the `<style>` element have mainly the purpose of allowing for quick styling, for example for testing purposes.
         style: String,
         tabindex: String,
         title: String,

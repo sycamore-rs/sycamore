@@ -80,7 +80,7 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
     }
 
     /// Mark this element as dynamic. This sets the `is_dyn` flag to true.
-    /// 
+    ///
     /// This is mostly used internally to signal when an element should be flagged for hydration.
     pub fn mark_dyn(&mut self) {
         self.is_dyn = true;

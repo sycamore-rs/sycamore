@@ -31,7 +31,9 @@ fn main() {
     log::info!("{ssr}");
 
     let root = document().get_element_by_id("main").unwrap();
-    root.set_inner_html(&ssr);
 
-    sycamore_web2::render::hydrate_to(root.unchecked_into(), app);
+    // root.set_inner_html(&ssr);
+    // sycamore_web2::render::hydrate_to(root.unchecked_into(), app);
+
+    sycamore_web2::render::render_to(root.unchecked_into(), app);
 }
