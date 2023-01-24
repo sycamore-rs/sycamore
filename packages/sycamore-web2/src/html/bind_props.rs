@@ -1,7 +1,7 @@
 //! Definitions for properties that can be two-way binded to with the [`bind`] directive.
 
 use sycamore_core2::attributes::ApplyAttr;
-use sycamore_core2::elements::{AnyElement, TypedElement};
+use sycamore_core2::elements::TypedElement;
 use sycamore_reactive::{create_effect, Scope, Signal};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::Event;
@@ -40,17 +40,18 @@ fn bind_to_element<'a, Ev: From<JsValue> + Into<JsValue>, T>(
     from: impl Fn(&JsValue) -> Option<T> + 'a,
 ) {
     if get_render_env(cx) == RenderEnv::Dom {
-        ApplyAttr::<WebNode, _, AnyElement>::apply(ev, cx, el, move |ev: Ev| {
-            let ev: JsValue = ev.into();
-            let target = ev.unchecked_into::<Event>().target().unwrap();
-            let prop = js_sys::Reflect::get(&target, &prop.into()).unwrap();
-            signal.set(from(&prop).unwrap());
-        });
-        let el = el.clone();
-        create_effect(cx, move || {
-            let value = signal.get();
-            el.set_property(prop, into(&value));
-        });
+        // ApplyAttr::<WebNode, _, AnyElement>::apply(ev, cx, el, move |ev: Ev| {
+        //     let ev: JsValue = ev.into();
+        //     let target = ev.unchecked_into::<Event>().target().unwrap();
+        //     let prop = js_sys::Reflect::get(&target, &prop.into()).unwrap();
+        //     signal.set(from(&prop).unwrap());
+        // });
+        // let el = el.clone();
+        // create_effect(cx, move || {
+        //     let value = signal.get();
+        //     el.set_property(prop, into(&value));
+        // });
+        todo!();
     }
 }
 

@@ -53,8 +53,14 @@ pub static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| 
     .collect()
 });
 
-/// A `View` type that uses [`WebNode`](web_node::WebNode) as the rendering backend by default.
+/// A [`View`](sycamore_core2::view::View) type that uses [`WebNode`](web_node::WebNode) as the
+/// rendering backend by default.
 pub type View<G = web_node::WebNode> = sycamore_core2::view::View<G>;
+
+/// An [`ElementBuilder`](sycamore_core2::elements::ElementBuilder) type that uses
+/// [`WebNode`](web_node::WebNode) as the rendering backend by default.
+pub type ElementBuilder<'a, E, G = web_node::WebNode> =
+    sycamore_core2::elements::ElementBuilder<'a, E, G>;
 
 /// Queue up a callback to be executed when the component is mounted.
 ///

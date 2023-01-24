@@ -1,5 +1,4 @@
 use sycamore_core2::elements::ElementBuilderOrView;
-use sycamore_core2::view::ToView;
 use sycamore_reactive::*;
 use sycamore_web2::html::elements::*;
 use sycamore_web2::html::*;
@@ -12,11 +11,12 @@ fn app(cx: Scope) -> View {
     let decrement = move |_| counter -= 1;
     let reset = move |_| counter.set(0);
     div(cx)
+        .class("container")
         .child(
             p(cx)
                 .child("Counter value: ")
                 .child(View::new_dyn(cx, move || counter.get().into_view(cx)))
-                .with_dyn(attr::class, move || format!("counter-{counter}")),
+                .dynamic(move |e| e.class(format!("counter-{counter}")))
         )
         .child(button(cx).child("+").with(on::click, increment))
         .child(button(cx).child("-").with(on::click, decrement))

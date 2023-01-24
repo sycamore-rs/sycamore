@@ -2,17 +2,29 @@
 
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(non_upper_case_globals)]
 
 use std::borrow::Cow;
 
-use sycamore_core2::elements::{ElementBuilder, TypedElement};
+use sycamore_core2::elements::TypedElement;
 use sycamore_core2::generic_node::GenericNodeElements;
 use sycamore_reactive::Scope;
 
 use crate::web_node::WebNode;
+use crate::ElementBuilder;
+
+/// Represents a web element.
+///
+/// This includes both HTML and SVG elements.
+pub trait WebElement: TypedElement<WebNode> + Sized {
+    fn new(cx: Scope) -> Self;
+}
+
+/// A marker trait for all HTML elements.
+pub trait HtmlElement: WebElement {}
 
 /// A marker trait implemented for all SVG elements.
-pub trait SvgElement: TypedElement<WebNode> {}
+pub trait SvgElement: WebElement {}
 
 /// Macro for generating element definitions.
 macro_rules! define_elements {
@@ -91,19 +103,28 @@ macro_rules! define_element_impl {
         }
     ) => {
         $(#[$attr])*
-        #[derive(Debug)]
-        pub struct $el {}
-        impl TypedElement<WebNode> for $el {}
-        $(#[$attr])*
-        pub fn $el(cx: Scope) -> ElementBuilder<WebNode, $el> {
-            ElementBuilder::new(cx, || {
-                if let Some(ns) = $ns {
-                    WebNode::element_from_tag_namespace(cx, $tag.into(), Cow::Borrowed(ns))
+        #[derive(Debug, Clone)]
+        pub struct $el { node: WebNode }
+        impl WebElement for $el {
+            fn new(cx: Scope) -> Self {
+                let node = if let Some(ns) = $ns {
+                    WebNode::element_from_tag_namespace(cx, Cow::Borrowed($tag), Cow::Borrowed(ns))
                 } else {
-                    WebNode::element_from_tag(cx, $tag.into())
-                }
-            })
+                    WebNode::element_from_tag(cx, Cow::Borrowed($tag))
+                };
+                Self { node }
+            }
         }
+        impl TypedElement<WebNode> for $el {
+            fn as_node(&self) -> &WebNode {
+                &self.node
+            }
+            fn into_node(self) -> WebNode {
+                self.node
+            }
+        }
+        $(#[$attr])*
+        pub static $el: fn(Scope) -> ElementBuilder<$el> = |cx| ElementBuilder::from_element(cx, $el::new(cx));
     };
     (
         $ns:expr,
@@ -138,6 +159,7 @@ macro_rules! define_element_impl {
 
 // A list of valid HTML5 elements (does not include removed or obsolete elements).
 define_elements! {
+    impl HtmlElement,
     None,
     "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/",
 
@@ -371,5 +393,5 @@ define_elements! {
     svg_title("title") {},
     tspan {},
     r#use("use") {},
-    view {},
+    _view("view") {},
 }

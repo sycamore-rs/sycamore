@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use sycamore_reactive::Scope;
+use sycamore_reactive::{create_effect, Scope};
 
 use crate::attributes::{ApplyAttr, ApplyAttrDyn};
 use crate::generic_node::GenericNode;
@@ -10,25 +10,45 @@ use crate::view::{ToView, View};
 
 /// A marker trait that is implemented by elements that can be used with the specified
 /// [`GenericNode`] rendering backend.
-pub trait TypedElement<G: GenericNode> {}
+pub trait TypedElement<G: GenericNode>: Clone + Sized {
+    /// Get a reference to the underlying [`WebNode`].
+    fn as_node(&self) -> &G;
+    /// Consume this element and return the untyped [`WebNode`].
+    fn into_node(self) -> G;
+    /// Create a new [`View`] from this element.
+    fn build(&self) -> View<G> {
+        View::new_node(self.as_node().clone())
+    }
+}
 
-/// Builder-pattern for elements.
-pub struct ElementBuilder<'a, G: GenericNode, E: TypedElement<G>> {
+/// A trait that is specifically implemented by [`ElementBuilder`] so that we can access the
+/// underlying node when implementing a new trait for [`ElementBuilder`].
+pub trait AsNode<G: GenericNode> {
+    /// Get a reference to the underlying [`GenericNode`].
+    fn as_node(&self) -> &G;
+}
+
+/// Builder struct for elements.
+///
+/// Generally, you can get an [`ElementBuilder`] by calling the element's method.
+pub struct ElementBuilder<'a, E: TypedElement<G>, G: GenericNode> {
+    /// Hold on to the `Scope` so that we can use it without requesting it as a parameter all the
+    /// time.
     cx: Scope<'a>,
     /// The element that is being built.
-    el: G,
+    el: E,
     /// Whether the element is dynamic. In SSR, an extra `data-hk` attribute is
     /// added. In client-side hydration, all elements that are not dynamic ignored.
     is_dyn: bool,
-    _marker: std::marker::PhantomData<E>,
+    _marker: std::marker::PhantomData<G>,
 }
 
-impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
+impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
     /// Creates a new [`ElementBuilder`] with the specified element.
     ///
     /// The input is untyped, so it is possible to construct an `ElementBuilder` of any element type
     /// with this method, regardless of the actual type of the underlying element.
-    pub fn from_element(cx: Scope<'a>, el: G) -> Self {
+    pub fn from_element(cx: Scope<'a>, el: E) -> Self {
         Self {
             cx,
             el,
@@ -37,20 +57,21 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         }
     }
 
-    pub fn new(cx: Scope<'a>, f: impl Fn() -> G) -> Self {
-        let el = G::get_next_element(cx, f);
-        Self {
-            cx,
-            el,
-            is_dyn: false,
-            _marker: std::marker::PhantomData,
-        }
-    }
+    // pub fn new(cx: Scope<'a>, f: impl Fn() -> G) -> Self {
+    //     let el = G::get_next_element(cx, f);
+    //     Self {
+    //         cx,
+    //         el,
+    //         is_dyn: false,
+    //         _marker: std::marker::PhantomData,
+    //     }
+    // }
 
     /// Consumes the [`ElementBuilder`] and returns the element.
-    pub fn finish(mut self) -> G {
-        self.el.finish_element(self.cx, self.is_dyn);
-        self.el
+    pub fn finish(self) -> G {
+        let mut node = self.el.into_node();
+        node.finish_element(self.cx, self.is_dyn);
+        node
     }
 
     /// Consumes the [`ElementBuilder`] and returns a newly constructed [`View`].
@@ -61,6 +82,21 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
     /// Mark this element as dynamic. This sets the `is_dyn` flag to true.
     fn mark_dyn(&mut self) {
         self.is_dyn = true;
+    }
+
+    /// Modify the element dynamically.
+    ///
+    /// For instance, you can use this to dynamically set an attribute value.
+    pub fn dynamic<U>(mut self, mut f: impl FnMut(Self) -> U + 'a) -> Self
+    where
+        E: 'a,
+    {
+        self.mark_dyn();
+        let cloned = self.clone();
+        create_effect(self.cx, move || {
+            let _ = f(cloned.clone());
+        });
+        self
     }
 
     /// Applies an attribute to the element.
@@ -83,7 +119,7 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         if Attr::NEEDS_HYDRATE {
             self.mark_dyn();
         }
-        attr.apply(self.cx, &self.el, value);
+        attr.apply(self.cx, self.el.as_node(), value);
         self
     }
 
@@ -94,7 +130,7 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         value: impl FnMut() -> Value + 'a,
     ) -> Self {
         self.mark_dyn();
-        attr.apply_dyn(self.cx, &self.el, Box::new(value));
+        attr.apply_dyn(self.cx, self.el.as_node(), Box::new(value));
         self
     }
 
@@ -115,26 +151,33 @@ impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilder<'a, G, E> {
         if !view.is_node() {
             self.mark_dyn();
         }
-        self.el.builder_insert(self.cx, view);
+        self.el.as_node().builder_insert(self.cx, view);
 
         self
     }
+}
 
-    /// Cast this [`ElementBuilder`] to a type-erased [`ElementBuilder`].
-    pub fn as_any(self) -> ElementBuilder<'a, G, AnyElement> {
-        ElementBuilder {
+impl<'a, E: TypedElement<G>, G: GenericNode> Clone for ElementBuilder<'a, E, G> {
+    fn clone(&self) -> Self {
+        Self {
             cx: self.cx,
-            el: self.el,
+            el: self.el.clone(),
             is_dyn: self.is_dyn,
             _marker: std::marker::PhantomData,
         }
     }
 }
 
-impl<'a, G: GenericNode, E: TypedElement<G>> fmt::Debug for ElementBuilder<'a, G, E> {
+impl<'a, E: TypedElement<G>, G: GenericNode> AsNode<G> for ElementBuilder<'a, E, G> {
+    fn as_node(&self) -> &G {
+        self.el.as_node()
+    }
+}
+
+impl<'a, E: TypedElement<G>, G: GenericNode> fmt::Debug for ElementBuilder<'a, E, G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ElementBuilder")
-            .field("element", &self.el)
+            .field("element", self.el.as_node())
             .finish()
     }
 }
@@ -142,10 +185,12 @@ impl<'a, G: GenericNode, E: TypedElement<G>> fmt::Debug for ElementBuilder<'a, G
 /// A trait that allows either [`ElementBuilder`] or any type that implements
 /// [`ToView`] to be used as a child.
 pub trait ElementBuilderOrView<G: GenericNode, S> {
+    /// If this is an [`ElementBuilder`], then it is converted to a [`View`]. Otherwise,
+    /// [`ToView::to_view`] is called.
     fn into_view(self, cx: Scope) -> View<G>;
 }
-impl<'a, G: GenericNode, E: TypedElement<G>> ElementBuilderOrView<G, ()>
-    for ElementBuilder<'a, G, E>
+impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilderOrView<G, ()>
+    for ElementBuilder<'a, E, G>
 {
     fn into_view(self, _cx: Scope) -> View<G> {
         self.view()
@@ -156,10 +201,3 @@ impl<G: GenericNode, T: ToView<G>> ElementBuilderOrView<G, ((),)> for T {
         self.to_view(cx)
     }
 }
-
-/// A marker type that can represent any element whatsoever. Should be used together with
-/// [`ElementBuilder`].
-#[derive(Debug)]
-pub struct AnyElement;
-
-impl<G: GenericNode> TypedElement<G> for AnyElement {}

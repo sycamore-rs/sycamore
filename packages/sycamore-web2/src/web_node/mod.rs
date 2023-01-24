@@ -305,6 +305,7 @@ impl GenericNode for WebNode {
 
     fn builder_insert(&self, cx: Scope, view: View<Self>) {
         match &self.0 {
+            #[cfg(feature = "dom")]
             WebNodeInner::Dom(_) => {
                 if is_hydrating(cx) {
                     // If it is a static, we don't need to insert it again.
@@ -326,6 +327,7 @@ impl GenericNode for WebNode {
                     sycamore_core2::render::insert(cx, self, view, None, None, true);
                 }
             }
+            #[cfg(feature = "ssr")]
             WebNodeInner::Ssr(_) => {
                 if view.is_node() {
                     sycamore_core2::render::insert(cx, self, view, None, None, true);

@@ -11,18 +11,15 @@ mod bind_props;
 mod events;
 mod props;
 
-pub use attributes::attr;
+pub use attributes::{GlobalAttributes, GlobalSvgAttributes};
 pub use bind_props::bind;
 pub use events::on;
 pub use props::prop;
 
 pub fn test() {
+    use elements::*;
     create_scope_immediate(|cx| {
-        let node = elements::button(cx)
-            .with(attr::class, "bg-red-500")
-            .with(on::click, |_| {})
-            .finish();
-        let view = crate::View::new_node(node);
+        let view = button(cx).class("bg-red-500").view();
 
         let _ = view;
     });
