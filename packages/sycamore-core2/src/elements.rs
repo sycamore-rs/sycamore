@@ -4,7 +4,6 @@ use std::fmt;
 
 use sycamore_reactive::{create_effect, Scope};
 
-use crate::attributes::{ApplyAttr, ApplyAttrDyn};
 use crate::generic_node::GenericNode;
 use crate::view::{ToView, View};
 
@@ -98,41 +97,6 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
         create_effect(self.cx, move || {
             let _ = f(cloned.clone());
         });
-        self
-    }
-
-    /// Applies an attribute to the element.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore::builder::prelude::*;
-    /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// p(cx)
-    ///     .with(attr::class, "hello-text")
-    ///     .child("Hello, World!")
-    /// # .view() }
-    /// ```
-    pub fn with<Value, Attr: ApplyAttr<'a, G, Value, E>>(
-        mut self,
-        attr: Attr,
-        value: Value,
-    ) -> Self {
-        if Attr::NEEDS_HYDRATE {
-            self.mark_dyn();
-        }
-        attr.apply(self.cx, self.el.as_node(), value);
-        self
-    }
-
-    /// Applies an attribute to the element.
-    pub fn with_dyn<Value, Attr: ApplyAttrDyn<'a, G, Value, E>>(
-        mut self,
-        attr: Attr,
-        value: impl FnMut() -> Value + 'a,
-    ) -> Self {
-        self.mark_dyn();
-        attr.apply_dyn(self.cx, self.el.as_node(), Box::new(value));
         self
     }
 

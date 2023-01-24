@@ -10,7 +10,6 @@
 
 #![deny(missing_debug_implementations)]
 
-pub mod attributes;
 pub mod component;
 pub mod elements;
 pub mod generic_node;
