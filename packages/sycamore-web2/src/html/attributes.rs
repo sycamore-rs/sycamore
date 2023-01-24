@@ -9,8 +9,8 @@ use sycamore_core2::elements::AsNode;
 use sycamore_core2::generic_node::GenericNode;
 
 use super::elements::{HtmlElement, SvgElement};
-use crate::ElementBuilder;
 use crate::web_node::WebNode;
+use crate::ElementBuilder;
 
 /// Codegen the methods for the attributes.
 macro_rules! define_attributes {

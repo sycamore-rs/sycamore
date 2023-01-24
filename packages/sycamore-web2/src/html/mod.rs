@@ -13,7 +13,7 @@ mod props;
 
 pub use attributes::{GlobalAttributes, GlobalSvgAttributes};
 pub use bind_props::bind;
-pub use events::on;
+pub use events::{on, OnAttributes};
 pub use props::prop;
 
 pub fn test() {

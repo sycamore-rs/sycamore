@@ -2,14 +2,37 @@
 
 #![allow(non_camel_case_types)]
 
-use sycamore_core2::attributes::ApplyAttr;
-use sycamore_core2::elements::TypedElement;
+use sycamore_core2::elements::{AsNode, TypedElement};
 use sycamore_core2::generic_node::GenericNodeElements;
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 use web_sys::*;
 
 use crate::web_node::WebNode;
+use crate::ElementBuilder;
+
+pub trait OnAttributes<'a> {
+    fn on<T: From<JsValue>, S>(
+        self,
+        event: OnAttr<T>,
+        handler: impl EventHandler<'a, T, S> + 'a,
+    ) -> Self;
+}
+
+impl<'a, E: TypedElement<WebNode>> OnAttributes<'a> for ElementBuilder<'a, E> {
+    fn on<T: From<JsValue>, S>(
+        mut self,
+        event: OnAttr<T>,
+        mut handler: impl EventHandler<'a, T, S> + 'a,
+    ) -> Self {
+        let cx = self.cx();
+        self.mark_dyn();
+        let type_erased = Box::new(move |ev: JsValue| handler.call(cx, ev.into()));
+        self.as_node()
+            .add_event_listener(cx, event.name, type_erased);
+        self
+    }
+}
 
 /// Attribute directive for attaching an event listener to an element.
 pub struct on;
@@ -57,16 +80,6 @@ impl<T> OnAttr<T> {
             name,
             _marker: std::marker::PhantomData,
         }
-    }
-}
-
-impl<'a, T: From<JsValue>, F: FnMut(T) + 'a, E: TypedElement<WebNode>> ApplyAttr<'a, WebNode, F, E>
-    for OnAttr<T>
-{
-    const NEEDS_HYDRATE: bool = true;
-    fn apply(self, cx: Scope<'a>, el: &WebNode, mut value: F) {
-        let type_erased = Box::new(move |ev: JsValue| value(ev.into()));
-        el.add_event_listener(cx, self.name, type_erased);
     }
 }
 

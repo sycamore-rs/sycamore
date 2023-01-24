@@ -1,14 +1,49 @@
 //! Definitions for properties that can be two-way binded to with the [`bind`] directive.
 
-use sycamore_core2::attributes::ApplyAttr;
-use sycamore_core2::elements::TypedElement;
-use sycamore_reactive::{create_effect, Scope, Signal};
+#![allow(non_upper_case_globals)]
+
+use sycamore_core2::elements::{AsNode, TypedElement};
+use sycamore_reactive::{create_effect, Signal};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::Event;
 
 use super::events::{on, OnAttr};
+use super::OnAttributes;
 use crate::render::{get_render_env, RenderEnv};
 use crate::web_node::WebNode;
+use crate::ElementBuilder;
+
+pub trait BindAttributes<'a> {
+    fn bind<T: JsValueCastToType, U: From<JsValue> + Into<JsValue>>(
+        self,
+        attr: BindAttr<T, U>,
+        signal: &'a Signal<T>,
+    ) -> Self;
+}
+
+impl<'a, E: TypedElement<WebNode>> BindAttributes<'a> for ElementBuilder<'a, E> {
+    fn bind<T: JsValueCastToType, U: From<JsValue> + Into<JsValue>>(
+        mut self,
+        attr: BindAttr<T, U>,
+        signal: &'a Signal<T>,
+    ) -> Self {
+        self.mark_dyn();
+        if get_render_env(self.cx()) == RenderEnv::Ssr {
+            return self;
+        }
+        let el = self.as_node().clone();
+        create_effect(self.cx(), move || {
+            let value = signal.get();
+            el.set_property(attr.prop, T::cast_into(&value));
+        });
+        self.on(attr.ev, move |ev: U| {
+            let ev: JsValue = ev.into();
+            let target = ev.unchecked_into::<Event>().target().unwrap();
+            let value = js_sys::Reflect::get(&target, &attr.prop.into()).unwrap();
+            signal.set(T::cast_from(&value).unwrap()); // TODO: don't unwrap here
+        })
+    }
+}
 
 /// Attribute directive for creating a two-way binding between a property value and a signal.
 #[allow(non_camel_case_types)]
@@ -30,83 +65,30 @@ impl<T, U> BindAttr<T, U> {
     }
 }
 
-fn bind_to_element<'a, Ev: From<JsValue> + Into<JsValue>, T>(
-    cx: Scope<'a>,
-    el: &WebNode,
-    prop: &'static str,
-    ev: OnAttr<Ev>,
-    signal: &'a Signal<T>,
-    into: impl Fn(&T) -> JsValue + 'a,
-    from: impl Fn(&JsValue) -> Option<T> + 'a,
-) {
-    if get_render_env(cx) == RenderEnv::Dom {
-        // ApplyAttr::<WebNode, _, AnyElement>::apply(ev, cx, el, move |ev: Ev| {
-        //     let ev: JsValue = ev.into();
-        //     let target = ev.unchecked_into::<Event>().target().unwrap();
-        //     let prop = js_sys::Reflect::get(&target, &prop.into()).unwrap();
-        //     signal.set(from(&prop).unwrap());
-        // });
-        // let el = el.clone();
-        // create_effect(cx, move || {
-        //     let value = signal.get();
-        //     el.set_property(prop, into(&value));
-        // });
-        todo!();
+pub trait JsValueCastToType {
+    fn cast_from(value: &JsValue) -> Option<Self>
+    where
+        Self: Sized;
+    fn cast_into(&self) -> JsValue;
+}
+
+impl JsValueCastToType for bool {
+    fn cast_from(value: &JsValue) -> Option<Self> {
+        value.as_bool()
+    }
+    fn cast_into(&self) -> JsValue {
+        JsValue::from(*self)
+    }
+}
+impl JsValueCastToType for String {
+    fn cast_from(value: &JsValue) -> Option<Self> {
+        value.as_string()
+    }
+    fn cast_into(&self) -> JsValue {
+        JsValue::from(self)
     }
 }
 
-impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
-    ApplyAttr<'a, WebNode, &'a Signal<bool>, E> for BindAttr<bool, Ev>
-{
-    const NEEDS_HYDRATE: bool = true;
-    fn apply(self, cx: Scope<'a>, el: &WebNode, value: &'a Signal<bool>) {
-        bind_to_element(
-            cx,
-            el,
-            self.prop,
-            self.ev,
-            value,
-            |&rs| rs.into(),
-            JsValue::as_bool,
-        );
-    }
-}
-
-impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
-    ApplyAttr<'a, WebNode, &'a Signal<f64>, E> for BindAttr<f64, Ev>
-{
-    const NEEDS_HYDRATE: bool = true;
-    fn apply(self, cx: Scope<'a>, el: &WebNode, value: &'a Signal<f64>) {
-        bind_to_element(
-            cx,
-            el,
-            self.prop,
-            self.ev,
-            value,
-            |&rs| rs.into(),
-            JsValue::as_f64,
-        );
-    }
-}
-
-impl<'a, E: TypedElement<WebNode>, Ev: From<JsValue> + Into<JsValue>>
-    ApplyAttr<'a, WebNode, &'a Signal<String>, E> for BindAttr<String, Ev>
-{
-    const NEEDS_HYDRATE: bool = true;
-    fn apply(self, cx: Scope<'a>, el: &WebNode, value: &'a Signal<String>) {
-        bind_to_element(
-            cx,
-            el,
-            self.prop,
-            self.ev,
-            value,
-            |rs| rs.into(),
-            JsValue::as_string,
-        );
-    }
-}
-
-#[allow(non_upper_case_globals)]
 impl bind {
     /// Creates a two-way binding to an input's `value`.
     pub const value: BindAttr<String, Event> = BindAttr::new("value", on::input);

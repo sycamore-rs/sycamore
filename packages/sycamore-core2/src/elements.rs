@@ -80,7 +80,9 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
     }
 
     /// Mark this element as dynamic. This sets the `is_dyn` flag to true.
-    fn mark_dyn(&mut self) {
+    /// 
+    /// This is mostly used internally to signal when an element should be flagged for hydration.
+    pub fn mark_dyn(&mut self) {
         self.is_dyn = true;
     }
 
@@ -142,7 +144,7 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
     /// # use sycamore::prelude::*;
     /// # fn _test<G: Html>(cx: Scope) -> View<G> {
     /// div(cx).child(
-    ///     h1().child("I am a child")
+    ///     h1(cx).child("I am a child")
     /// )
     /// # .view() }
     /// ```
@@ -154,6 +156,11 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
         self.el.as_node().builder_insert(self.cx, view);
 
         self
+    }
+
+    /// Get the [`Scope`] of this [`ElementBuilder`].
+    pub fn cx(&self) -> Scope<'a> {
+        self.cx
     }
 }
 
