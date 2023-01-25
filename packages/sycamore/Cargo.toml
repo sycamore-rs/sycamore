@@ -85,6 +85,7 @@ hydrate = [
     "sycamore-core/hydrate",
     "sycamore-web/hydrate",
 ]
+silence_dom_ssr_features_error = ["sycamore-web/silence_dom_ssr_features_error"]
 ssr = [
     "web",
     "html-escape",

@@ -15,10 +15,8 @@ use crate::view::View;
 /// * If hydration is enabled, create a new hydration context.
 /// * Create a new untracked scope (see [`untrack`]).
 /// * Call the closure `f` passed to this function.
-#[doc(hidden)]
-pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
-    // TODO: hydration?
-    untrack(f)
+pub fn component_scope<G: GenericNode>(cx: Scope, f: impl FnOnce() -> View<G>) -> View<G> {
+    G::component_scope(cx, || untrack(f))
 }
 
 /// A trait that is implemented automatically by the `Props` derive macro.

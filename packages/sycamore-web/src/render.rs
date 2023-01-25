@@ -91,7 +91,7 @@ pub fn hydrate_to_with_scope(
     // Provide the environment context.
     provide_context(cx, RenderEnv::Dom);
     provide_context(cx, HydrationState::new());
-    provide_context(cx, HydrationCtx::new_from_root(root.clone().into()));
+    provide_context(cx, HydrationCtx::new_from_root(root.clone()));
 
     let root = WebNode::from_web_sys(root.clone().into());
     // Get children from parent into a View to set as the initial node value.

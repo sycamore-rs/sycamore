@@ -24,7 +24,7 @@ enum SsrNodeType {
 #[derive(Debug, Clone)]
 pub(crate) struct SsrNodeInner {
     ty: Rc<SsrNodeType>,
-    pub(crate) hk: Cell<HydrationKey>,
+    pub(crate) hk: Cell<Option<HydrationKey>>,
     /// No parent if `Weak::upgrade` returns `None`.
     parent: RefCell<Weak<SsrNodeInner>>,
 }
@@ -51,7 +51,7 @@ impl SsrNode {
     fn new(ty: SsrNodeType, hk: HydrationKey) -> Self {
         Self(Rc::new(SsrNodeInner {
             ty: Rc::new(ty),
-            hk: Cell::new(hk),
+            hk: Cell::new(Some(hk)),
             parent: RefCell::new(Weak::new()), // no parent
         }))
     }

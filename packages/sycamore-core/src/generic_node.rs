@@ -114,8 +114,14 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
         f()
     }
 
+    /// A wrapper around [`insert`](crate::render::insert) that allows you to customize the behavior
+    /// for the rendering backend.
     fn builder_insert(&self, cx: Scope, view: View<Self>) {
         crate::render::insert(cx, self, view, None, None, true);
+    }
+
+    fn component_scope(_cx: Scope, f: impl FnOnce() -> View<Self>) -> View<Self> {
+        f()
     }
 }
 

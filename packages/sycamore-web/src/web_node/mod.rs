@@ -258,23 +258,23 @@ impl GenericNode for WebNode {
         }
     }
 
-    fn finish_element(&mut self, cx: Scope, _is_dyn: bool) {
+    fn finish_element(&mut self, _cx: Scope, _is_dyn: bool) {
         #[cfg(feature = "hydrate")]
-        if is_hydrating(cx) {
-            match &mut self.0 {
-                // If we are in SSR mode, add a `data-hk` attribute to the element.
-                #[cfg(feature = "ssr")]
-                WebNodeInner::Ssr(node) => {
-                    node.set_attribute("data-hk".into(), node.0.hk.get().to_string().into());
+        match &mut self.0 {
+            // If we are in SSR mode, add a `data-hk` attribute to the element.
+            #[cfg(feature = "ssr")]
+            WebNodeInner::Ssr(node) => {
+                if let Some(hk) = node.0.hk.get() {
+                    node.set_attribute("data-hk".into(), hk.to_string().into());
                 }
-                _ => {}
             }
+            _ => {}
         }
     }
 
     fn get_next_element(_cx: Scope, f: impl Fn() -> Self) -> Self {
         // If we are hydrating on the client-side, get the next element from the hydration state.
-        // Otherwise, return `None`.
+        // Otherwise, call f.
         #[cfg(feature = "hydrate")]
         match get_render_env(_cx) {
             #[cfg(feature = "dom")]
@@ -282,19 +282,32 @@ impl GenericNode for WebNode {
                 if is_hydrating(_cx) {
                     let hk = use_hydration_state(_cx).next_key();
                     let h_ctx = use_hydration_ctx(_cx);
-                    h_ctx
+                    let node = h_ctx
                         .get_element_by_key(hk)
                         .cloned()
-                        .map(Self::from_web_sys)
-                        .unwrap_or_else(f)
+                        .map(Self::from_web_sys);
+                    match node {
+                        Some(node) => node,
+                        None => {
+                            #[cfg(debug_assertions)]
+                            web_sys::console::warn_1(
+                                &format!("No element with hydration key {hk}. Skipping.").into(),
+                            );
+                            f()
+                        }
+                    }
                 } else {
                     f()
                 }
             }
             #[cfg(feature = "ssr")]
             RenderEnv::Ssr => {
-                // Increment the hydration key to stay in sync with client.
-                let hk = use_hydration_state(_cx).next_key();
+                let hk = if is_hydrating(_cx) {
+                    // Increment the hydration key to stay in sync with client.
+                    Some(use_hydration_state(_cx).next_key())
+                } else {
+                    None
+                };
                 let el = f();
                 el.as_ssr_node().unwrap().0.hk.set(hk);
                 el
@@ -305,44 +318,57 @@ impl GenericNode for WebNode {
     }
 
     fn builder_insert(&self, cx: Scope, view: View<Self>) {
+        let is_hydrating = is_hydrating(cx);
         match &self.0 {
             #[cfg(feature = "dom")]
             WebNodeInner::Dom(_) => {
-                if is_hydrating(cx) {
-                    // If it is a static, we don't need to insert it again.
-                    // Otherwise, find the start and end markers and insert the view between them.
-                    if !view.is_node() {
+                // If it is a static, we don't need to insert it again.
+                // Otherwise, find the start and end markers and insert the view between them.
+                let initial = if is_hydrating {
+                    if view.is_node() {
+                        return;
+                    } else {
                         let initial = get_next_markers(&self.to_web_sys().unchecked_into());
-                        let initial = initial.map(|nodes| {
-                            View::new_fragment(
-                                nodes
-                                    .into_iter()
-                                    .map(Self::from_web_sys)
-                                    .map(View::new_node)
-                                    .collect(),
-                            )
-                        });
-                        sycamore_core::render::insert(cx, self, view, initial, None, true);
+                        initial.map(|nodes| {
+                            let nodes = nodes
+                                .into_iter()
+                                .map(Self::from_web_sys)
+                                .map(View::new_node)
+                                .collect();
+                            View::new_fragment(nodes)
+                        })
                     }
                 } else {
-                    sycamore_core::render::insert(cx, self, view, None, None, true);
-                }
+                    None
+                };
+                sycamore_core::render::insert(cx, self, view, initial, None, true);
             }
             #[cfg(feature = "ssr")]
             WebNodeInner::Ssr(_) => {
                 if view.is_node() {
                     sycamore_core::render::insert(cx, self, view, None, None, true);
                 } else {
-                    // Insert start and finish tags.
-                    let start_tag = Self::marker_with_text(cx, "#".into());
+                    // Only insert start tag if we are hydrating.
+                    // Start tags are useless outside of hydration.
+                    if is_hydrating {
+                        let start_tag = Self::marker_with_text(cx, "#".into());
+                        self.append_child(&start_tag);
+                    }
                     let end_tag = Self::marker_with_text(cx, "/".into());
-                    self.append_child(&start_tag);
                     self.append_child(&end_tag);
 
-                    // Insert the view.
                     sycamore_core::render::insert(cx, self, view, None, Some(&end_tag), true);
                 }
             }
+        }
+    }
+
+    fn component_scope(cx: Scope, f: impl FnOnce() -> View<Self>) -> View<Self> {
+        if is_hydrating(cx) {
+            let h_state = use_hydration_state(cx);
+            h_state.enter_component(f)
+        } else {
+            f()
         }
     }
 }

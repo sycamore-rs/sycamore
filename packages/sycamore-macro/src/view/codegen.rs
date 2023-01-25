@@ -510,7 +510,7 @@ fn codegen_component(
 
     quote! {{
         let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
-        ::sycamore::component::component_scope(move || ::sycamore::component::Component::create(
+        ::sycamore::component::component_scope(#cx, move || ::sycamore::component::Component::create(
             __component,
             #cx,
             #props_quoted

@@ -12,5 +12,6 @@ log = "0.4.17"
 sycamore = { path = "../../packages/sycamore", features = [
     "hydrate",
     "ssr",
+    "silence_dom_ssr_features_error"
 ] }
 wasm-bindgen = "0.2.83"

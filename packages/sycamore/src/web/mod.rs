@@ -2,7 +2,11 @@
 
 // pub mod portal;
 
-/* Re-export sycamore-web */
+use sycamore_core::component::Children;
+use sycamore_macro::{component, Props};
+use sycamore_reactive::Scope;
+use sycamore_web::web_node::WebNode;
+/// Re-export sycamore-web
 pub use sycamore_web::*;
 
 #[allow(unused_imports)]
@@ -96,76 +100,81 @@ pub async fn render_to_string_await_suspense(
     // }
 
     // ret
+
     todo!()
 }
 
-// /// Props for [`NoHydrate`].
-// #[cfg(feature = "hydrate")]
-// #[derive(Props, Debug)]
-// pub struct NoHydrateProps<'a, G: GenericNode> {
-//     children: Children<'a, G>,
-// }
+/// Props for [`NoHydrate`].
+#[cfg(feature = "hydrate")]
+#[derive(Props, Debug)]
+pub struct NoHydrateProps<'a> {
+    children: Children<'a, WebNode>,
+}
 
-// /// Render the children of this component in a scope that will not be hydrated.
-// ///
-// /// When using `SsrNode`, this means that hydration markers won't be generated. When using
-// /// `HydrateNode`, this means that the entire sub-tree will be ignored. When using `DomNode`,
-// /// rendering proceeds as normal.
-// ///
-// /// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
-// /// elements.
-// #[cfg(feature = "hydrate")]
-// #[component]
-// pub fn NoHydrate<'a, G: GenericNode>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
-// use crate::utils::{hydrate, render};
+/// Render the children of this component in a scope that will not be hydrated.
+///
+/// When using `SsrNode`, this means that hydration markers won't be generated. When using
+/// `HydrateNode`, this means that the entire sub-tree will be ignored. When using `DomNode`,
+/// rendering proceeds as normal.
+///
+/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+/// elements.
+#[cfg(feature = "hydrate")]
+#[component]
+pub fn NoHydrate<'a>(cx: Scope<'a>, props: NoHydrateProps<'a>) -> View {
+    use sycamore_core::render::insert;
+    use sycamore_web::hydrate::{is_hydrating, without_hydration_state};
+    use sycamore_web::render::{get_render_env, RenderEnv};
 
-// let node_ref = create_node_ref(cx);
-// let v = view! { cx,
-//     div(ref=node_ref) {}
-// };
-// if G::CLIENT_SIDE_HYDRATION && !hydrate::hydration_completed() {
-//     // We don't want to hydrate the children, so we just do nothing.
-// } else if G::USE_HYDRATION_CONTEXT {
-//     // If we have a hydration context, remove it in this scope so that hydration markers are not
-//     // generated.
-//     let nodes = hydrate::with_no_hydration_context(|| props.children.call(cx));
-//     render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
-// } else {
-//     // Just continue rendering as normal.
-//     let nodes = props.children.call(cx);
-//     render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
-// };
-// v
-//     todo!()
-// }
+    let node_ref = create_node_ref(cx);
+    let view = view! { cx,
+        div(_ref=node_ref)
+    };
+    if is_hydrating(cx) {
+        match get_render_env(cx) {
+            RenderEnv::Dom => {
+                // We don't want to hydrate the children, so we just do nothing.
+            }
+            RenderEnv::Ssr => {
+                // If we have a hydration context, remove it in this scope so that hydration markers
+                // are not generated
+                let nodes = without_hydration_state(cx, || props.children.call(cx));
+                insert(cx, &node_ref.get(), nodes, None, None, false);
+            }
+        }
+    } else {
+        // Just continue rendering as normal.
+        let nodes = props.children.call(cx);
+        insert(cx, &node_ref.get(), nodes, None, None, false);
+    }
+    view
+}
 
-// /// Props for [`NoSsr`].
-// #[cfg(feature = "hydrate")]
-// #[derive(Props, Debug)]
-// pub struct NoSsrProps<'a, G: GenericNode> {
-//     children: Children<'a, G>,
-// }
+/// Props for [`NoSsr`].
+#[cfg(feature = "hydrate")]
+#[derive(Props, Debug)]
+pub struct NoSsrProps<'a> {
+    children: Children<'a, WebNode>,
+}
 
-// /// Only render the children of this component in the browser.
-// /// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
-// /// elements.
-// #[cfg(feature = "hydrate")]
-// #[component]
-// pub fn NoSsr<'a, G: GenericNode>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
-// use crate::utils::hydrate;
+/// Only render the children of this component in the browser.
+/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+/// elements.
+#[cfg(feature = "hydrate")]
+#[component]
+pub fn NoSsr<'a>(cx: Scope<'a>, props: NoSsrProps<'a>) -> View {
+    use sycamore_web::hydrate::without_hydration_state;
+    use sycamore_web::render::{get_render_env, RenderEnv};
 
-// let node = if !G::IS_BROWSER {
-//     // We don't want to render the children, so we just do nothing.
-//     view! { cx, }
-// } else if G::USE_HYDRATION_CONTEXT {
-//     // Since the nodes were not rendered on the server, there is nothing to hydrate.
-//     hydrate::with_no_hydration_context(|| props.children.call(cx))
-// } else {
-//     // Just continue rendering as normal.
-//     props.children.call(cx)
-// };
-// view! { cx,
-//     div { (node) }
-// }
-//     todo!()
-// }
+    without_hydration_state(cx, || {
+        let node = match get_render_env(cx) {
+            RenderEnv::Dom => props.children.call(cx),
+            // We don't want to render the children, so we just do nothing.
+            RenderEnv::Ssr => view! { cx, },
+        };
+
+        view! { cx,
+            div { (node) }
+        }
+    })
+}

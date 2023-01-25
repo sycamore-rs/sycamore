@@ -70,15 +70,7 @@ impl HydrationState {
             .set(self.current_element_id.get() + 1);
         HydrationKey(
             self.current_component_id.get(),
-            self.current_element_id.get(),
-        )
-    }
-
-    /// Get the current hydration key.
-    pub fn current_key(&self) -> HydrationKey {
-        HydrationKey(
-            self.current_component_id.get(),
-            self.current_element_id.get(),
+            self.current_element_id.get() - 1,
         )
     }
 
@@ -223,4 +215,14 @@ pub fn is_hydrating(cx: Scope) -> bool {
     } else {
         false
     }
+}
+
+/// Runs the given function with hydration disabled.
+pub fn without_hydration_state<T>(cx: Scope, f: impl FnOnce() -> T) -> T {
+    let h_state = use_hydration_state(cx);
+    let old = h_state.active.get();
+    h_state.active.set(false);
+    let ret = f();
+    h_state.active.set(old);
+    ret
 }

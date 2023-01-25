@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn Counter<G: Html>(cx: Scope) -> View<G> {
+fn Counter(cx: Scope) -> View {
     let state = create_signal(cx, 0i32);
     let increment = |_| state.set(*state.get() + 1);
     let decrement = |_| state.set(*state.get() - 1);
@@ -17,7 +17,7 @@ fn Counter<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-fn Hello<G: Html>(cx: Scope) -> View<G> {
+fn Hello(cx: Scope) -> View {
     let name = create_signal(cx, String::new());
     let is_empty = create_selector(cx, || !name.get().is_empty());
 
@@ -40,7 +40,7 @@ fn Hello<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     view! { cx,
         p { "Hydration" }
         br {}
@@ -61,6 +61,11 @@ fn main() {
     console_log::init_with_level(log::Level::Debug).unwrap();
 
     let s = sycamore::render_to_string(|cx| view! { cx, App {} });
+    log::warn!("We are rendering the app to a string directly in the browser.
+Generally, for a real life app, this would make no sense.
+However, we are doing this here for demonstration purposes without needing to set up a full-blown server.
+
+If you ever change the code in this example, make sure to update the index.html file with the string below.");
     log::info!("{}", s);
 
     sycamore::hydrate(|cx| view! { cx, App {} });

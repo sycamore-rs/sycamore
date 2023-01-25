@@ -59,8 +59,11 @@ fn insert_expression<G: GenericNode>(
                 parent.insert_child_before(node, marker);
             }
 
-            // The new node should be inserted into parent.
-            debug_assert_eq!(node.parent_node().as_ref(), Some(parent));
+            debug_assert_eq!(
+                node.parent_node().as_ref(),
+                Some(parent),
+                "the inserted node is not a child of {parent:?}"
+            );
         }
         ViewType::Dyn(f) => {
             let parent = parent.clone();
