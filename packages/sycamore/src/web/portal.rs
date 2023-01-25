@@ -1,7 +1,6 @@
 //! Portal API.
 
-use std::any::Any;
-
+use sycamore_web::render::{get_render_env, RenderEnv};
 use wasm_bindgen::prelude::*;
 
 use crate::component::Children;
@@ -9,20 +8,17 @@ use crate::prelude::*;
 
 /// Props for [`Portal`].
 #[derive(Props, Debug)]
-pub struct PortalProps<'a, G>
-where
-    G: GenericNode,
-{
-    children: Children<'a, G>,
+pub struct PortalProps<'a> {
+    children: Children<'a, WebNode>,
     selector: &'a str,
 }
 
 /// A portal into another part of the DOM.
 #[component]
-pub fn Portal<'a, G: Html>(cx: Scope<'a>, props: PortalProps<'a, G>) -> View<G> {
+pub fn Portal<'a>(cx: Scope<'a>, props: PortalProps<'a>) -> View {
     let PortalProps { children, selector } = props;
 
-    if G::IS_BROWSER {
+    if get_render_env(cx) == RenderEnv::Dom {
         let window = web_sys::window().unwrap_throw();
         let document = window.document().unwrap_throw();
         let container = document
@@ -33,28 +29,14 @@ pub fn Portal<'a, G: Html>(cx: Scope<'a>, props: PortalProps<'a, G>) -> View<G> 
         let children = children.call(cx).flatten();
 
         for child in &children {
-            container
-                .append_child(
-                    &<dyn Any>::downcast_ref::<DomNode>(child)
-                        .unwrap_throw()
-                        .to_web_sys(),
-                )
-                .unwrap_throw();
+            container.append_child(&child.to_web_sys()).unwrap_throw();
         }
 
         on_cleanup(cx, move || {
             for child in &children {
-                container
-                    .remove_child(
-                        &<dyn Any>::downcast_ref::<DomNode>(child)
-                            .unwrap_throw()
-                            .to_web_sys(),
-                    )
-                    .unwrap_throw();
+                container.remove_child(&child.to_web_sys()).unwrap_throw();
             }
         });
-    } else {
-        // TODO: Support for other types of nodes.
     }
 
     view! { cx, }

@@ -163,6 +163,9 @@ pub fn use_transition(cx: Scope<'_>) -> &TransitionHandle<'_> {
 
 #[cfg(all(test, feature = "ssr", not(miri)))]
 mod tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
     use sycamore_futures::provide_executor_scope;
 
     use super::*;
@@ -171,7 +174,7 @@ mod tests {
     #[tokio::test]
     async fn suspense() {
         #[component]
-        async fn Comp<G: Html>(cx: Scope<'_>) -> View<G> {
+        async fn Comp(cx: Scope<'_>) -> View {
             view! { cx, "Hello Suspense!" }
         }
 
@@ -192,14 +195,14 @@ mod tests {
     #[tokio::test]
     async fn transition() {
         provide_executor_scope(async {
-            let (sender, receiver) = oneshot::channel();
-            let mut sender = Some(sender);
-            let disposer = create_scope(|cx| {
+            let done_reached = Rc::new(Cell::new(false));
+            let done_reached_clone = Rc::clone(&done_reached);
+            render_to_string_await_suspense(|cx| {
                 let trigger = create_signal(cx, ());
                 let transition = use_transition(cx);
-                let _: View<SsrNode> = view! { cx,
+                let _: View = view! { cx,
                     Suspense(
-                        children=Children::new(cx, move |cx| {
+                        children=Children::new(move |cx| {
                             create_effect(cx, move || {
                                 trigger.track();
                                 assert!(try_use_context::<SuspenseState>(cx).is_some());
@@ -212,12 +215,13 @@ mod tests {
                 transition.start(|| trigger.set(()), || done.set(true));
                 create_effect(cx, move || {
                     if *done.get() {
-                        sender.take().unwrap().send(()).unwrap();
+                        done_reached_clone.set(true);
                     }
                 });
-            });
-            receiver.await.unwrap();
-            unsafe { disposer.dispose() };
+                view! { cx, }
+            })
+            .await;
+            assert!(done_reached.get());
         })
         .await;
     }

@@ -1,15 +1,18 @@
 //! Web support for Sycamore.
 
-// pub mod portal;
+pub mod portal;
 
+#[allow(unused_imports)]
 use sycamore_core::component::Children;
 use sycamore_macro::{component, Props};
 use sycamore_reactive::Scope;
+use sycamore_web::hydrate::HydrationState;
+use sycamore_web::render::RenderEnv;
+use sycamore_web::web_node::ssr::WriteToString;
 use sycamore_web::web_node::WebNode;
 /// Re-export sycamore-web
 pub use sycamore_web::*;
 
-#[allow(unused_imports)]
 use crate::prelude::*;
 
 /// A macro for ergonomically creating complex UI layouts in HTML.
@@ -49,59 +52,6 @@ macro_rules! html_node {
 #[doc(hidden)]
 pub mod macros {
     pub use crate::{html_node as node, html_view as view};
-}
-
-/// Render a [`View`] into a static [`String`]. Useful
-/// for rendering to a string on the server side.
-///
-/// Waits for suspense to be loaded before returning.
-///
-/// _This API requires the following crate features to be activated: `suspense`, `ssr`_
-#[cfg(all(feature = "ssr", feature = "suspense"))]
-pub async fn render_to_string_await_suspense(
-    view: impl FnOnce(Scope<'_>) -> sycamore_web::View + 'static,
-) -> String {
-    // use std::cell::RefCell;
-    // use std::rc::Rc;
-
-    // use futures::channel::oneshot;
-    // use sycamore_futures::spawn_local_scoped;
-
-    // use crate::utils::hydrate::with_hydration_context_async;
-
-    // let mut ret = String::new();
-    // let v = Rc::new(RefCell::new(None));
-    // let (sender, receiver) = oneshot::channel();
-    // let disposer = create_scope({
-    //     let v = Rc::clone(&v);
-    //     move |cx| {
-    //         spawn_local_scoped(cx, async move {
-    //             *v.borrow_mut() = Some(
-    //                 with_hydration_context_async(async {
-    //                     crate::suspense::await_suspense(cx, async { view(cx) }).await
-    //                 })
-    //                 .await,
-    //             );
-    //             sender
-    //                 .send(())
-    //                 .expect("receiving end should not be dropped");
-    //         });
-    //     }
-    // });
-    // receiver.await.expect("rendering should complete");
-    // let v = v.borrow().clone().unwrap();
-    // for node in v.flatten() {
-    //     node.write_to_string(&mut ret);
-    // }
-
-    // // SAFETY: we are done with the scope now.
-    // unsafe {
-    //     disposer.dispose();
-    // }
-
-    // ret
-
-    todo!()
 }
 
 /// Props for [`NoHydrate`].
@@ -177,4 +127,55 @@ pub fn NoSsr<'a>(cx: Scope<'a>, props: NoSsrProps<'a>) -> View {
             div { (node) }
         }
     })
+}
+
+/// Render a [`View`] into a static [`String`]. Useful for rendering to a string on the server side.
+///
+/// Waits for suspense to be loaded before returning.
+#[cfg(all(feature = "ssr", feature = "suspense"))]
+pub async fn render_to_string_await_suspense(
+    f: impl FnOnce(Scope<'_>) -> View + 'static,
+) -> String {
+    use futures::channel::oneshot;
+    use sycamore_futures::spawn_local_scoped;
+
+    let (sender, receiver) = oneshot::channel();
+
+    let disposer = create_scope(|cx| {
+        spawn_local_scoped(cx, async move {
+            let ssr = render_to_string_await_suspense_with_scope(cx, f).await;
+            sender
+                .send(ssr)
+                .expect("receiving end should not be dropped");
+        });
+    });
+
+    let ssr = receiver.await.expect("rendering should complete");
+
+    // SAFETY: we are done with the scope now.
+    unsafe {
+        disposer.dispose();
+    }
+    ssr
+}
+
+/// Same as [`render_to_string_await_suspense`] but with a pre-created scope.
+pub async fn render_to_string_await_suspense_with_scope(
+    cx: Scope<'_>,
+    f: impl FnOnce(Scope<'_>) -> View,
+) -> String {
+    // Provide the environment context.
+    provide_context(cx, RenderEnv::Ssr);
+    provide_context(cx, HydrationState::new());
+
+    let mut buf = String::new();
+
+    let v = crate::suspense::await_suspense(cx, async { f(cx) }).await;
+    for node in v.flatten() {
+        node.as_ssr_node()
+            .expect("expected SSR node")
+            .write_to_string(&mut buf);
+    }
+
+    buf
 }
