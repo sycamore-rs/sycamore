@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let state = create_signal(cx, 0i32);
     let increment = |_| state.set(*state.get() + 1);
     let decrement = |_| state.set(*state.get() - 1);

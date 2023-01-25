@@ -18,7 +18,7 @@ pub struct Codegen {
 impl Codegen {
     pub fn view_root(&self, view_root: &ViewRoot) -> TokenStream {
         let cx = &self.cx;
-        match &view_root.0[..] {
+        let quoted = match &view_root.0[..] {
             [] => quote! { ::sycamore::view::View::empty(#cx) },
             [node] => self.view_node(node),
             nodes => {
@@ -29,7 +29,11 @@ impl Codegen {
                     ])
                 }
             }
-        }
+        };
+        quote! {{
+            use ::sycamore::web::html::traits::*;
+            #quoted
+        }}
     }
 
     /// Generate a `View` from a `ViewNode`.
@@ -53,13 +57,18 @@ impl Codegen {
                 let cx = &self.cx;
                 let needs_cx = dyn_node.needs_cx(&cx.to_string());
 
-                match needs_cx {
-                    true => quote! {
-                        ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::ToView::to_view(&(#value)))
-                    },
-                    false => quote! {
-                        ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
-                    },
+                if needs_cx {
+                    quote! {
+                        ::sycamore::view::View::new_dyn_scoped(#cx,
+                            move |#cx| ::sycamore::view::ToView::to_view(&(#value), #cx)
+                        )
+                    }
+                } else {
+                    quote! {
+                        ::sycamore::view::View::new_dyn(#cx,
+                            move || ::sycamore::view::ToView::to_view(&(#value), #cx)
+                        )
+                    }
                 }
             }
         }
@@ -427,7 +436,7 @@ fn codegen_element(elements_mod_path: &syn::Path, cx: &Ident, element: &Element)
     } = element;
 
     let builder = format_ident!("__el");
-    let attrs_quoted = codegen_attrs_builder(&builder, attrs.into_iter());
+    let attrs_quoted = codegen_attrs_builder(elements_mod_path, &builder, attrs.into_iter(), true);
 
     let children_quoted = children
         .as_ref()
@@ -469,7 +478,7 @@ fn codegen_component(
 
     let builder = format_ident!("__props");
 
-    let attrs_quoted = codegen_attrs_builder(&builder, props.into_iter());
+    let attrs_quoted = codegen_attrs_builder(elements_mod_path, &builder, props.into_iter(), false);
 
     let children_quoted = children
         .as_ref()
@@ -482,7 +491,7 @@ fn codegen_component(
             let children = codegen.view_root(children);
             quote! {
                 let #builder = #builder.children(
-                    ::sycamore::component::Children::new(#cx, move |#cx| {
+                    ::sycamore::component::Children::new(move |#cx| {
                         #[allow(unused_variables)]
                         let #cx: ::sycamore::reactive::BoundedScope = #cx;
                         #children
@@ -510,34 +519,41 @@ fn codegen_component(
 }
 
 fn codegen_attrs_builder<'a>(
+    elements_mod_path: &syn::Path,
     builder: &Ident,
     attrs: impl Iterator<Item = &'a Attribute>,
+    emit_dynamic: bool,
 ) -> TokenStream {
-    let quoted = attrs.map(|attr| codegen_attr(builder, attr));
+    let quoted = attrs.map(|attr| codegen_attr(elements_mod_path, builder, attr, emit_dynamic));
     quote! {
         #(#quoted)*
     }
 }
 
-fn codegen_attr(builder: &Ident, attr: &Attribute) -> TokenStream {
+fn codegen_attr(
+    elements_mod_path: &syn::Path,
+    builder: &Ident,
+    attr: &Attribute,
+    emit_dynamic: bool,
+) -> TokenStream {
     let Attribute { ty, value, .. } = attr;
 
     let quoted = match ty {
         AttributeType::Ident(ident) => quote! { #builder.#ident(#value) },
         AttributeType::PrefixedIdent(prefix, _, ident) => {
-            quote! { #builder.#prefix(#prefix::#ident, #value) }
+            quote! { #builder.#prefix(#elements_mod_path::#prefix::#ident, #value) }
         }
         AttributeType::Custom(name) => quote! { #builder.custom_attr(#name, #value) },
         AttributeType::PrefixedCustom(prefix, _, name) => {
-            quote! { #builder.#prefix(#prefix::custom(#name), #value) }
+            quote! { #builder.#prefix(#elements_mod_path::#prefix::custom(#name), #value) }
         }
         AttributeType::Spread => quote! { #builder.spread(#value) },
     };
 
-    let is_dyn = !matches!(value, Expr::Lit(_) | Expr::Closure(_));
-    if is_dyn {
+    let is_dyn = !matches!(value, Expr::Lit(_) | Expr::Path(_) | Expr::Closure(_));
+    if is_dyn && emit_dynamic {
         // FIXME: some attributes should not be dynamic such as event handlers.
-        quote! { let #builder = #builder.dynamic(|| #quoted); }
+        quote! { let #builder = #builder.dynamic(move |#builder| #quoted); }
     } else {
         quote! { let #builder = #quoted; }
     }

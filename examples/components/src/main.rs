@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(inline_props)]
-fn MyComponent<'a, G: Html>(cx: Scope<'a>, value: &'a Signal<i32>) -> View<G> {
+fn MyComponent<'a>(cx: Scope<'a>, value: &'a Signal<i32>) -> View {
     view! { cx,
         div(class="my-component") {
             "My component"
@@ -14,7 +14,7 @@ fn MyComponent<'a, G: Html>(cx: Scope<'a>, value: &'a Signal<i32>) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let state = create_signal(cx, 0);
 
     let increment = |_| state.set(*state.get() + 1);

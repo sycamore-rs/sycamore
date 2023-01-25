@@ -8,15 +8,15 @@ pub struct MyComponentProps {
 }
 
 #[component]
-fn MyComponent<G: Html>(cx: Scope, props: MyComponentProps) -> View<G> {
+fn MyComponent(cx: Scope, props: MyComponentProps) -> View {
     view! { cx,
         (props.value)
     }
 }
 
-fn higher_order_component<G: Html>(
-    Comp: &dyn Fn(Scope, MyComponentProps) -> View<G>,
-) -> impl Fn(Scope) -> View<G> + '_ {
+fn higher_order_component(
+    Comp: &dyn Fn(Scope, MyComponentProps) -> View,
+) -> impl Fn(Scope) -> View + '_ {
     move |cx| {
         view! { cx,
             div {

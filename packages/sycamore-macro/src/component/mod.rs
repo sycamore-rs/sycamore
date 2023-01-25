@@ -230,7 +230,7 @@ impl ToTokens for ComponentFn {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = ::sycamore::reactive::create_signal(#cx, ::sycamore::view::View::empty());
+                    let __dyn = ::sycamore::reactive::create_signal(#cx, ::sycamore::view::View::default());
                     let __view = ::sycamore::view::View::new_dyn(#cx, || <_ as ::std::clone::Clone>::clone(&*__dyn.get()));
 
                     ::sycamore::suspense::suspense_scope(#cx, async move {

@@ -21,10 +21,20 @@ use sycamore_core::elements::Spread;
 use sycamore_core::generic_node::GenericNode;
 use sycamore_reactive::Scope;
 
+use self::elements::WebElement;
 use crate::web_node::WebNode;
 use crate::ElementBuilder;
 
-use self::elements::WebElement;
+/// A re-export for traits that should be in scope for the `view!` macro to work.
+#[doc(hidden)]
+pub mod traits {
+    pub use attributes::{GlobalAttributes, HtmlGlobalAttributes, SvgGlobalAttributes};
+    pub use bind_props::BindAttributes;
+    pub use events::OnAttributes;
+    pub use props::PropAttributes;
+
+    use super::*;
+}
 
 type AttrFn<'a, E> = Box<dyn FnOnce(ElementBuilder<'a, E>) + 'a>;
 

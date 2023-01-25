@@ -42,15 +42,15 @@ static NOUNS: &[&str] = &[
 ];
 
 #[component(inline_props)]
-fn Button<'a, G: Html>(
+fn Button<'a>(
     cx: Scope<'a>,
     id: &'static str,
     text: &'static str,
     callback: Box<dyn Fn() + 'a>,
-) -> View<G> {
+) -> View {
     view! { cx,
         div(class="col-sm-6 smallpad") {
-            button(id=id, class="btn btn-primary btn-block", type="button", on:click=move |_| callback()) {
+            button(id=id, class="btn btn-primary btn-block", _type="button", on:click=move |_| callback()) {
                 (text)
             }
         }
@@ -95,7 +95,7 @@ fn build_data(count: usize) -> Vec<RowData> {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let data = create_signal(cx, Vec::<RowData>::new());
     let selected = create_signal(cx, None::<usize>);
 
@@ -176,7 +176,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
                                     }
                                     td(class="col-md-1") {
                                         a(on:click=move |_| remove(row.id)) {
-                                            span(class="glyphicon glyphicon-remove", aria-hidden="true")
+                                            span(class="glyphicon glyphicon-remove", "aria-hidden"="true")
                                         }
                                     }
                                     td(class="col-md-6")
@@ -194,5 +194,5 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 fn main() {
     let document = web_sys::window().unwrap().document().unwrap();
     let mount_el = document.query_selector("#main").unwrap().unwrap();
-    sycamore::render_to(|cx| view! { cx, App {} }, &mount_el);
+    sycamore::render_to(&mount_el, App);
 }

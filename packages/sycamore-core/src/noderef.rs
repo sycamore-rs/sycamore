@@ -50,10 +50,10 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///
     /// ```
     /// # use sycamore::prelude::*;
-    /// # fn Component<G: Html>(cx: Scope) -> View<G> {
+    /// # fn Component(cx: Scope) -> View {
     /// let div_ref = create_node_ref(cx);
     /// on_mount(cx, || {
-    ///     let node = div_ref.get::<DomNode>();
+    ///     let node = div_ref.get();
     /// });
     /// view! { cx,
     ///     div(ref=div_ref)
@@ -62,43 +62,23 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// ```
     ///
     /// # Panics
-    /// Panics if the node ref is not set yet or is the wrong type.
+    /// Panics if the node ref is not set yet.
     ///
     /// For a non panicking version, see [`NodeRef::try_get`].
     #[track_caller]
-    pub fn get<T: GenericNode>(&self) -> T {
+    pub fn get(&self) -> G {
         self.try_get().expect("NodeRef is not set")
     }
 
-    /// Tries to get the T stored inside the node ref or `None` if it is not yet set or
-    /// the wrong type.
+    /// Tries to get the node stored inside the node ref or `None` if it is not set yet.
     ///
     /// For a panicking version, see [`NodeRef::get`].
-    pub fn try_get<T: GenericNode>(&self) -> Option<T> {
+    pub fn try_get(&self) -> Option<G> {
         if let Some(g) = self.0.get().as_ref() {
             (g as &dyn Any).downcast_ref().cloned()
         } else {
             None
         }
-    }
-
-    /// Gets the raw node stored inside the node ref.
-    ///
-    /// # Panics
-    /// Panics if the node ref is not set yet.
-    ///
-    /// For a non panicking version, see [`NodeRef::try_get_raw`].
-    #[track_caller]
-    pub fn get_raw(&self) -> G {
-        self.try_get().expect("NodeRef is not set")
-    }
-
-    /// Tries to get the raw node stored inside the node ref or `None` if it is
-    /// not yet set.
-    ///
-    /// For a panicking version, see [`NodeRef::get`].
-    pub fn try_get_raw(&self) -> Option<G> {
-        self.0.get().as_ref().clone()
     }
 
     /// Sets the node ref with the specified node.

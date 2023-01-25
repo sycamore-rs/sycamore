@@ -34,13 +34,13 @@ pub fn render(f: impl FnOnce(Scope) -> View<WebNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
-    render_to(document.body().unwrap_throw(), f);
+    render_to(&document.body().unwrap_throw(), f);
 }
 
 /// Render a [`View`] under a `parent` node.
 /// For rendering under the `<body>` tag, use [`render`] instead.
 #[cfg(feature = "dom")]
-pub fn render_to(root: web_sys::HtmlElement, f: impl FnOnce(Scope) -> View<WebNode>) {
+pub fn render_to(root: &web_sys::Element, f: impl FnOnce(Scope) -> View<WebNode>) {
     // Do not call the scope dispose callback, essentially leaking the scope for the lifetime of
     // the app.
     let _ = create_scope(|cx| render_to_with_scope(cx, root, f));
@@ -50,13 +50,13 @@ pub fn render_to(root: web_sys::HtmlElement, f: impl FnOnce(Scope) -> View<WebNo
 #[cfg(feature = "dom")]
 pub fn render_to_with_scope(
     cx: Scope,
-    root: web_sys::HtmlElement,
+    root: &web_sys::Element,
     f: impl FnOnce(Scope) -> View<WebNode>,
 ) {
     // Provide the environment context.
     provide_context(cx, RenderEnv::Dom);
 
-    let root = WebNode::from_web_sys(root.into());
+    let root = WebNode::from_web_sys(root.clone().into());
     insert(cx, &root, f(cx), None, None, true);
 }
 
@@ -67,13 +67,13 @@ pub fn hydrate(f: impl FnOnce(Scope) -> View<WebNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
-    hydrate_to(document.body().unwrap_throw(), f);
+    hydrate_to(&document.body().unwrap_throw(), f);
 }
 
 /// Render a [`View`] under a `parent` node with pre-existing DOM nodes.
 /// For rendering under the `<body>` tag, use [`hydrate`] instead.
 #[cfg(all(feature = "dom", feature = "hydrate"))]
-pub fn hydrate_to(root: web_sys::HtmlElement, f: impl FnOnce(Scope) -> View<WebNode>) {
+pub fn hydrate_to(root: &web_sys::Element, f: impl FnOnce(Scope) -> View<WebNode>) {
     // Do not call the scope dispose callback, essentially leaking the scope for the lifetime of
     // the app.
     let _ = create_scope(|cx| hydrate_to_with_scope(cx, root, f));
@@ -83,7 +83,7 @@ pub fn hydrate_to(root: web_sys::HtmlElement, f: impl FnOnce(Scope) -> View<WebN
 #[cfg(all(feature = "dom", feature = "hydrate"))]
 pub fn hydrate_to_with_scope(
     cx: Scope,
-    root: web_sys::HtmlElement,
+    root: &web_sys::Element,
     f: impl FnOnce(Scope) -> View<WebNode>,
 ) {
     use crate::hydrate::{HydrationCtx, HydrationState};
@@ -93,7 +93,7 @@ pub fn hydrate_to_with_scope(
     provide_context(cx, HydrationState::new());
     provide_context(cx, HydrationCtx::new_from_root(root.clone().into()));
 
-    let root = WebNode::from_web_sys(root.into());
+    let root = WebNode::from_web_sys(root.clone().into());
     // Get children from parent into a View to set as the initial node value.
     let mut children = Vec::new();
     let child_nodes = root.to_web_sys().child_nodes();

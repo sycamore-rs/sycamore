@@ -80,6 +80,8 @@ macro_rules! define_attributes {
 
 /// The global attribute for both HTML and SVG.
 pub trait GlobalAttributes: SetAttribute + Sized {
+    fn custom_attr(self, name: &'static str, value: impl Into<Cow<'static, str>>) -> Self;
+
     /// Set the inner HTML of the element.
     ///
     /// TODO (docs): Warn about potential XSS vulnerabilities.
@@ -104,12 +106,17 @@ pub trait GlobalAttributes: SetAttribute + Sized {
         /// This attribute and the `<style>` element have mainly the purpose of allowing for quick styling, for example for testing purposes.
         style: String,
         tabindex: String,
+        _type("type"): String,
     }
 }
 impl<'a, T> GlobalAttributes for ElementBuilder<'a, T>
 where
     T: WebElement,
 {
+    fn custom_attr(self, name: &'static str, value: impl Into<Cow<'static, str>>) -> Self {
+        self.set_attribute(name.into(), value.into());
+        self
+    }
     fn dangerously_set_inner_html(self, html: impl Into<Cow<'static, str>>) -> Self {
         self.as_node().dangerously_set_inner_html(html.into());
         self
@@ -123,6 +130,13 @@ impl<'a, T> GlobalAttributes for Attributes<'a, T>
 where
     T: WebElement,
 {
+    fn custom_attr(self, name: &'static str, value: impl Into<Cow<'static, str>>) -> Self {
+        let value = value.into();
+        self.add_fn(move |builder| {
+            builder.custom_attr(name, value);
+        });
+        self
+    }
     fn dangerously_set_inner_html(self, html: impl Into<Cow<'static, str>>) -> Self {
         let html = html.into();
         self.add_fn(move |builder| {
@@ -164,6 +178,7 @@ pub trait HtmlGlobalAttributes: SetAttribute + Sized {
         /// The `hidden` global attribute is an enumerated attribute indicating that the browser should not render the contents of the element.
         /// For example, it can be used to hide elements of the page that can't be used until the login process has been completed.
         hidden: bool,
+        href: String,
         inert: bool,
         inputmode: String,
         is: String,
@@ -413,7 +428,6 @@ pub trait SvgGlobalAttributes: SetAttribute + Sized {
         to: String,
         transform: String,
         transform_origin: String,
-        _type("type"): String,
         u1: String,
         u2: String,
         underline_position: String,

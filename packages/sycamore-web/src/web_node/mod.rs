@@ -272,15 +272,16 @@ impl GenericNode for WebNode {
         }
     }
 
-    fn get_next_element(cx: Scope, f: impl Fn() -> Self) -> Self {
+    fn get_next_element(_cx: Scope, f: impl Fn() -> Self) -> Self {
         // If we are hydrating on the client-side, get the next element from the hydration state.
         // Otherwise, return `None`.
         #[cfg(feature = "hydrate")]
-        match get_render_env(cx) {
+        match get_render_env(_cx) {
+            #[cfg(feature = "dom")]
             RenderEnv::Dom => {
-                if is_hydrating(cx) {
-                    let hk = use_hydration_state(cx).next_key();
-                    let h_ctx = use_hydration_ctx(cx);
+                if is_hydrating(_cx) {
+                    let hk = use_hydration_state(_cx).next_key();
+                    let h_ctx = use_hydration_ctx(_cx);
                     h_ctx
                         .get_element_by_key(hk)
                         .cloned()
@@ -290,10 +291,10 @@ impl GenericNode for WebNode {
                     f()
                 }
             }
-
+            #[cfg(feature = "ssr")]
             RenderEnv::Ssr => {
                 // Increment the hydration key to stay in sync with client.
-                let hk = use_hydration_state(cx).next_key();
+                let hk = use_hydration_state(_cx).next_key();
                 let el = f();
                 el.as_ssr_node().unwrap().0.hk.set(hk);
                 el

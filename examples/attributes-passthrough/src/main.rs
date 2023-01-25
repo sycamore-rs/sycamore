@@ -1,31 +1,28 @@
 use sycamore::prelude::*;
 
 #[derive(Props)]
-pub struct AccessibleInputProps<'cx, G: Html> {
+pub struct AccessibleInputProps<'a> {
     label_id: &'static str,
-    attributes: Attributes<'cx, G>,
-    children: Children<'cx, G>,
+    attributes: Attributes<'a>,
+    children: Children<'a, G>,
 }
 
 #[component]
-fn AccessibleSearchBox<'cx, G: Html>(
-    cx: Scope<'cx>,
-    props: AccessibleInputProps<'cx, G>,
-) -> View<G> {
+fn AccessibleSearchBox<'a>(cx: Scope<'a>, props: AccessibleInputProps<'a>) -> View {
     props
         .attributes
         .exclude_keys(&["aria-role", "aria-labelledby"]);
     let children = props.children.call(cx);
 
     view! { cx,
-        input(aria-role = "searchbox", aria-labelledby = props.label_id, ..props.attributes) {
+        input(aria:"role"="searchbox", aria:"labelledby"=props.label_id, ..props.attributes) {
             (children)
         }
     }
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     view! { cx,
         div {
             "Passthrough attributes demo"

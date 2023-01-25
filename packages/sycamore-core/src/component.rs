@@ -157,9 +157,9 @@ impl<'a, G: GenericNode> From<View<G>> for Children<'a, G> {
 
 impl<'a, G: GenericNode> Children<'a, G> {
     /// Creates a new empty [`Children`].
-    pub fn new(self, cx: Scope<'a>) -> Self {
+    pub fn empty() -> Self {
         Self {
-            f: Box::new(move |_| View::empty(cx)),
+            f: Box::new(move |cx| View::empty(cx)),
         }
     }
 
@@ -169,8 +169,14 @@ impl<'a, G: GenericNode> Children<'a, G> {
     }
 
     /// Create a new [`Children`] from a closure.
-    pub fn new_with(_cx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
+    pub fn new(f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }
+    }
+}
+
+impl<'a, G: GenericNode> Default for Children<'a, G> {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 
