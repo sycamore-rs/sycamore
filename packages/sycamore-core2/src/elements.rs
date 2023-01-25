@@ -10,6 +10,8 @@ use crate::view::{ToView, View};
 /// A marker trait that is implemented by elements that can be used with the specified
 /// [`GenericNode`] rendering backend.
 pub trait TypedElement<G: GenericNode>: Clone + Sized {
+    /// Create a new element from the specified node.
+    fn from_node(node: G) -> Self;
     /// Get a reference to the underlying [`WebNode`].
     fn as_node(&self) -> &G;
     /// Consume this element and return the untyped [`WebNode`].
@@ -56,15 +58,16 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
         }
     }
 
-    // pub fn new(cx: Scope<'a>, f: impl Fn() -> G) -> Self {
-    //     let el = G::get_next_element(cx, f);
-    //     Self {
-    //         cx,
-    //         el,
-    //         is_dyn: false,
-    //         _marker: std::marker::PhantomData,
-    //     }
-    // }
+    pub fn new(cx: Scope<'a>, f: impl Fn() -> G) -> Self {
+        let el = G::get_next_element(cx, f);
+        let el = E::from_node(el);
+        Self {
+            cx,
+            el,
+            is_dyn: false,
+            _marker: std::marker::PhantomData,
+        }
+    }
 
     /// Consumes the [`ElementBuilder`] and returns the element.
     pub fn finish(self) -> G {

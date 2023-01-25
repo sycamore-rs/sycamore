@@ -116,6 +116,9 @@ macro_rules! define_element_impl {
             }
         }
         impl TypedElement<WebNode> for $el {
+            fn from_node(node: WebNode) -> Self {
+                Self { node }
+            }
             fn as_node(&self) -> &WebNode {
                 &self.node
             }
@@ -124,7 +127,7 @@ macro_rules! define_element_impl {
             }
         }
         $(#[$attr])*
-        pub static $el: fn(Scope) -> ElementBuilder<$el> = |cx| ElementBuilder::from_element(cx, $el::new(cx));
+        pub static $el: fn(Scope) -> ElementBuilder<$el> = |cx| ElementBuilder::new(cx, || $el::new(cx).into_node());
     };
     (
         $ns:expr,
