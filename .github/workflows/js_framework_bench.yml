@@ -64,7 +64,7 @@ jobs:
 
       - name: Configure benchmarks
         run: node ./sycamore/packages/tools/configure_bench.js
-      
+
       - name: Benchmark list
         run: |
           ls ./js-framework-benchmark/frameworks/keyed
@@ -91,22 +91,25 @@ jobs:
         run: cd ./js-framework-benchmark && npm run bench -- --headless --framework keyed/sycamore keyed/sycamore-baseline keyed/wasm-bindgen
 
       - name: Results
+        if: success() || failure() # Continue even if benchmark failed.
         run: cd ./js-framework-benchmark && npm run results
 
       - name: Log results
+        if: success() || failure() # Continue even if benchmark failed.
         run: |
           results=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json)
           echo "$results"
           mkdir bench-results
           echo "$results" &> bench-results/BENCH_RESULTS.txt
-      
+
       - name: Log PR number
+        if: success() || failure() # Continue even if benchmark failed.
         env:
           PR_NUMBER: ${{ github.event.number }}
         run: echo "$PR_NUMBER" &> bench-results/PR_NUMBER.txt
-          
-      
+
       - name: Upload Artifact
+        if: success() || failure() # Continue even if benchmark failed.
         uses: actions/upload-artifact@v3
         with:
           name: bench-results
