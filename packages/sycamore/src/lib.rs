@@ -38,7 +38,6 @@
 #[allow(unused_extern_crates)] // False positive
 extern crate self as sycamore;
 
-// pub mod builder;
 pub mod easing;
 pub mod flow;
 #[cfg(feature = "suspense")]

@@ -90,7 +90,7 @@ pub fn hydrate_to_with_scope(
 
     // Provide the environment context.
     provide_context(cx, RenderEnv::Dom);
-    provide_context(cx, HydrationState::new());
+    let h_state = provide_context(cx, HydrationState::new());
     provide_context(cx, HydrationCtx::new_from_root(root.clone()));
 
     let root = WebNode::from_web_sys(root.clone().into());
@@ -107,6 +107,9 @@ pub fn hydrate_to_with_scope(
     let children = View::new_fragment(children);
 
     insert(cx, &root, f(cx), Some(children), None, true);
+
+    // We are done hydrating now.
+    h_state.finish_hydration();
 }
 
 /// Render a [`View`] into a static [`String`]. Useful

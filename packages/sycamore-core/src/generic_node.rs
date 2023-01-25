@@ -120,6 +120,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
         crate::render::insert(cx, self, view, None, None, true);
     }
 
+    /// A wrapper method to customize the behavior when functions are instantiated.
     fn component_scope(_cx: Scope, f: impl FnOnce() -> View<Self>) -> View<Self> {
         f()
     }

@@ -92,6 +92,11 @@ impl HydrationState {
         ret
     }
 
+    /// Finishes hydration. This should be called after the app is mounted.
+    pub fn finish_hydration(&self) {
+        self.active.set(false);
+    }
+
     /// Create a new default hydration state.
     pub fn new() -> Self {
         Self {
