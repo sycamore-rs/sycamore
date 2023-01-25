@@ -1,7 +1,6 @@
 //! Web support for Sycamore.
 
-pub mod html;
-pub mod portal;
+// pub mod portal;
 
 /* Re-export sycamore-web */
 pub use sycamore_web::*;
@@ -56,114 +55,117 @@ pub mod macros {
 /// _This API requires the following crate features to be activated: `suspense`, `ssr`_
 #[cfg(all(feature = "ssr", feature = "suspense"))]
 pub async fn render_to_string_await_suspense(
-    view: impl FnOnce(Scope<'_>) -> View<SsrNode> + 'static,
+    view: impl FnOnce(Scope<'_>) -> sycamore_web::View + 'static,
 ) -> String {
-    use std::cell::RefCell;
-    use std::rc::Rc;
+    // use std::cell::RefCell;
+    // use std::rc::Rc;
 
-    use futures::channel::oneshot;
-    use sycamore_futures::spawn_local_scoped;
+    // use futures::channel::oneshot;
+    // use sycamore_futures::spawn_local_scoped;
 
-    use crate::utils::hydrate::with_hydration_context_async;
+    // use crate::utils::hydrate::with_hydration_context_async;
 
-    let mut ret = String::new();
-    let v = Rc::new(RefCell::new(None));
-    let (sender, receiver) = oneshot::channel();
-    let disposer = create_scope({
-        let v = Rc::clone(&v);
-        move |cx| {
-            spawn_local_scoped(cx, async move {
-                *v.borrow_mut() = Some(
-                    with_hydration_context_async(async {
-                        crate::suspense::await_suspense(cx, async { view(cx) }).await
-                    })
-                    .await,
-                );
-                sender
-                    .send(())
-                    .expect("receiving end should not be dropped");
-            });
-        }
-    });
-    receiver.await.expect("rendering should complete");
-    let v = v.borrow().clone().unwrap();
-    for node in v.flatten() {
-        node.write_to_string(&mut ret);
-    }
+    // let mut ret = String::new();
+    // let v = Rc::new(RefCell::new(None));
+    // let (sender, receiver) = oneshot::channel();
+    // let disposer = create_scope({
+    //     let v = Rc::clone(&v);
+    //     move |cx| {
+    //         spawn_local_scoped(cx, async move {
+    //             *v.borrow_mut() = Some(
+    //                 with_hydration_context_async(async {
+    //                     crate::suspense::await_suspense(cx, async { view(cx) }).await
+    //                 })
+    //                 .await,
+    //             );
+    //             sender
+    //                 .send(())
+    //                 .expect("receiving end should not be dropped");
+    //         });
+    //     }
+    // });
+    // receiver.await.expect("rendering should complete");
+    // let v = v.borrow().clone().unwrap();
+    // for node in v.flatten() {
+    //     node.write_to_string(&mut ret);
+    // }
 
-    // SAFETY: we are done with the scope now.
-    unsafe {
-        disposer.dispose();
-    }
+    // // SAFETY: we are done with the scope now.
+    // unsafe {
+    //     disposer.dispose();
+    // }
 
-    ret
+    // ret
+    todo!()
 }
 
-/// Props for [`NoHydrate`].
-#[cfg(feature = "hydrate")]
-#[derive(Props, Debug)]
-pub struct NoHydrateProps<'a, G: GenericNode> {
-    children: Children<'a, G>,
-}
+// /// Props for [`NoHydrate`].
+// #[cfg(feature = "hydrate")]
+// #[derive(Props, Debug)]
+// pub struct NoHydrateProps<'a, G: GenericNode> {
+//     children: Children<'a, G>,
+// }
 
-/// Render the children of this component in a scope that will not be hydrated.
-///
-/// When using `SsrNode`, this means that hydration markers won't be generated. When using
-/// `HydrateNode`, this means that the entire sub-tree will be ignored. When using `DomNode`,
-/// rendering proceeds as normal.
-///
-/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
-/// elements.
-#[cfg(feature = "hydrate")]
-#[component]
-pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
-    use crate::utils::{hydrate, render};
+// /// Render the children of this component in a scope that will not be hydrated.
+// ///
+// /// When using `SsrNode`, this means that hydration markers won't be generated. When using
+// /// `HydrateNode`, this means that the entire sub-tree will be ignored. When using `DomNode`,
+// /// rendering proceeds as normal.
+// ///
+// /// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+// /// elements.
+// #[cfg(feature = "hydrate")]
+// #[component]
+// pub fn NoHydrate<'a, G: GenericNode>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> View<G> {
+    // use crate::utils::{hydrate, render};
 
-    let node_ref = create_node_ref(cx);
-    let v = view! { cx,
-        div(ref=node_ref) {}
-    };
-    if G::CLIENT_SIDE_HYDRATION && !hydrate::hydration_completed() {
-        // We don't want to hydrate the children, so we just do nothing.
-    } else if G::USE_HYDRATION_CONTEXT {
-        // If we have a hydration context, remove it in this scope so that hydration markers are not
-        // generated.
-        let nodes = hydrate::with_no_hydration_context(|| props.children.call(cx));
-        render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
-    } else {
-        // Just continue rendering as normal.
-        let nodes = props.children.call(cx);
-        render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
-    };
-    v
-}
+    // let node_ref = create_node_ref(cx);
+    // let v = view! { cx,
+    //     div(ref=node_ref) {}
+    // };
+    // if G::CLIENT_SIDE_HYDRATION && !hydrate::hydration_completed() {
+    //     // We don't want to hydrate the children, so we just do nothing.
+    // } else if G::USE_HYDRATION_CONTEXT {
+    //     // If we have a hydration context, remove it in this scope so that hydration markers are not
+    //     // generated.
+    //     let nodes = hydrate::with_no_hydration_context(|| props.children.call(cx));
+    //     render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
+    // } else {
+    //     // Just continue rendering as normal.
+    //     let nodes = props.children.call(cx);
+    //     render::insert(cx, &node_ref.get_raw(), nodes, None, None, false);
+    // };
+    // v
+//     todo!()
+// }
 
-/// Props for [`NoSsr`].
-#[cfg(feature = "hydrate")]
-#[derive(Props, Debug)]
-pub struct NoSsrProps<'a, G: GenericNode> {
-    children: Children<'a, G>,
-}
+// /// Props for [`NoSsr`].
+// #[cfg(feature = "hydrate")]
+// #[derive(Props, Debug)]
+// pub struct NoSsrProps<'a, G: GenericNode> {
+//     children: Children<'a, G>,
+// }
 
-/// Only render the children of this component in the browser.
-/// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
-/// elements.
-#[cfg(feature = "hydrate")]
-#[component]
-pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
-    use crate::utils::hydrate;
+// /// Only render the children of this component in the browser.
+// /// The children are wrapped inside a `<div>` element to prevent conflicts with surrounding
+// /// elements.
+// #[cfg(feature = "hydrate")]
+// #[component]
+// pub fn NoSsr<'a, G: GenericNode>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
+    // use crate::utils::hydrate;
 
-    let node = if !G::IS_BROWSER {
-        // We don't want to render the children, so we just do nothing.
-        view! { cx, }
-    } else if G::USE_HYDRATION_CONTEXT {
-        // Since the nodes were not rendered on the server, there is nothing to hydrate.
-        hydrate::with_no_hydration_context(|| props.children.call(cx))
-    } else {
-        // Just continue rendering as normal.
-        props.children.call(cx)
-    };
-    view! { cx,
-        div { (node) }
-    }
-}
+    // let node = if !G::IS_BROWSER {
+    //     // We don't want to render the children, so we just do nothing.
+    //     view! { cx, }
+    // } else if G::USE_HYDRATION_CONTEXT {
+    //     // Since the nodes were not rendered on the server, there is nothing to hydrate.
+    //     hydrate::with_no_hydration_context(|| props.children.call(cx))
+    // } else {
+    //     // Just continue rendering as normal.
+    //     props.children.call(cx)
+    // };
+    // view! { cx,
+    //     div { (node) }
+    // }
+//     todo!()
+// }

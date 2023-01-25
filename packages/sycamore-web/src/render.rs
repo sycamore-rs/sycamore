@@ -48,7 +48,7 @@ pub fn render_to(root: web_sys::HtmlElement, f: impl FnOnce(Scope) -> View<WebNo
 
 /// Same as [`render_to`] but with a pre-created scope.
 #[cfg(feature = "dom")]
-fn render_to_with_scope(
+pub fn render_to_with_scope(
     cx: Scope,
     root: web_sys::HtmlElement,
     f: impl FnOnce(Scope) -> View<WebNode>,
@@ -81,7 +81,7 @@ pub fn hydrate_to(root: web_sys::HtmlElement, f: impl FnOnce(Scope) -> View<WebN
 
 /// Same as [`hydrate_to`] but with a pre-created scope.
 #[cfg(all(feature = "dom", feature = "hydrate"))]
-fn hydrate_to_with_scope(
+pub fn hydrate_to_with_scope(
     cx: Scope,
     root: web_sys::HtmlElement,
     f: impl FnOnce(Scope) -> View<WebNode>,

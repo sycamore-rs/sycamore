@@ -24,6 +24,7 @@ pub enum NodeType {
 pub struct Element {
     pub tag: ElementTag,
     pub attrs: Punctuated<Attribute, Token![,]>,
+    pub brace: Option<Brace>,
     pub children: Option<ViewRoot>,
 }
 

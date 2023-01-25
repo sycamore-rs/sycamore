@@ -38,7 +38,7 @@
 #[allow(unused_extern_crates)] // False positive
 extern crate self as sycamore;
 
-pub mod builder;
+// pub mod builder;
 pub mod easing;
 pub mod flow;
 #[cfg(feature = "suspense")]
@@ -67,8 +67,8 @@ pub use web::render::{hydrate, hydrate_to, hydrate_to_with_scope};
 pub use web::render::{render, render_to, render_to_with_scope};
 #[cfg(feature = "ssr")]
 pub use web::render::{render_to_string, render_to_string_with_scope};
-#[cfg(all(feature = "ssr", feature = "suspense"))]
-pub use web::render_to_string_await_suspense; // FIXME
+// #[cfg(all(feature = "ssr", feature = "suspense"))]
+// pub use web::render_to_string_await_suspense; // FIXME
 
 /// The sycamore prelude.
 ///
@@ -86,13 +86,14 @@ pub mod prelude {
     pub use crate::generic_node::GenericNode;
     pub use crate::noderef::{create_node_ref, NodeRef};
     pub use crate::reactive::*;
+    #[cfg(not(feature = "web"))]
     pub use crate::view::View;
     #[cfg(feature = "web")]
     pub use crate::web::macros::{node, view};
     #[cfg(feature = "web")]
-    pub use crate::web::on_mount;
-    #[cfg(feature = "web")]
     pub use crate::web::web_node::WebNode;
+    #[cfg(feature = "web")]
+    pub use crate::web::{on_mount, View};
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

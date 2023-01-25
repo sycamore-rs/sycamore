@@ -17,7 +17,7 @@ pub(crate) enum ViewType<G: GenericNode> {
     Node(G),
     /// A dynamic [`View`].
     Dyn(RcSignal<View<G>>),
-    /// A fragment (aka. list) of [`View`]s.
+    /// A fragment/list of [`View`]s.
     #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
     Fragment(Rc<Box<[View<G>]>>),
 }
@@ -173,6 +173,12 @@ impl<G: GenericNode> View<G> {
                 fragment.iter().flat_map(|x| x.clone().flatten()).collect()
             }
         }
+    }
+}
+
+impl<G: GenericNode> Default for View<G> {
+    fn default() -> Self {
+        Self::new_fragment(Vec::new())
     }
 }
 

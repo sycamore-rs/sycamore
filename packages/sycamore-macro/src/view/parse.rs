@@ -91,10 +91,10 @@ impl Parse for Element {
 
         // Check if dangerously_set_inner_html is also set. If so, get the span.
         let dangerously_set_inner_html_span = attrs.iter().find(|attr| {
-            matches!(attr.ty, AttributeType::Ident(ident) if ident == "dangerously_set_inner_html")
+            matches!(&attr.ty, AttributeType::Ident(ident) if ident == "dangerously_set_inner_html")
         }).map(|attr| attr.span);
 
-        if let (Some(span), Some(children)) = (dangerously_set_inner_html_span, children) {
+        if let (Some(span), Some(children)) = (dangerously_set_inner_html_span, &children) {
             if children.0.is_empty() {
                 return Err(syn::Error::new(
                     span,
@@ -106,6 +106,7 @@ impl Parse for Element {
         Ok(Self {
             tag,
             attrs,
+            brace,
             children,
         })
     }

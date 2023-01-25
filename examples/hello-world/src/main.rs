@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     view! { cx,
         p {
             "Hello World!"

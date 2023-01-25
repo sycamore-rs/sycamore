@@ -15,7 +15,6 @@ use std::fmt;
 
 pub use attributes::{GlobalAttributes, HtmlGlobalAttributes, SvgGlobalAttributes};
 pub use bind_props::{bind, BindAttributes};
-pub use elements::*;
 pub use events::{on, OnAttributes};
 pub use props::{prop, PropAttributes};
 use sycamore_core::elements::Spread;
@@ -24,6 +23,8 @@ use sycamore_reactive::Scope;
 
 use crate::web_node::WebNode;
 use crate::ElementBuilder;
+
+use self::elements::WebElement;
 
 type AttrFn<'a, E> = Box<dyn FnOnce(ElementBuilder<'a, E>) + 'a>;
 
