@@ -46,7 +46,6 @@ pub mod futures;
 pub mod motion;
 #[cfg(feature = "suspense")]
 pub mod suspense;
-pub mod utils;
 #[cfg(feature = "web")]
 pub mod web;
 
@@ -62,14 +61,14 @@ pub mod reactive {
     pub use sycamore_reactive::*;
 }
 
-#[cfg(feature = "ssr")]
-pub use web::render_to_string;
-#[cfg(all(feature = "ssr", feature = "suspense"))]
-pub use web::render_to_string_await_suspense;
 #[cfg(all(feature = "web", feature = "hydrate"))]
-pub use web::{hydrate, hydrate_get_scope, hydrate_to};
+pub use web::render::{hydrate, hydrate_to, hydrate_to_with_scope};
 #[cfg(feature = "web")]
-pub use web::{render, render_get_scope, render_to};
+pub use web::render::{render, render_to, render_to_with_scope};
+#[cfg(feature = "ssr")]
+pub use web::render::{render_to_string, render_to_string_with_scope};
+#[cfg(all(feature = "ssr", feature = "suspense"))]
+pub use web::render_to_string_await_suspense; // FIXME
 
 /// The sycamore prelude.
 ///
@@ -92,12 +91,8 @@ pub mod prelude {
     pub use crate::web::macros::{node, view};
     #[cfg(feature = "web")]
     pub use crate::web::on_mount;
-    #[cfg(all(feature = "web", feature = "hydrate"))]
-    pub use crate::web::HydrateNode;
-    #[cfg(feature = "ssr")]
-    pub use crate::web::SsrNode;
     #[cfg(feature = "web")]
-    pub use crate::web::{DomNode, Html};
+    pub use crate::web::web_node::WebNode;
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

@@ -1,7 +1,5 @@
 //! Parse syntax for `view!` macro.
 
-use std::fmt;
-
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -66,35 +64,38 @@ impl Parse for ViewNode {
 impl Parse for Element {
     fn parse(input: ParseStream) -> Result<Self> {
         let tag = input.parse()?;
+        let lookahead = input.lookahead1();
+
         let mut has_paren = false;
         let attrs = if input.peek(token::Paren) {
             has_paren = true;
             let content;
             parenthesized!(content in input);
-            content
-                .parse_terminated::<Attribute, Token![,]>(Attribute::parse)?
-                .into_iter()
-                .collect()
+            content.parse_terminated::<Attribute, Token![,]>(Attribute::parse)?
         } else {
-            Vec::new()
+            Punctuated::new()
         };
-        if !has_paren && !input.peek(Brace) {
-            return Err(input.error("expected either `(` or `{` after element tag"));
+
+        if !has_paren && !lookahead.peek(Brace) {
+            return Err(lookahead.error());
         }
-        let mut children = Vec::new();
+
+        let mut brace = None;
+        let mut children: Option<ViewRoot> = None;
         if input.peek(Brace) {
+            // Parse children.
             let content;
-            braced!(content in input);
-            while !content.is_empty() {
-                children.push(content.parse()?);
-            }
+            brace = Some(braced!(content in input));
+            children = Some(content.parse()?);
         }
-        // Check if dangerously_set_inner_html is also set.
-        let dangerously_set_inner_html_span = attrs.iter().find_map(|attr| {
-            (attr.ty == AttributeType::DangerouslySetInnerHtml).then_some(attr.span)
-        });
-        if let Some(span) = dangerously_set_inner_html_span {
-            if !children.is_empty() {
+
+        // Check if dangerously_set_inner_html is also set. If so, get the span.
+        let dangerously_set_inner_html_span = attrs.iter().find(|attr| {
+            matches!(attr.ty, AttributeType::Ident(ident) if ident == "dangerously_set_inner_html")
+        }).map(|attr| attr.span);
+
+        if let (Some(span), Some(children)) = (dangerously_set_inner_html_span, children) {
+            if children.0.is_empty() {
                 return Err(syn::Error::new(
                     span,
                     "children and dangerously_set_inner_html cannot be both set",
@@ -137,90 +138,52 @@ impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
         let span = input.span();
         let ty = input.parse()?;
+        let mut eq = None;
         if !matches!(ty, AttributeType::Spread { .. }) {
-            let _eqs: Token![=] = input.parse()?;
+            eq = input.parse()?;
         }
         let value = input.parse()?;
-        Ok(Self { ty, value, span })
+        Ok(Self {
+            ty,
+            eq,
+            value,
+            span,
+        })
     }
 }
 
 impl Parse for AttributeType {
     fn parse(input: ParseStream) -> Result<Self> {
         let lookahead = input.lookahead1();
+
         if lookahead.peek(Token![..]) {
             let _2dot = input.parse::<Token![..]>()?;
             Ok(Self::Spread)
         } else if lookahead.peek(Ident::peek_any) {
-            let ident: AttributeName = input.parse()?;
-            let name = ident.to_string();
-
-            if name == "ref" {
-                Ok(Self::Ref)
-            } else if name == "dangerously_set_inner_html" {
-                Ok(Self::DangerouslySetInnerHtml)
-            } else if input.peek(Token![:]) {
-                let _colon: Token![:] = input.parse()?;
-                match name.as_str() {
-                    "on" => {
-                        let event = input.call(Ident::parse_any)?;
-                        Ok(Self::Event { event })
-                    }
-                    "prop" => {
-                        let prop = input.call(Ident::parse_any)?;
-                        Ok(Self::Property {
-                            prop: prop.to_string(),
-                        })
-                    }
-                    "bind" => {
-                        let prop = input.call(Ident::parse_any)?;
-                        Ok(Self::Bind {
-                            prop: prop.to_string(),
-                        })
-                    }
-                    _ => Err(syn::Error::new_spanned(
-                        ident.tag,
-                        format!("unknown directive `{}`", name),
-                    )),
+            let ident = input.parse()?;
+            // Check if this ident is a prefix or not.
+            if input.peek(Token![:]) {
+                let prefix = ident;
+                let colon = input.parse()?;
+                let lookahead2 = input.lookahead1();
+                if lookahead2.peek(Ident::peek_any) {
+                    let ident = input.parse()?;
+                    Ok(Self::PrefixedIdent(prefix, colon, ident))
+                } else if lookahead2.peek(LitStr) {
+                    let custom = input.parse()?;
+                    Ok(Self::PrefixedCustom(prefix, colon, custom))
+                } else {
+                    Err(lookahead2.error())
                 }
-            } else if is_bool_attr(&name) {
-                Ok(Self::Bool { name })
             } else {
-                Ok(Self::Str { name })
+                Ok(Self::Ident(ident))
             }
+        } else if lookahead.peek(LitStr) {
+            let custom = input.parse()?;
+            Ok(Self::Custom(custom))
         } else {
             Err(lookahead.error())
         }
-    }
-}
-
-pub struct AttributeName {
-    tag: Ident,
-    extended: Vec<(Token![-], Ident)>,
-}
-
-impl Parse for AttributeName {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let tag = input.call(Ident::parse_any)?;
-        let mut extended = Vec::new();
-        while input.peek(Token![-]) {
-            extended.push((input.parse()?, input.parse()?));
-        }
-
-        Ok(Self { tag, extended })
-    }
-}
-
-impl fmt::Display for AttributeName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let AttributeName { tag, extended } = self;
-
-        write!(f, "{}", tag)?;
-        for (_, ident) in extended {
-            write!(f, "-{}", ident)?;
-        }
-
-        Ok(())
     }
 }
 
@@ -228,16 +191,24 @@ impl Parse for Component {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident = input.parse()?;
 
-        let mut props = Punctuated::new();
-        let mut brace = None;
-        let mut children = None;
+        let lookahead = input.lookahead1();
 
-        if input.peek(Paren) {
-            // Parse props.
+        let mut has_paren = false;
+        let props = if input.peek(token::Paren) {
+            has_paren = true;
             let content;
             parenthesized!(content in input);
-            props = content.parse_terminated(ComponentProp::parse)?;
+            content.parse_terminated::<Attribute, Token![,]>(Attribute::parse)?
+        } else {
+            Punctuated::new()
+        };
+
+        if !has_paren && !lookahead.peek(Brace) {
+            return Err(lookahead.error());
         }
+
+        let mut brace = None;
+        let mut children: Option<ViewRoot> = None;
         if input.peek(Brace) {
             // Parse children.
             let content;
@@ -251,29 +222,6 @@ impl Parse for Component {
             brace,
             children,
         })
-    }
-}
-
-impl Parse for ComponentProp {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let name_or_prefix: Ident = input.parse()?;
-        if input.peek(Token![:]) {
-            let _colon = input.parse::<Token![:]>()?;
-            let name: AttributeName = input.parse()?;
-            Ok(Self {
-                prefix: Some(name_or_prefix),
-                name: name.to_string(),
-                eq: input.parse()?,
-                value: input.parse()?,
-            })
-        } else {
-            Ok(Self {
-                prefix: None,
-                name: name_or_prefix.to_string(),
-                eq: input.parse()?,
-                value: input.parse()?,
-            })
-        }
     }
 }
 

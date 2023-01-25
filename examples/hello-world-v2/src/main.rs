@@ -1,3 +1,5 @@
+// TODO: get rid of this example
+
 use sycamore_core::view::ToView;
 use sycamore_reactive::*;
 use sycamore_web::html::*;

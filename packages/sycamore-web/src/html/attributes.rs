@@ -6,9 +6,11 @@
 use std::borrow::Cow;
 
 use sycamore_core::generic_node::GenericNode;
+use sycamore_core::noderef::NodeRef;
 
 use super::elements::{HtmlElement, SvgElement};
 use super::{Attributes, SetAttribute, WebElement};
+use crate::web_node::WebNode;
 use crate::ElementBuilder;
 
 /// Codegen the methods for the attributes.
@@ -83,6 +85,9 @@ pub trait GlobalAttributes: SetAttribute + Sized {
     /// TODO (docs): Warn about potential XSS vulnerabilities.
     fn dangerously_set_inner_html(self, html: impl Into<Cow<'static, str>>) -> Self;
 
+    /// Set a [`NodeRef`] to this element.
+    fn _ref(self, v: &NodeRef<WebNode>) -> Self;
+
     // Some attributes are shared for both HTML and SVG elements.
     // We declare them here to prevent declaring them twice for both HTML and SVG.
     //
@@ -109,6 +114,10 @@ where
         self.as_node().dangerously_set_inner_html(html.into());
         self
     }
+    fn _ref(self, v: &NodeRef<WebNode>) -> Self {
+        v.set(self.as_node().clone());
+        self
+    }
 }
 impl<'a, T> GlobalAttributes for Attributes<'a, T>
 where
@@ -118,6 +127,13 @@ where
         let html = html.into();
         self.add_fn(move |builder| {
             builder.dangerously_set_inner_html(html);
+        });
+        self
+    }
+    fn _ref(self, v: &NodeRef<WebNode>) -> Self {
+        let v = v.clone();
+        self.add_fn(move |builder| {
+            builder._ref(&v);
         });
         self
     }
