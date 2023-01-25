@@ -10,10 +10,15 @@ fn app(cx: Scope) -> View {
     let decrement = move |_| counter -= 1;
     let reset = move |_| counter.set(0);
 
-    let attributes: Attributes<div> = Attributes::new().class("container").id("test");
-
     div(cx)
-        .spread(attributes)
+        .class("container")
+        .spread(
+            Attributes::new()
+                .id("test")
+                .data("test", "test")
+                .on(on::click, |_| log::info!("container clicked"))
+                .prop(prop::custom("customProp"), "test"),
+        )
         .child(
             p(cx)
                 .dynamic(move |e| e.class(format!("counter-{counter}")))

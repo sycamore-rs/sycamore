@@ -2,25 +2,24 @@
 
 #![allow(non_camel_case_types)]
 
-use sycamore_core2::elements::TypedElement;
 use sycamore_core2::generic_node::GenericNodeElements;
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 use web_sys::*;
 
-use crate::web_node::WebNode;
+use super::{Attributes, WebElement};
 use crate::ElementBuilder;
 
 pub trait OnAttributes<'a> {
-    fn on<T: From<JsValue>, S>(
+    fn on<T: From<JsValue> + 'a, S>(
         self,
         event: OnAttr<T>,
         handler: impl EventHandler<'a, T, S> + 'a,
     ) -> Self;
 }
 
-impl<'a, E: TypedElement<WebNode>> OnAttributes<'a> for ElementBuilder<'a, E> {
-    fn on<T: From<JsValue>, S>(
+impl<'a, E: WebElement> OnAttributes<'a> for ElementBuilder<'a, E> {
+    fn on<T: From<JsValue> + 'a, S>(
         mut self,
         event: OnAttr<T>,
         mut handler: impl EventHandler<'a, T, S> + 'a,
@@ -30,6 +29,18 @@ impl<'a, E: TypedElement<WebNode>> OnAttributes<'a> for ElementBuilder<'a, E> {
         let type_erased = Box::new(move |ev: JsValue| handler.call(cx, ev.into()));
         self.as_node()
             .add_event_listener(cx, event.name, type_erased);
+        self
+    }
+}
+impl<'a, E: WebElement> OnAttributes<'a> for Attributes<'a, E> {
+    fn on<T: From<JsValue> + 'a, S>(
+        self,
+        event: OnAttr<T>,
+        handler: impl EventHandler<'a, T, S> + 'a,
+    ) -> Self {
+        self.add_fn(|builder| {
+            builder.on(event, handler);
+        });
         self
     }
 }

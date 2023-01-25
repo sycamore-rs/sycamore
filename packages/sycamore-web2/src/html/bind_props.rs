@@ -2,27 +2,25 @@
 
 #![allow(non_upper_case_globals)]
 
-use sycamore_core2::elements::TypedElement;
 use sycamore_reactive::{create_effect, Signal};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::Event;
 
 use super::events::{on, OnAttr};
-use super::OnAttributes;
+use super::{Attributes, OnAttributes, WebElement};
 use crate::render::{get_render_env, RenderEnv};
-use crate::web_node::WebNode;
 use crate::ElementBuilder;
 
 pub trait BindAttributes<'a> {
-    fn bind<T: JsValueCastToType, U: From<JsValue> + Into<JsValue>>(
+    fn bind<T: JsValueCastToType, U: From<JsValue> + Into<JsValue> + 'a>(
         self,
         attr: BindAttr<T, U>,
         signal: &'a Signal<T>,
     ) -> Self;
 }
 
-impl<'a, E: TypedElement<WebNode>> BindAttributes<'a> for ElementBuilder<'a, E> {
-    fn bind<T: JsValueCastToType, U: From<JsValue> + Into<JsValue>>(
+impl<'a, E: WebElement> BindAttributes<'a> for ElementBuilder<'a, E> {
+    fn bind<T: JsValueCastToType, U: From<JsValue> + Into<JsValue> + 'a>(
         mut self,
         attr: BindAttr<T, U>,
         signal: &'a Signal<T>,
@@ -42,6 +40,18 @@ impl<'a, E: TypedElement<WebNode>> BindAttributes<'a> for ElementBuilder<'a, E> 
             let value = js_sys::Reflect::get(&target, &attr.prop.into()).unwrap();
             signal.set(T::cast_from(&value).unwrap()); // TODO: don't unwrap here
         })
+    }
+}
+impl<'a, E: WebElement> BindAttributes<'a> for Attributes<'a, E> {
+    fn bind<T: JsValueCastToType, U: From<JsValue> + Into<JsValue> + 'a>(
+        self,
+        attr: BindAttr<T, U>,
+        signal: &'a Signal<T>,
+    ) -> Self {
+        self.add_fn(|builder| {
+            builder.bind(attr, signal);
+        });
+        self
     }
 }
 

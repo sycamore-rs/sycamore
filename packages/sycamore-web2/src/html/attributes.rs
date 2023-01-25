@@ -8,37 +8,8 @@ use std::borrow::Cow;
 use sycamore_core2::generic_node::GenericNode;
 
 use super::elements::{HtmlElement, SvgElement};
-use super::{Attributes, WebElement};
+use super::{Attributes, SetAttribute, WebElement};
 use crate::ElementBuilder;
-
-/// Something that can have attributes.
-pub trait SetAttribute {
-    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>);
-    fn remove_attribute(&self, name: Cow<'static, str>);
-}
-
-impl<'a, E: WebElement> SetAttribute for ElementBuilder<'a, E> {
-    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
-        self.as_node().set_attribute(name, value);
-    }
-
-    fn remove_attribute(&self, name: Cow<'static, str>) {
-        self.as_node().remove_attribute(name);
-    }
-}
-impl<'a, E: WebElement> SetAttribute for Attributes<'a, E> {
-    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
-        self.fns.borrow_mut().push(Box::new(move |builder| {
-            builder.set_attribute(name.clone(), value.clone());
-        }));
-    }
-
-    fn remove_attribute(&self, name: Cow<'static, str>) {
-        self.fns.borrow_mut().push(Box::new(move |builder| {
-            builder.remove_attribute(name.clone());
-        }));
-    }
-}
 
 /// Codegen the methods for the attributes.
 macro_rules! define_attributes {

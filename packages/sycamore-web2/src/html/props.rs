@@ -1,18 +1,25 @@
 //! Definitions for properties that can be used with the [`prop`] directive.
 
-use sycamore_core2::elements::TypedElement;
 use wasm_bindgen::JsValue;
 
-use crate::web_node::WebNode;
+use super::{Attributes, WebElement};
 use crate::ElementBuilder;
 
-pub trait PropAttributes {
-    fn prop(self, attr: PropAttr, value: impl Into<JsValue>) -> Self;
+pub trait PropAttributes<'a> {
+    fn prop(self, attr: PropAttr, value: impl Into<JsValue> + 'a) -> Self;
 }
 
-impl<'a, E: TypedElement<WebNode>> PropAttributes for ElementBuilder<'a, E> {
-    fn prop(self, attr: PropAttr, value: impl Into<JsValue>) -> Self {
+impl<'a, E: WebElement> PropAttributes<'a> for ElementBuilder<'a, E> {
+    fn prop(self, attr: PropAttr, value: impl Into<JsValue> + 'a) -> Self {
         self.as_node().set_property(attr.name, value.into());
+        self
+    }
+}
+impl<'a, E: WebElement> PropAttributes<'a> for Attributes<'a, E> {
+    fn prop(self, attr: PropAttr, value: impl Into<JsValue> + 'a) -> Self {
+        self.add_fn(|builder| {
+            builder.prop(attr, value);
+        });
         self
     }
 }

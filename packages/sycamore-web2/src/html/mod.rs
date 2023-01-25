@@ -9,6 +9,7 @@ mod bind_props;
 mod events;
 mod props;
 
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt;
 
@@ -18,12 +19,13 @@ pub use elements::*;
 pub use events::{on, OnAttributes};
 pub use props::{prop, PropAttributes};
 use sycamore_core2::elements::Spread;
+use sycamore_core2::generic_node::GenericNode;
 use sycamore_reactive::Scope;
 
 use crate::web_node::WebNode;
 use crate::ElementBuilder;
 
-type AttrFn<'a, E> = Box<dyn FnOnce(ElementBuilder<E>) + 'a>;
+type AttrFn<'a, E> = Box<dyn FnOnce(ElementBuilder<'a, E>) + 'a>;
 
 /// A struct that can keep track of the attributes that are added.
 /// This can be used as a prop to a component to allow the component to accept arbitrary attributes
@@ -43,13 +45,13 @@ impl<'a, E: WebElement> Attributes<'a, E> {
     /// Add a closure.
     pub fn add_fn<F>(&self, f: F)
     where
-        F: FnOnce(ElementBuilder<E>) + 'static,
+        F: FnOnce(ElementBuilder<'a, E>) + 'a,
     {
         self.fns.borrow_mut().push(Box::new(f));
     }
 
     /// Apply all the attributes to the element builder.
-    pub fn apply(self, builder: ElementBuilder<E>) {
+    pub fn apply(self, builder: ElementBuilder<'a, E>) {
         for f in self.fns.into_inner() {
             f(builder.clone());
         }
@@ -68,8 +70,37 @@ impl<'a, E: WebElement> fmt::Debug for Attributes<'a, E> {
     }
 }
 
-impl<'a, E: WebElement> Spread<E, WebNode> for Attributes<'a, E> {
-    fn spread(self, cx: Scope, el: &WebNode) {
+impl<'a, E: WebElement> Spread<'a, E, WebNode> for Attributes<'a, E> {
+    fn spread(self, cx: Scope<'a>, el: &WebNode) {
         self.apply(ElementBuilder::from_element(cx, E::from_node(el.clone())));
+    }
+}
+
+/// Something that can have attributes.
+pub trait SetAttribute {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>);
+    fn remove_attribute(&self, name: Cow<'static, str>);
+}
+
+impl<'a, E: WebElement> SetAttribute for ElementBuilder<'a, E> {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
+        self.as_node().set_attribute(name, value);
+    }
+
+    fn remove_attribute(&self, name: Cow<'static, str>) {
+        self.as_node().remove_attribute(name);
+    }
+}
+impl<'a, E: WebElement> SetAttribute for Attributes<'a, E> {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
+        self.fns.borrow_mut().push(Box::new(move |builder| {
+            builder.set_attribute(name.clone(), value.clone());
+        }));
+    }
+
+    fn remove_attribute(&self, name: Cow<'static, str>) {
+        self.fns.borrow_mut().push(Box::new(move |builder| {
+            builder.remove_attribute(name.clone());
+        }));
     }
 }

@@ -141,7 +141,7 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
     /// Spread something onto this element. This uses the [`Spread`] trait behind the scenes.
     pub fn spread<S>(self, value: S) -> Self
     where
-        S: Spread<E, G>,
+        S: Spread<'a, E, G>,
     {
         value.spread(self.cx, self.as_node());
         self
@@ -196,7 +196,7 @@ impl<G: GenericNode, T: ToView<G>> ElementBuilderOrView<G, ((),)> for T {
 /// The `view!` spread operator.
 ///
 /// This is most often used to spread a list of attributes onto an element.
-pub trait Spread<E: TypedElement<G>, G: GenericNode> {
+pub trait Spread<'a, E: TypedElement<G>, G: GenericNode> {
     /// Spread onto the element.
-    fn spread(self, cx: Scope, el: &G);
+    fn spread(self, cx: Scope<'a>, el: &G);
 }
