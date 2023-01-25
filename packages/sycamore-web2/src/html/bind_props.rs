@@ -2,7 +2,7 @@
 
 #![allow(non_upper_case_globals)]
 
-use sycamore_core2::elements::{AsNode, TypedElement};
+use sycamore_core2::elements::TypedElement;
 use sycamore_reactive::{create_effect, Signal};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::Event;

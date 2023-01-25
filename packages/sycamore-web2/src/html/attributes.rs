@@ -5,12 +5,40 @@
 
 use std::borrow::Cow;
 
-use sycamore_core2::elements::AsNode;
 use sycamore_core2::generic_node::GenericNode;
 
 use super::elements::{HtmlElement, SvgElement};
-use crate::web_node::WebNode;
+use super::{Attributes, WebElement};
 use crate::ElementBuilder;
+
+/// Something that can have attributes.
+pub trait SetAttribute {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>);
+    fn remove_attribute(&self, name: Cow<'static, str>);
+}
+
+impl<'a, E: WebElement> SetAttribute for ElementBuilder<'a, E> {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
+        self.as_node().set_attribute(name, value);
+    }
+
+    fn remove_attribute(&self, name: Cow<'static, str>) {
+        self.as_node().remove_attribute(name);
+    }
+}
+impl<'a, E: WebElement> SetAttribute for Attributes<'a, E> {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
+        self.fns.borrow_mut().push(Box::new(move |builder| {
+            builder.set_attribute(name.clone(), value.clone());
+        }));
+    }
+
+    fn remove_attribute(&self, name: Cow<'static, str>) {
+        self.fns.borrow_mut().push(Box::new(move |builder| {
+            builder.remove_attribute(name.clone());
+        }));
+    }
+}
 
 /// Codegen the methods for the attributes.
 macro_rules! define_attributes {
@@ -33,7 +61,7 @@ macro_rules! define_attributes {
     ) => {
         $(#[$attr])*
         fn $id(self, v: impl Into<Cow<'static, str>>) -> Self {
-            self.as_node().set_attribute(stringify!($id).into(), v.into());
+            self.set_attribute(stringify!($id).into(), v.into());
             self
         }
     };
@@ -44,9 +72,9 @@ macro_rules! define_attributes {
         $(#[$attr])*
         fn $id(self, v: bool) -> Self {
             if v {
-                self.as_node().set_attribute(stringify!($id).into(), Cow::Borrowed(""));
+                self.set_attribute(stringify!($id).into(), Cow::Borrowed(""));
             } else {
-                self.as_node().remove_attribute(stringify!($id).into());
+                self.remove_attribute(stringify!($id).into());
             }
             self
         }
@@ -57,7 +85,7 @@ macro_rules! define_attributes {
     ) => {
         $(#[$attr])*
         fn $id(self, v: impl Into<Cow<'static, str>>) -> Self {
-            self.as_node().set_attribute(Cow::Borrowed($name), v.into());
+            self.set_attribute(Cow::Borrowed($name), v.into());
             self
         }
     };
@@ -68,25 +96,68 @@ macro_rules! define_attributes {
         $(#[$attr])*
         fn $id(self, v: bool) -> Self {
             if v {
-                self.as_node().set_attribute(Cow::Borrowed($name), Cow::Borrowed(""));
+                self.set_attribute(Cow::Borrowed($name), Cow::Borrowed(""));
             } else {
-                self.as_node().remove_attribute(Cow::Borrowed($name));
+                self.remove_attribute(Cow::Borrowed($name));
             }
             self
         }
     };
 }
 
-/// The global HTML attributes.
-pub trait GlobalAttributes: AsNode<WebNode> + Sized {
+/// The global attribute for both HTML and SVG.
+pub trait GlobalAttributes: SetAttribute + Sized {
+    /// Set the inner HTML of the element.
+    ///
+    /// TODO (docs): Warn about potential XSS vulnerabilities.
+    fn dangerously_set_inner_html(self, html: impl Into<Cow<'static, str>>) -> Self;
+
+    // Some attributes are shared for both HTML and SVG elements.
+    // We declare them here to prevent declaring them twice for both HTML and SVG.
+    //
+    // This way, we don't have any ambiguities when calling the attributes.
     define_attributes! {
-        accesskey: String,
-        autocapitalize: String,
-        autofocus: bool,
         /// The `class` global attribute is a space-separated list of the case-sensitive classes of the element.
         /// Classes allow CSS and JavaScript to select and access specific elements via the class selectors or functions
         /// like the DOM method `document.getElementsByClassName`.
         class: String,
+        /// The `id` global attribute defines an identifier (ID) which must be unique in the whole document.
+        /// Its purpose is to identify the element when linking (using a fragment identifier), scripting, or styling (with CSS).
+        id: String,
+        /// The `style` global attribute contains CSS styling declarations to be applied to the element. Note that it is recommended for styles to be defined in a separate file or files.
+        /// This attribute and the `<style>` element have mainly the purpose of allowing for quick styling, for example for testing purposes.
+        style: String,
+        tabindex: String,
+    }
+}
+impl<'a, T> GlobalAttributes for ElementBuilder<'a, T>
+where
+    T: WebElement,
+{
+    fn dangerously_set_inner_html(self, html: impl Into<Cow<'static, str>>) -> Self {
+        self.as_node().dangerously_set_inner_html(html.into());
+        self
+    }
+}
+impl<'a, T> GlobalAttributes for Attributes<'a, T>
+where
+    T: WebElement,
+{
+    fn dangerously_set_inner_html(self, html: impl Into<Cow<'static, str>>) -> Self {
+        let html = html.into();
+        self.add_fn(move |builder| {
+            builder.dangerously_set_inner_html(html);
+        });
+        self
+    }
+}
+
+/// The global HTML attributes.
+pub trait HtmlGlobalAttributes: SetAttribute + Sized {
+    define_attributes! {
+        accesskey: String,
+        autocapitalize: String,
+        autofocus: bool,
         /// The `contenteditable` global attribute is an enumerated attribute indicating if the element should be editable by the user.
         /// If so, the browser modifies its widget to allow editing.
         ///
@@ -106,9 +177,6 @@ pub trait GlobalAttributes: AsNode<WebNode> + Sized {
         /// The `hidden` global attribute is an enumerated attribute indicating that the browser should not render the contents of the element.
         /// For example, it can be used to hide elements of the page that can't be used until the login process has been completed.
         hidden: bool,
-        /// The `id` global attribute defines an identifier (ID) which must be unique in the whole document.
-        /// Its purpose is to identify the element when linking (using a fragment identifier), scripting, or styling (with CSS).
-        id: String,
         inert: bool,
         inputmode: String,
         is: String,
@@ -123,10 +191,6 @@ pub trait GlobalAttributes: AsNode<WebNode> + Sized {
         role: String,
         slot: String,
         spellcheck: String,
-        /// The `style` global attribute contains CSS styling declarations to be applied to the element. Note that it is recommended for styles to be defined in a separate file or files.
-        /// This attribute and the `<style>` element have mainly the purpose of allowing for quick styling, for example for testing purposes.
-        style: String,
-        tabindex: String,
         title: String,
         translate: String,
         virtualkeyboardpolicy: String,
@@ -135,25 +199,26 @@ pub trait GlobalAttributes: AsNode<WebNode> + Sized {
     /// Insert an `aria-*` attribute.
     fn aria(self, name: &'static str, v: impl Into<Cow<'static, str>>) -> Self {
         let name = String::from("aria-") + name;
-        self.as_node().set_attribute(Cow::Owned(name), v.into());
+        self.set_attribute(Cow::Owned(name), v.into());
         self
     }
     /// Insert a `data-*` attribute.
     fn data(self, name: &'static str, v: impl Into<Cow<'static, str>>) -> Self {
         let name = String::from("data-") + name;
-        self.as_node().set_attribute(Cow::Owned(name), v.into());
+        self.set_attribute(Cow::Owned(name), v.into());
         self
     }
     /// Insert a custom attribute.
     fn custom(self, name: &'static str, v: impl Into<Cow<'static, str>>) -> Self {
-        self.as_node().set_attribute(Cow::Borrowed(name), v.into());
+        self.set_attribute(Cow::Borrowed(name), v.into());
         self
     }
 }
 
-impl<'a, T> GlobalAttributes for ElementBuilder<'a, T> where T: HtmlElement {}
+impl<'a, T> HtmlGlobalAttributes for ElementBuilder<'a, T> where T: HtmlElement {}
+impl<'a, T> HtmlGlobalAttributes for Attributes<'a, T> where T: HtmlElement {}
 
-pub trait GlobalSvgAttributes: AsNode<WebNode> + Sized {
+pub trait SvgGlobalAttributes: SetAttribute + Sized {
     define_attributes! {
         accent_height: String,
         accumulate: String,
@@ -175,7 +240,6 @@ pub trait GlobalSvgAttributes: AsNode<WebNode> + Sized {
         by: String,
         calcMode: String,
         cap_height: String,
-        class: String,
         clip: String,
         clipPathUnits: String,
         clip_path: String,
@@ -241,7 +305,6 @@ pub trait GlobalSvgAttributes: AsNode<WebNode> + Sized {
         hreflang: String,
         horiz_adv_x: String,
         horiz_origin_x: String,
-        id: String,
         ideographic: String,
         image_rendering: String,
         _in("in"): String,
@@ -350,10 +413,8 @@ pub trait GlobalSvgAttributes: AsNode<WebNode> + Sized {
         stroke_miterlimit: String,
         stroke_opacity: String,
         stroke_width: String,
-        style: String,
         surfaceScale: String,
         systemLanguage: String,
-        tabindex: String,
         tableValues: String,
         target: String,
         targetX: String,
@@ -405,4 +466,5 @@ pub trait GlobalSvgAttributes: AsNode<WebNode> + Sized {
     }
 }
 
-impl<'a, T> GlobalSvgAttributes for ElementBuilder<'a, T> where T: SvgElement {}
+impl<'a, T> SvgGlobalAttributes for ElementBuilder<'a, T> where T: SvgElement {}
+impl<'a, T> SvgGlobalAttributes for Attributes<'a, T> where T: SvgElement {}

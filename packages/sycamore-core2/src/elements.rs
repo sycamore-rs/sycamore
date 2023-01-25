@@ -129,6 +129,23 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
     pub fn cx(&self) -> Scope<'a> {
         self.cx
     }
+
+    /// Get the underlying [`GenericNode`].
+    ///
+    /// This should not be used to get the node out of the builder. Instead, prefer to use
+    /// `.finish()` or `.view()` instead.
+    pub fn as_node(&self) -> &G {
+        self.el.as_node()
+    }
+
+    /// Spread something onto this element. This uses the [`Spread`] trait behind the scenes.
+    pub fn spread<S>(self, value: S) -> Self
+    where
+        S: Spread<E, G>,
+    {
+        value.spread(self.cx, self.as_node());
+        self
+    }
 }
 
 impl<'a, E: TypedElement<G>, G: GenericNode> Clone for ElementBuilder<'a, E, G> {
@@ -174,4 +191,12 @@ impl<G: GenericNode, T: ToView<G>> ElementBuilderOrView<G, ((),)> for T {
     fn into_view(self, cx: Scope) -> View<G> {
         self.to_view(cx)
     }
+}
+
+/// The `view!` spread operator.
+///
+/// This is most often used to spread a list of attributes onto an element.
+pub trait Spread<E: TypedElement<G>, G: GenericNode> {
+    /// Spread onto the element.
+    fn spread(self, cx: Scope, el: &G);
 }

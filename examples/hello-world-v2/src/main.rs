@@ -9,8 +9,11 @@ fn app(cx: Scope) -> View {
     let increment = move |_| counter += 1;
     let decrement = move |_| counter -= 1;
     let reset = move |_| counter.set(0);
+
+    let attributes: Attributes<div> = Attributes::new().class("container").id("test");
+
     div(cx)
-        .class("container")
+        .spread(attributes)
         .child(
             p(cx)
                 .dynamic(move |e| e.class(format!("counter-{counter}")))

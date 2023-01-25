@@ -1,6 +1,6 @@
 //! Definitions for properties that can be used with the [`prop`] directive.
 
-use sycamore_core2::elements::{AsNode, TypedElement};
+use sycamore_core2::elements::TypedElement;
 use wasm_bindgen::JsValue;
 
 use crate::web_node::WebNode;
