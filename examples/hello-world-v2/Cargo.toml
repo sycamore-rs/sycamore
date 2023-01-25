@@ -8,9 +8,9 @@ edition = "2021"
 [dependencies]
 console_error_panic_hook = "0.1.7"
 log = "0.4.17"
-sycamore-core2 = { path = "../../packages/sycamore-core2" }
+sycamore-core = { path = "../../packages/sycamore-core" }
 sycamore-reactive = { path = "../../packages/sycamore-reactive" }
-sycamore-web2 = { path = "../../packages/sycamore-web2", features = [
+sycamore-web = { path = "../../packages/sycamore-web", features = [
     "dom",
     "ssr",
     "silence_dom_ssr_features_error",

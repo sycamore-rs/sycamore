@@ -5,7 +5,7 @@
 
 use std::borrow::Cow;
 
-use sycamore_core2::generic_node::GenericNode;
+use sycamore_core::generic_node::GenericNode;
 
 use super::elements::{HtmlElement, SvgElement};
 use super::{Attributes, SetAttribute, WebElement};

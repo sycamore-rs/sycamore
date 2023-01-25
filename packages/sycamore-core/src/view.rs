@@ -96,8 +96,8 @@ impl<G: GenericNode> View<G> {
     ///
     /// Note that this is different from an empty view fragment. Instead, this is a single marker
     /// (dummy) node.
-    pub fn empty() -> Self {
-        Self::new_node(G::marker())
+    pub fn empty(cx: Scope) -> Self {
+        Self::new_node(G::marker(cx))
     }
 
     /// Try to cast to a [`GenericNode`], or `None` if wrong type.
@@ -176,12 +176,6 @@ impl<G: GenericNode> View<G> {
     }
 }
 
-impl<G: GenericNode> Default for View<G> {
-    fn default() -> Self {
-        Self::empty()
-    }
-}
-
 impl<G: GenericNode> fmt::Debug for View<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.inner {
@@ -228,13 +222,13 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 /// ```
 pub trait ToView<G: GenericNode> {
     /// Called during the initial render when creating the DOM nodes. Should return a [`View`].
-    fn to_view(&self) -> View<G>;
+    fn to_view(&self, cx: Scope) -> View<G>;
 }
 
 impl<G: GenericNode> ToView<G> for View<G> {
     /// Tautology of converting a [`View`] into a [`View`]. This allows us to interpolate views into
     /// other views.
-    fn to_view(&self) -> View<G> {
+    fn to_view(&self, _: Scope) -> View<G> {
         self.clone()
     }
 }
@@ -243,10 +237,10 @@ impl<T, G: GenericNode> ToView<G> for Option<T>
 where
     T: ToView<G>,
 {
-    fn to_view(&self) -> View<G> {
+    fn to_view(&self, cx: Scope) -> View<G> {
         match self {
-            Some(v) => v.to_view(),
-            None => View::empty(),
+            Some(v) => v.to_view(cx),
+            None => View::empty(cx),
         }
     }
 }
@@ -255,27 +249,27 @@ impl<T, G: GenericNode> ToView<G> for [T]
 where
     T: ToView<G>,
 {
-    fn to_view(&self) -> View<G> {
-        View::new_fragment(self.iter().map(ToView::to_view).collect())
+    fn to_view(&self, cx: Scope) -> View<G> {
+        View::new_fragment(self.iter().map(|x| ToView::to_view(x, cx)).collect())
     }
 }
 
 impl<G: GenericNode> ToView<G> for &'static str {
-    fn to_view(&self) -> View<G> {
-        View::new_node(G::text_node((*self).into()))
+    fn to_view(&self, cx: Scope) -> View<G> {
+        View::new_node(G::text_node(cx, (*self).into()))
     }
 }
 impl<G: GenericNode> ToView<G> for Cow<'static, str> {
-    fn to_view(&self) -> View<G> {
-        View::new_node(G::text_node(self.clone()))
+    fn to_view(&self, cx: Scope) -> View<G> {
+        View::new_node(G::text_node(cx, self.clone()))
     }
 }
 
 macro_rules! impl_to_view_text_to_string {
     ($t:ty) => {
         impl<G: GenericNode> ToView<G> for $t {
-            fn to_view(&self) -> View<G> {
-                View::new_node(G::text_node(self.to_string().into()))
+            fn to_view(&self, cx: Scope) -> View<G> {
+                View::new_node(G::text_node(cx, self.to_string().into()))
             }
         }
     };
@@ -304,16 +298,16 @@ impl<T, G: GenericNode> ToView<G> for &T
 where
     T: ToView<G>,
 {
-    fn to_view(&self) -> View<G> {
-        (*self).to_view()
+    fn to_view(&self, cx: Scope) -> View<G> {
+        (*self).to_view(cx)
     }
 }
 impl<T, G: GenericNode> ToView<G> for Box<T>
 where
     T: ToView<G>,
 {
-    fn to_view(&self) -> View<G> {
-        self.as_ref().to_view()
+    fn to_view(&self, cx: Scope) -> View<G> {
+        self.as_ref().to_view(cx)
     }
 }
 
@@ -321,8 +315,8 @@ impl<T, G: GenericNode> ToView<G> for Rc<T>
 where
     T: ToView<G>,
 {
-    fn to_view(&self) -> View<G> {
-        self.as_ref().to_view()
+    fn to_view(&self, cx: Scope) -> View<G> {
+        self.as_ref().to_view(cx)
     }
 }
 
@@ -330,8 +324,8 @@ impl<T, G: GenericNode> ToView<G> for Arc<T>
 where
     T: ToView<G>,
 {
-    fn to_view(&self) -> View<G> {
-        self.as_ref().to_view()
+    fn to_view(&self, cx: Scope) -> View<G> {
+        self.as_ref().to_view(cx)
     }
 }
 

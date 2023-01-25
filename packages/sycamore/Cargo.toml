@@ -93,12 +93,7 @@ ssr = [
     "sycamore-macro/ssr",
     "sycamore-web/ssr",
 ]
-suspense = [
-    "futures",
-    "wasm-bindgen-futures",
-    "sycamore-futures",
-    "sycamore-core/suspense",
-]
+suspense = ["futures", "wasm-bindgen-futures", "sycamore-futures"]
 serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
 web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]

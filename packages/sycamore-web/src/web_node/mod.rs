@@ -9,8 +9,8 @@ use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use sycamore_core2::generic_node::{GenericNode, GenericNodeElements};
-use sycamore_core2::view::View;
+use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
+use sycamore_core::view::View;
 use sycamore_reactive::Scope;
 use wasm_bindgen::{JsCast, JsValue};
 
@@ -321,16 +321,16 @@ impl GenericNode for WebNode {
                                     .collect(),
                             )
                         });
-                        sycamore_core2::render::insert(cx, self, view, initial, None, true);
+                        sycamore_core::render::insert(cx, self, view, initial, None, true);
                     }
                 } else {
-                    sycamore_core2::render::insert(cx, self, view, None, None, true);
+                    sycamore_core::render::insert(cx, self, view, None, None, true);
                 }
             }
             #[cfg(feature = "ssr")]
             WebNodeInner::Ssr(_) => {
                 if view.is_node() {
-                    sycamore_core2::render::insert(cx, self, view, None, None, true);
+                    sycamore_core::render::insert(cx, self, view, None, None, true);
                 } else {
                     // Insert start and finish tags.
                     let start_tag = Self::marker_with_text(cx, "#".into());
@@ -339,7 +339,7 @@ impl GenericNode for WebNode {
                     self.append_child(&end_tag);
 
                     // Insert the view.
-                    sycamore_core2::render::insert(cx, self, view, None, Some(&end_tag), true);
+                    sycamore_core::render::insert(cx, self, view, None, Some(&end_tag), true);
                 }
             }
         }

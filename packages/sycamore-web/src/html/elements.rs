@@ -6,8 +6,8 @@
 
 use std::borrow::Cow;
 
-use sycamore_core2::elements::TypedElement;
-use sycamore_core2::generic_node::GenericNodeElements;
+use sycamore_core::elements::TypedElement;
+use sycamore_core::generic_node::GenericNodeElements;
 use sycamore_reactive::Scope;
 
 use crate::web_node::WebNode;

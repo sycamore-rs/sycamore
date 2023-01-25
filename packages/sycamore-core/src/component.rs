@@ -17,14 +17,8 @@ use crate::view::View;
 /// * Call the closure `f` passed to this function.
 #[doc(hidden)]
 pub fn component_scope<G: GenericNode>(f: impl FnOnce() -> View<G>) -> View<G> {
-    if G::USE_HYDRATION_CONTEXT {
-        #[cfg(feature = "hydrate")]
-        return crate::hydrate::hydrate_component(|| untrack(f));
-        #[cfg(not(feature = "hydrate"))]
-        return untrack(f);
-    } else {
-        untrack(f)
-    }
+    // TODO: hydration?
+    untrack(f)
 }
 
 /// A trait that is implemented automatically by the `Props` derive macro.
@@ -161,22 +155,21 @@ impl<'a, G: GenericNode> From<View<G>> for Children<'a, G> {
     }
 }
 
-impl<'a, G: GenericNode> Default for Children<'a, G> {
-    fn default() -> Self {
+impl<'a, G: GenericNode> Children<'a, G> {
+    /// Creates a new empty [`Children`].
+    pub fn new(self, cx: Scope<'a>) -> Self {
         Self {
-            f: Box::new(|_| View::default()),
+            f: Box::new(move |_| View::empty(cx)),
         }
     }
-}
 
-impl<'a, G: GenericNode> Children<'a, G> {
     /// Instantiate the child [`View`] with the passed [`Scope`].
     pub fn call(self, cx: BoundedScope<'_, 'a>) -> View<G> {
         (self.f)(cx)
     }
 
     /// Create a new [`Children`] from a closure.
-    pub fn new(_cx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
+    pub fn new_with(_cx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }
     }
 }
@@ -196,16 +189,12 @@ pub enum AttributeValue<'cx, G: GenericNode> {
     DangerouslySetInnerHtml(&'static str),
     /// Dangerously set inner HTML with a dynamic value.
     DynamicDangerouslySetInnerHtml(Box<dyn Display>),
-    /// An event binding
-    Event(&'static str, Box<dyn FnMut(G::AnyEventData) + 'cx>),
     /// A binding to a boolean value
     BindBool(&'static str, &'cx Signal<bool>),
     /// A binding to a numeric value
     BindNumber(&'static str, &'cx Signal<f64>),
     /// A binding to a string value
     BindString(&'static str, &'cx Signal<String>),
-    /// A property value.
-    Property(&'static str, G::PropertyType),
     /// A [`NodeRef`] value.
     Ref(&'cx NodeRef<G>),
 }

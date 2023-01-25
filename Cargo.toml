@@ -11,10 +11,6 @@ members = [
   "packages/sycamore-router-macro",
   "packages/sycamore-web",
 
-  # Temporary packages
-  "packages/sycamore-core2",
-  "packages/sycamore-web2",
-
   # Examples
   "examples/*",
 

@@ -2,7 +2,7 @@
 
 #![allow(non_camel_case_types)]
 
-use sycamore_core2::generic_node::GenericNodeElements;
+use sycamore_core::generic_node::GenericNodeElements;
 use sycamore_reactive::Scope;
 use wasm_bindgen::JsValue;
 use web_sys::*;

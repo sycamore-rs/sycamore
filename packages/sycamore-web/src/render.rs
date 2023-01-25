@@ -1,7 +1,7 @@
 //! Render your app!
 
-use sycamore_core2::render::insert;
-use sycamore_core2::view::View;
+use sycamore_core::render::insert;
+use sycamore_core::view::View;
 use sycamore_reactive::{create_scope, provide_context, use_context, Scope};
 use wasm_bindgen::UnwrapThrowExt;
 

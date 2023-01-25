@@ -1,74 +1,50 @@
-//! Web renderer for the Sycamore UI framework.
+//! # `sycamore-web`
 //!
-//! Sycamore on its own is a backend-agnostic UI framework. This crate provides web support to
-//! Sycamore. With this crate, it is possible to render Sycamore views to the DOM (using
-//! [`DomNode`]), "hydrate" existing DOM nodes (using [`HydrateNode`]), or render a static string
-//! (using [`SsrNode`]).
+//! This crate adds web support to the Sycamore UI framework. This includes both client-side
+//! rendering to the DOM (using `wasm-bindgen` and `web-sys`) and server-side-rendering to render
+//! your web app to a static HTML string.
 //!
-//! This crate is re-exported in the `sycamore` crate. It is recommended to use that instead of
-//! using this crate directly.
+//! # `WebNode`
+//!
+//! [`WebNode`](crate::web_node::WebNode) is the central part of this crate. This is an
+//! implementation of a Sycamore rendering backend for rendering your Sycamore app to HTML, whether
+//! it be using the browser's DOM or to a static HTML string.
+//!
+//! # Feature Flags
+//!
+//! - `dom`: Enables rendering `WebNode`s to the browser DOM.
+//! - `hydrate`: Enables hydration of existing DOM nodes (usually in conjunction with SSR).
+//! - `ssr`: Enables rendering `WebNode`s to a static HTML string.
+//! - `suspense`: Enables support for futures/suspense integration.
+//!
+//! - `silence_dom_ssr_features_error`: By default, if both the `dom` and `ssr` features are
+//!   enabled, a compile-time error is emitted. This is for code-bloat reasons when deploying to
+//!   WASM. If you did intend to enable both features, you can silence this error by enabling this
+//!   feature. (This is also convenient for `cargo test` as we can test everything all-together
+//!   using `--all-features`).
 
-#![deny(missing_debug_implementations)]
-
-mod dom_node;
-mod dom_node_template;
-#[cfg(feature = "hydrate")]
-pub mod hydrate;
-#[cfg(feature = "hydrate")]
-mod hydrate_node;
-#[cfg(feature = "ssr")]
-mod ssr_node;
-
-pub use dom_node::*;
-#[cfg(feature = "hydrate")]
-pub use hydrate_node::*;
 use once_cell::sync::Lazy;
-#[cfg(feature = "ssr")]
-pub use ssr_node::*;
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
-use sycamore_reactive::*;
-use wasm_bindgen::prelude::*;
+use sycamore_reactive::{create_ref, use_scope_status, Scope};
+use wasm_bindgen::prelude::{wasm_bindgen, Closure};
+use wasm_bindgen::UnwrapThrowExt;
 
-/// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
-pub trait Html:
-    GenericNode<AnyEventData = JsValue, PropertyType = JsValue> + GenericNodeElements
-{
-    /// A boolean indicating whether this node is rendered in a browser context.
-    ///
-    /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
-    /// in the browser. It only means that it does not create DOM nodes.
-    const IS_BROWSER: bool;
+pub mod html;
+pub mod hydrate;
+pub mod render;
+pub mod web_node;
 
-    /// Convert this node into a raw [`web_sys::Node`].
-    ///
-    /// For certain backends, this is not possible (e.g. [`SsrNode`]). In that case, calling this
-    /// will panic at runtime.
-    fn to_web_sys(&self) -> web_sys::Node;
-
-    /// Convert a raw [`web_sys::Node`] into a [`GenericNode`].
-    ///
-    /// This is the inverse of [`to_web_sys`]. For certain backends, this is not possible (e.g.
-    /// [`SsrNode`]). In that case, calling this will panic at runtime.
-    ///
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use sycamore::prelude::*;
-    /// # fn get_web_sys_node() -> web_sys::Node {
-    /// #     todo!()
-    /// # }
-    /// # fn my_raw_node_view<G: Html>() -> View<G> {
-    /// let raw_node: web_sys::Node = get_web_sys_node();
-    /// let node = G::from_web_sys(raw_node);
-    /// let view = View::new_node(node);
-    /// # view
-    /// # }
-    /// ```
-    fn from_web_sys(node: web_sys::Node) -> Self;
+/// Get the global `window` object.
+pub fn window() -> web_sys::Window {
+    web_sys::window().unwrap_throw()
 }
 
-static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
+/// Get the global `document` object.
+pub fn document() -> web_sys::Document {
+    window().document().unwrap_throw()
+}
+
+#[doc(hidden)]
+pub static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
     vec![
         "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
         "source", "track", "wbr", "command", "keygen", "menuitem",
@@ -76,6 +52,15 @@ static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
     .into_iter()
     .collect()
 });
+
+/// A [`View`](sycamore_core::view::View) type that uses [`WebNode`](web_node::WebNode) as the
+/// rendering backend by default.
+pub type View<G = web_node::WebNode> = sycamore_core::view::View<G>;
+
+/// An [`ElementBuilder`](sycamore_core::elements::ElementBuilder) type that uses
+/// [`WebNode`](web_node::WebNode) as the rendering backend by default.
+pub type ElementBuilder<'a, E, G = web_node::WebNode> =
+    sycamore_core::elements::ElementBuilder<'a, E, G>;
 
 /// Queue up a callback to be executed when the component is mounted.
 ///
@@ -112,11 +97,12 @@ pub fn on_mount<'a>(cx: Scope<'a>, f: impl Fn() + 'a) {
     }
 }
 
-/// Get `window.document`.
-pub(crate) fn document() -> web_sys::Document {
-    thread_local! {
-        /// Cache document since it is frequently accessed to prevent going through js-interop.
-        static DOCUMENT: web_sys::Document = web_sys::window().unwrap_throw().document().unwrap_throw();
-    };
-    DOCUMENT.with(|document| document.clone())
-}
+#[cfg(all(
+    not(feature = "silence_dom_ssr_features_error"),
+    feature = "dom",
+    feature = "ssr"
+))]
+compile_error!(
+    "You should usually only enable either the `dom` feature or the `ssr` feature but not both.
+If you did intend to enable both features at the same time, you can enable the `silence_dom_ssr_features_error` feature to silence this error."
+);

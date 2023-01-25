@@ -18,8 +18,8 @@ pub use bind_props::{bind, BindAttributes};
 pub use elements::*;
 pub use events::{on, OnAttributes};
 pub use props::{prop, PropAttributes};
-use sycamore_core2::elements::Spread;
-use sycamore_core2::generic_node::GenericNode;
+use sycamore_core::elements::Spread;
+use sycamore_core::generic_node::GenericNode;
 use sycamore_reactive::Scope;
 
 use crate::web_node::WebNode;

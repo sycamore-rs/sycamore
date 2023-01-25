@@ -1,7 +1,7 @@
-use sycamore_core2::view::ToView;
+use sycamore_core::view::ToView;
 use sycamore_reactive::*;
-use sycamore_web2::html::*;
-use sycamore_web2::*;
+use sycamore_web::html::*;
+use sycamore_web::*;
 use wasm_bindgen::JsCast;
 
 fn app(cx: Scope) -> View {
@@ -34,11 +34,11 @@ fn app(cx: Scope) -> View {
 fn main() {
     console_error_panic_hook::set_once();
     wasm_logger::init(wasm_logger::Config::default());
-    let ssr = sycamore_web2::render::render_to_string(app);
+    let ssr = sycamore_web::render::render_to_string(app);
     log::info!("{ssr}");
 
     let root = document().get_element_by_id("main").unwrap();
 
     root.set_inner_html(&ssr);
-    sycamore_web2::render::hydrate_to(root.unchecked_into(), app);
+    sycamore_web::render::hydrate_to(root.unchecked_into(), app);
 }
