@@ -85,6 +85,7 @@ pub mod prelude {
     pub use crate::generic_node::GenericNode;
     pub use crate::noderef::{create_node_ref, NodeRef};
     pub use crate::reactive::*;
+    pub use crate::view::ToView;
     #[cfg(not(feature = "web"))]
     pub use crate::view::View;
     #[cfg(feature = "web")]
@@ -96,7 +97,7 @@ pub mod prelude {
 }
 
 /// Builder API alternative to `view!`.
-/// 
+///
 /// This module is intended to be imported using a glob import.
 /// # Example
 /// ```rust
@@ -105,6 +106,7 @@ pub mod prelude {
 /// ```
 #[cfg(feature = "web")]
 pub mod builder {
+    pub use sycamore_core::component::Props;
     pub use sycamore_web::html::elements::*;
     pub use sycamore_web::html::*;
 }

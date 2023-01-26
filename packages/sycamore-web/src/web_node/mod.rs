@@ -14,9 +14,9 @@ use sycamore_core::view::View;
 use sycamore_reactive::Scope;
 use wasm_bindgen::{JsCast, JsValue};
 
-use crate::hydrate::{
-    get_next_markers, is_hydrating, use_hydration_ctx, use_hydration_state, HydrationKey,
-};
+use crate::hydrate::{get_next_markers, is_hydrating, use_hydration_state};
+#[cfg(feature = "hydrate")]
+use crate::hydrate::{use_hydration_ctx, HydrationKey};
 use crate::render::{get_render_env, RenderEnv};
 
 pub struct WebNode(WebNodeInner);
@@ -432,6 +432,14 @@ impl WebNode {
             #[cfg(feature = "ssr")]
             WebNodeInner::Ssr(node) => node.set_property(name, value),
         }
+    }
+
+    /// A simple wrapper around [`JsCast::unchecked_into`].
+    pub fn unchecked_into<T>(self) -> T
+    where
+        T: JsCast,
+    {
+        self.to_web_sys().unchecked_into()
     }
 }
 

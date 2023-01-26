@@ -155,48 +155,140 @@ where
 
 /// The global HTML attributes.
 pub trait HtmlGlobalAttributes: SetAttribute + Sized {
+    // define_attributes! {
+    //     accesskey: String,
+    //     autocapitalize: String,
+    //     autofocus: bool,
+    //     /// The `contenteditable` global attribute is an enumerated attribute indicating if the element should be editable by the user.
+    //     /// If so, the browser modifies its widget to allow editing.
+    //     ///
+    //     /// The attribute must take one of the following values:
+    //     /// * `true` or an _empty string_, which indicates that the element is editable.
+    //     /// * `false`, which indicates that the element is not editable.
+    //     ///
+    //     /// If this attribute is missing or its value is invalid, its value is inherited from its parent element: so the element is editable if its parent is editable.
+    //     ///
+    //     /// Note that although its allowed values include `true` and `false`, this attribute is an enumerated one and not a Boolean one.
+    //     contenteditable: String,
+    //     contextmenu: String,
+    //     dir: String,
+    //     draggable: String,
+    //     enterkeyhint: String,
+    //     exportparts: String,
+    //     /// The `hidden` global attribute is an enumerated attribute indicating that the browser should not render the contents of the element.
+    //     /// For example, it can be used to hide elements of the page that can't be used until the login process has been completed.
+    //     hidden: bool,
+    //     href: String,
+    //     inert: bool,
+    //     inputmode: String,
+    //     is: String,
+    //     itemid: String,
+    //     itemprop: String,
+    //     itemref: String,
+    //     itemscope: bool,
+    //     itemtype: String,
+    //     lang: String,
+    //     nonce: String,
+    //     part: String,
+    //     role: String,
+    //     slot: String,
+    //     spellcheck: String,
+    //     title: String,
+    //     translate: String,
+    //     virtualkeyboardpolicy: String,
+    // }
+    // FIXME: these are not actually global attributes
     define_attributes! {
-        accesskey: String,
-        autocapitalize: String,
-        autofocus: bool,
-        /// The `contenteditable` global attribute is an enumerated attribute indicating if the element should be editable by the user.
-        /// If so, the browser modifies its widget to allow editing.
-        ///
-        /// The attribute must take one of the following values:
-        /// * `true` or an _empty string_, which indicates that the element is editable.
-        /// * `false`, which indicates that the element is not editable.
-        ///
-        /// If this attribute is missing or its value is invalid, its value is inherited from its parent element: so the element is editable if its parent is editable.
-        ///
-        /// Note that although its allowed values include `true` and `false`, this attribute is an enumerated one and not a Boolean one.
-        contenteditable: String,
-        contextmenu: String,
-        dir: String,
-        draggable: String,
-        enterkeyhint: String,
-        exportparts: String,
-        /// The `hidden` global attribute is an enumerated attribute indicating that the browser should not render the contents of the element.
-        /// For example, it can be used to hide elements of the page that can't be used until the login process has been completed.
-        hidden: bool,
-        href: String,
-        inert: bool,
-        inputmode: String,
-        is: String,
-        itemid: String,
-        itemprop: String,
-        itemref: String,
-        itemscope: bool,
-        itemtype: String,
-        lang: String,
-        nonce: String,
-        part: String,
-        role: String,
-        slot: String,
-        spellcheck: String,
-        title: String,
-        translate: String,
-        virtualkeyboardpolicy: String,
-    }
+            accept: String,
+            accept_charset: String,
+            accesskey: String,
+            action: String,
+            align: String,
+            alt: String,
+            _async: String,
+            autocomplete: String,
+            autofocus: bool,
+            autoplay: String,
+            bgcolor: String,
+            border: String,
+            charset: String,
+            checked: String,
+            cite: String,
+            color: String,
+            cols: String,
+            colspan: String,
+            content: String,
+            contenteditable: String,
+            controls: String,
+            coords: String,
+            datetime: String,
+            default: String,
+            defer: String,
+            dir: String,
+            dirname: String,
+            disabled: String,
+            download: String,
+            draggable: String,
+            enctype: String,
+            _for: String,
+            form: String,
+            formaction: String,
+            headers: String,
+            height: String,
+            hidden: bool,
+            high: String,
+            href: String,
+            hreflang: String,
+            http_equiv: String,
+            inert: bool,
+            ismap: String,
+            kind: String,
+            label: String,
+            lang: String,
+            list: String,
+            _loop: String,
+            low: String,
+            max: String,
+            maxlength: String,
+            media: String,
+            method: String,
+            min: String,
+            multiple: String,
+            muted: String,
+            name: String,
+            novalidate: String,
+            open: String,
+            optimum: String,
+            pattern: String,
+            placeholder: String,
+            poster: String,
+            preload: String,
+            readonly: bool,
+            rel: String,
+            required: String,
+            reversed: String,
+            rows: String,
+            rowspan: String,
+            sandbox: String,
+            scope: String,
+            selected: String,
+            shape: String,
+            size: String,
+            sizes: String,
+            span: String,
+            spellcheck: String,
+            src: String,
+            srcdoc: String,
+            srclang: String,
+            srcset: String,
+            start: String,
+            step: String,
+            target: String,
+            usemap: String,
+            value: String,
+            width: String,
+            wrap: String,
+        }
 
     /// Insert an `aria-*` attribute.
     fn aria(self, name: &'static str, v: impl Into<Cow<'static, str>>) -> Self {

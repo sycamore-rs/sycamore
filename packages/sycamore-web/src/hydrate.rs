@@ -198,7 +198,7 @@ pub fn get_next_markers(el: &HtmlElement) -> Option<Vec<Node>> {
 /// # Panics
 ///
 /// This will panic if the [`HydrationState`] is not in the context.
-pub(crate) fn use_hydration_state(cx: Scope) -> &HydrationState {
+pub fn use_hydration_state(cx: Scope) -> &HydrationState {
     use_context::<HydrationState>(cx)
 }
 
@@ -207,7 +207,7 @@ pub(crate) fn use_hydration_state(cx: Scope) -> &HydrationState {
 /// # Panics
 ///
 /// This will panic if the [`HydrateCtx`] is not in the context.
-pub(crate) fn use_hydration_ctx(cx: Scope) -> &HydrationCtx {
+pub fn use_hydration_ctx(cx: Scope) -> &HydrationCtx {
     use_context::<HydrationCtx>(cx)
 }
 

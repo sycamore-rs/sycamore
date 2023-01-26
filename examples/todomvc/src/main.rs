@@ -108,7 +108,7 @@ fn main() {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     // Initialize application state from localStorage.
     let local_storage = web_sys::window()
         .unwrap()
@@ -158,7 +158,7 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Copyright<G: Html>(cx: Scope) -> View<G> {
+pub fn Copyright(cx: Scope) -> View {
     view! { cx,
         footer(class="info") {
             p { "Double click to edit a todo" }
@@ -175,7 +175,7 @@ pub fn Copyright<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Header<G: Html>(cx: Scope) -> View<G> {
+pub fn Header(cx: Scope) -> View {
     let app_state = use_context::<AppState>(cx);
     let input_value = create_signal(cx, String::new());
 
@@ -205,7 +205,7 @@ pub fn Header<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component(inline_props)]
-pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
+pub fn Item(cx: Scope, todo: RcSignal<Todo>) -> View {
     let app_state = use_context::<AppState>(cx);
     // Make `todo` live as long as the scope.
     let todo = create_ref(cx, todo);
@@ -215,7 +215,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
     let id = todo.get().id;
 
     let is_editing = create_signal(cx, false);
-    let input_ref = create_node_ref(cx);
+    let input_ref: &NodeRef<WebNode> = create_node_ref(cx);
     let input_value = create_signal(cx, "".to_string());
 
     let toggle_completed = |_| todo.modify().completed = !todo.get().completed;
@@ -223,7 +223,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
     let handle_dblclick = move |_| {
         is_editing.set(true);
         input_ref
-            .get::<DomNode>()
+            .get()
             .unchecked_into::<HtmlInputElement>()
             .focus()
             .unwrap();
@@ -274,7 +274,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
             div(class="view") {
                 input(
                     class="toggle",
-                    type="checkbox",
+                    _type="checkbox",
                     on:input=toggle_completed,
                     bind:checked=checked
                 )
@@ -285,7 +285,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
             }
 
             (is_editing.get().then(|| view! { cx,
-                input(ref=input_ref,
+                input(_ref=input_ref,
                     class="edit",
                     bind:value=input_value,
                     on:blur=move |_| handle_blur(),
@@ -297,7 +297,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
 }
 
 #[component]
-pub fn List<G: Html>(cx: Scope) -> View<G> {
+pub fn List(cx: Scope) -> View {
     let app_state = use_context::<AppState>(cx);
     let todos_left = create_selector(cx, || app_state.todos_left());
 
@@ -328,12 +328,12 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
             input(
                 id="toggle-all",
                 class="toggle-all",
-                type="checkbox",
+                _type="checkbox",
                 readonly=true,
                 bind:checked=checked,
                 on:input=|_| app_state.toggle_complete_all()
             )
-            label(for="toggle-all")
+            label(_for="toggle-all")
 
             ul(class="todo-list") {
                 Keyed(
@@ -349,7 +349,7 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component(inline_props)]
-pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
+pub fn TodoFilter(cx: Scope, filter: Filter) -> View {
     let app_state = use_context::<AppState>(cx);
     let selected = move || filter == *app_state.filter.get();
     let set_filter = |filter| app_state.filter.set(filter);
@@ -368,7 +368,7 @@ pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
 }
 
 #[component]
-pub fn Footer<G: Html>(cx: Scope) -> View<G> {
+pub fn Footer(cx: Scope) -> View {
     let app_state = use_context::<AppState>(cx);
 
     let items_text = || match app_state.todos_left() {
