@@ -1,8 +1,9 @@
 //! General utilities for working with elements.
+// TODO: Document this module and provide examples.
 
 use std::fmt;
 
-use sycamore_reactive::{create_effect, Scope};
+use sycamore_reactive::{create_effect, BoundedScope, Scope};
 
 use crate::generic_node::GenericNode;
 use crate::view::{ToView, View};
@@ -123,6 +124,42 @@ impl<'a, E: TypedElement<G>, G: GenericNode> ElementBuilder<'a, E, G> {
         self.el.as_node().builder_insert(self.cx, view);
 
         self
+    }
+
+    /// Render a dynamic child view.
+    ///
+    /// TODO: example
+    pub fn dyn_child<S, T>(mut self, mut f: impl FnMut(BoundedScope<'_, 'a>) -> T + 'a) -> Self
+    where
+        T: ElementBuilderOrView<G, S>,
+    {
+        self.mark_dyn();
+        let cx = self.cx;
+        self.child(View::new_dyn_scoped(cx, move |cx| f(cx).into_view(cx)))
+    }
+
+    /// Render a child element conditionally.
+    ///
+    /// TODO: example
+    pub fn dyn_if<S1, T1, S2, T2>(
+        mut self,
+        cond: impl Fn() -> bool + 'a,
+        then: impl Fn(Scope) -> T1 + 'a,
+        fallback: impl Fn(Scope) -> T2 + 'a,
+    ) -> Self
+    where
+        T1: ElementBuilderOrView<G, S1>,
+        T2: ElementBuilderOrView<G, S2>,
+    {
+        self.mark_dyn();
+        let cx = self.cx;
+        self.child(View::new_dyn_scoped(cx, move |cx| {
+            if cond() {
+                then(cx).into_view(cx)
+            } else {
+                fallback(cx).into_view(cx)
+            }
+        }))
     }
 
     /// Get the [`Scope`] of this [`ElementBuilder`].

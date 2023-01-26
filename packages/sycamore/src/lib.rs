@@ -66,8 +66,8 @@ pub use web::render::{hydrate, hydrate_to, hydrate_to_with_scope};
 pub use web::render::{render, render_to, render_to_with_scope};
 #[cfg(feature = "ssr")]
 pub use web::render::{render_to_string, render_to_string_with_scope};
-// #[cfg(all(feature = "ssr", feature = "suspense"))]
-// pub use web::render_to_string_await_suspense; // FIXME
+#[cfg(all(feature = "ssr", feature = "suspense"))]
+pub use web::{render_to_string_await_suspense, render_to_string_await_suspense_with_scope};
 
 /// The sycamore prelude.
 ///
@@ -93,6 +93,20 @@ pub mod prelude {
     pub use crate::web::web_node::WebNode;
     #[cfg(feature = "web")]
     pub use crate::web::{on_mount, View};
+}
+
+/// Builder API alternative to `view!`.
+/// 
+/// This module is intended to be imported using a glob import.
+/// # Example
+/// ```rust
+/// pub use sycamore::builder::*;
+/// pub use sycamore::prelude::*;
+/// ```
+#[cfg(feature = "web")]
+pub mod builder {
+    pub use sycamore_web::html::elements::*;
+    pub use sycamore_web::html::*;
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.

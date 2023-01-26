@@ -178,16 +178,13 @@ mod tests {
             view! { cx, "Hello Suspense!" }
         }
 
-        let view = provide_executor_scope(async {
-            render_to_string_await_suspense(|cx| {
-                view! { cx,
-                    Suspense(fallback=view! { cx, "Loading..." }) {
-                        Comp {}
-                    }
+        let view = provide_executor_scope(render_to_string_await_suspense(|cx| {
+            view! { cx,
+                Suspense(fallback=view! { cx, "Loading..." }) {
+                    Comp {}
                 }
-            })
-            .await
-        })
+            }
+        }))
         .await;
         assert_eq!(view, "Hello Suspense!");
     }

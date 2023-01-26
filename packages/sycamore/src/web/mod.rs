@@ -1,14 +1,13 @@
 //! Web support for Sycamore.
 
+#![allow(unused_imports)]
 pub mod portal;
 
-#[allow(unused_imports)]
 use sycamore_core::component::Children;
 use sycamore_macro::{component, Props};
 use sycamore_reactive::Scope;
 use sycamore_web::hydrate::HydrationState;
 use sycamore_web::render::RenderEnv;
-use sycamore_web::web_node::ssr::WriteToString;
 use sycamore_web::web_node::WebNode;
 /// Re-export sycamore-web
 pub use sycamore_web::*;
@@ -160,10 +159,13 @@ pub async fn render_to_string_await_suspense(
 }
 
 /// Same as [`render_to_string_await_suspense`] but with a pre-created scope.
+#[cfg(all(feature = "ssr", feature = "suspense"))]
 pub async fn render_to_string_await_suspense_with_scope(
     cx: Scope<'_>,
     f: impl FnOnce(Scope<'_>) -> View,
 ) -> String {
+    use sycamore_web::web_node::ssr::WriteToString;
+
     // Provide the environment context.
     provide_context(cx, RenderEnv::Ssr);
     provide_context(cx, HydrationState::new());

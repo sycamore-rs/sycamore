@@ -3,28 +3,32 @@
 //! This example demonstrates the basics of the builder API for constructing views, as an
 //! alternative to using the `view!` macro.
 
-use sycamore::builder::prelude::*;
+use sycamore::builder::*;
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let name = create_signal(cx, String::new());
-    div()
-        .c(h1()
-            .t("Hello ")
-            .dyn_if(
-                || !name.get().is_empty(),
-                || span().dyn_t(|| name.get().to_string()),
-                || span().t("World"),
-            )
-            .t("!"))
-        .c(input().bind_value(name))
-        .view(cx)
+    div(cx)
+        .child(
+            p(cx)
+                .child("Hello ")
+                .dyn_child(|cx| {
+                    if name.get().is_empty() {
+                        span(cx).child("World").view()
+                    } else {
+                        span(cx).dyn_child(|_| name.get().to_string()).view()
+                    }
+                })
+                .child("!"),
+        )
+        .child(input(cx).bind(bind::value, name))
+        .view()
 }
 
 fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|cx| component(|| App(cx)));
+    sycamore::render(App);
 }
