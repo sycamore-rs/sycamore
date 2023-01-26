@@ -80,7 +80,7 @@ pub use web::{render_to_string_await_suspense, render_to_string_await_suspense_w
 pub mod prelude {
     pub use sycamore_macro::*;
 
-    pub use crate::component::{AttributeValue, Attributes, Children};
+    pub use crate::component::{AttributeValue, Children};
     pub use crate::flow::*;
     pub use crate::generic_node::GenericNode;
     pub use crate::noderef::{create_node_ref, NodeRef};
@@ -88,6 +88,8 @@ pub mod prelude {
     pub use crate::view::ToView;
     #[cfg(not(feature = "web"))]
     pub use crate::view::View;
+    #[cfg(feature = "web")]
+    pub use crate::web::html::Attributes;
     #[cfg(feature = "web")]
     pub use crate::web::macros::{node, view};
     #[cfg(feature = "web")]

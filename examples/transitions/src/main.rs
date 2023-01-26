@@ -21,7 +21,7 @@ impl Tab {
 }
 
 #[component(inline_props)]
-async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
+async fn Child(cx: Scope<'_>, tab: Tab) -> View {
     let delay_ms = rand::thread_rng().gen_range(200..500);
     TimeoutFuture::new(delay_ms).await;
 
@@ -34,7 +34,7 @@ async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let tab = create_signal(cx, Tab::One);
     let transition = use_transition(cx);
     let update = move |x| transition.start(move || tab.set(x), || ());
@@ -60,5 +60,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|cx| view! { cx, App {} });
+    sycamore::render(App);
 }

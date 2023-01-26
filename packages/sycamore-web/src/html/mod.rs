@@ -38,9 +38,42 @@ pub mod traits {
 
 type AttrFn<'a, E> = Box<dyn FnOnce(ElementBuilder<'a, E>) + 'a>;
 
-/// A struct that can keep track of the attributes that are added.
-/// This can be used as a prop to a component to allow the component to accept arbitrary attributes
-/// and then spread them onto the element.
+/// A special property type to allow the component to accept passthrough attributes.
+/// This can be useful if your component wraps an HTML element, i.e. accessible component libraries.
+///
+/// Add a field called `attributes` of this type to your properties struct.
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// #[derive(Props)]
+/// struct RowProps<'a, G: Html> {
+///     width: i32,
+///     children: Children<'a, G>,
+///     attributes: Attributes<'a, G>,
+/// }
+///
+/// #[component]
+/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
+///     let children = props.children.call(cx);
+///     // Spread the `Attributes` onto the div.
+///     view! { cx,
+///         div(..props.attributes) {
+///             (children)
+///         }
+///     }
+/// }
+///
+/// # #[component]
+/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// // Using `Row` somewhere else in your app:
+/// view! { cx,
+///     Row(width=10, attr:id = "row1", attr:class = "bg-neutral-400") {
+///         p { "This is a child node." }
+///     }
+/// }
+/// # }
+/// ```
 pub struct Attributes<'a, E: WebElement> {
     fns: RefCell<Vec<AttrFn<'a, E>>>,
 }

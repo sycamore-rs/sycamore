@@ -90,6 +90,14 @@ impl JsValueCastToType for bool {
         JsValue::from(*self)
     }
 }
+impl JsValueCastToType for f64 {
+    fn cast_from(value: &JsValue) -> Option<Self> {
+        value.as_f64()
+    }
+    fn cast_into(&self) -> JsValue {
+        JsValue::from(*self)
+    }
+}
 impl JsValueCastToType for String {
     fn cast_from(value: &JsValue) -> Option<Self> {
         value.as_string()

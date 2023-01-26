@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let name = create_signal(cx, String::new());
 
     let handle_change = move |_| unreachable!();
@@ -24,6 +24,6 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 }
 
 fn main() {
-    let s = sycamore::render_to_string(|cx| view! { cx, App {} });
+    let s = sycamore::render_to_string(App);
     println!("{}", s);
 }

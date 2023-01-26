@@ -3,7 +3,7 @@ use sycamore::futures::spawn_local_scoped;
 use sycamore::prelude::*;
 
 #[component]
-fn TimerCounter<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let state = create_signal(cx, 0);
 
     spawn_local_scoped(cx, async move {
@@ -21,7 +21,5 @@ fn TimerCounter<G: Html>(cx: Scope) -> View<G> {
 }
 
 fn main() {
-    sycamore::render(|cx| {
-        view! { cx, TimerCounter {} }
-    });
+    sycamore::render(App);
 }

@@ -107,6 +107,8 @@ pub trait GlobalAttributes: SetAttribute + Sized {
         style: String,
         tabindex: String,
         _type("type"): String,
+
+        xmlns: String,
     }
 }
 impl<'a, T> GlobalAttributes for ElementBuilder<'a, T>
@@ -226,7 +228,7 @@ pub trait HtmlGlobalAttributes: SetAttribute + Sized {
             defer: String,
             dir: String,
             dirname: String,
-            disabled: String,
+            disabled: bool,
             download: String,
             draggable: String,
             enctype: String,

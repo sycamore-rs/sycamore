@@ -246,6 +246,7 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
 /// # }
 /// ```
 #[derive(Debug)]
+#[deprecated]
 pub struct Attributes<'cx, G: GenericNode> {
     attrs: RefCell<HashMap<Cow<'static, str>, AttributeValue<'cx, G>>>,
 }
