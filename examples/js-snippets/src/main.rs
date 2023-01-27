@@ -7,7 +7,7 @@ extern "C" {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App(cx: Scope) -> View {
     let a = create_signal(cx, 0_f64);
     let b = create_signal(cx, 0_f64);
     let product = create_signal(cx, 0_f64);
@@ -17,18 +17,14 @@ fn App<G: Html>(cx: Scope) -> View<G> {
     });
 
     view! { cx,
-        input(type="number", bind:valueAsNumber=a)
+        input(_type="number", bind:value_as_number=a)
         span { "*" }
-        input(type="number", bind:valueAsNumber=b)
+        input(_type="number", bind:value_as_number=b)
         span { "=" }
         span { (*product.get()) }
     }
 }
 
 fn main() {
-    sycamore::render(|cx| {
-        view! { cx,
-            App
-        }
-    });
+    sycamore::render(App);
 }
