@@ -8,9 +8,8 @@ use std::borrow::Cow;
 use sycamore_core::generic_node::GenericNode;
 use sycamore_core::noderef::NodeRef;
 
-use super::attributes_prop::{AttributeValue, Attributes};
 use super::elements::{HtmlElement, SvgElement};
-use super::{SetAttribute, WebElement};
+use super::{Attributes, SetAttribute, WebElement};
 use crate::web_node::WebNode;
 use crate::ElementBuilder;
 
@@ -139,15 +138,17 @@ where
     T: WebElement,
 {
     fn dangerously_set_inner_html(self, html: impl Into<Cow<'static, str>>) -> Self {
-        self.set(
-            "dangerously_set_inner_html",
-            AttributeValue::DangerouslySetInnerHtml(html.into().into()),
-        );
+        let html = html.into();
+        self.add_fn(|builder| {
+            builder.dangerously_set_inner_html(html);
+        });
         self
     }
     fn _ref(self, v: &NodeRef<WebNode>) -> Self {
         let v = v.clone();
-        self.set("_ref", AttributeValue::Ref(v.clone()));
+        self.add_fn(move |builder| {
+            builder._ref(&v);
+        });
         self
     }
 }

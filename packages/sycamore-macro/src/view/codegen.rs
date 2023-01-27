@@ -436,7 +436,8 @@ fn codegen_element(elements_mod_path: &syn::Path, cx: &Ident, element: &Element)
     } = element;
 
     let builder = format_ident!("__el");
-    let attrs_quoted = codegen_attrs_builder(elements_mod_path, &builder, attrs.into_iter(), true);
+    let attrs_quoted =
+        codegen_attrs_builder(elements_mod_path, &builder, attrs.into_iter(), true, true);
 
     let children_quoted = children
         .as_ref()
@@ -447,7 +448,7 @@ fn codegen_element(elements_mod_path: &syn::Path, cx: &Ident, element: &Element)
                 elements_mod_path: elements_mod_path.clone(),
             };
             let children = codegen.view_root(children);
-            quote! { let #builder = #builder.child( #children); }
+            quote! { .child(#children) }
         })
         .unwrap_or_default();
 
@@ -457,10 +458,10 @@ fn codegen_element(elements_mod_path: &syn::Path, cx: &Ident, element: &Element)
     };
 
     quote! {{
-        let #builder = #tag_quoted;
+        #tag_quoted
         #attrs_quoted
         #children_quoted
-        #builder.finish()
+        .finish()
     }}
 }
 
@@ -478,7 +479,8 @@ fn codegen_component(
 
     let builder = format_ident!("__props");
 
-    let attrs_quoted = codegen_attrs_builder(elements_mod_path, &builder, props.into_iter(), false);
+    let attrs_quoted =
+        codegen_attrs_builder(elements_mod_path, &builder, props.into_iter(), false, true);
 
     let children_quoted = children
         .as_ref()
@@ -490,22 +492,22 @@ fn codegen_component(
             };
             let children = codegen.view_root(children);
             quote! {
-                let #builder = #builder.children(
+                .children(
                     ::sycamore::component::Children::new(move |#cx| {
                         #[allow(unused_variables)]
                         let #cx: ::sycamore::reactive::BoundedScope = #cx;
                         #children
                     })
-                );
+                )
             }
         })
         .unwrap_or_default();
 
     let props_quoted = quote! {{
-        let #builder = ::sycamore::component::element_like_component_builder(__component);
+        ::sycamore::component::element_like_component_builder(__component)
         #attrs_quoted
         #children_quoted
-        #builder.build()
+        .build()
     }};
 
     quote! {{
@@ -523,10 +525,46 @@ fn codegen_attrs_builder<'a>(
     builder: &Ident,
     attrs: impl Iterator<Item = &'a Attribute>,
     emit_dynamic: bool,
+    attr_passthrough: bool,
 ) -> TokenStream {
-    let quoted = attrs.map(|attr| codegen_attr(elements_mod_path, builder, attr, emit_dynamic));
+    let attrs = attrs.collect::<Vec<_>>();
+    // Get all the prefixed attributes and construct a new `Attributes` value.
+    let has_prefixed_attrs = attrs.iter().any(|attr| attr.prefix().is_some());
+    let passthrough = if attr_passthrough && has_prefixed_attrs {
+        // Strip all the `attr:` prefixes from the attributes and add them to the `Attributes`
+        // value.
+        let attrs = attrs
+            .clone()
+            .into_iter()
+            .cloned()
+            .filter(|attr| attr.prefix().is_some())
+            .map(|mut attr| {
+                if attr.prefix().map(|x| x.to_string()) == Some("attr".to_string()) {
+                    attr.remove_prefix();
+                }
+                attr
+            })
+            .collect::<Vec<_>>();
+        let quoted = codegen_attrs_builder(
+            elements_mod_path,
+            builder,
+            attrs.iter(),
+            true, // FIXME: dynamic attributes don't work with `Attributes`.
+            false,
+        );
+        quote! {
+            .attributes(::sycamore::web::html::Attributes::new() #quoted)
+        }
+    } else {
+        quote! {}
+    };
+    let quoted = attrs
+        .iter()
+        .filter(|attr| !(attr_passthrough && attr.prefix().is_some()))
+        .map(|attr| codegen_attr(elements_mod_path, builder, attr, emit_dynamic));
     quote! {
         #(#quoted)*
+        #passthrough
     }
 }
 
@@ -539,22 +577,22 @@ fn codegen_attr(
     let Attribute { ty, value, .. } = attr;
 
     let quoted = match ty {
-        AttributeType::Ident(ident) => quote! { #builder.#ident(#value) },
+        AttributeType::Ident(ident) => quote! { .#ident(#value) },
+        AttributeType::Custom(name) => quote! { .custom_attr(#name, #value) },
         AttributeType::PrefixedIdent(prefix, _, ident) => {
-            quote! { #builder.#prefix(#elements_mod_path::#prefix::#ident, #value) }
+            quote! { .#prefix(#elements_mod_path::#prefix::#ident, #value) }
         }
-        AttributeType::Custom(name) => quote! { #builder.custom_attr(#name, #value) },
         AttributeType::PrefixedCustom(prefix, _, name) => {
-            quote! { #builder.#prefix(#elements_mod_path::#prefix::custom(#name), #value) }
+            quote! { .#prefix(#elements_mod_path::#prefix::custom(#name), #value) }
         }
-        AttributeType::Spread => quote! { #builder.spread(#value) },
+        AttributeType::Spread => quote! { .spread(#value) },
     };
 
     let is_dyn = !matches!(value, Expr::Lit(_) | Expr::Path(_) | Expr::Closure(_));
-    if is_dyn && emit_dynamic {
+    if is_dyn && emit_dynamic && ty != &AttributeType::Spread {
         // FIXME: some attributes should not be dynamic such as event handlers.
-        quote! { let #builder = #builder.dynamic(move |#builder| #quoted); }
+        quote! { .dynamic(move |#builder| #builder #quoted) }
     } else {
-        quote! { let #builder = #quoted; }
+        quoted
     }
 }

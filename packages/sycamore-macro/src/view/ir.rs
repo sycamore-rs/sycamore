@@ -33,6 +33,7 @@ pub enum ElementTag {
     Custom(String),
 }
 
+#[derive(Clone)]
 pub struct Attribute {
     pub ty: AttributeType,
     pub eq: Option<Token![=]>,
@@ -40,18 +41,36 @@ pub struct Attribute {
     pub span: Span,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum AttributeType {
     /// Syntax: `ident`
     Ident(Ident),
-    /// Syntax: `prefix:ident`
-    PrefixedIdent(Ident, Token![:], Ident),
     /// Syntax: `"custom-attribute"`
     Custom(LitStr),
+    /// Syntax: `prefix:ident`
+    PrefixedIdent(Ident, Token![:], Ident),
     /// Syntax: `prefix:"custom-attribute"`
     PrefixedCustom(Ident, Token![:], LitStr),
     /// Syntax: `..attributes`
     Spread,
+}
+
+impl Attribute {
+    pub fn prefix(&self) -> Option<&Ident> {
+        match &self.ty {
+            AttributeType::PrefixedIdent(prefix, _, _) => Some(prefix),
+            AttributeType::PrefixedCustom(prefix, _, _) => Some(prefix),
+            _ => None,
+        }
+    }
+
+    pub fn remove_prefix(&mut self) {
+        self.ty = match &self.ty {
+            AttributeType::PrefixedIdent(_, _, ident) => AttributeType::Ident(ident.clone()),
+            AttributeType::PrefixedCustom(_, _, lit) => AttributeType::Custom(lit.clone()),
+            ty => ty.clone(),
+        };
+    }
 }
 
 pub struct Component {

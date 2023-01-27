@@ -23,16 +23,20 @@ fn AccessibleSearchBox<'a>(cx: Scope<'a>, props: AccessibleInputProps<'a>) -> Vi
 fn App(cx: Scope) -> View {
     view! { cx,
         div {
-            "Passthrough attributes demo"
+            p { "Passthrough attributes demo" }
 
-            label(id = "searchbox1_label") { "Search Box 1" }
-            AccessibleSearchBox(label_id = "searchbox1_label", style="background-color:slategray;") {}
-            label(id = "searchbox2_label") { "Search Box 2" }
-            AccessibleSearchBox(label_id = "searchbox2_label", style="background-color:gray;") { }
+            div {
+                label(id = "searchbox1_label") { "Search Box 1" }
+                AccessibleSearchBox(label_id = "searchbox1_label", attr:style="background-color:red;") {}
+            }
+            div {
+                label(id = "searchbox2_label") { "Search Box 2" }
+                AccessibleSearchBox(label_id = "searchbox2_label", attr:style="background-color:yellow;") { }
+            }
         }
     }
 }
 
 fn main() {
-    sycamore::render(|cx| view! { cx, App {} });
+    sycamore::render(App);
 }
