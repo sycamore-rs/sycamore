@@ -16,4 +16,5 @@ pub mod generic_node;
 pub mod hydrate;
 pub mod noderef;
 pub mod render;
+pub mod stable_id;
 pub mod view;
