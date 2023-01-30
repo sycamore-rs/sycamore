@@ -26,6 +26,7 @@ use once_cell::sync::Lazy;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
 pub use web_sys;
+pub use js_sys;
 use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
