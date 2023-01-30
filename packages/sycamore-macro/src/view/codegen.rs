@@ -319,18 +319,18 @@ impl CodegenTemplate {
                 let convert_into_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => quote! {
                         ::sycamore::rt::JsValue::from_bool(
-                            *::sycamore::reactive::ReadSignal::get(&#expr)
+                            *::sycamore::reactive::ReadSignal::get(&__expr)
                         )
                     },
                     JsPropertyType::Number => quote! {
                         ::sycamore::rt::JsValue::from_f64(
-                            *::sycamore::reactive::ReadSignal::get(&#expr)
+                            *::sycamore::reactive::ReadSignal::get(&__expr)
                         )
                     },
                     JsPropertyType::String => quote! {
                         ::sycamore::rt::JsValue::from_str(
                             &::std::string::ToString::to_string(
-                                &::sycamore::reactive::ReadSignal::get(&#expr),
+                                &::sycamore::reactive::ReadSignal::get(&__expr),
                             )
                         )
                     },
@@ -360,7 +360,7 @@ impl CodegenTemplate {
                     {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                         ::sycamore::reactive::create_effect(#cx, {
-                            let #expr = ::std::clone::Clone::clone(&#expr);
+                            let __expr = ::std::clone::Clone::clone(&#expr);
                             move ||::sycamore::generic_node::GenericNode::set_property(
                                 &__el,
                                 #prop,
@@ -371,9 +371,9 @@ impl CodegenTemplate {
                     ::sycamore::generic_node::GenericNode::event(
                         &__flagged[#flag_counter], #cx, #elements_mod_path::ev::#event_name,
                         {
-                            let #expr = ::std::clone::Clone::clone(&#expr);
+                            let __expr = ::std::clone::Clone::clone(&#expr);
                             ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                                ::sycamore::reactive::Signal::set(&#expr, #convert_from_jsvalue_fn);
+                                ::sycamore::reactive::Signal::set(&__expr, #convert_from_jsvalue_fn);
                             })
                         },
                     );
