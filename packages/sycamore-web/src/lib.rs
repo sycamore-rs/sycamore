@@ -25,11 +25,12 @@ pub use hydrate_node::*;
 use once_cell::sync::Lazy;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
-pub use web_sys;
-pub use js_sys;
 use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
+pub use web_sys;
+pub use js_sys;
+pub use wasm_bindgen;
 
 /// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
 pub trait Html:
