@@ -1,5 +1,6 @@
 //! Utilities for rendering nodes.
 
+use std::iter;
 use std::rc::Rc;
 
 use ahash::AHashMap;
@@ -248,17 +249,23 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     debug_assert!(!a.is_empty(), "a cannot be empty");
 
     // Sanity check: make sure all nodes in a are children of parent.
-    #[cfg(debug_assertions)]
-    {
+    if cfg!(debug_assertions) {
         for (i, node) in a.iter().enumerate() {
-            if node.parent_node().as_ref() != Some(parent) {
-                panic!(
-                    "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
-                    i, node
-                );
-            }
+            assert!(
+                node.parent_node().as_ref() == Some(parent),
+                "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
+                i,
+                node
+            );
         }
     }
+
+    debug_assert_eq!(
+        a,
+        iter::successors(Some(a[0].clone()), G::next_sibling)
+            .take(a.len())
+            .collect::<Vec<_>>()
+    );
 
     let b_len = b.len();
     let mut a_end = a.len();
@@ -273,20 +280,19 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     while a_start < a_end || b_start < b_end {
         if a_end == a_start {
             // Append.
-            let node = if b_end < b_len {
-                if b_start != 0 {
-                    b[b_start - 1].next_sibling()
-                } else {
-                    Some(b[b_end - b_start].clone())
-                }
-            } else {
-                after.clone()
-            };
-
             for new_node in &b[b_start..b_end] {
+                let node = if b_end < b_len {
+                    if b_start != 0 {
+                        b[b_start - 1].next_sibling()
+                    } else {
+                        Some(b[b_end - b_start].clone())
+                    }
+                } else {
+                    after.clone()
+                };
                 parent.insert_child_before(new_node, node.as_ref());
+                b_start += 1;
             }
-            b_start = b_end;
         } else if b_end == b_start {
             // Remove.
             for node in &a[a_start..a_end] {
@@ -362,15 +368,21 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     }
 
     // Sanity check: make sure all nodes in b are children of parent after reconciliation.
-    #[cfg(debug_assertions)]
-    {
+    if cfg!(debug_assertions) {
         for (i, node) in b.iter().enumerate() {
-            if node.parent_node().as_ref() != Some(parent) {
-                panic!(
-                    "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
-                    i, node
-                );
-            }
+            assert!(
+                node.parent_node().as_ref() == Some(parent),
+                "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
+                i,
+                node
+            );
         }
     }
+
+    debug_assert_eq!(
+        b,
+        iter::successors(b.get(0).cloned(), G::next_sibling)
+            .take(b.len())
+            .collect::<Vec<_>>()
+    );
 }
