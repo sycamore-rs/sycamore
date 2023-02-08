@@ -67,10 +67,7 @@ fn insert_expression<G: GenericNode>(
             let marker = marker.cloned();
             let f = f.clone();
             create_effect_scoped(cx, move |cx| {
-                let mut value = f.get();
-                while let ViewType::Dyn(f) = &value.inner {
-                    value = f.get();
-                }
+                let value = f.get();
                 insert_expression(
                     cx,
                     &parent,
