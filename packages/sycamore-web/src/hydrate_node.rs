@@ -354,7 +354,7 @@ pub fn hydrate(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
-/// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
+/// hydration). For rendering under the `<body>` tag, use [`hydrate`] instead.
 ///
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
