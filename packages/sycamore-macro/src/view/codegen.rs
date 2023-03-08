@@ -5,8 +5,8 @@
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{spanned::Spanned, Path};
-use syn::{Expr, ExprLit, Ident, Lit, LitBool};
+use syn::spanned::Spanned;
+use syn::{Expr, ExprLit, Ident, Lit, LitBool, Path};
 
 use crate::view::ir::*;
 
