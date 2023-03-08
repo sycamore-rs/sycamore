@@ -63,32 +63,36 @@ fn dyn_fragment() {
 
 #[wasm_bindgen_test]
 fn dyn_nested() {
-     create_scope_immediate(|cx| {
+    create_scope_immediate(|cx| {
         let node: View<DomNode> = View::new_dyn(cx, move || {
-            View::new_dyn(cx, move || view! { cx,
-                div {
-                    "Test"
+            View::new_dyn(cx, move || {
+                view! { cx,
+                    div {
+                        "Test"
+                    }
                 }
             })
         });
 
         sycamore::render_to(|_| node, &test_container());
         assert_text_content!(query("div"), "Test");
-     });
+    });
 }
 
 #[wasm_bindgen_test]
 fn dyn_scoped_nested() {
-     create_scope_immediate(|cx| {
+    create_scope_immediate(|cx| {
         let node: View<DomNode> = View::new_dyn_scoped(cx, move |cx| {
-            View::new_dyn_scoped(cx, move |cx| view! { cx,
-                div {
-                    "Test"
+            View::new_dyn_scoped(cx, move |cx| {
+                view! { cx,
+                    div {
+                        "Test"
+                    }
                 }
             })
         });
 
         sycamore::render_to(|_| node, &test_container());
         assert_text_content!(query("div"), "Test");
-     });
+    });
 }
