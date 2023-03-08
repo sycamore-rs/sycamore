@@ -1,7 +1,7 @@
 use super::*;
 
 #[wasm_bindgen_test]
-fn lazy() {
+fn dyn_view_static() {
     create_scope_immediate(|cx| {
         let node: View<DomNode> = View::new_dyn(cx, move || {
             view! { cx,
@@ -17,7 +17,7 @@ fn lazy() {
 }
 
 #[wasm_bindgen_test]
-fn lazy_reactive() {
+fn dyn_view() {
     create_scope_immediate(|cx| {
         let template = create_signal(
             cx,
@@ -40,7 +40,7 @@ fn lazy_reactive() {
 }
 
 #[wasm_bindgen_test]
-fn lazy_in_fragment() {
+fn dyn_fragment() {
     create_scope_immediate(|cx| {
         let num = create_signal(cx, 0);
 
@@ -59,4 +59,36 @@ fn lazy_in_fragment() {
 
         assert_text_content!(test_container, "before1after");
     });
+}
+
+#[wasm_bindgen_test]
+fn dyn_nested() {
+     create_scope_immediate(|cx| {
+        let node: View<DomNode> = View::new_dyn(cx, move || {
+            View::new_dyn(cx, move || view! { cx,
+                div {
+                    "Test"
+                }
+            })
+        });
+
+        sycamore::render_to(|_| node, &test_container());
+        assert_text_content!(query("div"), "Test");
+     });
+}
+
+#[wasm_bindgen_test]
+fn dyn_scoped_nested() {
+     create_scope_immediate(|cx| {
+        let node: View<DomNode> = View::new_dyn_scoped(cx, move |cx| {
+            View::new_dyn_scoped(cx, move |cx| view! { cx,
+                div {
+                    "Test"
+                }
+            })
+        });
+
+        sycamore::render_to(|_| node, &test_container());
+        assert_text_content!(query("div"), "Test");
+     });
 }
