@@ -20,7 +20,7 @@ struct BenchmarkResults {
 }
 
 fn main() {
-    let args = env::args().into_iter().collect::<Vec<_>>();
+    let args = env::args().collect::<Vec<_>>();
     let results_path = args
         .get(1)
         .expect("path to results file should be passed as an argument");

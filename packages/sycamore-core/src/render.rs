@@ -251,10 +251,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     {
         for (i, node) in a.iter().enumerate() {
             if node.parent_node().as_ref() != Some(parent) {
-                panic!(
-                    "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
-                    i, node
-                );
+                panic!("node {i} in existing nodes Vec is not a child of parent. node = {node:#?}",);
             }
         }
     }
@@ -366,8 +363,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         for (i, node) in b.iter().enumerate() {
             if node.parent_node().as_ref() != Some(parent) {
                 panic!(
-                    "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
-                    i, node
+                    "node {i} in new nodes Vec is not a child of parent after reconciliation. node = {node:#?}",
                 );
             }
         }
