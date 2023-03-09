@@ -1,19 +1,25 @@
 //! Rendering backend for the DOM.
 
+use std::borrow::Cow;
 use std::cell::Cell;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use js_sys::Array;
-use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::generic_node::{
+    GenericNode, GenericNodeElements, SycamoreElement, Template, TemplateResult,
+};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
-use web_sys::{Comment, Document, Element, Node, Text};
+use web_sys::{Comment, Element, Node, Text};
 
-use crate::Html;
+use crate::dom_node_template::{
+    add_new_cached_template, execute_walk, try_get_cached_template, WalkResult,
+};
+use crate::{document, Html};
 
 #[wasm_bindgen]
 extern "C" {
@@ -28,11 +34,6 @@ extern "C" {
     type ElementTrySetClassName;
     #[wasm_bindgen(method, catch, setter, js_name = "className")]
     fn try_set_class_name(this: &ElementTrySetClassName, class_name: &str) -> Result<(), JsValue>;
-
-    #[wasm_bindgen(extends = Document)]
-    type DocumentCreateTextNodeInt;
-    #[wasm_bindgen(method, js_name = "createTextNode")]
-    pub fn create_text_node_int(this: &DocumentCreateTextNodeInt, num: i32) -> web_sys::Text;
 }
 
 /// An unique id for every node.
@@ -63,11 +64,6 @@ pub struct DomNode {
 }
 
 impl DomNode {
-    /// Get the underlying [`web_sys::Node`].
-    pub fn inner_element(&self) -> Node {
-        self.node.clone()
-    }
-
     /// Cast the underlying [`web_sys::Node`] using [`JsCast`].
     pub fn unchecked_into<T: JsCast>(self) -> T {
         self.node.unchecked_into()
@@ -84,14 +80,6 @@ impl DomNode {
             }
         }
         self.id.get()
-    }
-
-    /// Create a new [`DomNode`] from a raw [`web_sys::Node`].
-    pub fn from_web_sys(node: Node) -> Self {
-        Self {
-            id: Default::default(),
-            node,
-        }
     }
 }
 
@@ -137,96 +125,51 @@ impl fmt::Debug for DomNode {
     }
 }
 
-fn document() -> web_sys::Document {
-    thread_local! {
-        /// Cache document since it is frequently accessed to prevent going through js-interop.
-        static DOCUMENT: web_sys::Document = web_sys::window().unwrap_throw().document().unwrap_throw();
-    };
-    DOCUMENT.with(|document| document.clone())
-}
-
 impl GenericNode for DomNode {
-    type EventType = web_sys::Event;
+    type AnyEventData = wasm_bindgen::JsValue;
     type PropertyType = JsValue;
 
-    fn element<T: SycamoreElement>() -> Self {
-        let node = if let Some(ns) = T::NAME_SPACE {
-            document()
-                .create_element_ns(Some(ns), intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        } else {
-            document()
-                .create_element(intern(T::TAG_NAME))
-                .unwrap_throw()
-                .into()
-        };
+    fn text_node(text: Cow<'static, str>) -> Self {
+        let node = document().create_text_node(&text).into();
         DomNode {
             id: Default::default(),
             node,
         }
     }
 
-    fn element_from_tag(tag: &str) -> Self {
-        let node = document().create_element(intern(tag)).unwrap_throw().into();
+    fn marker_with_text(text: Cow<'static, str>) -> Self {
+        let node = document().create_comment(&text).into();
         DomNode {
             id: Default::default(),
             node,
         }
     }
 
-    fn text_node(text: &str) -> Self {
-        let node = document().create_text_node(text).into();
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
-    fn text_node_int(int: i32) -> Self {
-        let node = document()
-            .unchecked_into::<DocumentCreateTextNodeInt>()
-            .create_text_node_int(int)
-            .into();
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
-    fn marker_with_text(text: &str) -> Self {
-        let node = document().create_comment(text).into();
-        DomNode {
-            id: Default::default(),
-            node,
-        }
-    }
-
-    fn set_attribute(&self, name: &str, value: &str) {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
         self.node
             .unchecked_ref::<Element>()
-            .set_attribute(intern(name), value)
+            .set_attribute(intern(&name), &value)
             .unwrap_throw();
     }
 
-    fn remove_attribute(&self, name: &str) {
+    fn remove_attribute(&self, name: Cow<'static, str>) {
         self.node
             .unchecked_ref::<Element>()
-            .remove_attribute(intern(name))
+            .remove_attribute(intern(&name))
             .unwrap_throw();
     }
 
-    fn set_class_name(&self, value: &str) {
+    fn set_class_name(&self, value: Cow<'static, str>) {
         if self
             .node
             .unchecked_ref::<ElementTrySetClassName>()
-            .try_set_class_name(value)
+            .try_set_class_name(&value)
             .is_err()
         {
             // Node is a SVG element.
             self.node
                 .unchecked_ref::<Element>()
-                .set_attribute("class", value)
+                .set_attribute("class", &value)
                 .unwrap_throw();
         }
     }
@@ -323,24 +266,28 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F) {
-        let boxed: Box<dyn FnMut(Self::EventType)> = Box::new(handler);
+    fn untyped_event<'a>(
+        &self,
+        cx: Scope<'a>,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
         // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
         // preventing the handler from ever being accessed after its lifetime.
-        let handler: Box<dyn FnMut(Self::EventType) + 'static> =
-            unsafe { std::mem::transmute(boxed) };
+        let handler: Box<dyn FnMut(Self::AnyEventData) + 'static> =
+            unsafe { std::mem::transmute(handler) };
         let closure = create_ref(cx, Closure::wrap(handler));
         self.node
-            .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(&event, closure.as_ref().unchecked_ref())
             .unwrap_throw();
     }
 
-    fn update_inner_text(&self, text: &str) {
-        self.node.set_text_content(Some(text));
+    fn update_inner_text(&self, text: Cow<'static, str>) {
+        self.node.set_text_content(Some(&text));
     }
 
-    fn dangerously_set_inner_html(&self, html: &str) {
-        self.node.unchecked_ref::<Element>().set_inner_html(html);
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>) {
+        self.node.unchecked_ref::<Element>().set_inner_html(&html);
     }
 
     fn clone_node(&self) -> Self {
@@ -351,11 +298,85 @@ impl GenericNode for DomNode {
     }
 }
 
+impl GenericNodeElements for DomNode {
+    fn element<T: SycamoreElement>() -> Self {
+        let node = if let Some(ns) = T::NAMESPACE {
+            document()
+                .create_element_ns(Some(ns), intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        } else {
+            document()
+                .create_element(intern(T::TAG_NAME))
+                .unwrap_throw()
+                .into()
+        };
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    fn element_from_tag(tag: Cow<'static, str>) -> Self {
+        let node = document()
+            .create_element(intern(&tag))
+            .unwrap_throw()
+            .into();
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    fn element_from_tag_namespace(tag: Cow<'static, str>, namespace: Cow<'static, str>) -> Self {
+        let node = document()
+            .create_element_ns(Some(intern(&namespace)), intern(&tag))
+            .unwrap_throw()
+            .into();
+        DomNode {
+            id: Default::default(),
+            node,
+        }
+    }
+
+    /// For performance reasons, we will render this template to an HTML string and then cache it.
+    ///
+    /// We can then cerate an HTML template element and clone it to create a new instance.
+    fn instantiate_template(template: &Template) -> TemplateResult<DomNode> {
+        if let Some(cached) = try_get_cached_template(template.id) {
+            let root = cached.clone_template_content();
+
+            // Execute the walk sequence.
+            let WalkResult {
+                flagged_nodes,
+                dyn_markers,
+            } = execute_walk(&cached.walk, &root, false);
+
+            TemplateResult {
+                root: DomNode::from_web_sys(root),
+                flagged_nodes,
+                dyn_markers,
+            }
+        } else {
+            add_new_cached_template(template);
+            // Now that the cached template has been created, we can use it.
+            Self::instantiate_template(template)
+        }
+    }
+}
+
 impl Html for DomNode {
     const IS_BROWSER: bool = true;
 
     fn to_web_sys(&self) -> web_sys::Node {
-        self.inner_element()
+        self.node.clone()
+    }
+
+    fn from_web_sys(node: Node) -> Self {
+        Self {
+            id: Default::default(),
+            node,
+        }
     }
 }
 

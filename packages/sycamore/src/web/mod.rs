@@ -9,6 +9,45 @@ pub use sycamore_web::*;
 #[allow(unused_imports)]
 use crate::prelude::*;
 
+/// A macro for ergonomically creating complex UI layouts in HTML.
+///
+/// To learn more about the view syntax, see [the chapter on views](https://sycamore-rs.netlify.app/docs/basics/view)
+/// in the Sycamore Book.
+#[macro_export]
+macro_rules! html_view {
+    ($($t:tt)*) => {
+        $crate::view_with_elements!($crate::web::html, $($t)*)
+    };
+}
+
+/// Like [`view!`] but only creates a single raw node instead.
+///
+/// # Example
+///
+/// ```
+/// use sycamore::prelude::*;
+///
+/// #[component]
+/// pub fn MyComponent<G: Html>(cx: Scope) -> View<G> {
+///     let cool_button: G = node! { cx, button { "The coolest 😎" } };
+///
+///     cool_button.set_property("myProperty", &"Epic!".into());
+///
+///     View::new_node(cool_button)
+/// }
+/// ```
+#[macro_export]
+macro_rules! html_node {
+    ($($t:tt)*) => {
+        $crate::node_with_elements!($crate::web::html, $($t)*)
+    };
+}
+
+#[doc(hidden)]
+pub mod macros {
+    pub use crate::{html_node as node, html_view as view};
+}
+
 /// Render a [`View`] into a static [`String`]. Useful
 /// for rendering to a string on the server side.
 ///
@@ -62,7 +101,7 @@ pub async fn render_to_string_await_suspense(
 
 /// Props for [`NoHydrate`].
 #[cfg(feature = "hydrate")]
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct NoHydrateProps<'a, G: GenericNode> {
     children: Children<'a, G>,
 }
@@ -82,8 +121,6 @@ pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> Vi
 
     let node_ref = create_node_ref(cx);
     let v = view! { cx,
-        // TODO: remove wrapper `div`. We currently cannot do that because otherwise
-        // the node won't get inserted into the DOM.
         div(ref=node_ref) {}
     };
     if G::CLIENT_SIDE_HYDRATION && !hydrate::hydration_completed() {
@@ -103,7 +140,7 @@ pub fn NoHydrate<'a, G: Html>(cx: Scope<'a>, props: NoHydrateProps<'a, G>) -> Vi
 
 /// Props for [`NoSsr`].
 #[cfg(feature = "hydrate")]
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct NoSsrProps<'a, G: GenericNode> {
     children: Children<'a, G>,
 }
@@ -127,8 +164,6 @@ pub fn NoSsr<'a, G: Html>(cx: Scope<'a>, props: NoSsrProps<'a, G>) -> View<G> {
         props.children.call(cx)
     };
     view! { cx,
-        // TODO: remove wrapper `div`. We currently cannot do that because otherwise
-        // the node won't get inserted into the DOM.
         div { (node) }
     }
 }

@@ -1,25 +1,62 @@
 use sycamore::prelude::*;
 
-#[derive(Prop)]
-pub struct Prop {
-    prop: &'static str,
-}
-
 #[component]
-pub fn PropComponent<G: Html>(cx: Scope, Prop { prop: _ }: Prop) -> View<G> {
+pub fn Component<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div {}
     }
 }
 
-#[derive(Prop)]
-pub struct PropWithChildren<'a, G: GenericNode> {
+#[derive(Props)]
+pub struct Props {
+    prop: &'static str,
+}
+
+#[component]
+pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
+    view! { cx,
+        div {}
+    }
+}
+
+#[derive(Props)]
+pub struct AllDefaultProps {
+    #[prop(default)]
+    prop: u32,
+}
+
+#[component]
+pub fn AllDefaultPropsComponent<G: Html>(cx: Scope, _props: AllDefaultProps) -> View<G> {
+    view! { cx,
+        div {}
+    }
+}
+
+#[derive(Props)]
+pub struct OptionalProps {
+    #[prop(default, setter(strip_option))]
+    optional: Option<u32>,
+    implicit: Option<u32>,
+}
+
+#[component]
+pub fn OptionalPropsComponent<G: Html>(cx: Scope, _props: OptionalProps) -> View<G> {
+    view! { cx,
+        div {}
+    }
+}
+
+#[derive(Props)]
+pub struct PropsWithChildren<'a, G: GenericNode> {
     children: Children<'a, G>,
 }
 
 #[component]
-pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<'a, G>) -> View<G> {
-    let children = prop.children.call(cx);
+pub fn ComponentWithChildren<'a, G: Html>(
+    cx: Scope<'a>,
+    props: PropsWithChildren<'a, G>,
+) -> View<G> {
+    let children = props.children.call(cx);
 
     view! { cx,
         div {
@@ -29,8 +66,11 @@ pub fn ComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<
 }
 
 #[component]
-pub fn NestedComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChildren<'a, G>) -> View<G> {
-    let children = prop.children.call(cx);
+pub fn NestedComponentWithChildren<'a, G: Html>(
+    cx: Scope<'a>,
+    props: PropsWithChildren<'a, G>,
+) -> View<G> {
+    let children = props.children.call(cx);
 
     view! { cx,
         ComponentWithChildren {
@@ -41,17 +81,25 @@ pub fn NestedComponentWithChildren<'a, G: Html>(cx: Scope<'a>, prop: PropWithChi
 }
 
 #[component]
-pub async fn AsyncComponentWithPropDestructuring<'a, G: Html>(
+pub async fn AsyncComponentWithPropsDestructuring<'a, G: Html>(
     cx: Scope<'a>,
-    PropWithChildren { children }: PropWithChildren<'a, G>,
+    PropsWithChildren { children }: PropsWithChildren<'a, G>,
 ) -> View<G> {
     children.call(cx)
 }
 
+#[derive(Props)]
+pub struct AttributesProps<'cx, G: Html> {
+    attributes: Attributes<'cx, G>,
+}
+
 #[component]
-pub fn Component<G: Html>(cx: Scope) -> View<G> {
+pub fn AttributesComponent<'cx, G: Html>(
+    cx: Scope<'cx>,
+    AttributesProps { attributes }: AttributesProps<'cx, G>,
+) -> View<G> {
     view! { cx,
-        div {}
+        input(..attributes) {}
     }
 }
 
@@ -61,21 +109,36 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, Component {} };
 
         let prop = "prop";
-        let _: View<G> = view! { cx, PropComponent(prop=prop) };
+        let _: View<G> = view! { cx, PropsComponent(prop=prop) };
+
+        let _: View<G> = view! { cx, AllDefaultPropsComponent(prop=123) };
+        let _: View<G> = view! { cx, AllDefaultPropsComponent() };
+        let _: View<G> = view! { cx, AllDefaultPropsComponent {} };
+
+        let _: View<G> = view! { cx, OptionalPropsComponent(optional=123) };
+        let _: View<G> = view! { cx, OptionalPropsComponent(implicit=123) };
+        let _: View<G> = view! { cx, OptionalPropsComponent(optional=123, implicit=123) };
+        let _: View<G> = view! { cx, OptionalPropsComponent() };
+        let _: View<G> = view! { cx, OptionalPropsComponent {} };
+
+        let _: View<G> = view! { cx, ComponentWithChildren { Component() } };
+        let _: View<G> = view! { cx, ComponentWithChildren { div {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren { div {} div {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren { Component {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren() { Component {} } };
+        let _: View<G> = view! { cx, ComponentWithChildren {} };
+        let _: View<G> = view! { cx, ComponentWithChildren() };
+        let _: View<G> = view! { cx, ComponentWithChildren() {} };
+        let _: View<G> = view! { cx, AttributesComponent(attr:class = "test") {} };
+        let str_signal = create_signal(cx, String::new());
+        let _: View<G> = view! { cx, AttributesComponent(bind:value = str_signal) {} };
+        let on_click = |_| {};
+        let _: View<G> = view! { cx, AttributesComponent(on:click = on_click) {} };
+        let bool_signal = create_signal(cx, false);
+        let _: View<G> = view! { cx, AttributesComponent(attr:disabled = false, attr:checked = *bool_signal.get()) };
 
         let _: View<G> = view! { cx,
-            ComponentWithChildren {
-                Component()
-            }
-        };
-        let _: View<G> = view! { cx,
-            ComponentWithChildren {
-                Component {}
-            }
-        };
-
-        let _: View<G> = view! { cx,
-            AsyncComponentWithPropDestructuring {
+            AsyncComponentWithPropsDestructuring {
                 Component {}
             }
         };

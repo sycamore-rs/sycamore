@@ -34,17 +34,17 @@ pub fn provide_context<T: 'static>(cx: Scope, value: T) -> &T {
 #[track_caller]
 pub fn provide_context_ref<'a, T: 'static>(cx: Scope<'a>, value: &'a T) -> &'a T {
     let type_id = TypeId::of::<T>();
-    if cx
-        .raw
-        .inner
-        .borrow_mut()
-        .contexts
-        .get_or_insert_with(Default::default)
-        .insert(type_id, value)
-        .is_some()
-    {
+
+    // Check if context already exists in this scope.
+    let mut scope = cx.raw.inner.borrow_mut();
+    let contexts = scope.contexts.get_or_insert_with(Default::default);
+    if contexts.iter().any(|(x, _)| *x == type_id) {
         panic!("existing context with type exists already");
     }
+
+    // Insert context into this scope.
+    contexts.push((type_id, value));
+
     value
 }
 
@@ -54,12 +54,12 @@ pub fn try_use_context<T: 'static>(cx: Scope) -> Option<&T> {
     let type_id = TypeId::of::<T>();
     let mut this = Some(cx.raw);
     while let Some(current) = this {
-        if let Some(value) = current
+        if let Some((_, value)) = current
             .inner
             .borrow()
             .contexts
             .as_ref()
-            .and_then(|c| c.get(&type_id))
+            .and_then(|c| c.iter().find(|(x, _)| *x == type_id))
         {
             let value = value.downcast_ref::<T>().unwrap();
             return Some(value);
@@ -110,15 +110,7 @@ where
 
 /// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
 pub fn scope_depth(cx: Scope) -> u32 {
-    let mut depth = 0;
-    let mut current = cx.raw;
-
-    // SAFETY: 'current.parent' necessarily lives longer than 'current'.
-    while let Some(next) = current.parent.map(|x| unsafe { &*x }) {
-        current = next;
-        depth += 1;
-    }
-    depth
+    cx.raw.inner.borrow().depth
 }
 
 #[cfg(test)]

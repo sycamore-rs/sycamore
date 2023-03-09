@@ -3,7 +3,7 @@
 use std::iter;
 use std::rc::Rc;
 
-use ahash::AHashMap;
+use hashbrown::HashMap;
 use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
@@ -20,9 +20,9 @@ use crate::view::{View, ViewType};
 ///   directly before `marker`. If `marker` is `None`, `accessor` will be appended at the end of
 ///   `parent`.
 /// * `multi` - A boolean flag indicating whether the node to be inserted is the only child of
-///   `parent`. Setting this to `true` will enable certain optimizations when clearing the node.
-///   Even if the node to be inserted is the only child of `parent`, `multi` can still be set to
-///   `false` but forgoes the optimizations.
+///   `parent`. Setting this to `false` will enable an optimization when clearing the node. Even if
+///   the node to be inserted is the only child of `parent`, `multi` can still be set to `true` but
+///   forgoes the optimization.
 pub fn insert<G: GenericNode>(
     cx: Scope<'_>,
     parent: &G,
@@ -54,15 +54,12 @@ fn insert_expression<G: GenericNode>(
         ViewType::Node(node) => {
             if let Some(current) = current {
                 clean_children(parent, current.flatten(), marker, Some(node), multi);
-            } else if !multi && cfg!(feature = "hydrate") {
-                // FIXME: This is an extremely ugly hack to get around the fact that current is None
-                // for text nodes when G is HydrateNode. This will cause the text node to be
-                // inserted twice when hydrating.
-                parent.update_inner_text("");
-                parent.insert_child_before(node, None);
+            } else if marker.is_none() {
+                parent.append_child(node);
             } else {
                 parent.insert_child_before(node, marker);
             }
+
             // The new node should be inserted into parent.
             debug_assert_eq!(node.parent_node().as_ref(), Some(parent));
         }
@@ -71,10 +68,7 @@ fn insert_expression<G: GenericNode>(
             let marker = marker.cloned();
             let f = f.clone();
             create_effect_scoped(cx, move |cx| {
-                let mut value = f.get();
-                while let ViewType::Dyn(f) = &value.inner {
-                    value = f.get();
-                }
+                let value = f.get();
                 insert_expression(
                     cx,
                     &parent,
@@ -155,6 +149,8 @@ fn insert_expression<G: GenericNode>(
 /// * `marker` - If `marker` is `None`, all the nodes from `parent` are removed regardless of
 ///   `current`. This behavior will likely change in the future.
 /// * `replacement` - An optional replacement node for the removed nodes.
+/// * `multi` - If set to `false`, this will use a more efficient `innerText = ""` to clear instead
+///   of removing child nodes one by one.
 pub fn clean_children<G: GenericNode>(
     parent: &G,
     current: Vec<G>,
@@ -163,7 +159,7 @@ pub fn clean_children<G: GenericNode>(
     multi: bool,
 ) {
     if !multi {
-        parent.update_inner_text("");
+        parent.update_inner_text("".into());
         if let Some(replacement) = replacement {
             parent.append_child(replacement);
         }
@@ -251,12 +247,9 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     // Sanity check: make sure all nodes in a are children of parent.
     if cfg!(debug_assertions) {
         for (i, node) in a.iter().enumerate() {
-            assert!(
-                node.parent_node().as_ref() == Some(parent),
-                "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
-                i,
-                node
-            );
+            if node.parent_node().as_ref() != Some(parent) {
+                panic!("node {i} in existing nodes Vec is not a child of parent. node = {node:#?}",);
+            }
         }
     }
 
@@ -272,7 +265,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     let mut b_end = b_len;
     let mut a_start = 0;
     let mut b_start = 0;
-    let mut map = None::<AHashMap<G, usize>>;
+    let mut map = None::<HashMap<G, usize>>;
 
     // Last node in a.
     let after = a[a_end - 1].next_sibling();
@@ -370,12 +363,11 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     // Sanity check: make sure all nodes in b are children of parent after reconciliation.
     if cfg!(debug_assertions) {
         for (i, node) in b.iter().enumerate() {
-            assert!(
-                node.parent_node().as_ref() == Some(parent),
-                "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
-                i,
-                node
-            );
+            if node.parent_node().as_ref() != Some(parent) {
+                panic!(
+                    "node {i} in new nodes Vec is not a child of parent after reconciliation. node = {node:#?}",
+                );
+            }
         }
     }
 

@@ -7,21 +7,24 @@ use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 mod component;
-mod prop;
+mod props;
 mod view;
 
-/// A macro for ergonomically creating complex UI structures.
+/// A macro for ergonomically creating complex UI complex layouts.
 ///
-/// To learn more about the template syntax, see the chapter on
-/// [the `view!` macro](https://sycamore-rs.netlify.app/docs/basics/view) in the Sycamore Book.
+/// To learn more about the view syntax, see [the chapter on views](https://sycamore-rs.netlify.app/docs/basics/view)
+/// in the Sycamore Book.
+///
+/// This macro is rendering backend-agnostic. Most of the times, you probably want to use a
+/// backend-specific macro instead, such as the `view!` macro.
 #[proc_macro]
-pub fn view(input: TokenStream) -> TokenStream {
-    let view_root = parse_macro_input!(input as view::WithCxArg<view::ir::ViewRoot>);
+pub fn view_with_elements(input: TokenStream) -> TokenStream {
+    let view_root = parse_macro_input!(input as view::WithArgs<view::ir::ViewRoot>);
 
     view::view_impl(view_root).into()
 }
 
-/// Like [`view!`] but only creates a single raw node instead.
+/// Like [`view_with_elements!`] but only creates a single raw node instead.
 ///
 /// # Example
 ///
@@ -38,8 +41,8 @@ pub fn view(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro]
-pub fn node(input: TokenStream) -> TokenStream {
-    let elem = parse_macro_input!(input as view::WithCxArg<view::ir::Element>);
+pub fn node_with_elements(input: TokenStream) -> TokenStream {
+    let elem = parse_macro_input!(input as view::WithArgs<view::ir::Element>);
 
     view::node_impl(elem).into()
 }
@@ -67,12 +70,12 @@ pub fn component(args: TokenStream, item: TokenStream) -> TokenStream {
         .into()
 }
 
-/// The derive macro for `Prop`. The macro creates a builder-like API used in the [`view!`] macro.
-#[proc_macro_derive(Prop, attributes(builder))]
-pub fn derive_prop(input: TokenStream) -> TokenStream {
+/// The derive macro for `Props`. The macro creates a builder-like API used in the [`view!`] macro.
+#[proc_macro_derive(Props, attributes(prop))]
+pub fn derive_props(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    prop::impl_derive_prop(&input)
+    props::impl_derive_props(&input)
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

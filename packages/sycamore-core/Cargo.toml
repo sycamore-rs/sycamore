@@ -8,15 +8,17 @@ keywords = ["wasm", "gui", "reactive"]
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.8.0"
+version = "0.8.2"
 
 [dependencies]
-ahash = "0.7.6"
+hashbrown = "0.13.1"
+sycamore-futures = { path = "../sycamore-futures", version = "0.8.0", optional = true }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0" }
 
 [dev-dependencies]
-sycamore = { path = "../sycamore" }
+sycamore = { path = "../sycamore", features = ["ssr"] }
 
 [features]
 default = []
 hydrate = []
+suspense = ["sycamore-futures"]

@@ -8,23 +8,16 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
-use once_cell::sync::Lazy;
-use sycamore_core::generic_node::{GenericNode, SycamoreElement};
+use sycamore_core::generic_node::{
+    instantiate_template_universal, GenericNode, GenericNodeElements, InstantiateUniversalOpts,
+    SycamoreElement, Template, TemplateResult,
+};
 use sycamore_core::hydrate::{get_next_id, with_hydration_context};
 use sycamore_core::view::View;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 
-use crate::Html;
-
-static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-    vec![
-        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
-        "source", "track", "wbr", "command", "keygen", "menuitem",
-    ]
-    .into_iter()
-    .collect()
-});
+use crate::{Html, VOID_ELEMENTS};
 
 /// Inner representation for [`SsrNode`].
 #[derive(Debug, Clone)]
@@ -70,6 +63,19 @@ impl SsrNode {
         }))
     }
 
+    /// Create a new element without hydration keys or another other special attributes.
+    fn new_element_raw(
+        tag: Cow<'static, str>,
+        attributes: IndexMap<Cow<'static, str>, Cow<'static, str>>,
+        children: Vec<Self>,
+    ) -> Self {
+        Self::new(SsrNodeType::Element(RefCell::new(Element {
+            name: tag,
+            attributes,
+            children,
+        })))
+    }
+
     fn set_parent(&self, parent: Weak<SsrNodeInner>) {
         if let Some(old_parent) = self.parent_node() {
             old_parent.try_remove_child(self);
@@ -107,72 +113,42 @@ impl SsrNode {
     ///
     /// Do not pass unsanitized user input to this function. When the node is rendered, no escaping
     /// will be performed which might lead to a XSS (Cross Site Scripting) attack.
-    pub fn raw_text_node(html: &str) -> Self {
-        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(
-            html.to_string(),
-        ))))
+    pub fn raw_text_node(html: Cow<'static, str>) -> Self {
+        SsrNode::new(SsrNodeType::RawText(RefCell::new(RawText(html))))
     }
 }
 
 impl GenericNode for SsrNode {
     /// Although [`SsrNode`] is intended to be used on the server-side instead of in the browser,
-    /// the event type is still [`web_sys::Event`] because it must support the same API as
+    /// the event type is still [`JsValue`] because it must support the same API as
     /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
     /// anyways, it's okay to do this.
-    type EventType = web_sys::Event;
+    type AnyEventData = JsValue;
     type PropertyType = JsValue;
 
     const USE_HYDRATION_CONTEXT: bool = true;
 
-    fn element<T: SycamoreElement>() -> Self {
-        let hk = get_next_id();
-        let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
-            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
-        }
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: Cow::Borrowed(T::TAG_NAME),
-            attributes,
-            children: Default::default(),
-        })))
+    fn text_node(text: Cow<'static, str>) -> Self {
+        Self::new(SsrNodeType::Text(RefCell::new(Text(text))))
     }
 
-    fn element_from_tag(tag: &str) -> Self {
-        let hk = get_next_id();
-        let mut attributes = IndexMap::new();
-        if let Some(hk) = hk {
-            attributes.insert("data-hk".to_string(), format!("{}.{}", hk.0, hk.1));
-        }
-        Self::new(SsrNodeType::Element(RefCell::new(Element {
-            name: Cow::Owned(tag.to_string()),
-            attributes,
-            children: Default::default(),
-        })))
+    fn marker_with_text(text: Cow<'static, str>) -> Self {
+        Self::new(SsrNodeType::Comment(RefCell::new(Comment(text))))
     }
 
-    fn text_node(text: &str) -> Self {
-        Self::new(SsrNodeType::Text(RefCell::new(Text(text.to_string()))))
-    }
-
-    fn marker_with_text(text: &str) -> Self {
-        Self::new(SsrNodeType::Comment(RefCell::new(Comment(
-            text.to_string(),
-        ))))
-    }
-
-    fn set_attribute(&self, name: &str, value: &str) {
+    fn set_attribute(&self, name: Cow<'static, str>, value: Cow<'static, str>) {
         self.unwrap_element()
             .borrow_mut()
             .attributes
-            .insert(name.to_string(), value.to_string());
+            .insert(name, value);
     }
 
-    fn remove_attribute(&self, name: &str) {
-        self.unwrap_element().borrow_mut().attributes.remove(name);
+    fn remove_attribute(&self, name: Cow<'static, str>) {
+        self.unwrap_element().borrow_mut().attributes.remove(&name);
     }
 
-    fn set_class_name(&self, value: &str) {
-        self.set_attribute("class", value);
+    fn set_class_name(&self, value: Cow<'static, str>) {
+        self.set_attribute("class".into(), value);
     }
 
     fn add_class(&self, class: &str) {
@@ -186,9 +162,9 @@ impl GenericNode for SsrNode {
 
             class_set.insert(class);
 
-            *classes = class_set.drain().collect::<Vec<_>>().join(" ");
+            *classes = class_set.drain().collect::<Vec<_>>().join(" ").into();
         } else {
-            attributes.insert("class".to_string(), class.to_owned());
+            attributes.insert("class".into(), class.to_string().into());
         }
     }
 
@@ -203,7 +179,7 @@ impl GenericNode for SsrNode {
 
             class_set.remove(class);
 
-            *classes = class_set.drain().collect::<Vec<_>>().join(" ");
+            *classes = class_set.drain().collect::<Vec<_>>().join(" ").into();
         }
     }
 
@@ -316,27 +292,32 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, _cx: Scope<'a>, _name: &str, _handler: F) {
+    fn untyped_event<'a>(
+        &self,
+        _cx: Scope<'a>,
+        _event: Cow<'_, str>,
+        _handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
         // Noop. Events are attached on client side.
     }
 
-    fn update_inner_text(&self, text: &str) {
+    fn update_inner_text(&self, text: Cow<'static, str>) {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(el) => el.borrow_mut().children = vec![SsrNode::text_node(text)],
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
-            SsrNodeType::Text(t) => t.borrow_mut().0 = text.to_string(),
+            SsrNodeType::Text(t) => t.borrow_mut().0 = text,
             SsrNodeType::RawText(_t) => panic!("cannot update inner text on raw text node"),
         }
     }
 
-    fn dangerously_set_inner_html(&self, html: &str) {
+    fn dangerously_set_inner_html(&self, html: Cow<'static, str>) {
         match self.0.ty.as_ref() {
             SsrNodeType::Element(el) => {
                 el.borrow_mut().children = vec![SsrNode::raw_text_node(html)];
             }
             SsrNodeType::Comment(_c) => panic!("cannot update inner text on comment node"),
             SsrNodeType::Text(_t) => panic!("cannot update inner text on text node"),
-            SsrNodeType::RawText(t) => t.borrow_mut().0 = html.to_string(),
+            SsrNodeType::RawText(t) => t.borrow_mut().0 = html,
         }
     }
 
@@ -349,11 +330,50 @@ impl GenericNode for SsrNode {
     }
 }
 
+impl GenericNodeElements for SsrNode {
+    fn element<T: SycamoreElement>() -> Self {
+        Self::element_from_tag(T::TAG_NAME.into())
+    }
+
+    fn element_from_tag(tag: Cow<'static, str>) -> Self {
+        let mut attributes = IndexMap::new();
+        if let Some(hk) = get_next_id() {
+            attributes.insert("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
+        }
+        Self::new_element_raw(tag, attributes, Vec::new())
+    }
+
+    fn instantiate_template(template: &Template) -> TemplateResult<SsrNode> {
+        let result: TemplateResult<SsrNode> = instantiate_template_universal(
+            template,
+            InstantiateUniversalOpts {
+                start_marker: Some("#"),
+                end_marker: Some("/"),
+                create_element: |tag| Self::new_element_raw(tag, IndexMap::new(), Vec::new()),
+                create_element_ns: |tag, _| Self::new_element_raw(tag, IndexMap::new(), Vec::new()),
+            },
+        );
+        let hk = get_next_id();
+        if let Some(hk) = hk {
+            result
+                .root
+                .set_attribute("data-hk".into(), format!("{}.{}", hk.0, hk.1).into());
+        }
+        result
+    }
+}
+
 impl Html for SsrNode {
     const IS_BROWSER: bool = false;
 
+    /// Calling this on a [`SsrNode`] will unconditionally panic in all circumstances.
     fn to_web_sys(&self) -> web_sys::Node {
         panic!("SsrNode cannot be converted into web_sys::Node");
+    }
+
+    /// Calling this on a [`SsrNode`] will unconditionally panic in all circumstances.
+    fn from_web_sys(_: web_sys::Node) -> Self {
+        panic!("SsrNode cannot be converted from web_sys::Node");
     }
 }
 
@@ -379,7 +399,7 @@ impl WriteToString for SsrNode {
 #[derive(Debug, Clone, Eq, PartialEq)]
 struct Element {
     name: Cow<'static, str>,
-    attributes: IndexMap<String, String>,
+    attributes: IndexMap<Cow<'static, str>, Cow<'static, str>>,
     children: Vec<SsrNode>,
 }
 
@@ -416,7 +436,7 @@ impl WriteToString for Element {
 
 /// A SSR comment node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct Comment(String);
+struct Comment(Cow<'static, str>);
 
 impl WriteToString for Comment {
     fn write_to_string(&self, s: &mut String) {
@@ -430,7 +450,7 @@ impl WriteToString for Comment {
 
 /// A SSR text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct Text(String);
+struct Text(Cow<'static, str>);
 
 impl WriteToString for Text {
     fn write_to_string(&self, s: &mut String) {
@@ -440,7 +460,7 @@ impl WriteToString for Text {
 
 /// Un-escaped text node.
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct RawText(String);
+struct RawText(Cow<'static, str>);
 
 impl WriteToString for RawText {
     fn write_to_string(&self, s: &mut String) {
@@ -468,6 +488,7 @@ pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String
 
 #[cfg(test)]
 mod tests {
+    use sycamore::generic_node::GenericNodeElements;
     use sycamore::prelude::*;
     use sycamore::render_to_string;
     use sycamore::web::html;

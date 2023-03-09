@@ -32,11 +32,11 @@ view! { cx,
 
 Components would be much more useful if they can accept data from the parent and render the given
 data. Luckily, we can do this with properties. To allow your component to accept properties, take a
-second argument with a type that implements the `Prop` trait. For convenience, you can automatically
-derive the `Prop` trait with a derive-macro.
+second argument with a type that implements the `Props` trait. For convenience, you can automatically
+derive the `Props` trait with a derive-macro.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps {
     name: String,
     email: String,
@@ -63,7 +63,7 @@ Here is an example of a simple component that displays the value of its prop and
 updates the displayed value when the prop changes.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps<'a> {
     value: &'a ReadSignal<i32>,
 }
@@ -92,7 +92,7 @@ Components can also be wrappers around other child views by adding the `children
 properties struct.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 pub struct MyComponentProps<'a, G: Html> {
     children: Children<'a, G>,
     class: String
@@ -118,14 +118,14 @@ view! {
 
 ## Default props
 
-Some property fields might have a default value. Use the `#[builder(default)]` attribute to allow
+Some property fields might have a default value. Use the `#[prop(default)]` attribute to allow
 omitting the property when constructing the component.
 
 ```rust
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps {
     name: String,
-    #[builder(default)]
+    #[prop(default)]
     email: String,
 }
 
@@ -145,7 +145,7 @@ automatically generated.
 
 ```rust
 // Manual method.
-#[derive(Prop)]
+#[derive(Props)]
 struct MyProps<'a> {
     value: &'a ReadSignal<i32>,
 }

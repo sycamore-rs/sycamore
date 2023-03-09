@@ -1,4 +1,6 @@
 use sycamore::prelude::*;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlElement;
 
 use crate::sidebar::SidebarData;
 use crate::DarkMode;
@@ -10,6 +12,30 @@ fn DarkModeToggle<G: Html>(cx: Scope) -> View<G> {
 
     let DarkMode(dark_mode) = use_context::<DarkMode>(cx);
     let toggle = |_| dark_mode.set(!*dark_mode.get());
+
+    // Update color-scheme when `dark_mode` changes.
+    create_effect(cx, || {
+        let document = web_sys::window().unwrap().document().unwrap();
+        let document_element = document
+            .document_element()
+            .unwrap()
+            .unchecked_into::<HtmlElement>();
+        document_element
+            .style()
+            .set_property("overflow", "hidden")
+            .unwrap();
+        document.body().unwrap().client_width(); // Trigger reflow.
+        document_element
+            .set_attribute(
+                "data-color-scheme",
+                if *dark_mode.get() { "dark" } else { "light" },
+            )
+            .unwrap();
+        document_element
+            .style()
+            .set_property("overflow", "")
+            .unwrap();
+    });
 
     view! { cx,
         button(
@@ -40,9 +66,8 @@ fn Nav<G: Html>(cx: Scope) -> View<G> {
                     // Brand section
                     div(class="ml-0 sm:ml-3 inline-block flex-initial") {
                         div(class="flex space-x-4") {
-                            a(href="/#", class="py-2 px-3 text-sm text-white font-medium \
-                            bg-gray-500 hover:bg-gray-600 transition-colors rounded") {
-                                "Sycamore"
+                            a(href="/#") {
+                                img(src="/logo.svg", class="h-10 w-10")
                             }
                         }
                     }
@@ -103,17 +128,15 @@ pub fn HamburgerMenu<G: Html>(cx: Scope) -> View<G> {
             on:click=toggle
         ) {
             NavLinks {}
-            (if let Some(sidebar) = sidebar.get().as_ref().clone() {
+            (if let Some((version, data)) = sidebar.get().as_ref().clone() {
                 view! { cx,
                     div(class="opacity-25 mx-2 p-px my-2 bg-current")
                     div(class="w-full"){
-                        crate::sidebar::Sidebar({
-                            (sidebar.0.unwrap_or_else(||"next".to_string()), sidebar.1)
-                        })
+                        crate::sidebar::Sidebar(version=version.unwrap_or_else(|| "next".to_string()), data=data)
                     }
                 }
             } else {
-                View::empty()
+                view! { cx, }
             })
         }
     }

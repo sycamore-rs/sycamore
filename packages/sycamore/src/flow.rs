@@ -8,7 +8,7 @@ use std::hash::Hash;
 use crate::prelude::*;
 
 /// Props for [`Keyed`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct KeyedProps<'a, T, F, G: GenericNode, K, Key>
 where
     F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,
@@ -81,7 +81,7 @@ where
 }
 
 /// Props for [`Indexed`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct IndexedProps<'a, G: GenericNode, T, F>
 where
     F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,

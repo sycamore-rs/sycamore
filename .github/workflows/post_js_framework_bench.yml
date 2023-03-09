@@ -1,0 +1,47 @@
+name: Post comment for JS framework benchmark
+
+on:
+  workflow_run:
+    workflows: [JS framework benchmark]
+    types:
+      - completed
+
+jobs:
+  post-js-framework-benchmark-comment-results:
+    name: Post JS framework benchmark results
+    runs-on: ubuntu-latest
+
+    env:
+      MSG_FOOTER: |
+        Workflow: [${{ github.event.workflow_run.id }}](/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }})
+        *Adding new commits will generate a new report*
+
+    steps:
+    - name: Download artifact
+      id: download-artifact
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        workflow: js_framework_bench.yml
+        run_id: ${{ github.event.workflow_run.id }}
+        name: bench-results
+        path: bench-results/
+
+    - name: Post results
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const benchResults = fs.readFileSync('bench-results/BENCH_RESULTS.txt', 'utf8');
+          const prNumber = fs.readFileSync('bench-results/PR_NUMBER.txt', 'utf8');
+
+          console.log(benchResults);
+          console.log("PR number", prNumber);
+
+          github.rest.issues.createComment({
+            issue_number: prNumber,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: benchResults + process.env.MSG_FOOTER,
+          });

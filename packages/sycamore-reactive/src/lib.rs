@@ -16,7 +16,6 @@ use std::marker::PhantomData;
 use std::mem;
 use std::rc::{Rc, Weak};
 
-use ahash::AHashMap;
 use arena::*;
 pub use context::*;
 pub use effect::*;
@@ -43,11 +42,18 @@ struct ScopeInner<'a> {
     /// Contexts that are allocated on the current [`Scope`].
     /// See the [`mod@context`] module.
     ///
-    /// Note that the `AHashMap` is wrapped with an `Option<Box<_>>`. This is because contexts are
+    /// Note that the `Vec` is wrapped with an `Option<Box<_>>`. This is because contexts are
     /// usually read and rarely created. Making this heap allocated when prevent blowing up the
     /// size of the [`ScopeInner`] struct when most of the times, this field is unneeded.
     #[allow(clippy::box_collection)]
-    contexts: Option<Box<AHashMap<TypeId, &'a dyn Any>>>,
+    #[allow(clippy::type_complexity)]
+    contexts: Option<Box<Vec<(TypeId, &'a dyn Any)>>>,
+    /// The depth of the current scope. The root scope has a depth of 0. Any child scopes have a
+    /// depth of N + 1 where N is the depth of the parent scope.
+    depth: u32,
+    /// If this is true, this will prevent the scope from being dropped.
+    /// This is set when an effect is running to prevent an use-after-free.
+    lock_drop: bool,
     // Make sure that 'a is invariant.
     _phantom: InvariantLifetime<'a>,
 }
@@ -99,11 +105,6 @@ impl<'a, 'b: 'a> BoundedScope<'a, 'b> {
             _phantom: PhantomData,
         }
     }
-
-    /// Alias for `self.raw.arena.alloc`.
-    fn alloc<T>(&self, value: T) -> &'a mut T {
-        self.raw.arena.alloc(value)
-    }
 }
 
 /// A type-alias for [`BoundedScope`] where both lifetimes are the same.
@@ -112,7 +113,7 @@ pub type Scope<'a> = BoundedScope<'a, 'a>;
 impl<'a> ScopeRaw<'a> {
     /// Create a new [`ScopeRaw`]. This function is deliberately not `pub` because it should not be
     /// possible to access a [`ScopeRaw`] directly on the stack.
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(depth: u32) -> Self {
         // Even though the initialization code below is same as deriving Default::default(), we
         // can't do that because accessing a raw Scope outside of a scope closure breaks
         // safety contracts.
@@ -123,11 +124,32 @@ impl<'a> ScopeRaw<'a> {
                 cleanups: Default::default(),
                 child_scopes: Default::default(),
                 contexts: None,
+                depth,
+                lock_drop: false,
                 _phantom: Default::default(),
             }),
             arena: Default::default(),
             parent: None,
         }
+    }
+
+    /// Recursively check if this scope or any child scope is drop-locked.
+    fn is_drop_locked_recursive(&self) -> bool {
+        if self.inner.borrow().lock_drop {
+            true
+        } else {
+            self.is_child_scopes_drop_locked_recursive()
+        }
+    }
+
+    /// Recursively check if this scope or any child scope is drop-locked.
+    fn is_child_scopes_drop_locked_recursive(&self) -> bool {
+        // SAFETY: We are not accessing any values with a lifetime.
+        self.inner
+            .borrow()
+            .child_scopes
+            .values()
+            .any(|&child| unsafe { &*child }.is_drop_locked_recursive())
     }
 }
 
@@ -157,6 +179,8 @@ impl<'a> ScopeDisposer<'a> {
     ///
     /// `dispose` should not be called inside the `create_scope` or `create_child_scope` closure.
     ///
+    /// This should also not be called if the scope or any child scope is drop-locked.
+    ///
     /// # Drop order
     ///
     /// Fields are dropped in the following order:
@@ -175,7 +199,7 @@ impl<'a> ScopeDisposer<'a> {
     }
 }
 
-/// Creates a reactive scope.
+/// Creates a root reactive scope.
 ///
 /// Returns a disposer function which will release the memory owned by the [`Scope`].
 /// Failure to call the disposer function will result in a memory leak.
@@ -209,7 +233,7 @@ impl<'a> ScopeDisposer<'a> {
 /// ```
 #[must_use = "not calling the disposer function will result in a memory leak"]
 pub fn create_scope<'disposer>(f: impl for<'a> FnOnce(Scope<'a>)) -> ScopeDisposer<'disposer> {
-    let cx = ScopeRaw::new();
+    let cx = ScopeRaw::new(0);
     let boxed = Box::new(cx);
     let ptr = Box::into_raw(boxed);
     // SAFETY: Safe because heap allocated value has stable address.
@@ -277,10 +301,9 @@ pub fn create_child_scope<'a, F>(cx: Scope<'a>, f: F) -> ScopeDisposer<'a>
 where
     F: for<'child_lifetime> FnOnce(BoundedScope<'child_lifetime, 'a>),
 {
-    let mut child = ScopeRaw::new();
-    // SAFETY: The only fields that are accessed on self from child is `context` which does not
-    // have any lifetime annotations.
-    child.parent = Some(unsafe { std::mem::transmute(cx.raw as *const _) });
+    let parent_depth = scope_depth(cx);
+    let mut child = ScopeRaw::new(parent_depth + 1);
+    child.parent = Some(cx.raw as *const _);
     let boxed = Box::new(child);
     let ptr = Box::into_raw(boxed);
 
@@ -291,7 +314,7 @@ where
     // - self.child_cx is append only. That means that the Box<cx> will not be dropped until Self is
     //   dropped.
     f(unsafe { Scope::new(&*ptr) });
-    //                      ^^^ -> `ptr` is still accessible here after call to f.
+    //                          ^^^ -> `ptr` is still accessible here after call to f.
     ScopeDisposer::new(move || unsafe {
         let cx = cx.raw.inner.borrow_mut().child_scopes.remove(key).unwrap();
         // SAFETY: Safe because ptr created using Box::into_raw and closure cannot live longer
@@ -342,8 +365,41 @@ pub fn create_scope_immediate(f: impl for<'a> FnOnce(Scope<'a>)) {
 /// let _ = outer.unwrap();
 /// # });
 /// ```
-pub fn create_ref<T>(cx: Scope, value: T) -> &T {
+pub fn create_ref<T: 'static>(cx: Scope, value: T) -> &T {
     cx.raw.arena.alloc(value)
+}
+
+/// Allocate a new arbitrary value under the current [`Scope`].
+/// The allocated value lasts as long as the scope and cannot be used outside of the scope.
+///
+/// # Ref lifetime
+///
+/// The lifetime of the returned ref is the same as the [`Scope`].
+/// As such, the reference cannot escape the [`Scope`].
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let mut outer = None;
+/// let disposer = create_child_scope(cx, |cx| {
+///     let data = create_ref(cx, 0);
+///     let raw: &i32 = &data;
+///     outer = Some(raw);
+///     //           ^^^
+/// });
+/// disposer();
+/// let _ = outer.unwrap();
+/// # });
+/// ```
+///
+/// # Safety
+///
+/// The allocated value must not access any value allocated on the scope in its `Drop`
+/// implementation.
+///
+/// This should almost never happen in the wild, but beware that accessing allocated data in `Drop`
+/// might cause an use-after-free because the accessed value might have been dropped already.
+pub unsafe fn create_ref_unsafe<'a, T: 'a>(cx: Scope<'a>, value: T) -> &'a T {
+    cx.raw.arena.alloc_non_static(value)
 }
 
 /// Adds a callback that is called when the scope is destroyed.
@@ -512,15 +568,6 @@ mod tests {
     }
 
     #[test]
-    fn can_store_disposer_in_own_signal() {
-        create_scope_immediate(|cx| {
-            let signal = create_signal(cx, None);
-            let disposer = create_child_scope(cx, |_cx| {});
-            signal.set(Some(disposer));
-        });
-    }
-
-    #[test]
     fn refs_are_dropped_on_dispose() {
         thread_local! {
             static COUNTER: Cell<u32> = Cell::new(0);
@@ -559,25 +606,6 @@ mod tests {
                                                           // access it in drop.
         });
 
-        unsafe { disposer.dispose() };
-    }
-
-    #[test]
-    fn access_previous_ref_in_drop() {
-        struct ReadRefOnDrop<'a> {
-            r: &'a i32,
-            expect: i32,
-        }
-        impl<'a> Drop for ReadRefOnDrop<'a> {
-            fn drop(&mut self) {
-                assert_eq!(*self.r, self.expect);
-            }
-        }
-
-        let disposer = create_scope(|cx| {
-            let r = create_ref(cx, 123);
-            create_ref(cx, ReadRefOnDrop { r, expect: 123 });
-        });
         unsafe { disposer.dispose() };
     }
 }

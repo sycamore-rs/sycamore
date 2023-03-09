@@ -1,4 +1,4 @@
-name: Bench
+name: Benchmark
 
 on: [pull_request]
 
@@ -15,21 +15,22 @@ jobs:
           override: true
 
       - name: Checkout repository base
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.base_ref }}
 
       - name: Run cargo bench on base
-        run: cargo bench
+        run: cargo bench --bench reactivity --bench ssr
 
       - name: Checkout repository head
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.head_ref }}
           clean: false # Do not remove benchmark results from base branch
 
       - name: Run cargo bench on head
-        run: cargo bench
+        run: cargo bench --bench reactivity --bench ssr
 
       - name: Upload benchmark report
         uses: actions/upload-artifact@v2

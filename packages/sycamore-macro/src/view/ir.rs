@@ -18,27 +18,6 @@ pub enum ViewNode {
     Dyn(Dyn),
 }
 
-impl ViewNode {
-    /// Node is dynamic if the node is a component or a splice that is not a simple path.
-    /// # Example
-    /// ```ignore
-    /// view! { MyComponent() } // is_dynamic = true
-    /// view! { (state.get()) } // is_dynamic = true
-    /// view! { (state) } // is_dynamic = false
-    /// ```
-    pub fn is_dynamic(&self) -> bool {
-        match self {
-            ViewNode::Element(_) => false,
-            ViewNode::Component(_) => true,
-            ViewNode::Text(_) => false,
-            ViewNode::Dyn(Dyn {
-                value: Expr::Lit(_) | Expr::Path(_),
-            }) => false,
-            ViewNode::Dyn(_) => true,
-        }
-    }
-}
-
 pub enum NodeType {
     Element,
     Component,
@@ -75,13 +54,15 @@ pub enum AttributeType {
     /// Syntax: `dangerously_set_inner_html`.
     DangerouslySetInnerHtml,
     /// Syntax: `on:<event>`.
-    Event { event: String },
+    Event { event: Ident },
     /// Syntax: `bind:<prop>`.
     Bind { prop: String },
     /// Syntax: `prop:<prop>`.
     Property { prop: String },
     /// Syntax: `ref`.
     Ref,
+    /// Syntax: ..attributes
+    Spread,
 }
 
 pub fn is_bool_attr(name: &str) -> bool {
@@ -121,17 +102,7 @@ pub fn is_bool_attr(name: &str) -> bool {
     BOOLEAN_ATTRIBUTES_SET.contains(name)
 }
 
-pub enum Component {
-    Legacy(LegacyComponent),
-    New(NewComponent),
-}
-
-pub struct LegacyComponent {
-    pub ident: Path,
-    pub args: Punctuated<Expr, Token![,]>,
-}
-
-pub struct NewComponent {
+pub struct Component {
     pub ident: Path,
     pub props: Punctuated<ComponentProp, Token![,]>,
     pub brace: Option<Brace>,
@@ -139,7 +110,8 @@ pub struct NewComponent {
 }
 
 pub struct ComponentProp {
-    pub name: Ident,
+    pub prefix: Option<Ident>,
+    pub name: String,
     pub eq: Token![=],
     pub value: Expr,
 }

@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
+use sycamore::web::html::ev;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
@@ -20,7 +21,7 @@ pub trait Integration {
 
     /// Get the click handler that is run when links are clicked.
 
-    fn click_handler(&self) -> Box<dyn Fn(web_sys::Event)>;
+    fn click_handler(&self) -> Box<dyn Fn(web_sys::MouseEvent)>;
 }
 
 thread_local! {
@@ -62,7 +63,7 @@ impl Integration for HistoryIntegration {
         closure.forget();
     }
 
-    fn click_handler(&self) -> Box<dyn Fn(web_sys::Event)> {
+    fn click_handler(&self) -> Box<dyn Fn(web_sys::MouseEvent)> {
         Box::new(|ev| {
             if let Some(a) = ev
                 .target()
@@ -141,7 +142,7 @@ fn base_pathname() -> String {
 }
 
 /// Props for [`Router`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct RouterProps<'a, R, F, I, G>
 where
     R: Route + 'a,
@@ -151,7 +152,7 @@ where
 {
     view: F,
     integration: I,
-    #[builder(default, setter(skip))]
+    #[prop(default, setter(skip))]
     _phantom: PhantomData<&'a (R, G)>,
 }
 
@@ -173,7 +174,7 @@ where
 }
 
 /// Props for [`RouterBase`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct RouterBaseProps<'a, R, F, I, G>
 where
     R: Route + 'a,
@@ -184,7 +185,7 @@ where
     view: F,
     integration: I,
     route: R,
-    #[builder(default, setter(skip))]
+    #[prop(default, setter(skip))]
     _phantom: PhantomData<&'a G>,
 }
 
@@ -211,7 +212,7 @@ where
 #[component]
 pub fn Router<'a, G: Html, R, F, I>(cx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
 where
-    R: Route + 'a,
+    R: Route + 'static,
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration + 'static,
 {
@@ -235,7 +236,7 @@ pub fn RouterBase<'a, G: Html, R, F, I>(
     props: RouterBaseProps<'a, R, F, I, G>,
 ) -> View<G>
 where
-    R: Route + 'a,
+    R: Route + 'static,
     F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
     I: Integration + 'static,
 {
@@ -279,12 +280,12 @@ where
     let view = view(cx, route_signal);
     // Delegate click events from child <a> tags.
     if let Some(node) = view.as_node() {
-        node.event(cx, "click", integration.click_handler());
+        node.event(cx, ev::click, integration.click_handler());
     } else {
         let view = view.clone();
         create_effect_scoped(cx, move |cx| {
             for node in view.clone().flatten() {
-                node.event(cx, "click", integration.click_handler());
+                node.event(cx, ev::click, integration.click_handler());
             }
         });
     }
@@ -292,7 +293,7 @@ where
 }
 
 /// Props for [`StaticRouter`].
-#[derive(Prop, Debug)]
+#[derive(Props, Debug)]
 pub struct StaticRouterProps<'a, R, F, G>
 where
     R: Route + 'a,
@@ -301,7 +302,7 @@ where
 {
     view: F,
     route: R,
-    #[builder(default, setter(skip))]
+    #[prop(default, setter(skip))]
     _phantom: PhantomData<&'a (R, G)>,
 }
 
@@ -335,7 +336,7 @@ where
     F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
 {
     view! { cx,
-        StaticRouterBase(props)
+        StaticRouterBase(view=props.view, route=props.route)
     }
 }
 
@@ -438,7 +439,7 @@ mod tests {
             NotFound,
         }
 
-        #[component]
+        #[component(inline_props)]
         fn Comp<G: Html>(cx: Scope, path: String) -> View<G> {
             let route = Routes::match_route(
                 // The user would never use this directly, so they'd never have to do this trick
@@ -472,17 +473,17 @@ mod tests {
         }
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp("/".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp(path="/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp("/about".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp(path="/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp("/404".to_string()) }),
+            sycamore::render_to_string(|cx| view! { cx, Comp(path="/404".to_string()) }),
             "Not Found"
         );
     }

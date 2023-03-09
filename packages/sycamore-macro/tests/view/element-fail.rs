@@ -1,6 +1,6 @@
 use sycamore::prelude::*;
 
-fn compile_fail<G: GenericNode>() {
+fn compile_fail<G: Html>() {
     create_scope_immediate(|cx| {
         let _: View<G> = view! { cx, button };
         let _: View<G> = view! { cx, button(disabled) };
@@ -8,6 +8,7 @@ fn compile_fail<G: GenericNode>() {
         let _: View<G> = view! { cx, button(prop:disabled) };
         let _: View<G> = view! { cx, button(unknown:directive="123") };
         let _: View<G> = view! { cx, unknownelement {} };
+        let _: View<G> = view! { cx, div(..unknown_attributes) {} };
 
         let _: View<G> = view! { cx, button(a.b.c="123") };
 

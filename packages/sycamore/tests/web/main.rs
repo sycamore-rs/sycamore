@@ -12,6 +12,7 @@ pub mod svg;
 
 mod utils;
 
+use sycamore::generic_node::GenericNodeElements;
 use sycamore::prelude::*;
 use sycamore::web::html;
 use utils::*;
@@ -126,7 +127,7 @@ fn template_interpolation_if_else() {
                 (if *show.get() {
                     view! { cx, "Hello Sycamore!" }
                 } else {
-                    view! { cx, }
+                    view! { cx, "Hidden" }
                 })
             }
         };
@@ -134,7 +135,7 @@ fn template_interpolation_if_else() {
         assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
-        assert_text_content!(query("p"), "");
+        assert_text_content!(query("p"), "Hidden");
 
         show.set(true);
         assert_text_content!(query("p"), "Hello Sycamore!");
@@ -150,14 +151,14 @@ fn template_interpolation_if_else_with_sibling() {
             (if *show.get() {
                 view! { cx, p { "Hello Sycamore!" } }
             } else {
-                view! { cx, p { "" }}
+                view! { cx, p { "Hidden" }}
             })
         };
         sycamore::render_to(|_| node, &test_container());
         assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
-        assert_text_content!(query("p"), "");
+        assert_text_content!(query("p"), "Hidden");
 
         show.set(true);
         assert_text_content!(query("p"), "Hello Sycamore!");
@@ -298,6 +299,28 @@ fn two_way_bind_to_props() {
 }
 
 #[wasm_bindgen_test]
+fn two_way_bind_to_value_as_number() {
+    create_scope_immediate(|cx| {
+        let value = create_signal(cx, 1.0);
+
+        let node = view! { cx,
+            input(type="range", bind:valueAsNumber=value) // Note that type must be "range" or "number"
+        };
+
+        sycamore::render_to(|_| node, &test_container());
+        let input: HtmlInputElement = query_into("input");
+        assert_eq!(input.value_as_number(), 1.0);
+
+        value.set(2.0);
+        assert_eq!(input.value_as_number(), 2.0);
+
+        input.set_value_as_number(3.0);
+        input.dispatch_event(&Event::new("input").unwrap()).unwrap();
+        assert_eq!(*value.get(), 3.0);
+    });
+}
+
+#[wasm_bindgen_test]
 fn noderefs() {
     create_scope_immediate(|cx| {
         let noderef = create_node_ref(cx);
@@ -311,6 +334,30 @@ fn noderefs() {
         let input_ref = query("input");
 
         assert_eq!(input_ref, noderef.get::<DomNode>().unchecked_into());
+    });
+}
+
+#[wasm_bindgen_test]
+fn noderef_reactivity_test() {
+    create_scope_immediate(|cx| {
+        let counter = create_signal(cx, 0);
+        let node_ref: &NodeRef<DomNode> = create_node_ref(cx);
+
+        let _ = view! { cx,
+            div(ref=node_ref)
+        };
+
+        create_effect(cx, move || {
+            node_ref.get::<DomNode>();
+            counter.set(*counter.get() + 1);
+        });
+        assert_eq!(*counter.get(), 1);
+
+        let _ = view! { cx,
+            div(ref=node_ref)
+        };
+
+        assert_eq!(*counter.get(), 2);
     });
 }
 
@@ -359,7 +406,7 @@ fn dyn_fragment_reuse_nodes() {
         let p = query("#test-container");
 
         assert_text_content!(p, "123");
-        assert!(p.first_child() == nodes[0].as_node().map(|node| node.inner_element()));
+        assert!(p.first_child() == nodes[0].as_node().map(|node| node.to_web_sys()));
     });
 }
 
@@ -368,32 +415,24 @@ fn dom_node_add_class_splits_at_whitespace() {
     let node = DomNode::element::<html::div>();
     node.add_class("my_class");
     assert_eq!(
-        node.inner_element()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "my_class"
     );
     node.add_class("my_class");
     assert_eq!(
-        node.inner_element()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "my_class"
     );
     node.remove_class("my_class");
     node.add_class("hyphenated-class");
     assert_eq!(
-        node.inner_element()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "hyphenated-class"
     );
     node.remove_class("hyphenated-class");
     node.add_class("multiple classes");
     assert_eq!(
-        node.inner_element()
-            .unchecked_into::<Element>()
-            .class_name(),
+        node.to_web_sys().unchecked_into::<Element>().class_name(),
         "multiple classes"
     );
 }

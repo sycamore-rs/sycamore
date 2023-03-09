@@ -1,12 +1,12 @@
 //! Utilities for smooth transitions and animations.
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::reactive::*;
 
 /// Type returned by [`create_raf`] and [`create_raf_loop`].
-type RafState<'a> = (RcSignal<bool>, &'a dyn Fn(), &'a dyn Fn());
+type RafState<'a> = (RcSignal<bool>, Rc<dyn Fn() + 'a>, Rc<dyn Fn() + 'a>);
 
 /// Schedule a callback to be called on each animation frame.
 /// Does nothing if not on `wasm32` target.
@@ -18,8 +18,8 @@ type RafState<'a> = (RcSignal<bool>, &'a dyn Fn(), &'a dyn Fn());
 /// The raf is not started by default. Call the `start` function to initiate the raf.
 pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
     let running = create_ref(cx, create_rc_signal(false));
-    let start: &dyn Fn();
-    let stop: &dyn Fn();
+    let start: Rc<dyn Fn()>;
+    let stop: Rc<dyn Fn()>;
 
     // Only run on wasm32 architecture.
     #[cfg(all(target_arch = "wasm32", feature = "web"))]
@@ -53,7 +53,7 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
                 }
             }
         })));
-        start = create_ref(cx, move || {
+        start = Rc::new(move || {
             if !*running.get() {
                 running.set(true);
                 web_sys::window()
@@ -64,12 +64,12 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
                     .unwrap_throw();
             }
         });
-        stop = create_ref(cx, || running.set(false));
+        stop = Rc::new(|| running.set(false));
     }
     #[cfg(not(all(target_arch = "wasm32", feature = "web")))]
     {
-        start = create_ref(cx, || running.set(true));
-        stop = create_ref(cx, || running.set(false));
+        start = Rc::new(|| running.set(true));
+        stop = Rc::new(|| running.set(false));
     }
 
     (running.clone(), start, stop)
@@ -84,13 +84,16 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
 ///
 /// The raf is not started by default. Call the `start` function to initiate the raf.
 pub fn create_raf_loop<'a>(cx: Scope<'a>, mut f: impl FnMut() -> bool + 'a) -> RafState<'a> {
-    let stop_shared = create_ref(cx, Cell::new(None::<&dyn Fn()>));
-    let (running, start, stop) = create_raf(cx, move || {
-        if !f() {
-            stop_shared.get().unwrap()();
+    let stop_shared = Rc::new(RefCell::new(None::<Rc<dyn Fn() + 'a>>));
+    let (running, start, stop) = create_raf(cx, {
+        let stop_shared = Rc::clone(&stop_shared);
+        move || {
+            if !f() {
+                stop_shared.borrow().as_ref().unwrap()();
+            }
         }
     });
-    stop_shared.set(Some(stop));
+    *stop_shared.borrow_mut() = Some(Rc::clone(&stop));
     (running, start, stop)
 }
 
@@ -101,10 +104,13 @@ pub fn create_tweened_signal<'a, T: Lerp + Clone + 'a>(
     transition_duration: std::time::Duration,
     easing_fn: impl Fn(f32) -> f32 + 'static,
 ) -> &'a Tweened<'a, T> {
-    create_ref(
-        cx,
-        Tweened::new(cx, initial, transition_duration, easing_fn),
-    )
+    // SAFETY: We do not access any referenced data in the Drop implementation of Tweened.
+    unsafe {
+        create_ref_unsafe(
+            cx,
+            Tweened::new(cx, initial, transition_duration, easing_fn),
+        )
+    }
 }
 
 /// Describes a trait that can be linearly interpolate between two points.

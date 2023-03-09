@@ -1,4 +1,4 @@
-name: Build Website Production
+name: Build website production
 
 on:
   push:

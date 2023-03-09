@@ -11,20 +11,20 @@ repository = "https://github.com/sycamore-rs/sycamore"
 version = "0.8.2"
 
 [dependencies]
-ahash = "0.7.6"
-futures = { version = "0.3.21", optional = true }
-html-escape = { version = "0.2.9", optional = true }
-indexmap = { version = "1.8.0", features = ["std"] }
-js-sys = { version = "0.3.56", optional = true }
-once_cell = { version = "1.10.0", optional = true }
-paste = "1.0.6"
+futures = { version = "0.3.25", optional = true }
+hashbrown = "0.13.1"
+html-escape = { version = "0.2.12", optional = true }
+indexmap = { version = "1.9.2", features = ["std"] }
+js-sys = { version = "0.3.60", optional = true }
+once_cell = { version = "1.16.0", optional = true }
+paste = "1.0.9"
 sycamore-core = { path = "../sycamore-core", version = "0.8.0" }
 sycamore-futures = { path = "../sycamore-futures", version = "0.8.0", optional = true }
 sycamore-macro = { path = "../sycamore-macro", version = "0.8.0" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0" }
 sycamore-web = { path = "../sycamore-web", version = "0.8.0", optional = true }
-wasm-bindgen = { version = "0.2.79", optional = true }
-wasm-bindgen-futures = { version = "0.4.29", optional = true }
+wasm-bindgen = { version = "0.2.83", optional = true }
+wasm-bindgen-futures = { version = "0.4.33", optional = true }
 
 [dependencies.web-sys]
 features = [
@@ -34,7 +34,6 @@ features = [
     "DocumentFragment",
     "DomTokenList",
     "Element",
-    "Event",
     "HtmlElement",
     "HtmlInputElement",
     "HtmlCollection",
@@ -42,15 +41,41 @@ features = [
     "NodeList",
     "Text",
     "Window",
+    # Event types
+    "AnimationEvent",
+    "BeforeUnloadEvent",
+    "CompositionEvent",
+    "DeviceMotionEvent",
+    "DeviceOrientationEvent",
+    "DragEvent",
+    "ErrorEvent",
+    "Event",
+    "FocusEvent",
+    "GamepadEvent",
+    "HashChangeEvent",
+    "InputEvent",
+    "KeyboardEvent",
+    "MessageEvent",
+    "MouseEvent",
+    "PageTransitionEvent",
+    "PointerEvent",
+    "PopStateEvent",
+    "ProgressEvent",
+    "PromiseRejectionEvent",
+    "SecurityPolicyViolationEvent",
+    "StorageEvent",
+    "SubmitEvent",
+    "TouchEvent",
+    "TransitionEvent",
+    "WheelEvent",
 ]
-version = "0.3.56"
+version = "0.3.60"
 optional = true
 
 [dev-dependencies]
-criterion = "0.3.5"
-expect-test = "1.2.2"
-tokio = { version = "1.17.0", features = ["macros", "rt"] }
-wasm-bindgen-test = "0.3.29"
+expect-test = "1.4.0"
+tokio = { version = "1.22.0", features = ["macros", "rt"] }
+wasm-bindgen-test = "0.3.33"
 
 [features]
 default = ["web", "wasm-bindgen-interning"]
@@ -68,18 +93,18 @@ ssr = [
     "sycamore-macro/ssr",
     "sycamore-web/ssr",
 ]
-suspense = ["futures", "wasm-bindgen-futures", "sycamore-futures"]
+suspense = [
+    "futures",
+    "wasm-bindgen-futures",
+    "sycamore-futures",
+    "sycamore-core/suspense",
+]
 serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
 web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]
 
-[[bench]]
-harness = false
-name = "reactivity"
-
-[[bench]]
-harness = false
-name = "ssr"
+[[test]]
+name = "web"
 required-features = ["ssr"]
 
 [[test]]

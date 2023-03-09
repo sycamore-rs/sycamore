@@ -1,4 +1,4 @@
-//! The `Prop` derive macro implementation.
+//! The `Props` derive macro implementation.
 //!
 //! _Credits: This code is mostly taken from <https://github.com/idanarye/rust-typed-builder>_
 
@@ -7,7 +7,7 @@ use quote::quote;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Error, Result};
 
-pub fn impl_derive_prop(ast: &DeriveInput) -> Result<TokenStream> {
+pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
     let data = match &ast.data {
         syn::Data::Struct(data) => match &data.fields {
             syn::Fields::Named(fields) => {
@@ -37,21 +37,21 @@ pub fn impl_derive_prop(ast: &DeriveInput) -> Result<TokenStream> {
             syn::Fields::Unnamed(_) => {
                 return Err(Error::new(
                     ast.span(),
-                    "Prop is not supported for tuple structs",
+                    "Props is not supported for tuple structs",
                 ))
             }
             syn::Fields::Unit => {
                 return Err(Error::new(
                     ast.span(),
-                    "Prop is not supported for unit structs",
+                    "Props is not supported for unit structs",
                 ))
             }
         },
         syn::Data::Enum(_) => {
-            return Err(Error::new(ast.span(), "Prop is not supported for enums"))
+            return Err(Error::new(ast.span(), "Props is not supported for enums"))
         }
         syn::Data::Union(_) => {
-            return Err(Error::new(ast.span(), "Prop is not supported for unions"))
+            return Err(Error::new(ast.span(), "Props is not supported for unions"))
         }
     };
     Ok(data)
@@ -127,10 +127,10 @@ mod struct_info {
                 ref name,
                 ref builder_name,
                 ..
-            } = *self;
+            } = self;
             let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
             let all_fields_param = syn::GenericParam::Type(
-                syn::Ident::new("PropFields", proc_macro2::Span::call_site()).into(),
+                syn::Ident::new("PropsFields", proc_macro2::Span::call_site()).into(),
             );
             let b_generics = self.modify_generics(|g| {
                 g.params.insert(0, all_fields_param.clone());
@@ -201,7 +201,7 @@ mod struct_info {
             let (b_generics_impl, b_generics_ty, b_generics_where_extras_predicates) =
                 b_generics.split_for_impl();
             let mut b_generics_where: syn::WhereClause = syn::parse2(quote! {
-                where PropFields: Clone
+                where PropsFields: Clone
             })?;
             if let Some(predicates) = b_generics_where_extras_predicates {
                 b_generics_where
@@ -210,7 +210,7 @@ mod struct_info {
             }
 
             Ok(quote! {
-                impl #impl_generics ::sycamore::component::Prop for #name #ty_generics #where_clause {
+                impl #impl_generics ::sycamore::component::Props for #name #ty_generics #where_clause {
                     type Builder = #builder_name #generics_with_empty;
                     #[doc = #builder_method_doc]
                     #[allow(dead_code, clippy::default_trait_access)]
@@ -270,7 +270,7 @@ mod struct_info {
         pub fn field_impl(&self, field: &FieldInfo) -> Result<TokenStream, Error> {
             let StructInfo {
                 ref builder_name, ..
-            } = *self;
+            } = self;
 
             let descructuring = self.included_fields().map(|f| {
                 if f.ordinal == field.ordinal {
@@ -282,7 +282,7 @@ mod struct_info {
             });
             let reconstructing = self.included_fields().map(|f| f.name);
 
-            let &FieldInfo {
+            let FieldInfo {
                 name: ref field_name,
                 ty: ref field_type,
                 ..
@@ -356,7 +356,7 @@ mod struct_info {
             {
                 field.type_from_inside_option().ok_or_else(|| {
                     Error::new_spanned(
-                        &field_type,
+                        field_type,
                         "can't `strip_option` - field is not `Option<...>`",
                     )
                 })?
@@ -537,7 +537,7 @@ mod struct_info {
                 ref name,
                 ref builder_name,
                 ..
-            } = *self;
+            } = self;
 
             let generics = self.modify_generics(|g| {
                 let index_after_lifetime_in_generics = g
@@ -669,7 +669,7 @@ mod struct_info {
         pub fn new(attrs: &[syn::Attribute]) -> Result<TypeBuilderAttr, Error> {
             let mut result = TypeBuilderAttr::default();
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("builder") {
+                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
                     continue;
                 }
 
@@ -747,7 +747,7 @@ mod struct_info {
                         let call_func = quote!(#call_func);
                         Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group {}", call_func),
+                            format!("Illegal prop setting group {}", call_func),
                         )
                     })?;
                     match subsetting_name.as_str() {
@@ -759,7 +759,7 @@ mod struct_info {
                         }
                         _ => Err(Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group name {}", subsetting_name),
+                            format!("Illegal prop setting group name {}", subsetting_name),
                         )),
                     }
                 }
@@ -777,6 +777,7 @@ mod field_info {
 
     use super::util::{
         expr_to_single_string, ident_to_type, path_to_single_string, strip_raw_ident_prefix,
+        type_from_inside_option,
     };
 
     #[derive(Debug)]
@@ -795,6 +796,21 @@ mod field_info {
             field_defaults: FieldBuilderAttr,
         ) -> Result<FieldInfo, Error> {
             if let Some(ref name) = field.ident {
+                let mut builder_attr = field_defaults.with(&field.attrs)?;
+
+                let strip_option_auto = builder_attr.setter.strip_option.is_some()
+                    || !builder_attr.ignore_option && type_from_inside_option(&field.ty).is_some();
+                if builder_attr.setter.strip_option.is_none() && strip_option_auto {
+                    builder_attr.default =
+                        Some(syn::parse_quote!(::std::default::Default::default()));
+                    builder_attr.setter.strip_option = Some(field.ty.span());
+                } else if name == "children" || name == "attributes" {
+                    // If this field is the `children` or `attributes` field, make it implicitly
+                    // have a default value.
+                    builder_attr.default =
+                        Some(syn::parse_quote! { ::std::default::Default::default() });
+                }
+
                 Ok(FieldInfo {
                     ordinal,
                     name,
@@ -803,7 +819,7 @@ mod field_info {
                         Span::call_site(),
                     ),
                     ty: &field.ty,
-                    builder_attr: field_defaults.with(&field.attrs)?,
+                    builder_attr,
                 })
             } else {
                 Err(Error::new(field.span(), "Nameless field in struct"))
@@ -830,36 +846,14 @@ mod field_info {
         }
 
         pub fn type_from_inside_option(&self) -> Option<&syn::Type> {
-            let path = if let syn::Type::Path(type_path) = self.ty {
-                if type_path.qself.is_some() {
-                    return None;
-                } else {
-                    &type_path.path
-                }
-            } else {
-                return None;
-            };
-            let segment = path.segments.last()?;
-            if segment.ident != "Option" {
-                return None;
-            }
-            let generic_params =
-                if let syn::PathArguments::AngleBracketed(generic_params) = &segment.arguments {
-                    generic_params
-                } else {
-                    return None;
-                };
-            if let syn::GenericArgument::Type(ty) = generic_params.args.first()? {
-                Some(ty)
-            } else {
-                None
-            }
+            type_from_inside_option(self.ty)
         }
     }
 
     #[derive(Debug, Default, Clone)]
     pub struct FieldBuilderAttr {
         pub default: Option<syn::Expr>,
+        pub ignore_option: bool,
         pub setter: SetterSettings,
     }
 
@@ -875,7 +869,7 @@ mod field_info {
     impl FieldBuilderAttr {
         pub fn with(mut self, attrs: &[syn::Attribute]) -> Result<Self, Error> {
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("builder") {
+                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
                     continue;
                 }
 
@@ -965,7 +959,7 @@ mod field_info {
                         let call_func = quote!(#call_func);
                         Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group {}", call_func),
+                            format!("Illegal prop setting group {}", call_func),
                         )
                     })?;
                     match subsetting_name.as_ref() {
@@ -977,7 +971,7 @@ mod field_info {
                         }
                         _ => Err(Error::new_spanned(
                             &call.func,
-                            format!("Illegal builder setting group name {}", subsetting_name),
+                            format!("Illegal prop setting group name {}", subsetting_name),
                         )),
                     }
                 }
@@ -992,6 +986,10 @@ mod field_info {
                         match name.as_str() {
                             "default" => {
                                 self.default = None;
+                                Ok(())
+                            }
+                            "optional" => {
+                                self.ignore_option = true;
                                 Ok(())
                             }
                             _ => Err(Error::new_spanned(path, "Unknown setting".to_owned())),
@@ -1011,7 +1009,7 @@ mod field_info {
             if let (Some(skip), None) = (&self.setter.skip, &self.default) {
                 return Err(Error::new(
                     *skip,
-                    "#[builder(skip)] must be accompanied by default or default_code",
+                    "#[prop(skip)] must be accompanied by default or default_code",
                 ));
             }
 
@@ -1266,5 +1264,32 @@ mod util {
             name.replace_range(0..2, "");
         }
         name
+    }
+
+    pub fn type_from_inside_option(ty: &syn::Type) -> Option<&syn::Type> {
+        let path = if let syn::Type::Path(type_path) = ty {
+            if type_path.qself.is_some() {
+                return None;
+            } else {
+                &type_path.path
+            }
+        } else {
+            return None;
+        };
+        let segment = path.segments.last()?;
+        if segment.ident != "Option" {
+            return None;
+        }
+        let generic_params =
+            if let syn::PathArguments::AngleBracketed(generic_params) = &segment.arguments {
+                generic_params
+            } else {
+                return None;
+            };
+        if let syn::GenericArgument::Type(ty) = generic_params.args.first()? {
+            Some(ty)
+        } else {
+            None
+        }
     }
 }
