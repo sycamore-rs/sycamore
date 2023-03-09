@@ -82,18 +82,22 @@ fn dyn_nested() {
 #[wasm_bindgen_test]
 fn dyn_scoped_nested() {
     create_scope_immediate(|cx| {
+        let num = create_signal(cx, 0);
+
         let node: View<DomNode> = View::new_dyn_scoped(cx, move |cx| {
             View::new_dyn_scoped(cx, move |cx| {
                 view! { cx,
                     div {
-                        "Test"
+                        (num.get())
                     }
                 }
             })
         });
 
         sycamore::render_to(|_| node, &test_container());
-        assert_text_content!(query("div"), "Test");
+        assert_text_content!(query("div"), "0");
+        num.set(1);
+        assert_text_content!(query("div"), "1");
     });
 }
 
