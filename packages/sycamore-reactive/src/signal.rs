@@ -467,6 +467,36 @@ pub fn create_signal<T: 'static>(cx: Scope, value: T) -> &Signal<T> {
     create_ref(cx, signal)
 }
 
+/// Create a new [`Signal`] under the current [`Scope`].
+/// The created signal lasts as long as the scope and cannot be used outside of the scope.
+///
+/// # Signal lifetime
+///
+/// The lifetime of the returned signal is the same as the [`Scope`].
+/// As such, the signal cannot escape the [`Scope`].
+///
+/// ```compile_fail
+/// # use sycamore_reactive::*;
+/// let mut outer = None;
+/// create_scope_immediate(|cx| {
+///     let signal = create_signal(cx, 0);
+///     outer = Some(signal);
+/// });
+/// # });
+/// ```
+///
+/// # Safety
+///
+/// The created signal must not access any value allocated on the scope in its `Drop`
+/// implementation.
+///
+/// This should almost never happen in the wild, but beware that accessing allocated data in `Drop`
+/// might cause an use-after-free because the accessed value might have been dropped already.
+pub unsafe fn create_signal_unsafe<'a, T: 'a>(cx: Scope<'a>, value: T) -> &'a Signal<T> {
+    let signal = Signal::new(value);
+    create_ref_unsafe(cx, signal)
+}
+
 /// Create a new [`Signal`] under the current [`Scope`] but with an initial value wrapped in a
 /// [`Rc`]. This is useful to avoid having to clone a value that is already wrapped in a [`Rc`] when
 /// creating a new signal. Otherwise, this is identical to [`create_signal`].
