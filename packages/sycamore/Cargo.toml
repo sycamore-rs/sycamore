@@ -34,7 +34,6 @@ features = [
     "DocumentFragment",
     "DomTokenList",
     "Element",
-    "Event",
     "HtmlElement",
     "HtmlInputElement",
     "HtmlCollection",
@@ -42,6 +41,33 @@ features = [
     "NodeList",
     "Text",
     "Window",
+    # Event types
+    "AnimationEvent",
+    "BeforeUnloadEvent",
+    "CompositionEvent",
+    "DeviceMotionEvent",
+    "DeviceOrientationEvent",
+    "DragEvent",
+    "ErrorEvent",
+    "Event",
+    "FocusEvent",
+    "GamepadEvent",
+    "HashChangeEvent",
+    "InputEvent",
+    "KeyboardEvent",
+    "MessageEvent",
+    "MouseEvent",
+    "PageTransitionEvent",
+    "PointerEvent",
+    "PopStateEvent",
+    "ProgressEvent",
+    "PromiseRejectionEvent",
+    "SecurityPolicyViolationEvent",
+    "StorageEvent",
+    "SubmitEvent",
+    "TouchEvent",
+    "TransitionEvent",
+    "WheelEvent",
 ]
 version = "0.3.60"
 optional = true
@@ -67,7 +93,12 @@ ssr = [
     "sycamore-macro/ssr",
     "sycamore-web/ssr",
 ]
-suspense = ["futures", "wasm-bindgen-futures", "sycamore-futures"]
+suspense = [
+    "futures",
+    "wasm-bindgen-futures",
+    "sycamore-futures",
+    "sycamore-core/suspense",
+]
 serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
 web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]

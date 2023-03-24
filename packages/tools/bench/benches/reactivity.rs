@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 use sycamore::reactive::*;
 
 pub fn bench(c: &mut Criterion) {
@@ -53,6 +53,42 @@ pub fn bench(c: &mut Criterion) {
                 mapped.track();
             });
         });
+    });
+
+    c.bench_function("reactivity_context_deeply_nested", |b| {
+        b.iter_batched(
+            || {
+                let trigger = create_rc_signal(());
+                let trigger_clone = trigger.clone();
+                create_scope_immediate(move |cx| {
+                    let state = create_signal(cx, 0i32);
+                    provide_context_ref(cx, state);
+
+                    fn create_nested_child_scopes(cx: Scope, depth: usize, cb: impl FnOnce(Scope)) {
+                        if depth == 0 {
+                            cb(cx);
+                            return;
+                        }
+
+                        create_child_scope(cx, |cx| {
+                            provide_context::<i32>(cx, 0i32);
+                            create_nested_child_scopes(cx, depth - 1, cb);
+                        });
+                    }
+
+                    create_nested_child_scopes(cx, 100, |cx| {
+                        create_effect(cx, move || {
+                            trigger.track();
+                            let state: &Signal<i32> = use_context(cx);
+                            black_box(state);
+                        });
+                    });
+                });
+                trigger_clone
+            },
+            |trigger| trigger.set(()),
+            BatchSize::SmallInput,
+        );
     });
 }
 

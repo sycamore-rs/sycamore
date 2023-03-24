@@ -254,7 +254,7 @@ supported by the builder API.
 Events are attached using `.on(...)`.
 
 ```rust
-button().on("click", |_| { /* do something */ }).t("Click me")
+button().on(ev::click, |_| { /* do something */ }).t("Click me")
 ```
 
 ### Fragments

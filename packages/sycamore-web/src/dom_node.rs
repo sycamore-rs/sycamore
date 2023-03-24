@@ -126,7 +126,7 @@ impl fmt::Debug for DomNode {
 }
 
 impl GenericNode for DomNode {
-    type EventType = web_sys::Event;
+    type AnyEventData = wasm_bindgen::JsValue;
     type PropertyType = JsValue;
 
     fn text_node(text: Cow<'static, str>) -> Self {
@@ -266,15 +266,19 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F) {
-        let boxed: Box<dyn FnMut(Self::EventType)> = Box::new(handler);
+    fn untyped_event<'a>(
+        &self,
+        cx: Scope<'a>,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
         // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
         // preventing the handler from ever being accessed after its lifetime.
-        let handler: Box<dyn FnMut(Self::EventType) + 'static> =
-            unsafe { std::mem::transmute(boxed) };
+        let handler: Box<dyn FnMut(Self::AnyEventData) + 'static> =
+            unsafe { std::mem::transmute(handler) };
         let closure = create_ref(cx, Closure::wrap(handler));
         self.node
-            .add_event_listener_with_callback(intern(name), closure.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(&event, closure.as_ref().unchecked_ref())
             .unwrap_throw();
     }
 

@@ -1,10 +1,14 @@
 //! Utilities for components and component properties.
 
-use std::fmt;
+use std::borrow::Cow;
+use std::cell::{Ref, RefCell};
+use std::collections::HashMap;
+use std::fmt::{self, Display};
 
 use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
+use crate::noderef::NodeRef;
 use crate::view::View;
 
 /// Runs the given closure inside a new component scope. In other words, this does the following:
@@ -174,5 +178,202 @@ impl<'a, G: GenericNode> Children<'a, G> {
     /// Create a new [`Children`] from a closure.
     pub fn new(_cx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
         Self { f: Box::new(f) }
+    }
+}
+
+/// The value of a passthrough attribute.
+/// The default for unknown attributes is [`AttributeValue::Str`] or [`AttributeValue::DynamicStr`]
+pub enum AttributeValue<'cx, G: GenericNode> {
+    /// A string literal value. Example: `attr:id = "test"`
+    Str(&'static str),
+    /// A dynamic string value from a variable. Example: `attr:id = id_signal`
+    DynamicStr(Box<dyn FnMut() -> String + 'cx>),
+    /// A boolean literal value. Example: `attr:disabled = true`
+    Bool(bool),
+    /// A dynamic boolean value from a variable. Example: `attr:disabled = disabled_signal`
+    DynamicBool(Box<dyn FnMut() -> bool + 'cx>),
+    /// Dangerously set inner HTML with a literal string value.
+    DangerouslySetInnerHtml(&'static str),
+    /// Dangerously set inner HTML with a dynamic value.
+    DynamicDangerouslySetInnerHtml(Box<dyn Display>),
+    /// An event binding
+    Event(&'static str, Box<dyn FnMut(G::AnyEventData) + 'cx>),
+    /// A binding to a boolean value
+    BindBool(&'static str, &'cx Signal<bool>),
+    /// A binding to a numeric value
+    BindNumber(&'static str, &'cx Signal<f64>),
+    /// A binding to a string value
+    BindString(&'static str, &'cx Signal<String>),
+    /// A property value.
+    Property(&'static str, G::PropertyType),
+    /// A [`NodeRef`] value.
+    Ref(&'cx NodeRef<G>),
+}
+
+impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AttributeValue").finish()
+    }
+}
+
+/// A special property type to allow the component to accept passthrough attributes.
+/// This can be useful if your component wraps an HTML element, i.e. accessible component libraries.
+///
+/// Add a field called `attributes` of this type to your properties struct.
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// #[derive(Props)]
+/// struct RowProps<'a, G: Html> {
+///     width: i32,
+///     children: Children<'a, G>,
+///     attributes: Attributes<'a, G>,
+/// }
+///
+/// #[component]
+/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
+///     let children = props.children.call(cx);
+///     // Spread the `Attributes` onto the div.
+///     view! { cx,
+///         div(..props.attributes) {
+///             (children)
+///         }
+///     }
+/// }
+///
+/// # #[component]
+/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// // Using `Row` somewhere else in your app:
+/// view! { cx,
+///     Row(width=10, attr:id = "row1", attr:class = "bg-neutral-400") {
+///         p { "This is a child node." }
+///     }
+/// }
+/// # }
+/// ```
+#[derive(Debug)]
+pub struct Attributes<'cx, G: GenericNode> {
+    attrs: RefCell<HashMap<Cow<'static, str>, AttributeValue<'cx, G>>>,
+}
+
+impl<'cx, G: GenericNode> Default for Attributes<'cx, G> {
+    fn default() -> Self {
+        Self {
+            attrs: RefCell::new(Default::default()),
+        }
+    }
+}
+
+impl<'cx, G: GenericNode> Attributes<'cx, G> {
+    // Creates a new [`Attributes`] struct from a map of keys and values.
+    pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>) -> Self {
+        Self {
+            attrs: RefCell::new(attributes),
+        }
+    }
+}
+
+impl<'cx, G: GenericNode> Attributes<'cx, G> {
+    /// Read the string value of an attribute. Returns `Option::None` if the attribute is missing
+    /// or not a string.
+    pub fn get_str(&self, key: &str) -> Option<Cow<'static, str>> {
+        match self.attrs.borrow_mut().get_mut(key)? {
+            AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
+            AttributeValue::DynamicStr(s) => Some(Cow::Owned(s())),
+            _ => None,
+        }
+    }
+
+    /// Remove an attribute and return the string value of it. Returns `Option::None` if the
+    /// attribute is missing or not a string.
+    pub fn remove_str(&self, key: &str) -> Option<Cow<'static, str>> {
+        match self.remove(key)? {
+            AttributeValue::Str(s) => Some(Cow::Borrowed(s)),
+            AttributeValue::DynamicStr(mut s) => Some(Cow::Owned(s())),
+            _ => None,
+        }
+    }
+
+    /// Read the boolean value of an attribute. Returns `Option::None` if the attribute is missing
+    /// or not a boolean.
+    pub fn get_bool(&self, key: &str) -> Option<bool> {
+        match self.attrs.borrow_mut().get_mut(key)? {
+            AttributeValue::Bool(b) => Some(*b),
+            AttributeValue::DynamicBool(b) => Some(b()),
+            _ => None,
+        }
+    }
+
+    /// Remove an attribute and return the boolean value of it. Returns `Option::None` if the
+    /// attribute is missing or not a boolean.
+    pub fn remove_bool(&self, key: &str) -> Option<bool> {
+        match self.remove(key)? {
+            AttributeValue::Bool(b) => Some(b),
+            AttributeValue::DynamicBool(mut b) => Some(b()),
+            _ => None,
+        }
+    }
+
+    /// Fetch the `dangerously_set_inner_html` attribute from the attributes if it exists.
+    pub fn get_dangerously_set_inner_html(&self) -> Option<Cow<'static, str>> {
+        match &*self.get("dangerously_set_inner_html")? {
+            AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),
+            AttributeValue::DynamicDangerouslySetInnerHtml(html) => {
+                Some(Cow::Owned(html.to_string()))
+            }
+            _ => None,
+        }
+    }
+
+    /// Remove the `dangerously_set_inner_html` attribute from the attributes and return its
+    /// previous value.
+    pub fn remove_dangerously_set_inner_html(&self) -> Option<Cow<'static, str>> {
+        match self.remove("dangerously_set_inner_html")? {
+            AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),
+            AttributeValue::DynamicDangerouslySetInnerHtml(html) => {
+                Some(Cow::Owned(html.to_string()))
+            }
+            _ => None,
+        }
+    }
+
+    /// Fetch the ref from the attributes if it exists.
+    pub fn get_ref(&self) -> Option<Ref<NodeRef<G>>> {
+        Ref::filter_map(self.get("ref")?, |value| match value {
+            AttributeValue::Ref(node_ref) => Some(*node_ref),
+            _ => None,
+        })
+        .ok()
+    }
+
+    /// Remove the `ref` from the attributes and return its previous value.
+    pub fn remove_ref(&self) -> Option<&'cx NodeRef<G>> {
+        match self.remove("ref")? {
+            AttributeValue::Ref(node_ref) => Some(node_ref),
+            _ => None,
+        }
+    }
+
+    /// Exclude a set of keys from the attributes.
+    pub fn exclude_keys(&self, keys: &[&str]) {
+        for &key in keys {
+            self.remove(key);
+        }
+    }
+
+    /// Get an attribute value if it exists.
+    pub fn get(&self, key: &str) -> Option<Ref<AttributeValue<'cx, G>>> {
+        Ref::filter_map(self.attrs.borrow(), |attrs| attrs.get(key)).ok()
+    }
+
+    /// Remove an attribute value and return its previous value
+    pub fn remove(&self, key: &str) -> Option<AttributeValue<'cx, G>> {
+        self.attrs.borrow_mut().remove(key)
+    }
+
+    /// INTERNAL: used in the `view!` macro to apply attributes
+    pub fn drain(&self) -> Vec<(Cow<'static, str>, AttributeValue<'cx, G>)> {
+        self.attrs.borrow_mut().drain().collect()
     }
 }

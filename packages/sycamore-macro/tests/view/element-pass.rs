@@ -16,6 +16,9 @@ fn compile_pass<G: Html>() {
 
         let _: View<G> = view! { cx, p(dangerously_set_inner_html="<span>Test</span>") };
 
+        let attributes = Attributes::default();
+        let _: View<G> = view! { cx, p(..attributes) };
+
         // view! should correctly parenthesize the (1 + 2) when borrowing.
         let _: View<G> = view! { cx, p { (1 + 2) } };
     });

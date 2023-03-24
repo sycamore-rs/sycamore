@@ -137,7 +137,9 @@ impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
         let span = input.span();
         let ty = input.parse()?;
-        let _eqs: Token![=] = input.parse()?;
+        if !matches!(ty, AttributeType::Spread { .. }) {
+            let _eqs: Token![=] = input.parse()?;
+        }
         let value = input.parse()?;
         Ok(Self { ty, value, span })
     }
@@ -145,74 +147,80 @@ impl Parse for Attribute {
 
 impl Parse for AttributeType {
     fn parse(input: ParseStream) -> Result<Self> {
-        pub struct AttributeName {
-            tag: Ident,
-            extended: Vec<(Token![-], Ident)>,
-        }
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![..]) {
+            let _2dot = input.parse::<Token![..]>()?;
+            Ok(Self::Spread)
+        } else if lookahead.peek(Ident::peek_any) {
+            let ident: AttributeName = input.parse()?;
+            let name = ident.to_string();
 
-        impl Parse for AttributeName {
-            fn parse(input: ParseStream) -> Result<Self> {
-                let tag = input.call(Ident::parse_any)?;
-                let mut extended = Vec::new();
-                while input.peek(Token![-]) {
-                    extended.push((input.parse()?, input.parse()?));
+            if name == "ref" {
+                Ok(Self::Ref)
+            } else if name == "dangerously_set_inner_html" {
+                Ok(Self::DangerouslySetInnerHtml)
+            } else if input.peek(Token![:]) {
+                let _colon: Token![:] = input.parse()?;
+                match name.as_str() {
+                    "on" => {
+                        let event = input.call(Ident::parse_any)?;
+                        Ok(Self::Event { event })
+                    }
+                    "prop" => {
+                        let prop = input.call(Ident::parse_any)?;
+                        Ok(Self::Property {
+                            prop: prop.to_string(),
+                        })
+                    }
+                    "bind" => {
+                        let prop = input.call(Ident::parse_any)?;
+                        Ok(Self::Bind {
+                            prop: prop.to_string(),
+                        })
+                    }
+                    _ => Err(syn::Error::new_spanned(
+                        ident.tag,
+                        format!("unknown directive `{}`", name),
+                    )),
                 }
-
-                Ok(Self { tag, extended })
+            } else if is_bool_attr(&name) {
+                Ok(Self::Bool { name })
+            } else {
+                Ok(Self::Str { name })
             }
-        }
-
-        impl fmt::Display for AttributeName {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                let AttributeName { tag, extended } = self;
-
-                write!(f, "{}", tag)?;
-                for (_, ident) in extended {
-                    write!(f, "-{}", ident)?;
-                }
-
-                Ok(())
-            }
-        }
-
-        let ident: AttributeName = input.parse()?;
-        let name = ident.to_string();
-
-        if name == "ref" {
-            Ok(Self::Ref)
-        } else if name == "dangerously_set_inner_html" {
-            Ok(Self::DangerouslySetInnerHtml)
-        } else if input.peek(Token![:]) {
-            let _colon: Token![:] = input.parse()?;
-            match name.as_str() {
-                "on" => {
-                    let event = input.call(Ident::parse_any)?;
-                    Ok(Self::Event {
-                        event: event.to_string(),
-                    })
-                }
-                "prop" => {
-                    let prop = input.call(Ident::parse_any)?;
-                    Ok(Self::Property {
-                        prop: prop.to_string(),
-                    })
-                }
-                "bind" => {
-                    let prop = input.call(Ident::parse_any)?;
-                    Ok(Self::Bind {
-                        prop: prop.to_string(),
-                    })
-                }
-                _ => Err(syn::Error::new_spanned(
-                    ident.tag,
-                    format!("unknown directive `{}`", name),
-                )),
-            }
-        } else if is_bool_attr(&name) {
-            Ok(Self::Bool { name })
         } else {
-            Ok(Self::Str { name })
+            Err(lookahead.error())
         }
+    }
+}
+
+pub struct AttributeName {
+    tag: Ident,
+    extended: Vec<(Token![-], Ident)>,
+}
+
+impl Parse for AttributeName {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let tag = input.call(Ident::parse_any)?;
+        let mut extended = Vec::new();
+        while input.peek(Token![-]) {
+            extended.push((input.parse()?, input.parse()?));
+        }
+
+        Ok(Self { tag, extended })
+    }
+}
+
+impl fmt::Display for AttributeName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let AttributeName { tag, extended } = self;
+
+        write!(f, "{}", tag)?;
+        for (_, ident) in extended {
+            write!(f, "-{}", ident)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -248,11 +256,24 @@ impl Parse for Component {
 
 impl Parse for ComponentProp {
     fn parse(input: ParseStream) -> Result<Self> {
-        Ok(Self {
-            name: input.parse()?,
-            eq: input.parse()?,
-            value: input.parse()?,
-        })
+        let name_or_prefix: Ident = input.parse()?;
+        if input.peek(Token![:]) {
+            let _colon = input.parse::<Token![:]>()?;
+            let name: AttributeName = input.parse()?;
+            Ok(Self {
+                prefix: Some(name_or_prefix),
+                name: name.to_string(),
+                eq: input.parse()?,
+                value: input.parse()?,
+            })
+        } else {
+            Ok(Self {
+                prefix: None,
+                name: name_or_prefix.to_string(),
+                eq: input.parse()?,
+                value: input.parse()?,
+            })
+        }
     }
 }
 

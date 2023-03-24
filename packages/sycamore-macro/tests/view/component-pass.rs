@@ -88,6 +88,21 @@ pub async fn AsyncComponentWithPropsDestructuring<'a, G: Html>(
     children.call(cx)
 }
 
+#[derive(Props)]
+pub struct AttributesProps<'cx, G: Html> {
+    attributes: Attributes<'cx, G>,
+}
+
+#[component]
+pub fn AttributesComponent<'cx, G: Html>(
+    cx: Scope<'cx>,
+    AttributesProps { attributes }: AttributesProps<'cx, G>,
+) -> View<G> {
+    view! { cx,
+        input(..attributes) {}
+    }
+}
+
 fn compile_pass<G: Html>() {
     create_scope_immediate(|cx| {
         let _: View<G> = view! { cx, Component() };
@@ -114,6 +129,13 @@ fn compile_pass<G: Html>() {
         let _: View<G> = view! { cx, ComponentWithChildren {} };
         let _: View<G> = view! { cx, ComponentWithChildren() };
         let _: View<G> = view! { cx, ComponentWithChildren() {} };
+        let _: View<G> = view! { cx, AttributesComponent(attr:class = "test") {} };
+        let str_signal = create_signal(cx, String::new());
+        let _: View<G> = view! { cx, AttributesComponent(bind:value = str_signal) {} };
+        let on_click = |_| {};
+        let _: View<G> = view! { cx, AttributesComponent(on:click = on_click) {} };
+        let bool_signal = create_signal(cx, false);
+        let _: View<G> = view! { cx, AttributesComponent(attr:disabled = false, attr:checked = *bool_signal.get()) };
 
         let _: View<G> = view! { cx,
             AsyncComponentWithPropsDestructuring {

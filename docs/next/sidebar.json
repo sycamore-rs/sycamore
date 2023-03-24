@@ -66,6 +66,10 @@
                     "href": "advanced/advanced_reactivity"
                 },
                 {
+                    "name": "Attribute Passthrough",
+                    "href": "advanced/attributes_prop"
+                },
+                {
                     "name": "Styling",
                     "href": "advanced/styling"
                 },

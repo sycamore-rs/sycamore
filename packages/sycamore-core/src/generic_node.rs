@@ -6,6 +6,7 @@ use std::hash::Hash;
 
 use sycamore_reactive::Scope;
 
+use crate::event::{EventDescriptor, EventHandler};
 use crate::render::insert;
 use crate::view::View;
 
@@ -40,8 +41,9 @@ pub trait SycamoreElement {
 /// [`GenericNode`]s should be cheaply cloneable (usually backed by a [`Rc`](std::rc::Rc) or other
 /// reference counted container) and preserve reference equality.
 pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
-    /// The type of the event that is passed to the event handler.
-    type EventType;
+    /// Type-erased event data type. It should be possible to convert between this type and the
+    /// concrete event type.
+    type AnyEventData;
     /// The type for [`set_property`](Self::set_property).
     type PropertyType;
 
@@ -122,10 +124,35 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     /// Remove this node from the tree.
     fn remove_self(&self);
 
-    /// Add a event handler to the event `name`.
-    /// The event should be removed once the scope is disposed, as to prevent accessing scope
-    /// variables after the scope is disposed.
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F);
+    /// Add a event handler for the event `name`.
+    ///
+    /// The implementation needs to ensure that the passed event handler is not called once the
+    /// reactive scope `cx` is disposed, in order to prevent use-after-free. This is already handled
+    /// at compile-time with the `+ 'a` bound on the handler. However, many implementations will
+    /// probably need to unsafely cast the lifetime of the handler to `'static` in order to store
+    /// it.
+    fn event<
+        'a,
+        Ev: EventDescriptor<Self::AnyEventData>,
+        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
+        S,
+    >(
+        &self,
+        cx: Scope<'a>,
+        _ev: Ev,
+        mut handler: F,
+    ) {
+        let boxed: Box<dyn FnMut(Self::AnyEventData)> =
+            Box::new(move |ev| handler.call(cx, ev.into()));
+        self.untyped_event(cx, Cow::Borrowed(Ev::EVENT_NAME), boxed)
+    }
+
+    fn untyped_event<'a>(
+        &self,
+        cx: Scope<'a>,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    );
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
     /// a new text node.

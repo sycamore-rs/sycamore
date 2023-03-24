@@ -76,7 +76,7 @@ impl fmt::Debug for HydrateNode {
 }
 
 impl GenericNode for HydrateNode {
-    type EventType = web_sys::Event;
+    type AnyEventData = JsValue;
     type PropertyType = JsValue;
 
     const USE_HYDRATION_CONTEXT: bool = true;
@@ -182,8 +182,13 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, cx: Scope<'a>, name: &str, handler: F) {
-        self.node.event(cx, name, handler);
+    fn untyped_event<'a>(
+        &self,
+        cx: Scope<'a>,
+        event: Cow<'_, str>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
+        self.node.untyped_event(cx, event, handler);
     }
 
     #[inline]
@@ -349,7 +354,7 @@ pub fn hydrate(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
-/// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
+/// hydration). For rendering under the `<body>` tag, use [`hydrate`] instead.
 ///
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///

@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
 use uuid::Uuid;
-use wasm_bindgen::JsCast;
-use web_sys::{Event, HtmlInputElement, KeyboardEvent};
+use web_sys::{HtmlInputElement, KeyboardEvent};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Todo {
@@ -180,9 +179,7 @@ pub fn Header<G: Html>(cx: Scope) -> View<G> {
     let app_state = use_context::<AppState>(cx);
     let input_value = create_signal(cx, String::new());
 
-    let handle_keyup = |event: Event| {
-        let event: KeyboardEvent = event.unchecked_into();
-
+    let handle_keyup = |event: KeyboardEvent| {
         if event.key() == "Enter" {
             let mut task = input_value.get().as_ref().clone();
             task = task.trim().to_string();
@@ -246,13 +243,10 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
         }
     };
 
-    let handle_keyup = move |event: Event| {
-        let event: KeyboardEvent = event.unchecked_into();
-        match event.key().as_str() {
-            "Enter" => handle_blur(),
-            "Escape" => is_editing.set(false),
-            _ => {}
-        }
+    let handle_keyup = move |event: KeyboardEvent| match event.key().as_str() {
+        "Enter" => handle_blur(),
+        "Escape" => is_editing.set(false),
+        _ => {}
     };
 
     let handle_destroy = move |_| {

@@ -120,10 +120,10 @@ impl SsrNode {
 
 impl GenericNode for SsrNode {
     /// Although [`SsrNode`] is intended to be used on the server-side instead of in the browser,
-    /// the event type is still [`web_sys::Event`] because it must support the same API as
+    /// the event type is still [`JsValue`] because it must support the same API as
     /// [`DomNode`](super::DomNode). Since event handlers will never be called on the server side
     /// anyways, it's okay to do this.
-    type EventType = web_sys::Event;
+    type AnyEventData = JsValue;
     type PropertyType = JsValue;
 
     const USE_HYDRATION_CONTEXT: bool = true;
@@ -292,7 +292,12 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn event<'a, F: FnMut(Self::EventType) + 'a>(&self, _cx: Scope<'a>, _name: &str, _handler: F) {
+    fn untyped_event<'a>(
+        &self,
+        _cx: Scope<'a>,
+        _event: Cow<'_, str>,
+        _handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+    ) {
         // Noop. Events are attached on client side.
     }
 

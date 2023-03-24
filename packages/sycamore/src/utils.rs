@@ -11,10 +11,17 @@ pub mod hydrate {
     pub use sycamore_web::hydrate as web;
 }
 
+use std::borrow::Cow;
+
+use js_sys::Reflect;
+use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_core::render;
+use wasm_bindgen::JsValue;
 
 use crate::generic_node::GenericNode;
 use crate::prelude::*;
+use crate::rt::Event;
+use crate::web::html::ev;
 
 /// If `el` is a `HydrateNode`, use `get_next_marker` to get the initial node value.
 pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
@@ -39,4 +46,131 @@ pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
     {
         None
     }
+}
+
+#[doc(hidden)]
+pub fn erase_handler<'a, Ev, Handler, S>(
+    cx: Scope<'a>,
+    mut handler: Handler,
+) -> Box<dyn FnMut(JsValue) + 'a>
+where
+    Handler: EventHandler<'a, JsValue, Ev, S> + 'a,
+    Ev: EventDescriptor<JsValue>,
+{
+    Box::new(move |e: JsValue| handler.call(cx, e.into()))
+}
+
+/// Apply an `AttributeValue` to an element. Used by the `view!` macro.
+pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType = JsValue>>(
+    cx: Scope<'cx>,
+    el: G,
+    name: Cow<'static, str>,
+    value: AttributeValue<'cx, G>,
+) {
+    match value {
+        AttributeValue::Str(s) => {
+            el.set_attribute(name.clone(), Cow::Borrowed(s));
+        }
+        AttributeValue::DynamicStr(mut s) => {
+            create_effect(cx, {
+                let name = name.clone();
+                move || el.set_attribute(name.clone(), Cow::Owned(s()))
+            });
+        }
+        AttributeValue::Bool(value) => {
+            if value {
+                el.set_attribute(name.clone(), Cow::Borrowed(""));
+            }
+        }
+        AttributeValue::DynamicBool(mut value) => {
+            create_effect(cx, {
+                let name = name.clone();
+                move || {
+                    if value() {
+                        el.set_attribute(name.clone(), Cow::Borrowed(""));
+                    } else {
+                        el.remove_attribute(name.clone());
+                    }
+                }
+            });
+        }
+        AttributeValue::DangerouslySetInnerHtml(value) => {
+            el.dangerously_set_inner_html(value.into());
+        }
+        AttributeValue::DynamicDangerouslySetInnerHtml(value) => {
+            create_effect(cx, move || {
+                el.dangerously_set_inner_html(Cow::Owned(value.to_string()));
+            });
+        }
+        AttributeValue::Event(event, handler) => {
+            el.untyped_event(cx, Cow::Borrowed(event), handler);
+        }
+        AttributeValue::BindBool(prop, signal) => {
+            #[cfg(target_arch = "wasm32")]
+            {
+                create_effect(cx, {
+                    let signal = signal.clone();
+                    let el = el.clone();
+                    move || el.set_property(prop, &JsValue::from_bool(*signal.get()))
+                });
+            }
+            el.event(cx, ev::change, {
+                move |event: Event| {
+                    signal.set(
+                        JsValue::as_bool(
+                            &Reflect::get(&event.target().unwrap(), &prop.into()).unwrap(),
+                        )
+                        .unwrap(),
+                    );
+                }
+            });
+        }
+        AttributeValue::BindNumber(prop, signal) => {
+            #[cfg(target_arch = "wasm32")]
+            {
+                create_effect(cx, {
+                    let signal = signal.clone();
+                    let el = el.clone();
+                    move || el.set_property(prop, &JsValue::from_f64(*signal.get()))
+                });
+            }
+            el.event(cx, ev::input, {
+                move |event: Event| {
+                    signal.set(
+                        JsValue::as_f64(
+                            &Reflect::get(&event.target().unwrap(), &prop.into()).unwrap(),
+                        )
+                        .unwrap(),
+                    );
+                }
+            });
+        }
+        AttributeValue::BindString(prop, signal) => {
+            #[cfg(target_arch = "wasm32")]
+            {
+                create_effect(cx, {
+                    let signal = signal.clone();
+                    let el = el.clone();
+                    move || el.set_property(prop, &JsValue::from_str(&*signal.get()))
+                });
+            }
+            el.event(cx, ev::input, {
+                let signal = Clone::clone(&signal);
+                move |event: Event| {
+                    signal.set(
+                        JsValue::as_string(
+                            &Reflect::get(&event.target().unwrap(), &prop.into()).unwrap(),
+                        )
+                        .unwrap(),
+                    );
+                }
+            });
+        }
+        AttributeValue::Property(prop, value) => {
+            create_effect(cx, move || el.set_property(prop, &value));
+        }
+        AttributeValue::Ref(value) => {
+            value.set(el);
+        }
+    };
 }
