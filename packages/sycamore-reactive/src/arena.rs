@@ -3,7 +3,8 @@
 use std::cell::UnsafeCell;
 use std::mem::needs_drop;
 
-// use bumpalo::Bump;
+use bumpalo::Bump;
+use bumpalo::boxed::Box;
 use smallvec::SmallVec;
 
 /// The size of the [`SmallVec`] inline data.
@@ -15,8 +16,7 @@ impl<T> ReallyAny for T {}
 
 #[derive(Default)]
 pub(crate) struct ScopeArena<'a> {
-    // TODO: Add back once https://github.com/fitzgen/bumpalo/pull/188 is released in bumpalo
-    // bump: Bump,
+    bump: Bump,
     /// A list of pointers pointing into the arena. When the arena is dropped, the pointed data
     /// will also be dropped.
     drop_list: UnsafeCell<SmallVec<[*mut (dyn ReallyAny + 'a); SCOPE_ARENA_STACK_SIZE]>>,
@@ -39,7 +39,7 @@ impl<'a> ScopeArena<'a> {
     /// See docs for [`create_ref`](crate::create_ref).
     #[allow(clippy::mut_from_ref)] // We return a new reference each time so this is a false-positive.
     pub unsafe fn alloc_non_static<T: 'a>(&'a self, value: T) -> &'a mut T {
-        let boxed = Box::new(value);
+        let boxed = Box::new_in(value, &self.bump);
         let ptr = Box::into_raw(boxed);
 
         if needs_drop::<T>() {
