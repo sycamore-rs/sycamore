@@ -3,8 +3,8 @@
 use std::cell::UnsafeCell;
 use std::mem::needs_drop;
 
-use bumpalo::Bump;
 use bumpalo::boxed::Box;
+use bumpalo::Bump;
 use smallvec::SmallVec;
 
 /// The size of the [`SmallVec`] inline data.
