@@ -26,7 +26,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                 let mut is_to_route = false;
 
                 for attr in &variant.attrs {
-                    let attr_name = match attr.path.get_ident() {
+                    let attr_name = match attr.path().get_ident() {
                         Some(ident) => ident.to_string(),
                         None => continue,
                     };

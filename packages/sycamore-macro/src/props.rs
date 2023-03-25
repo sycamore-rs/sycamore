@@ -60,7 +60,9 @@ pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
 mod struct_info {
     use proc_macro2::TokenStream;
     use quote::quote;
+    use syn::Token;
     use syn::parse::Error;
+    use syn::punctuated::Punctuated;
 
     use super::field_info::{FieldBuilderAttr, FieldInfo};
     use super::util::{
@@ -669,27 +671,12 @@ mod struct_info {
         pub fn new(attrs: &[syn::Attribute]) -> Result<TypeBuilderAttr, Error> {
             let mut result = TypeBuilderAttr::default();
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
+                if !attr.path().is_ident("prop") {
                     continue;
                 }
-
-                if attr.tokens.is_empty() {
-                    continue;
-                }
-                let as_expr: syn::Expr = syn::parse2(attr.tokens.clone())?;
-
-                match as_expr {
-                    syn::Expr::Paren(body) => {
-                        result.apply_meta(*body.expr)?;
-                    }
-                    syn::Expr::Tuple(body) => {
-                        for expr in body.elems.into_iter() {
-                            result.apply_meta(expr)?;
-                        }
-                    }
-                    _ => {
-                        return Err(Error::new_spanned(attr.tokens.clone(), "Expected (<...>)"));
-                    }
+                let as_expr: Punctuated<syn::Expr, Token![,]> = attr.parse_args_with(Punctuated::parse_terminated)?;
+                for expr in as_expr {
+                    result.apply_meta(expr)?;
                 }
             }
 
@@ -772,7 +759,9 @@ mod struct_info {
 mod field_info {
     use proc_macro2::{Span, TokenStream};
     use quote::quote;
+    use syn::Token;
     use syn::parse::Error;
+    use syn::punctuated::Punctuated;
     use syn::spanned::Spanned;
 
     use super::util::{
@@ -869,27 +858,12 @@ mod field_info {
     impl FieldBuilderAttr {
         pub fn with(mut self, attrs: &[syn::Attribute]) -> Result<Self, Error> {
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
+                if !attr.path().is_ident("prop") {
                     continue;
                 }
-
-                if attr.tokens.is_empty() {
-                    continue;
-                }
-
-                let as_expr: syn::Expr = syn::parse2(attr.tokens.clone())?;
-                match as_expr {
-                    syn::Expr::Paren(body) => {
-                        self.apply_meta(*body.expr)?;
-                    }
-                    syn::Expr::Tuple(body) => {
-                        for expr in body.elems.into_iter() {
-                            self.apply_meta(expr)?;
-                        }
-                    }
-                    _ => {
-                        return Err(Error::new_spanned(attr.tokens.clone(), "Expected (<...>)"));
-                    }
+                let as_expr: Punctuated<syn::Expr, Token![,]> = attr.parse_args_with(Punctuated::parse_terminated)?;
+                for expr in as_expr {
+                    self.apply_meta(expr)?;
                 }
             }
 

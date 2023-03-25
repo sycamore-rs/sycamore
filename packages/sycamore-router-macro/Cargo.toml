@@ -19,7 +19,7 @@ proc-macro = true
 nom = "7.1.1"
 proc-macro2 = "1.0.47"
 quote = "1.0.21"
-syn = "1.0.103"
+syn = "2.0.10"
 unicode-xid = "0.2.4"
 
 [dev-dependencies]
