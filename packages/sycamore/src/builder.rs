@@ -98,21 +98,29 @@ pub fn tag<'a, G: GenericNodeElements>(
     ElementBuilder::new(move |_| G::element_from_tag(t.into()))
 }
 
+//  Implementation note:
+//  It might be tempting to extract a common function for all of the functions of the form:
+//       let el = (self.0)(cx); ...
+//       el
+//  but we used to have one (called `map`) and it was removed on purpose.
+//  The trouble is that each call to this internal utility function will result in an expnentially
+//  larger type, as the `G` parameter to the previous builder is included twice in the type of the
+//  closure (once for the call to the function the user called, like `.attr`, and once for the
+//  `.map` call internally). If something causes the `ElementBuilder` to have a nontrivial `Drop` --
+//  which happens if any user-supplied or internally generated closure includes a type with a
+//  nontrivial `Drop` in its captures -- then the whole exponential type needs to be materialized.
+//  This causes both slow compile times and, in some cases, completely breaks `wasm-bindgen`
+//  because the generated type can create mangled names on the order of 100s or 1000s of kilobytes
+//  in size.
+//
+//  See:
+//    - https://github.com/rust-lang/rust/issues/109363
+//      Rust issue for exponential blowup in mangled function name size
+//    - https://github.com/rustwasm/wasm-bindgen/issues/3362
+//      wasm-bindgen issue for falure on mangled functions > 100_000 bytes in length
 impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     pub(crate) fn new(f: F) -> Self {
         Self(f, PhantomData)
-    }
-
-    /// Utility function for composing new [`ElementBuilder`]s.
-    fn map(
-        self,
-        f: impl FnOnce(Scope<'a>, &G) + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
-            f(cx, &el);
-            el
-        })
     }
 
     /// Set the attribute of the element.
@@ -130,7 +138,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         name: impl Into<Cow<'static, str>> + 'a,
         value: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.set_attribute(name.into(), value.into()))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            el.set_attribute(name.into(), value.into());
+            el
+        })
     }
 
     /// Set the boolean attribute of the element.
@@ -148,10 +160,12 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         name: impl Into<Cow<'static, str>> + 'a,
         value: bool,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| {
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
             if value {
                 el.set_attribute(name.into(), "".into());
             }
+            el
         })
     }
 
@@ -174,8 +188,9 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         mut value: impl FnMut() -> Option<S> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         let name = name.into();
-        self.map(move |cx, el| {
-            let el = el.clone();
+        ElementBuilder::new(move |cx| {
+            let el_ = (self.0)(cx);
+            let el = el_.clone();
             create_effect(cx, move || {
                 let value = value();
                 if let Some(value) = value {
@@ -184,6 +199,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
                     el.remove_attribute(name.clone());
                 }
             });
+            el_
         })
     }
 
@@ -204,8 +220,9 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         mut value: impl FnMut() -> bool + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         let name = name.into();
-        self.map(move |cx, el| {
-            let el = el.clone();
+        ElementBuilder::new(move |cx| {
+            let el_ = (self.0)(cx);
+            let el = el_.clone();
             create_effect(cx, move || {
                 if value() {
                     el.set_attribute(name.clone(), "".into());
@@ -213,6 +230,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
                     el.remove_attribute(name.clone());
                 }
             });
+            el_
         })
     }
 
@@ -234,7 +252,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         html: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.dangerously_set_inner_html(html.into()))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            el.dangerously_set_inner_html(html.into());
+            el
+        })
     }
 
     /// Dynamically set the inner html of the element.
@@ -258,11 +280,13 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     where
         U: Into<Cow<'static, str>> + 'a,
     {
-        self.map(move |cx, el| {
-            let el = el.clone();
+        ElementBuilder::new(move |cx| {
+            let el_ = (self.0)(cx);
+            let el = el_.clone();
             create_effect(cx, move || {
                 el.dangerously_set_inner_html(html().into());
             });
+            el_
         })
     }
 
@@ -281,7 +305,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         class: impl AsRef<str> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.add_class(class.as_ref()))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            el.add_class(class.as_ref());
+            el
+        })
     }
 
     /// Adds a dynamic class on the node.
@@ -305,8 +333,9 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         class: impl AsRef<str> + 'a,
         mut apply: impl FnMut() -> bool + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |cx, el| {
-            let el = el.clone();
+        ElementBuilder::new(move |cx| {
+            let el_ = (self.0)(cx);
+            let el = el_.clone();
             create_effect(cx, move || {
                 if apply() {
                     el.add_class(class.as_ref());
@@ -314,6 +343,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
                     el.remove_class(class.as_ref());
                 }
             });
+            el_
         })
     }
 
@@ -331,7 +361,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         class: impl Into<Cow<'static, str>> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.set_attribute("id".into(), class.into()))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            el.set_attribute("id".into(), class.into());
+            el
+        })
     }
 
     /// Set a property on the element.
@@ -349,7 +383,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         name: impl AsRef<str> + 'a,
         property: impl Into<G::PropertyType> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| el.set_property(name.as_ref(), &property.into()))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            el.set_property(name.as_ref(), &property.into());
+            el
+        })
     }
 
     /// Set a dynamic property on the element.
@@ -370,11 +408,13 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         name: impl AsRef<str> + 'a,
         mut property: impl FnMut() -> V + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |cx, el| {
-            let el = el.clone();
+        ElementBuilder::new(move |cx| {
+            let el_ = (self.0)(cx);
+            let el = el_.clone();
             create_effect(cx, move || {
                 el.set_property(name.as_ref(), &property().into());
             });
+            el_
         })
     }
 
@@ -399,15 +439,21 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         use std::any::TypeId;
         // Only create a text node if we are not hydrating.
         #[cfg(feature = "hydrate")]
-        return self.map(|_, el| {
+        return ElementBuilder::new(|cx| {
+            let el = (self.0)(cx);
             if TypeId::of::<G>() != TypeId::of::<crate::web::HydrateNode>()
                 || sycamore_core::hydrate::hydration_completed()
             {
                 el.append_child(&G::text_node(text.into()));
             }
+            el
         });
         #[cfg(not(feature = "hydrate"))]
-        return self.map(|_, el| el.append_child(&G::text_node(text.into())));
+        return ElementBuilder::new(|cx| {
+            let el = (self.0)(cx);
+            el.append_child(&G::text_node(text.into()));
+            el
+        });
     }
 
     /// Adds a dynamic text node.
@@ -427,13 +473,15 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         f: impl FnMut() -> S + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(|cx, el| {
+        ElementBuilder::new(|cx| {
+            let el = (self.0)(cx);
             let memo = create_memo(cx, f);
-            Self::dyn_c_internal(cx, el, move || {
+            Self::dyn_c_internal(cx, &el, move || {
                 View::new_node(G::text_node(
                     memo.get().as_ref().as_ref().to_string().into(),
                 ))
             });
+            el
         })
     }
 
@@ -453,7 +501,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         c: impl ElementBuilderOrView<'a, G> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(|cx, el| render::insert(cx, el, c.into_view(cx), None, None, true))
+        ElementBuilder::new(|cx| {
+            let el = (self.0)(cx);
+            render::insert(cx, &el, c.into_view(cx), None, None, true);
+            el
+        })
     }
 
     /// Internal implementation for [`Self::dyn_c`] and [`Self::dyn_t`].
@@ -588,7 +640,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         mut f: impl FnMut() -> O + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |cx, el| Self::dyn_c_internal(cx, el, move || f().into_view(cx)))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            Self::dyn_c_internal(cx, &el, move || f().into_view(cx));
+            el
+        })
     }
 
     /// Adds a dynamic, conditional view.
@@ -613,9 +669,10 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         mut r#else: impl FnMut() -> O2 + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         let cond = Rc::new(cond);
-        self.map(move |cx, el| {
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
             // FIXME: should be dyn_c_internal_scoped to prevent memory leaks.
-            Self::dyn_c_internal(cx, el, move || {
+            Self::dyn_c_internal(cx, &el, move || {
                 if *create_selector(cx, {
                     let cond = Rc::clone(&cond);
                     #[allow(clippy::redundant_closure)] // FIXME: clippy false positive
@@ -628,6 +685,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
                     r#else().into_view(cx)
                 }
             });
+            el
         })
     }
 
@@ -639,7 +697,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         f: impl FnMut(BoundedScope<'_, 'a>) -> View<G> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(|cx, el| Self::dyn_c_internal_scoped(cx, el, f))
+        ElementBuilder::new(|cx| {
+            let el = (self.0)(cx);
+            Self::dyn_c_internal_scoped(cx, &el, f);
+            el
+        })
     }
 
     /// Attach an event handler to the element.
@@ -659,7 +721,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         ev: Ev,
         handler: impl EventHandler<'a, G::AnyEventData, Ev, S> + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |cx, el| el.event(cx, ev, handler))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            el.event(cx, ev, handler);
+            el
+        })
     }
 
     /// Get a hold of the raw element by using a [`NodeRef`].
@@ -677,7 +743,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         self,
         node_ref: NodeRef<G>,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |_, el| node_ref.set(el.clone()))
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
+            node_ref.set(el.clone());
+            el
+        })
     }
 
     /// Construct a [`View`] by evaluating the lazy [`ElementBuilder`].
@@ -721,7 +791,8 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
         self,
         sub: impl std::ops::Deref<Target = Signal<String>> + Clone + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |cx, el| {
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
             create_effect(cx, {
                 let el = el.clone();
                 let sub = sub.clone();
@@ -743,6 +814,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
                     sub.set(val);
                 }),
             );
+            el
         })
     }
 
@@ -763,7 +835,8 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
         self,
         sub: impl std::ops::Deref<Target = Signal<bool>> + Clone + 'a,
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        self.map(move |cx, el| {
+        ElementBuilder::new(move |cx| {
+            let el = (self.0)(cx);
             create_effect(cx, {
                 let el = el.clone();
                 let sub = sub.clone();
@@ -785,6 +858,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
                     sub.set(val);
                 }),
             );
+            el
         })
     }
 }
