@@ -60,9 +60,9 @@ pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
 mod struct_info {
     use proc_macro2::TokenStream;
     use quote::quote;
-    use syn::Token;
     use syn::parse::Error;
     use syn::punctuated::Punctuated;
+    use syn::Token;
 
     use super::field_info::{FieldBuilderAttr, FieldInfo};
     use super::util::{
@@ -674,7 +674,8 @@ mod struct_info {
                 if !attr.path().is_ident("prop") {
                     continue;
                 }
-                let as_expr: Punctuated<syn::Expr, Token![,]> = attr.parse_args_with(Punctuated::parse_terminated)?;
+                let as_expr: Punctuated<syn::Expr, Token![,]> =
+                    attr.parse_args_with(Punctuated::parse_terminated)?;
                 for expr in as_expr {
                     result.apply_meta(expr)?;
                 }
@@ -759,10 +760,10 @@ mod struct_info {
 mod field_info {
     use proc_macro2::{Span, TokenStream};
     use quote::quote;
-    use syn::Token;
     use syn::parse::Error;
     use syn::punctuated::Punctuated;
     use syn::spanned::Spanned;
+    use syn::Token;
 
     use super::util::{
         expr_to_single_string, ident_to_type, path_to_single_string, strip_raw_ident_prefix,
@@ -861,7 +862,8 @@ mod field_info {
                 if !attr.path().is_ident("prop") {
                     continue;
                 }
-                let as_expr: Punctuated<syn::Expr, Token![,]> = attr.parse_args_with(Punctuated::parse_terminated)?;
+                let as_expr: Punctuated<syn::Expr, Token![,]> =
+                    attr.parse_args_with(Punctuated::parse_terminated)?;
                 for expr in as_expr {
                     self.apply_meta(expr)?;
                 }
