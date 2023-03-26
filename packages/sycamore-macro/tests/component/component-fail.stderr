@@ -1,8 +1,8 @@
 error: component must return `sycamore::view::View`
- --> tests/component/component-fail.rs:5:18
+ --> tests/component/component-fail.rs:5:29
   |
 5 | fn Comp1<G: Html>(_cx: Scope) {
-  |                  ^^^^^^^^^^^^
+  |                             ^
 
 error: component must take at least one argument of type `sycamore::reactive::Scope`
   --> tests/component/component-fail.rs:11:18

@@ -39,7 +39,7 @@ impl Parse for ComponentFn {
 
                 if let ReturnType::Default = sig.output {
                     return Err(syn::Error::new(
-                        sig.paren_token.span,
+                        sig.paren_token.span.close(),
                         "component must return `sycamore::view::View`",
                     ));
                 };
@@ -48,7 +48,7 @@ impl Parse for ComponentFn {
 
                 if inputs.is_empty() {
                     return Err(syn::Error::new(
-                        sig.paren_token.span,
+                        sig.paren_token.span.span(),
                         "component must take at least one argument of type `sycamore::reactive::Scope`",
                     ));
                 }
@@ -293,7 +293,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let inputs = item.sig.inputs.clone();
     if inputs.is_empty() {
         return Err(syn::Error::new(
-            item.sig.paren_token.span,
+            item.sig.paren_token.span.join(),
             "component must take at least one argument of type `sycamore::reactive::Scope`",
         ));
     }
