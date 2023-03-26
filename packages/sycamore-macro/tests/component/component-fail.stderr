@@ -1,8 +1,8 @@
 error: component must return `sycamore::view::View`
- --> tests/component/component-fail.rs:5:18
+ --> tests/component/component-fail.rs:5:29
   |
 5 | fn Comp1<G: Html>(_cx: Scope) {
-  |                  ^^^^^^^^^^^^
+  |                             ^
 
 error: component must take at least one argument of type `sycamore::reactive::Scope`
   --> tests/component/component-fail.rs:11:18
@@ -38,7 +38,7 @@ error: component should not take more than 2 arguments
   --> tests/component/component-fail.rs:34:77
    |
 34 | fn CompWithMultipleProps<G: Html>(_cx: Scope, prop1: ::std::primitive::i32, prop2: ::std::primitive::i32) -> View<G> {
-   |                                                                             ^^^^^
+   |                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: taking an unit tuple as props is useless
   --> tests/component/component-fail.rs:41:49

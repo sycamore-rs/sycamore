@@ -2,13 +2,13 @@ error: Route can only be derived on enums
  --> tests/router/router-fail.rs:4:1
   |
 4 | struct Routes1 {}
-  | ^^^^^^
+  | ^^^^^^^^^^^^^^^^^
 
 error: not found route not specified
  --> tests/router/router-fail.rs:8:1
   |
 8 | enum Routes2 {}
-  | ^^^^
+  | ^^^^^^^^^^^^^^^
 
 error: not found route cannot have any fields
   --> tests/router/router-fail.rs:13:13
