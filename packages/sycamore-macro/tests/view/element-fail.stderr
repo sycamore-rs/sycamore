@@ -4,7 +4,7 @@ error: unexpected end of input, expected either `(` or `{` after element tag
 5 |         let _: View<G> = view! { cx, button };
   |                          ^^^^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the macro `$crate::view_with_elements` which comes from the expansion of the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `$crate::view_with_elements` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected `=`
  --> tests/view/element-fail.rs:6:53
