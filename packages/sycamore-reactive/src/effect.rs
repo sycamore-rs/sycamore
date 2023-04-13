@@ -1,5 +1,3 @@
-//! Side effects.
-
 use std::{panic::Location, ptr};
 
 use hashbrown::HashSet;
@@ -17,7 +15,7 @@ thread_local! {
 /// this struct.
 pub(crate) struct EffectState<'a> {
     /// The callback when the effect is re-executed.
-    cb: Rc<RefCell<dyn FnMut() + 'a>>,
+    cb: Rc<RefCell<EffectCallback<'a, dyn FnMut() + 'a>>>,
     /// A list of dependencies that can trigger this effect.
     dependencies: HashSet<EffectDependency>,
 }
@@ -55,6 +53,65 @@ impl<'a> EffectState<'a> {
     }
 }
 
+pub(crate) struct EffectCallback<'a, T: ?Sized>
+where
+    T: FnMut() + 'a,
+{
+    cx: Scope<'a>,
+    effect: &'a RefCell<Option<EffectState<'a>>>,
+    f: T,
+}
+
+impl<'a> EffectCallback<'a, dyn FnMut() + 'a> {
+    pub fn run(&mut self) {
+        let cx = self.cx;
+        let effect = self.effect;
+        let f = &mut self.f;
+        EFFECTS.with(|effects| {
+            // Record initial effect stack length to verify that it is the same after.
+            let initial_effect_stack_len = effects.borrow().len();
+
+            // Take effect out.
+            let mut effect_borrow_mut = effect.borrow_mut();
+            let tmp_effect = effect_borrow_mut.as_mut().unwrap();
+            tmp_effect.clear_dependencies();
+
+            // Push the effect onto the effect stack so that it is visible by signals.
+            effects
+                .borrow_mut()
+                .push((tmp_effect as *mut EffectState<'a>).cast::<EffectState<'static>>());
+            // We want to drop-lock the parent scope during the call to `f` so that the child
+            // scope remains alive during the whole call.
+            cx.raw.inner.borrow_mut().lock_drop = true;
+            // Now we can call the user-provided function.
+            f();
+            cx.raw.inner.borrow_mut().lock_drop = false;
+            // Pop the effect from the effect stack.
+            // This ends the mutable borrow of `tmp_effect`.
+            effects.borrow_mut().pop().unwrap();
+
+            // The raw pointer pushed onto `effects` is dead and can no longer be accessed.
+            // We can now access `effect` directly again.
+
+            // For all the signals collected by the EffectState, we need to add backlinks from
+            // the signal to the effect, so that updating the signal will trigger the effect.
+            for emitter in &tmp_effect.dependencies {
+                // The SignalEmitter might have been destroyed between when the signal was
+                // accessed and now.
+                if let Some(emitter) = emitter.0.upgrade() {
+                    // SAFETY: When the effect is destroyed or when the emitter is dropped,
+                    // this link will be destroyed to prevent dangling references.
+                    emitter.subscribe(Rc::downgrade(unsafe {
+                        std::mem::transmute(&tmp_effect.cb)
+                    }));
+                }
+            }
+
+            debug_assert_eq!(effects.borrow().len(), initial_effect_stack_len);
+        });
+    }
+}
+
 /// Creates an effect on signals used inside the effect closure.
 ///
 /// # Example
@@ -71,7 +128,15 @@ impl<'a> EffectState<'a> {
 /// # });
 /// ```
 pub fn create_effect<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) {
-    _create_effect(cx, Box::new(f))
+    let effect = _make_effect(cx);
+    let cb = Rc::new(RefCell::new(EffectCallback { cx, effect, f }));
+
+    _create_effect(effect, cb)
+}
+
+fn _make_effect<'a>(cx: Scope<'a>) -> &'a RefCell<Option<EffectState<'a>>> {
+    // SAFETY: We do not access the scope in the Drop implementation for EffectState.
+    unsafe { create_ref_unsafe(cx, RefCell::new(None::<EffectState<'a>>)) }
 }
 
 /// Creates an effect on signals used inside the effect closure, returning the value from the initial call to the closure.
@@ -107,56 +172,10 @@ pub fn create_effect_return_init<'a, T: 'a>(cx: Scope<'a>, mut f: impl FnMut() -
 }
 
 /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
-fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
-    // SAFETY: We do not access the scope in the Drop implementation for EffectState.
-    let effect = unsafe { create_ref_unsafe(cx, RefCell::new(None::<EffectState<'a>>)) };
-    let cb = Rc::new(RefCell::new({
-        move || {
-            EFFECTS.with(|effects| {
-                // Record initial effect stack length to verify that it is the same after.
-                let initial_effect_stack_len = effects.borrow().len();
-
-                // Take effect out.
-                let mut effect_borrow_mut = effect.borrow_mut();
-                let tmp_effect = effect_borrow_mut.as_mut().unwrap();
-                tmp_effect.clear_dependencies();
-
-                // Push the effect onto the effect stack so that it is visible by signals.
-                effects
-                    .borrow_mut()
-                    .push((tmp_effect as *mut EffectState<'a>).cast::<EffectState<'static>>());
-                // We want to drop-lock the parent scope during the call to `f` so that the child
-                // scope remains alive during the whole call.
-                cx.raw.inner.borrow_mut().lock_drop = true;
-                // Now we can call the user-provided function.
-                f();
-                cx.raw.inner.borrow_mut().lock_drop = false;
-                // Pop the effect from the effect stack.
-                // This ends the mutable borrow of `tmp_effect`.
-                effects.borrow_mut().pop().unwrap();
-
-                // The raw pointer pushed onto `effects` is dead and can no longer be accessed.
-                // We can now access `effect` directly again.
-
-                // For all the signals collected by the EffectState, we need to add backlinks from
-                // the signal to the effect, so that updating the signal will trigger the effect.
-                for emitter in &tmp_effect.dependencies {
-                    // The SignalEmitter might have been destroyed between when the signal was
-                    // accessed and now.
-                    if let Some(emitter) = emitter.0.upgrade() {
-                        // SAFETY: When the effect is destroyed or when the emitter is dropped,
-                        // this link will be destroyed to prevent dangling references.
-                        emitter.subscribe(Rc::downgrade(unsafe {
-                            std::mem::transmute(&tmp_effect.cb)
-                        }));
-                    }
-                }
-
-                debug_assert_eq!(effects.borrow().len(), initial_effect_stack_len);
-            });
-        }
-    }));
-
+fn _create_effect<'a>(
+    effect: &RefCell<Option<EffectState<'a>>>,
+    cb: Rc<RefCell<EffectCallback<'a, dyn FnMut() + 'a>>>,
+) {
     // Initialize initial effect state.
     *effect.borrow_mut() = Some(EffectState {
         cb: cb.clone(),
@@ -164,7 +183,7 @@ fn _create_effect<'a>(cx: Scope<'a>, mut f: Box<(dyn FnMut() + 'a)>) {
     });
 
     // Initial callback call to get everything started.
-    cb.borrow_mut()();
+    cb.borrow_mut().run();
 }
 
 /// Creates an effect on signals used inside the effect closure.

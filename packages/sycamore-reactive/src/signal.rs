@@ -4,11 +4,11 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::ops::{AddAssign, Deref, DerefMut, DivAssign, MulAssign, SubAssign};
 
-use crate::effect::EFFECTS;
+use crate::effect::{EffectCallback, EFFECTS};
 use crate::*;
 
-type WeakEffectCallback = Weak<RefCell<dyn FnMut()>>;
-type EffectCallbackPtr = *const RefCell<dyn FnMut()>;
+type WeakEffectCallback = Weak<RefCell<EffectCallback<'static, dyn FnMut()>>>;
+type EffectCallbackPtr = *const RefCell<EffectCallback<'static, dyn FnMut()>>;
 
 pub(crate) type SignalEmitterInner = RefCell<IndexMap<EffectCallbackPtr, WeakEffectCallback>>;
 
@@ -77,7 +77,7 @@ impl SignalEmitter {
             // subscriber might have already been destroyed in the case of nested effects.
             if let Some(callback) = subscriber.upgrade() {
                 // Call the callback.
-                callback.borrow_mut()();
+                callback.borrow_mut().run();
             }
         }
     }
