@@ -1,7 +1,5 @@
 //! Derived and computed data.
 
-use std::cell::Cell;
-
 use crate::*;
 
 /// Creates a memoized computation from some signals.
@@ -90,24 +88,24 @@ pub fn create_selector_with<'a, U: 'static>(
     mut f: impl FnMut() -> U + 'a,
     eq_f: impl Fn(&U, &U) -> bool + 'a,
 ) -> &'a ReadSignal<U> {
-    let signal: Rc<Cell<Option<&Signal<U>>>> = Rc::new(Cell::new(None));
+    let mut signal_opt: Option<&Signal<U>> = None;
 
-    create_effect(cx, {
-        let signal = Rc::clone(&signal);
+    create_effect_return_init(cx, {
         move || {
             let new = f();
-            if let Some(signal) = signal.get() {
+            if let Some(signal) = signal_opt {
                 // Check if new value is different from old value.
                 if !eq_f(&new, &*signal.get_untracked()) {
-                    signal.set(new)
+                    signal.set(new);
                 }
+                signal
             } else {
-                signal.set(Some(create_signal(cx, new)))
+                let signal = create_signal(cx, new);
+                signal_opt = Some(signal);
+                signal
             }
         }
-    });
-
-    signal.get().unwrap()
+    })
 }
 
 /// An alternative to [`create_signal`] that uses a reducer to get the next
