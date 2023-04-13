@@ -1,6 +1,6 @@
 //! Side effects.
 
-use std::panic::Location;
+use std::{panic::Location, ptr};
 
 use hashbrown::HashSet;
 
@@ -72,6 +72,38 @@ impl<'a> EffectState<'a> {
 /// ```
 pub fn create_effect<'a>(cx: Scope<'a>, f: impl FnMut() + 'a) {
     _create_effect(cx, Box::new(f))
+}
+
+/// Creates an effect on signals used inside the effect closure, returning the value from the initial call to the closure.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let state = create_signal(cx, 0);
+///
+/// println!("Init: {}", create_effect_return_init(cx, || {
+///     let v = state.get();
+///     println!("State changed. New state value = {}", v);
+///     v
+/// })); // Prints "State changed. New state value = 0" and "Init: 0"
+///
+/// state.set(1); // Prints "State changed. New state value = 1"
+/// # });
+/// ```
+pub fn create_effect_return_init<'a, T: 'a>(cx: Scope<'a>, mut f: impl FnMut() -> T + 'a) -> T {
+    // use an option so we don't leak the value in case _create_effect panics after running f()
+    let mut init = None;
+    let mut init_ptr: *mut Option<T> = &mut init as *mut _;
+    create_effect(cx, move || {
+        let value = f();
+        if !init_ptr.is_null() {
+            // SAFETY: since value_ptr is not null and here we set it to null, this must be the initial execution inside _create_effect, so the pointer is valid
+            unsafe { ptr::write(init_ptr, Some(value)) };
+            init_ptr = ptr::null_mut();
+        }
+    });
+    init.unwrap()
 }
 
 /// Internal implementation for `create_effect`. Use dynamic dispatch to reduce code-bloat.
