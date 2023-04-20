@@ -320,9 +320,76 @@ impl<T> Signal<T> {
     ///
     /// This will also re-compute all the subscribers of this signal by calling all the dependency
     /// callbacks.
+    /// Calls all the subscribers without modifying the state.
+    /// This can be useful when using patterns such as inner mutability where the state updated will
+    /// not be automatically triggered. In the general case, however, it is preferable to use
+    /// [`Signal::set()`] instead.
+    ///
+    /// This will also re-compute all the subscribers of this signal by calling all the dependency
+    /// callbacks.
     pub fn trigger_subscribers(&self) {
-        self.0.emitter.trigger_subscribers()
+        BATCHED_EMITTERS.with(|emitters| {
+            {
+                let emitters = emitters.borrow();
+                if let Some(emitters) = emitters.as_ref() {
+                    let my_emitters: IndexMap<EffectCallbackPtr, WeakEffectCallback> =
+                        self.0.emitter.0.as_ref().borrow().clone();
+                    emitters.borrow_mut().extend(my_emitters);
+                    return;
+                }
+            }
+            self.0.emitter.trigger_subscribers();
+        });
     }
+}
+
+thread_local! {
+    static BATCHED_EMITTERS: RefCell<Option<SignalEmitterInner>> = RefCell::new(None);
+}
+
+/// Run the closure while batching any updates it causes. This means effects that depend on multiple
+/// signals will only rerun once.
+///
+/// # Example
+///
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_scope_immediate(|cx| {
+/// let first_name = create_signal(cx, "John");
+/// let last_name = create_signal(cx, "Smith");
+///
+/// let full_name = create_memo(cx, || {
+///     // Only runs once when updating the names
+///     format!("{} {}", first_name.get(), last_name.get())
+/// });
+///
+/// let update_names = || {
+///    batch(|| {
+///         first_name.set("Hello");
+///         last_name.set("Sycamore");
+///    });
+/// };
+/// # });
+/// ```
+pub fn batch(f: impl FnOnce()) {
+    BATCHED_EMITTERS.with(|emitters| {
+        if emitters.borrow().is_none() {
+            *emitters.borrow_mut() = Some(Default::default());
+        }
+        f();
+        let subscribers = emitters.borrow_mut().take().unwrap().take().into_values();
+
+        // Subscriber order is reversed because effects attach subscribers at the end of the
+        // effect scope. This will ensure that outer effects re-execute before inner effects,
+        // preventing inner effects from running twice.
+        for subscriber in subscribers.rev() {
+            // subscriber might have already been destroyed in the case of nested effects.
+            if let Some(callback) = subscriber.upgrade() {
+                // Call the callback.
+                callback.borrow_mut()();
+            }
+        }
+    });
 }
 
 /// A mutable reference for modifying a [`Signal`].
