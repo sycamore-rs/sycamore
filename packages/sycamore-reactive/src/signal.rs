@@ -932,4 +932,27 @@ mod tests {
             let _rc_signal: RcSignal<i32> = create_rc_signal_from_rc(Rc::new(0));
         });
     }
+
+    #[test]
+    fn batch_signal_updates() {
+        create_scope_immediate(|cx| {
+            let signal1 = create_signal(cx, "Hello");
+            let signal2 = create_signal(cx, "World");
+            let counter = create_signal(cx, 0);
+
+            create_effect(cx, || {
+                signal1.track();
+                signal2.track();
+                counter.set_fn(|i| i + 1);
+            });
+
+            batch(|| {
+                signal1.set("Hellooo");
+                signal2.set("Sycamore");
+            });
+            assert_eq!(*signal1.get(), "Hellooo");
+            assert_eq!(*signal2.get(), "Sycamore");
+            assert_eq!(*counter.get(), 2);
+        });
+    }
 }
