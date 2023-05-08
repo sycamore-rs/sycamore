@@ -1,16 +1,22 @@
 //! Reactivity runtime for Sycamore.
 
+#![cfg_attr(feature = "nightly", feature(fn_traits))]
+#![cfg_attr(feature = "nightly", feature(unboxed_closures))]
+
 use std::cell::{Cell, RefCell};
 use std::sync::Mutex;
 
 use signals::{SignalData, SignalKey};
 use slotmap::{new_key_type, SlotMap};
 
+pub mod effects;
+pub mod memos;
 pub mod signals;
 
 struct Root {
     root_scope: Cell<ScopeKey>,
     scopes: RefCell<SlotMap<ScopeKey, ScopeData>>,
+    signals: RefCell<SlotMap<SignalKey, SignalData>>,
 }
 
 #[derive(Clone, Copy)]
@@ -43,7 +49,8 @@ new_key_type! { struct ScopeKey; }
 
 struct ScopeData {
     child_scopes: Vec<ScopeKey>,
-    signals: SlotMap<SignalKey, SignalData>,
+    /// A list of signals "owned" by this scope.
+    signals: Vec<SignalKey>,
     root: &'static Root,
 }
 
@@ -51,8 +58,21 @@ impl ScopeData {
     fn new(root: &'static Root) -> Self {
         Self {
             child_scopes: Vec::new(),
-            signals: SlotMap::default(),
+            signals: Vec::new(),
             root,
+        }
+    }
+}
+
+impl Drop for ScopeData {
+    fn drop(&mut self) {
+        for child_scope in &self.child_scopes {
+            let data = self.root.scopes.borrow_mut().remove(*child_scope);
+            drop(data.expect("child scope should not be dropped yet"));
+        }
+        for signal in &self.signals {
+            let data = self.root.signals.borrow_mut().remove(*signal);
+            drop(data.expect("scope should not be dropped yet"));
         }
     }
 }
@@ -65,8 +85,13 @@ pub struct Scope {
 }
 
 impl Scope {
-    fn get_data<T>(self, f: impl FnOnce(&mut ScopeData) -> T) -> T {
+    pub(crate) fn get_data<T>(self, mut f: impl FnMut(&mut ScopeData) -> T) -> T {
         f(&mut self.root.scopes.borrow_mut()[self.key])
+    }
+
+    pub fn dispose(self) {
+        let data = self.root.scopes.borrow_mut().remove(self.key);
+        drop(data.expect("scope should not be dropped yet"));
     }
 }
 
@@ -85,6 +110,7 @@ pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
     let root = Root {
         root_scope: Default::default(),
         scopes: Default::default(),
+        signals: Default::default(),
     };
     let _ref = Box::leak(Box::new(root));
     KEEP_ALIVE
@@ -95,4 +121,15 @@ pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
     let handle = RootHandle { _ref };
     handle.reinitialize(f);
     handle
+}
+
+pub fn create_child_scope(cx: Scope, mut f: impl FnMut(Scope)) -> Scope {
+    let new = ScopeData::new(cx.root);
+    let key = cx.root.scopes.borrow_mut().insert(new);
+    // Push the new scope onto the child scope list so that it is properly dropped when the parent
+    // scope is dropped.
+    cx.get_data(|cx| cx.child_scopes.push(key));
+    let scope = Scope { key, root: cx.root };
+    f(scope);
+    scope
 }
