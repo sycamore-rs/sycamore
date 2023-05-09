@@ -19,6 +19,12 @@ struct Root {
     signals: RefCell<SlotMap<SignalId, SignalState>>,
     /// If this is `Some`, that means we are tracking signal accesses.
     tracker: RefCell<Option<DependencyTracker>>,
+    /// A temporary buffer used to provide input to `topo_sort`. This is to prevent allocating a
+    /// new `Vec` evertime that method is called.
+    topo_sort_start: RefCell<Vec<SignalId>>,
+    /// A temporary buffer used by the `topo_sort` method. This is to prevent allocating a new
+    /// `Vec` everytime that method is called.
+    topo_sort_buf: RefCell<Vec<SignalId>>,
 }
 
 impl Root {
@@ -33,13 +39,17 @@ impl Root {
     /// Assuming that there are no circular dependencies, the reactive graph is a DAG (Directed
     /// Acylic Graph). We can therefore do a topological sort on the reactive nodes using Kahn's
     /// algorithm.
-    fn topo_sort(&self, mut start: Vec<SignalId>) -> Vec<SignalId> {
-        let mut sorted = Vec::new();
+    ///
+    /// This method writes the result to `self.buf` to prevent unnecessary allocations.
+    fn topo_sort(&self) {
+        let mut start = self.topo_sort_start.borrow_mut();
+        let mut buf = self.topo_sort_buf.borrow_mut();
+        buf.clear();
 
         while let Some(node) = start.pop() {
             // Add this node to topo_sorted since we know at this point all dependencies are
             // updated.
-            sorted.push(node);
+            buf.push(node);
             let dependencies = std::mem::take(&mut self.signals.borrow_mut()[node].dependents);
             for dependent in dependencies {
                 // Remove the dependency link in dependent.
@@ -52,8 +62,6 @@ impl Root {
                 }
             }
         }
-
-        sorted
     }
 
     /// Run the update callback of the signal, also recreating any dependencies found by
@@ -82,7 +90,11 @@ impl Root {
     /// Call this if `signal` has been updated manually. This will automatically update all signals
     /// that depend on `signal`.
     fn propagate_updates(&self, start: SignalId) {
-        let sorted = self.topo_sort(vec![start]);
+        self.topo_sort_start.borrow_mut().clear();
+        self.topo_sort_start.borrow_mut().push(start);
+        self.topo_sort();
+        let sorted = self.topo_sort_buf.borrow();
+
         // We skip the first node since that's the start node which we don't need to update.
         for node in &sorted[1..] {
             self.run_update(*node);
@@ -183,6 +195,7 @@ pub struct Scope {
 }
 
 impl Scope {
+    #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_data<T>(self, f: impl FnOnce(&mut ScopeState) -> T) -> T {
         f(&mut self.root.scopes.borrow_mut()[self.id])
     }
