@@ -1,4 +1,40 @@
-//! Reactive primitives for Sycamore.
+//! Reactive primitives for [Sycamore](https://github.com/sycamore-rs/sycamore).
+//!
+//! ```rust
+//! use sycamore_reactive3::*;
+//!
+//! create_root(|cx| {
+//!     let greeting = create_signal(cx, "Hello");
+//!     let name = create_signal(cx, "World");
+//!
+//!     let display_text = create_memo(cx, move || format!("{greeting} {name}!"));
+//!     assert_eq!(display_text.get_clone(), "Hello World!");
+//!
+//!     name.set("Sycamore");
+//!     assert_eq!(display_text.get_clone(), "Hello Sycamore!");
+//! });
+//! ```
+//!
+//! # A note on `nightly`
+//!
+//! If you are using rust `nightly`, you can enable the `nightly` feature to enable the more terse
+//! syntax for signal get/set.
+//!
+//! ```rust
+//! # use sycamore_reactive3::*;
+//! # create_root(|cx| {
+//! let signal = create_signal(cx, 123);
+//!
+//! // Stable:
+//! let value = signal.get();
+//! signal.set(456);
+//!
+//! // Nightly:
+//! let value = signal();
+//! signal(456);
+//! # });
+//! ```
+//! Of course, the stable `.get()` also works on nightly as well if that's what you prefer.
 
 #![cfg_attr(feature = "nightly", feature(fn_traits))]
 #![cfg_attr(feature = "nightly", feature(unboxed_closures))]
@@ -333,6 +369,19 @@ pub fn create_child_scope(cx: Scope, mut f: impl FnMut(Scope)) -> Scope {
 }
 
 /// Adds a callback that is called when the scope is destroyed.
+///
+/// # Example
+/// ```rust
+/// # use sycamore_reactive3::*;
+/// # create_root(|cx| {
+/// let child_scope = create_child_scope(cx, |cx| {
+///     on_cleanup(cx, || {
+///         println!("Child scope is being dropped");
+///     });
+/// });
+/// child_scope.dispose(); // Executes the on_cleanup callback.
+/// # });
+/// ```
 pub fn on_cleanup(cx: Scope, f: impl FnOnce() + 'static) {
     cx.get_data(move |cx| cx.cleanups.push(Box::new(f)));
 }

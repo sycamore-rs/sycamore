@@ -2,6 +2,8 @@
 
 use std::any::Any;
 use std::cell::RefCell;
+use std::fmt;
+use std::fmt::Formatter;
 use std::marker::PhantomData;
 use std::ops::Deref;
 
@@ -359,6 +361,29 @@ impl<T> Deref for Signal<T> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+// Formatting implementations for `ReadSignal` and `Signal`.
+impl<T: fmt::Debug> fmt::Debug for ReadSignal<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.with(|value| value.fmt(f))
+    }
+}
+impl<T: fmt::Debug> fmt::Debug for Signal<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.with(|value| value.fmt(f))
+    }
+}
+
+impl<T: fmt::Display> fmt::Display for ReadSignal<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.with(|value| value.fmt(f))
+    }
+}
+impl<T: fmt::Display> fmt::Display for Signal<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.with(|value| value.fmt(f))
     }
 }
 
