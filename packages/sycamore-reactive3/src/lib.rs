@@ -1,4 +1,4 @@
-//! Reactivity runtime for Sycamore.
+//! Reactive primitives for Sycamore.
 
 #![cfg_attr(feature = "nightly", feature(fn_traits))]
 #![cfg_attr(feature = "nightly", feature(unboxed_closures))]
@@ -153,7 +153,7 @@ pub struct RootHandle {
 }
 
 impl RootHandle {
-    /// Reinitializes the [`Root`]. Once the root is reinitialized, nothing from before this call
+    /// Reinitializes the root. Once the root is reinitialized, nothing from before this call
     /// should reference this `Root`.
     pub fn reinitialize(&self, mut f: impl FnMut(Scope)) {
         // Destroy everything!
@@ -161,7 +161,7 @@ impl RootHandle {
         let _ = self._ref.signals.take();
         let _ = self._ref.tracker.take();
         let _ = self._ref.rev_sorted_buf.take();
-        
+
         // Create an initial scope and call our callback.
         let root_scope = ScopeState::new(self._ref);
         let root_scope_key = self._ref.scopes.borrow_mut().insert(root_scope);
@@ -250,7 +250,7 @@ impl Drop for ScopeState {
 /// A reference to a reactive scope. This struct is `Copy`, allowing it to be copied into
 /// closures without any clones.
 ///
-/// The intended way to access a [`Scope`] is with the [`create_scope`] function.
+/// The intended way to access a [`Scope`] is with the [`create_child_scope`] function.
 #[derive(Clone, Copy)]
 pub struct Scope {
     id: ScopeId,
@@ -281,7 +281,7 @@ impl fmt::Debug for Scope {
 ///
 /// # Example
 /// ```rust
-/// use sycamore_reactive3::*;
+/// # use sycamore_reactive3::*;
 ///
 /// create_root(|cx| {
 ///     let signal = create_signal(cx, 123);
@@ -289,7 +289,7 @@ impl fmt::Debug for Scope {
 ///     let child_scope = create_child_scope(cx, move |cx| {
 ///         // ...
 ///     });
-/// })
+/// });
 /// ```
 pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
     /// An unsafe wrapper around a raw pointer which we promise to never touch, effectively making

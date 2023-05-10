@@ -2,15 +2,28 @@ use std::cell::RefCell;
 use std::ops::Deref;
 
 use crate::signals::{create_signal, Signal};
-use crate::{DependencyTracker, Scope};
+use crate::{DependencyTracker, Scope, ReadSignal};
 
+/// A memoized derived signal.
+///
+/// Usually created using [`create_memo`], [`create_selector`], and [`create_selector_with`].
 pub struct Memo<T: 'static> {
     signal: Signal<T>,
 }
 
-// TODO: Don't do this.
+impl<T> Memo<T> {
+    /// Get the inner [`Signal`] that is backing this memo.
+    ///
+    /// Be careful when using this! Normally, you should not be able to update a memo manually
+    /// because that is already being done automatically. However, you can use this to create a
+    /// "writable memo", one which can be both updated manually and automatically.
+    pub fn inner_signal(self) -> Signal<T> {
+        self.signal
+    }
+}
+
 impl<T> Deref for Memo<T> {
-    type Target = Signal<T>;
+    type Target = ReadSignal<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.signal
@@ -33,10 +46,10 @@ pub(crate) fn create_updated_signal<T>(
     mut f: impl FnMut(&mut T) -> bool + 'static,
 ) -> Signal<T> {
     let signal = create_signal(cx, initial);
-    initial_deps.create_dependency_links(cx.root, signal.id);
+    initial_deps.create_dependency_links(cx.root, signal.0.id);
 
     // Set the signal update callback as f.
-    signal.get_data_mut(move |data| {
+    signal.0.get_data_mut(move |data| {
         data.update = Some(Box::new(move |any| {
             f(any.downcast_mut().expect("could not downcast memo value"))
         }))
