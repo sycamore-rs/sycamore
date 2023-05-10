@@ -1,3 +1,5 @@
+//! Memos (aka. eager derived signals).
+
 use std::cell::RefCell;
 use std::fmt::{self, Formatter};
 use std::ops::Deref;

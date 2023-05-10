@@ -39,6 +39,7 @@
 #![cfg_attr(feature = "nightly", feature(fn_traits))]
 #![cfg_attr(feature = "nightly", feature(unboxed_closures))]
 
+use std::any::{Any, TypeId};
 use std::cell::{Cell, RefCell};
 use std::fmt;
 use std::sync::Mutex;
@@ -46,9 +47,11 @@ use std::sync::Mutex;
 use signals::{Mark, SignalId, SignalState};
 use slotmap::{new_key_type, SlotMap};
 
+mod context;
 mod memos;
 mod signals;
 
+pub use context::*;
 pub use memos::*;
 pub use signals::*;
 
@@ -199,7 +202,7 @@ impl RootHandle {
         let _ = self._ref.rev_sorted_buf.take();
 
         // Create an initial scope and call our callback.
-        let root_scope = ScopeState::new(self._ref);
+        let root_scope = ScopeState::new(self._ref, None);
         let root_scope_key = self._ref.scopes.borrow_mut().insert(root_scope);
         self._ref.root_scope.set(root_scope_key);
 
@@ -251,17 +254,22 @@ struct ScopeState {
     child_scopes: Vec<ScopeId>,
     /// A list of signals "owned" by this scope.
     signals: Vec<SignalId>,
+    /// A list of context values in this scope.
+    context: Vec<Box<dyn Any>>,
+    parent: Option<ScopeId>,
     root: &'static Root,
 }
 
 impl ScopeState {
     /// Create a new `ScopeState` referencing the `root`. This does _not_ insert the `ScopeState`
     /// into the `Root`.
-    fn new(root: &'static Root) -> Self {
+    fn new(root: &'static Root, parent: Option<ScopeId>) -> Self {
         Self {
             child_scopes: Vec::new(),
             cleanups: Vec::new(),
             signals: Vec::new(),
+            context: Vec::new(),
+            parent,
             root,
         }
     }
@@ -355,7 +363,7 @@ pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
 ///
 /// Returns the created [`Scope`] which can be used to dispose it.
 pub fn create_child_scope(cx: Scope, mut f: impl FnMut(Scope)) -> Scope {
-    let new = ScopeState::new(cx.root);
+    let new = ScopeState::new(cx.root, Some(cx.id));
     let key = cx.root.scopes.borrow_mut().insert(new);
     // Push the new scope onto the child scope list so that it is properly dropped when the parent
     // scope is dropped.
