@@ -5,11 +5,11 @@ use std::cell::RefCell;
 use std::fmt;
 use std::fmt::Formatter;
 use std::marker::PhantomData;
-use std::ops::Deref;
+use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
 use slotmap::new_key_type;
 
-use crate::{Root, Scope};
+use crate::{create_memo, Memo, Root, Scope};
 
 new_key_type! { pub(crate) struct SignalId; }
 
@@ -314,6 +314,22 @@ impl<T> Signal<T> {
         self.update(|val| std::mem::replace(val, new))
     }
 
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn take_silent(self) -> T
+    where
+        T: Default,
+    {
+        self.set_silent(T::default())
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn take(self) -> T
+    where
+        T: Default,
+    {
+        self.set(T::default())
+    }
+
     /// Update the value of the signal silently. This will not trigger any updates in dependent
     /// signals. As such, this is generally not recommended as it can easily lead to state
     /// inconsistencies.
@@ -334,6 +350,25 @@ impl<T> Signal<T> {
         let ret = self.update_silent(f);
         self.0.root.propagate_updates(self.0.id);
         ret
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn set_fn_silent(self, f: impl FnOnce(&T) -> T) {
+        self.update_silent(move |val| *val = f(val));
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn set_fn(self, f: impl FnOnce(&T) -> T) {
+        self.update_silent(move |val| *val = f(val));
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn map<U>(self, cx: Scope, mut f: impl FnMut(&T) -> U + 'static) -> Memo<U> {
+        create_memo(cx, move || self.with(&mut f))
+    }
+
+    pub fn split(self) -> (ReadSignal<T>, impl Fn(T) -> T) {
+        (*self, move |value| self.set(value))
     }
 }
 
@@ -396,6 +431,32 @@ impl<T: Copy> FnOnce<()> for ReadSignal<T> {
     }
 }
 
+impl<T: AddAssign<Rhs>, Rhs> AddAssign<Rhs> for Signal<T> {
+    fn add_assign(&mut self, rhs: Rhs) {
+        self.update(|this| *this += rhs);
+    }
+}
+impl<T: SubAssign<Rhs>, Rhs> SubAssign<Rhs> for Signal<T> {
+    fn sub_assign(&mut self, rhs: Rhs) {
+        self.update(|this| *this -= rhs);
+    }
+}
+impl<T: MulAssign<Rhs>, Rhs> MulAssign<Rhs> for Signal<T> {
+    fn mul_assign(&mut self, rhs: Rhs) {
+        self.update(|this| *this *= rhs);
+    }
+}
+impl<T: DivAssign<Rhs>, Rhs> DivAssign<Rhs> for Signal<T> {
+    fn div_assign(&mut self, rhs: Rhs) {
+        self.update(|this| *this /= rhs);
+    }
+}
+impl<T: RemAssign<Rhs>, Rhs> RemAssign<Rhs> for Signal<T> {
+    fn rem_assign(&mut self, rhs: Rhs) {
+        self.update(|this| *this %= rhs);
+    }
+}
+
 /// We need to implement this again for `Signal` despite `Signal` deref-ing to `ReadSignal` since
 /// we also have another implementation of `FnOnce` for `Signal`.
 #[cfg(feature = "nightly")]
@@ -413,5 +474,166 @@ impl<T: Copy> FnOnce<(T,)> for Signal<T> {
 
     extern "rust-call" fn call_once(self, (val,): (T,)) -> Self::Output {
         self.set(val)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn signal() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            assert_eq!(state.get(), 0);
+
+            state.set(1);
+            assert_eq!(state.get(), 1);
+
+            state.set_fn(|n| *n + 1);
+            assert_eq!(state.get(), 2);
+        });
+    }
+
+    #[test]
+    fn signal_composition() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            let double = || state.get() * 2;
+
+            assert_eq!(double(), 0);
+            state.set(1);
+            assert_eq!(double(), 2);
+        });
+    }
+
+    #[test]
+    fn set_silent_signal() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            let double = state.map(cx, |&x| x * 2);
+
+            assert_eq!(double.get(), 0);
+            state.set_silent(1);
+            assert_eq!(double.get(), 0); // double value is unchanged.
+
+            state.set_fn_silent(|n| n + 1);
+            assert_eq!(double.get(), 0); // double value is unchanged.
+        });
+    }
+
+    #[test]
+    fn read_signal() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            let readonly: ReadSignal<i32> = *state;
+
+            assert_eq!(readonly.get(), 0);
+            state.set(1);
+            assert_eq!(readonly.get(), 1);
+        });
+    }
+
+    #[test]
+    fn map_signal() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            let double = state.map(cx, |&x| x * 2);
+
+            assert_eq!(double.get(), 0);
+            state.set(1);
+            assert_eq!(double.get(), 2);
+        });
+    }
+
+    #[test]
+    fn take_signal() {
+        create_root(|cx| {
+            let state = create_signal(cx, 123);
+
+            let x = state.take();
+            assert_eq!(x, 123);
+            assert_eq!(state.get(), 0);
+        });
+    }
+
+    #[test]
+    fn take_silent_signal() {
+        create_root(|cx| {
+            let state = create_signal(cx, 123);
+            let double = state.map(cx, |&x| x * 2);
+
+            // Do not trigger subscribers.
+            state.take_silent();
+            assert_eq!(state.get(), 0);
+            assert_eq!(double.get(), 246);
+        });
+    }
+
+    #[test]
+    fn signal_split() {
+        create_root(|cx| {
+            let (state, set_state) = create_signal(cx, 0).split();
+            assert_eq!(state.get(), 0);
+
+            set_state(1);
+            assert_eq!(state.get(), 1);
+        });
+    }
+
+    #[test]
+    fn signal_display() {
+        create_root(|cx| {
+            let signal = create_signal(cx, 0);
+            assert_eq!(format!("{signal}"), "0");
+            let read_signal: ReadSignal<_> = *signal;
+            assert_eq!(format!("{read_signal}"), "0");
+            let memo = create_memo(cx, || 0);
+            assert_eq!(format!("{memo}"), "0");
+        });
+    }
+
+    #[test]
+    fn signal_debug() {
+        create_root(|cx| {
+            let signal = create_signal(cx, 0);
+            assert_eq!(format!("{signal:?}"), "0");
+            let read_signal: ReadSignal<_> = *signal;
+            assert_eq!(format!("{read_signal:?}"), "0");
+            let memo = create_memo(cx, || 0);
+            assert_eq!(format!("{memo:?}"), "0");
+        });
+    }
+
+    #[test]
+    fn signal_add_assign_update() {
+        create_root(|cx| {
+            let mut signal = create_signal(cx, 0);
+            let counter = create_signal(cx, 0);
+            create_effect(cx, move || {
+                signal.track();
+                counter.set(counter.get_untracked() + 1);
+            });
+            signal += 1;
+            signal -= 1;
+            signal *= 1;
+            signal /= 1;
+            assert_eq!(counter.get(), 5);
+        });
+    }
+
+    #[test]
+    fn signal_update() {
+        create_root(|cx| {
+            let signal = create_signal(cx, "Hello ".to_string());
+            let counter = create_signal(cx, 0);
+            create_effect(cx, move || {
+                signal.track();
+                counter.set(counter.get_untracked() + 1);
+            });
+            signal.update(|value| value.push_str("World!"));
+            assert_eq!(signal.get_clone(), "Hello World!");
+            assert_eq!(counter.get(), 2);
+        });
     }
 }

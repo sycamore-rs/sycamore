@@ -39,7 +39,7 @@
 #![cfg_attr(feature = "nightly", feature(fn_traits))]
 #![cfg_attr(feature = "nightly", feature(unboxed_closures))]
 
-use std::any::{Any, TypeId};
+use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::fmt;
 use std::sync::Mutex;
@@ -48,10 +48,12 @@ use signals::{Mark, SignalId, SignalState};
 use slotmap::{new_key_type, SlotMap};
 
 mod context;
+// mod iter;
 mod memos;
 mod signals;
 
 pub use context::*;
+// pub use iter::*;
 pub use memos::*;
 pub use signals::*;
 
@@ -256,6 +258,7 @@ struct ScopeState {
     signals: Vec<SignalId>,
     /// A list of context values in this scope.
     context: Vec<Box<dyn Any>>,
+    /// The ID of the parent scope, or `None` if this is the root scope.
     parent: Option<ScopeId>,
     root: &'static Root,
 }

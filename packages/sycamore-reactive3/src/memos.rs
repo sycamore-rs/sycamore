@@ -249,5 +249,142 @@ pub fn create_reducer<T, Msg>(
 /// recommended to update signal states inside an effect. You probably should be using a
 /// [`create_memo`] instead.
 pub fn create_effect(cx: Scope, f: impl FnMut() + 'static) {
-    let _effect = create_memo(cx, f);
+    let _ = create_memo(cx, f);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn memo() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            let double = create_memo(cx, move || state.get() * 2);
+
+            assert_eq!(double.get(), 0);
+            state.set(1);
+            assert_eq!(double.get(), 2);
+            state.set(2);
+            assert_eq!(double.get(), 4);
+        });
+    }
+
+    /// Make sure value is memoized rather than executed on demand.
+    #[test]
+    fn memo_only_run_once() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+
+            let counter = create_signal(cx, 0);
+            let double = create_memo(cx, move || {
+                counter.set(counter.get_untracked() + 1);
+                state.get() * 2
+            });
+
+            assert_eq!(counter.get(), 1); // once for calculating initial derived state
+            state.set(2);
+            assert_eq!(counter.get(), 2);
+            assert_eq!(double.get(), 4);
+            assert_eq!(counter.get(), 2); // should still be 2 after access
+        });
+    }
+
+    #[test]
+    fn dependency_on_memo() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            let double = create_memo(cx, move || state.get() * 2);
+            let quadruple = create_memo(cx, move || double.get() * 2);
+
+            assert_eq!(quadruple.get(), 0);
+            state.set(1);
+            assert_eq!(quadruple.get(), 4);
+        });
+    }
+
+    #[test]
+    fn untracked_memo() {
+        create_root(|cx| {
+            let state = create_signal(cx, 1);
+            let double = create_memo(cx, move || state.get_untracked() * 2);
+
+            assert_eq!(double.get(), 2);
+            state.set(2);
+            assert_eq!(double.get(), 2); // double value should still be true because state.get()
+                                         // was
+                                         // inside untracked
+        });
+    }
+
+    #[test]
+    fn selector() {
+        create_root(|cx| {
+            let state = create_signal(cx, 0);
+            let double = create_selector(cx, move || state.get() * 2);
+
+            let counter = create_signal(cx, 0);
+            create_effect(cx, move || {
+                counter.set(counter.get_untracked() + 1);
+
+                double.track();
+            });
+            assert_eq!(double.get(), 0);
+            assert_eq!(counter.get(), 1);
+
+            state.set(0);
+            assert_eq!(double.get(), 0);
+            assert_eq!(counter.get(), 1); // calling set_state should not trigger the effect
+
+            state.set(2);
+            assert_eq!(double.get(), 4);
+            assert_eq!(counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn reducer() {
+        create_root(|cx| {
+            enum Msg {
+                Increment,
+                Decrement,
+            }
+
+            let (state, dispatch) = create_reducer(cx, 0, |state, msg: Msg| match msg {
+                Msg::Increment => *state + 1,
+                Msg::Decrement => *state - 1,
+            });
+
+            assert_eq!(state.get(), 0);
+            dispatch(Msg::Increment);
+            assert_eq!(state.get(), 1);
+            dispatch(Msg::Decrement);
+            assert_eq!(state.get(), 0);
+            dispatch(Msg::Increment);
+            dispatch(Msg::Increment);
+            assert_eq!(state.get(), 2);
+        });
+    }
+
+    #[test]
+    fn memo_reducer() {
+        create_root(|cx| {
+            enum Msg {
+                Increment,
+                Decrement,
+            }
+
+            let (state, dispatch) = create_reducer(cx, 0, |state, msg: Msg| match msg {
+                Msg::Increment => *state + 1,
+                Msg::Decrement => *state - 1,
+            });
+            let doubled = create_memo(cx, move || state.get() * 2);
+
+            assert_eq!(doubled.get(), 0);
+            dispatch(Msg::Increment);
+            assert_eq!(doubled.get(), 2);
+            dispatch(Msg::Decrement);
+            assert_eq!(doubled.get(), 0);
+        });
+    }
 }
