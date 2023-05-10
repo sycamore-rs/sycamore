@@ -31,6 +31,27 @@ pub fn bench(c: &mut Criterion) {
         });
     });
 
+    c.bench_function("reactivity_effects new", |b| {
+        let root = sycamore_reactive3::create_root(|cx| {
+            b.iter(|| {
+                let child_scope = sycamore_reactive3::create_child_scope(cx, |cx| {
+                    let state = sycamore_reactive3::signals::create_signal(cx, 0);
+
+                    sycamore_reactive3::memos::create_effect(cx, move || {
+                        let double = state.get() * 2;
+                        black_box(double);
+                    });
+                    for _i in 0..1000 {
+                        state.set(state.get() + 1);
+                    }
+                });
+
+                child_scope.dispose();
+            });
+        });
+        root.dispose();
+    });
+
     c.bench_function("reactivity_effects", |b| {
         b.iter(|| {
             create_scope_immediate(|cx| {

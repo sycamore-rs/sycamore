@@ -31,7 +31,27 @@ pub(crate) struct SignalState {
     ///
     /// Note that the update function takes a `&mut dyn Any`. The update function should only ever
     /// set this value to the same type as the signal.
-    pub update: Option<Box<dyn FnMut(&mut Box<dyn Any>)>>,
+    ///
+    /// The return value of the update function is a `bool`. This should represent whether the
+    /// value has been changed or not. If `true` is returned, then dependent signals will also be
+    /// updated.
+    pub update: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> bool>>,
+    /// An internal state used by `propagate_updates`. This should be `true` if the signal has been
+    /// updated in the last call to `propagate_updates` and was reacheable from the start node.
+    /// This is to stop propagation to dependents if this value is `false`.
+    pub changed_in_last_update: bool,
+    /// An internal state used by `propagate_updates`. This is used in DFS to detect cycles.
+    pub mark: Mark,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Mark {
+    /// Mark when DFS reaches node.
+    Temp,
+    /// Mark when DFS is done with node.
+    Permanent,
+    /// No mark.
+    None,
 }
 
 pub struct Signal<T: 'static> {
@@ -46,6 +66,8 @@ pub fn create_signal<T>(cx: Scope, value: T) -> Signal<T> {
         dependencies: Vec::new(),
         dependents: Vec::new(),
         update: None,
+        changed_in_last_update: false,
+        mark: Mark::None,
     };
     let key = cx.root.signals.borrow_mut().insert(data);
     // Add the signal the scope signal list so that it is properly dropped when the scope is
@@ -114,11 +136,6 @@ impl<T> Signal<T> {
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn set(self, new: T) -> T {
-        self.update(|val| std::mem::replace(val, new))
-    }
-
-    #[cfg_attr(debug_assertions, track_caller)]
     pub fn with_untracked<U>(self, f: impl FnOnce(&T) -> U) -> U {
         self.get_data(|signal| {
             f(signal
@@ -136,14 +153,29 @@ impl<T> Signal<T> {
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn update<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
-        let ret = self.get_data(|signal| {
+    pub fn set_silent(self, new: T) -> T {
+        self.update_silent(|val| std::mem::replace(val, new))
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn set(self, new: T) -> T {
+        self.update(|val| std::mem::replace(val, new))
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn update_silent<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
+        self.get_data(|signal| {
             f(signal
                 .value
                 .borrow_mut()
                 .downcast_mut()
                 .expect("wrong signal type in slotmap"))
-        });
+        })
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn update<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
+        let ret = self.update_silent(f);
         self.root.propagate_updates(self.id);
         ret
     }

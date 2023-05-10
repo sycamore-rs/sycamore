@@ -6,7 +6,7 @@
 use std::cell::{Cell, RefCell};
 use std::sync::Mutex;
 
-use signals::{SignalId, SignalState};
+use signals::{Mark, SignalId, SignalState};
 use slotmap::{new_key_type, SlotMap};
 
 pub mod memos;
@@ -19,12 +19,9 @@ struct Root {
     signals: RefCell<SlotMap<SignalId, SignalState>>,
     /// If this is `Some`, that means we are tracking signal accesses.
     tracker: RefCell<Option<DependencyTracker>>,
-    /// A temporary buffer used to provide input to `topo_sort`. This is to prevent allocating a
-    /// new `Vec` evertime that method is called.
-    topo_sort_start: RefCell<Vec<SignalId>>,
-    /// A temporary buffer used by the `topo_sort` method. This is to prevent allocating a new
-    /// `Vec` everytime that method is called.
-    topo_sort_buf: RefCell<Vec<SignalId>>,
+    /// A temporary buffer used in `propagate_updates` to prevent allocating a new Vec every time
+    /// it is called.
+    rev_sorted_buf: RefCell<Vec<SignalId>>,
 }
 
 impl Root {
@@ -36,69 +33,92 @@ impl Root {
         (ret, self.tracker.replace(prev).unwrap())
     }
 
-    /// Assuming that there are no circular dependencies, the reactive graph is a DAG (Directed
-    /// Acylic Graph). We can therefore do a topological sort on the reactive nodes using Kahn's
-    /// algorithm.
-    ///
-    /// This method writes the result to `self.buf` to prevent unnecessary allocations.
-    fn topo_sort(&self) {
-        let mut start = self.topo_sort_start.borrow_mut();
-        let mut buf = self.topo_sort_buf.borrow_mut();
-        buf.clear();
-
-        while let Some(node) = start.pop() {
-            // Add this node to topo_sorted since we know at this point all dependencies are
-            // updated.
-            buf.push(node);
-            let dependencies = std::mem::take(&mut self.signals.borrow_mut()[node].dependents);
-            for dependent in dependencies {
-                // Remove the dependency link in dependent.
-                self.signals.borrow_mut()[dependent]
-                    .dependencies
-                    .retain(|dependency| *dependency != node);
-                // Check if there are any remaining dependencies left.
-                if self.signals.borrow()[dependent].dependencies.is_empty() {
-                    start.push(dependent);
-                }
-            }
-        }
-    }
-
     /// Run the update callback of the signal, also recreating any dependencies found by
-    /// tracking
-    /// signal accesses inside the function.
+    /// tracking signal accesses inside the function. This method does _not_ delete existing
+    /// dependency links.
     ///
     /// # Params
     /// * `root` - The reactive root.
     /// * `id` - The ID associated with this `SignalState`. This is because we are not storing the
     /// `SignalId` inside the state itself.
-    pub fn run_update(&self, id: SignalId) {
+    ///
+    /// # Returns
+    /// Returns whether the signal value has been changed.
+    fn run_update(&self, id: SignalId) -> bool {
         // We take the update callback out because that requires a mut ref and we cannot hold that
         // while running update itself.
         let mut update = self.signals.borrow_mut()[id].update.take();
-        if let Some(update) = &mut update {
-            let (_, tracker) = self.tracked_scope(|| {
-                update(&mut self.signals.borrow()[id].value.borrow_mut());
-            });
-
+        let changed = if let Some(update) = &mut update {
+            let (changed, tracker) =
+                self.tracked_scope(|| update(&mut self.signals.borrow()[id].value.borrow_mut()));
             tracker.create_dependency_links(self, id);
-        }
+            changed
+        } else {
+            false
+        };
         // Put the update back in.
         self.signals.borrow_mut()[id].update = update;
+        changed
     }
 
-    /// Call this if `signal` has been updated manually. This will automatically update all signals
-    /// that depend on `signal`.
-    fn propagate_updates(&self, start: SignalId) {
-        self.topo_sort_start.borrow_mut().clear();
-        self.topo_sort_start.borrow_mut().push(start);
-        self.topo_sort();
-        let sorted = self.topo_sort_buf.borrow();
+    /// Call this if `start_node` has been updated manually. This will automatically update all
+    /// signals that depend on `start_node`.
+    ///
+    /// If there are no cyclic dependencies, then the reactive graph is a DAG (Directed Acylic
+    /// Graph). We can therefore use DFS to get a topological sorting of all the reactive nodes.
+    ///
+    /// We then go through every node in this topological sorting and update only those nodes which
+    /// have dependencies that were updated. TODO: Is there a way to cut update short if nothing
+    /// changed?
+    fn propagate_updates(&self, start_node: SignalId) {
+        let mut rev_sorted = self.rev_sorted_buf.borrow_mut();
+        rev_sorted.clear();
 
-        // We skip the first node since that's the start node which we don't need to update.
-        for node in &sorted[1..] {
-            self.run_update(*node);
+        self.dfs(start_node, &mut rev_sorted);
+
+        for &node in rev_sorted.iter().rev() {
+            // Reset value.
+            self.signals.borrow_mut()[node].mark = Mark::None;
+
+            // Do not update the starting node since it has already been updated.
+            if node == start_node {
+                self.signals.borrow_mut()[node].changed_in_last_update = true;
+                continue;
+            }
+
+            // Check if dependencies are updated.
+            let dependencies = std::mem::take(&mut self.signals.borrow_mut()[node].dependencies);
+            let any_dep_changed = dependencies
+                .iter()
+                .any(|dep| self.signals.borrow()[*dep].changed_in_last_update);
+
+            let changed = if any_dep_changed {
+                // Both dependencies and dependents have been erased by now.
+                self.run_update(node)
+            } else {
+                false
+            };
+            self.signals.borrow_mut()[node].changed_in_last_update = changed;
         }
+    }
+
+    fn dfs(&self, current: SignalId, buf: &mut Vec<SignalId>) {
+        // Reset value.
+        self.signals.borrow_mut()[current].changed_in_last_update = false;
+
+        match self.signals.borrow()[current].mark {
+            Mark::Temp => panic!("cylcic reactive dependency detected"),
+            Mark::Permanent => return,
+            Mark::None => {}
+        }
+        self.signals.borrow_mut()[current].mark = Mark::Temp;
+
+        let children = std::mem::take(&mut self.signals.borrow_mut()[current].dependents);
+        for child in children {
+            self.dfs(child, buf);
+        }
+        self.signals.borrow_mut()[current].mark = Mark::Permanent;
+        buf.push(current);
     }
 }
 

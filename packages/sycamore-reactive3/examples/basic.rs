@@ -1,4 +1,4 @@
-use sycamore_reactive3::memos::create_memo;
+use sycamore_reactive3::memos::{create_effect, create_memo};
 use sycamore_reactive3::signals::create_signal;
 use sycamore_reactive3::*;
 
@@ -8,7 +8,8 @@ fn main() {
         let doubled = create_memo(cx, move || signal.get() * 2);
         let doubled_as_well = create_memo(cx, move || signal.get() + signal.get());
         let quadrupled = create_memo(cx, move || doubled.get() + doubled_as_well.get());
-        let _print = create_memo(cx, move || {
+
+        create_effect(cx, move || {
             println!(
                 "n = {}, n * 2 = {}, n * 2 (again) = {}, n * 4 = {}",
                 signal.get(),
@@ -17,8 +18,9 @@ fn main() {
                 quadrupled.get()
             );
         });
-        signal.set(123);
-        signal.set(456);
+
+        signal.set(2);
+        signal.set(3);
     });
     root.dispose();
 }
