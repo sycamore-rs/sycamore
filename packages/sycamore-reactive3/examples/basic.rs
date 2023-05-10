@@ -21,6 +21,7 @@ fn main() {
 
         signal.set(2);
         signal.set(3);
+        cx.dispose();
     });
     root.dispose();
 }

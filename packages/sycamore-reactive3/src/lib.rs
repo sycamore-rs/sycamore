@@ -4,18 +4,35 @@
 #![cfg_attr(feature = "nightly", feature(unboxed_closures))]
 
 use std::cell::{Cell, RefCell};
+use std::fmt;
 use std::sync::Mutex;
 
 use signals::{Mark, SignalId, SignalState};
 use slotmap::{new_key_type, SlotMap};
 
-pub mod memos;
-pub mod signals;
+mod memos;
+mod signals;
 
+pub use memos::*;
+pub use signals::*;
+
+/// The struct managing the state of the reactive system. Only one should be created per running
+/// app.
+///
+/// Often times, this is intended to be leaked to be able to get a `&'static Root`. However, the
+/// `Root` is also `dispose`-able, meaning that any resources allocated in this `Root` will get
+/// deallocated. Therefore in practice, there should be no memory leak at all except for the `Root`
+/// itself. Finally, the `Root` is expected to live for the whole duration of the app so this is
+/// not a problem.
 #[derive(Default)]
 struct Root {
+    /// A reference to the root scope.
     root_scope: Cell<ScopeId>,
+    /// All the scopes that have been created in this `Root`.
     scopes: RefCell<SlotMap<ScopeId, ScopeState>>,
+    /// All the signals that have been created in this `Root`.
+    /// Eventhough signals are stored here, they are created under roots and are destroyed by the
+    /// scopes when they themselves are dropped.
     signals: RefCell<SlotMap<SignalId, SignalState>>,
     /// If this is `Some`, that means we are tracking signal accesses.
     tracker: RefCell<Option<DependencyTracker>>,
@@ -71,6 +88,7 @@ impl Root {
     /// have dependencies that were updated. TODO: Is there a way to cut update short if nothing
     /// changed?
     fn propagate_updates(&self, start_node: SignalId) {
+        // Avoid allocation by reusing a `Vec` stored in the `Root`.
         let mut rev_sorted = self.rev_sorted_buf.borrow_mut();
         rev_sorted.clear();
 
@@ -102,6 +120,10 @@ impl Root {
         }
     }
 
+    /// Run depth-first-search on the reactive graph starting at `current`.
+    ///
+    /// Also resets `changed_in_last_update` and adds a [`Mark::Permanent`] for all signals
+    /// traversed.
     fn dfs(&self, current: SignalId, buf: &mut Vec<SignalId>) {
         // Reset value.
         self.signals.borrow_mut()[current].changed_in_last_update = false;
@@ -122,6 +144,9 @@ impl Root {
     }
 }
 
+/// A handle to a root. This lets you reinitialize or dispose the root for resource cleanup.
+///
+/// This is generally obtained from [`create_root`].
 #[derive(Clone, Copy)]
 pub struct RootHandle {
     _ref: &'static Root,
@@ -131,6 +156,12 @@ impl RootHandle {
     /// Reinitializes the [`Root`]. Once the root is reinitialized, nothing from before this call
     /// should reference this `Root`.
     pub fn reinitialize(&self, mut f: impl FnMut(Scope)) {
+        // Destroy everything!
+        let _ = self._ref.scopes.take();
+        let _ = self._ref.signals.take();
+        let _ = self._ref.tracker.take();
+        let _ = self._ref.rev_sorted_buf.take();
+        
         // Create an initial scope and call our callback.
         let root_scope = ScopeState::new(self._ref);
         let root_scope_key = self._ref.scopes.borrow_mut().insert(root_scope);
@@ -143,11 +174,14 @@ impl RootHandle {
         f(cx);
     }
 
+    /// Destroy everything that was created in this scope. This is simply an alias for
+    /// [`RootHandle::reinitialize`] with an empty callback.
     pub fn dispose(&self) {
         self.reinitialize(|_| {})
     }
 }
 
+/// Tracks signals that are accessed inside a reactive scope.
 #[derive(Default)]
 struct DependencyTracker {
     /// A list of signals that were accessed.
@@ -167,8 +201,12 @@ impl DependencyTracker {
     }
 }
 
-new_key_type! { struct ScopeId; }
+new_key_type! {
+    /// Id for [`ScopeState`].
+    struct ScopeId;
+}
 
+/// Internal state for [`Scope`].
 struct ScopeState {
     /// A list of callbacks that will be called when the scope is dropped.
     cleanups: Vec<Box<dyn FnOnce()>>,
@@ -181,6 +219,8 @@ struct ScopeState {
 }
 
 impl ScopeState {
+    /// Create a new `ScopeState` referencing the `root`. This does _not_ insert the `ScopeState`
+    /// into the `Root`.
     fn new(root: &'static Root) -> Self {
         Self {
             child_scopes: Vec::new(),
@@ -207,7 +247,10 @@ impl Drop for ScopeState {
     }
 }
 
-/// Represents a reactive scope.
+/// A reference to a reactive scope. This struct is `Copy`, allowing it to be copied into
+/// closures without any clones.
+///
+/// The intended way to access a [`Scope`] is with the [`create_scope`] function.
 #[derive(Clone, Copy)]
 pub struct Scope {
     id: ScopeId,
@@ -220,12 +263,34 @@ impl Scope {
         f(&mut self.root.scopes.borrow_mut()[self.id])
     }
 
+    /// Remove the scope from the root and drop it.
     pub fn dispose(self) {
         let data = self.root.scopes.borrow_mut().remove(self.id);
         drop(data.expect("scope should not be dropped yet"));
     }
 }
 
+impl fmt::Debug for Scope {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Scope").field("id", &self.id).finish()
+    }
+}
+
+/// Creates a new reactive root with a top-level [`Scope`]. The returned [`RootHandle`] can be used
+/// to [`dispose`](RootHandle::dispose) the root.
+///
+/// # Example
+/// ```rust
+/// use sycamore_reactive3::*;
+///
+/// create_root(|cx| {
+///     let signal = create_signal(cx, 123);
+///
+///     let child_scope = create_child_scope(cx, move |cx| {
+///         // ...
+///     });
+/// })
+/// ```
 pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
     /// An unsafe wrapper around a raw pointer which we promise to never touch, effectively making
     /// it thread-safe.
@@ -250,6 +315,9 @@ pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
     handle
 }
 
+/// Create a child scope.
+///
+/// Returns the created [`Scope`] which can be used to dispose it.
 pub fn create_child_scope(cx: Scope, mut f: impl FnMut(Scope)) -> Scope {
     let new = ScopeState::new(cx.root);
     let key = cx.root.scopes.borrow_mut().insert(new);
@@ -264,6 +332,7 @@ pub fn create_child_scope(cx: Scope, mut f: impl FnMut(Scope)) -> Scope {
     scope
 }
 
+/// Adds a callback that is called when the scope is destroyed.
 pub fn on_cleanup(cx: Scope, f: impl FnOnce() + 'static) {
     cx.get_data(move |cx| cx.cleanups.push(Box::new(f)));
 }

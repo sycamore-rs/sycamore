@@ -3,10 +3,11 @@ use sycamore::reactive::*;
 
 pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity_signals new", |b| {
-        let root = sycamore_reactive3::create_root(|cx| {
+        use sycamore_reactive3::*;
+        let root = create_root(|cx| {
             b.iter(|| {
-                let child_scope = sycamore_reactive3::create_child_scope(cx, |cx| {
-                    let state = sycamore_reactive3::signals::create_signal(cx, 0);
+                let child_scope = create_child_scope(cx, |cx| {
+                    let state = create_signal(cx, 0);
 
                     for _i in 0..1000 {
                         state.set(state.get() + 1);
@@ -32,12 +33,13 @@ pub fn bench(c: &mut Criterion) {
     });
 
     c.bench_function("reactivity_effects new", |b| {
-        let root = sycamore_reactive3::create_root(|cx| {
+        use sycamore_reactive3::*;
+        let root = create_root(|cx| {
             b.iter(|| {
-                let child_scope = sycamore_reactive3::create_child_scope(cx, |cx| {
-                    let state = sycamore_reactive3::signals::create_signal(cx, 0);
+                let child_scope = create_child_scope(cx, |cx| {
+                    let state = create_signal(cx, 0);
 
-                    sycamore_reactive3::memos::create_effect(cx, move || {
+                    create_effect(cx, move || {
                         let double = state.get() * 2;
                         black_box(double);
                     });
