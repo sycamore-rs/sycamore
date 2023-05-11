@@ -114,10 +114,10 @@ pub fn tag<'a, G: GenericNodeElements>(
 //  in size.
 //
 //  See:
-//    - https://github.com/rust-lang/rust/issues/109363
-//      Rust issue for exponential blowup in mangled function name size
-//    - https://github.com/rustwasm/wasm-bindgen/issues/3362
-//      wasm-bindgen issue for falure on mangled functions > 100_000 bytes in length
+//    - https://github.com/rust-lang/rust/issues/109363 Rust issue for exponential blowup in mangled
+//      function name size
+//    - https://github.com/rustwasm/wasm-bindgen/issues/3362 wasm-bindgen issue for falure on
+//      mangled functions > 100_000 bytes in length
 impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     pub(crate) fn new(f: F) -> Self {
         Self(f, PhantomData)
@@ -793,6 +793,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         ElementBuilder::new(move |cx| {
             let el = (self.0)(cx);
+            #[cfg(target_arch = "wasm32")]
             create_effect(cx, {
                 let el = el.clone();
                 let sub = sub.clone();
@@ -837,6 +838,7 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
         ElementBuilder::new(move |cx| {
             let el = (self.0)(cx);
+            #[cfg(target_arch = "wasm32")]
             create_effect(cx, {
                 let el = el.clone();
                 let sub = sub.clone();

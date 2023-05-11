@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   .content blockquote {
     @apply bg-gray-300 dark:bg-gray-700 p-2 mt-2 rounded;
   }
