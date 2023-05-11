@@ -88,8 +88,10 @@ impl Integration for HistoryIntegration {
 
                 let meta_keys_pressed = meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
                 if !meta_keys_pressed && location.origin() == Ok(origin) {
-                    if location.pathname().as_ref() != Ok(&a_pathname) {
-                        // Same origin, different path.
+                    if location.hash().as_ref() != Ok(&hash) {
+                        // Same origin, same path, different anchor. Use default browser behavior.
+                    } else if location.pathname().as_ref() != Ok(&a_pathname) {
+                        // Same origin, different path. Navigate to new page.
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
                             let pathname = pathname.borrow().clone().unwrap_throw();
@@ -106,9 +108,6 @@ impl Integration for HistoryIntegration {
                                 .unwrap_throw();
                             window.scroll_to_with_x_and_y(0.0, 0.0);
                         });
-                    } else if Ok(&hash) != location.hash().as_ref() {
-                        // Same origin, same path, different anchor.
-                        // Use default browser behavior.
                     } else {
                         // Same page. Do nothing.
                         ev.prevent_default();
@@ -273,7 +272,9 @@ where
         move || {
             let path = integration.current_pathname();
             let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
-            pathname.set(path.to_string());
+            if *pathname.get() != path {
+                pathname.set(path.to_string());
+            }
         }
     }));
     let route_signal = create_memo(cx, move || route.match_path(&pathname.get()));
