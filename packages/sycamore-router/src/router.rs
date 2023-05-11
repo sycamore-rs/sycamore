@@ -272,7 +272,7 @@ where
         move || {
             let path = integration.current_pathname();
             let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
-            if *pathname.get() != path.to_string() {
+            if *pathname.get() != path {
                 pathname.set(path.to_string());
             }
         }
