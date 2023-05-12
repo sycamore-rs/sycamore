@@ -1,10 +1,9 @@
 //! Reactive utilities for dealing with lists and iterables.
 
+use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem;
 use std::rc::Rc;
-
-use hashbrown::HashMap;
 
 use crate::*;
 
@@ -23,12 +22,12 @@ use crate::*;
 ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
 pub fn map_keyed<T, K, U: 'static>(
     cx: Scope,
-    list: ReadSignal<Vec<T>>,
+    list: impl Accessor<Vec<T>> + Clone + 'static,
     map_fn: impl Fn(Scope, T) -> U + 'static,
     key_fn: impl Fn(&T) -> K + 'static,
 ) -> Memo<Vec<U>>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + 'static,
     K: Eq + Hash,
     U: Clone,
 {
@@ -41,15 +40,13 @@ where
     let mut disposers: Vec<Option<Scope>> = Vec::new();
     let mut disposers_tmp: Vec<Option<Scope>> = Vec::new();
 
-    let signal = create_signal(cx, Vec::new());
-
     // Diff and update signal each time list is updated.
     create_memo(cx, move || {
-        let new_items = list.get_clone();
+        let new_items = list.clone().value();
         if new_items.is_empty() {
             // Fast path for removing all items.
             for dis in mem::take(&mut disposers) {
-                unsafe { dis.unwrap().dispose() };
+                dis.unwrap().dispose();
             }
             mapped = Vec::new();
         } else if items.is_empty() {
@@ -58,7 +55,10 @@ where
             disposers.reserve(new_items.len());
 
             for new_item in new_items.iter().cloned() {
-                let new_disposer = create_child_scope(cx, |cx| mapped.push(map_fn(cx, new_item)));
+                let map_fn = &map_fn;
+                let mapped = &mut mapped;
+                let new_disposer =
+                    create_child_scope(cx, move |cx| mapped.push(map_fn(cx, new_item)));
                 disposers.push(Some(new_disposer));
             }
         } else {
@@ -130,7 +130,7 @@ where
                     new_indices_next[j - start].and_then(|j| new_indices.insert(key_fn(item), j));
                 } else {
                     // Create new.
-                    unsafe { disposers[i].take().unwrap().dispose() };
+                    disposers[i].take().unwrap().dispose();
                 }
             }
 
@@ -169,7 +169,7 @@ where
         disposers.truncate(new_items.len());
 
         // 4) Save a copy of the mapped items for the next update.
-        items = Rc::clone(&new_items);
+        items = Rc::new(new_items.clone());
         debug_assert!([items.len(), mapped.len(), disposers.len()]
             .iter()
             .all(|l| *l == new_items.len()));
@@ -193,11 +193,11 @@ where
 /// * `map_fn` - A closure that maps from the input type to the output type.
 pub fn map_indexed<T, U: 'static>(
     cx: Scope,
-    list: ReadSignal<Vec<T>>,
+    list: impl Accessor<Vec<T>> + Clone + 'static,
     map_fn: impl Fn(Scope, T) -> U + 'static,
-) -> ReadSignal<Vec<U>>
+) -> Memo<Vec<U>>
 where
-    T: PartialEq + Clone,
+    T: PartialEq + Clone + 'static,
     U: Clone,
 {
     // Previous state used for diffing.
@@ -205,18 +205,14 @@ where
     let mut mapped = Vec::new();
     let mut disposers: Vec<Scope> = Vec::new();
 
-    let signal = create_signal(cx, Vec::new());
-
     // Diff and update signal each time list is updated.
-    create_effect(cx, move || {
-        let new_items = list.get();
+    create_memo(cx, move || {
+        let new_items = list.clone().value();
 
         if new_items.is_empty() {
             // Fast path for removing all items.
             for dis in mem::take(&mut disposers) {
-                unsafe {
-                    dis.dispose();
-                }
+                dis.dispose();
             }
             items = Rc::new(Vec::new());
             mapped = Vec::new();
@@ -243,18 +239,14 @@ where
                     } else if eqs {
                         mapped[i] = tmp.unwrap();
                         let prev = mem::replace(&mut disposers[i], new_disposer);
-                        unsafe {
-                            prev.dispose();
-                        }
+                        prev.dispose();
                     }
                 }
             }
 
             if new_items.len() < items.len() {
                 for _i in new_items.len()..items.len() {
-                    unsafe {
-                        disposers.pop().unwrap().dispose();
-                    }
+                    disposers.pop().unwrap().dispose();
                 }
             }
 
@@ -262,17 +254,15 @@ where
             mapped.truncate(new_items.len());
 
             // Save a copy of the mapped items for the next update.
-            items = Rc::clone(&new_items);
+            items = Rc::new(new_items.clone());
             debug_assert!([items.len(), mapped.len(), disposers.len()]
                 .iter()
                 .all(|l| *l == new_items.len()));
         }
 
         // Update signal to trigger updates.
-        signal.set(mapped.clone());
-    });
-
-    signal
+        mapped.clone()
+    })
 }
 
 #[cfg(test)]
@@ -286,13 +276,13 @@ mod tests {
         create_root(|cx| {
             let a = create_signal(cx, vec![1, 2, 3]);
             let mapped = map_keyed(cx, a, |_, x| x * 2, |x| *x);
-            assert_eq!(*mapped.get(), vec![2, 4, 6]);
+            assert_eq!(mapped.get_clone(), vec![2, 4, 6]);
 
             a.set(vec![1, 2, 3, 4]);
-            assert_eq!(*mapped.get(), vec![2, 4, 6, 8]);
+            assert_eq!(mapped.get_clone(), vec![2, 4, 6, 8]);
 
             a.set(vec![2, 2, 3, 4]);
-            assert_eq!(*mapped.get(), vec![4, 4, 6, 8]);
+            assert_eq!(mapped.get_clone(), vec![4, 4, 6, 8]);
         });
     }
 
@@ -301,10 +291,10 @@ mod tests {
         create_root(|cx| {
             let a = create_signal(cx, vec![1, 2, 3]);
             let mapped = map_keyed(cx, a, |_, x| x * 2, |x| *x);
-            assert_eq!(*mapped.get(), vec![2, 4, 6]);
+            assert_eq!(mapped.get_clone(), vec![2, 4, 6]);
 
             a.set(vec![4, 5, 6]);
-            assert_eq!(*mapped.get(), vec![8, 10, 12]);
+            assert_eq!(mapped.get_clone(), vec![8, 10, 12]);
         });
     }
 
@@ -316,7 +306,7 @@ mod tests {
             let mapped = map_keyed(cx, a, |_, x| x * 2, |x| *x);
 
             a.set(Vec::new());
-            assert_eq!(*mapped.get(), Vec::<i32>::new());
+            assert_eq!(mapped.get_clone(), Vec::<i32>::new());
         });
     }
 
@@ -338,16 +328,16 @@ mod tests {
                 },
                 |x| *x,
             );
-            assert_eq!(*mapped.get(), vec![1, 2, 3]);
+            assert_eq!(mapped.get_clone(), vec![1, 2, 3]);
 
             a.set(vec![1, 2]);
-            assert_eq!(*mapped.get(), vec![1, 2]);
+            assert_eq!(mapped.get_clone(), vec![1, 2]);
 
             a.set(vec![1, 2, 4]);
-            assert_eq!(*mapped.get(), vec![1, 2, 4]);
+            assert_eq!(mapped.get_clone(), vec![1, 2, 4]);
 
             a.set(vec![1, 2, 3, 4]);
-            assert_eq!(*mapped.get(), vec![1, 2, 5, 4]);
+            assert_eq!(mapped.get_clone(), vec![1, 2, 5, 4]);
         });
     }
 
@@ -414,13 +404,13 @@ mod tests {
         create_root(|cx| {
             let a = create_signal(cx, vec![1, 2, 3]);
             let mapped = map_indexed(cx, a, |_, x| x * 2);
-            assert_eq!(*mapped.get(), vec![2, 4, 6]);
+            assert_eq!(mapped.get_clone(), vec![2, 4, 6]);
 
             a.set(vec![1, 2, 3, 4]);
-            assert_eq!(*mapped.get(), vec![2, 4, 6, 8]);
+            assert_eq!(mapped.get_clone(), vec![2, 4, 6, 8]);
 
             a.set(vec![2, 2, 3, 4]);
-            assert_eq!(*mapped.get(), vec![4, 4, 6, 8]);
+            assert_eq!(mapped.get_clone(), vec![4, 4, 6, 8]);
         });
     }
 
@@ -432,7 +422,7 @@ mod tests {
             let mapped = map_indexed(cx, a, |_, x| x * 2);
 
             a.set(Vec::new());
-            assert_eq!(*mapped.get(), Vec::<i32>::new());
+            assert_eq!(mapped.get_clone(), Vec::<i32>::new());
         });
     }
 
@@ -444,14 +434,14 @@ mod tests {
             let mapped = map_indexed(cx, a, |_, x| x * 2);
 
             let counter = create_signal(cx, 0);
-            create_effect(cx, || {
-                counter.set(*counter.get_untracked() + 1);
+            create_effect(cx, move || {
+                counter.set(counter.get_untracked() + 1);
                 mapped.track();
             });
 
-            assert_eq!(*counter.get(), 1);
+            assert_eq!(counter.get(), 1);
             a.set(vec![1, 2, 3, 4]);
-            assert_eq!(*counter.get(), 2);
+            assert_eq!(counter.get(), 2);
         });
     }
 
@@ -468,16 +458,16 @@ mod tests {
                     counter.get()
                 }
             });
-            assert_eq!(*mapped.get(), vec![1, 2, 3]);
+            assert_eq!(mapped.get_clone(), vec![1, 2, 3]);
 
             a.set(vec![1, 2]);
-            assert_eq!(*mapped.get(), vec![1, 2]);
+            assert_eq!(mapped.get_clone(), vec![1, 2]);
 
             a.set(vec![1, 2, 4]);
-            assert_eq!(*mapped.get(), vec![1, 2, 4]);
+            assert_eq!(mapped.get_clone(), vec![1, 2, 4]);
 
             a.set(vec![1, 3, 4]);
-            assert_eq!(*mapped.get(), vec![1, 5, 4]);
+            assert_eq!(mapped.get_clone(), vec![1, 5, 4]);
         });
     }
 

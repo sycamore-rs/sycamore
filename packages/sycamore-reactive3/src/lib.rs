@@ -48,15 +48,15 @@ use signals::{Mark, SignalId, SignalState};
 use slotmap::{new_key_type, SlotMap};
 
 mod context;
-// mod iter;
 mod effects;
+mod iter;
 mod memos;
 mod signals;
 mod utils;
 
 pub use context::*;
 pub use effects::*;
-// pub use iter::*;
+pub use iter::*;
 pub use memos::*;
 pub use signals::*;
 pub use utils::*;
@@ -483,7 +483,7 @@ pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
 /// Create a child scope.
 ///
 /// Returns the created [`Scope`] which can be used to dispose it.
-pub fn create_child_scope(cx: Scope, mut f: impl FnMut(Scope)) -> Scope {
+pub fn create_child_scope(cx: Scope, f: impl FnOnce(Scope)) -> Scope {
     let new = ScopeState::new(cx.root, Some(cx.id));
     let key = cx.root.scopes.borrow_mut().insert(new);
     // Push the new scope onto the child scope list so that it is properly dropped when the parent

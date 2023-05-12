@@ -36,7 +36,7 @@ pub(crate) struct EffectState {
 ///
 /// `create_effect` should only be used for creating **side-effects**. It is generally not
 /// recommended to update signal states inside an effect. You probably should be using a
-/// [`create_memo`] instead.
+/// [`create_memo`](crate::create_memo) instead.
 pub fn create_effect(cx: Scope, mut f: impl FnMut() + 'static) {
     // Run the effect right now so we can get the dependencies.
     let (_, tracker) = cx.root.tracked_scope(&mut f);
@@ -50,6 +50,22 @@ pub fn create_effect(cx: Scope, mut f: impl FnMut() + 'static) {
     tracker.create_effect_dependency_links(cx.root, key);
 }
 
+/// Creates an effect on signals used inside the effect closure.
+///
+/// Unlike [`create_effect`], this function also provides a new reactive scope instead the
+/// effect closure. This scope is created for each new run of the effect.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive3::*;
+/// # create_root(|cx| {
+/// create_effect_scoped(cx, |cx| {
+///     // Use the scoped cx inside here.
+///     let _nested_signal = create_signal(cx, 0);
+///     // _nested_signal cannot escape out of the effect closure.
+/// });
+/// # });
+/// ```
 pub fn create_effect_scoped(cx: Scope, mut f: impl FnMut(Scope) + 'static) {
     let mut child_scope: Option<Scope> = None;
     create_effect(cx, move || {

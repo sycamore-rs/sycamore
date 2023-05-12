@@ -2,6 +2,41 @@
 
 use crate::*;
 
+/// A trait that is implemented for reactive data that can be accessed and tracked, such as
+/// [`Signal`].
+///
+/// You can make your components/functions take this instead of a concrete reactive type so that it
+/// can work with any reactive type.
+pub trait Accessor<T> {
+    /// Get the reactive value. For example, with [`Signal`], this just calls
+    /// [`get`](ReadSignal::get).
+    fn value(self) -> T;
+}
+
+impl<T: Clone> Accessor<T> for Signal<T> {
+    fn value(self) -> T {
+        self.get_clone()
+    }
+}
+
+impl<T: Clone> Accessor<T> for ReadSignal<T> {
+    fn value(self) -> T {
+        self.get_clone()
+    }
+}
+
+impl<T: Clone> Accessor<T> for Memo<T> {
+    fn value(self) -> T {
+        self.get_clone()
+    }
+}
+
+impl<T> Accessor<T> for T {
+    fn value(self) -> T {
+        self
+    }
+}
+
 /// A trait that is implemented for reactive data that can be tracked, such as [`Signal`].
 ///
 /// Also implemented for tuples containing `Trackable`s.
