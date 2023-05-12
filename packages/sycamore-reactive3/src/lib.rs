@@ -52,12 +52,14 @@ mod context;
 mod effects;
 mod memos;
 mod signals;
+mod utils;
 
 pub use context::*;
 pub use effects::*;
 // pub use iter::*;
 pub use memos::*;
 pub use signals::*;
+pub use utils::*;
 
 /// The struct managing the state of the reactive system. Only one should be created per running
 /// app.
@@ -134,6 +136,13 @@ impl Root {
     /// * `id` - The ID associated with this `EffectState`. This is because we are not storing the
     /// `EffectId` inside the state itself.
     fn run_effect_update(&self, id: EffectId) {
+        // Destroy all old dependent links from signal -> effect.
+
+        for dependency in self.effects.borrow_mut()[id].dependencies.drain(..) {
+            self.signals.borrow_mut()[dependency]
+                .effect_dependents
+                .retain(|&x| x != id);
+        }
         // We take the update callback out because that requires a mut ref and we cannot hold that
         // while running the callback itself.
         let mut callback = self.effects.borrow_mut()[id]
@@ -310,11 +319,11 @@ impl DependencyTracker {
     /// Sets the `effect_dependents` field for all the signals that have been tracked.
     fn create_effect_dependency_links(self, root: &Root, dependent: EffectId) {
         for signal in &self.dependencies {
-            dbg!(signal, "added as dependency of effect", dependent);
             root.signals.borrow_mut()[*signal]
                 .effect_dependents
                 .push(dependent);
         }
+        root.effects.borrow_mut()[dependent].dependencies = self.dependencies;
     }
 }
 
@@ -370,8 +379,8 @@ impl Drop for ScopeState {
             let data = self.root.signals.borrow_mut().remove(*signal);
             drop(data.expect("scope should not be dropped yet"));
         }
-        for effects in &self.effects {
-            let data = self.root.effects.borrow_mut().remove(*effects);
+        for effect in &self.effects {
+            let data = self.root.effects.borrow_mut().remove(*effect);
             drop(data.expect("scope should not be dropped yet"));
         }
     }
