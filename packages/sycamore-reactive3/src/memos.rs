@@ -4,8 +4,7 @@ use std::cell::RefCell;
 use std::fmt::{self, Formatter};
 use std::ops::Deref;
 
-use crate::signals::{create_signal, Signal};
-use crate::{DependencyTracker, ReadSignal, Scope};
+use crate::{create_signal, DependencyTracker, ReadSignal, Scope, Signal};
 
 /// A memoized derived signal.
 ///
@@ -61,7 +60,7 @@ pub(crate) fn create_updated_signal<T>(
     mut f: impl FnMut(&mut T) -> bool + 'static,
 ) -> Signal<T> {
     let signal = create_signal(cx, initial);
-    initial_deps.create_dependency_links(cx.root, signal.0.id);
+    initial_deps.create_signal_dependency_links(cx.root, signal.0.id);
 
     // Set the signal update callback as f.
     signal.0.get_data_mut(move |data| {
@@ -227,31 +226,6 @@ pub fn create_reducer<T, Msg>(
     (Memo { signal }, dispatch)
 }
 
-/// Creates an effect on signals used inside the effect closure.
-///
-/// # Example
-/// ```
-/// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let state = create_signal(cx, 0);
-///
-/// create_effect(cx, move || {
-///     println!("State changed. New state value = {}", state.get());
-/// });
-/// // Prints "State changed. New state value = 0"
-///
-/// state.set(1);
-/// // Prints "State changed. New state value = 1"
-/// # });
-/// ```
-///
-/// `create_effect` should only be used for creating **side-effects**. It is generally not
-/// recommended to update signal states inside an effect. You probably should be using a
-/// [`create_memo`] instead.
-pub fn create_effect(cx: Scope, f: impl FnMut() + 'static) {
-    let _ = create_memo(cx, f);
-}
-
 #[cfg(test)]
 mod tests {
     use crate::*;
@@ -278,7 +252,7 @@ mod tests {
 
             let counter = create_signal(cx, 0);
             let double = create_memo(cx, move || {
-                counter.set(counter.get_untracked() + 1);
+                counter.set_silent(counter.get_untracked() + 1);
                 state.get() * 2
             });
 

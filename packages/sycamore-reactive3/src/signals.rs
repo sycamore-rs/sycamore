@@ -9,7 +9,7 @@ use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
 use slotmap::new_key_type;
 
-use crate::{create_memo, Memo, Root, Scope};
+use crate::{create_memo, EffectId, Memo, Root, Scope};
 
 new_key_type! { pub(crate) struct SignalId; }
 
@@ -25,6 +25,7 @@ pub(crate) struct SignalState {
     ///
     /// If this signal updates, any dependent signal will automatically be updated as well.
     pub dependents: Vec<SignalId>,
+    pub effect_dependents: Vec<EffectId>,
     /// A callback that automatically updates the value of the signal when one of its dependencies
     /// updates.
     ///
@@ -153,6 +154,7 @@ pub fn create_signal<T>(cx: Scope, value: T) -> Signal<T> {
     let data = SignalState {
         value: RefCell::new(Box::new(value)),
         dependencies: Vec::new(),
+        effect_dependents: Vec::new(),
         dependents: Vec::new(),
         update: None,
         changed_in_last_update: false,

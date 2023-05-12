@@ -49,10 +49,12 @@ use slotmap::{new_key_type, SlotMap};
 
 mod context;
 // mod iter;
+mod effects;
 mod memos;
 mod signals;
 
 pub use context::*;
+pub use effects::*;
 // pub use iter::*;
 pub use memos::*;
 pub use signals::*;
@@ -75,11 +77,16 @@ struct Root {
     /// Eventhough signals are stored here, they are created under roots and are destroyed by the
     /// scopes when they themselves are dropped.
     signals: RefCell<SlotMap<SignalId, SignalState>>,
+    /// ALl the effects that have been created in this `Root`.
+    /// Effects are also destroyed by the scopes when they themselves are dropped.
+    effects: RefCell<SlotMap<EffectId, EffectState>>,
     /// If this is `Some`, that means we are tracking signal accesses.
     tracker: RefCell<Option<DependencyTracker>>,
     /// A temporary buffer used in `propagate_updates` to prevent allocating a new Vec every time
     /// it is called.
     rev_sorted_buf: RefCell<Vec<SignalId>>,
+    /// A list of effects to be run after signal updates are over.
+    effect_queue: RefCell<Vec<EffectId>>,
 }
 
 impl Root {
@@ -102,14 +109,14 @@ impl Root {
     ///
     /// # Returns
     /// Returns whether the signal value has been changed.
-    fn run_update(&self, id: SignalId) -> bool {
+    fn run_signal_update(&self, id: SignalId) -> bool {
         // We take the update callback out because that requires a mut ref and we cannot hold that
         // while running update itself.
         let mut update = self.signals.borrow_mut()[id].update.take();
         let changed = if let Some(update) = &mut update {
             let (changed, tracker) =
                 self.tracked_scope(|| update(&mut self.signals.borrow()[id].value.borrow_mut()));
-            tracker.create_dependency_links(self, id);
+            tracker.create_signal_dependency_links(self, id);
             changed
         } else {
             false
@@ -119,18 +126,55 @@ impl Root {
         changed
     }
 
-    /// Call this if `start_node` has been updated manually. This will automatically update all
-    /// signals that depend on `start_node`.
+    /// Run the callback of the effect, also recreating any dependencies found by tracking signal
+    /// accesses inside the function. This method does _not_ delete existing dependency links.
     ///
+    /// # Params
+    /// * `root` - The reactive root.
+    /// * `id` - The ID associated with this `EffectState`. This is because we are not storing the
+    /// `EffectId` inside the state itself.
+    fn run_effect_update(&self, id: EffectId) {
+        // We take the update callback out because that requires a mut ref and we cannot hold that
+        // while running the callback itself.
+        let mut callback = self.effects.borrow_mut()[id]
+            .callback
+            .take()
+            .expect("callback should not be None");
+        let (_, tracker) = self.tracked_scope(&mut callback);
+        tracker.create_effect_dependency_links(self, id);
+        // Put the callback back in.
+        self.effects.borrow_mut()[id].callback = Some(callback);
+    }
+
+    /// Runs and clears all the effects in `effect_queue`.
+    fn run_effects(&self) {
+        // 1 - Reset all values for `already_run_in_update`
+        let effect_queue = self.effect_queue.take();
+        for &effect in &effect_queue {
+            self.effects.borrow_mut()[effect].already_run_in_update = false;
+        }
+        // 2 - Run all the effects.
+        for &effect in &effect_queue {
+            if !self.effects.borrow_mut()[effect].already_run_in_update {
+                self.run_effect_update(effect);
+                // Prevent effects from running twice.
+                self.effects.borrow_mut()[effect].already_run_in_update = true;
+            }
+        }
+    }
+
     /// If there are no cyclic dependencies, then the reactive graph is a DAG (Directed Acylic
     /// Graph). We can therefore use DFS to get a topological sorting of all the reactive nodes.
     ///
     /// We then go through every node in this topological sorting and update only those nodes which
     /// have dependencies that were updated. TODO: Is there a way to cut update short if nothing
     /// changed?
-    fn propagate_updates(&self, start_node: SignalId) {
+    fn propagate_signal_updates(&self, start_node: SignalId) {
         // Avoid allocation by reusing a `Vec` stored in the `Root`.
-        let mut rev_sorted = self.rev_sorted_buf.borrow_mut();
+        let mut rev_sorted = self
+            .rev_sorted_buf
+            .try_borrow_mut()
+            .expect("cannot update a signal inside a memo");
         rev_sorted.clear();
 
         self.dfs(start_node, &mut rev_sorted);
@@ -142,6 +186,9 @@ impl Root {
             // Do not update the starting node since it has already been updated.
             if node == start_node {
                 self.signals.borrow_mut()[node].changed_in_last_update = true;
+                let dependents =
+                    std::mem::take(&mut self.signals.borrow_mut()[node].effect_dependents);
+                self.effect_queue.borrow_mut().extend(dependents);
                 continue;
             }
 
@@ -153,12 +200,29 @@ impl Root {
 
             let changed = if any_dep_changed {
                 // Both dependencies and dependents have been erased by now.
-                self.run_update(node)
+                self.run_signal_update(node)
             } else {
                 false
             };
             self.signals.borrow_mut()[node].changed_in_last_update = changed;
+
+            // If the signal value has changed, add all the effects that depend on it to the effect
+            // queue.
+            if changed {
+                let dependents =
+                    std::mem::take(&mut self.signals.borrow_mut()[node].effect_dependents);
+                self.effect_queue.borrow_mut().extend(dependents);
+            }
         }
+    }
+
+    /// Call this if `start_node` has been updated manually. This will automatically update all
+    /// signals that depend on `start_node` as well as call any effects as necessary.
+    fn propagate_updates(&self, start_node: SignalId) {
+        // Propagate any signal updates.
+        self.propagate_signal_updates(start_node);
+        // Run all the effects that have been queued.
+        self.run_effects();
     }
 
     /// Run depth-first-search on the reactive graph starting at `current`.
@@ -200,8 +264,10 @@ impl RootHandle {
         // Destroy everything!
         let _ = self._ref.scopes.take();
         let _ = self._ref.signals.take();
+        let _ = self._ref.effects.take();
         let _ = self._ref.tracker.take();
         let _ = self._ref.rev_sorted_buf.take();
+        let _ = self._ref.effect_queue.take();
 
         // Create an initial scope and call our callback.
         let root_scope = ScopeState::new(self._ref, None);
@@ -231,7 +297,7 @@ struct DependencyTracker {
 
 impl DependencyTracker {
     /// Sets the `dependents` field for all the signals that have been tracked.
-    fn create_dependency_links(self, root: &Root, dependent: SignalId) {
+    fn create_signal_dependency_links(self, root: &Root, dependent: SignalId) {
         for signal in &self.dependencies {
             root.signals.borrow_mut()[*signal]
                 .dependents
@@ -239,6 +305,16 @@ impl DependencyTracker {
         }
         // Set the signal dependencies so that it is updated automatically.
         root.signals.borrow_mut()[dependent].dependencies = self.dependencies;
+    }
+
+    /// Sets the `effect_dependents` field for all the signals that have been tracked.
+    fn create_effect_dependency_links(self, root: &Root, dependent: EffectId) {
+        for signal in &self.dependencies {
+            dbg!(signal, "added as dependency of effect", dependent);
+            root.signals.borrow_mut()[*signal]
+                .effect_dependents
+                .push(dependent);
+        }
     }
 }
 
@@ -256,6 +332,8 @@ struct ScopeState {
     child_scopes: Vec<ScopeId>,
     /// A list of signals "owned" by this scope.
     signals: Vec<SignalId>,
+    /// A list of effects "owned" by this scope.
+    effects: Vec<EffectId>,
     /// A list of context values in this scope.
     context: Vec<Box<dyn Any>>,
     /// The ID of the parent scope, or `None` if this is the root scope.
@@ -271,6 +349,7 @@ impl ScopeState {
             child_scopes: Vec::new(),
             cleanups: Vec::new(),
             signals: Vec::new(),
+            effects: Vec::new(),
             context: Vec::new(),
             parent,
             root,
@@ -289,6 +368,10 @@ impl Drop for ScopeState {
         }
         for signal in &self.signals {
             let data = self.root.signals.borrow_mut().remove(*signal);
+            drop(data.expect("scope should not be dropped yet"));
+        }
+        for effects in &self.effects {
+            let data = self.root.effects.borrow_mut().remove(*effects);
             drop(data.expect("scope should not be dropped yet"));
         }
     }

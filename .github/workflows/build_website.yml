@@ -28,7 +28,7 @@ jobs:
       - name: Install trunk
         run: >
           wget -qO-
-          https://github.com/thedodd/trunk/releases/download/v0.14.0/trunk-x86_64-unknown-linux-gnu.tar.gz
+          https://github.com/thedodd/trunk/releases/download/v0.16.0/trunk-x86_64-unknown-linux-gnu.tar.gz
           | tar -xzf- && sudo mv trunk /usr/bin/
 
       - name: Cargo generate-lockfile
