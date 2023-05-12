@@ -292,6 +292,69 @@ mod tests {
     }
 
     #[test]
+    fn memos_should_recreate_dependencies_each_time() {
+        create_root(|cx| {
+            let condition = create_signal(cx, true);
+
+            let state1 = create_signal(cx, 0);
+            let state2 = create_signal(cx, 1);
+
+            let counter = create_signal(cx, 0);
+            create_memo(cx, move || {
+                counter.set_silent(counter.get_untracked() + 1);
+
+                if condition.get() {
+                    state1.track();
+                } else {
+                    state2.track();
+                }
+            });
+
+            assert_eq!(counter.get(), 1);
+
+            state1.set(1);
+            assert_eq!(counter.get(), 2);
+
+            state2.set(1);
+            assert_eq!(counter.get(), 2); // not tracked
+
+            condition.set(false);
+            assert_eq!(counter.get(), 3);
+
+            state1.set(2);
+            assert_eq!(counter.get(), 3); // not tracked
+
+            state2.set(2);
+            assert_eq!(counter.get(), 4); // tracked after condition.set
+        });
+    }
+
+    #[test]
+    fn destroy_memos_on_scope_dispose() {
+        create_root(|cx| {
+            let counter = create_signal(cx, 0);
+
+            let trigger = create_signal(cx, ());
+
+            let child_scope = create_child_scope(cx, move |cx| {
+                let _ = create_memo(cx, move || {
+                    trigger.track();
+                    counter.set_silent(counter.get_untracked() + 1);
+                });
+            });
+
+            assert_eq!(counter.get(), 1);
+
+            trigger.set(());
+            assert_eq!(counter.get(), 2);
+
+            child_scope.dispose();
+            trigger.set(());
+            assert_eq!(counter.get(), 2); // memo should be destroyed and thus not executed
+        });
+    }
+
+    #[test]
     fn selector() {
         create_root(|cx| {
             let state = create_signal(cx, 0);

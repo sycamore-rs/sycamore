@@ -112,6 +112,12 @@ impl Root {
     /// # Returns
     /// Returns whether the signal value has been changed.
     fn run_signal_update(&self, id: SignalId) -> bool {
+        let dependencies = std::mem::take(&mut self.signals.borrow_mut()[id].dependencies);
+        for dependency in dependencies {
+            self.signals.borrow_mut()[dependency]
+                .dependents
+                .retain(|&x| x != id);
+        }
         // We take the update callback out because that requires a mut ref and we cannot hold that
         // while running update itself.
         let mut update = self.signals.borrow_mut()[id].update.take();
@@ -202,8 +208,8 @@ impl Root {
             }
 
             // Check if dependencies are updated.
-            let dependencies = std::mem::take(&mut self.signals.borrow_mut()[node].dependencies);
-            let any_dep_changed = dependencies
+            let any_dep_changed = self.signals.borrow()[node]
+                .dependencies
                 .iter()
                 .any(|dep| self.signals.borrow()[*dep].changed_in_last_update);
 
@@ -239,6 +245,11 @@ impl Root {
     /// Also resets `changed_in_last_update` and adds a [`Mark::Permanent`] for all signals
     /// traversed.
     fn dfs(&self, current: SignalId, buf: &mut Vec<SignalId>) {
+        // If signal is dead, don't even visit it.
+        if self.signals.borrow().get(current).is_none() {
+            return;
+        }
+
         // Reset value.
         self.signals.borrow_mut()[current].changed_in_last_update = false;
 
