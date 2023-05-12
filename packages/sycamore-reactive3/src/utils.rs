@@ -10,31 +10,47 @@ use crate::*;
 pub trait Accessor<T> {
     /// Get the reactive value. For example, with [`Signal`], this just calls
     /// [`get`](ReadSignal::get).
-    fn value(self) -> T;
+    fn value(&self) -> T;
 }
 
 impl<T: Clone> Accessor<T> for Signal<T> {
-    fn value(self) -> T {
+    fn value(&self) -> T {
         self.get_clone()
     }
 }
 
 impl<T: Clone> Accessor<T> for ReadSignal<T> {
-    fn value(self) -> T {
+    fn value(&self) -> T {
         self.get_clone()
     }
 }
 
 impl<T: Clone> Accessor<T> for Memo<T> {
-    fn value(self) -> T {
+    fn value(&self) -> T {
         self.get_clone()
     }
 }
 
-impl<T> Accessor<T> for T {
-    fn value(self) -> T {
-        self
+impl<T: Clone> Accessor<T> for T {
+    fn value(&self) -> T {
+        self.clone()
     }
+}
+
+#[derive(Clone, Copy)]
+struct DerivedSignal<T, F: Fn() -> T> {
+    f: F,
+}
+
+impl<T, F: Fn() -> T> Accessor<T> for DerivedSignal<T, F> {
+    fn value(&self) -> T {
+        (self.f)()
+    }
+}
+
+/// Create an [`Accessor`] that represents a derived signal.
+pub fn derived<T>(f: impl Fn() -> T) -> impl Accessor<T> {
+    DerivedSignal { f }
 }
 
 /// A trait that is implemented for reactive data that can be tracked, such as [`Signal`].

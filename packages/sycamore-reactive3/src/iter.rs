@@ -41,7 +41,7 @@ where
 
     // Diff and update signal each time list is updated.
     create_memo(cx, move || {
-        let new_items = list.clone().value();
+        let new_items = list.value();
         if new_items.is_empty() {
             // Fast path for removing all items.
             for dis in mem::take(&mut disposers) {
@@ -201,7 +201,7 @@ where
 
     // Diff and update signal each time list is updated.
     create_memo(cx, move || {
-        let new_items = list.clone().value();
+        let new_items = list.value();
 
         if new_items.is_empty() {
             // Fast path for removing all items.
