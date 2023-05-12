@@ -2,7 +2,7 @@
 
 use slotmap::new_key_type;
 
-use crate::{create_child_scope, Root, Scope, SignalId};
+use crate::{create_child_scope, Scope, SignalId};
 
 new_key_type! { pub(crate) struct EffectId; }
 
@@ -10,24 +10,10 @@ pub(crate) struct EffectState {
     /// The callback of the effect. This is an `Option` so that we can temporarily take the
     /// callback out to call it without holding onto a mutable borrow of all the effects.
     pub callback: Option<Box<dyn FnMut()>>,
-    /// A list of dependencies of this effect.
+    /// A list of signals that will trigger this effect.
     pub dependencies: Vec<SignalId>,
     /// An internal state to prevent an effect from running twice in the same update.
     pub already_run_in_update: bool,
-    pub id: EffectId,
-    pub root: &'static Root,
-}
-
-impl Drop for EffectState {
-    fn drop(&mut self) {
-        // Destroy all links from signal -> effect to prevent signals from triggering a dead
-        // effect.
-        for dependency in self.dependencies.drain(..) {
-            self.root.signals.borrow_mut()[dependency]
-                .effect_dependents
-                .retain(|&x| x != self.id);
-        }
-    }
 }
 
 /// Creates an effect on signals used inside the effect closure.
@@ -54,17 +40,11 @@ impl Drop for EffectState {
 pub fn create_effect(cx: Scope, mut f: impl FnMut() + 'static) {
     // Run the effect right now so we can get the dependencies.
     let (_, tracker) = cx.root.tracked_scope(&mut f);
-    let key = cx
-        .root
-        .effects
-        .borrow_mut()
-        .insert_with_key(|id| EffectState {
-            callback: Some(Box::new(f)),
-            dependencies: Vec::new(),
-            already_run_in_update: false,
-            id,
-            root: cx.root,
-        });
+    let key = cx.root.effects.borrow_mut().insert(EffectState {
+        callback: Some(Box::new(f)),
+        dependencies: Vec::new(),
+        already_run_in_update: false,
+    });
     cx.get_data(|data| data.effects.push(key));
     // Add the dependency links.
     tracker.create_effect_dependency_links(cx.root, key);

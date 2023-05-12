@@ -136,8 +136,6 @@ impl Root {
     /// * `id` - The ID associated with this `EffectState`. This is because we are not storing the
     /// `EffectId` inside the state itself.
     fn run_effect_update(&self, id: EffectId) {
-        // Destroy all old dependent links from signal -> effect.
-
         for dependency in self.effects.borrow_mut()[id].dependencies.drain(..) {
             self.signals.borrow_mut()[dependency]
                 .effect_dependents
@@ -158,7 +156,9 @@ impl Root {
     /// Runs and clears all the effects in `effect_queue`.
     fn run_effects(&self) {
         // 1 - Reset all values for `already_run_in_update`
-        let effect_queue = self.effect_queue.take();
+        let mut effect_queue = self.effect_queue.take();
+        // Filter out all the effects that are already dead.
+        effect_queue.retain(|x| self.effects.borrow().get(*x).is_some());
         for &effect in &effect_queue {
             self.effects.borrow_mut()[effect].already_run_in_update = false;
         }
@@ -373,7 +373,7 @@ impl Drop for ScopeState {
         }
         for child_scope in &self.child_scopes {
             let data = self.root.scopes.borrow_mut().remove(*child_scope);
-            drop(data.expect("child scope should not be dropped yet"));
+            drop(data);
         }
         for signal in &self.signals {
             let data = self.root.signals.borrow_mut().remove(*signal);
