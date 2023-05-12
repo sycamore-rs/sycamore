@@ -3,7 +3,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem;
-use std::rc::Rc;
 
 use crate::*;
 
@@ -32,7 +31,7 @@ where
     U: Clone,
 {
     // Previous state used for diffing.
-    let mut items = Rc::new(Vec::new());
+    let mut items = Vec::new();
 
     let mut mapped: Vec<U> = Vec::new();
     let mut mapped_tmp: Vec<Option<U>> = Vec::new();
@@ -62,11 +61,6 @@ where
                 disposers.push(Some(new_disposer));
             }
         } else {
-            debug_assert!(
-                !new_items.is_empty() && !items.is_empty(),
-                "new_items.is_empty() and items.is_empty() are special cased"
-            );
-
             mapped_tmp.clear();
             mapped_tmp.resize(new_items.len(), None);
 
@@ -169,10 +163,10 @@ where
         disposers.truncate(new_items.len());
 
         // 4) Save a copy of the mapped items for the next update.
-        items = Rc::new(new_items.clone());
-        debug_assert!([items.len(), mapped.len(), disposers.len()]
+        debug_assert!([mapped.len(), disposers.len()]
             .iter()
             .all(|l| *l == new_items.len()));
+        items = new_items;
 
         mapped.clone()
     })
@@ -201,7 +195,7 @@ where
     U: Clone,
 {
     // Previous state used for diffing.
-    let mut items = Rc::new(Vec::new());
+    let mut items = Vec::new();
     let mut mapped = Vec::new();
     let mut disposers: Vec<Scope> = Vec::new();
 
@@ -214,7 +208,7 @@ where
             for dis in mem::take(&mut disposers) {
                 dis.dispose();
             }
-            items = Rc::new(Vec::new());
+            items = Vec::new();
             mapped = Vec::new();
         } else {
             // Pre-allocate space needed
@@ -254,10 +248,10 @@ where
             mapped.truncate(new_items.len());
 
             // Save a copy of the mapped items for the next update.
-            items = Rc::new(new_items.clone());
-            debug_assert!([items.len(), mapped.len(), disposers.len()]
+            debug_assert!([mapped.len(), disposers.len()]
                 .iter()
                 .all(|l| *l == new_items.len()));
+            items = new_items;
         }
 
         // Update signal to trigger updates.
@@ -268,6 +262,7 @@ where
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
+    use std::rc::Rc;
 
     use super::*;
 
