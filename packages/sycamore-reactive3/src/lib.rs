@@ -162,18 +162,25 @@ impl Root {
     /// Runs and clears all the effects in `effect_queue`.
     fn run_effects(&self) {
         // 1 - Reset all values for `already_run_in_update`
-        let mut effect_queue = self.effect_queue.take();
-        // Filter out all the effects that are already dead.
-        effect_queue.retain(|x| self.effects.borrow().get(*x).is_some());
-        for &effect in &effect_queue {
-            self.effects.borrow_mut()[effect].already_run_in_update = false;
+        let effect_queue = self.effect_queue.take();
+        for &effect_id in &effect_queue {
+            // Filter out all the effects that are already dead.
+            if let Some(effect) = self.effects.borrow_mut().get_mut(effect_id) {
+                effect.already_run_in_update = false;
+            }
         }
         // 2 - Run all the effects.
-        for &effect in &effect_queue {
-            if !self.effects.borrow_mut()[effect].already_run_in_update {
-                self.run_effect_update(effect);
-                // Prevent effects from running twice.
-                self.effects.borrow_mut()[effect].already_run_in_update = true;
+        for &effect_id in &effect_queue {
+            let mut effects_mut = self.effects.borrow_mut();
+            // Filter out all the effects that are already dead.
+            if let Some(effect) = effects_mut.get_mut(effect_id) {
+                if !effect.already_run_in_update {
+                    // Prevent effects from running twice.
+                    effect.already_run_in_update = true;
+                    drop(effects_mut); // We can't hold on to self.effects because a signal might
+                                       // be set inside the effect.
+                    self.run_effect_update(effect_id);
+                }
             }
         }
     }
@@ -192,20 +199,22 @@ impl Root {
             .expect("cannot update a signal inside a memo");
         rev_sorted.clear();
 
-        self.dfs(start_node, &mut rev_sorted);
+        self.dfs(start_node, &mut self.signals.borrow_mut(), &mut rev_sorted);
 
         for &node in rev_sorted.iter().rev() {
-            // Reset value.
-            self.signals.borrow_mut()[node].mark = Mark::None;
+            let mut signals_mut = self.signals.borrow_mut();
+            let node_state = &mut signals_mut[node];
+            node_state.mark = Mark::None; // Reset value.
 
             // Do not update the starting node since it has already been updated.
             if node == start_node {
-                self.signals.borrow_mut()[node].changed_in_last_update = true;
-                let dependents =
-                    std::mem::take(&mut self.signals.borrow_mut()[node].effect_dependents);
-                self.effect_queue.borrow_mut().extend(dependents);
+                node_state.changed_in_last_update = true;
+                self.effect_queue
+                    .borrow_mut()
+                    .extend(node_state.effect_dependents.drain(..));
                 continue;
             }
+            drop(signals_mut);
 
             // Check if dependencies are updated.
             let any_dep_changed = self.signals.borrow()[node]
@@ -219,14 +228,16 @@ impl Root {
             } else {
                 false
             };
-            self.signals.borrow_mut()[node].changed_in_last_update = changed;
+            let mut signals_mut = self.signals.borrow_mut();
+            let node_state = &mut signals_mut[node];
+            node_state.changed_in_last_update = changed;
 
             // If the signal value has changed, add all the effects that depend on it to the effect
             // queue.
             if changed {
-                let dependents =
-                    std::mem::take(&mut self.signals.borrow_mut()[node].effect_dependents);
-                self.effect_queue.borrow_mut().extend(dependents);
+                self.effect_queue
+                    .borrow_mut()
+                    .extend(node_state.effect_dependents.drain(..));
             }
         }
     }
@@ -244,28 +255,32 @@ impl Root {
     ///
     /// Also resets `changed_in_last_update` and adds a [`Mark::Permanent`] for all signals
     /// traversed.
-    fn dfs(&self, current: SignalId, buf: &mut Vec<SignalId>) {
-        // If signal is dead, don't even visit it.
-        if self.signals.borrow().get(current).is_none() {
+    fn dfs(
+        &self,
+        current_id: SignalId,
+        signals: &mut SlotMap<SignalId, SignalState>,
+        buf: &mut Vec<SignalId>,
+    ) {
+        let Some(current) = signals.get_mut(current_id) else {
+            // If signal is dead, don't even visit it.
             return;
-        }
+        };
 
-        // Reset value.
-        self.signals.borrow_mut()[current].changed_in_last_update = false;
-
-        match self.signals.borrow()[current].mark {
+        current.changed_in_last_update = false; // Reset value.
+        match current.mark {
             Mark::Temp => panic!("cylcic reactive dependency detected"),
             Mark::Permanent => return,
             Mark::None => {}
         }
-        self.signals.borrow_mut()[current].mark = Mark::Temp;
+        current.mark = Mark::Temp;
 
-        let children = std::mem::take(&mut self.signals.borrow_mut()[current].dependents);
+        let children = current.dependents.clone();
+        current.dependents.clear();
         for child in children {
-            self.dfs(child, buf);
+            self.dfs(child, signals, buf);
         }
-        self.signals.borrow_mut()[current].mark = Mark::Permanent;
-        buf.push(current);
+        signals[current_id].mark = Mark::Permanent;
+        buf.push(current_id);
     }
 }
 

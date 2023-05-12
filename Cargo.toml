@@ -42,3 +42,6 @@ members = [
 	"packages/tools/bench",
 	"packages/tools/bench-diff",
 ]
+
+[profile.bench]
+debug = true

@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion
 use sycamore::reactive::*;
 
 pub fn bench(c: &mut Criterion) {
-    c.bench_function("reactivity_signals new", |b| {
+    c.bench_function("reactivity_signals_new", |b| {
         use sycamore_reactive3::*;
         let root = create_root(|cx| {
             b.iter(|| {
@@ -32,7 +32,7 @@ pub fn bench(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("reactivity_effects new", |b| {
+    c.bench_function("reactivity_effects_new", |b| {
         use sycamore_reactive3::*;
         let root = create_root(|cx| {
             b.iter(|| {
