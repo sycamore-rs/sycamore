@@ -89,7 +89,12 @@ impl RoutePath {
     /// Attempt to match the path (url) with the current [`RoutePath`]. The path should already be
     /// split around `/` characters.
     pub fn match_path<'a>(&self, path: &[&'a str]) -> Option<Vec<Capture<'a>>> {
-        let mut paths = path.iter();
+        let mut paths = path.to_vec();
+        if let Some(last) = paths.last_mut() {
+            // Get rid of everything after '?' and '#' in the last segment.
+            *last = last.split('?').next().unwrap().split('#').next().unwrap();
+        }
+        let mut paths = paths.iter();
         let mut segments = self.segments.iter();
         let mut captures = Vec::new();
 
@@ -199,6 +204,7 @@ mod tests {
 
     use super::*;
 
+    #[track_caller]
     fn check(path: &str, route: RoutePath, expected: Option<Vec<Capture>>) {
         let path = path
             .split('/')
@@ -347,6 +353,42 @@ mod tests {
                 Capture::DynSegments(vec!["a", "b", "c"]),
                 Capture::DynSegments(vec!["e", "f", "g"]),
             ]),
+        );
+    }
+
+    #[test]
+    fn ignore_query_params_static() {
+        check(
+            "/a/b?foo=bar",
+            RoutePath::new(vec![Param("a".to_string()), Param("b".to_string())]),
+            Some(Vec::new()),
+        );
+    }
+
+    #[test]
+    fn ingnore_query_params_dyn() {
+        check(
+            "/a/b/c?foo=bar",
+            RoutePath::new(vec![DynSegments]),
+            Some(vec![Capture::DynSegments(vec!["a", "b", "c"])]),
+        );
+    }
+
+    #[test]
+    fn ignore_hash_static() {
+        check(
+            "/a/b#foo",
+            RoutePath::new(vec![Param("a".to_string()), Param("b".to_string())]),
+            Some(Vec::new()),
+        );
+    }
+
+    #[test]
+    fn ingnore_hash_dyn() {
+        check(
+            "/a/b/c#foo",
+            RoutePath::new(vec![DynSegments]),
+            Some(vec![Capture::DynSegments(vec!["a", "b", "c"])]),
         );
     }
 

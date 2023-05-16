@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.63.0
+          - 1.65.0
           - stable
           - nightly
         os:
