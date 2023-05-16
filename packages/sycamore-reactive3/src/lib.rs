@@ -52,6 +52,7 @@ mod effects;
 mod iter;
 mod memos;
 mod signals;
+mod store;
 mod utils;
 
 pub use context::*;
@@ -59,6 +60,7 @@ pub use effects::*;
 pub use iter::*;
 pub use memos::*;
 pub use signals::*;
+pub use store::*;
 pub use utils::*;
 
 /// The struct managing the state of the reactive system. Only one should be created per running
@@ -125,8 +127,9 @@ impl Root {
         // while running update itself.
         let mut update = self.signals.borrow_mut()[id].update.take();
         let changed = if let Some(update) = &mut update {
-            let (changed, tracker) =
-                self.tracked_scope(|| update(&mut self.signals.borrow()[id].value.borrow_mut()));
+            let mut value = self.signals.borrow()[id].value.take().unwrap();
+            let (changed, tracker) = self.tracked_scope(|| update(&mut value));
+            *self.signals.borrow()[id].value.borrow_mut() = Some(value);
             tracker.create_signal_dependency_links(self, id);
             changed
         } else {
@@ -194,6 +197,7 @@ impl Root {
     /// We then go through every node in this topological sorting and update only those nodes which
     /// have dependencies that were updated. TODO: Is there a way to cut update short if nothing
     /// changed?
+    #[cfg_attr(debug_assertions, track_caller)]
     fn propagate_signal_updates(&self, start_node: SignalId) {
         // Avoid allocation by reusing a `Vec` stored in the `Root`.
         let mut rev_sorted = self
@@ -247,6 +251,7 @@ impl Root {
 
     /// Call this if `start_node` has been updated manually. This will automatically update all
     /// signals that depend on `start_node` as well as call any effects as necessary.
+    #[cfg_attr(debug_assertions, track_caller)]
     fn propagate_updates(&self, start_node: SignalId) {
         // Propagate any signal updates.
         self.propagate_signal_updates(start_node);
@@ -532,6 +537,10 @@ pub fn on_cleanup(cx: Scope, f: impl FnOnce() + 'static) {
 }
 
 /// Batch updates from related signals together and only run effects at the end of the scope.
+///
+/// Note that this only batches effect updates, not memos. This is because we cannot defer updating
+/// of a signal because of methods like [`Signal::update`] which allow direct mutation to the
+/// underlying value.
 pub fn batch<T>(cx: Scope, f: impl FnOnce() -> T) -> T {
     cx.root.start_batch();
     let ret = f();

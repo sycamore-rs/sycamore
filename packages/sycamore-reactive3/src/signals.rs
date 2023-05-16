@@ -15,7 +15,10 @@ new_key_type! { pub(crate) struct SignalId; }
 
 /// Stores al the data associated with a signal.
 pub(crate) struct SignalState {
-    pub value: RefCell<Box<dyn Any>>,
+    /// The value of the signal. This is wrapped inside an [`Option`] because this will allow us to
+    /// temporarily take the value out while we run signal updates so that we do not have to hold
+    /// on mutably to `root.signals`.
+    pub value: RefCell<Option<Box<dyn Any>>>,
     /// List of signals whose value this signal depends on.
     ///
     /// If any of the dependency signals are updated, this signal will automatically be updated as
@@ -150,9 +153,10 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 ///
 /// This is why in the above example, we could access `signal` even after it was moved in to the
 /// closure of the `create_memo`.
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_signal<T>(cx: Scope, value: T) -> Signal<T> {
     let data = SignalState {
-        value: RefCell::new(Box::new(value)),
+        value: RefCell::new(Some(Box::new(value))),
         dependencies: Vec::new(),
         effect_dependents: Vec::new(),
         dependents: Vec::new(),
@@ -278,7 +282,9 @@ impl<T> ReadSignal<T> {
             f(signal
                 .value
                 .borrow()
-                .downcast_ref::<T>()
+                .as_ref()
+                .expect("cannot get value while updating")
+                .downcast_ref()
                 .expect("wrong signal type in slotmap"))
         })
     }
@@ -341,6 +347,8 @@ impl<T> Signal<T> {
             f(signal
                 .value
                 .borrow_mut()
+                .as_mut()
+                .expect("cannot update while updating")
                 .downcast_mut()
                 .expect("wrong signal type in slotmap"))
         })
