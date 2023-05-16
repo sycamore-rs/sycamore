@@ -27,12 +27,7 @@ Reactivity is based on reactive primitives. A `Signal` is one such example of a 
 At it's simplest, a `Signal` is simply a wrapper around a type that can be read and written to and
 which can be listened on whenever its wrapped value is mutated.
 
-To create a signal, we use `create_signal(cx, ...)`. Note that the return value of this method is
-not actually `Signal` but `&Signal`. The reason for this is because the created signal is allocated
-on the reactive scope and therefore has its lifetime tied with the scope. Furthermore, this allows
-using Rust's lifetime system to make sure signals are not accessed once its enclosing scope has been
-destroyed.
-
+To create a signal, we use `create_signal(cx, ...)`. 
 Here is an example of creating a signal, accessing it via `.get()`, and modifying it via
 `.set(...)`.
 
@@ -51,7 +46,7 @@ accomplished like so:
 
 ```rust
 let state = create_signal(cx, 0);
-create_effect(cx, || println!("The state changed. New value: {}", state.get()));
+create_effect(cx, move || println!("The state changed. New value: {}", state.get()));
 // Prints "The state changed. New value: 0"
 // (note that the effect is always executed at least 1 regardless of state changes)
 
@@ -75,11 +70,11 @@ In fact, we can easily create a derived state (also know as derive stores) using
 
 ```rust
 let state = create_signal(cx, 0);
-let double = create_memo(cx, || *state.get() * 2);
+let double = create_memo(cx, || state.get() * 2);
 
-assert_eq!(*double.get(), 0);
+assert_eq!(double.get(), 0);
 state.set(1);
-assert_eq!(*double.get(), 2);
+assert_eq!(double.get(), 2);
 ```
 
 `create_memo(...)` automatically recomputes the derived value when any of its dependencies change.
@@ -109,7 +104,7 @@ let state = create_signal(cx, 0);
     let text = G::text(String::new() /* placeholder */);
     create_effect(cx, move || {
         // Update text when `state` changes.
-        text.update_text(Some(&state.get()));
+        text.update_text(Some(&state.get(),to_string()));
     });
     element.append(&text);
     element

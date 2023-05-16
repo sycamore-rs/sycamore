@@ -7,7 +7,7 @@ let visible = create_signal(cx, true);
 
 view! { cx,
     div {
-        (if *visible.get() {
+        (if visible.get() {
             view! { cx, "Now you see me" }
         } else {
             view! { cx, } // Now you don't
@@ -32,7 +32,7 @@ let is_empty = create_selector(cx, || !name.get().is_empty());
 
 view! { cx,
     h1 {
-        (if *is_empty.get() {
+        (if is_empty.get() {
             view! { cx, span { (name.get()) } }
         } else {
             view! { cx, span { "World" } }
