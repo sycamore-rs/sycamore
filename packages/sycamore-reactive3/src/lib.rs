@@ -89,6 +89,9 @@ struct Root {
     rev_sorted_buf: RefCell<Vec<SignalId>>,
     /// A list of effects to be run after signal updates are over.
     effect_queue: RefCell<Vec<EffectId>>,
+    /// Whether we are currently batching signal updatse. If this is true, we do not run
+    /// `effect_queue` and instead wait until the end of the batch.
+    batch: Cell<bool>,
 }
 
 impl Root {
@@ -247,8 +250,10 @@ impl Root {
     fn propagate_updates(&self, start_node: SignalId) {
         // Propagate any signal updates.
         self.propagate_signal_updates(start_node);
-        // Run all the effects that have been queued.
-        self.run_effects();
+        if !self.batch.get() {
+            // Run all the effects that have been queued.
+            self.run_effects();
+        }
     }
 
     /// Run depth-first-search on the reactive graph starting at `current`.
@@ -281,6 +286,17 @@ impl Root {
         }
         signals[current_id].mark = Mark::Permanent;
         buf.push(current_id);
+    }
+
+    /// Sets the batch flag to `true`.
+    fn start_batch(&self) {
+        self.batch.set(true);
+    }
+
+    /// Sets the batch flag to `false` and run all the queued effects.
+    fn end_batch(&self) {
+        self.batch.set(false);
+        self.run_effects();
     }
 }
 
@@ -513,4 +529,103 @@ pub fn create_child_scope(cx: Scope, f: impl FnOnce(Scope)) -> Scope {
 /// ```
 pub fn on_cleanup(cx: Scope, f: impl FnOnce() + 'static) {
     cx.get_data(move |cx| cx.cleanups.push(Box::new(f)));
+}
+
+/// Batch updates from related signals together and only run effects at the end of the scope.
+pub fn batch<T>(cx: Scope, f: impl FnOnce() -> T) -> T {
+    cx.root.start_batch();
+    let ret = f();
+    cx.root.end_batch();
+    ret
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn cleanup() {
+        create_root(|cx| {
+            let cleanup_called = create_signal(cx, false);
+            let scope = create_child_scope(cx, |cx| {
+                on_cleanup(cx, move || {
+                    cleanup_called.set(true);
+                });
+            });
+            assert!(!cleanup_called.get());
+            scope.dispose();
+            assert!(cleanup_called.get());
+        });
+    }
+
+    #[test]
+    fn cleanup_in_effect() {
+        create_root(|cx| {
+            let trigger = create_signal(cx, ());
+
+            let counter = create_signal(cx, 0);
+
+            create_effect_scoped(cx, move |cx| {
+                trigger.track();
+
+                on_cleanup(cx, move || {
+                    counter.set(counter.get() + 1);
+                });
+            });
+
+            assert_eq!(counter.get(), 0);
+
+            trigger.set(());
+            assert_eq!(counter.get(), 1);
+
+            trigger.set(());
+            assert_eq!(counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn cleanup_is_untracked() {
+        create_root(|cx| {
+            let trigger = create_signal(cx, ());
+
+            let counter = create_signal(cx, 0);
+
+            create_effect_scoped(cx, move |cx| {
+                counter.set(counter.get_untracked() + 1);
+
+                on_cleanup(cx, move || {
+                    trigger.track(); // trigger should not be tracked
+                });
+            });
+
+            assert_eq!(counter.get(), 1);
+
+            trigger.set(());
+            assert_eq!(counter.get(), 1);
+        });
+    }
+
+    #[test]
+    fn batch_updates_effects_at_end() {
+        create_root(|cx| {
+            let state1 = create_signal(cx, 1);
+            let state2 = create_signal(cx, 2);
+            let counter = create_signal(cx, 0);
+            create_effect(cx, move || {
+                counter.set(counter.get_untracked() + 1);
+                let _ = state1.get() + state2.get();
+            });
+            assert_eq!(counter.get(), 1);
+            state1.set(2);
+            state2.set(3);
+            assert_eq!(counter.get(), 3);
+            batch(cx, move || {
+                state1.set(3);
+                assert_eq!(counter.get(), 3);
+                state2.set(4);
+                assert_eq!(counter.get(), 3);
+            });
+            assert_eq!(counter.get(), 4);
+        });
+    }
 }

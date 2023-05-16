@@ -130,6 +130,42 @@ pub fn bench(c: &mut Criterion) {
             BatchSize::SmallInput,
         );
     });
+
+    c.bench_function("deep_creation", |b| {
+        b.iter(|| {
+            let d = create_scope(|cx| {
+                let signal = create_signal(cx, 0);
+                let mut memos = Vec::<&ReadSignal<usize>>::new();
+                for _ in 0..1000usize {
+                    if let Some(prev) = memos.last().copied() {
+                        memos.push(create_memo(cx, move || *prev.get() + 1));
+                    } else {
+                        memos.push(create_memo(cx, move || *signal.get() + 1));
+                    }
+                }
+            });
+            unsafe { d.dispose() };
+        });
+    });
+
+    c.bench_function("deep_creation_new", |b| {
+        use sycamore_reactive3::*;
+
+        b.iter(|| {
+            let d = create_root(|cx| {
+                let signal = create_signal(cx, 0);
+                let mut memos = Vec::<Memo<usize>>::new();
+                for _ in 0..1000usize {
+                    if let Some(prev) = memos.last().copied() {
+                        memos.push(create_memo(cx, move || prev.get() + 1));
+                    } else {
+                        memos.push(create_memo(cx, move || signal.get() + 1));
+                    }
+                }
+            });
+            d.dispose();
+        });
+    });
 }
 
 criterion_group! {
