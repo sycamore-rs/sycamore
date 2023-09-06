@@ -21,6 +21,9 @@ fn compile_pass<G: Html>() {
 
         // view! should correctly parenthesize the (1 + 2) when borrowing.
         let _: View<G> = view! { cx, p { (1 + 2) } };
+
+        // view! should accept the pattern "-ref-" in an attribute name.
+        let _: View<G> = view! { cx, p(class="my-class", data-ref-me="my-value") };
     });
 }
 
