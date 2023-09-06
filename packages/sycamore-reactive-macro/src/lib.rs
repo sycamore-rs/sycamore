@@ -58,8 +58,8 @@ fn impl_state_struct(
             #(#node_idents: <#node_types as ::sycamore_reactive3::State>::Trigger,)*
         }
 
-        impl #impl_generics #trigger_ident #ty_generics #where_clause {
-            pub fn new(cx: ::sycamore_reactive3::Scope) -> Self {
+        impl #impl_generics ::sycamore_reactive3::StateTrigger for #trigger_ident #ty_generics #where_clause {
+            fn new(cx: ::sycamore_reactive3::Scope) -> Self {
                 Self {
                     #(#leaf_idents: ::sycamore_reactive3::create_signal(cx, ()),)*
                     #(#node_idents: <#node_types as ::sycamore_reactive3::State>::Trigger::new(cx),)*
@@ -104,7 +104,12 @@ impl Parse for LensSegment {
 #[proc_macro]
 pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let path = parse_macro_input!(input as LensPath);
-    let mut tokens = path.first.to_token_stream();
+    let first = path.first;
+
+    let mut tokens = quote! {
+        ::sycamore_reactive3::Store::__get(&#first)
+    };
+
     for segment in path.segments {
         match segment {
             LensSegment::Field(ident) => {
