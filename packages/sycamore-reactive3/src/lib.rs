@@ -52,7 +52,8 @@ mod effects;
 mod iter;
 mod memos;
 mod signals;
-mod store;
+// mod store;
+mod store2;
 mod utils;
 
 pub use context::*;
@@ -60,8 +61,12 @@ pub use effects::*;
 pub use iter::*;
 pub use memos::*;
 pub use signals::*;
-pub use store::*;
+// pub use store::*;
+pub use store2::*;
 pub use utils::*;
+
+/// Add name for proc-macro purposes.
+extern crate self as sycamore_reactive3;
 
 /// The struct managing the state of the reactive system. Only one should be created per running
 /// app.

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 paste = "1.0.12"
 slotmap = "1.0.6"
+sycamore-reactive-macro = { path = "../sycamore-reactive-macro" }
 
 [features]
 default = []
