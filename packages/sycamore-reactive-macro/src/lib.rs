@@ -1,6 +1,8 @@
-use quote::{format_ident, quote, ToTokens};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, Ident, Result};
+use syn::token::Bracket;
+use syn::{parse_macro_input, Expr, Ident, Result, Token};
 
 #[proc_macro_derive(State, attributes(nested))]
 pub fn state(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -86,7 +88,7 @@ impl Parse for LensPath {
     fn parse(input: ParseStream) -> Result<Self> {
         let first = input.parse()?;
         let mut segments = Vec::new();
-        while !input.is_empty() {
+        while input.peek(Token![.]) || input.peek(Bracket) {
             segments.push(input.parse()?);
         }
         Ok(LensPath { first, segments })
@@ -101,21 +103,80 @@ impl Parse for LensSegment {
     }
 }
 
+impl LensPath {
+    fn to_value_path(&self) -> TokenStream {
+        let mut tokens = TokenStream::default();
+        for segment in &self.segments {
+            match segment {
+                LensSegment::Field(ident) => {
+                    tokens.extend(quote!(.#ident));
+                }
+            }
+        }
+        tokens
+    }
+
+    fn to_trigger_path(&self) -> TokenStream {
+        let mut tokens = TokenStream::default();
+        for segment in &self.segments {
+            match segment {
+                LensSegment::Field(ident) => {
+                    tokens.extend(quote!(.#ident));
+                }
+            }
+        }
+        tokens
+    }
+}
+
 #[proc_macro]
 pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let path = parse_macro_input!(input as LensPath);
+
+    let value_path = path.to_value_path();
+    let trigger_path = path.to_trigger_path();
     let first = path.first;
 
-    let mut tokens = quote! {
-        ::sycamore_reactive3::Store::__get(&#first)
-    };
+    quote! {{
+        // Track the value.
+        ::sycamore_reactive3::Store::__trigger(&#first) #trigger_path.get();
 
-    for segment in path.segments {
-        match segment {
-            LensSegment::Field(ident) => {
-                tokens.extend(quote!(.#ident));
-            }
-        }
+        ::sycamore_reactive3::Store::__with(&#first, |#first| #first #value_path)
+    }}
+    .into()
+}
+
+struct SetInput {
+    path: LensPath,
+    value: Expr,
+}
+
+impl Parse for SetInput {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let path = input.parse()?;
+        input.parse::<Token![,]>()?;
+        let value = input.parse()?;
+        Ok(SetInput { path, value })
     }
-    tokens.into()
+}
+
+#[proc_macro]
+pub fn set(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let SetInput { path, value } = parse_macro_input!(input as SetInput);
+
+    let value_path = path.to_value_path();
+    let trigger_path = path.to_trigger_path();
+    if path.segments.is_empty() {
+        return syn::Error::new_spanned(path.first, "Cannot use `set!` on the root of a store.")
+            .to_compile_error()
+            .into();
+    }
+
+    let first = path.first;
+
+    quote! {{
+        ::sycamore_reactive3::Store::__with_mut(&#first, |#first| #first #value_path = #value);
+        ::sycamore_reactive3::Store::__trigger(&#first) #trigger_path.set(());
+    }}
+    .into()
 }
