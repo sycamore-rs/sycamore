@@ -52,8 +52,7 @@ mod effects;
 mod iter;
 mod memos;
 mod signals;
-// mod store;
-mod store2;
+mod store;
 mod utils;
 
 pub use context::*;
@@ -61,8 +60,7 @@ pub use effects::*;
 pub use iter::*;
 pub use memos::*;
 pub use signals::*;
-// pub use store::*;
-pub use store2::*;
+pub use store::*;
 pub use utils::*;
 
 /// Add name for proc-macro purposes.
