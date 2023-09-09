@@ -50,10 +50,11 @@ fn impl_state_struct(
 
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
+    let doc_comment =
+        format!("A mirrored version of [`{ident}`] with triggers for all the fields.");
+
     Ok(quote! {
-        #[doc = "A mirrored version of [`"]
-        #[doc = ::std::stringify!(#ident)]
-        #[doc = "`] with triggers for all the fields."]
+        #[doc = #doc_comment]
         #[allow(non_camel_case_types)]
         #vis struct #trigger_ident #ty_generics #where_clause {
             #(#leaf_idents: ::sycamore_reactive3::Signal<()>,)*
