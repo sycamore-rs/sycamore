@@ -36,7 +36,7 @@ fn main() {
             0f64
         };
 
-        let mut entry = benchmark_results.entry(result.benchmark).or_default();
+        let entry = benchmark_results.entry(result.benchmark).or_default();
         if result.framework.starts_with("wasm-bindgen") {
             entry.bindgen = avg_val
         } else if result.framework.starts_with("sycamore-baseline") {
