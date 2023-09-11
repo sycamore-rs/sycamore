@@ -315,12 +315,7 @@ impl<G: GenericNodeElements> Debug for InstantiateUniversalOpts<G> {
 
 impl<G: GenericNodeElements> Clone for InstantiateUniversalOpts<G> {
     fn clone(&self) -> Self {
-        Self {
-            start_marker: self.start_marker,
-            end_marker: self.end_marker,
-            create_element: self.create_element,
-            create_element_ns: self.create_element_ns,
-        }
+        *self
     }
 }
 
