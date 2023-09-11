@@ -34,9 +34,7 @@ impl<T> Deref for Memo<T> {
 
 impl<T> Clone for Memo<T> {
     fn clone(&self) -> Self {
-        Self {
-            signal: self.signal,
-        }
+        *self
     }
 }
 impl<T> Copy for Memo<T> {}
@@ -51,6 +49,7 @@ impl<T: fmt::Display> fmt::Display for Memo<T> {
         self.with(|value| value.fmt(f))
     }
 }
+
 /// Create a new [`Signal`] from an initial value, an initial list of dependencies, and an update
 /// function. Used in the implementation of [`create_memo`] and friends.
 pub(crate) fn create_updated_signal<T>(
@@ -141,7 +140,7 @@ pub fn create_selector_with<T>(
     let (initial, tracker) = cx.root.tracked_scope(&mut f);
     let signal = create_updated_signal(cx, initial, tracker, move |value| {
         let new = f();
-        if eq(&new, &value) {
+        if eq(&new, value) {
             false
         } else {
             *value = new;
@@ -222,7 +221,7 @@ pub fn create_reducer<T, Msg>(
 ) -> (Memo<T>, impl Fn(Msg)) {
     let reduce = RefCell::new(reduce);
     let signal = create_signal(cx, initial);
-    let dispatch = move |msg| signal.update(|value| *value = reduce.borrow_mut()(&value, msg));
+    let dispatch = move |msg| signal.update(|value| *value = reduce.borrow_mut()(value, msg));
     (Memo { signal }, dispatch)
 }
 

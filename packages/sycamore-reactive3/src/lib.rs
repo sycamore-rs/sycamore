@@ -209,7 +209,7 @@ impl Root {
             .expect("cannot update a signal inside a memo");
         rev_sorted.clear();
 
-        self.dfs(start_node, &mut self.signals.borrow_mut(), &mut rev_sorted);
+        Self::dfs(start_node, &mut self.signals.borrow_mut(), &mut rev_sorted);
 
         for &node in rev_sorted.iter().rev() {
             let mut signals_mut = self.signals.borrow_mut();
@@ -269,7 +269,6 @@ impl Root {
     /// Also resets `changed_in_last_update` and adds a [`Mark::Permanent`] for all signals
     /// traversed.
     fn dfs(
-        &self,
         current_id: SignalId,
         signals: &mut SlotMap<SignalId, SignalState>,
         buf: &mut Vec<SignalId>,
@@ -290,7 +289,7 @@ impl Root {
         let children = current.dependents.clone();
         current.dependents.clear();
         for child in children {
-            self.dfs(child, signals, buf);
+            Self::dfs(child, signals, buf);
         }
         signals[current_id].mark = Mark::Permanent;
         buf.push(current_id);

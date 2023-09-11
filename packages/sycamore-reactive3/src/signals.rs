@@ -42,6 +42,7 @@ pub(crate) struct SignalState {
     /// The return value of the update function is a `bool`. This should represent whether the
     /// value has been changed or not. If `true` is returned, then dependent signals will also be
     /// updated.
+    #[allow(clippy::type_complexity)]
     pub update: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> bool>>,
     /// An internal state used by `propagate_updates`. This should be `true` if the signal has been
     /// updated in the last call to `propagate_updates` and was reacheable from the start node.
@@ -178,7 +179,7 @@ pub fn create_signal<T>(cx: Scope, value: T) -> Signal<T> {
 impl<T> ReadSignal<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_data<U>(self, f: impl FnOnce(&SignalState) -> U) -> U {
-        f(&mut self
+        f(self
             .root
             .signals
             .borrow()
@@ -188,7 +189,7 @@ impl<T> ReadSignal<T> {
 
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_data_mut<U>(self, f: impl FnOnce(&mut SignalState) -> U) -> U {
-        f(&mut self
+        f(self
             .root
             .signals
             .borrow_mut()
@@ -385,18 +386,14 @@ impl<T> Signal<T> {
 /// We manually implement `Clone` + `Copy` for `Signal` so that we don't get extra bounds on `T`.
 impl<T> Clone for ReadSignal<T> {
     fn clone(&self) -> Self {
-        Self {
-            id: self.id,
-            root: self.root,
-            _phantom: self._phantom,
-        }
+        *self
     }
 }
 impl<T> Copy for ReadSignal<T> {}
 
 impl<T> Clone for Signal<T> {
     fn clone(&self) -> Self {
-        Self(self.0)
+        *self
     }
 }
 impl<T> Copy for Signal<T> {}

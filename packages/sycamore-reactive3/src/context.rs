@@ -13,7 +13,11 @@ pub fn provide_context<T: 'static>(cx: Scope, value: T) {
     let any: Box<dyn Any> = Box::new(value);
     // Check if a context of the same type exists already.
     cx.get_data(|scope| {
-        if scope.context.iter().any(|x| x.type_id() == any.type_id()) {
+        if scope
+            .context
+            .iter()
+            .any(|x| (**x).type_id() == (*any).type_id())
+        {
             panic!(
                 "a context with type {} exists already in this scope",
                 type_name::<T>()
