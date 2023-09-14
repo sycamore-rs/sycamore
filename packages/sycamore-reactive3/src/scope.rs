@@ -1,3 +1,5 @@
+//! [`Root`] and [`Scope`].
+
 use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::fmt;
@@ -487,11 +489,10 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
             .push(UnsafeSendPtr(_ref as *const Root));
     }
 
-    let handle = RootHandle { _ref };
     Root::set_global(Some(_ref));
     f();
     Root::set_global(None);
-    handle
+    RootHandle { _ref }
 }
 
 /// Create a child scope.

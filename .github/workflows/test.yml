@@ -52,14 +52,21 @@ jobs:
         # Only run tests for sycamore to prevent stray feature flags from other tests.
         run: cd packages/sycamore && cargo test
 
-      - name: Run tests with all features
+      - name: Run tests (with UI tests) on 1.72.0
         if: matrix.rust == '1.72.0'
         env:
           RUN_UI_TESTS: true
+          RUSTFLAGS: --cfg 'stable_ci'
         run: cargo test --all-features
 
-      - name: Run tests with all features excluding UI
-        if: matrix.rust != '1.72.0'
+      - name: Run tests on stable
+        if: matrix.rust == 'stable'
+        env:
+          RUSTFLAGS: --cfg 'stable_ci'
+        run: cargo test --all-features
+
+      - name: Run tests on nightly
+        if: matrix.rust == 'nightly'
         run: cargo test --all-features
 
       - name: Run headless browser tests
