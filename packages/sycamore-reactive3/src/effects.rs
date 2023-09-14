@@ -2,7 +2,7 @@
 
 use slotmap::new_key_type;
 
-use crate::{create_child_scope, Scope, SignalId};
+use crate::{create_child_scope, Root, Scope, SignalId};
 
 new_key_type! { pub(crate) struct EffectId; }
 
@@ -21,10 +21,10 @@ pub(crate) struct EffectState {
 /// # Example
 /// ```
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let state = create_signal(cx, 0);
+/// # create_root(|| {
+/// let state = create_signal(0);
 ///
-/// create_effect(cx, move || {
+/// create_effect(move || {
 ///     println!("State changed. New state value = {}", state.get());
 /// });
 /// // Prints "State changed. New state value = 0"
@@ -37,17 +37,20 @@ pub(crate) struct EffectState {
 /// `create_effect` should only be used for creating **side-effects**. It is generally not
 /// recommended to update signal states inside an effect. You probably should be using a
 /// [`create_memo`](crate::create_memo) instead.
-pub fn create_effect(cx: Scope, mut f: impl FnMut() + 'static) {
+pub fn create_effect(mut f: impl FnMut() + 'static) {
+    let root = Root::get_global();
     // Run the effect right now so we can get the dependencies.
-    let (_, tracker) = cx.root.tracked_scope(&mut f);
-    let key = cx.root.effects.borrow_mut().insert(EffectState {
+    let (_, tracker) = root.tracked_scope(&mut f);
+    let key = root.effects.borrow_mut().insert(EffectState {
         callback: Some(Box::new(f)),
         dependencies: Vec::new(),
         already_run_in_update: false,
     });
-    cx.get_data(|data| data.effects.push(key));
+    root.scopes.borrow_mut()[root.current_scope.get().unwrap()]
+        .effects
+        .push(key);
     // Add the dependency links.
-    tracker.create_effect_dependency_links(cx.root, key);
+    tracker.create_effect_dependency_links(root, key);
 }
 
 /// Creates an effect on signals used inside the effect closure.
@@ -58,21 +61,21 @@ pub fn create_effect(cx: Scope, mut f: impl FnMut() + 'static) {
 /// # Example
 /// ```
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// create_effect_scoped(cx, |cx| {
+/// # create_root(|| {
+/// create_effect_scoped(|| {
 ///     // Use the scoped cx inside here.
-///     let _nested_signal = create_signal(cx, 0);
+///     let _nested_signal = create_signal(0);
 ///     // _nested_signal cannot escape out of the effect closure.
 /// });
 /// # });
 /// ```
-pub fn create_effect_scoped(cx: Scope, mut f: impl FnMut(Scope) + 'static) {
+pub fn create_effect_scoped(mut f: impl FnMut() + 'static) {
     let mut child_scope: Option<Scope> = None;
-    create_effect(cx, move || {
+    create_effect(move || {
         if let Some(child_scope) = child_scope {
             child_scope.dispose();
         }
-        child_scope = Some(create_child_scope(cx, &mut f));
+        child_scope = Some(create_child_scope(&mut f));
     });
 }
 
@@ -82,12 +85,12 @@ mod tests {
 
     #[test]
     fn effect() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
+        create_root(|| {
+            let state = create_signal(0);
 
-            let double = create_signal(cx, -1);
+            let double = create_signal(-1);
 
-            create_effect(cx, move || {
+            create_effect(move || {
                 double.set(state.get() * 2);
             });
             assert_eq!(double.get(), 0); // calling create_effect should call the effect at least once
@@ -101,17 +104,14 @@ mod tests {
 
     #[test]
     fn effect_with_explicit_dependencies() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
+        create_root(|| {
+            let state = create_signal(0);
 
-            let double = create_signal(cx, -1);
+            let double = create_signal(-1);
 
-            create_effect(
-                cx,
-                on(state, move || {
-                    double.set(state.get() * 2);
-                }),
-            );
+            create_effect(on(state, move || {
+                double.set(state.get() * 2);
+            }));
             assert_eq!(double.get(), 0); // calling create_effect should call the effect at least once
 
             state.set(1);
@@ -123,9 +123,9 @@ mod tests {
 
     #[test]
     fn effect_cannot_create_infinite_loop() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
-            create_effect(cx, move || {
+        create_root(|| {
+            let state = create_signal(0);
+            create_effect(move || {
                 state.track();
                 state.set(0);
             });
@@ -135,11 +135,11 @@ mod tests {
 
     #[test]
     fn effect_should_only_subscribe_once_to_same_signal() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
+        create_root(|| {
+            let state = create_signal(0);
 
-            let counter = create_signal(cx, 0);
-            create_effect(cx, move || {
+            let counter = create_signal(0);
+            create_effect(move || {
                 counter.set(counter.get_untracked() + 1);
 
                 // call state.track() twice but should subscribe once
@@ -156,14 +156,14 @@ mod tests {
 
     #[test]
     fn effect_should_recreate_dependencies_each_time() {
-        create_root(|cx| {
-            let condition = create_signal(cx, true);
+        create_root(|| {
+            let condition = create_signal(true);
 
-            let state1 = create_signal(cx, 0);
-            let state2 = create_signal(cx, 1);
+            let state1 = create_signal(0);
+            let state2 = create_signal(1);
 
-            let counter = create_signal(cx, 0);
-            create_effect(cx, move || {
+            let counter = create_signal(0);
+            create_effect(move || {
                 counter.set(counter.get_untracked() + 1);
 
                 if condition.get() {
@@ -194,17 +194,17 @@ mod tests {
 
     #[test]
     fn inner_effects_run_first() {
-        create_root(|cx| {
-            let trigger = create_signal(cx, ());
+        create_root(|| {
+            let trigger = create_signal(());
 
-            let outer_counter = create_signal(cx, 0);
-            let inner_counter = create_signal(cx, 0);
+            let outer_counter = create_signal(0);
+            let inner_counter = create_signal(0);
 
-            create_effect_scoped(cx, move |cx| {
+            create_effect_scoped(move || {
                 trigger.track();
                 outer_counter.set(outer_counter.get_untracked() + 1);
 
-                create_effect(cx, move || {
+                create_effect(move || {
                     trigger.track();
                     inner_counter.set(inner_counter.get_untracked() + 1);
                 });
@@ -222,13 +222,13 @@ mod tests {
 
     #[test]
     fn destroy_effects_on_scope_dispose() {
-        create_root(|cx| {
-            let counter = create_signal(cx, 0);
+        create_root(|| {
+            let counter = create_signal(0);
 
-            let trigger = create_signal(cx, ());
+            let trigger = create_signal(());
 
-            let child_scope = create_child_scope(cx, move |cx| {
-                create_effect(cx, move || {
+            let child_scope = create_child_scope(move || {
+                create_effect(move || {
                     trigger.track();
                     counter.set(counter.get_untracked() + 1);
                 });
@@ -247,11 +247,11 @@ mod tests {
 
     #[test]
     fn effect_scoped_subscribing_to_own_signal() {
-        create_root(|cx| {
-            let trigger = create_signal(cx, ());
-            create_effect_scoped(cx, move |cx| {
+        create_root(|| {
+            let trigger = create_signal(());
+            create_effect_scoped(move || {
                 trigger.track();
-                let signal = create_signal(cx, ());
+                let signal = create_signal(());
                 // Track own signal:
                 signal.track();
             });

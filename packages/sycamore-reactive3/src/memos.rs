@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::fmt::{self, Formatter};
 use std::ops::Deref;
 
-use crate::{create_signal, DependencyTracker, ReadSignal, Scope, Signal};
+use crate::{create_signal, DependencyTracker, ReadSignal, Root, Signal};
 
 /// A memoized derived signal.
 ///
@@ -53,13 +53,13 @@ impl<T: fmt::Display> fmt::Display for Memo<T> {
 /// Create a new [`Signal`] from an initial value, an initial list of dependencies, and an update
 /// function. Used in the implementation of [`create_memo`] and friends.
 pub(crate) fn create_updated_signal<T>(
-    cx: Scope,
     initial: T,
     initial_deps: DependencyTracker,
     mut f: impl FnMut(&mut T) -> bool + 'static,
 ) -> Signal<T> {
-    let signal = create_signal(cx, initial);
-    initial_deps.create_signal_dependency_links(cx.root, signal.0.id);
+    let root = Root::get_global();
+    let signal = create_signal(initial);
+    initial_deps.create_signal_dependency_links(root, signal.0.id);
 
     // Set the signal update callback as f.
     signal.0.get_data_mut(move |data| {
@@ -84,8 +84,8 @@ pub(crate) fn create_updated_signal<T>(
 ///
 /// ```
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let state = create_signal(cx, 0);
+/// # create_root(|| {
+/// let state = create_signal(0);
 /// let double = || state.get() * 2;
 ///
 /// let _ = double();
@@ -104,18 +104,19 @@ pub(crate) fn create_updated_signal<T>(
 /// # Example
 /// ```
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let state = create_signal(cx, 0);
-/// let double = create_memo(cx, move || state.get() * 2);
+/// # create_root(|| {
+/// let state = create_signal(0);
+/// let double = create_memo(move || state.get() * 2);
 ///
 /// assert_eq!(double.get(), 0);
 /// state.set(1);
 /// assert_eq!(double.get(), 2);
 /// # });
 /// ```
-pub fn create_memo<T>(cx: Scope, mut f: impl FnMut() -> T + 'static) -> Memo<T> {
-    let (initial, tracker) = cx.root.tracked_scope(&mut f);
-    let signal = create_updated_signal(cx, initial, tracker, move |value| {
+pub fn create_memo<T>(mut f: impl FnMut() -> T + 'static) -> Memo<T> {
+    let root = Root::get_global();
+    let (initial, tracker) = root.tracked_scope(&mut f);
+    let signal = create_updated_signal(initial, tracker, move |value| {
         *value = f();
         true
     });
@@ -133,12 +134,12 @@ pub fn create_memo<T>(cx: Scope, mut f: impl FnMut() -> T + 'static) -> Memo<T> 
 /// To use the type's [`PartialEq`] implementation instead of a custom function, use
 /// [`create_selector`].
 pub fn create_selector_with<T>(
-    cx: Scope,
     mut f: impl FnMut() -> T + 'static,
     mut eq: impl FnMut(&T, &T) -> bool + 'static,
 ) -> Memo<T> {
-    let (initial, tracker) = cx.root.tracked_scope(&mut f);
-    let signal = create_updated_signal(cx, initial, tracker, move |value| {
+    let root = Root::get_global();
+    let (initial, tracker) = root.tracked_scope(&mut f);
+    let signal = create_updated_signal(initial, tracker, move |value| {
         let new = f();
         if eq(&new, value) {
             false
@@ -160,12 +161,12 @@ pub fn create_selector_with<T>(
 /// # Example
 /// ```
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let state = create_signal(cx, 1);
-/// let squared = create_selector(cx, move || state.get() * state.get());
+/// # create_root(|| {
+/// let state = create_signal(1);
+/// let squared = create_selector(move || state.get() * state.get());
 /// assert_eq!(squared.get(), 1);
 ///
-/// create_effect(cx, move || println!("x^2 = {}", squared.get()));
+/// create_effect(move || println!("x^2 = {}", squared.get()));
 ///
 /// state.set(2); // Triggers the effect.
 /// assert_eq!(squared.get(), 4);
@@ -174,11 +175,11 @@ pub fn create_selector_with<T>(
 /// assert_eq!(squared.get(), 4);
 /// # });
 /// ```
-pub fn create_selector<T>(cx: Scope, f: impl FnMut() -> T + 'static) -> Memo<T>
+pub fn create_selector<T>(f: impl FnMut() -> T + 'static) -> Memo<T>
 where
     T: PartialEq,
 {
-    create_selector_with(cx, f, PartialEq::eq)
+    create_selector_with(f, PartialEq::eq)
 }
 
 /// An alternative to [`create_signal`] that uses a reducer to get the next
@@ -201,8 +202,8 @@ where
 ///     Decrement,
 /// }
 ///
-/// # create_root(|cx| {
-/// let (state, dispatch) = create_reducer(cx, 0, |&state, msg: Msg| match msg {
+/// # create_root(|| {
+/// let (state, dispatch) = create_reducer(0, |&state, msg: Msg| match msg {
 ///     Msg::Increment => state + 1,
 ///     Msg::Decrement => state - 1,
 /// });
@@ -215,12 +216,11 @@ where
 /// # });
 /// ```
 pub fn create_reducer<T, Msg>(
-    cx: Scope,
     initial: T,
     reduce: impl FnMut(&T, Msg) -> T,
 ) -> (Memo<T>, impl Fn(Msg)) {
     let reduce = RefCell::new(reduce);
-    let signal = create_signal(cx, initial);
+    let signal = create_signal(initial);
     let dispatch = move |msg| signal.update(|value| *value = reduce.borrow_mut()(value, msg));
     (Memo { signal }, dispatch)
 }
@@ -231,9 +231,9 @@ mod tests {
 
     #[test]
     fn memo() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
-            let double = create_memo(cx, move || state.get() * 2);
+        create_root(|| {
+            let state = create_signal(0);
+            let double = create_memo(move || state.get() * 2);
 
             assert_eq!(double.get(), 0);
             state.set(1);
@@ -246,11 +246,11 @@ mod tests {
     /// Make sure value is memoized rather than executed on demand.
     #[test]
     fn memo_only_run_once() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
+        create_root(|| {
+            let state = create_signal(0);
 
-            let counter = create_signal(cx, 0);
-            let double = create_memo(cx, move || {
+            let counter = create_signal(0);
+            let double = create_memo(move || {
                 counter.set_silent(counter.get_untracked() + 1);
                 state.get() * 2
             });
@@ -265,10 +265,10 @@ mod tests {
 
     #[test]
     fn dependency_on_memo() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
-            let double = create_memo(cx, move || state.get() * 2);
-            let quadruple = create_memo(cx, move || double.get() * 2);
+        create_root(|| {
+            let state = create_signal(0);
+            let double = create_memo(move || state.get() * 2);
+            let quadruple = create_memo(move || double.get() * 2);
 
             assert_eq!(quadruple.get(), 0);
             state.set(1);
@@ -278,9 +278,9 @@ mod tests {
 
     #[test]
     fn untracked_memo() {
-        create_root(|cx| {
-            let state = create_signal(cx, 1);
-            let double = create_memo(cx, move || state.get_untracked() * 2);
+        create_root(|| {
+            let state = create_signal(1);
+            let double = create_memo(move || state.get_untracked() * 2);
 
             assert_eq!(double.get(), 2);
             state.set(2);
@@ -292,14 +292,14 @@ mod tests {
 
     #[test]
     fn memos_should_recreate_dependencies_each_time() {
-        create_root(|cx| {
-            let condition = create_signal(cx, true);
+        create_root(|| {
+            let condition = create_signal(true);
 
-            let state1 = create_signal(cx, 0);
-            let state2 = create_signal(cx, 1);
+            let state1 = create_signal(0);
+            let state2 = create_signal(1);
 
-            let counter = create_signal(cx, 0);
-            create_memo(cx, move || {
+            let counter = create_signal(0);
+            create_memo(move || {
                 counter.set_silent(counter.get_untracked() + 1);
 
                 if condition.get() {
@@ -330,13 +330,13 @@ mod tests {
 
     #[test]
     fn destroy_memos_on_scope_dispose() {
-        create_root(|cx| {
-            let counter = create_signal(cx, 0);
+        create_root(|| {
+            let counter = create_signal(0);
 
-            let trigger = create_signal(cx, ());
+            let trigger = create_signal(());
 
-            let child_scope = create_child_scope(cx, move |cx| {
-                let _ = create_memo(cx, move || {
+            let child_scope = create_child_scope(move || {
+                let _ = create_memo(move || {
                     trigger.track();
                     counter.set_silent(counter.get_untracked() + 1);
                 });
@@ -355,12 +355,12 @@ mod tests {
 
     #[test]
     fn selector() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
-            let double = create_selector(cx, move || state.get() * 2);
+        create_root(|| {
+            let state = create_signal(0);
+            let double = create_selector(move || state.get() * 2);
 
-            let counter = create_signal(cx, 0);
-            create_effect(cx, move || {
+            let counter = create_signal(0);
+            create_effect(move || {
                 counter.set(counter.get_untracked() + 1);
 
                 double.track();
@@ -380,13 +380,13 @@ mod tests {
 
     #[test]
     fn reducer() {
-        create_root(|cx| {
+        create_root(|| {
             enum Msg {
                 Increment,
                 Decrement,
             }
 
-            let (state, dispatch) = create_reducer(cx, 0, |state, msg: Msg| match msg {
+            let (state, dispatch) = create_reducer(0, |state, msg: Msg| match msg {
                 Msg::Increment => *state + 1,
                 Msg::Decrement => *state - 1,
             });
@@ -404,17 +404,17 @@ mod tests {
 
     #[test]
     fn memo_reducer() {
-        create_root(|cx| {
+        create_root(|| {
             enum Msg {
                 Increment,
                 Decrement,
             }
 
-            let (state, dispatch) = create_reducer(cx, 0, |state, msg: Msg| match msg {
+            let (state, dispatch) = create_reducer(0, |state, msg: Msg| match msg {
                 Msg::Increment => *state + 1,
                 Msg::Decrement => *state - 1,
             });
-            let doubled = create_memo(cx, move || state.get() * 2);
+            let doubled = create_memo(move || state.get() * 2);
 
             assert_eq!(doubled.get(), 0);
             dispatch(Msg::Increment);

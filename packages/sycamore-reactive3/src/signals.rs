@@ -9,7 +9,7 @@ use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
 use slotmap::new_key_type;
 
-use crate::{create_memo, EffectId, Memo, Root, Scope};
+use crate::{create_memo, EffectId, Memo, Root};
 
 new_key_type! { pub(crate) struct SignalId; }
 
@@ -74,8 +74,8 @@ pub(crate) enum Mark {
 /// # Example
 /// ```
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let signal: Signal<i32> = create_signal(cx, 123);
+/// # create_root(|| {
+/// let signal: Signal<i32> = create_signal(123);
 /// let read_signal: ReadSignal<i32> = *signal;
 /// assert_eq!(read_signal.get(), 123);
 /// signal.set(456);
@@ -112,8 +112,8 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 ///
 /// ```rust
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let signal = create_signal(cx, 1);
+/// # create_root(|| {
+/// let signal = create_signal(1);
 /// signal.get(); // Should return 1.
 /// signal.set(2);
 /// signal.get(); // Should return 2.
@@ -133,11 +133,11 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 ///
 /// ```rust
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let signal = create_signal(cx, 1);
+/// # create_root(|| {
+/// let signal = create_signal(1);
 /// // Note that we are accessing signal inside a closure in the line below. This will cause it to
 /// // be automatically tracked and update our double value whenever signal is changed.
-/// let double = create_memo(cx, move || signal.get() * 2);
+/// let double = create_memo(move || signal.get() * 2);
 /// double.get(); // Should return 2.
 /// signal.set(2);
 /// double.get(); // Should return 4. Notice how this value was updated automatically when we
@@ -155,7 +155,8 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// This is why in the above example, we could access `signal` even after it was moved in to the
 /// closure of the `create_memo`.
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn create_signal<T>(cx: Scope, value: T) -> Signal<T> {
+pub fn create_signal<T>(value: T) -> Signal<T> {
+    let root = Root::get_global();
     let data = SignalState {
         value: RefCell::new(Some(Box::new(value))),
         dependencies: Vec::new(),
@@ -165,13 +166,15 @@ pub fn create_signal<T>(cx: Scope, value: T) -> Signal<T> {
         changed_in_last_update: false,
         mark: Mark::None,
     };
-    let key = cx.root.signals.borrow_mut().insert(data);
+    let key = root.signals.borrow_mut().insert(data);
     // Add the signal the scope signal list so that it is properly dropped when the scope is
     // dropped.
-    cx.get_data(|cx| cx.signals.push(key));
+    root.scopes.borrow_mut()[root.current_scope.get().unwrap()]
+        .signals
+        .push(key);
     Signal(ReadSignal {
         id: key,
-        root: cx.root,
+        root,
         _phantom: PhantomData,
     })
 }
@@ -225,15 +228,15 @@ impl<T> ReadSignal<T> {
     /// # Example
     /// ```rust
     /// # use sycamore_reactive3::*;
-    /// # create_root(|cx| {
-    /// let state = create_signal(cx, 0);
+    /// # create_root(|| {
+    /// let state = create_signal(0);
     /// assert_eq!(state.get(), 0);
     ///
     /// state.set(1);
     /// assert_eq!(state.get(), 1);
     ///
     /// // The signal is automatically tracked in the line below.
-    /// let doubled = create_memo(cx, move || state.get());
+    /// let doubled = create_memo(move || state.get());
     /// # });
     /// ```
     #[cfg_attr(debug_assertions, track_caller)]
@@ -254,12 +257,12 @@ impl<T> ReadSignal<T> {
     /// # Example
     /// ```rust
     /// # use sycamore_reactive3::*;
-    /// # create_root(|cx| {
-    /// let greeting = create_signal(cx, "Hello".to_string());
+    /// # create_root(|| {
+    /// let greeting = create_signal("Hello".to_string());
     /// assert_eq!(greeting.get_clone(), "Hello".to_string());
     ///
     /// // The signal is automatically tracked in the line below.
-    /// let hello_world = create_memo(cx, move || format!("{} World!", greeting.get_clone()));
+    /// let hello_world = create_memo(move || format!("{} World!", greeting.get_clone()));
     /// assert_eq!(hello_world.get_clone(), "Hello World!");
     ///
     /// greeting.set("Goodbye".to_string());
@@ -374,8 +377,8 @@ impl<T> Signal<T> {
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn map<U>(self, cx: Scope, mut f: impl FnMut(&T) -> U + 'static) -> Memo<U> {
-        create_memo(cx, move || self.with(&mut f))
+    pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> Memo<U> {
+        create_memo(move || self.with(&mut f))
     }
 
     pub fn split(self) -> (ReadSignal<T>, impl Fn(T) -> T) {
@@ -490,8 +493,8 @@ mod tests {
 
     #[test]
     fn signal() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
+        create_root(|| {
+            let state = create_signal(0);
             assert_eq!(state.get(), 0);
 
             state.set(1);
@@ -504,8 +507,8 @@ mod tests {
 
     #[test]
     fn signal_composition() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
+        create_root(|| {
+            let state = create_signal(0);
             let double = || state.get() * 2;
 
             assert_eq!(double(), 0);
@@ -516,9 +519,9 @@ mod tests {
 
     #[test]
     fn set_silent_signal() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
-            let double = state.map(cx, |&x| x * 2);
+        create_root(|| {
+            let state = create_signal(0);
+            let double = state.map(|&x| x * 2);
 
             assert_eq!(double.get(), 0);
             state.set_silent(1);
@@ -531,8 +534,8 @@ mod tests {
 
     #[test]
     fn read_signal() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
+        create_root(|| {
+            let state = create_signal(0);
             let readonly: ReadSignal<i32> = *state;
 
             assert_eq!(readonly.get(), 0);
@@ -543,9 +546,9 @@ mod tests {
 
     #[test]
     fn map_signal() {
-        create_root(|cx| {
-            let state = create_signal(cx, 0);
-            let double = state.map(cx, |&x| x * 2);
+        create_root(|| {
+            let state = create_signal(0);
+            let double = state.map(|&x| x * 2);
 
             assert_eq!(double.get(), 0);
             state.set(1);
@@ -555,8 +558,8 @@ mod tests {
 
     #[test]
     fn take_signal() {
-        create_root(|cx| {
-            let state = create_signal(cx, 123);
+        create_root(|| {
+            let state = create_signal(123);
 
             let x = state.take();
             assert_eq!(x, 123);
@@ -566,9 +569,9 @@ mod tests {
 
     #[test]
     fn take_silent_signal() {
-        create_root(|cx| {
-            let state = create_signal(cx, 123);
-            let double = state.map(cx, |&x| x * 2);
+        create_root(|| {
+            let state = create_signal(123);
+            let double = state.map(|&x| x * 2);
 
             // Do not trigger subscribers.
             state.take_silent();
@@ -579,8 +582,8 @@ mod tests {
 
     #[test]
     fn signal_split() {
-        create_root(|cx| {
-            let (state, set_state) = create_signal(cx, 0).split();
+        create_root(|| {
+            let (state, set_state) = create_signal(0).split();
             assert_eq!(state.get(), 0);
 
             set_state(1);
@@ -590,34 +593,34 @@ mod tests {
 
     #[test]
     fn signal_display() {
-        create_root(|cx| {
-            let signal = create_signal(cx, 0);
+        create_root(|| {
+            let signal = create_signal(0);
             assert_eq!(format!("{signal}"), "0");
             let read_signal: ReadSignal<_> = *signal;
             assert_eq!(format!("{read_signal}"), "0");
-            let memo = create_memo(cx, || 0);
+            let memo = create_memo(|| 0);
             assert_eq!(format!("{memo}"), "0");
         });
     }
 
     #[test]
     fn signal_debug() {
-        create_root(|cx| {
-            let signal = create_signal(cx, 0);
+        create_root(|| {
+            let signal = create_signal(0);
             assert_eq!(format!("{signal:?}"), "0");
             let read_signal: ReadSignal<_> = *signal;
             assert_eq!(format!("{read_signal:?}"), "0");
-            let memo = create_memo(cx, || 0);
+            let memo = create_memo(|| 0);
             assert_eq!(format!("{memo:?}"), "0");
         });
     }
 
     #[test]
     fn signal_add_assign_update() {
-        create_root(|cx| {
-            let mut signal = create_signal(cx, 0);
-            let counter = create_signal(cx, 0);
-            create_effect(cx, move || {
+        create_root(|| {
+            let mut signal = create_signal(0);
+            let counter = create_signal(0);
+            create_effect(move || {
                 signal.track();
                 counter.set(counter.get_untracked() + 1);
             });
@@ -631,10 +634,10 @@ mod tests {
 
     #[test]
     fn signal_update() {
-        create_root(|cx| {
-            let signal = create_signal(cx, "Hello ".to_string());
-            let counter = create_signal(cx, 0);
-            create_effect(cx, move || {
+        create_root(|| {
+            let signal = create_signal("Hello ".to_string());
+            let counter = create_signal(0);
+            create_effect(move || {
                 signal.track();
                 counter.set(counter.get_untracked() + 1);
             });

@@ -3,11 +3,11 @@
 //! ```rust
 //! use sycamore_reactive3::*;
 //!
-//! create_root(|cx| {
-//!     let greeting = create_signal(cx, "Hello");
-//!     let name = create_signal(cx, "World");
+//! create_root(|| {
+//!     let greeting = create_signal("Hello");
+//!     let name = create_signal("World");
 //!
-//!     let display_text = create_memo(cx, move || format!("{greeting} {name}!"));
+//!     let display_text = create_memo(move || format!("{greeting} {name}!"));
 //!     assert_eq!(display_text.get_clone(), "Hello World!");
 //!
 //!     name.set("Sycamore");
@@ -22,8 +22,8 @@
 //!
 //! ```rust
 //! # use sycamore_reactive3::*;
-//! # create_root(|cx| {
-//! let signal = create_signal(cx, 123);
+//! # create_root(|| {
+//! let signal = create_signal(123);
 //!
 //! // Stable:
 //! let value = signal.get();
@@ -59,94 +59,3 @@ pub use utils::*;
 
 /// Add name for proc-macro purposes.
 extern crate self as sycamore_reactive3;
-
-#[cfg(test)]
-mod tests {
-    use crate::*;
-
-    #[test]
-    fn cleanup() {
-        create_root(|cx| {
-            let cleanup_called = create_signal(cx, false);
-            let scope = create_child_scope(cx, |cx| {
-                on_cleanup(cx, move || {
-                    cleanup_called.set(true);
-                });
-            });
-            assert!(!cleanup_called.get());
-            scope.dispose();
-            assert!(cleanup_called.get());
-        });
-    }
-
-    #[test]
-    fn cleanup_in_effect() {
-        create_root(|cx| {
-            let trigger = create_signal(cx, ());
-
-            let counter = create_signal(cx, 0);
-
-            create_effect_scoped(cx, move |cx| {
-                trigger.track();
-
-                on_cleanup(cx, move || {
-                    counter.set(counter.get() + 1);
-                });
-            });
-
-            assert_eq!(counter.get(), 0);
-
-            trigger.set(());
-            assert_eq!(counter.get(), 1);
-
-            trigger.set(());
-            assert_eq!(counter.get(), 2);
-        });
-    }
-
-    #[test]
-    fn cleanup_is_untracked() {
-        create_root(|cx| {
-            let trigger = create_signal(cx, ());
-
-            let counter = create_signal(cx, 0);
-
-            create_effect_scoped(cx, move |cx| {
-                counter.set(counter.get_untracked() + 1);
-
-                on_cleanup(cx, move || {
-                    trigger.track(); // trigger should not be tracked
-                });
-            });
-
-            assert_eq!(counter.get(), 1);
-
-            trigger.set(());
-            assert_eq!(counter.get(), 1);
-        });
-    }
-
-    #[test]
-    fn batch_updates_effects_at_end() {
-        create_root(|cx| {
-            let state1 = create_signal(cx, 1);
-            let state2 = create_signal(cx, 2);
-            let counter = create_signal(cx, 0);
-            create_effect(cx, move || {
-                counter.set(counter.get_untracked() + 1);
-                let _ = state1.get() + state2.get();
-            });
-            assert_eq!(counter.get(), 1);
-            state1.set(2);
-            state2.set(3);
-            assert_eq!(counter.get(), 3);
-            batch(cx, move || {
-                state1.set(3);
-                assert_eq!(counter.get(), 3);
-                state2.set(4);
-                assert_eq!(counter.get(), 3);
-            });
-            assert_eq!(counter.get(), 4);
-        });
-    }
-}

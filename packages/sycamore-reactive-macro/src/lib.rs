@@ -62,10 +62,10 @@ fn impl_state_struct(
         }
 
         impl #impl_generics ::sycamore_reactive3::StateTrigger for #trigger_ident #ty_generics #where_clause {
-            fn new(cx: ::sycamore_reactive3::Scope) -> Self {
+            fn new() -> Self {
                 Self {
-                    #(#leaf_idents: ::sycamore_reactive3::create_signal(cx, ()),)*
-                    #(#node_idents: <#node_types as ::sycamore_reactive3::State>::Trigger::new(cx),)*
+                    #(#leaf_idents: ::sycamore_reactive3::create_signal(()),)*
+                    #(#node_idents: <#node_types as ::sycamore_reactive3::State>::Trigger::new(),)*
                 }
             }
         }

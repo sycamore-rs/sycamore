@@ -22,6 +22,8 @@ pub(crate) struct Root {
     pub root_scope: Cell<ScopeId>,
     /// All the scopes that have been created in this `Root`.
     pub scopes: RefCell<SlotMap<ScopeId, ScopeState>>,
+    /// The current scope that we are running in.
+    pub current_scope: Cell<Option<ScopeId>>,
     /// All the signals that have been created in this `Root`.
     /// Eventhough signals are stored here, they are created under roots and are destroyed by the
     /// scopes when they themselves are dropped.
@@ -41,7 +43,70 @@ pub(crate) struct Root {
     pub batch: Cell<bool>,
 }
 
+thread_local! {
+    /// The current reactive root.
+    static GLOBAL_ROOT: Cell<Option<&'static Root>> = Cell::new(None);
+}
+
 impl Root {
+    /// Get the current reactive root. Panics if no root is found.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn get_global() -> &'static Root {
+        GLOBAL_ROOT.with(|root| root.get().expect("no root found"))
+    }
+
+    /// Sets the current reactive root. Returns the previous root.
+    pub fn set_global(root: Option<&'static Root>) -> Option<&'static Root> {
+        GLOBAL_ROOT.with(|r| r.replace(root))
+    }
+
+    /// Disposes of all the resources held on by this root and resets the state.
+    pub fn dispose(&self) {
+        let _ = self.scopes.take();
+        self.current_scope.set(None);
+        let _ = self.signals.take();
+        let _ = self.effects.take();
+        let _ = self.tracker.take();
+        let _ = self.rev_sorted_buf.take();
+        let _ = self.effect_queue.take();
+        self.batch.set(false);
+    }
+
+    /// Create a new scope. If we are not inside a scope, creates a top-level scope. Otherwise,
+    /// cerates a nested scope inside the current scope.
+    pub fn create_scope(&'static self, f: impl FnOnce()) -> Scope {
+        match self.current_scope.get() {
+            Some(parent) => {
+                // Create a nested scope.
+                let scope = ScopeState::new(self, Some(parent));
+                let scope_key = self.scopes.borrow_mut().insert(scope);
+                self.scopes.borrow_mut()[parent]
+                    .child_scopes
+                    .push(scope_key);
+                self.current_scope.set(Some(scope_key));
+                f();
+                self.current_scope.set(Some(parent));
+                Scope {
+                    id: scope_key,
+                    root: self,
+                }
+            }
+            None => {
+                // Create a new top-level scope.
+                let root_scope = ScopeState::new(self, None);
+                let root_scope_key = self.scopes.borrow_mut().insert(root_scope);
+                self.root_scope.set(root_scope_key);
+                self.current_scope.set(Some(root_scope_key));
+                f();
+                self.current_scope.set(None);
+                Scope {
+                    id: root_scope_key,
+                    root: self,
+                }
+            }
+        }
+    }
+
     /// Run the provided closure in a tracked scope. This will detect all the signals that are
     /// accessed and track them in a dependency list.
     pub fn tracked_scope<T>(&self, f: impl FnOnce() -> T) -> (T, DependencyTracker) {
@@ -258,32 +323,9 @@ pub struct RootHandle {
 }
 
 impl RootHandle {
-    /// Reinitializes the root. Once the root is reinitialized, nothing from before this call
-    /// should reference this `Root`.
-    pub fn reinitialize(&self, mut f: impl FnMut(Scope)) {
-        self.dispose();
-
-        // Create an initial scope and call our callback.
-        let root_scope = ScopeState::new(self._ref, None);
-        let root_scope_key = self._ref.scopes.borrow_mut().insert(root_scope);
-        self._ref.root_scope.set(root_scope_key);
-
-        let cx = Scope {
-            id: root_scope_key,
-            root: self._ref,
-        };
-        f(cx);
-    }
-
-    /// Destroy everything that was created in this scope. This is simply an alias for
-    /// [`RootHandle::reinitialize`] with an empty callback.
+    /// Destroy everything that was created in this scope.
     pub fn dispose(&self) {
-        let _ = self._ref.scopes.take();
-        let _ = self._ref.signals.take();
-        let _ = self._ref.effects.take();
-        let _ = self._ref.tracker.take();
-        let _ = self._ref.rev_sorted_buf.take();
-        let _ = self._ref.effect_queue.take();
+        self._ref.dispose();
     }
 }
 
@@ -405,22 +447,6 @@ impl fmt::Debug for Scope {
     }
 }
 
-thread_local! {
-    /// The current reactive root.
-    static ROOT: Cell<Option<&'static Root>> = Cell::new(None);
-}
-
-/// Get the current reactive root. Panics if no root is found.
-#[cfg_attr(debug_assertions, track_caller)]
-fn get_root() -> &'static Root {
-    ROOT.with(|root| root.get().expect("no root found"))
-}
-
-/// Sets the current reactive root. Returns the previous root.
-fn set_root(root: Option<&'static Root>) -> Option<&'static Root> {
-    ROOT.with(|r| r.replace(root))
-}
-
 /// Creates a new reactive root with a top-level [`Scope`]. The returned [`RootHandle`] can be used
 /// to [`dispose`](RootHandle::dispose) the root.
 ///
@@ -428,15 +454,15 @@ fn set_root(root: Option<&'static Root>) -> Option<&'static Root> {
 /// ```rust
 /// # use sycamore_reactive3::*;
 ///
-/// create_root(|cx| {
-///     let signal = create_signal(cx, 123);
+/// create_root(|| {
+///     let signal = create_signal(123);
 ///
-///     let child_scope = create_child_scope(cx, move |cx| {
+///     let child_scope = create_child_scope(move || {
 ///         // ...
 ///     });
 /// });
 /// ```
-pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
+pub fn create_root(f: impl FnOnce()) -> RootHandle {
     /// An unsafe wrapper around a raw pointer which we promise to never touch, effectively making
     /// it thread-safe.
     struct UnsafeSendPtr<T>(*const T);
@@ -456,25 +482,18 @@ pub fn create_root(f: impl FnMut(Scope)) -> RootHandle {
         .push(UnsafeSendPtr(_ref as *const Root));
 
     let handle = RootHandle { _ref };
-    handle.reinitialize(f);
+    Root::set_global(Some(_ref));
+    _ref.create_scope(f);
+    Root::set_global(None);
     handle
 }
 
 /// Create a child scope.
 ///
 /// Returns the created [`Scope`] which can be used to dispose it.
-pub fn create_child_scope(cx: Scope, f: impl FnOnce(Scope)) -> Scope {
-    let new = ScopeState::new(cx.root, Some(cx.id));
-    let key = cx.root.scopes.borrow_mut().insert(new);
-    // Push the new scope onto the child scope list so that it is properly dropped when the parent
-    // scope is dropped.
-    cx.get_data(|cx| cx.child_scopes.push(key));
-    let scope = Scope {
-        id: key,
-        root: cx.root,
-    };
-    f(scope);
-    scope
+/// TODO: Make sure that the created scope is not a top-level scope.
+pub fn create_child_scope(f: impl FnOnce()) -> Scope {
+    Root::get_global().create_scope(f)
 }
 
 /// Adds a callback that is called when the scope is destroyed.
@@ -482,17 +501,20 @@ pub fn create_child_scope(cx: Scope, f: impl FnOnce(Scope)) -> Scope {
 /// # Example
 /// ```rust
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let child_scope = create_child_scope(cx, |cx| {
-///     on_cleanup(cx, || {
+/// # create_root(|| {
+/// let child_scope = create_child_scope(|| {
+///     on_cleanup(|| {
 ///         println!("Child scope is being dropped");
 ///     });
 /// });
 /// child_scope.dispose(); // Executes the on_cleanup callback.
 /// # });
 /// ```
-pub fn on_cleanup(cx: Scope, f: impl FnOnce() + 'static) {
-    cx.get_data(move |cx| cx.cleanups.push(Box::new(f)));
+pub fn on_cleanup(f: impl FnOnce() + 'static) {
+    let root = Root::get_global();
+    root.scopes.borrow_mut()[root.current_scope.get().unwrap()]
+        .cleanups
+        .push(Box::new(f));
 }
 
 /// Batch updates from related signals together and only run effects at the end of the scope.
@@ -500,10 +522,11 @@ pub fn on_cleanup(cx: Scope, f: impl FnOnce() + 'static) {
 /// Note that this only batches effect updates, not memos. This is because we cannot defer updating
 /// of a signal because of methods like [`Signal::update`] which allow direct mutation to the
 /// underlying value.
-pub fn batch<T>(cx: Scope, f: impl FnOnce() -> T) -> T {
-    cx.root.start_batch();
+pub fn batch<T>(f: impl FnOnce() -> T) -> T {
+    let root = Root::get_global();
+    root.start_batch();
     let ret = f();
-    cx.root.end_batch();
+    root.end_batch();
     ret
 }
 
@@ -513,10 +536,10 @@ mod tests {
 
     #[test]
     fn cleanup() {
-        create_root(|cx| {
-            let cleanup_called = create_signal(cx, false);
-            let scope = create_child_scope(cx, |cx| {
-                on_cleanup(cx, move || {
+        create_root(|| {
+            let cleanup_called = create_signal(false);
+            let scope = create_child_scope(|| {
+                on_cleanup(move || {
                     cleanup_called.set(true);
                 });
             });
@@ -528,15 +551,15 @@ mod tests {
 
     #[test]
     fn cleanup_in_effect() {
-        create_root(|cx| {
-            let trigger = create_signal(cx, ());
+        create_root(|| {
+            let trigger = create_signal(());
 
-            let counter = create_signal(cx, 0);
+            let counter = create_signal(0);
 
-            create_effect_scoped(cx, move |cx| {
+            create_effect_scoped(move || {
                 trigger.track();
 
-                on_cleanup(cx, move || {
+                on_cleanup(move || {
                     counter.set(counter.get() + 1);
                 });
             });
@@ -553,15 +576,15 @@ mod tests {
 
     #[test]
     fn cleanup_is_untracked() {
-        create_root(|cx| {
-            let trigger = create_signal(cx, ());
+        create_root(|| {
+            let trigger = create_signal(());
 
-            let counter = create_signal(cx, 0);
+            let counter = create_signal(0);
 
-            create_effect_scoped(cx, move |cx| {
+            create_effect_scoped(move || {
                 counter.set(counter.get_untracked() + 1);
 
-                on_cleanup(cx, move || {
+                on_cleanup(move || {
                     trigger.track(); // trigger should not be tracked
                 });
             });
@@ -575,11 +598,11 @@ mod tests {
 
     #[test]
     fn batch_updates_effects_at_end() {
-        create_root(|cx| {
-            let state1 = create_signal(cx, 1);
-            let state2 = create_signal(cx, 2);
-            let counter = create_signal(cx, 0);
-            create_effect(cx, move || {
+        create_root(|| {
+            let state1 = create_signal(1);
+            let state2 = create_signal(2);
+            let counter = create_signal(0);
+            create_effect(move || {
                 counter.set(counter.get_untracked() + 1);
                 let _ = state1.get() + state2.get();
             });
@@ -587,7 +610,7 @@ mod tests {
             state1.set(2);
             state2.set(3);
             assert_eq!(counter.get(), 3);
-            batch(cx, move || {
+            batch(move || {
                 state1.set(3);
                 assert_eq!(counter.get(), 3);
                 state2.set(4);

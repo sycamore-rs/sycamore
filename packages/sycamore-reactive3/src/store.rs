@@ -2,8 +2,6 @@
 
 use std::cell::RefCell;
 
-use crate::Scope;
-
 pub struct Store<T: State> {
     value: RefCell<T>,
     trigger: T::Trigger,
@@ -28,10 +26,10 @@ impl<T: State> Store<T> {
     }
 }
 
-pub fn create_store<T: State>(cx: Scope, value: T) -> Store<T> {
+pub fn create_store<T: State>(value: T) -> Store<T> {
     Store {
         value: RefCell::new(value),
-        trigger: T::Trigger::new(cx),
+        trigger: T::Trigger::new(),
     }
 }
 
@@ -41,7 +39,7 @@ pub trait State {
 }
 
 pub trait StateTrigger {
-    fn new(cx: Scope) -> Self;
+    fn new() -> Self;
 }
 
 #[cfg(test)]
@@ -58,11 +56,10 @@ mod tests {
             value: i32,
         }
 
-        let _ = create_root(|cx| {
-            let foo = create_store(cx, Foo { value: 123 });
+        let _ = create_root(|| {
+            let foo = create_store(Foo { value: 123 });
             set!(foo.value, 456);
-            let test = get!(foo.value);
-            panic!("test = {test}");
+            assert_eq!(get!(foo.value), 456)
         });
     }
 }

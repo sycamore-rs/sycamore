@@ -119,10 +119,10 @@ impl_trackable_deps_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
 /// # Example
 /// ```
 /// # use sycamore_reactive3::*;
-/// # create_root(|cx| {
-/// let state = create_signal(cx, 0);
+/// # create_root(|| {
+/// let state = create_signal(0);
 ///
-/// create_effect(cx, on(state, move || {
+/// create_effect(on(state, move || {
 ///     println!("State changed. New state value = {}", state.get());
 /// }));
 /// // Prints "State changed. New state value = 0"
