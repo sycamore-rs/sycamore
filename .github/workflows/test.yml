@@ -48,7 +48,7 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run tests with default features
+      - name: Run tests for packages/sycamore with default features
         # Only run tests for sycamore to prevent stray feature flags from other tests.
         run: cd packages/sycamore && cargo test
 
@@ -62,7 +62,7 @@ jobs:
       - name: Run tests on stable
         if: matrix.rust == 'stable'
         env:
-          RUSTFLAGS: --cfg 'stable_ci'
+          RUSTFLAGS: "--cfg stable_ci"
         run: cargo test --all-features
 
       - name: Run tests on nightly
