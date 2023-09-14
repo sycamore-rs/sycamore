@@ -56,7 +56,7 @@ jobs:
         if: matrix.rust == '1.72.0'
         env:
           RUN_UI_TESTS: true
-          RUSTFLAGS: --cfg 'stable_ci'
+          RUSTFLAGS: "--cfg stable_ci"
         run: cargo test --all-features
 
       - name: Run tests on stable
