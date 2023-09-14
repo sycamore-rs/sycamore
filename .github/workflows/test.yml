@@ -56,22 +56,19 @@ jobs:
         if: matrix.rust == '1.72.0'
         env:
           RUN_UI_TESTS: true
-          RUSTFLAGS: "--cfg stable_ci"
-        run: cargo test --all-features
+        run: cargo test
 
       - name: Run tests on stable
         if: matrix.rust == 'stable'
-        env:
-          RUSTFLAGS: "--cfg stable_ci"
-        run: cargo test --all-features
+        run: cargo test
 
-      - name: Run tests on nightly
+      - name: Run all tests on nightly
         if: matrix.rust == 'nightly'
         run: cargo test --all-features
 
-      - name: Run headless browser tests
+      - name: Run headless browser tests on nightly
         run: cd packages/sycamore && wasm-pack test --firefox --chrome --headless --all-features
-        if: always()
+        if: matrix.rust == 'nightly'
 
   clippy:
     name: Clippy

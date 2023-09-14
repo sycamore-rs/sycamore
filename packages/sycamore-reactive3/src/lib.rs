@@ -36,11 +36,7 @@
 //! ```
 //! Of course, the stable `.get()` also works on nightly as well if that's what you prefer.
 
-// Enable feature flags for nightly and only if not running in CI on stable toolchain.
-#![cfg_attr(
-    all(feature = "nightly", not(stable_ci)),
-    feature(fn_traits, unboxed_closures)
-)]
+#![cfg_attr(feature = "nightly", feature(fn_traits, unboxed_closures))]
 
 mod context;
 mod effects;
