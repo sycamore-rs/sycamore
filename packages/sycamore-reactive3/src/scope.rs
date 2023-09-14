@@ -262,13 +262,16 @@ impl Root {
     /// Call this if `start_node` has been updated manually. This will automatically update all
     /// signals that depend on `start_node` as well as call any effects as necessary.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn propagate_updates(&self, start_node: SignalId) {
+    pub fn propagate_updates(&'static self, start_node: SignalId) {
+        // Set the global root.
+        let prev = Root::set_global(Some(self));
         // Propagate any signal updates.
         self.propagate_signal_updates(start_node);
         if !self.batch.get() {
             // Run all the effects that have been queued.
             self.run_effects();
         }
+        Root::set_global(prev);
     }
 
     /// Run depth-first-search on the reactive graph starting at `current`.
