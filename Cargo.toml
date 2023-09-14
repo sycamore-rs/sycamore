@@ -1,43 +1,48 @@
 [workspace]
 resolver = "2"
 members = [
-  # Packages
-  "packages/sycamore",
-  "packages/sycamore-core",
-  "packages/sycamore-futures",
-  "packages/sycamore-macro",
-  "packages/sycamore-reactive",
-  "packages/sycamore-router",
-  "packages/sycamore-router-macro",
-  "packages/sycamore-web",
+	# Packages
+	"packages/sycamore",
+	"packages/sycamore-core",
+	"packages/sycamore-futures",
+	"packages/sycamore-macro",
+	"packages/sycamore-reactive",
+	"packages/sycamore-reactive3",
+	"packages/sycamore-reactive-macro",
+	"packages/sycamore-router",
+	"packages/sycamore-router-macro",
+	"packages/sycamore-web",
 
-  # Examples
-  "examples/components",
-  "examples/context",
-  "examples/counter",
-  "examples/http-request",
-  "examples/http-request-builder",
-  "examples/hydrate",
-  "examples/iteration",
-  "examples/js-framework-benchmark",
-  "examples/hello-builder",
-  "examples/hello-world",
-  "examples/higher-order-components",
-  "examples/motion",
-  "examples/number-binding",
-  "examples/ssr",
-  "examples/svg",
-  "examples/timer",
-  "examples/todomvc",
-  "examples/transitions",
-  "examples/attributes-passthrough",
-  "examples/js-snippets",
+	# Examples
+	"examples/components",
+	"examples/context",
+	"examples/counter",
+	"examples/http-request",
+	"examples/http-request-builder",
+	"examples/hydrate",
+	"examples/iteration",
+	"examples/js-framework-benchmark",
+	"examples/hello-builder",
+	"examples/hello-world",
+	"examples/higher-order-components",
+	"examples/motion",
+	"examples/number-binding",
+	"examples/ssr",
+	"examples/svg",
+	"examples/timer",
+	"examples/todomvc",
+	"examples/transitions",
+	"examples/attributes-passthrough",
+	"examples/js-snippets",
 
-  # Website
-  "docs",
-  "website",
+	# Website
+	"docs",
+	"website",
 
-  # Tools
-  "packages/tools/bench",
-  "packages/tools/bench-diff",
+	# Tools
+	"packages/tools/bench",
+	"packages/tools/bench-diff",
 ]
+
+[profile.bench]
+debug = true

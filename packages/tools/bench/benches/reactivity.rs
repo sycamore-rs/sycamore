@@ -2,6 +2,24 @@ use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion
 use sycamore::reactive::*;
 
 pub fn bench(c: &mut Criterion) {
+    c.bench_function("reactivity_signals_new", |b| {
+        use sycamore_reactive3::*;
+        let root = create_root(|| {
+            b.iter(|| {
+                let child_scope = create_child_scope(|| {
+                    let state = create_signal(0);
+
+                    for _i in 0..1000 {
+                        state.set(state.get() + 1);
+                    }
+                });
+
+                child_scope.dispose();
+            });
+        });
+        root.dispose();
+    });
+
     c.bench_function("reactivity_signals", |b| {
         b.iter(|| {
             create_scope_immediate(|cx| {
@@ -12,6 +30,28 @@ pub fn bench(c: &mut Criterion) {
                 }
             });
         });
+    });
+
+    c.bench_function("reactivity_effects_new", |b| {
+        use sycamore_reactive3::*;
+        let root = create_root(|| {
+            b.iter(|| {
+                let child_scope = create_child_scope(|| {
+                    let state = create_signal(0);
+
+                    create_effect(move || {
+                        let double = state.get() * 2;
+                        black_box(double);
+                    });
+                    for _i in 0..1000 {
+                        state.set(state.get() + 1);
+                    }
+                });
+
+                child_scope.dispose();
+            });
+        });
+        root.dispose();
     });
 
     c.bench_function("reactivity_effects", |b| {
@@ -89,6 +129,42 @@ pub fn bench(c: &mut Criterion) {
             |trigger| trigger.set(()),
             BatchSize::SmallInput,
         );
+    });
+
+    c.bench_function("deep_creation", |b| {
+        b.iter(|| {
+            let d = create_scope(|cx| {
+                let signal = create_signal(cx, 0);
+                let mut memos = Vec::<&ReadSignal<usize>>::new();
+                for _ in 0..1000usize {
+                    if let Some(prev) = memos.last().copied() {
+                        memos.push(create_memo(cx, move || *prev.get() + 1));
+                    } else {
+                        memos.push(create_memo(cx, move || *signal.get() + 1));
+                    }
+                }
+            });
+            unsafe { d.dispose() };
+        });
+    });
+
+    c.bench_function("deep_creation_new", |b| {
+        use sycamore_reactive3::*;
+
+        b.iter(|| {
+            let d = create_root(|| {
+                let signal = create_signal(0);
+                let mut memos = Vec::<Memo<usize>>::new();
+                for _ in 0..1000usize {
+                    if let Some(prev) = memos.last().copied() {
+                        memos.push(create_memo(move || prev.get() + 1));
+                    } else {
+                        memos.push(create_memo(move || signal.get() + 1));
+                    }
+                }
+            });
+            d.dispose();
+        });
     });
 }
 
