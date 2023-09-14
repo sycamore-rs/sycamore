@@ -432,7 +432,7 @@ impl<T: fmt::Display> fmt::Display for Signal<T> {
     }
 }
 
-#[cfg(feature = "nightly")]
+#[cfg(all(feature = "nightly", not(stable_ci)))]
 impl<T: Copy> FnOnce<()> for ReadSignal<T> {
     type Output = T;
 
@@ -469,7 +469,7 @@ impl<T: RemAssign<Rhs>, Rhs> RemAssign<Rhs> for Signal<T> {
 
 /// We need to implement this again for `Signal` despite `Signal` deref-ing to `ReadSignal` since
 /// we also have another implementation of `FnOnce` for `Signal`.
-#[cfg(feature = "nightly")]
+#[cfg(all(feature = "nightly", not(stable_ci)))]
 impl<T: Copy> FnOnce<()> for Signal<T> {
     type Output = T;
 
@@ -478,7 +478,7 @@ impl<T: Copy> FnOnce<()> for Signal<T> {
     }
 }
 
-#[cfg(feature = "nightly")]
+#[cfg(all(feature = "nightly", not(stable_ci)))]
 impl<T: Copy> FnOnce<(T,)> for Signal<T> {
     type Output = T;
 
