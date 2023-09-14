@@ -506,3 +506,94 @@ pub fn batch<T>(cx: Scope, f: impl FnOnce() -> T) -> T {
     cx.root.end_batch();
     ret
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn cleanup() {
+        create_root(|cx| {
+            let cleanup_called = create_signal(cx, false);
+            let scope = create_child_scope(cx, |cx| {
+                on_cleanup(cx, move || {
+                    cleanup_called.set(true);
+                });
+            });
+            assert!(!cleanup_called.get());
+            scope.dispose();
+            assert!(cleanup_called.get());
+        });
+    }
+
+    #[test]
+    fn cleanup_in_effect() {
+        create_root(|cx| {
+            let trigger = create_signal(cx, ());
+
+            let counter = create_signal(cx, 0);
+
+            create_effect_scoped(cx, move |cx| {
+                trigger.track();
+
+                on_cleanup(cx, move || {
+                    counter.set(counter.get() + 1);
+                });
+            });
+
+            assert_eq!(counter.get(), 0);
+
+            trigger.set(());
+            assert_eq!(counter.get(), 1);
+
+            trigger.set(());
+            assert_eq!(counter.get(), 2);
+        });
+    }
+
+    #[test]
+    fn cleanup_is_untracked() {
+        create_root(|cx| {
+            let trigger = create_signal(cx, ());
+
+            let counter = create_signal(cx, 0);
+
+            create_effect_scoped(cx, move |cx| {
+                counter.set(counter.get_untracked() + 1);
+
+                on_cleanup(cx, move || {
+                    trigger.track(); // trigger should not be tracked
+                });
+            });
+
+            assert_eq!(counter.get(), 1);
+
+            trigger.set(());
+            assert_eq!(counter.get(), 1);
+        });
+    }
+
+    #[test]
+    fn batch_updates_effects_at_end() {
+        create_root(|cx| {
+            let state1 = create_signal(cx, 1);
+            let state2 = create_signal(cx, 2);
+            let counter = create_signal(cx, 0);
+            create_effect(cx, move || {
+                counter.set(counter.get_untracked() + 1);
+                let _ = state1.get() + state2.get();
+            });
+            assert_eq!(counter.get(), 1);
+            state1.set(2);
+            state2.set(3);
+            assert_eq!(counter.get(), 3);
+            batch(cx, move || {
+                state1.set(3);
+                assert_eq!(counter.get(), 3);
+                state2.set(4);
+                assert_eq!(counter.get(), 3);
+            });
+            assert_eq!(counter.get(), 4);
+        });
+    }
+}
