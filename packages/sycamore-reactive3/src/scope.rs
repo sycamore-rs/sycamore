@@ -16,14 +16,13 @@ use crate::{EffectId, EffectState};
 /// deallocated. Therefore in practice, there should be no memory leak at all except for the `Root`
 /// itself. Finally, the `Root` is expected to live for the whole duration of the app so this is
 /// not a problem.
-#[derive(Default)]
 pub(crate) struct Root {
     /// A reference to the root scope.
     pub root_scope: Cell<ScopeId>,
     /// All the scopes that have been created in this `Root`.
     pub scopes: RefCell<SlotMap<ScopeId, ScopeState>>,
     /// The current scope that we are running in.
-    pub current_scope: Cell<Option<ScopeId>>,
+    pub current_scope: Cell<ScopeId>,
     /// All the signals that have been created in this `Root`.
     /// Eventhough signals are stored here, they are created under roots and are destroyed by the
     /// scopes when they themselves are dropped.
@@ -60,50 +59,54 @@ impl Root {
         GLOBAL_ROOT.with(|r| r.replace(root))
     }
 
+    pub fn new_static() -> &'static Self {
+        let this = Self {
+            root_scope: Cell::new(ScopeId::default()),
+            scopes: RefCell::new(SlotMap::default()),
+            current_scope: Cell::new(ScopeId::default()),
+            signals: RefCell::new(SlotMap::default()),
+            effects: RefCell::new(SlotMap::default()),
+            tracker: RefCell::new(None),
+            rev_sorted_buf: RefCell::new(Vec::new()),
+            effect_queue: RefCell::new(Vec::new()),
+            batch: Cell::new(false),
+        };
+        let _ref = Box::leak(Box::new(this));
+        _ref.reinit();
+        _ref
+    }
+
     /// Disposes of all the resources held on by this root and resets the state.
-    pub fn dispose(&self) {
+    pub fn reinit(&'static self) {
         let _ = self.scopes.take();
-        self.current_scope.set(None);
         let _ = self.signals.take();
         let _ = self.effects.take();
         let _ = self.tracker.take();
         let _ = self.rev_sorted_buf.take();
         let _ = self.effect_queue.take();
         self.batch.set(false);
+        // Create a new top-level scope.
+        let root_scope = ScopeState::new(self, None);
+        let root_scope_key = self.scopes.borrow_mut().insert(root_scope);
+        self.root_scope.set(root_scope_key);
+        self.current_scope.set(root_scope_key);
     }
 
-    /// Create a new scope. If we are not inside a scope, creates a top-level scope. Otherwise,
-    /// cerates a nested scope inside the current scope.
-    pub fn create_scope(&'static self, f: impl FnOnce()) -> Scope {
-        match self.current_scope.get() {
-            Some(parent) => {
-                // Create a nested scope.
-                let scope = ScopeState::new(self, Some(parent));
-                let scope_key = self.scopes.borrow_mut().insert(scope);
-                self.scopes.borrow_mut()[parent]
-                    .child_scopes
-                    .push(scope_key);
-                self.current_scope.set(Some(scope_key));
-                f();
-                self.current_scope.set(Some(parent));
-                Scope {
-                    id: scope_key,
-                    root: self,
-                }
-            }
-            None => {
-                // Create a new top-level scope.
-                let root_scope = ScopeState::new(self, None);
-                let root_scope_key = self.scopes.borrow_mut().insert(root_scope);
-                self.root_scope.set(root_scope_key);
-                self.current_scope.set(Some(root_scope_key));
-                f();
-                self.current_scope.set(None);
-                Scope {
-                    id: root_scope_key,
-                    root: self,
-                }
-            }
+    /// Create a new child scope. Implementation detail for [`create_child_scope`].
+    pub fn create_child_scope(&'static self, f: impl FnOnce()) -> Scope {
+        // Create a nested scope.
+        let parent = self.current_scope.get();
+        let scope = ScopeState::new(self, Some(parent));
+        let scope_key = self.scopes.borrow_mut().insert(scope);
+        self.scopes.borrow_mut()[parent]
+            .child_scopes
+            .push(scope_key);
+        self.current_scope.set(scope_key);
+        f();
+        self.current_scope.set(parent);
+        Scope {
+            id: scope_key,
+            root: self,
         }
     }
 
@@ -328,7 +331,7 @@ pub struct RootHandle {
 impl RootHandle {
     /// Destroy everything that was created in this scope.
     pub fn dispose(&self) {
-        self._ref.dispose();
+        self._ref.reinit();
     }
 }
 
@@ -466,27 +469,27 @@ impl fmt::Debug for Scope {
 /// });
 /// ```
 pub fn create_root(f: impl FnOnce()) -> RootHandle {
-    /// An unsafe wrapper around a raw pointer which we promise to never touch, effectively making
-    /// it thread-safe.
-    struct UnsafeSendPtr<T>(*const T);
+    let _ref = Root::new_static();
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        /// An unsafe wrapper around a raw pointer which we promise to never touch, effectively
+        /// making it thread-safe.
+        struct UnsafeSendPtr<T>(*const T);
+        /// We never ever touch the pointer inside so surely this is safe!
+        unsafe impl<T> Send for UnsafeSendPtr<T> {}
 
-    /// We never ever touch the pointer inside so surely this is safe!
-    unsafe impl<T> Send for UnsafeSendPtr<T> {}
-
-    /// A static variable to keep on holding to the allocated `Root`s to prevent Miri and Valgrind
-    /// from complaining.
-    static KEEP_ALIVE: Mutex<Vec<UnsafeSendPtr<Root>>> = Mutex::new(Vec::new());
-
-    let root = Root::default();
-    let _ref = Box::leak(Box::new(root));
-    KEEP_ALIVE
-        .lock()
-        .unwrap()
-        .push(UnsafeSendPtr(_ref as *const Root));
+        /// A static variable to keep on holding to the allocated `Root`s to prevent Miri and
+        /// Valgrind from complaining.
+        static KEEP_ALIVE: Mutex<Vec<UnsafeSendPtr<Root>>> = Mutex::new(Vec::new());
+        KEEP_ALIVE
+            .lock()
+            .unwrap()
+            .push(UnsafeSendPtr(_ref as *const Root));
+    }
 
     let handle = RootHandle { _ref };
     Root::set_global(Some(_ref));
-    _ref.create_scope(f);
+    f();
     Root::set_global(None);
     handle
 }
@@ -496,7 +499,7 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
 /// Returns the created [`Scope`] which can be used to dispose it.
 /// TODO: Make sure that the created scope is not a top-level scope.
 pub fn create_child_scope(f: impl FnOnce()) -> Scope {
-    Root::get_global().create_scope(f)
+    Root::get_global().create_child_scope(f)
 }
 
 /// Adds a callback that is called when the scope is destroyed.
@@ -515,7 +518,7 @@ pub fn create_child_scope(f: impl FnOnce()) -> Scope {
 /// ```
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
     let root = Root::get_global();
-    root.scopes.borrow_mut()[root.current_scope.get().unwrap()]
+    root.scopes.borrow_mut()[root.current_scope.get()]
         .cleanups
         .push(Box::new(f));
 }

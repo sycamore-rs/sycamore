@@ -169,7 +169,7 @@ pub fn create_signal<T>(value: T) -> Signal<T> {
     let key = root.signals.borrow_mut().insert(data);
     // Add the signal the scope signal list so that it is properly dropped when the scope is
     // dropped.
-    root.scopes.borrow_mut()[root.current_scope.get().unwrap()]
+    root.scopes.borrow_mut()[root.current_scope.get()]
         .signals
         .push(key);
     Signal(ReadSignal {

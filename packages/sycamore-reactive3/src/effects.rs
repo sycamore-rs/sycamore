@@ -46,7 +46,7 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
         dependencies: Vec::new(),
         already_run_in_update: false,
     });
-    root.scopes.borrow_mut()[root.current_scope.get().unwrap()]
+    root.scopes.borrow_mut()[root.current_scope.get()]
         .effects
         .push(key);
     // Add the dependency links.
