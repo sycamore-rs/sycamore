@@ -20,7 +20,7 @@
 //! If you are using rust `nightly`, you can enable the `nightly` feature to enable the more terse
 //! syntax for signal get/set.
 //!
-//! ```rust
+//! ```ignore
 //! # use sycamore_reactive3::*;
 //! # create_root(|| {
 //! let signal = create_signal(123);
