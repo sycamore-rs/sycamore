@@ -283,13 +283,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let props_struct_ident = format_ident!("{}_Props", item.sig.ident);
 
     let inputs = item.sig.inputs.clone();
-    if inputs.is_empty() {
-        return Err(syn::Error::new(
-            item.sig.paren_token.span.join(),
-            "component must take at least one argument of type `sycamore::reactive::Scope`",
-        ));
-    }
-    let props = inputs.into_iter().skip(1).collect::<Vec<_>>();
+    let props = inputs.into_iter().collect::<Vec<_>>();
 
     let generics = &item.sig.generics;
     let generics_phantoms = generics.params.iter().enumerate().filter_map(|(i, param)| {
@@ -334,13 +328,8 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     });
     // Rewrite function signature.
     let props_struct_generics = generics.split_for_impl().1;
-    let cx = item.sig.inputs.first().cloned();
-    item.sig.inputs = cx
-        .into_iter()
-        .chain(std::iter::once(
-            parse_quote! { __props: #props_struct_ident #props_struct_generics },
-        ))
-        .collect();
+    item.sig.inputs =
+        Punctuated::from(parse_quote! { __props: #props_struct_ident #props_struct_generics });
     // Rewrite function body.
     let block = item.block.clone();
     item.block = parse_quote! {{

@@ -72,11 +72,11 @@ impl UnitBuilder {
 }
 
 /// A trait that is automatically implemented by all components.
-pub trait Component<'a, T: Props, G: GenericNode, S> {
+pub trait Component<T: Props, G: GenericNode, S> {
     /// Instantiate the component with the given props and reactive scope.
     fn create(self, props: T) -> View<G>;
 }
-impl<'a, F, T: Props, G: GenericNode> Component<'a, T, G, ((),)> for F
+impl<F, T: Props, G: GenericNode> Component<T, G, ((),)> for F
 where
     F: FnOnce(T) -> View<G>,
 {
@@ -84,7 +84,7 @@ where
         self(props)
     }
 }
-impl<'a, F, G: GenericNode> Component<'a, (), G, ()> for F
+impl<F, G: GenericNode> Component<(), G, ()> for F
 where
     F: FnOnce() -> View<G>,
 {
@@ -95,8 +95,8 @@ where
 
 /// Get the builder for the component function.
 #[doc(hidden)]
-pub fn element_like_component_builder<'a, G: GenericNode, T: Props, S>(
-    _f: &impl Component<'a, T, G, S>,
+pub fn element_like_component_builder<G: GenericNode, T: Props, S>(
+    _f: &impl Component<T, G, S>,
 ) -> T::Builder {
     T::builder()
 }
