@@ -4,8 +4,6 @@ use std::borrow::Cow;
 use std::fmt::{self, Debug, Formatter};
 use std::hash::Hash;
 
-use sycamore_reactive::Scope;
-
 use crate::event::{EventDescriptor, EventHandler};
 use crate::render::insert;
 use crate::view::View;
@@ -134,24 +132,21 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn event<
         'a,
         Ev: EventDescriptor<Self::AnyEventData>,
-        F: EventHandler<'a, Self::AnyEventData, Ev, S> + 'a,
+        F: EventHandler<Self::AnyEventData, Ev, S> + 'static,
         S,
     >(
         &self,
-        cx: Scope<'a>,
         _ev: Ev,
         mut handler: F,
     ) {
-        let boxed: Box<dyn FnMut(Self::AnyEventData)> =
-            Box::new(move |ev| handler.call(cx, ev.into()));
-        self.untyped_event(cx, Cow::Borrowed(Ev::EVENT_NAME), boxed)
+        let boxed: Box<dyn FnMut(Self::AnyEventData)> = Box::new(move |ev| handler.call(ev.into()));
+        self.untyped_event(Cow::Borrowed(Ev::EVENT_NAME), boxed)
     }
 
-    fn untyped_event<'a>(
+    fn untyped_event(
         &self,
-        cx: Scope<'a>,
         event: Cow<'_, str>,
-        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     );
 
     /// Update inner text of the node. If the node has elements, all the elements are replaced with
@@ -199,7 +194,6 @@ pub trait GenericNodeElements: GenericNode {
 
     /// Insert the dynamic values into the template at the dynamic markers.
     fn apply_dyn_values_to_template(
-        cx: Scope,
         dyn_markers: &[DynMarkerResult<Self>],
         dyn_values: Vec<View<Self>>,
     ) {
@@ -212,7 +206,6 @@ pub trait GenericNodeElements: GenericNode {
         }
         for (m, value) in dyn_markers.iter().zip(dyn_values.into_iter()) {
             insert(
-                cx,
                 &m.parent,
                 value,
                 m.initial.clone(),
@@ -234,11 +227,10 @@ pub fn __instantiate_template<G: GenericNodeElements>(template: &Template) -> Te
 /// knowing what `G` is.
 #[doc(hidden)]
 pub fn __apply_dyn_values_to_template<G: GenericNodeElements>(
-    cx: Scope,
     dyn_markers: &[DynMarkerResult<G>],
     dyn_values: Vec<View<G>>,
 ) {
-    G::apply_dyn_values_to_template(cx, dyn_markers, dyn_values)
+    G::apply_dyn_values_to_template(dyn_markers, dyn_values)
 }
 
 /// The "shape" of the template, i.e. what the structure of the template looks like. This is

@@ -3,7 +3,6 @@
 use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::fmt;
-use std::sync::Mutex;
 
 use slotmap::{new_key_type, SlotMap};
 
@@ -335,6 +334,14 @@ impl RootHandle {
     pub fn dispose(&self) {
         self._ref.reinit();
     }
+
+    /// Runs the closure in the current scope of the root.
+    pub fn run_in<T>(&self, f: impl FnOnce() -> T) -> T {
+        let prev = Root::set_global(Some(self._ref));
+        let ret = f();
+        Root::set_global(prev);
+        ret
+    }
 }
 
 /// Tracks signals that are accessed inside a reactive scope.
@@ -470,6 +477,7 @@ impl fmt::Debug for Scope {
 ///     });
 /// });
 /// ```
+#[must_use = "root should be disposed"]
 pub fn create_root(f: impl FnOnce()) -> RootHandle {
     let _ref = Root::new_static();
     #[cfg(not(target_arch = "wasm32"))]
@@ -482,7 +490,8 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
 
         /// A static variable to keep on holding to the allocated `Root`s to prevent Miri and
         /// Valgrind from complaining.
-        static KEEP_ALIVE: Mutex<Vec<UnsafeSendPtr<Root>>> = Mutex::new(Vec::new());
+        static KEEP_ALIVE: std::sync::Mutex<Vec<UnsafeSendPtr<Root>>> =
+            std::sync::Mutex::new(Vec::new());
         KEEP_ALIVE
             .lock()
             .unwrap()
@@ -534,6 +543,32 @@ pub fn batch<T>(f: impl FnOnce() -> T) -> T {
     root.start_batch();
     let ret = f();
     root.end_batch();
+    ret
+}
+
+/// Run the passed closure inside an untracked dependency scope.
+///
+/// See also [`ReadSignal::get_untracked()`].
+///
+/// # Example
+///
+/// ```
+/// # use sycamore_reactive3::*;
+/// # create_root(|| {
+/// let state = create_signal(1);
+/// let double = create_memo(move || untrack(|| state.get() * 2));
+/// assert_eq!(double.get(), 2);
+///
+/// state.set(2);
+/// // double value should still be old value because state was untracked
+/// assert_eq!(double.get(), 2);
+/// # });
+/// ```
+pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
+    let root = Root::get_global();
+    let prev = root.tracker.replace(None);
+    let ret = f();
+    root.tracker.replace(prev);
     ret
 }
 

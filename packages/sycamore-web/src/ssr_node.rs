@@ -8,13 +8,14 @@ use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
+use once_cell::unsync::Lazy;
 use sycamore_core::generic_node::{
     instantiate_template_universal, GenericNode, GenericNodeElements, InstantiateUniversalOpts,
     SycamoreElement, Template, TemplateResult,
 };
 use sycamore_core::hydrate::{get_next_id, with_hydration_context};
 use sycamore_core::view::View;
-use sycamore_reactive::*;
+use sycamore_reactive3::*;
 use wasm_bindgen::prelude::*;
 
 use crate::{Html, VOID_ELEMENTS};
@@ -292,11 +293,10 @@ impl GenericNode for SsrNode {
             .remove_child(self);
     }
 
-    fn untyped_event<'a>(
+    fn untyped_event(
         &self,
-        _cx: Scope<'a>,
         _event: Cow<'_, str>,
-        _handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+        _handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     ) {
         // Noop. Events are attached on client side.
     }
@@ -473,17 +473,23 @@ impl WriteToString for RawText {
 ///
 /// _This API requires the following crate features to be activated: `ssr`_
 #[must_use]
-pub fn render_to_string(view: impl FnOnce(Scope<'_>) -> View<SsrNode>) -> String {
-    let mut ret = String::new();
-    create_scope_immediate(|cx| {
-        let v = with_hydration_context(|| view(cx));
-
-        for node in v.flatten() {
-            node.write_to_string(&mut ret);
-        }
-    });
-
-    ret
+pub fn render_to_string(view: impl FnOnce() -> View<SsrNode>) -> String {
+    thread_local! {
+        /// Use a static variable here so that we can reuse the same root for multiple calls to
+        /// this function.
+        static SSR_ROOT: Lazy<RootHandle> = Lazy::new(|| create_root(|| {}));
+    }
+    SSR_ROOT.with(|root| {
+        root.dispose();
+        root.run_in(|| {
+            let mut buf = String::new();
+            let v = with_hydration_context(|| view());
+            for node in v.flatten() {
+                node.write_to_string(&mut buf);
+            }
+            buf
+        })
+    })
 }
 
 #[cfg(test)]

@@ -46,49 +46,41 @@ impl Parse for ComponentFn {
 
                 let inputs = sig.inputs.clone().into_iter().collect::<Vec<_>>();
 
-                if inputs.is_empty() {
-                    return Err(syn::Error::new(
-                        sig.paren_token.span.span(),
-                        "component must take at least one argument of type `sycamore::reactive::Scope`",
-                    ));
-                }
-
-                if inputs.len() > 2 {
-                    return Err(syn::Error::new(
-                        sig.inputs
-                            .clone()
-                            .into_iter()
-                            .skip(2)
-                            .collect::<Punctuated<_, Token![,]>>()
-                            .span(),
-                        "component should not take more than 2 arguments",
-                    ));
-                }
-
-                if let FnArg::Typed(t) = &inputs[0] {
-                    if !matches!(&*t.pat, Pat::Ident(_)) {
-                        return Err(syn::Error::new(
-                            t.span(),
-                            "First argument to a component is expected to be a `sycamore::reactive::Scope`",
-                        ));
-                    }
-                } else {
-                    return Err(syn::Error::new(
-                        inputs[0].span(),
-                        "function components can't accept a receiver",
-                    ));
-                }
-
-                if let Some(FnArg::Typed(pat)) = inputs.get(1) {
-                    if let Type::Tuple(TypeTuple { elems, .. }) = &*pat.ty {
-                        if elems.is_empty() {
+                match &inputs[..] {
+                    [] => {}
+                    [input] => {
+                        if let FnArg::Receiver(_) = input {
                             return Err(syn::Error::new(
-                                pat.ty.span(),
-                                "taking an unit tuple as props is useless",
+                                input.span(),
+                                "components can't accept a receiver",
+                            ));
+                        }
+
+                        if let FnArg::Typed(pat) = input {
+                            if let Type::Tuple(TypeTuple { elems, .. }) = &*pat.ty {
+                                if elems.is_empty() {
+                                    return Err(syn::Error::new(
+                                        pat.ty.span(),
+                                        "taking an unit tuple as props is useless",
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                    [..] => {
+                        if inputs.len() > 1 {
+                            return Err(syn::Error::new(
+                                sig.inputs
+                                    .clone()
+                                    .into_iter()
+                                    .skip(2)
+                                    .collect::<Punctuated<_, Token![,]>>()
+                                    .span(),
+                                "component should not take more than 1 parameter",
                             ));
                         }
                     }
-                }
+                };
 
                 Ok(Self { f })
             }

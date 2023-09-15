@@ -1,12 +1,12 @@
 //! Utilities for smooth transitions and animations.
 
-use std::cell::RefCell;
+use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
 use crate::reactive::*;
 
 /// Type returned by [`create_raf`] and [`create_raf_loop`].
-type RafState<'a> = (RcSignal<bool>, Rc<dyn Fn() + 'a>, Rc<dyn Fn() + 'a>);
+type RafState = (Signal<bool>, Rc<dyn Fn() + 'static>, Rc<dyn Fn() + 'static>);
 
 /// Schedule a callback to be called on each animation frame.
 /// Does nothing if not on `wasm32` target.
@@ -16,45 +16,35 @@ type RafState<'a> = (RcSignal<bool>, Rc<dyn Fn() + 'a>, Rc<dyn Fn() + 'a>);
 /// third item is a function to stop the raf.
 ///
 /// The raf is not started by default. Call the `start` function to initiate the raf.
-pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
-    let running = create_ref(cx, create_rc_signal(false));
+pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
+    let running = create_signal(false);
     let start: Rc<dyn Fn()>;
     let stop: Rc<dyn Fn()>;
+    let _ = cb;
 
     // Only run on wasm32 architecture.
     #[cfg(all(target_arch = "wasm32", feature = "web"))]
     {
         use wasm_bindgen::prelude::*;
-        use wasm_bindgen::JsCast;
 
-        let boxed: Box<dyn FnMut() + 'a> = Box::new(_f);
-        // SAFETY: We are only transmuting the lifetime from 'a to 'static which is safe because
-        // the closure will not be accessed once the enclosing Scope is disposed.
-        let extended: Box<dyn FnMut() + 'static> = unsafe { std::mem::transmute(boxed) };
-        let extended = RefCell::new(extended);
-        let scope_status = use_scope_status(cx);
-
-        let f = Rc::new(RefCell::new(None::<Closure<dyn Fn()>>));
+        let f = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
         let g = Rc::clone(&f);
 
-        *g.borrow_mut() = Some(Closure::wrap(Box::new({
-            let running = running.clone();
-            move || {
-                if *scope_status.get() && *running.get() {
-                    // Verified that scope is still valid. We can access `extended` in here.
-                    extended.borrow_mut()();
-                    // Request the next raf frame.
-                    web_sys::window()
-                        .unwrap_throw()
-                        .request_animation_frame(
-                            f.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
-                        )
-                        .unwrap_throw();
-                }
+        *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+            if running.get() {
+                // Verified that scope is still valid. We can access `extended` in here.
+                cb();
+                // Request the next raf frame.
+                web_sys::window()
+                    .unwrap_throw()
+                    .request_animation_frame(
+                        f.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
+                    )
+                    .unwrap_throw();
             }
         })));
         start = Rc::new(move || {
-            if !*running.get() {
+            if !running.get() {
                 running.set(true);
                 web_sys::window()
                     .unwrap_throw()
@@ -64,12 +54,12 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
                     .unwrap_throw();
             }
         });
-        stop = Rc::new(|| running.set(false));
+        stop = Rc::new(move || running.set(false));
     }
     #[cfg(not(all(target_arch = "wasm32", feature = "web")))]
     {
-        start = Rc::new(|| running.set(true));
-        stop = Rc::new(|| running.set(false));
+        start = Rc::new(move || running.set(true));
+        stop = Rc::new(move || running.set(false));
     }
 
     (running.clone(), start, stop)
@@ -83,34 +73,27 @@ pub fn create_raf<'a>(cx: Scope<'a>, _f: impl FnMut() + 'a) -> RafState<'a> {
 /// looping from outside the function.
 ///
 /// The raf is not started by default. Call the `start` function to initiate the raf.
-pub fn create_raf_loop<'a>(cx: Scope<'a>, mut f: impl FnMut() -> bool + 'a) -> RafState<'a> {
-    let stop_shared = Rc::new(RefCell::new(None::<Rc<dyn Fn() + 'a>>));
-    let (running, start, stop) = create_raf(cx, {
+pub fn create_raf_loop(mut f: impl FnMut() -> bool + 'static) -> RafState {
+    let stop_shared = Rc::new(OnceCell::new());
+    let (running, start, stop) = create_raf({
         let stop_shared = Rc::clone(&stop_shared);
         move || {
             if !f() {
-                stop_shared.borrow().as_ref().unwrap()();
+                stop_shared.get();
             }
         }
     });
-    *stop_shared.borrow_mut() = Some(Rc::clone(&stop));
+    stop_shared.set(Rc::clone(&stop)).ok().unwrap();
     (running, start, stop)
 }
 
 /// Create a new [`Tweened`] signal.
-pub fn create_tweened_signal<'a, T: Lerp + Clone + 'a>(
-    cx: Scope<'a>,
+pub fn create_tweened_signal<T: Lerp + Clone>(
     initial: T,
     transition_duration: std::time::Duration,
     easing_fn: impl Fn(f32) -> f32 + 'static,
-) -> &'a Tweened<'a, T> {
-    // SAFETY: We do not access any referenced data in the Drop implementation of Tweened.
-    unsafe {
-        create_ref_unsafe(
-            cx,
-            Tweened::new(cx, initial, transition_duration, easing_fn),
-        )
-    }
+) -> Tweened<T> {
+    Tweened::new(initial, transition_duration, easing_fn)
 }
 
 /// Describes a trait that can be linearly interpolate between two points.
@@ -162,39 +145,34 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
 }
 
 /// A state that is interpolated when it is set.
-pub struct Tweened<'a, T: Lerp + Clone>(Rc<RefCell<TweenedInner<'a, T>>>);
-impl<'a, T: Lerp + Clone> std::fmt::Debug for Tweened<'a, T> {
+pub struct Tweened<T: Lerp + Clone + 'static>(Rc<RefCell<TweenedInner<T>>>);
+impl<T: Lerp + Clone> std::fmt::Debug for Tweened<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Tweened").finish()
     }
 }
 
-struct TweenedInner<'a, T: Lerp + Clone + 'a> {
-    /// The [`Scope`] under which the tweened signal was created. We need to hold on to the
-    /// context to be able to spawn the raf callback.
-    cx: Scope<'a>,
-    value: RcSignal<T>,
-    is_tweening: RcSignal<bool>,
-    raf_state: Option<RafState<'a>>,
+struct TweenedInner<T: Lerp + Clone + 'static> {
+    value: Signal<T>,
+    is_tweening: Signal<bool>,
+    raf_state: Option<RafState>,
     transition_duration_ms: f32,
     easing_fn: Rc<dyn Fn(f32) -> f32>,
 }
 
-impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
+impl<T: Lerp + Clone> Tweened<T> {
     /// Create a new tweened state with the given value.
     ///
     /// End users should use [`Scope::create_tweened_signal`] instead.
     pub(crate) fn new(
-        cx: Scope<'a>,
         initial: T,
         transition_duration: std::time::Duration,
         easing_fn: impl Fn(f32) -> f32 + 'static,
     ) -> Self {
-        let value = create_rc_signal(initial);
+        let value = create_signal(initial);
         Self(Rc::new(RefCell::new(TweenedInner {
-            cx,
             value,
-            is_tweening: create_rc_signal(false),
+            is_tweening: create_signal(false),
             raf_state: None,
             transition_duration_ms: transition_duration.as_millis() as f32,
             easing_fn: Rc::new(easing_fn),
@@ -216,7 +194,7 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
         {
             use js_sys::Date;
 
-            let start = self.signal().get_untracked().as_ref().clone();
+            let start = self.signal().get_clone_untracked();
             let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
 
             let start_time = Date::now();
@@ -226,12 +204,12 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
 
             // If previous raf is still running, call stop() to cancel it.
             if let Some((running, _, stop)) = &self.0.borrow_mut().raf_state {
-                if *running.get_untracked() {
+                if running.get_untracked() {
                     stop();
                 }
             }
 
-            let (running, start, stop) = create_raf_loop(self.0.borrow().cx, move || {
+            let (running, start, stop) = create_raf_loop(move || {
                 let now = Date::now();
 
                 let since_start = now - start_time;
@@ -253,37 +231,42 @@ impl<'a, T: Lerp + Clone + 'a> Tweened<'a, T> {
     }
 
     /// Alias for `signal().get()`.
-    pub fn get(&self) -> Rc<T> {
+    pub fn get(&self) -> T
+    where
+        T: Copy,
+    {
         self.signal().get()
     }
 
     /// Alias for `signal().get_untracked()`.
-    pub fn get_untracked(&self) -> Rc<T> {
+    pub fn get_untracked(&self) -> T
+    where
+        T: Copy,
+    {
         self.signal().get_untracked()
     }
 
     /// Get the inner signal backing the state.
-    pub fn signal(&self) -> RcSignal<T> {
+    pub fn signal(&self) -> Signal<T> {
         self.0.borrow().value.clone()
     }
 
     /// Returns `true` if the value is currently being tweened/interpolated. This value is reactive
     /// and can be tracked.
     pub fn is_tweening(&self) -> bool {
-        *self.0.borrow().is_tweening.get()
+        self.0.borrow().is_tweening.get()
     }
 }
 
-impl<'a, T: Lerp + Clone + 'static> Clone for Tweened<'a, T> {
+impl<T: Lerp + Clone + 'static> Clone for Tweened<T> {
     fn clone(&self) -> Self {
         Self(Rc::clone(&self.0))
     }
 }
 
-impl<'a, T: Lerp + Clone + 'static> Clone for TweenedInner<'a, T> {
+impl<T: Lerp + Clone + 'static> Clone for TweenedInner<T> {
     fn clone(&self) -> Self {
         Self {
-            cx: self.cx,
             value: self.value.clone(),
             is_tweening: self.is_tweening.clone(),
             raf_state: self.raf_state.clone(),

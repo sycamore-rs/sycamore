@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use hashbrown::HashMap;
-use sycamore_reactive::*;
+use sycamore_reactive3::*;
 
 use crate::generic_node::GenericNode;
 use crate::view::{View, ViewType};
@@ -23,18 +23,16 @@ use crate::view::{View, ViewType};
 ///   the node to be inserted is the only child of `parent`, `multi` can still be set to `true` but
 ///   forgoes the optimization.
 pub fn insert<G: GenericNode>(
-    cx: Scope<'_>,
     parent: &G,
     accessor: View<G>,
     initial: Option<View<G>>,
     marker: Option<&G>,
     multi: bool,
 ) {
-    insert_expression(cx, parent, &accessor, initial, marker, false, multi);
+    insert_expression(parent, &accessor, initial, marker, false, multi);
 }
 
 fn insert_expression<G: GenericNode>(
-    cx: Scope<'_>,
     parent: &G,
     value: &View<G>,
     mut current: Option<View<G>>,
@@ -46,7 +44,7 @@ fn insert_expression<G: GenericNode>(
         inner: ViewType::Dyn(f),
     }) = current
     {
-        current = Some(f.get().as_ref().clone());
+        current = Some(f.get_clone());
     }
 
     match &value.inner {
@@ -66,10 +64,9 @@ fn insert_expression<G: GenericNode>(
             let parent = parent.clone();
             let marker = marker.cloned();
             let f = f.clone();
-            create_effect_scoped(cx, move |cx| {
-                let value = f.get();
+            create_effect_scoped(move || {
+                let value = f.get_clone();
                 insert_expression(
-                    cx,
                     &parent,
                     &value,
                     current.clone(),
@@ -77,7 +74,7 @@ fn insert_expression<G: GenericNode>(
                     false,
                     multi,
                 );
-                current = Some(value.as_ref().clone());
+                current = Some(value);
             });
         }
         ViewType::Fragment(fragment) => {
@@ -88,12 +85,11 @@ fn insert_expression<G: GenericNode>(
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
-                create_effect_scoped(cx, move |cx| {
+                create_effect_scoped(move || {
                     let value = View::new_fragment(v.clone());
                     // This will call normalize_incoming_fragment again, but this time with the
                     // unwrap_fragment arg set to true.
                     insert_expression(
-                        cx,
                         &parent,
                         &value,
                         current.clone(),
@@ -203,12 +199,12 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
         match &template.inner {
             ViewType::Node(_) => v.push(template.clone()),
             ViewType::Dyn(f) if unwrap => {
-                let mut value = f.get().as_ref().clone();
+                let mut value = f.get_clone();
                 while let ViewType::Dyn(f) = &value.inner {
-                    value = f.get().as_ref().clone();
+                    value = f.get_clone();
                 }
-                let fragment: Rc<Box<[View<G>]>> = match &value.inner {
-                    ViewType::Node(_) => Rc::new(Box::new([value])),
+                let fragment: Rc<[View<G>]> = match &value.inner {
+                    ViewType::Node(_) => Rc::new([value]),
                     ViewType::Fragment(fragment) => Rc::clone(fragment),
                     _ => unreachable!(),
                 };

@@ -26,13 +26,13 @@ use crate::prelude::*;
 /// Returns a [`RcSignal`] with an initial value of `None` and a value of `Some` once the passed
 /// future has been resolved.
 
-pub fn create_resource<'a, U: 'a, F>(cx: Scope<'a>, f: F) -> RcSignal<Option<U>>
+pub fn create_resource<U, F>(f: F) -> RcSignal<Option<U>>
 where
-    F: Future<Output = U> + 'a,
+    F: Future<Output = U> + 'static,
 {
     let signal = create_rc_signal(None);
 
-    spawn_local_scoped(cx, {
+    spawn_local_scoped({
         let signal = signal.clone();
         async move {
             signal.set(Some(f.await));

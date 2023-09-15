@@ -7,7 +7,7 @@
 use std::any::Any;
 use std::fmt;
 
-use sycamore_reactive::*;
+use sycamore_reactive3::*;
 
 use crate::generic_node::GenericNode;
 
@@ -26,17 +26,12 @@ use crate::generic_node::GenericNode;
 /// }
 /// ```
 #[derive(Clone, PartialEq, Eq)]
-pub struct NodeRef<G: GenericNode>(RcSignal<Option<G>>);
+pub struct NodeRef<G: GenericNode>(Signal<Option<G>>);
 
 impl<G: GenericNode + Any> NodeRef<G> {
-    /// Creates an empty node ref.
-    ///
-    /// Generally, it is preferable to use [`create_node_ref`] instead.
-    /// Unlike [`create_node_ref`], this creates a node ref that is not behind a reference. This
-    /// makes it harder to pass around but can be desireable in certain cases.
+    /// Alias to [`create_node_ref`].
     pub fn new() -> Self {
-        let signal = create_rc_signal(None);
-        Self(signal)
+        create_node_ref()
     }
 
     /// Gets the raw node stored inside the node ref.
@@ -75,8 +70,8 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///
     /// For a panicking version, see [`NodeRef::get`].
     pub fn try_get<T: GenericNode>(&self) -> Option<T> {
-        if let Some(g) = self.0.get().as_ref() {
-            (g as &dyn Any).downcast_ref().cloned()
+        if let Some(g) = self.0.get_clone() {
+            (&g as &dyn Any).downcast_ref().cloned()
         } else {
             None
         }
@@ -98,7 +93,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///
     /// For a panicking version, see [`NodeRef::get`].
     pub fn try_get_raw(&self) -> Option<G> {
-        self.0.get().as_ref().clone()
+        self.0.get_clone()
     }
 
     /// Sets the node ref with the specified node.
@@ -144,7 +139,7 @@ impl<G: GenericNode> Default for NodeRef<G> {
 
 impl<G: GenericNode> fmt::Debug for NodeRef<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("NodeRef").field(&self.0.get()).finish()
+        f.debug_tuple("NodeRef").field(&self.0.get_clone()).finish()
     }
 }
 
@@ -163,6 +158,6 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
 /// # view! { cx, }
 /// # }
 /// ```
-pub fn create_node_ref<G: GenericNode>(cx: Scope<'_>) -> &NodeRef<G> {
-    create_ref(cx, NodeRef::new())
+pub fn create_node_ref<G: GenericNode>() -> NodeRef<G> {
+    NodeRef(create_signal(None))
 }

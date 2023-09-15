@@ -20,3 +20,4 @@ sycamore-reactive-macro = { path = "../sycamore-reactive-macro" }
 [features]
 default = []
 nightly = []
+serde = []   # TODO: add serde support

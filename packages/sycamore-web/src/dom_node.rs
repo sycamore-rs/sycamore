@@ -11,7 +11,7 @@ use sycamore_core::generic_node::{
 };
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
-use sycamore_reactive::*;
+use sycamore_reactive3::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
@@ -266,20 +266,17 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn untyped_event<'a>(
+    fn untyped_event(
         &self,
-        cx: Scope<'a>,
         event: Cow<'_, str>,
-        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     ) {
-        // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
-        // preventing the handler from ever being accessed after its lifetime.
-        let handler: Box<dyn FnMut(Self::AnyEventData) + 'static> =
-            unsafe { std::mem::transmute(handler) };
-        let closure = create_ref(cx, Closure::wrap(handler));
-        self.node
-            .add_event_listener_with_callback(&event, closure.as_ref().unchecked_ref())
-            .unwrap_throw();
+        let closure = create_signal(Closure::wrap(handler));
+        closure.with(|closure| {
+            self.node
+                .add_event_listener_with_callback(&event, closure.as_ref().unchecked_ref())
+                .unwrap_throw();
+        });
     }
 
     fn update_inner_text(&self, text: Cow<'static, str>) {
@@ -384,7 +381,7 @@ impl Html for DomNode {
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render(view: impl FnOnce(Scope<'_>) -> View<DomNode>) {
+pub fn render(view: impl FnOnce() -> View<DomNode> + 'static) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
@@ -395,7 +392,7 @@ pub fn render(view: impl FnOnce(Scope<'_>) -> View<DomNode>) {
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(view: impl FnOnce(Scope<'_>) -> View<DomNode>, parent: &Node) {
+pub fn render_to(view: impl FnOnce() -> View<DomNode> + 'static, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
     let _ = render_get_scope(view, parent);
 }
@@ -411,15 +408,14 @@ pub fn render_to(view: impl FnOnce(Scope<'_>) -> View<DomNode>, parent: &Node) {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 #[must_use = "please hold onto the ScopeDisposer until you want to clean things up, or use render_to() instead"]
-pub fn render_get_scope<'a>(
-    view: impl FnOnce(Scope<'_>) -> View<DomNode> + 'a,
-    parent: &'a Node,
-) -> ScopeDisposer<'a> {
-    create_scope(|cx| {
+pub fn render_get_scope(
+    view: impl FnOnce() -> View<DomNode> + 'static,
+    parent: &Node,
+) -> RootHandle {
+    create_root(|| {
         insert(
-            cx,
             &DomNode::from_web_sys(parent.clone()),
-            view(cx),
+            view(),
             None,
             None,
             false,

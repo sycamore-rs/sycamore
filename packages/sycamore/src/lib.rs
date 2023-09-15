@@ -59,7 +59,7 @@ pub use sycamore_macro::*;
 ///
 /// Reactive primitives for Sycamore.
 pub mod reactive {
-    pub use sycamore_reactive::*;
+    pub use sycamore_reactive3::*;
 }
 
 #[cfg(feature = "ssr")]
@@ -67,7 +67,7 @@ pub use web::render_to_string;
 #[cfg(all(feature = "ssr", feature = "suspense"))]
 pub use web::render_to_string_await_suspense;
 #[cfg(all(feature = "web", feature = "hydrate"))]
-pub use web::{hydrate, hydrate_get_scope, hydrate_to};
+pub use web::{hydrate, hydrate_get_root, hydrate_to};
 #[cfg(feature = "web")]
 pub use web::{render, render_get_scope, render_to};
 

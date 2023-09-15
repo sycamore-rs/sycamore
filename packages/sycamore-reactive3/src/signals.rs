@@ -316,13 +316,23 @@ impl<T> Signal<T> {
     /// signals. As such, this is generally not recommended as it can easily lead to state
     /// inconsistencies.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn set_silent(self, new: T) -> T {
-        self.update_silent(|val| std::mem::replace(val, new))
+    pub fn set_silent(self, new: T) {
+        self.replace_silent(new);
     }
 
     /// Set a new value for the signal and automatically update any dependents.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn set(self, new: T) -> T {
+    pub fn set(self, new: T) {
+        self.replace(new);
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn replace_silent(self, new: T) -> T {
+        self.update_silent(|val| std::mem::replace(val, new))
+    }
+
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn replace(self, new: T) -> T {
         self.update(|val| std::mem::replace(val, new))
     }
 
@@ -331,7 +341,7 @@ impl<T> Signal<T> {
     where
         T: Default,
     {
-        self.set_silent(T::default())
+        self.replace_silent(T::default())
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
@@ -339,7 +349,7 @@ impl<T> Signal<T> {
     where
         T: Default,
     {
-        self.set(T::default())
+        self.replace(T::default())
     }
 
     /// Update the value of the signal silently. This will not trigger any updates in dependent
@@ -382,7 +392,7 @@ impl<T> Signal<T> {
     }
 
     pub fn split(self) -> (ReadSignal<T>, impl Fn(T) -> T) {
-        (*self, move |value| self.set(value))
+        (*self, move |value| self.replace(value))
     }
 }
 
@@ -400,6 +410,41 @@ impl<T> Clone for Signal<T> {
     }
 }
 impl<T> Copy for Signal<T> {}
+
+// Forward `PartialEq`, `Eq`, `PartialOrd`, `Ord` from inner type.
+impl<T: PartialEq> PartialEq for ReadSignal<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.with(|value| other.with(|other| value == other))
+    }
+}
+impl<T: Eq> Eq for ReadSignal<T> {}
+impl<T: PartialOrd> PartialOrd for ReadSignal<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.with(|value| other.with(|other| value.partial_cmp(other)))
+    }
+}
+impl<T: Ord> Ord for ReadSignal<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.with(|value| other.with(|other| value.cmp(other)))
+    }
+}
+
+impl<T: PartialEq> PartialEq for Signal<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.with(|value| other.with(|other| value == other))
+    }
+}
+impl<T: Eq> Eq for Signal<T> {}
+impl<T: PartialOrd> PartialOrd for Signal<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.with(|value| other.with(|other| value.partial_cmp(other)))
+    }
+}
+impl<T: Ord> Ord for Signal<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.with(|value| other.with(|other| value.cmp(other)))
+    }
+}
 
 impl<T> Deref for Signal<T> {
     type Target = ReadSignal<T>;

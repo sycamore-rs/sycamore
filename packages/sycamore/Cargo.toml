@@ -21,53 +21,53 @@ paste = "1.0.9"
 sycamore-core = { path = "../sycamore-core", version = "0.9.0-beta.1" }
 sycamore-futures = { path = "../sycamore-futures", version = "0.9.0-beta.1", optional = true }
 sycamore-macro = { path = "../sycamore-macro", version = "0.9.0-beta.1" }
-sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.1" }
+sycamore-reactive3 = { path = "../sycamore-reactive3", version = "0.9.0-beta.1" }
 sycamore-web = { path = "../sycamore-web", version = "0.9.0-beta.1", optional = true }
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 
 [dependencies.web-sys]
 features = [
-    "console",
-    "Comment",
-    "Document",
-    "DocumentFragment",
-    "DomTokenList",
-    "Element",
-    "HtmlElement",
-    "HtmlInputElement",
-    "HtmlCollection",
-    "Node",
-    "NodeList",
-    "Text",
-    "Window",
-    # Event types
-    "AnimationEvent",
-    "BeforeUnloadEvent",
-    "CompositionEvent",
-    "DeviceMotionEvent",
-    "DeviceOrientationEvent",
-    "DragEvent",
-    "ErrorEvent",
-    "Event",
-    "FocusEvent",
-    "GamepadEvent",
-    "HashChangeEvent",
-    "InputEvent",
-    "KeyboardEvent",
-    "MessageEvent",
-    "MouseEvent",
-    "PageTransitionEvent",
-    "PointerEvent",
-    "PopStateEvent",
-    "ProgressEvent",
-    "PromiseRejectionEvent",
-    "SecurityPolicyViolationEvent",
-    "StorageEvent",
-    "SubmitEvent",
-    "TouchEvent",
-    "TransitionEvent",
-    "WheelEvent",
+	"console",
+	"Comment",
+	"Document",
+	"DocumentFragment",
+	"DomTokenList",
+	"Element",
+	"HtmlElement",
+	"HtmlInputElement",
+	"HtmlCollection",
+	"Node",
+	"NodeList",
+	"Text",
+	"Window",
+	# Event types
+	"AnimationEvent",
+	"BeforeUnloadEvent",
+	"CompositionEvent",
+	"DeviceMotionEvent",
+	"DeviceOrientationEvent",
+	"DragEvent",
+	"ErrorEvent",
+	"Event",
+	"FocusEvent",
+	"GamepadEvent",
+	"HashChangeEvent",
+	"InputEvent",
+	"KeyboardEvent",
+	"MessageEvent",
+	"MouseEvent",
+	"PageTransitionEvent",
+	"PointerEvent",
+	"PopStateEvent",
+	"ProgressEvent",
+	"PromiseRejectionEvent",
+	"SecurityPolicyViolationEvent",
+	"StorageEvent",
+	"SubmitEvent",
+	"TouchEvent",
+	"TransitionEvent",
+	"WheelEvent",
 ]
 version = "0.3.60"
 optional = true
@@ -80,26 +80,27 @@ wasm-bindgen-test = "0.3.33"
 [features]
 default = ["web", "wasm-bindgen-interning"]
 hydrate = [
-    "web",
-    "sycamore-macro/hydrate",
-    "sycamore-core/hydrate",
-    "sycamore-web/hydrate",
+	"web",
+	"sycamore-macro/hydrate",
+	"sycamore-core/hydrate",
+	"sycamore-web/hydrate",
 ]
+nightly = ["sycamore-reactive3/nightly"]
 ssr = [
-    "web",
-    "html-escape",
-    "once_cell",
-    "hydrate",
-    "sycamore-macro/ssr",
-    "sycamore-web/ssr",
+	"web",
+	"html-escape",
+	"once_cell",
+	"hydrate",
+	"sycamore-macro/ssr",
+	"sycamore-web/ssr",
 ]
 suspense = [
-    "futures",
-    "wasm-bindgen-futures",
-    "sycamore-futures",
-    "sycamore-core/suspense",
+	"futures",
+	"wasm-bindgen-futures",
+	"sycamore-futures",
+	"sycamore-core/suspense",
 ]
-serde = ["sycamore-reactive/serde"]
+serde = ["sycamore-reactive3/serde"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
 web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]
 
