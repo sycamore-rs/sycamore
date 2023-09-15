@@ -94,6 +94,7 @@ impl Root {
     }
 
     /// Create a new child scope. Implementation detail for [`create_child_scope`].
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn create_child_scope(&'static self, f: impl FnOnce()) -> Scope {
         // Create a nested scope.
         let parent = self.current_scope.get();
@@ -444,15 +445,21 @@ pub struct Scope {
 }
 
 impl Scope {
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub(crate) fn get_data<T>(self, f: impl FnOnce(&mut ScopeState) -> T) -> T {
-        f(&mut self.root.scopes.borrow_mut()[self.id])
-    }
-
     /// Remove the scope from the root and drop it.
     pub fn dispose(self) {
         let data = self.root.scopes.borrow_mut().remove(self.id);
         drop(data.expect("scope should not be dropped yet"));
+    }
+
+    /// Run the provided function inside the reactive scope. Sets the global root if it is in a
+    /// different root.
+    pub fn run_in(self, f: impl FnOnce()) {
+        let prev_root = Root::set_global(Some(self.root));
+        let prev_scope = self.root.current_scope.get();
+        self.root.current_scope.set(self.id);
+        f();
+        self.root.current_scope.set(prev_scope);
+        Root::set_global(prev_root);
     }
 }
 
@@ -507,7 +514,7 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
 /// Create a child scope.
 ///
 /// Returns the created [`Scope`] which can be used to dispose it.
-/// TODO: Make sure that the created scope is not a top-level scope.
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_child_scope(f: impl FnOnce()) -> Scope {
     Root::get_global().create_child_scope(f)
 }
@@ -570,6 +577,15 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     let ret = f();
     root.tracker.replace(prev);
     ret
+}
+
+/// Get the current reactive scope from the global root.
+pub fn current_scope() -> Scope {
+    let root = Root::get_global();
+    Scope {
+        id: root.current_scope.get(),
+        root,
+    }
 }
 
 #[cfg(test)]

@@ -4,6 +4,7 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::fmt;
 use std::fmt::Formatter;
+use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
@@ -411,7 +412,7 @@ impl<T> Clone for Signal<T> {
 }
 impl<T> Copy for Signal<T> {}
 
-// Forward `PartialEq`, `Eq`, `PartialOrd`, `Ord` from inner type.
+// Forward `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` from inner type.
 impl<T: PartialEq> PartialEq for ReadSignal<T> {
     fn eq(&self, other: &Self) -> bool {
         self.with(|value| other.with(|other| value == other))
@@ -426,6 +427,11 @@ impl<T: PartialOrd> PartialOrd for ReadSignal<T> {
 impl<T: Ord> Ord for ReadSignal<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.with(|value| other.with(|other| value.cmp(other)))
+    }
+}
+impl<T: Hash> Hash for ReadSignal<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.with(|value| value.hash(state))
     }
 }
 
@@ -443,6 +449,11 @@ impl<T: PartialOrd> PartialOrd for Signal<T> {
 impl<T: Ord> Ord for Signal<T> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.with(|value| other.with(|other| value.cmp(other)))
+    }
+}
+impl<T: Hash> Hash for Signal<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.with(|value| value.hash(state))
     }
 }
 

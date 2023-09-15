@@ -269,9 +269,13 @@ impl GenericNode for DomNode {
     fn untyped_event(
         &self,
         event: Cow<'_, str>,
-        handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
+        mut handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     ) {
-        let closure = create_signal(Closure::wrap(handler));
+        // Run the handler in the current scope where the event is attached.
+        let scope = current_scope();
+        let closure = create_signal(Closure::<dyn FnMut(JsValue)>::wrap(Box::new(move |x| {
+            scope.run_in(|| handler(x));
+        })));
         closure.with(|closure| {
             self.node
                 .add_event_listener_with_callback(&event, closure.as_ref().unchecked_ref())
