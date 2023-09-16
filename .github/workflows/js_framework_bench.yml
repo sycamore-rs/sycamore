@@ -93,6 +93,12 @@ jobs:
       - name: Results
         run: cd ./js-framework-benchmark && npm run results
 
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: results
+          path: js-framework-benchmark/webdriver-ts/results.json
+
       - name: Log results
         run: |
           results=$(cd ./sycamore/packages/tools/bench-diff && cargo run -- ../../../../js-framework-benchmark/webdriver-ts/results.json)
@@ -106,7 +112,7 @@ jobs:
         run: echo "$PR_NUMBER" &> bench-results/PR_NUMBER.txt
           
       
-      - name: Upload Artifact
+      - name: Upload bench diff
         uses: actions/upload-artifact@v3
         with:
           name: bench-results
