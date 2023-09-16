@@ -588,6 +588,15 @@ pub fn current_scope() -> Scope {
     }
 }
 
+/// Get the root reactive scope from the global root.
+pub fn root_scope() -> Scope {
+    let root = Root::get_global();
+    Scope {
+        id: root.root_scope.get(),
+        root,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;

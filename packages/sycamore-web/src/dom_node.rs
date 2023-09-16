@@ -272,7 +272,7 @@ impl GenericNode for DomNode {
         mut handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     ) {
         // Run the handler in the current scope where the event is attached.
-        let scope = current_scope();
+        let scope = root_scope();
         let closure = create_signal(Closure::<dyn FnMut(JsValue)>::wrap(Box::new(move |x| {
             scope.run_in(|| handler(x));
         })));
