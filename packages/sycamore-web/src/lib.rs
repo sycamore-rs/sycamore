@@ -29,7 +29,7 @@ use once_cell::sync::Lazy;
 #[cfg(feature = "ssr")]
 pub use ssr_node::*;
 use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
-use sycamore_reactive3::*;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 
 /// Trait that is implemented by all [`GenericNode`] backends that render to HTML.

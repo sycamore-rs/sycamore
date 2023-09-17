@@ -5,7 +5,7 @@ use std::fmt;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use sycamore_reactive3::*;
+use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
 

@@ -11,7 +11,7 @@ use sycamore_core::generic_node::{
 };
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
-use sycamore_reactive3::*;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};

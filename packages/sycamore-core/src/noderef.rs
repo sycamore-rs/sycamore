@@ -7,7 +7,7 @@
 use std::any::Any;
 use std::fmt;
 
-use sycamore_reactive3::*;
+use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
 

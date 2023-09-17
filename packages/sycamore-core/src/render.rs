@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use hashbrown::HashMap;
-use sycamore_reactive3::*;
+use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
 use crate::view::{View, ViewType};

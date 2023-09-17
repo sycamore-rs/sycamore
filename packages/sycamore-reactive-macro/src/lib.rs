@@ -57,20 +57,20 @@ fn impl_state_struct(
         #[doc = #doc_comment]
         #[allow(non_camel_case_types)]
         #vis struct #trigger_ident #ty_generics #where_clause {
-            #(#leaf_idents: ::sycamore_reactive3::Signal<()>,)*
-            #(#node_idents: <#node_types as ::sycamore_reactive3::State>::Trigger,)*
+            #(#leaf_idents: ::sycamore_reactive::Signal<()>,)*
+            #(#node_idents: <#node_types as ::sycamore_reactive::State>::Trigger,)*
         }
 
-        impl #impl_generics ::sycamore_reactive3::StateTrigger for #trigger_ident #ty_generics #where_clause {
+        impl #impl_generics ::sycamore_reactive::StateTrigger for #trigger_ident #ty_generics #where_clause {
             fn new() -> Self {
                 Self {
-                    #(#leaf_idents: ::sycamore_reactive3::create_signal(()),)*
-                    #(#node_idents: <#node_types as ::sycamore_reactive3::State>::Trigger::new(),)*
+                    #(#leaf_idents: ::sycamore_reactive::create_signal(()),)*
+                    #(#node_idents: <#node_types as ::sycamore_reactive::State>::Trigger::new(),)*
                 }
             }
         }
 
-        impl ::sycamore_reactive3::State for #impl_generics #ident #ty_generics #where_clause {
+        impl ::sycamore_reactive::State for #impl_generics #ident #ty_generics #where_clause {
             type Trigger = #trigger_ident;
         }
     })
@@ -140,9 +140,9 @@ pub fn get(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     quote! {{
         // Track the value.
-        ::sycamore_reactive3::Store::__trigger(&#first) #trigger_path.get();
+        ::sycamore_reactive::Store::__trigger(&#first) #trigger_path.get();
 
-        ::sycamore_reactive3::Store::__with(&#first, |#first| #first #value_path)
+        ::sycamore_reactive::Store::__with(&#first, |#first| #first #value_path)
     }}
     .into()
 }
@@ -176,8 +176,8 @@ pub fn set(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let first = path.first;
 
     quote! {{
-        ::sycamore_reactive3::Store::__with_mut(&#first, |#first| #first #value_path = #value);
-        ::sycamore_reactive3::Store::__trigger(&#first) #trigger_path.set(());
+        ::sycamore_reactive::Store::__with_mut(&#first, |#first| #first #value_path = #value);
+        ::sycamore_reactive::Store::__trigger(&#first) #trigger_path.set(());
     }}
     .into()
 }

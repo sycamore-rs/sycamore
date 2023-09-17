@@ -20,7 +20,7 @@ pub(crate) struct EffectState {
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(0);
 ///
@@ -60,7 +60,7 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// create_effect_scoped(|| {
 ///     // Use the scoped cx inside here.

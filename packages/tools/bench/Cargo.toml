@@ -8,7 +8,6 @@ publish = false
 
 [dependencies]
 sycamore = { path = "../../sycamore", features = ["ssr"] }
-sycamore-reactive3 = { path = "../../sycamore-reactive3" }
 
 [dev-dependencies]
 criterion = "0.4.0"

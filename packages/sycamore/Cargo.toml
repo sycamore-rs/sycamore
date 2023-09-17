@@ -21,7 +21,7 @@ paste = "1.0.9"
 sycamore-core = { path = "../sycamore-core", version = "0.9.0-beta.1" }
 sycamore-futures = { path = "../sycamore-futures", version = "0.9.0-beta.1", optional = true }
 sycamore-macro = { path = "../sycamore-macro", version = "0.9.0-beta.1" }
-sycamore-reactive3 = { path = "../sycamore-reactive3", version = "0.9.0-beta.1" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.1" }
 sycamore-web = { path = "../sycamore-web", version = "0.9.0-beta.1", optional = true }
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
@@ -85,7 +85,7 @@ hydrate = [
 	"sycamore-core/hydrate",
 	"sycamore-web/hydrate",
 ]
-nightly = ["sycamore-reactive3/nightly"]
+nightly = ["sycamore-reactive/nightly"]
 ssr = [
 	"web",
 	"html-escape",
@@ -100,7 +100,7 @@ suspense = [
 	"sycamore-futures",
 	"sycamore-core/suspense",
 ]
-serde = ["sycamore-reactive3/serde"]
+serde = ["sycamore-reactive/serde"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
 web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]
 

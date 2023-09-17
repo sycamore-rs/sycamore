@@ -5,7 +5,7 @@ use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use sycamore_reactive3::*;
+use sycamore_reactive::*;
 
 use crate::generic_node::GenericNode;
 use crate::noderef::NodeRef;

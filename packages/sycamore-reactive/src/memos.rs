@@ -83,7 +83,7 @@ pub(crate) fn create_updated_signal<T>(
 /// twice.
 ///
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(0);
 /// let double = || state.get() * 2;
@@ -103,7 +103,7 @@ pub(crate) fn create_updated_signal<T>(
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(0);
 /// let double = create_memo(move || state.get() * 2);
@@ -160,7 +160,7 @@ pub fn create_selector_with<T>(
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(1);
 /// let squared = create_selector(move || state.get() * state.get());
@@ -196,7 +196,7 @@ where
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// enum Msg {
 ///     Increment,
 ///     Decrement,

@@ -74,7 +74,7 @@ pub(crate) enum Mark {
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let signal: Signal<i32> = create_signal(123);
 /// let read_signal: ReadSignal<i32> = *signal;
@@ -112,7 +112,7 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// clone the value for us.
 ///
 /// ```rust
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let signal = create_signal(1);
 /// signal.get(); // Should return 1.
@@ -133,7 +133,7 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// allows us to update related state whenever the signal is changed.
 ///
 /// ```rust
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let signal = create_signal(1);
 /// // Note that we are accessing signal inside a closure in the line below. This will cause it to
@@ -228,7 +228,7 @@ impl<T> ReadSignal<T> {
     ///
     /// # Example
     /// ```rust
-    /// # use sycamore_reactive3::*;
+    /// # use sycamore_reactive::*;
     /// # create_root(|| {
     /// let state = create_signal(0);
     /// assert_eq!(state.get(), 0);
@@ -257,7 +257,7 @@ impl<T> ReadSignal<T> {
     ///
     /// # Example
     /// ```rust
-    /// # use sycamore_reactive3::*;
+    /// # use sycamore_reactive::*;
     /// # create_root(|| {
     /// let greeting = create_signal("Hello".to_string());
     /// assert_eq!(greeting.get_clone(), "Hello".to_string());

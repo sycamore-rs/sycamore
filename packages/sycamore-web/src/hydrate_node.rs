@@ -10,7 +10,7 @@ use sycamore_core::generic_node::{
 use sycamore_core::hydrate::{hydration_completed, with_hydration_context};
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
-use sycamore_reactive3::*;
+use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::Node;

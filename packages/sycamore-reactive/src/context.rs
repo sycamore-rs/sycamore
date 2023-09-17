@@ -1,205 +1,94 @@
-//! Context state management.
+//! Context values.
 
-use crate::*;
+use std::any::{type_name, Any};
 
-/// Provides a context in the current [`Scope`]. The context can later be accessed by using
-/// [`use_context`] lower in the scope hierarchy.
-///
-/// The context can also be accessed in the same scope in which it is provided.
-///
-/// This method is simply a wrapper around [`create_ref`] and [`provide_context_ref`].
+use crate::{Root, ScopeId};
+
+/// Provide a context value in this scope.
 ///
 /// # Panics
-/// This method panics if a context with the same type exists already in this scope.
-/// Note that if a context with the same type exists in a parent scope, the new context will
-/// shadow the old context.
-#[track_caller]
-pub fn provide_context<T: 'static>(cx: Scope, value: T) -> &T {
-    let value = create_ref(cx, value);
-    provide_context_ref(cx, value)
+/// This panics if a context value of the same type exists already in this scope. Note that it is
+/// allowed to have context values with the same type in _different_ scopes.
+pub fn provide_context<T: 'static>(value: T) {
+    let root = Root::get_global();
+    provide_context_in_scope(root.current_scope.get(), value);
 }
 
-/// Provides a context in the current [`Scope`]. The context can later be accessed by using
-/// [`use_context`] lower in the scope hierarchy.
-///
-/// The context can also be accessed in the same scope in which it is provided.
-///
-/// Unlike [`provide_context`], this method accepts a reference that
-/// lives at least as long as the scope.
+/// Provide a context value in global scope.
 ///
 /// # Panics
-/// This method panics if a context with the same type exists already in this scope.
-/// Note that if a context with the same type exists in a parent scope, the new context will
-/// shadow the old context.
-#[track_caller]
-pub fn provide_context_ref<'a, T: 'static>(cx: Scope<'a>, value: &'a T) -> &'a T {
-    let type_id = TypeId::of::<T>();
+/// This panics if a context value of the same type exists already in the global scope. Note that it
+/// is allowed to have context values with the same type in _different_ scopes.
+pub fn provide_global_context<T: 'static>(value: T) {
+    let root = Root::get_global();
+    provide_context_in_scope(root.root_scope.get(), value);
+}
 
-    // Check if context already exists in this scope.
-    let mut scope = cx.raw.inner.borrow_mut();
-    let contexts = scope.contexts.get_or_insert_with(Default::default);
-    if contexts.iter().any(|(x, _)| *x == type_id) {
-        panic!("existing context with type exists already");
+/// Internal implementation for [`provide_context`] and [`provide_global_context`].
+fn provide_context_in_scope<T: 'static>(key: ScopeId, value: T) {
+    let root = Root::get_global();
+    let mut scopes = root.scopes.borrow_mut();
+    let any: Box<dyn Any> = Box::new(value);
+
+    let scope = &mut scopes[key];
+    if scope
+        .context
+        .iter()
+        .any(|x| (**x).type_id() == (*any).type_id())
+    {
+        panic!(
+            "a context with type {} exists already in this scope",
+            type_name::<T>()
+        );
+    } else {
+        scope.context.push(any);
     }
-
-    // Insert context into this scope.
-    contexts.push((type_id, value));
-
-    value
 }
 
-/// Tries to get a context value of the given type. If no context with the right type found,
-/// returns `None`. For a panicking version, see [`use_context`].
-pub fn try_use_context<T: 'static>(cx: Scope) -> Option<&T> {
-    let type_id = TypeId::of::<T>();
-    let mut this = Some(cx.raw);
-    while let Some(current) = this {
-        if let Some((_, value)) = current
-            .inner
-            .borrow()
-            .contexts
-            .as_ref()
-            .and_then(|c| c.iter().find(|(x, _)| *x == type_id))
-        {
-            let value = value.downcast_ref::<T>().unwrap();
-            return Some(value);
-        } else {
-            // SAFETY: `current.parent` necessarily lives longer than `current`.
-            this = current.parent.map(|x| unsafe { &*x });
+/// Tries to get a context value of the given type. If no context is found, returns `None`.
+pub fn try_use_context<T: Clone + 'static>() -> Option<T> {
+    let root = Root::get_global();
+    let scopes = root.scopes.borrow();
+    // Walk up the scope stack until we find one with the context of the right type.
+    let mut current = Some(&scopes[root.current_scope.get()]);
+    while let Some(next) = current {
+        for value in &next.context {
+            if let Some(value) = value.downcast_ref::<T>().cloned() {
+                return Some(value);
+            }
         }
+        // No context of the right type found for this scope. Now check the parent scope.
+        current = next.parent.map(|key| &scopes[key]);
     }
     None
 }
 
-/// Gets a context value of the given type.
-///
-/// # Panics
-/// This method panics if the context cannot be found in the current scope hierarchy.
-/// For a non-panicking version, see [`try_use_context`].
-#[track_caller]
-pub fn use_context<T: 'static>(cx: Scope) -> &T {
-    try_use_context(cx).expect("context not found for type")
+/// Get a context with the given type. If no context is found, this panics.
+pub fn use_context<T: Clone + 'static>() -> T {
+    try_use_context().unwrap_or_else(|| panic!("no context of type {} found)", type_name::<T>()))
 }
 
-/// Gets a context value of the given type or computes it from a closure.
-///
-/// Note that if no context exists, the new context will be created in the _current_ scope. This
-/// means that the new value will still be inaccessible in an outer scope.
-pub fn use_context_or_else<T, F>(cx: Scope, f: F) -> &T
-where
-    T: 'static,
-    F: FnOnce() -> T,
-{
-    try_use_context(cx).unwrap_or_else(|| provide_context(cx, f()))
+/// Try to get a context with the given type. If no context is found, returns the value of the
+/// function and sets the value of the context in the current scope.
+pub fn use_context_or_else<T: Clone + 'static, F: FnOnce() -> T>(f: F) -> T {
+    try_use_context().unwrap_or_else(|| {
+        let value = f();
+        provide_context(value.clone());
+        value
+    })
 }
 
-/// Gets a context value of the given type or computes it from a closure.
-///
-/// Unlike [`provide_context`], this closure should return a reference that lives at least as long
-/// as the scope.
-///
-/// Note that if no context exists, the new context will be created in the _current_ scope. This
-/// means that the new value will still be inaccessible in an outer scope.
-pub fn use_context_or_else_ref<'a, T, F>(cx: Scope<'a>, f: F) -> &'a T
-where
-    T: 'static,
-    F: FnOnce() -> &'a T,
-{
-    try_use_context(cx).unwrap_or_else(|| provide_context_ref(cx, f()))
-}
+/// Gets how deep the current scope is from the root/global scope. The value for the global scope
+/// itself is always `0`.
+pub fn use_scope_depth() -> u32 {
+    let root = Root::get_global();
+    let scopes = root.scopes.borrow();
+    let mut current = Some(&scopes[root.current_scope.get()]);
+    let mut depth = 0;
 
-/// Returns the current depth of the scope. If the scope is the root scope, returns `0`.
-pub fn scope_depth(cx: Scope) -> u32 {
-    cx.raw.inner.borrow().depth
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn context() {
-        create_scope_immediate(|cx| {
-            provide_context(cx, 42i32);
-            let x = use_context::<i32>(cx);
-            assert_eq!(*x, 42);
-        });
+    while let Some(next) = current {
+        current = next.parent.map(|key| &scopes[key]);
+        depth += 1;
     }
-
-    #[test]
-    fn context_in_nested_scope() {
-        create_scope_immediate(|cx| {
-            provide_context(cx, 42i32);
-            let _ = create_child_scope(cx, |cx| {
-                let x = use_context::<i32>(cx);
-                assert_eq!(*x, 42);
-            });
-        });
-    }
-
-    #[test]
-    // Do not run under miri as there is a memory leak false positive.
-    #[cfg_attr(miri, ignore)]
-    #[should_panic = "existing context with type exists already"]
-    fn existing_context_with_same_type_should_panic() {
-        create_scope_immediate(|cx| {
-            provide_context(cx, 0i32);
-            provide_context(cx, 0i32);
-            //                  ^^^^ -> has type `i32` and therefore should panic
-        });
-    }
-
-    #[test]
-    fn test_use_context_or_else() {
-        create_scope_immediate(|cx| {
-            assert!(try_use_context::<i32>(cx).is_none());
-
-            let a = use_context_or_else(cx, || 123);
-            assert_eq!(*a, 123);
-
-            assert!(try_use_context::<i32>(cx).is_some());
-            let b: &i32 = use_context_or_else(cx, || panic!("don't call me"));
-            assert_eq!(*b, 123);
-        });
-    }
-
-    #[test]
-    fn test_use_context_or_else_ref() {
-        create_scope_immediate(|cx| {
-            assert!(try_use_context::<Signal<i32>>(cx).is_none());
-
-            let a = use_context_or_else_ref(cx, || create_signal(cx, 123));
-            assert_eq!(*a.get(), 123);
-
-            assert!(try_use_context::<Signal<i32>>(cx).is_some());
-            let b: &Signal<i32> = use_context_or_else_ref(cx, || panic!("don't call me"));
-            assert_eq!(*b.get(), 123);
-        });
-    }
-
-    #[test]
-    fn root_scope_is_zero_depth() {
-        create_scope_immediate(|cx| {
-            assert_eq!(scope_depth(cx), 0);
-        });
-    }
-
-    #[test]
-    fn depth_of_scope_inc_with_child_scopes() {
-        create_scope_immediate(|cx| {
-            let _ = create_child_scope(cx, |cx| {
-                // first non root scope should be 1
-                assert_eq!(scope_depth(cx), 1);
-
-                let _ = create_child_scope(cx, |cx| {
-                    // next scope should thus be 2
-                    assert_eq!(scope_depth(cx), 2);
-                });
-
-                // We should still be one out here - not that the current implementation would
-                // suggest otherwise.
-                assert_eq!(scope_depth(cx), 1);
-            });
-        });
-    }
+    depth
 }

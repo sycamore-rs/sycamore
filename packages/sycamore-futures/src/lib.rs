@@ -9,7 +9,7 @@ use futures::future::abortable;
 use futures::stream::Abortable;
 use futures::Future;
 use pin_project::pin_project;
-use sycamore_reactive3::{on_cleanup, use_current_scope, Scope};
+use sycamore_reactive::{on_cleanup, use_current_scope, Scope};
 
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`
 /// scope.

@@ -59,7 +59,7 @@ pub use sycamore_macro::*;
 ///
 /// Reactive primitives for Sycamore.
 pub mod reactive {
-    pub use sycamore_reactive3::*;
+    pub use sycamore_reactive::*;
 }
 
 #[cfg(feature = "ssr")]

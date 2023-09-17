@@ -7,7 +7,6 @@ members = [
 	"packages/sycamore-futures",
 	"packages/sycamore-macro",
 	"packages/sycamore-reactive",
-	"packages/sycamore-reactive3",
 	"packages/sycamore-reactive-macro",
 	"packages/sycamore-router",
 	"packages/sycamore-router-macro",

@@ -475,7 +475,7 @@ impl fmt::Debug for Scope {
 ///
 /// # Example
 /// ```rust
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 ///
 /// create_root(|| {
 ///     let signal = create_signal(123);
@@ -524,7 +524,7 @@ pub fn create_child_scope(f: impl FnOnce()) -> Scope {
 ///
 /// # Example
 /// ```rust
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let child_scope = create_child_scope(|| {
 ///     on_cleanup(|| {
@@ -561,7 +561,7 @@ pub fn batch<T>(f: impl FnOnce() -> T) -> T {
 /// # Example
 ///
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(1);
 /// let double = create_memo(move || untrack(|| state.get() * 2));

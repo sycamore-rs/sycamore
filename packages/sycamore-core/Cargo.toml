@@ -13,7 +13,7 @@ version = "0.9.0-beta.1"
 [dependencies]
 hashbrown = "0.13.1"
 sycamore-futures = { path = "../sycamore-futures", version = "0.9.0-beta.1", optional = true }
-sycamore-reactive3 = { path = "../sycamore-reactive3", version = "0.9.0-beta.1" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.1" }
 
 [dev-dependencies]
 sycamore = { path = "../sycamore", features = ["ssr"] }
