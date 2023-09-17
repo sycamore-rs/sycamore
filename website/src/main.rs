@@ -16,7 +16,7 @@ use sycamore_router::{HistoryIntegration, Route, Router};
 const LATEST_MAJOR_VERSION: &str = "v0.8";
 const NEXT_VERSION: &str = "next";
 
-#[derive(Debug, Route)]
+#[derive(Debug, Clone, Route)]
 enum Routes {
     #[to("/")]
     Index,
@@ -35,7 +35,7 @@ enum Routes {
 }
 
 #[derive(Clone)]
-struct DarkMode(RcSignal<bool>);
+struct DarkMode(Signal<bool>);
 
 async fn docs_preload(path: String) -> MarkdownPage {
     let text = Request::get(&path).send().await.unwrap().text().await;
@@ -62,123 +62,108 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
     }
 }
 
-fn switch<'a, G: Html>(cx: Scope<'a>, route: &'a ReadSignal<Routes>) -> View<G> {
-    let cached_sidebar_data =
-        create_ref(cx, create_rc_signal(None::<(Option<String>, SidebarData)>));
-    provide_context_ref(cx, cached_sidebar_data);
+fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
+    let cached_sidebar_data = create_signal(None::<(Option<String>, SidebarData)>);
+    provide_context(cached_sidebar_data);
 
     let fetch_docs_data = move |url| {
-        let data = create_resource(cx, docs_preload(url));
-        if cached_sidebar_data.get().is_none()
-            || cached_sidebar_data
-                .get()
-                .as_ref()
-                .as_ref()
-                .unwrap()
-                .0
-                .is_some()
-        {
+        let data = create_resource(docs_preload(url));
+        if cached_sidebar_data.with(|x| x.is_none() || x.as_ref().unwrap().0.is_some()) {
             // Update sidebar
             let cached_sidebar_data = cached_sidebar_data.clone();
-            spawn_local_scoped(cx, async move {
+            spawn_local_scoped(async move {
                 cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
             });
         }
         data
     };
-    let view = create_memo(
-        cx,
-        on([route], move || match route.get().as_ref() {
-            Routes::Index => view! { cx,
-                div(class="container mx-auto") {
-                    index::Index {}
-                }
-            },
-            Routes::Docs(a, b) => {
-                let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
-                view! { cx,
-                    (if let Some(data) = data.get().as_ref() {
-                        if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
-                            view! { cx,
-                                content::Content(
-                                    data=data.clone(),
-                                    sidebar=(
-                                        "next".to_string(),
-                                        cached_sidebar_data.1.clone(),
-                                    ),
-                                )
-                            }
-                        } else {
-                            view! { cx, }
-                        }
-                    } else {
-                        view! { cx, }
-                    })
-                }
+    let view = create_memo(on(route, move || match route.get_clone() {
+        Routes::Index => view! {
+            div(class="container mx-auto") {
+                index::Index {}
             }
-            Routes::VersionedDocs(version, a, b) => {
-                let version = version.clone();
-                let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
-                view! { cx,
-                    (if let Some(data) = data.get().as_ref() {
-                        if let Some(cached_sidebar_data) = cached_sidebar_data.get().as_ref() {
-                            let version = version.clone();
-                            view! { cx,
-                                content::Content(
-                                    data=data.clone(),
-                                    sidebar=(
-                                        version,
-                                        cached_sidebar_data.1.clone(),
-                                    ),
-                                )
-                            }
-                        } else {
-                            view! { cx, }
-                        }
-                    } else {
-                        view! { cx, }
-                    })
-                }
-            }
-            Routes::NewsIndex => view! { cx,
-                news_index::NewsIndex {}
-            },
-            Routes::Post(name) => {
-                let data =
-                    create_resource(cx, docs_preload(format!("/static/posts/{}.json", name)));
-                view! { cx,
-                    (if let Some(data) = data.get().as_ref() {
-                        view! { cx,
+        },
+        Routes::Docs(a, b) => {
+            let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
+            view! {
+                (if let Some(data) = data.get_clone() {
+                    if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
+                        view! {
                             content::Content(
                                 data=data.clone(),
+                                sidebar=(
+                                    "next".to_string(),
+                                    cached_sidebar_data.1.clone(),
+                                ),
                             )
                         }
                     } else {
-                        view! { cx, }
-                    })
-                }
+                        view! { }
+                    }
+                } else {
+                    view! { }
+                })
             }
-            Routes::Versions => view! { cx,
-                versions::Versions {}
-            },
-            Routes::NotFound => view! { cx,
-                "404 Not Found"
-            },
-        }),
-    );
+        }
+        Routes::VersionedDocs(version, a, b) => {
+            let version = version.clone();
+            let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
+            view! {
+                (if let Some(data) = data.get_clone() {
+                    if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
+                        let version = version.clone();
+                        view! {
+                            content::Content(
+                                data=data.clone(),
+                                sidebar=(
+                                    version,
+                                    cached_sidebar_data.1.clone(),
+                                ),
+                            )
+                        }
+                    } else {
+                        view! { }
+                    }
+                } else {
+                    view! { }
+                })
+            }
+        }
+        Routes::NewsIndex => view! {
+            news_index::NewsIndex {}
+        },
+        Routes::Post(name) => {
+            let data = create_resource(docs_preload(format!("/static/posts/{}.json", name)));
+            view! {
+                (if let Some(data) = data.get_clone() {
+                    view! {
+                        content::Content(data=data)
+                    }
+                } else {
+                    view! { }
+                })
+            }
+        }
+        Routes::Versions => view! {
+            versions::Versions {}
+        },
+        Routes::NotFound => view! {
+            "404 Not Found"
+        },
+    }));
 
-    view! { cx,
+    view! {
         div(class="font-body pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors"
         ) {
             header::Header {}
-            ((*view.get()).clone())
+            (view.get_clone())
         }
     }
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App<G: Html>() -> View<G> {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
     // Get dark mode from media query.
     let dark_mode_mq = web_sys::window()
@@ -193,11 +178,11 @@ fn App<G: Html>(cx: Scope) -> View<G> {
     } else {
         dark_mode_mq
     };
-    let dark_mode = DarkMode(create_rc_signal(dark_mode));
-    provide_context(cx, dark_mode);
-    let DarkMode(dark_mode) = use_context::<DarkMode>(cx);
+    let dark_mode = DarkMode(create_signal(dark_mode));
+    provide_context(dark_mode);
+    let DarkMode(dark_mode) = use_context::<DarkMode>();
 
-    create_effect(cx, move || {
+    create_effect(move || {
         if let Some(local_storage) = &local_storage {
             local_storage
                 .set_item("dark_mode", &dark_mode.get().to_string())
@@ -205,12 +190,12 @@ fn App<G: Html>(cx: Scope) -> View<G> {
         }
     });
 
-    view! { cx,
-        main(class=if *dark_mode.get() { "dark" } else { "" }) {
-            (if *dark_mode.get() {
-                view! { cx, link(rel="stylesheet", href="/static/dark.css") }
+    view! {
+        main(class=if dark_mode.get() { "dark" } else { "" }) {
+            (if dark_mode.get() {
+                view! {  link(rel="stylesheet", href="/static/dark.css") }
             } else {
-                view! { cx, link(rel="stylesheet", href="/static/light.css") }
+                view! {  link(rel="stylesheet", href="/static/light.css") }
             })
             Router(
                 integration=HistoryIntegration::new(),
@@ -227,7 +212,5 @@ fn main() {
         console_log::init_with_level(log::Level::Debug).unwrap();
     }
 
-    sycamore::render(|cx| {
-        view! { cx, App {} }
-    });
+    sycamore::render(App);
 }

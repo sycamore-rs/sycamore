@@ -1,14 +1,14 @@
 use sycamore::prelude::*;
 
 #[component]
-pub fn Index<G: Html>(cx: Scope) -> View<G> {
+pub fn Index<G: Html>() -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
         .unwrap()
         .set_title("Sycamore");
 
-    view! { cx,
+    view! {
         div(class="pb-10 mx-4") {
             div(class="flex flex-col items-center w-full mb-10") {
                 img(src="/logo.svg", alt="logo", class="w-32 h-32 mt-10")
