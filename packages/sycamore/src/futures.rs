@@ -23,14 +23,14 @@ use crate::prelude::*;
 
 /// Create a new async resource.
 ///
-/// Returns a [`RcSignal`] with an initial value of `None` and a value of `Some` once the passed
+/// Returns a [`Signal`] with an initial value of `None` and a value of `Some` once the passed
 /// future has been resolved.
 
-pub fn create_resource<U, F>(f: F) -> RcSignal<Option<U>>
+pub fn create_resource<U, F>(f: F) -> Signal<Option<U>>
 where
     F: Future<Output = U> + 'static,
 {
-    let signal = create_rc_signal(None);
+    let signal = create_signal(None);
 
     spawn_local_scoped({
         let signal = signal.clone();

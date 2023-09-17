@@ -14,10 +14,10 @@ version = "0.9.0-beta.1"
 
 [dependencies]
 paste = "1.0.12"
+serde = { version = "1.0.188", optional = true }
 slotmap = "1.0.6"
 sycamore-reactive-macro = { path = "../sycamore-reactive-macro" }
 
 [features]
 default = []
 nightly = []
-serde = []   # TODO: add serde support

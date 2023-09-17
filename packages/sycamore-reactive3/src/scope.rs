@@ -453,13 +453,14 @@ impl Scope {
 
     /// Run the provided function inside the reactive scope. Sets the global root if it is in a
     /// different root.
-    pub fn run_in(self, f: impl FnOnce()) {
+    pub fn run_in<T>(self, f: impl FnOnce() -> T) -> T {
         let prev_root = Root::set_global(Some(self.root));
         let prev_scope = self.root.current_scope.get();
         self.root.current_scope.set(self.id);
-        f();
+        let ret = f();
         self.root.current_scope.set(prev_scope);
         Root::set_global(prev_root);
+        ret
     }
 }
 
@@ -580,7 +581,7 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
 }
 
 /// Get the current reactive scope from the global root.
-pub fn current_scope() -> Scope {
+pub fn use_current_scope() -> Scope {
     let root = Root::get_global();
     Scope {
         id: root.current_scope.get(),
@@ -589,7 +590,7 @@ pub fn current_scope() -> Scope {
 }
 
 /// Get the root reactive scope from the global root.
-pub fn root_scope() -> Scope {
+pub fn use_root_scope() -> Scope {
     let root = Root::get_global();
     Scope {
         id: root.root_scope.get(),

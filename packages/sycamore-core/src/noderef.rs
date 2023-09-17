@@ -25,7 +25,7 @@ use crate::generic_node::GenericNode;
 ///     }
 /// }
 /// ```
-#[derive(Clone, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct NodeRef<G: GenericNode>(Signal<Option<G>>);
 
 impl<G: GenericNode + Any> NodeRef<G> {
@@ -142,6 +142,13 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
         f.debug_tuple("NodeRef").field(&self.0.get_clone()).finish()
     }
 }
+
+impl<G: GenericNode> Clone for NodeRef<G> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<G: GenericNode> Copy for NodeRef<G> {}
 
 /* Hook implementation */
 

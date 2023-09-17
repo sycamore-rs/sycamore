@@ -761,14 +761,13 @@ impl<G: Html, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// ```
     pub fn bind_value(
         self,
-        sub: impl std::ops::Deref<Target = Signal<String>> + Clone + 'static,
+        sub: Signal<String>,
     ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
         ElementBuilder::new(move || {
             let el = (self.0)();
             #[cfg(target_arch = "wasm32")]
             create_effect({
                 let el = el.clone();
-                let sub = sub.clone();
                 move || sub.with(|sub| el.set_property("value", &sub.as_str().into()))
             });
             el.event(

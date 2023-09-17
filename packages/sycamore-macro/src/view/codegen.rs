@@ -301,20 +301,14 @@ impl CodegenTemplate {
 
                 let convert_into_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => quote! {
-                        ::sycamore::rt::JsValue::from_bool(
-                            *::sycamore::reactive::ReadSignal::get(&__expr)
-                        )
+                        ::sycamore::rt::JsValue::from_bool(__expr.get())
                     },
                     JsPropertyType::Number => quote! {
-                        ::sycamore::rt::JsValue::from_f64(
-                            *::sycamore::reactive::ReadSignal::get(&__expr)
-                        )
+                        ::sycamore::rt::JsValue::from_f64(__expr.get())
                     },
                     JsPropertyType::String => quote! {
-                        ::sycamore::rt::JsValue::from_str(
-                            &::std::string::ToString::to_string(
-                                &::sycamore::reactive::ReadSignal::get(&__expr),
-                            )
+                        __expr.with(|__expr|
+                            ::sycamore::rt::JsValue::from_str(&::std::string::ToString::to_string(__expr))
                         )
                     },
                 };
@@ -356,7 +350,7 @@ impl CodegenTemplate {
                         {
                             let __expr = ::std::clone::Clone::clone(&#expr);
                             ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                                ::sycamore::reactive::Signal::set(&__expr, #convert_from_jsvalue_fn);
+                                ::sycamore::reactive::Signal::set(__expr, #convert_from_jsvalue_fn);
                             })
                         },
                     );

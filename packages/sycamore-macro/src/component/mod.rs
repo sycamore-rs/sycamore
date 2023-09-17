@@ -93,7 +93,6 @@ impl Parse for ComponentFn {
 }
 
 struct AsyncCompInputs {
-    cx: Ident,
     sync_input: Punctuated<FnArg, Token![,]>,
     async_args: Vec<Expr>,
 }
@@ -113,19 +112,6 @@ fn async_comp_inputs_from_sig_inputs(inputs: &Punctuated<FnArg, Token![,]>) -> A
     }
 
     let mut inputs = inputs.iter();
-
-    let cx_fn_arg = inputs.next().unwrap();
-
-    let cx = if let FnArg::Typed(t) = cx_fn_arg {
-        if let Pat::Ident(id) = &*t.pat {
-            async_args.push(pat_ident_arm(&mut sync_input, cx_fn_arg, id));
-            id.ident.clone()
-        } else {
-            unreachable!("checked in parsing that the first argument is an Ident");
-        }
-    } else {
-        unreachable!("checked in parsing that the first argument is not a receiver");
-    };
 
     let prop_arg = inputs.next();
     let prop_arg = prop_arg.map(|prop_fn_arg| match prop_fn_arg {
@@ -169,7 +155,6 @@ fn async_comp_inputs_from_sig_inputs(inputs: &Punctuated<FnArg, Token![,]>) -> A
     }
 
     AsyncCompInputs {
-        cx,
         async_args,
         sync_input,
     }
@@ -200,7 +185,6 @@ impl ToTokens for ComponentFn {
             // caller.
             let inputs = &sig.inputs;
             let AsyncCompInputs {
-                cx,
                 sync_input,
                 async_args: args,
             } = async_comp_inputs_from_sig_inputs(inputs);
@@ -222,10 +206,10 @@ impl ToTokens for ComponentFn {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = ::sycamore::reactive::create_signal(#cx, ::sycamore::view::View::empty());
-                    let __view = ::sycamore::view::View::new_dyn(#cx, || <_ as ::std::clone::Clone>::clone(&*__dyn.get()));
+                    let __dyn = ::sycamore::reactive::create_signal(::sycamore::view::View::empty());
+                    let __view = ::sycamore::view::View::new_dyn(move || __dyn.get_clone());
 
-                    ::sycamore::suspense::suspense_scope(#cx, async move {
+                    ::sycamore::suspense::suspense_scope(async move {
                         let __async_view = #inner_ident(#(#args),*).await;
                         __dyn.set(__async_view);
                     });

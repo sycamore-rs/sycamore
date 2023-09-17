@@ -12,6 +12,7 @@ version = "0.9.0-beta.1"
 
 [dependencies]
 futures = "0.3.25"
+pin-project = "1.1.3"
 sycamore-reactive3 = { path = "../sycamore-reactive3", version = "0.9.0-beta.1" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

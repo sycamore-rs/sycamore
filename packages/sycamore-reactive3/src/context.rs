@@ -68,6 +68,16 @@ pub fn use_context<T: Clone + 'static>() -> T {
     try_use_context().unwrap_or_else(|| panic!("no context of type {} found)", type_name::<T>()))
 }
 
+/// Try to get a context with the given type. If no context is found, returns the value of the
+/// function and sets the value of the context in the current scope.
+pub fn use_context_or_else<T: Clone + 'static, F: FnOnce() -> T>(f: F) -> T {
+    try_use_context().unwrap_or_else(|| {
+        let value = f();
+        provide_context(value.clone());
+        value
+    })
+}
+
 /// Gets how deep the current scope is from the root/global scope. The value for the global scope
 /// itself is always `0`.
 pub fn use_scope_depth() -> u32 {

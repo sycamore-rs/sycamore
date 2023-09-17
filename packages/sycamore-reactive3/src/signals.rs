@@ -327,11 +327,13 @@ impl<T> Signal<T> {
         self.replace(new);
     }
 
+    /// Silently set a new value for the signal and return the previous value.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn replace_silent(self, new: T) -> T {
         self.update_silent(|val| std::mem::replace(val, new))
     }
 
+    /// Set a new value for the signal and return the previous value.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn replace(self, new: T) -> T {
         self.update(|val| std::mem::replace(val, new))
@@ -412,6 +414,18 @@ impl<T> Clone for Signal<T> {
 }
 impl<T> Copy for Signal<T> {}
 
+// Implement `Default` for `ReadSignal` and `Signal`.
+impl<T: Default> Default for ReadSignal<T> {
+    fn default() -> Self {
+        *create_signal(Default::default())
+    }
+}
+impl<T: Default> Default for Signal<T> {
+    fn default() -> Self {
+        create_signal(Default::default())
+    }
+}
+
 // Forward `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` from inner type.
 impl<T: PartialEq> PartialEq for ReadSignal<T> {
     fn eq(&self, other: &Self) -> bool {
@@ -488,6 +502,32 @@ impl<T: fmt::Display> fmt::Display for Signal<T> {
     }
 }
 
+// Serde implementations for `ReadSignal` and `Signal`.
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> serde::Serialize for ReadSignal<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.with(|value| value.serialize(serializer))
+    }
+}
+#[cfg(feature = "serde")]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for ReadSignal<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(*create_signal(T::deserialize(deserializer)?))
+    }
+}
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> serde::Serialize for Signal<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.with(|value| value.serialize(serializer))
+    }
+}
+#[cfg(feature = "serde")]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Signal<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(create_signal(T::deserialize(deserializer)?))
+    }
+}
+
 #[cfg(feature = "nightly")]
 impl<T: Copy> FnOnce<()> for ReadSignal<T> {
     type Output = T;
@@ -539,7 +579,7 @@ impl<T: Copy> FnOnce<(T,)> for Signal<T> {
     type Output = T;
 
     extern "rust-call" fn call_once(self, (val,): (T,)) -> Self::Output {
-        self.set(val)
+        self.replace(val)
     }
 }
 
