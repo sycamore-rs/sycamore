@@ -20,7 +20,7 @@ Since the interpolated value subscribes to `visible`, the content inside the if 
 when `visible` is changed.
 
 The conditions for displaying content can also be more complex. For example, the following snippet
-will display the value of `name` when it is non-empty, other wise displaying `"World"`.
+will display the value of `name` when it is non-empty, otherwise displaying `"World"`.
 
 Note the usage of `create_selector` here. The reason for this is to memoize the value of
 `name.get().is_empty()`. We don't want the inner `view!` (inside the `if` block) to be recreated
