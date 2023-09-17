@@ -66,7 +66,7 @@ and calling `state.get()` inside this listener scope adds itself as a _dependenc
 Sure, effects are nice but Rust is a multi-paradigm language, not just an imperative language. Let's
 take advantage of the more functional side of Rust!
 
-In fact, we can easily create a derived state (also know as derive stores) using `create_memo(...)`.
+In fact, we can easily create a derived state (also known as derive stores) using `create_memo(...)`.
 
 ```rust
 let state = create_signal(cx, 0);

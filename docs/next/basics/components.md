@@ -3,7 +3,7 @@
 Any serious UI framework needs a way to compose and abstract UI elements. In Sycamore, this can be
 accomplished using components.
 
-Components in `sycamore` are simply functions slapped with the `#[component]` attribute that take a
+Components in `sycamore` are simply functions slapped with the `#[component]` attribute that take an
 argument of type `Scope` (a reactive scope). Component functions only run once (unlike React where
 functional-components are called on every render). Think of it as a builder-pattern for constructing
 UI.
