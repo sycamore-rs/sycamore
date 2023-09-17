@@ -25,7 +25,7 @@ pub trait Integration {
 }
 
 thread_local! {
-    static PATHNAME: RefCell<Option<RcSignal<String>>> = RefCell::new(None);
+    static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
 }
 
 /// A router integration that uses the
@@ -142,23 +142,23 @@ fn base_pathname() -> String {
 
 /// Props for [`Router`].
 #[derive(Props, Debug)]
-pub struct RouterProps<'a, R, F, I, G>
+pub struct RouterProps<R, F, I, G>
 where
-    R: Route + 'a,
-    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    R: Route + 'static,
+    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
     I: Integration,
     G: GenericNode,
 {
     view: F,
     integration: I,
     #[prop(default, setter(skip))]
-    _phantom: PhantomData<&'a (R, G)>,
+    _phantom: PhantomData<(R, G)>,
 }
 
-impl<'a, R, F, I, G> RouterProps<'a, R, F, I, G>
+impl<R, F, I, G> RouterProps<R, F, I, G>
 where
-    R: Route + 'a,
-    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    R: Route + 'static,
+    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
     I: Integration,
     G: GenericNode,
 {
@@ -174,24 +174,22 @@ where
 
 /// Props for [`RouterBase`].
 #[derive(Props, Debug)]
-pub struct RouterBaseProps<'a, R, F, I, G>
+pub struct RouterBaseProps<R, F, I, G>
 where
-    R: Route + 'a,
-    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    R: Route + 'static,
+    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
     I: Integration,
     G: GenericNode,
 {
     view: F,
     integration: I,
     route: R,
-    #[prop(default, setter(skip))]
-    _phantom: PhantomData<&'a G>,
 }
 
-impl<'a, R, F, I, G> RouterBaseProps<'a, R, F, I, G>
+impl<R, F, I, G> RouterBaseProps<R, F, I, G>
 where
-    R: Route + 'a,
-    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    R: Route + 'static,
+    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
     I: Integration,
     G: GenericNode,
 {
@@ -201,7 +199,6 @@ where
             view,
             integration,
             route,
-            _phantom: PhantomData,
         }
     }
 }
@@ -209,13 +206,13 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<'a, G: Html, R, F, I>(cx: Scope<'a>, props: RouterProps<'a, R, F, I, G>) -> View<G>
+pub fn Router<G: Html, R, F, I>(props: RouterProps<R, F, I, G>) -> View<G>
 where
     R: Route + 'static,
-    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
     I: Integration + 'static,
 {
-    view! { cx,
+    view! {
         RouterBase(
             view=props.view,
             integration=props.integration,
@@ -230,20 +227,16 @@ where
 ///
 /// This is a very specific use-case, and you probably actually want [`Router`]!
 #[component]
-pub fn RouterBase<'a, G: Html, R, F, I>(
-    cx: Scope<'a>,
-    props: RouterBaseProps<'a, R, F, I, G>,
-) -> View<G>
+pub fn RouterBase<G: Html, R, F, I>(props: RouterBaseProps<R, F, I, G>) -> View<G>
 where
     R: Route + 'static,
-    F: FnOnce(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
     I: Integration + 'static,
 {
     let RouterBaseProps {
         view,
         integration,
         route,
-        _phantom,
     } = props;
     let integration = Rc::new(integration);
     let base_pathname = base_pathname();
@@ -256,14 +249,12 @@ where
         // Get initial url from window.location.
         let path = integration.current_pathname();
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
-        *pathname.borrow_mut() = Some(create_rc_signal(path.to_string()));
+        *pathname.borrow_mut() = Some(create_signal(path.to_string()));
     });
     let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    on_cleanup(cx, || {
-        PATHNAME.with(|pathname| *pathname.borrow_mut() = None)
-    });
+    on_cleanup(|| PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
 
     // Listen to popstate event.
     integration.on_popstate(Box::new({
@@ -272,21 +263,21 @@ where
         move || {
             let path = integration.current_pathname();
             let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
-            if *pathname.get() != path {
+            if pathname.with(|pathname| pathname != path) {
                 pathname.set(path.to_string());
             }
         }
     }));
-    let route_signal = create_memo(cx, move || route.match_path(&pathname.get()));
-    let view = view(cx, route_signal);
+    let route_signal = create_memo(move || pathname.with(|pathname| route.match_path(pathname)));
+    let view = view(*route_signal);
     // Delegate click events from child <a> tags.
     if let Some(node) = view.as_node() {
-        node.event(cx, ev::click, integration.click_handler());
+        node.event(ev::click, integration.click_handler());
     } else {
         let view = view.clone();
-        create_effect_scoped(cx, move |cx| {
+        create_effect_scoped(move || {
             for node in view.clone().flatten() {
-                node.event(cx, ev::click, integration.click_handler());
+                node.event(ev::click, integration.click_handler());
             }
         });
     }
@@ -295,31 +286,25 @@ where
 
 /// Props for [`StaticRouter`].
 #[derive(Props, Debug)]
-pub struct StaticRouterProps<'a, R, F, G>
+pub struct StaticRouterProps<R, F, G>
 where
-    R: Route + 'a,
-    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    R: Route + 'static,
+    F: Fn(ReadSignal<R>) -> View<G> + 'static,
     G: GenericNode,
 {
     view: F,
     route: R,
-    #[prop(default, setter(skip))]
-    _phantom: PhantomData<&'a (R, G)>,
 }
 
-impl<'a, R, F, G> StaticRouterProps<'a, R, F, G>
+impl<R, F, G> StaticRouterProps<R, F, G>
 where
-    R: Route,
-    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    R: Route + 'static,
+    F: Fn(ReadSignal<R>) -> View<G> + 'static,
     G: GenericNode,
 {
     /// Create a new [`StaticRouterProps`].
     pub fn new(route: R, view: F) -> Self {
-        Self {
-            view,
-            route,
-            _phantom: PhantomData,
-        }
+        Self { view, route }
     }
 }
 
@@ -328,15 +313,12 @@ where
 /// This is useful for SSR where we want the HTML to be rendered instantly instead of waiting for
 /// the route preload to finish loading.
 #[component]
-pub fn StaticRouter<'a, G: Html, R, F>(
-    cx: Scope<'a>,
-    props: StaticRouterProps<'a, R, F, G>,
-) -> View<G>
+pub fn StaticRouter<G: Html, R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
 where
     R: Route + 'static,
-    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(ReadSignal<R>) -> View<G> + 'static,
 {
-    view! { cx,
+    view! {
         StaticRouterBase(view=props.view, route=props.route)
     }
 }
@@ -344,21 +326,14 @@ where
 /// Implementation detail for [`StaticRouter`]. The extra component is needed to make sure hydration
 /// keys are consistent.
 #[component]
-fn StaticRouterBase<'a, G: Html, R, F>(
-    cx: Scope<'a>,
-    props: StaticRouterProps<'a, R, F, G>,
-) -> View<G>
+fn StaticRouterBase<G: Html, R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
 where
     R: Route + 'static,
-    F: Fn(Scope<'a>, &'a ReadSignal<R>) -> View<G> + 'a,
+    F: Fn(ReadSignal<R>) -> View<G> + 'static,
 {
-    let StaticRouterProps {
-        view,
-        route,
-        _phantom,
-    } = props;
+    let StaticRouterProps { view, route } = props;
 
-    view(cx, create_signal(cx, route))
+    view(*create_signal(route))
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
@@ -441,7 +416,7 @@ mod tests {
         }
 
         #[component(inline_props)]
-        fn Comp<G: Html>(cx: Scope, path: String) -> View<G> {
+        fn Comp<G: Html>(path: String) -> View<G> {
             let route = Routes::match_route(
                 // The user would never use this directly, so they'd never have to do this trick
                 // It doesn't matter which variant we provide here, it just needs to conform to
@@ -453,18 +428,18 @@ mod tests {
                     .collect::<Vec<_>>(),
             );
 
-            view! { cx,
+            view! {
                 StaticRouter(
                     route=route,
-                    view=|cx, route: &ReadSignal<Routes>| {
+                    view=|route: &ReadSignal<Routes>| {
                         match route.get().as_ref() {
-                            Routes::Home => view! { cx,
+                            Routes::Home => view! {
                                 "Home"
                             },
-                            Routes::About => view! { cx,
+                            Routes::About => view! {
                                 "About"
                             },
-                            Routes::NotFound => view! { cx,
+                            Routes::NotFound => view! {
                                 "Not Found"
                             }
                         }
@@ -474,17 +449,17 @@ mod tests {
         }
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp(path="/".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp(path="/".to_string()) }),
             "Home"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp(path="/about".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp(path="/about".to_string()) }),
             "About"
         );
 
         assert_eq!(
-            sycamore::render_to_string(|cx| view! { cx, Comp(path="/404".to_string()) }),
+            sycamore::render_to_string(|| view! { Comp(path="/404".to_string()) }),
             "Not Found"
         );
     }

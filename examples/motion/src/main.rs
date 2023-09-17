@@ -7,7 +7,7 @@ use sycamore::prelude::*;
 #[component]
 fn CreateRAF<G: Html>() -> View<G> {
     let mut state = create_signal(0i32);
-    let (_running, start, stop) = create_raf(|| {
+    let (_running, start, stop) = create_raf(move || {
         state += 1;
     });
     view! {
@@ -47,6 +47,8 @@ fn Tweened<G: Html>() -> View<G> {
 }
 
 fn main() {
+    console_error_panic_hook::set_once();
+
     sycamore::render(|| {
         view! {
             p { "Motion demo" }

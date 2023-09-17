@@ -145,7 +145,7 @@ impl<T: Lerp + Clone, const N: usize> Lerp for [T; N] {
 }
 
 /// A state that is interpolated when it is set.
-pub struct Tweened<T: Lerp + Clone + 'static>(Rc<RefCell<TweenedInner<T>>>);
+pub struct Tweened<T: Lerp + Clone + 'static>(Signal<TweenedInner<T>>);
 impl<T: Lerp + Clone> std::fmt::Debug for Tweened<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Tweened").finish()
@@ -170,13 +170,13 @@ impl<T: Lerp + Clone> Tweened<T> {
         easing_fn: impl Fn(f32) -> f32 + 'static,
     ) -> Self {
         let value = create_signal(initial);
-        Self(Rc::new(RefCell::new(TweenedInner {
+        Self(create_signal(TweenedInner {
             value,
             is_tweening: create_signal(false),
             raf_state: None,
             transition_duration_ms: transition_duration.as_millis() as f32,
             easing_fn: Rc::new(easing_fn),
-        })))
+        }))
     }
 
     /// Set the target value for the `Tweened`. The existing value will be interpolated to the
@@ -195,15 +195,15 @@ impl<T: Lerp + Clone> Tweened<T> {
             use js_sys::Date;
 
             let start = self.signal().get_clone_untracked();
-            let easing_fn = Rc::clone(&self.0.borrow().easing_fn);
+            let easing_fn = Rc::clone(&self.0.with(|this| this.easing_fn.clone()));
 
             let start_time = Date::now();
-            let signal = self.0.borrow().value.clone();
-            let is_tweening = self.0.borrow().is_tweening.clone();
-            let transition_duration_ms = self.0.borrow().transition_duration_ms;
+            let signal = self.0.with(|this| this.value.clone());
+            let is_tweening = self.0.with(|this| this.is_tweening.clone());
+            let transition_duration_ms = self.0.with(|this| this.transition_duration_ms);
 
             // If previous raf is still running, call stop() to cancel it.
-            if let Some((running, _, stop)) = &self.0.borrow_mut().raf_state {
+            if let Some((running, _, stop)) = &self.0.with(|this| this.raf_state.clone()) {
                 if running.get_untracked() {
                     stop();
                 }
@@ -225,8 +225,9 @@ impl<T: Lerp + Clone> Tweened<T> {
                 }
             });
             start();
-            self.0.borrow().is_tweening.set(true);
-            self.0.borrow_mut().raf_state = Some((running, start, stop));
+            is_tweening.set(true);
+            self.0
+                .update(|this| this.raf_state = Some((running, start, stop)));
         }
     }
 
@@ -248,21 +249,22 @@ impl<T: Lerp + Clone> Tweened<T> {
 
     /// Get the inner signal backing the state.
     pub fn signal(&self) -> Signal<T> {
-        self.0.borrow().value.clone()
+        self.0.with(|this| this.value.clone())
     }
 
     /// Returns `true` if the value is currently being tweened/interpolated. This value is reactive
     /// and can be tracked.
     pub fn is_tweening(&self) -> bool {
-        self.0.borrow().is_tweening.get()
+        self.0.with(|this| this.is_tweening.get())
     }
 }
 
 impl<T: Lerp + Clone + 'static> Clone for Tweened<T> {
     fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
+        *self
     }
 }
+impl<T: Lerp + Clone + 'static> Copy for Tweened<T> {}
 
 impl<T: Lerp + Clone + 'static> Clone for TweenedInner<T> {
     fn clone(&self) -> Self {
