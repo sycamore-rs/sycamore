@@ -3,7 +3,7 @@
 When you're working on code for your own website, props are a great way to pass customizable values
 to a component. If you need to customize an additional attribute on your HTML element, just add a
 prop! On the other hand, when you're working on components used by other people (i.e. component libraries),
-specifying every possible customization can quickly become unfeasable or even impossible.
+specifying every possible customization can quickly become unfeasible or even impossible.
 
 This is where the `Attributes` type is a useful escape hatch. Simply add a field named `attributes`
 of that type to your props,

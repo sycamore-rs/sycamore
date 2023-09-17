@@ -32,7 +32,7 @@ provide_context_ref(cx, dark_mode);
 ```
 
 You might notice that there are two different methods for providing context: `provide_context` and
-`provide_context_ref`. The first one is for providing a value, whereas the later is for providing a
+`provide_context_ref`. The first one is for providing a value, whereas the latter is for providing a
 reference. The first one is simply a wrapper around `create_ref` and `provide_context_ref`. For
 example, the two following code snippets are equivalent.
 
