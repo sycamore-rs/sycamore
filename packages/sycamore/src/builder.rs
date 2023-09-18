@@ -171,7 +171,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// # use sycamore::prelude::*;
     /// # fn _test<G: Html>() -> View<G> {
     /// let input_type = create_signal("text");
-    /// input().dyn_attr("type", || Some(*input_type.get()))
+    /// input().dyn_attr("type", move || Some(input_type.get()))
     /// # .view() }
     /// ```
     pub fn dyn_attr<S: Into<Cow<'static, str>> + 'static>(
@@ -203,7 +203,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// # use sycamore::prelude::*;
     /// # fn _test<G: Html>() -> View<G> {
     /// let required = create_signal(true);
-    /// input().dyn_bool_attr("required", || *required.get())
+    /// input().dyn_bool_attr("required", move || required.get())
     /// # .view() }
     /// ```
     pub fn dyn_bool_attr(
@@ -317,7 +317,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// let checked_class = create_signal(false);
     /// input()
     ///     .attr("type", "checkbox")
-    ///     .dyn_class("bg-red-500", || *checked_class.get())
+    ///     .dyn_class("bg-red-500", move || checked_class.get())
     /// # .view() }
     /// ```
     pub fn dyn_class(
@@ -392,7 +392,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// let checked = create_signal(false);
     /// input()
     ///     .attr("type", "checkbox")
-    ///     .dyn_prop("checked", || *checked.get())
+    ///     .dyn_prop("checked", move || checked.get())
     /// # .view() }
     /// ```
     pub fn dyn_prop<V: Into<G::PropertyType> + 'static>(
@@ -458,7 +458,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// let name = create_signal("Sycamore");
     /// p()
     ///     .t("Name: ")
-    ///     .dyn_t(|| name.get().to_string())
+    ///     .dyn_t(move || name.get().to_string())
     /// # .view() }
     /// ```
     pub fn dyn_t<S: AsRef<str> + 'static>(
@@ -631,7 +631,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// # fn _test<G: Html>() -> View<G> {
     /// let visible = create_signal(true);
     /// div().dyn_if(
-    ///     || *visible.get(),
+    ///     move || visible.get(),
     ///     || p().t("Now you see me"),
     ///     || p().t("Now you don't!"),
     /// )
@@ -802,7 +802,7 @@ impl<G: Html, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// ```
     pub fn bind_checked(
         self,
-        sub: impl std::ops::Deref<Target = Signal<bool>> + Clone + 'static,
+        sub: Signal<bool>,
     ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
         ElementBuilder::new(move || {
             let el = (self.0)();

@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn static_router() {
-        #[derive(Route)]
+        #[derive(Route, Clone, Copy)]
         enum Routes {
             #[to("/")]
             Home,
@@ -431,8 +431,8 @@ mod tests {
             view! {
                 StaticRouter(
                     route=route,
-                    view=|route: &ReadSignal<Routes>| {
-                        match route.get().as_ref() {
+                    view=|route: ReadSignal<Routes>| {
+                        match route.get() {
                             Routes::Home => view! {
                                 "Home"
                             },

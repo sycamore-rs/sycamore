@@ -1,6 +1,6 @@
 //! Utilities for smooth transitions and animations.
 
-use std::cell::{OnceCell, RefCell};
+use std::cell::OnceCell;
 use std::rc::Rc;
 
 use crate::reactive::*;
@@ -20,7 +20,7 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
     let running = create_signal(false);
     let start: Rc<dyn Fn()>;
     let stop: Rc<dyn Fn()>;
-    let _ = cb;
+    let _ = &mut cb;
 
     // Only run on wasm32 architecture.
     #[cfg(all(target_arch = "wasm32", feature = "web"))]

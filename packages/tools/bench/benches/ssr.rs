@@ -5,23 +5,23 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
             #[component]
-            fn App<G: Html>(cx: Scope) -> View<G> {
-                view! { cx,
+            fn App<G: Html>() -> View<G> {
+                view! {
                     div(class="my-container") {
                         p { "Hello World!" }
                     }
                 }
             }
 
-            let _ssr = sycamore::render_to_string(|cx| view! { cx, App {} });
+            let _ssr = sycamore::render_to_string(|| view! { App {} });
         })
     });
 
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
             #[component(inline_props)]
-            fn ListItem<G: Html>(cx: Scope, value: i32) -> View<G> {
-                view! { cx,
+            fn ListItem<G: Html>(value: i32) -> View<G> {
+                view! {
                     p {
                         span(class="placeholder")
                         i { (value) }
@@ -33,14 +33,14 @@ pub fn bench(c: &mut Criterion) {
             }
 
             #[component]
-            fn App<G: Html>(cx: Scope) -> View<G> {
-                let values = create_signal(cx, (0i32..=10).collect::<Vec<_>>());
+            fn App<G: Html>() -> View<G> {
+                let values = create_signal((0i32..=10).collect::<Vec<_>>());
 
-                view! { cx,
+                view! {
                     div(class="my-container") {
                         Indexed(
                             iterable=values,
-                            view=|cx, x| view! { cx,
+                            view=|x| view! {
                                 ListItem(value=x)
                             }
                         )
@@ -48,7 +48,7 @@ pub fn bench(c: &mut Criterion) {
                 }
             }
 
-            let _ssr = sycamore::render_to_string(|cx| view! { cx, App {} });
+            let _ssr = sycamore::render_to_string(App);
         })
     });
 }

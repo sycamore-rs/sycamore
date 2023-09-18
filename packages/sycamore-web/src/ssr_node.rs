@@ -502,7 +502,7 @@ mod tests {
     #[test]
     fn render_hello_world() {
         assert_eq!(
-            render_to_string(|cx| view! { cx,
+            render_to_string(|| view! {
                 "Hello World!"
             }),
             "Hello World!"
@@ -512,7 +512,7 @@ mod tests {
     #[test]
     fn render_escaped_text() {
         assert_eq!(
-            render_to_string(|cx| view! { cx,
+            render_to_string(|| view! {
                 "<script>Dangerous!</script>"
             }),
             "&lt;script>Dangerous!&lt;/script>"
@@ -522,7 +522,7 @@ mod tests {
     #[test]
     fn render_unescaped_html() {
         assert_eq!(
-            render_to_string(|cx| view! { cx,
+            render_to_string(|| view! {
                 div(dangerously_set_inner_html="<a>Html!</a>")
             }),
             "<div data-hk=\"0.0\"><a>Html!</a></div>"

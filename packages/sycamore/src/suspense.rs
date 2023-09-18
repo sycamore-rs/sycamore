@@ -192,7 +192,7 @@ mod tests {
         provide_executor_scope(async {
             let (sender, receiver) = oneshot::channel();
             let mut sender = Some(sender);
-            let disposer = create_scope(|| {
+            let disposer = create_child_scope(|| {
                 let trigger = create_signal(());
                 let transition = use_transition();
                 let _: View<SsrNode> = view! {
@@ -207,9 +207,9 @@ mod tests {
                     )
                 };
                 let done = create_signal(false);
-                transition.start(|| trigger.set(()), || done.set(true));
+                transition.start(move || trigger.set(()), move || done.set(true));
                 create_effect(move || {
-                    if *done.get() {
+                    if done.get() {
                         sender.take().unwrap().send(()).unwrap();
                     }
                 });

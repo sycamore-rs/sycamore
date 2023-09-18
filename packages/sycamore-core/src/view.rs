@@ -56,7 +56,7 @@ impl<G: GenericNode> View<G> {
     }
 
     /// Create a new [`View`] from a [`FnMut`] while creating a new child reactive scope.
-    #[deprecated(note = "TODO: make memos reactive scopes")]
+    // #[deprecated(note = "TODO: make memos reactive scopes")]
     pub fn new_dyn_scoped(f: impl FnMut() -> View<G> + 'static) -> Self {
         Self::new_dyn(f)
     }
@@ -327,7 +327,7 @@ mod tests {
         let option = Some("Hello!");
         let view = option.to_view();
         assert!(view.as_node().is_some());
-        let string = sycamore::render_to_string(|_| view);
+        let string = sycamore::render_to_string(|| view);
         assert_eq!(string, "Hello!");
     }
 
@@ -336,7 +336,7 @@ mod tests {
         let fragment = vec!["Hello", " ", "World!"];
         let view = fragment.to_view();
         assert!(view.as_fragment().is_some());
-        let string = sycamore::render_to_string(|_| view);
+        let string = sycamore::render_to_string(|| view);
         assert_eq!(string, "Hello World!");
     }
 }

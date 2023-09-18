@@ -19,21 +19,19 @@ fn on_cleanup_callback() {
 
 #[wasm_bindgen_test]
 pub fn test_cleanup_in_root() {
-    let root = create_scope(|cx| {
-        on_cleanup(cx, on_cleanup_callback);
+    let root = create_root(|| {
+        on_cleanup(on_cleanup_callback);
     });
-    assert_cleanup_called(|| unsafe {
-        root.dispose();
-    });
+    assert_cleanup_called(|| root.dispose());
 }
 
 #[wasm_bindgen_test]
 pub fn test_cleanup_in_effect() {
-    create_scope_immediate(|cx| {
-        let trigger = create_signal(cx, ());
-        create_effect_scoped(cx, |cx| {
+    let _ = create_root(|| {
+        let trigger = create_signal(());
+        create_effect_scoped(move || {
             trigger.track();
-            on_cleanup(cx, on_cleanup_callback);
+            on_cleanup(on_cleanup_callback);
         });
 
         assert_cleanup_called(|| {
@@ -43,20 +41,18 @@ pub fn test_cleanup_in_effect() {
 }
 
 #[component]
-fn CleanupComp<G: Html>(cx: Scope) -> View<G> {
-    on_cleanup(cx, on_cleanup_callback);
-    view! { cx, }
+fn CleanupComp<G: Html>() -> View<G> {
+    on_cleanup(on_cleanup_callback);
+    view! {}
 }
 
 #[wasm_bindgen_test]
 fn component_cleanup_on_root_destroyed() {
-    let root = create_scope(|cx| {
-        let _: View<DomNode> = view! { cx,
+    let root = create_root(|| {
+        let _: View<DomNode> = view! {
             CleanupComp {}
         };
     });
 
-    assert_cleanup_called(move || unsafe {
-        root.dispose();
-    });
+    assert_cleanup_called(move || root.dispose());
 }

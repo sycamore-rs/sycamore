@@ -9,8 +9,8 @@ fn check(actual: &str, expect: Expect) {
 
 mod hello_world {
     use super::*;
-    fn v<G: Html>(cx: Scope) -> View<G> {
-        p().t("Hello World!").view(cx)
+    fn v<G: Html>() -> View<G> {
+        p().t("Hello World!").view()
     }
     #[test]
     fn ssr() {
@@ -34,8 +34,8 @@ mod hello_world {
 
 mod hydrate_recursive {
     use super::*;
-    fn v<G: Html>(cx: Scope) -> View<G> {
-        div().c(p().t("Nested")).view(cx)
+    fn v<G: Html>() -> View<G> {
+        div().c(p().t("Nested")).view()
     }
     #[test]
     fn ssr() {
@@ -59,8 +59,8 @@ mod hydrate_recursive {
 
 mod multiple_nodes_at_same_depth {
     use super::*;
-    fn v<G: Html>(cx: Scope) -> View<G> {
-        div().c(p().t("First")).c(p().t("Second")).view(cx)
+    fn v<G: Html>() -> View<G> {
+        div().c(p().t("First")).c(p().t("Second")).view()
     }
     #[test]
     fn ssr() {
@@ -86,8 +86,8 @@ mod multiple_nodes_at_same_depth {
 
 mod top_level_fragment {
     use super::*;
-    fn v<G: Html>(cx: Scope) -> View<G> {
-        fragment([p().t("First").view(cx), p().t("Second").view(cx)])
+    fn v<G: Html>() -> View<G> {
+        fragment([p().t("First").view(), p().t("Second").view()])
     }
     #[test]
     fn ssr() {
@@ -111,26 +111,26 @@ mod top_level_fragment {
 
 mod dynamic {
     use super::*;
-    fn v<'a, G: Html>(cx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
-        p().dyn_t(|| state.get().to_string()).view(cx)
+    fn v<G: Html>(state: ReadSignal<i32>) -> View<G> {
+        p().dyn_t(move || state.get().to_string()).view()
     }
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
+            &sycamore::render_to_string(|| v(*create_signal(0))),
             expect![[r#"<p data-hk="0.0"><!--#-->0<!--/--></p>"#]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html_str = sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0)));
+        let html_str = sycamore::render_to_string(|| v(*create_signal(0)));
         let c = test_container();
         c.set_inner_html(&html_str);
 
-        create_scope_immediate(|cx| {
-            let state = create_signal(cx, 0);
+        let _ = create_root(|| {
+            let state = create_signal(0);
 
-            sycamore::hydrate_to(|_| v(cx, state), &c);
+            sycamore::hydrate_to(|| v(*state), &c);
 
             assert_text_content!(query("p"), "0");
 
@@ -146,29 +146,29 @@ mod dynamic {
 
 mod dynamic_with_siblings {
     use super::*;
-    fn v<'a, G: Html>(cx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
+    fn v<G: Html>(state: ReadSignal<i32>) -> View<G> {
         p().t("Value: ")
-            .dyn_t(|| state.get().to_string())
+            .dyn_t(move || state.get().to_string())
             .t("!")
-            .view(cx)
+            .view()
     }
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
+            &sycamore::render_to_string(|| v(*create_signal(0))),
             expect![[r#"<p data-hk="0.0">Value: <!--#-->0<!--/-->!</p>"#]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html_str = sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0)));
+        let html_str = sycamore::render_to_string(|| v(*create_signal(0)));
         let c = test_container();
         c.set_inner_html(&html_str);
 
-        create_scope_immediate(|cx| {
-            let state = create_signal(cx, 0);
+        let _ = create_root(|| {
+            let state = create_signal(0);
 
-            sycamore::hydrate_to(|_| v(cx, state), &c);
+            sycamore::hydrate_to(|| v(*state), &c);
 
             // Reactivity should work normally.
             state.set(1);
@@ -182,33 +182,32 @@ mod dynamic_with_siblings {
 
 mod dynamic_template {
     use super::*;
-    fn v<'a, G: Html>(cx: Scope<'a>, state: &'a ReadSignal<View<G>>) -> View<G> {
+    fn v<G: Html>(state: ReadSignal<View<G>>) -> View<G> {
         p().t("before")
-            .dyn_c(|| state.get().as_ref().clone())
+            .dyn_c(move || state.get_clone())
             .t("after")
-            .view(cx)
+            .view()
     }
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" }))),
+            &sycamore::render_to_string(|| v(*create_signal(view! { "text" }))),
             expect![[r#"<p data-hk="0.0">before<!--#-->text<!--/-->after</p>"#]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html_str =
-            sycamore::render_to_string(|cx| v(cx, create_signal(cx, view! { cx, "text" })));
+        let html_str = sycamore::render_to_string(|| v(*create_signal(view! { "text" })));
         let c = test_container();
         c.set_inner_html(&html_str);
 
-        create_scope_immediate(|cx| {
-            let state = create_signal(cx, view! { cx, "text" });
+        let _ = create_root(|| {
+            let state = create_signal(view! { "text" });
 
-            sycamore::hydrate_to(|_| v(cx, state), &c);
+            sycamore::hydrate_to(|| v(*state), &c);
 
             // Reactivity should work normally.
-            state.set(view! { cx, span { "nested node" } });
+            state.set(view! { span { "nested node" } });
             assert_text_content!(query("p"), "beforenested nodeafter");
 
             // P tag should still be the SSR-ed node, not a new node.
@@ -219,26 +218,26 @@ mod dynamic_template {
 
 mod top_level_dynamic_with_siblings {
     use super::*;
-    fn v<'a, G: Html>(cx: Scope<'a>, state: &'a ReadSignal<i32>) -> View<G> {
-        fragment([t("Value: "), dyn_t(cx, || state.get().to_string()), t("!")])
+    fn v<G: Html>(state: ReadSignal<i32>) -> View<G> {
+        fragment([t("Value: "), dyn_t(move || state.get().to_string()), t("!")])
     }
     #[test]
     fn ssr() {
         check(
-            &sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0))),
+            &sycamore::render_to_string(|| v(*create_signal(0))),
             expect![[r#"Value: 0!"#]],
         );
     }
     #[wasm_bindgen_test]
     fn test() {
-        let html_str = sycamore::render_to_string(|cx| v(cx, create_signal(cx, 0)));
+        let html_str = sycamore::render_to_string(|| v(*create_signal(0)));
         let c = test_container();
         c.set_inner_html(&html_str);
 
-        create_scope_immediate(|cx| {
-            let state = create_signal(cx, 0);
+        let _ = create_root(|| {
+            let state = create_signal(0);
 
-            sycamore::hydrate_to(|_| v(cx, state), &c);
+            sycamore::hydrate_to(|| v(*state), &c);
 
             // Reactivity should work normally.
             state.set(1);
