@@ -10,7 +10,13 @@ error: expected `inline_props`
 15 | #[component(not_inline_props)]
    |             ^^^^^^^^^^^^^^^^
 
-error[E0562]: `impl Trait` only allowed in function and inherent method return types, not in type
+error[E0562]: `impl Trait` only allowed in function and inherent method return types, not in field types
+ --> tests/component/inline-props-fail.rs:9:45
+  |
+9 | fn ImplTraitInArgs<G: Html>(cx: Scope, foo: impl std::fmt::Display) -> View<G> {
+  |                                             ^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0562]: `impl Trait` only allowed in function and inherent method return types, not in impl headers
  --> tests/component/inline-props-fail.rs:9:45
   |
 9 | fn ImplTraitInArgs<G: Html>(cx: Scope, foo: impl std::fmt::Display) -> View<G> {

@@ -197,7 +197,7 @@ enum Routes {
 To display content based on the route that matches, we can use a `Router`.
 
 ```rust
-view! {
+view! { cx,
     Router(
         integration=HistoryIntegration::new(),
         view=|cx, route: &ReadSignal<AppRoutes>| {
@@ -245,7 +245,7 @@ function.
 ```rust
 let route = AppRoutes::match_path(path);
 
-view! {
+view! { cx,
     StaticRouter(
         route=route,
         view=|cx, route: &ReadSignal<AppRoutes>| {
@@ -295,7 +295,7 @@ page. Sometimes, we just want the browser to handle navigation without being int
 router. To bypass the router, we can add the `rel="external"` attribute to the anchor tag.
 
 ```rust
-view! {
+view! { cx,
     a(href="path", rel="external") { "Path" }
 }
 ```

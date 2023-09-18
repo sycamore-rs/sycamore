@@ -6,6 +6,8 @@ use sycamore::prelude::*;
 pub use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_web::on_mount;
 
+#[allow(clippy::useless_attribute)] // Clippy bug: https://github.com/rust-lang/rust-clippy/issues/10878
+#[allow(ambiguous_glob_reexports)] // FIXME: fix this lint warning
 pub use self::html_tags::*;
 pub use self::svg_tags::*;
 use crate::builder::ElementBuilder;
