@@ -44,7 +44,7 @@ fn VersionedDocsLink<G: Html>(
     versioned_docs_link: VersionedDocsLink,
 ) -> View<G> {
     match versioned_docs_link {
-        VersionedDocsLink::Some(link) => view! { 
+        VersionedDocsLink::Some(link) => view! {
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("/docs/{}/getting_started/installation", link),
@@ -58,7 +58,7 @@ fn VersionedDocsLink<G: Html>(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::None => view! { 
+        VersionedDocsLink::None => view! {
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("https://docs.rs/sycamore/{}", &name[1..]),
@@ -68,7 +68,7 @@ fn VersionedDocsLink<G: Html>(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::Next => view! { 
+        VersionedDocsLink::Next => view! {
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href="/docs/getting_started/installation",
@@ -94,7 +94,7 @@ pub fn Versions<G: Html>() -> View<G> {
         .iter()
         .copied()
         .map(|(name, versioned_docs_link)| {
-            view! { 
+            view! {
                 li {
                     h2(class="text-2xl font-light") { (name) }
                     div(class="flex flex-col divide-y dark:divide-gray-500 text-gray-600 dark:text-gray-300") {
@@ -106,7 +106,7 @@ pub fn Versions<G: Html>() -> View<G> {
         .collect();
     let versions = View::new_fragment(versions);
 
-    view! { 
+    view! {
         div(class="container mx-auto") {
             h1(class="text-4xl font-bold") { "Versions" }
             ul(class="mt-5 ml-2 flex flex-col space-y-4") {

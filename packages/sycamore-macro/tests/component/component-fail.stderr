@@ -1,55 +1,51 @@
 error: component must return `sycamore::view::View`
- --> tests/component/component-fail.rs:5:29
+ --> tests/component/component-fail.rs:4:19
   |
-5 | fn Comp1<G: Html>(_cx: Scope) {
-  |                             ^
-
-error: component must take at least one argument of type `sycamore::reactive::Scope`
-  --> tests/component/component-fail.rs:11:18
-   |
-11 | fn Comp2<G: Html>() -> View<G> {
-   |                  ^^
+4 | fn Comp1<G: Html>() {
+  |                   ^
 
 error: const functions can't be components
-  --> tests/component/component-fail.rs:16:1
-   |
-16 | const fn Comp3<G: Html>(_cx: Scope) -> View<G> {
-   | ^^^^^
+ --> tests/component/component-fail.rs:9:1
+  |
+9 | const fn Comp2<G: Html>() -> View<G> {
+  | ^^^^^
 
 error: extern functions can't be components
-  --> tests/component/component-fail.rs:21:1
+  --> tests/component/component-fail.rs:14:1
    |
-21 | extern fn Comp4<G: Html>(_cx: Scope) -> View<G> {
+14 | extern "C" fn Comp3<G: Html>() -> View<G> {
    | ^^^^^^
 
-error: function components can't accept a receiver
-  --> tests/component/component-fail.rs:26:19
+error: components can't accept a receiver
+  --> tests/component/component-fail.rs:19:19
    |
-26 | fn Comp5<G: Html>(self) -> View<G> {
+19 | fn Comp4<G: Html>(self) -> View<G> {
    |                   ^^^^
 
 error: the `component` attribute can only be applied to functions
-  --> tests/component/component-fail.rs:31:1
+  --> tests/component/component-fail.rs:24:1
    |
-31 | struct Comp6;
+24 | struct Comp5;
    | ^^^^^^^^^^^^^
 
-error: component should not take more than 2 arguments
-  --> tests/component/component-fail.rs:34:77
+error: component should not take more than 1 parameter
+  --> tests/component/component-fail.rs:26:1
    |
-34 | fn CompWithMultipleProps<G: Html>(_cx: Scope, prop1: ::std::primitive::i32, prop2: ::std::primitive::i32) -> View<G> {
-   |                                                                             ^^^^^
+26 | #[component]
+   | ^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: taking an unit tuple as props is useless
-  --> tests/component/component-fail.rs:41:49
+  --> tests/component/component-fail.rs:34:37
    |
-41 | fn CompWithUnitProps<G: Html>(_cx: Scope, prop: ()) -> View<G> {
-   |                                                 ^^
+34 | fn CompWithUnitProps<G: Html>(prop: ()) -> View<G> {
+   |                                     ^^
 
 error: `self` parameter is only allowed in associated functions
-  --> tests/component/component-fail.rs:26:19
+  --> tests/component/component-fail.rs:19:19
    |
-26 | fn Comp5<G: Html>(self) -> View<G> {
+19 | fn Comp4<G: Html>(self) -> View<G> {
    |                   ^^^^ not semantically valid as function parameter
    |
    = note: associated functions are those in `impl` or `trait` definitions
