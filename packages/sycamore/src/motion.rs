@@ -25,6 +25,8 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
     // Only run on wasm32 architecture.
     #[cfg(all(target_arch = "wasm32", feature = "web"))]
     {
+        use std::cell::RefCell;
+
         use wasm_bindgen::prelude::*;
 
         let f = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
