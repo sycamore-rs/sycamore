@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn memo() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = create_memo(move || state.get() * 2);
 
@@ -246,7 +246,7 @@ mod tests {
     /// Make sure value is memoized rather than executed on demand.
     #[test]
     fn memo_only_run_once() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
 
             let counter = create_signal(0);
@@ -265,7 +265,7 @@ mod tests {
 
     #[test]
     fn dependency_on_memo() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = create_memo(move || state.get() * 2);
             let quadruple = create_memo(move || double.get() * 2);
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn untracked_memo() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(1);
             let double = create_memo(move || state.get_untracked() * 2);
 
@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn memos_should_recreate_dependencies_each_time() {
-        create_root(|| {
+        let _ = create_root(|| {
             let condition = create_signal(true);
 
             let state1 = create_signal(0);
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn destroy_memos_on_scope_dispose() {
-        create_root(|| {
+        let _ = create_root(|| {
             let counter = create_signal(0);
 
             let trigger = create_signal(());
@@ -355,7 +355,7 @@ mod tests {
 
     #[test]
     fn selector() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = create_selector(move || state.get() * 2);
 
@@ -380,7 +380,7 @@ mod tests {
 
     #[test]
     fn reducer() {
-        create_root(|| {
+        let _ = create_root(|| {
             enum Msg {
                 Increment,
                 Decrement,
@@ -404,7 +404,7 @@ mod tests {
 
     #[test]
     fn memo_reducer() {
-        create_root(|| {
+        let _ = create_root(|| {
             enum Msg {
                 Increment,
                 Decrement,

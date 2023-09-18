@@ -1,20 +1,15 @@
 use sycamore::prelude::*;
 
 #[component(inline_props)]
-fn MissingScope<G: Html>() -> View<G> {
-    todo!()
-}
-
-#[component(inline_props)]
-fn ImplTraitInArgs<G: Html>(cx: Scope, foo: impl std::fmt::Display) -> View<G> {
-    view! { cx,
+fn ImplTraitInArgs<G: Html>(foo: impl std::fmt::Display) -> View<G> {
+    view! {
         (foo)
     }
 }
 
 #[component(not_inline_props)]
-fn NotInlineProps<G: Html>(cx: Scope) -> View<G> {
-    view! { cx, }
+fn NotInlineProps<G: Html>() -> View<G> {
+    view! {}
 }
 
 fn main() {}

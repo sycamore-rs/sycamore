@@ -91,10 +91,7 @@ pub async fn render_to_string_await_suspense(
         node.write_to_string(&mut ret);
     }
 
-    // SAFETY: we are done with the scope now.
-    unsafe {
-        disposer.dispose();
-    }
+    disposer.dispose();
 
     ret
 }

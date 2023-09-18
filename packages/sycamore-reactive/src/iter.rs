@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn keyed() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let mapped = map_keyed(a, |x| x * 2, |x| *x);
             assert_eq!(mapped.get_clone(), vec![2, 4, 6]);
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn keyed_recompute_everything() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let mapped = map_keyed(a, |x| x * 2, |x| *x);
             assert_eq!(mapped.get_clone(), vec![2, 4, 6]);
@@ -291,7 +291,7 @@ mod tests {
     /// Test fast path for clearing Vec.
     #[test]
     fn keyed_clear() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let mapped = map_keyed(a, |x| x * 2, |x| *x);
 
@@ -303,7 +303,7 @@ mod tests {
     /// Test that using [`Scope::map_keyed`] will reuse previous computations.
     #[test]
     fn keyed_use_previous_computation() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
             let mapped = map_keyed(
@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn keyed_call_cleanup_on_remove() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
             let _mapped = map_keyed(
@@ -363,7 +363,7 @@ mod tests {
 
     #[test]
     fn keyed_call_cleanup_on_remove_all() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
             let _mapped = map_keyed(
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn indexed() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let mapped = map_indexed(a, |x| x * 2);
             assert_eq!(mapped.get_clone(), vec![2, 4, 6]);
@@ -404,7 +404,7 @@ mod tests {
     /// Test fast path for clearing Vec.
     #[test]
     fn indexed_clear() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let mapped = map_indexed(a, |x| x * 2);
 
@@ -416,7 +416,7 @@ mod tests {
     /// Test that result of mapped function can be listened to.
     #[test]
     fn indexed_react() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let mapped = map_indexed(a, |x| x * 2);
 
@@ -435,7 +435,7 @@ mod tests {
     /// Test that using [`map_indexed`] will reuse previous computations.
     #[test]
     fn indexed_use_previous_computation() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
             let mapped = map_indexed(a, {
@@ -460,7 +460,7 @@ mod tests {
 
     #[test]
     fn indexed_call_cleanup_on_remove() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
             let _mapped = map_indexed(a, {
@@ -487,7 +487,7 @@ mod tests {
 
     #[test]
     fn indexed_call_cleanup_on_remove_all() {
-        create_root(|| {
+        let _ = create_root(|| {
             let a = create_signal(vec![1, 2, 3]);
             let counter = Rc::new(Cell::new(0));
             let _mapped = map_indexed(a, {

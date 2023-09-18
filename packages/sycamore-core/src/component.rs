@@ -109,16 +109,16 @@ pub fn element_like_component_builder<G: GenericNode, T: Props, S>(
 /// ```
 /// # use sycamore::prelude::*;
 /// #[derive(Props)]
-/// struct RowProps<'a, G: Html> {
+/// struct RowProps<G: Html> {
 ///     width: i32,
-///     children: Children<'a, G>,
+///     children: Children<G>,
 /// }
 ///
 /// #[component]
-/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
+/// fn Row<G: Html>(props: RowProps<G>) -> View<G> {
 ///     // Convert the `Children` into a `View<G>`.
-///     let children = props.children.call(cx);
-///     view! { cx,
+///     let children = props.children.call();
+///     view! {
 ///         div {
 ///             (children)
 ///         }
@@ -126,9 +126,9 @@ pub fn element_like_component_builder<G: GenericNode, T: Props, S>(
 /// }
 ///
 /// # #[component]
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// # fn App<G: Html>() -> View<G> {
 /// // Using `Row` somewhere else in your app:
-/// view! { cx,
+/// view! {
 ///     Row(width=10) {
 ///         p { "This is a child node." }
 ///     }
@@ -225,17 +225,17 @@ impl<G: GenericNode> fmt::Debug for AttributeValue<G> {
 /// ```
 /// # use sycamore::prelude::*;
 /// #[derive(Props)]
-/// struct RowProps<'a, G: Html> {
+/// struct RowProps<G: Html> {
 ///     width: i32,
-///     children: Children<'a, G>,
-///     attributes: Attributes<'a, G>,
+///     children: Children<G>,
+///     attributes: Attributes<G>,
 /// }
 ///
 /// #[component]
-/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
-///     let children = props.children.call(cx);
+/// fn Row<G: Html>(props: RowProps<G>) -> View<G> {
+///     let children = props.children.call();
 ///     // Spread the `Attributes` onto the div.
-///     view! { cx,
+///     view! {
 ///         div(..props.attributes) {
 ///             (children)
 ///         }
@@ -243,9 +243,9 @@ impl<G: GenericNode> fmt::Debug for AttributeValue<G> {
 /// }
 ///
 /// # #[component]
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// # fn App<G: Html>() -> View<G> {
 /// // Using `Row` somewhere else in your app:
-/// view! { cx,
+/// view! {
 ///     Row(width=10, attr:id = "row1", attr:class = "bg-neutral-400") {
 ///         p { "This is a child node." }
 ///     }

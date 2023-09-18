@@ -604,7 +604,7 @@ mod tests {
 
     #[test]
     fn cleanup() {
-        create_root(|| {
+        let _ = create_root(|| {
             let cleanup_called = create_signal(false);
             let scope = create_child_scope(|| {
                 on_cleanup(move || {
@@ -619,7 +619,7 @@ mod tests {
 
     #[test]
     fn cleanup_in_effect() {
-        create_root(|| {
+        let _ = create_root(|| {
             let trigger = create_signal(());
 
             let counter = create_signal(0);
@@ -644,7 +644,7 @@ mod tests {
 
     #[test]
     fn cleanup_is_untracked() {
-        create_root(|| {
+        let _ = create_root(|| {
             let trigger = create_signal(());
 
             let counter = create_signal(0);
@@ -666,7 +666,7 @@ mod tests {
 
     #[test]
     fn batch_updates_effects_at_end() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state1 = create_signal(1);
             let state2 = create_signal(2);
             let counter = create_signal(0);

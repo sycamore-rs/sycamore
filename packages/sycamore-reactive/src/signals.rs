@@ -589,7 +589,7 @@ mod tests {
 
     #[test]
     fn signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             assert_eq!(state.get(), 0);
 
@@ -603,7 +603,7 @@ mod tests {
 
     #[test]
     fn signal_composition() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = || state.get() * 2;
 
@@ -615,7 +615,7 @@ mod tests {
 
     #[test]
     fn set_silent_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = state.map(|&x| x * 2);
 
@@ -630,7 +630,7 @@ mod tests {
 
     #[test]
     fn read_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let readonly: ReadSignal<i32> = *state;
 
@@ -642,7 +642,7 @@ mod tests {
 
     #[test]
     fn map_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = state.map(|&x| x * 2);
 
@@ -654,7 +654,7 @@ mod tests {
 
     #[test]
     fn take_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(123);
 
             let x = state.take();
@@ -665,7 +665,7 @@ mod tests {
 
     #[test]
     fn take_silent_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(123);
             let double = state.map(|&x| x * 2);
 
@@ -678,7 +678,7 @@ mod tests {
 
     #[test]
     fn signal_split() {
-        create_root(|| {
+        let _ = create_root(|| {
             let (state, set_state) = create_signal(0).split();
             assert_eq!(state.get(), 0);
 
@@ -689,7 +689,7 @@ mod tests {
 
     #[test]
     fn signal_display() {
-        create_root(|| {
+        let _ = create_root(|| {
             let signal = create_signal(0);
             assert_eq!(format!("{signal}"), "0");
             let read_signal: ReadSignal<_> = *signal;
@@ -701,7 +701,7 @@ mod tests {
 
     #[test]
     fn signal_debug() {
-        create_root(|| {
+        let _ = create_root(|| {
             let signal = create_signal(0);
             assert_eq!(format!("{signal:?}"), "0");
             let read_signal: ReadSignal<_> = *signal;
@@ -713,7 +713,7 @@ mod tests {
 
     #[test]
     fn signal_add_assign_update() {
-        create_root(|| {
+        let _ = create_root(|| {
             let mut signal = create_signal(0);
             let counter = create_signal(0);
             create_effect(move || {
@@ -730,7 +730,7 @@ mod tests {
 
     #[test]
     fn signal_update() {
-        create_root(|| {
+        let _ = create_root(|| {
             let signal = create_signal("Hello ".to_string());
             let counter = create_signal(0);
             create_effect(move || {

@@ -192,7 +192,7 @@ mod tests {
         provide_executor_scope(async {
             let (sender, receiver) = oneshot::channel();
             let mut sender = Some(sender);
-            let disposer = create_child_scope(|| {
+            let disposer = create_root(|| {
                 let trigger = create_signal(());
                 let transition = use_transition();
                 let _: View<SsrNode> = view! {
@@ -215,7 +215,7 @@ mod tests {
                 });
             });
             receiver.await.unwrap();
-            unsafe { disposer.dispose() };
+            disposer.dispose();
         })
         .await;
     }

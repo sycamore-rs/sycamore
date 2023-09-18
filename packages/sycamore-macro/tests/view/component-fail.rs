@@ -6,47 +6,46 @@ pub struct Props {
 }
 
 #[component]
-pub fn PropsComponent<G: Html>(cx: Scope, Props { prop: _ }: Props) -> View<G> {
-    view! { cx,
+pub fn PropsComponent<G: Html>(Props { prop: _ }: Props) -> View<G> {
+    view! {
         div {}
     }
 }
 
 #[component]
-fn Component<G: Html>(cx: Scope) -> View<G> {
-    view! { cx,
+fn Component<G: Html>() -> View<G> {
+    view! {
         div {}
     }
 }
 
 #[derive(Props)]
-pub struct AttributesProps<'cx, G: Html> {
-    attributes: Attributes<'cx, G>,
+pub struct AttributesProps<G: Html> {
+    attributes: Attributes<G>,
 }
 
 #[component]
-pub fn AttributesComponent<'cx, G: Html>(
-    cx: Scope<'cx>,
-    AttributesProps { attributes: _ }: AttributesProps<'cx, G>,
+pub fn AttributesComponent<G: Html>(
+    AttributesProps { attributes: _ }: AttributesProps<G>,
 ) -> View<G> {
-    view! { cx,
+    view! {
         div {}
     }
 }
 
 fn compile_fail<G: Html>() {
-    create_scope_immediate(|cx| {
-        let _: View<G> = view! { cx, UnknownComponent() };
-        let _: View<G> = view! { cx, UnknownComponent {} };
+    let _ = create_root(|| {
+        let _: View<G> = view! { UnknownComponent() };
+        let _: View<G> = view! { UnknownComponent {} };
 
-        let _: View<G> = view! { cx, Component };
-        let _: View<G> = view! { cx, Component(prop=1) };
+        let _: View<G> = view! { Component };
+        let _: View<G> = view! { Component(prop=1) };
 
-        let _: View<G> = view! { cx, PropsComponent() };
-        let _: View<G> = view! { cx, PropsComponent {} };
-        let _: View<G> = view! { cx, PropsComponent(prop=123) };
-        let _: View<G> = view! { cx, PropsComponent { prop: "123" } }; // Legacy syntax.
-        let _: View<G> = view! { cx, AttributesComponent(attr:class=123) }; // Wrong type
+        let _: View<G> = view! { PropsComponent() };
+        let _: View<G> = view! { PropsComponent {} };
+        let _: View<G> = view! { PropsComponent(prop=123) };
+        let _: View<G> = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
+        let _: View<G> = view! { AttributesComponent(attr:class=123) }; // Wrong type
     });
 }
 

@@ -26,8 +26,8 @@ pub(crate) enum ViewType<G: GenericNode> {
 /// ```
 /// # use sycamore::prelude::*;
 /// # #[component]
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
-/// let my_view: View<G> = view! { cx,
+/// # fn App<G: Html>() -> View<G> {
+/// let my_view: View<G> = view! {
 ///     div {
 ///         p { "A view." }
 ///     }
@@ -181,9 +181,9 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 /// ```
 /// # use sycamore::prelude::*;
 ///
-/// # fn Component<G: Html>(cx: Scope) -> View<G> {
+/// # fn Component<G: Html>() -> View<G> {
 /// let text = "Hello!";
-/// view! { cx,
+/// view! {
 ///     (text)
 /// }
 /// # }
@@ -195,9 +195,9 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 /// ```
 /// # use sycamore::prelude::*;
 ///
-/// # fn Component<G: Html>(cx: Scope) -> View<G> {
+/// # fn Component<G: Html>() -> View<G> {
 /// let show = true;
-/// view! { cx,
+/// view! {
 ///     (show.then(|| view! { "Hello!" }))
 /// }
 /// # }

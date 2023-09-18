@@ -6,7 +6,7 @@ use sycamore::prelude::*;
 
 #[component]
 fn App<G: Html>() -> View<G> {
-    let mut rotate = create_tweened_signal(0f64, Duration::from_millis(800), easing::quad_inout);
+    let rotate = create_tweened_signal(0f64, Duration::from_millis(800), easing::quad_inout);
 
     view! {
         button(disabled=rotate.is_tweening(), on:click=move |_| rotate.set(rotate.get() + 0.5)) { "Half rotate..." }

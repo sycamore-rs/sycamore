@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn effect() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
 
             let double = create_signal(-1);
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn effect_with_explicit_dependencies() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
 
             let double = create_signal(-1);
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn effect_cannot_create_infinite_loop() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             create_effect(move || {
                 state.track();
@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn effect_should_only_subscribe_once_to_same_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
 
             let counter = create_signal(0);
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn effect_should_recreate_dependencies_each_time() {
-        create_root(|| {
+        let _ = create_root(|| {
             let condition = create_signal(true);
 
             let state1 = create_signal(0);
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn inner_effects_run_first() {
-        create_root(|| {
+        let _ = create_root(|| {
             let trigger = create_signal(());
 
             let outer_counter = create_signal(0);
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn destroy_effects_on_scope_dispose() {
-        create_root(|| {
+        let _ = create_root(|| {
             let counter = create_signal(0);
 
             let trigger = create_signal(());
@@ -247,7 +247,7 @@ mod tests {
 
     #[test]
     fn effect_scoped_subscribing_to_own_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let trigger = create_signal(());
             create_effect_scoped(move || {
                 trigger.track();
