@@ -93,7 +93,7 @@ pub fn bench(c: &mut Criterion) {
                     create_nested_child_scopes(100, || {
                         create_effect(move || {
                             trigger.track();
-                            let state: &Signal<i32> = use_context();
+                            let state: Signal<i32> = use_context();
                             black_box(state);
                         });
                     });
