@@ -99,18 +99,17 @@ pub fn on_mount(f: impl Fn() + 'static) {
         #[wasm_bindgen]
         extern "C" {
             #[wasm_bindgen(js_name = "queueMicrotask")]
-            fn queue_microtask(f: &Closure<dyn Fn()>);
+            fn queue_microtask(f: &JsValue);
         }
 
+        let scope = use_current_scope();
         let cb = move || {
             if is_alive.get() {
                 // Scope is still valid. We can call the callback.
-                f();
+                scope.run_in(f);
             }
         };
-        let boxed: Box<dyn Fn()> = Box::new(cb);
-        let closure = create_signal(Closure::wrap(boxed));
-        closure.with(queue_microtask);
+        queue_microtask(&Closure::once_into_js(cb));
     }
 }
 

@@ -259,9 +259,12 @@ pub fn Item<G: Html>(todo: Signal<Todo>) -> View<G> {
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
     let checked = create_signal(false);
-    create_effect(move || {
-        // Calling checked.set will also update the `checked` property on the input element.
-        checked.set(completed.get())
+    // FIXME: remove this on_mount.
+    on_mount(move || {
+        create_effect(move || {
+            // Calling checked.set will also update the `checked` property on the input element.
+            checked.set(completed.get())
+        });
     });
 
     let class = move || {
@@ -321,9 +324,12 @@ pub fn List<G: Html>() -> View<G> {
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
     let checked = create_signal(false);
-    create_effect(move || {
-        // Calling checked.set will also update the `checked` property on the input element.
-        checked.set(todos_left.get() == 0)
+    // FIXME: remove this on_mount.
+    on_mount(move || {
+        create_effect(move || {
+            // Calling checked.set will also update the `checked` property on the input element.
+            checked.set(todos_left.get() == 0)
+        });
     });
 
     view! {
