@@ -33,7 +33,7 @@ jobs:
           | tar -xzf- && sudo mv trunk /usr/bin/
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: 18.x
 
@@ -41,15 +41,15 @@ jobs:
         uses: nanasess/setup-chromedriver@v2
 
       # Checkout repositories into respective directories
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           path: ./sycamore
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           path: ./sycamore-baseline
           ref: ${{ github.event.pull_request.base.ref }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           repository: krausest/js-framework-benchmark
           path: ./js-framework-benchmark
