@@ -370,10 +370,7 @@ pub fn hydrate_to(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
 ///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 #[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
-pub fn hydrate_get_root<'a>(
-    view: impl FnOnce() -> View<HydrateNode> + 'a,
-    parent: &'a Node,
-) -> RootHandle {
+pub fn hydrate_get_root(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) -> RootHandle {
     // Get children from parent into a View to set as the initial node value.
     let mut children = Vec::new();
     let child_nodes = parent.child_nodes();
@@ -388,7 +385,7 @@ pub fn hydrate_get_root<'a>(
     create_root(|| {
         insert(
             &HydrateNode::from_web_sys(parent.clone()),
-            with_hydration_context(|| view()),
+            with_hydration_context(view),
             Some(View::new_fragment(children)),
             None,
             false,

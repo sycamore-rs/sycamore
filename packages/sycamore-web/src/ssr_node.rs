@@ -483,7 +483,7 @@ pub fn render_to_string(view: impl FnOnce() -> View<SsrNode>) -> String {
         root.dispose();
         root.run_in(|| {
             let mut buf = String::new();
-            let v = with_hydration_context(|| view());
+            let v = with_hydration_context(view);
             for node in v.flatten() {
                 node.write_to_string(&mut buf);
             }

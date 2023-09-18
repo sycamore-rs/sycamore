@@ -63,7 +63,7 @@ fn insert_expression<G: GenericNode>(
         ViewType::Dyn(f) => {
             let parent = parent.clone();
             let marker = marker.cloned();
-            let f = f.clone();
+            let f = *f;
             create_effect_scoped(move || {
                 let value = f.get_clone();
                 insert_expression(
@@ -208,8 +208,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
                     ViewType::Fragment(fragment) => Rc::clone(fragment),
                     _ => unreachable!(),
                 };
-                dynamic =
-                    normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
+                dynamic = normalize_incoming_fragment(v, &fragment, false) || dynamic;
             }
             ViewType::Dyn(_) => {
                 // Not unwrap
@@ -217,8 +216,7 @@ pub fn normalize_incoming_fragment<G: GenericNode>(
                 dynamic = true;
             }
             ViewType::Fragment(fragment) => {
-                dynamic =
-                    normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
+                dynamic = normalize_incoming_fragment(v, fragment, false) || dynamic;
             }
         }
     }

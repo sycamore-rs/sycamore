@@ -98,10 +98,7 @@ pub async fn await_suspense<U>(f: impl Future<Output = U>) -> U {
     // Push a new suspense state.
     let count = create_signal(0);
     state.async_counts.update(|counts| counts.push(count));
-    let ready = create_selector({
-        let count = count.clone();
-        move || count.get() == 0
-    });
+    let ready = create_selector(move || count.get() == 0);
 
     if let Some(mut outer_count) = outer_count {
         outer_count += 1;

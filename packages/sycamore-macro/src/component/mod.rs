@@ -312,8 +312,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     });
     // Rewrite function signature.
     let props_struct_generics = generics.split_for_impl().1;
-    item.sig.inputs =
-        Punctuated::from(parse_quote! { __props: #props_struct_ident #props_struct_generics });
+    item.sig.inputs = parse_quote! { __props: #props_struct_ident #props_struct_generics };
     // Rewrite function body.
     let block = item.block.clone();
     item.block = parse_quote! {{

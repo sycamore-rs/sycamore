@@ -62,7 +62,7 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
         stop = Rc::new(move || running.set(false));
     }
 
-    (running.clone(), start, stop)
+    (running, start, stop)
 }
 
 /// Schedule a callback to be called on each animation frame.
@@ -249,7 +249,7 @@ impl<T: Lerp + Clone> Tweened<T> {
 
     /// Get the inner signal backing the state.
     pub fn signal(&self) -> Signal<T> {
-        self.0.with(|this| this.value.clone())
+        self.0.with(|this| this.value)
     }
 
     /// Returns `true` if the value is currently being tweened/interpolated. This value is reactive
@@ -269,8 +269,8 @@ impl<T: Lerp + Clone + 'static> Copy for Tweened<T> {}
 impl<T: Lerp + Clone + 'static> Clone for TweenedInner<T> {
     fn clone(&self) -> Self {
         Self {
-            value: self.value.clone(),
-            is_tweening: self.is_tweening.clone(),
+            value: self.value,
+            is_tweening: self.is_tweening,
             raf_state: self.raf_state.clone(),
             transition_duration_ms: self.transition_duration_ms,
             easing_fn: Rc::clone(&self.easing_fn),

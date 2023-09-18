@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::Cell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
@@ -25,7 +25,7 @@ pub trait Integration {
 }
 
 thread_local! {
-    static PATHNAME: RefCell<Option<Signal<String>>> = RefCell::new(None);
+    static PATHNAME: Cell<Option<Signal<String>>> = Cell::new(None);
 }
 
 /// A router integration that uses the
@@ -94,7 +94,7 @@ impl Integration for HistoryIntegration {
                         // Same origin, different path. Navigate to new page.
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
-                            let pathname = pathname.borrow().clone().unwrap_throw();
+                            let pathname = pathname.get().unwrap_throw();
                             let path = a_pathname
                                 .strip_prefix(&base_pathname())
                                 .unwrap_or(&a_pathname);
@@ -243,23 +243,22 @@ where
 
     PATHNAME.with(|pathname| {
         assert!(
-            pathname.borrow().is_none(),
+            pathname.get().is_none(),
             "cannot have more than one Router component initialized"
         );
         // Get initial url from window.location.
         let path = integration.current_pathname();
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
-        *pathname.borrow_mut() = Some(create_signal(path.to_string()));
+        pathname.set(Some(create_signal(path.to_string())));
     });
-    let pathname = PATHNAME.with(|p| p.borrow().clone().unwrap_throw());
+    let pathname = PATHNAME.with(|p| p.get().unwrap_throw());
 
     // Set PATHNAME to None when the Router is destroyed.
-    on_cleanup(|| PATHNAME.with(|pathname| *pathname.borrow_mut() = None));
+    on_cleanup(|| PATHNAME.with(|pathname| pathname.set(None)));
 
     // Listen to popstate event.
     integration.on_popstate(Box::new({
         let integration = integration.clone();
-        let pathname = pathname.clone();
         move || {
             let path = integration.current_pathname();
             let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
@@ -346,11 +345,11 @@ where
 pub fn navigate(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
-            pathname.borrow().is_some(),
+            pathname.get().is_some(),
             "navigate can only be used with a Router"
         );
 
-        let pathname = pathname.borrow().clone().unwrap_throw();
+        let pathname = pathname.get().unwrap_throw();
         let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
 
@@ -375,11 +374,11 @@ pub fn navigate(url: &str) {
 pub fn navigate_replace(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
-            pathname.borrow().is_some(),
+            pathname.get().is_some(),
             "navigate_replace can only be used with a Router"
         );
 
-        let pathname = pathname.borrow().clone().unwrap_throw();
+        let pathname = pathname.get().unwrap_throw();
         let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
 

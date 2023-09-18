@@ -123,14 +123,7 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
     fn remove_self(&self);
 
     /// Add a event handler for the event `name`.
-    ///
-    /// The implementation needs to ensure that the passed event handler is not called once the
-    /// reactive scope `cx` is disposed, in order to prevent use-after-free. This is already handled
-    /// at compile-time with the `+ 'a` bound on the handler. However, many implementations will
-    /// probably need to unsafely cast the lifetime of the handler to `'static` in order to store
-    /// it.
     fn event<
-        'a,
         Ev: EventDescriptor<Self::AnyEventData>,
         F: EventHandler<Self::AnyEventData, Ev, S> + 'static,
         S,

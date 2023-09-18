@@ -32,11 +32,8 @@ where
 {
     let signal = create_signal(None);
 
-    spawn_local_scoped({
-        let signal = signal.clone();
-        async move {
-            signal.set(Some(f.await));
-        }
+    spawn_local_scoped(async move {
+        signal.set(Some(f.await));
     });
 
     signal

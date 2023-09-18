@@ -9,24 +9,25 @@ use crate::prelude::*;
 
 /// Props for [`Portal`].
 #[derive(Props, Debug)]
-pub struct PortalProps<'a, G>
+pub struct PortalProps<G>
 where
     G: GenericNode,
 {
     children: Children<G>,
-    selector: &'a str,
+    #[prop(setter(into))]
+    selector: String,
 }
 
 /// A portal into another part of the DOM.
 #[component]
-pub fn Portal<'a, G: Html>(props: PortalProps<'a, G>) -> View<G> {
+pub fn Portal<G: Html>(props: PortalProps<G>) -> View<G> {
     let PortalProps { children, selector } = props;
 
     if G::IS_BROWSER {
         let window = web_sys::window().unwrap_throw();
         let document = window.document().unwrap_throw();
         let container = document
-            .query_selector(selector)
+            .query_selector(&selector)
             .unwrap_throw()
             .expect_throw("could not find element matching selector");
 

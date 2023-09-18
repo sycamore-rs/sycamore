@@ -113,7 +113,7 @@ pub struct NoHydrateProps<G: GenericNode> {
 /// elements.
 #[cfg(feature = "hydrate")]
 #[component]
-pub fn NoHydrate<'a, G: Html>(props: NoHydrateProps<G>) -> View<G> {
+pub fn NoHydrate<G: Html>(props: NoHydrateProps<G>) -> View<G> {
     use crate::utils::{hydrate, render};
 
     let node_ref = create_node_ref();
@@ -147,7 +147,7 @@ pub struct NoSsrProps<G: GenericNode> {
 /// elements.
 #[cfg(feature = "hydrate")]
 #[component]
-pub fn NoSsr<'a, G: Html>(props: NoSsrProps<G>) -> View<G> {
+pub fn NoSsr<G: Html>(props: NoSsrProps<G>) -> View<G> {
     use crate::utils::hydrate;
 
     let node = if !G::IS_BROWSER {

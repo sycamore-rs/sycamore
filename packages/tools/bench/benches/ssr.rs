@@ -39,7 +39,7 @@ pub fn bench(c: &mut Criterion) {
                 view! {
                     div(class="my-container") {
                         Indexed(
-                            iterable=values,
+                            iterable=*values,
                             view=|x| view! {
                                 ListItem(value=x)
                             }

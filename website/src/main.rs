@@ -69,8 +69,6 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
     let fetch_docs_data = move |url| {
         let data = create_resource(docs_preload(url));
         if cached_sidebar_data.with(|x| x.is_none() || x.as_ref().unwrap().0.is_some()) {
-            // Update sidebar
-            let cached_sidebar_data = cached_sidebar_data.clone();
             spawn_local_scoped(async move {
                 cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
             });

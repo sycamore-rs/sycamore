@@ -164,7 +164,7 @@ impl<G: GenericNode> From<View<G>> for Children<G> {
 impl<G: GenericNode> Default for Children<G> {
     fn default() -> Self {
         Self {
-            f: Box::new(|| View::default()),
+            f: Box::new(View::default),
         }
     }
 }

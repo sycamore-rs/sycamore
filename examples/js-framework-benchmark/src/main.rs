@@ -158,7 +158,7 @@ fn App<G: Html>() -> View<G> {
                             let is_selected = create_selector(move || selected.get() == Some(row.id));
                             let handle_click = move |_| selected.set(Some(row.id));
                             view! {
-                                tr(class=is_selected.get().then(|| "danger").unwrap_or("")) {
+                                tr(class=if is_selected.get() { "danger" } else { "" }) {
                                     td(class="col-md-1") { (row.id) }
                                     td(class="col-md-4") {
                                         a(on:click=handle_click) { (row.label.get_clone()) }
