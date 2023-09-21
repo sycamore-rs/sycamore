@@ -89,6 +89,9 @@ pub(crate) enum Mark {
 pub struct ReadSignal<T: 'static> {
     pub(crate) id: SignalId,
     root: &'static Root,
+    /// Keep track of where the signal was created for diagnostics.
+    #[cfg(debug_assertions)]
+    created_at: &'static std::panic::Location<'static>,
     _phantom: PhantomData<T>,
 }
 
@@ -157,7 +160,7 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// closure of the `create_memo`.
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_signal<T>(value: T) -> Signal<T> {
-    let root = Root::get_global();
+    let root = Root::global();
     let data = SignalState {
         value: RefCell::new(Some(Box::new(value))),
         dependencies: Vec::new(),
@@ -176,6 +179,8 @@ pub fn create_signal<T>(value: T) -> Signal<T> {
     Signal(ReadSignal {
         id: key,
         root,
+        #[cfg(debug_assertions)]
+        created_at: std::panic::Location::caller(),
         _phantom: PhantomData,
     })
 }
@@ -183,22 +188,30 @@ pub fn create_signal<T>(value: T) -> Signal<T> {
 impl<T> ReadSignal<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_data<U>(self, f: impl FnOnce(&SignalState) -> U) -> U {
-        f(self
-            .root
-            .signals
-            .borrow()
-            .get(self.id)
-            .expect("signal is disposed"))
+        let signals = self.root.signals.borrow();
+        let data = signals.get(self.id);
+        match data {
+            Some(data) => f(data),
+            None => panic!("{}", self.get_disposed_panic_message()),
+        }
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_data_mut<U>(self, f: impl FnOnce(&mut SignalState) -> U) -> U {
-        f(self
-            .root
-            .signals
-            .borrow_mut()
-            .get_mut(self.id)
-            .expect("signal is disposed"))
+        let mut signals = self.root.signals.borrow_mut();
+        let data = signals.get_mut(self.id);
+        match data {
+            Some(data) => f(data),
+            None => panic!("{}", self.get_disposed_panic_message()),
+        }
+    }
+
+    fn get_disposed_panic_message(self) -> String {
+        #[cfg(not(debug_assertions))]
+        return "signal was disposed".to_string();
+
+        #[cfg(debug_assertions)]
+        return format!("signal was disposed. Created at {}", self.created_at);
     }
 
     /// Get the value of the signal without tracking it. The type must implement [`Copy`]. If this

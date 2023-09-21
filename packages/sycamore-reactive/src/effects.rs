@@ -38,7 +38,7 @@ pub(crate) struct EffectState {
 /// recommended to update signal states inside an effect. You probably should be using a
 /// [`create_memo`](crate::create_memo) instead.
 pub fn create_effect(mut f: impl FnMut() + 'static) {
-    let root = Root::get_global();
+    let root = Root::global();
     // Run the effect right now so we can get the dependencies.
     let (_, tracker) = root.tracked_scope(&mut f);
     let key = root.effects.borrow_mut().insert(EffectState {

@@ -360,7 +360,7 @@ pub fn hydrate(view: impl FnOnce() -> View<HydrateNode>) {
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
 pub fn hydrate_to(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
-    let _ = hydrate_get_root(view, parent);
+    let _ = create_root(|| hydrate_in_scope(view, parent));
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
@@ -368,9 +368,11 @@ pub fn hydrate_to(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
 /// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
 /// modal is closed).
 ///
+/// It is expected that this function will be called inside a reactive root, usually created using
+/// [`create_root`].
+///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
-#[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
-pub fn hydrate_get_root(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) -> RootHandle {
+pub fn hydrate_in_scope(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
     // Get children from parent into a View to set as the initial node value.
     let mut children = Vec::new();
     let child_nodes = parent.child_nodes();
@@ -382,13 +384,11 @@ pub fn hydrate_get_root(view: impl FnOnce() -> View<HydrateNode>, parent: &Node)
         .map(|x| View::new_node(HydrateNode::from_web_sys(x)))
         .collect::<Vec<_>>();
 
-    create_root(|| {
-        insert(
-            &HydrateNode::from_web_sys(parent.clone()),
-            with_hydration_context(view),
-            Some(View::new_fragment(children)),
-            None,
-            false,
-        );
-    })
+    insert(
+        &HydrateNode::from_web_sys(parent.clone()),
+        with_hydration_context(view),
+        Some(View::new_fragment(children)),
+        None,
+        false,
+    );
 }

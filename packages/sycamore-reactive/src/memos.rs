@@ -52,12 +52,13 @@ impl<T: fmt::Display> fmt::Display for Memo<T> {
 
 /// Create a new [`Signal`] from an initial value, an initial list of dependencies, and an update
 /// function. Used in the implementation of [`create_memo`] and friends.
+#[cfg_attr(debug_assertions, track_caller)]
 pub(crate) fn create_updated_signal<T>(
     initial: T,
     initial_deps: DependencyTracker,
     mut f: impl FnMut(&mut T) -> bool + 'static,
 ) -> Signal<T> {
-    let root = Root::get_global();
+    let root = Root::global();
     let signal = create_signal(initial);
     initial_deps.create_signal_dependency_links(root, signal.0.id);
 
@@ -113,8 +114,9 @@ pub(crate) fn create_updated_signal<T>(
 /// assert_eq!(double.get(), 2);
 /// # });
 /// ```
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_memo<T>(mut f: impl FnMut() -> T + 'static) -> Memo<T> {
-    let root = Root::get_global();
+    let root = Root::global();
     let (initial, tracker) = root.tracked_scope(&mut f);
     let signal = create_updated_signal(initial, tracker, move |value| {
         *value = f();
@@ -133,11 +135,12 @@ pub fn create_memo<T>(mut f: impl FnMut() -> T + 'static) -> Memo<T> {
 ///
 /// To use the type's [`PartialEq`] implementation instead of a custom function, use
 /// [`create_selector`].
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_selector_with<T>(
     mut f: impl FnMut() -> T + 'static,
     mut eq: impl FnMut(&T, &T) -> bool + 'static,
 ) -> Memo<T> {
-    let root = Root::get_global();
+    let root = Root::global();
     let (initial, tracker) = root.tracked_scope(&mut f);
     let signal = create_updated_signal(initial, tracker, move |value| {
         let new = f();
@@ -175,6 +178,7 @@ pub fn create_selector_with<T>(
 /// assert_eq!(squared.get(), 4);
 /// # });
 /// ```
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_selector<T>(f: impl FnMut() -> T + 'static) -> Memo<T>
 where
     T: PartialEq,
@@ -215,6 +219,7 @@ where
 /// assert_eq!(state.get(), 0);
 /// # });
 /// ```
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_reducer<T, Msg>(
     initial: T,
     reduce: impl FnMut(&T, Msg) -> T,

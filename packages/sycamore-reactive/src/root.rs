@@ -7,7 +7,7 @@ use std::fmt;
 use slotmap::{new_key_type, SlotMap};
 
 use crate::signals::{Mark, SignalId, SignalState};
-use crate::{EffectId, EffectState};
+use crate::{EffectId, EffectState, NodeId, ReactiveNode};
 
 /// The struct managing the state of the reactive system. Only one should be created per running
 /// app.
@@ -38,9 +38,10 @@ pub(crate) struct Root {
     pub rev_sorted_buf: RefCell<Vec<SignalId>>,
     /// A list of effects to be run after signal updates are over.
     pub effect_queue: RefCell<Vec<EffectId>>,
+    pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
     /// Whether we are currently batching signal updatse. If this is true, we do not run
     /// `effect_queue` and instead wait until the end of the batch.
-    pub batch: Cell<bool>,
+    pub batching: Cell<bool>,
 }
 
 thread_local! {
@@ -51,7 +52,7 @@ thread_local! {
 impl Root {
     /// Get the current reactive root. Panics if no root is found.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn get_global() -> &'static Root {
+    pub fn global() -> &'static Root {
         GLOBAL_ROOT.with(|root| root.get().expect("no root found"))
     }
 
@@ -70,7 +71,8 @@ impl Root {
             tracker: RefCell::new(None),
             rev_sorted_buf: RefCell::new(Vec::new()),
             effect_queue: RefCell::new(Vec::new()),
-            batch: Cell::new(false),
+            nodes: RefCell::new(SlotMap::default()),
+            batching: Cell::new(false),
         };
         let _ref = Box::leak(Box::new(this));
         _ref.reinit();
@@ -85,7 +87,8 @@ impl Root {
         let _ = self.tracker.take();
         let _ = self.rev_sorted_buf.take();
         let _ = self.effect_queue.take();
-        self.batch.set(false);
+        let _ = self.nodes.take();
+        self.batching.set(false);
         // Create a new top-level scope.
         let root_scope = ScopeState::new(self, None);
         let root_scope_key = self.scopes.borrow_mut().insert(root_scope);
@@ -272,7 +275,7 @@ impl Root {
         let prev = Root::set_global(Some(self));
         // Propagate any signal updates.
         self.propagate_signal_updates(start_node);
-        if !self.batch.get() {
+        if !self.batching.get() {
             // Run all the effects that have been queued.
             self.run_effects();
         }
@@ -312,12 +315,12 @@ impl Root {
 
     /// Sets the batch flag to `true`.
     fn start_batch(&self) {
-        self.batch.set(true);
+        self.batching.set(true);
     }
 
     /// Sets the batch flag to `false` and run all the queued effects.
     fn end_batch(&self) {
-        self.batch.set(false);
+        self.batching.set(false);
         self.run_effects();
     }
 }
@@ -517,7 +520,7 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
 /// Returns the created [`Scope`] which can be used to dispose it.
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_child_scope(f: impl FnOnce()) -> Scope {
-    Root::get_global().create_child_scope(f)
+    Root::global().create_child_scope(f)
 }
 
 /// Adds a callback that is called when the scope is destroyed.
@@ -535,7 +538,7 @@ pub fn create_child_scope(f: impl FnOnce()) -> Scope {
 /// # });
 /// ```
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
-    let root = Root::get_global();
+    let root = Root::global();
     root.scopes.borrow_mut()[root.current_scope.get()]
         .cleanups
         .push(Box::new(f));
@@ -547,7 +550,7 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
 /// of a signal because of methods like [`Signal::update`] which allow direct mutation to the
 /// underlying value.
 pub fn batch<T>(f: impl FnOnce() -> T) -> T {
-    let root = Root::get_global();
+    let root = Root::global();
     root.start_batch();
     let ret = f();
     root.end_batch();
@@ -573,7 +576,7 @@ pub fn batch<T>(f: impl FnOnce() -> T) -> T {
 /// # });
 /// ```
 pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
-    let root = Root::get_global();
+    let root = Root::global();
     let prev = root.tracker.replace(None);
     let ret = f();
     root.tracker.replace(prev);
@@ -582,7 +585,7 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
 
 /// Get the current reactive scope from the global root.
 pub fn use_current_scope() -> Scope {
-    let root = Root::get_global();
+    let root = Root::global();
     Scope {
         id: root.current_scope.get(),
         root,
@@ -591,7 +594,7 @@ pub fn use_current_scope() -> Scope {
 
 /// Get the root reactive scope from the global root.
 pub fn use_root_scope() -> Scope {
-    let root = Root::get_global();
+    let root = Root::global();
     Scope {
         id: root.root_scope.get(),
         root,

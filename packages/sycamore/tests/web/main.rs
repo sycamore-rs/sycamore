@@ -67,24 +67,26 @@ fn hello_world() {
 
 #[wasm_bindgen_test]
 fn hello_world_noderef() {
-    let p_ref = NodeRef::new();
+    let _ = create_root(|| {
+        let p_ref = NodeRef::new();
 
-    sycamore::render_to(
-        move || {
-            view! {
-                p(ref=p_ref) { "Hello World!" }
-            }
-        },
-        &test_container(),
-    );
+        sycamore::render_in_scope(
+            move || {
+                view! {
+                    p(ref=p_ref) { "Hello World!" }
+                }
+            },
+            &test_container(),
+        );
 
-    assert_eq!(
-        &p_ref
-            .get::<DomNode>()
-            .unchecked_into::<HtmlElement>()
-            .outer_html(),
-        "<p>Hello World!</p>"
-    );
+        assert_eq!(
+            &p_ref
+                .get::<DomNode>()
+                .unchecked_into::<HtmlElement>()
+                .outer_html(),
+            "<p>Hello World!</p>"
+        );
+    });
 }
 
 #[wasm_bindgen_test]
@@ -131,7 +133,7 @@ fn template_interpolation_if_else() {
                 })
             }
         };
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
@@ -154,7 +156,7 @@ fn template_interpolation_if_else_with_sibling() {
                 view! { p { "Hidden" }}
             })
         };
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("p"), "Hello Sycamore!");
 
         show.set(false);
@@ -176,7 +178,7 @@ fn template_interpolation_nested_reactivity() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let p = query("p");
         assert_text_content!(p, "0");
 
@@ -194,7 +196,7 @@ fn reactive_text() {
             p { (count.get()) }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let p = query("p");
 
         assert_text_content!(p, "0");
@@ -213,7 +215,7 @@ fn reactive_text_do_not_destroy_previous_children() {
             p { "Value: " (count.get()) }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let p = query("p");
 
         assert_text_content!(p, "Value: 0");
@@ -232,7 +234,7 @@ fn reactive_attribute() {
             span(attribute=count.get())
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let span = query("span");
 
         assert_eq!(span.get_attribute("attribute").unwrap(), "0");
@@ -251,7 +253,7 @@ fn reactive_property() {
             input(type="checkbox", prop:indeterminate=indeterminate.get())
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let input: HtmlInputElement = query_into("input");
 
         assert!(input.indeterminate());
@@ -268,7 +270,7 @@ fn static_property() {
             input(prop:checked=true)
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let input: HtmlInputElement = query_into("input");
 
         assert!(input.checked());
@@ -286,7 +288,7 @@ fn two_way_bind_to_props() {
             p { (value.get_clone()) }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let input: HtmlInputElement = query_into("input");
 
         value.set("abc".to_string());
@@ -307,7 +309,7 @@ fn two_way_bind_to_value_as_number() {
             input(type="range", bind:valueAsNumber=value) // Note that type must be "range" or "number"
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let input: HtmlInputElement = query_into("input");
         assert_eq!(input.value_as_number(), 1.0);
 
@@ -330,7 +332,7 @@ fn noderefs() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let input_ref = query("input");
 
         assert_eq!(input_ref, noderef.get::<DomNode>().unchecked_into());
@@ -369,7 +371,7 @@ fn fragments() {
             p { "2" }
             p { "3" }
         };
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         assert_text_content!(query("#test-container"), "123");
     });
@@ -384,7 +386,7 @@ fn fragments_text_nodes() {
             "3"
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         assert_text_content!(query("#test-container"), "123");
     });
@@ -395,7 +397,7 @@ fn dyn_fragment_reuse_nodes() {
     let _ = create_root(|| {
         let nodes = vec![view! { "1" }, view! { "2" }, view! { "3" }];
 
-        sycamore::render_to(
+        sycamore::render_in_scope(
             {
                 let nodes = nodes.clone();
                 || View::new_dyn(move || View::new_fragment(nodes.clone()))

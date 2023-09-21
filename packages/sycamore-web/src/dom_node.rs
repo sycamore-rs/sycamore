@@ -398,7 +398,7 @@ pub fn render(view: impl FnOnce() -> View<DomNode> + 'static) {
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn render_to(view: impl FnOnce() -> View<DomNode> + 'static, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
-    let _ = render_get_scope(view, parent);
+    let _ = create_root(|| render_in_scope(view, parent));
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
@@ -410,19 +410,16 @@ pub fn render_to(view: impl FnOnce() -> View<DomNode> + 'static, parent: &Node) 
 /// of your app long-term. For rendering a view that will never be unmounted from the dom, use
 /// [`render_to`] instead. For rendering under the `<body>` tag, use [`render`] instead.
 ///
+/// It is expected that this function will be called inside a reactive root, usually created using
+/// [`create_root`].
+///
 /// _This API requires the following crate features to be activated: `dom`_
-#[must_use = "please hold onto the ScopeDisposer until you want to clean things up, or use render_to() instead"]
-pub fn render_get_scope(
-    view: impl FnOnce() -> View<DomNode> + 'static,
-    parent: &Node,
-) -> RootHandle {
-    create_root(|| {
-        insert(
-            &DomNode::from_web_sys(parent.clone()),
-            view(),
-            None,
-            None,
-            false,
-        );
-    })
+pub fn render_in_scope(view: impl FnOnce() -> View<DomNode> + 'static, parent: &Node) {
+    insert(
+        &DomNode::from_web_sys(parent.clone()),
+        view(),
+        None,
+        None,
+        false,
+    );
 }
