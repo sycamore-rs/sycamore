@@ -2,7 +2,9 @@
 
 use std::any::{type_name, Any};
 
-use crate::{Root, ScopeId};
+use slotmap::Key;
+
+use crate::{NodeId, Root};
 
 /// Provide a context value in this scope.
 ///
@@ -11,27 +13,17 @@ use crate::{Root, ScopeId};
 /// allowed to have context values with the same type in _different_ scopes.
 pub fn provide_context<T: 'static>(value: T) {
     let root = Root::global();
-    provide_context_in_scope(root.current_scope.get(), value);
-}
-
-/// Provide a context value in global scope.
-///
-/// # Panics
-/// This panics if a context value of the same type exists already in the global scope. Note that it
-/// is allowed to have context values with the same type in _different_ scopes.
-pub fn provide_global_context<T: 'static>(value: T) {
-    let root = Root::global();
-    provide_context_in_scope(root.root_scope.get(), value);
+    provide_context_in_node(root.current_node.get(), value);
 }
 
 /// Internal implementation for [`provide_context`] and [`provide_global_context`].
-fn provide_context_in_scope<T: 'static>(key: ScopeId, value: T) {
+fn provide_context_in_node<T: 'static>(id: NodeId, value: T) {
     let root = Root::global();
-    let mut scopes = root.scopes.borrow_mut();
+    let mut nodes = root.nodes.borrow_mut();
     let any: Box<dyn Any> = Box::new(value);
 
-    let scope = &mut scopes[key];
-    if scope
+    let node = &mut nodes[id];
+    if node
         .context
         .iter()
         .any(|x| (**x).type_id() == (*any).type_id())
@@ -41,16 +33,16 @@ fn provide_context_in_scope<T: 'static>(key: ScopeId, value: T) {
             type_name::<T>()
         );
     } else {
-        scope.context.push(any);
+        node.context.push(any);
     }
 }
 
 /// Tries to get a context value of the given type. If no context is found, returns `None`.
 pub fn try_use_context<T: Clone + 'static>() -> Option<T> {
     let root = Root::global();
-    let scopes = root.scopes.borrow();
+    let nodes = root.nodes.borrow();
     // Walk up the scope stack until we find one with the context of the right type.
-    let mut current = Some(&scopes[root.current_scope.get()]);
+    let mut current = Some(&nodes[root.current_node.get()]);
     while let Some(next) = current {
         for value in &next.context {
             if let Some(value) = value.downcast_ref::<T>().cloned() {
@@ -58,7 +50,11 @@ pub fn try_use_context<T: Clone + 'static>() -> Option<T> {
             }
         }
         // No context of the right type found for this scope. Now check the parent scope.
-        current = next.parent.map(|key| &scopes[key]);
+        if next.parent.is_null() {
+            current = None;
+        } else {
+            current = Some(&nodes[next.parent]);
+        }
     }
     None
 }
@@ -82,13 +78,17 @@ pub fn use_context_or_else<T: Clone + 'static, F: FnOnce() -> T>(f: F) -> T {
 /// itself is always `0`.
 pub fn use_scope_depth() -> u32 {
     let root = Root::global();
-    let scopes = root.scopes.borrow();
-    let mut current = Some(&scopes[root.current_scope.get()]);
+    let nodes = root.nodes.borrow();
+    let mut current = Some(&nodes[root.current_node.get()]);
     let mut depth = 0;
 
     while let Some(next) = current {
-        current = next.parent.map(|key| &scopes[key]);
         depth += 1;
+        if next.parent.is_null() {
+            current = None;
+        } else {
+            current = Some(&nodes[next.parent]);
+        }
     }
     depth
 }

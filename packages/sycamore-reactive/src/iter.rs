@@ -35,8 +35,8 @@ where
     let mut mapped: Vec<U> = Vec::new();
     let mut mapped_tmp: Vec<Option<U>> = Vec::new();
 
-    let mut disposers: Vec<Option<Scope>> = Vec::new();
-    let mut disposers_tmp: Vec<Option<Scope>> = Vec::new();
+    let mut disposers: Vec<Option<NodeHandle>> = Vec::new();
+    let mut disposers_tmp: Vec<Option<NodeHandle>> = Vec::new();
 
     // Diff and update signal each time list is updated.
     create_memo(move || {
@@ -193,7 +193,7 @@ where
     // Previous state used for diffing.
     let mut items = Vec::new();
     let mut mapped = Vec::new();
-    let mut disposers: Vec<Scope> = Vec::new();
+    let mut disposers: Vec<NodeHandle> = Vec::new();
 
     // Diff and update signal each time list is updated.
     create_memo(move || {

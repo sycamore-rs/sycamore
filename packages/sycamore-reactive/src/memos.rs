@@ -60,11 +60,11 @@ pub(crate) fn create_updated_signal<T>(
 ) -> Signal<T> {
     let root = Root::global();
     let signal = create_signal(initial);
-    initial_deps.create_signal_dependency_links(root, signal.0.id);
+    initial_deps.create_dependency_link(root, signal.0.id);
 
     // Set the signal update callback as f.
     signal.0.get_data_mut(move |data| {
-        data.update = Some(Box::new(move |any| {
+        data.callback = Some(Box::new(move |any| {
             f(any.downcast_mut().expect("could not downcast memo value"))
         }))
     });
@@ -117,6 +117,7 @@ pub(crate) fn create_updated_signal<T>(
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_memo<T>(mut f: impl FnMut() -> T + 'static) -> Memo<T> {
     let root = Root::global();
+    // FIXME: run in scope of new node.
     let (initial, tracker) = root.tracked_scope(&mut f);
     let signal = create_updated_signal(initial, tracker, move |value| {
         *value = f();

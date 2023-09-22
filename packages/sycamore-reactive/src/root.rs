@@ -1,13 +1,10 @@
 //! [`Root`] and [`Scope`].
 
-use std::any::Any;
 use std::cell::{Cell, RefCell};
-use std::fmt;
 
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{Key, SlotMap};
 
-use crate::signals::{Mark, SignalId, SignalState};
-use crate::{EffectId, EffectState, NodeId, ReactiveNode};
+use crate::{create_memo, create_signal, Mark, NodeHandle, NodeId, NodeState, ReactiveNode};
 
 /// The struct managing the state of the reactive system. Only one should be created per running
 /// app.
@@ -18,27 +15,18 @@ use crate::{EffectId, EffectState, NodeId, ReactiveNode};
 /// itself. Finally, the `Root` is expected to live for the whole duration of the app so this is
 /// not a problem.
 pub(crate) struct Root {
-    /// A reference to the root scope.
-    pub root_scope: Cell<ScopeId>,
-    /// All the scopes that have been created in this `Root`.
-    pub scopes: RefCell<SlotMap<ScopeId, ScopeState>>,
-    /// The current scope that we are running in.
-    pub current_scope: Cell<ScopeId>,
-    /// All the signals that have been created in this `Root`.
-    /// Eventhough signals are stored here, they are created under roots and are destroyed by the
-    /// scopes when they themselves are dropped.
-    pub signals: RefCell<SlotMap<SignalId, SignalState>>,
-    /// ALl the effects that have been created in this `Root`.
-    /// Effects are also destroyed by the scopes when they themselves are dropped.
-    pub effects: RefCell<SlotMap<EffectId, EffectState>>,
     /// If this is `Some`, that means we are tracking signal accesses.
     pub tracker: RefCell<Option<DependencyTracker>>,
     /// A temporary buffer used in `propagate_updates` to prevent allocating a new Vec every time
     /// it is called.
-    pub rev_sorted_buf: RefCell<Vec<SignalId>>,
-    /// A list of effects to be run after signal updates are over.
-    pub effect_queue: RefCell<Vec<EffectId>>,
+    pub rev_sorted_buf: RefCell<Vec<NodeId>>,
+    /// The current node that owns everything created in its scope.
+    /// If we are at the top-level, then this is the "null" key.
+    pub current_node: Cell<NodeId>,
+    /// All the nodes created in this `Root`.
     pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
+    /// A list of effects to be run after signal updates are over.
+    pub effect_queue: RefCell<Vec<Box<dyn FnMut()>>>,
     /// Whether we are currently batching signal updatse. If this is true, we do not run
     /// `effect_queue` and instead wait until the end of the batch.
     pub batching: Cell<bool>,
@@ -63,15 +51,11 @@ impl Root {
 
     pub fn new_static() -> &'static Self {
         let this = Self {
-            root_scope: Cell::new(ScopeId::default()),
-            scopes: RefCell::new(SlotMap::default()),
-            current_scope: Cell::new(ScopeId::default()),
-            signals: RefCell::new(SlotMap::default()),
-            effects: RefCell::new(SlotMap::default()),
             tracker: RefCell::new(None),
             rev_sorted_buf: RefCell::new(Vec::new()),
-            effect_queue: RefCell::new(Vec::new()),
+            current_node: Cell::new(NodeId::null()),
             nodes: RefCell::new(SlotMap::default()),
+            effect_queue: RefCell::new(Vec::new()),
             batching: Cell::new(false),
         };
         let _ref = Box::leak(Box::new(this));
@@ -81,38 +65,21 @@ impl Root {
 
     /// Disposes of all the resources held on by this root and resets the state.
     pub fn reinit(&'static self) {
-        let _ = self.scopes.take();
-        let _ = self.signals.take();
-        let _ = self.effects.take();
         let _ = self.tracker.take();
         let _ = self.rev_sorted_buf.take();
         let _ = self.effect_queue.take();
+        let _ = self.current_node.take();
         let _ = self.nodes.take();
         self.batching.set(false);
-        // Create a new top-level scope.
-        let root_scope = ScopeState::new(self, None);
-        let root_scope_key = self.scopes.borrow_mut().insert(root_scope);
-        self.root_scope.set(root_scope_key);
-        self.current_scope.set(root_scope_key);
     }
 
     /// Create a new child scope. Implementation detail for [`create_child_scope`].
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn create_child_scope(&'static self, f: impl FnOnce()) -> Scope {
-        // Create a nested scope.
-        let parent = self.current_scope.get();
-        let scope = ScopeState::new(self, Some(parent));
-        let scope_key = self.scopes.borrow_mut().insert(scope);
-        self.scopes.borrow_mut()[parent]
-            .child_scopes
-            .push(scope_key);
-        self.current_scope.set(scope_key);
+    pub fn create_child_scope(&'static self, f: impl FnOnce()) -> NodeHandle {
+        let node = create_signal(()).id;
+        let prev = self.current_node.replace(node);
         f();
-        self.current_scope.set(parent);
-        Scope {
-            id: scope_key,
-            root: self,
-        }
+        self.current_node.set(prev);
+        NodeHandle(node)
     }
 
     /// Run the provided closure in a tracked scope. This will detect all the signals that are
@@ -129,83 +96,51 @@ impl Root {
     ///
     /// # Params
     /// * `root` - The reactive root.
-    /// * `id` - The ID associated with this `SignalState`. This is because we are not storing the
+    /// * `id` - The id associated with the reactive node.
     /// `SignalId` inside the state itself.
     ///
     /// # Returns
-    /// Returns whether the signal value has been changed.
-    fn run_signal_update(&self, id: SignalId) -> bool {
-        let dependencies = std::mem::take(&mut self.signals.borrow_mut()[id].dependencies);
+    /// Returns the new node state.
+    fn run_node_update(&self, id: NodeId) -> NodeState {
+        let dependencies = std::mem::take(&mut self.nodes.borrow_mut()[id].dependencies);
         for dependency in dependencies {
-            self.signals.borrow_mut()[dependency]
+            self.nodes.borrow_mut()[dependency]
                 .dependents
                 .retain(|&x| x != id);
         }
-        // We take the update callback out because that requires a mut ref and we cannot hold that
-        // while running update itself.
-        let mut update = self.signals.borrow_mut()[id].update.take();
-        let changed = if let Some(update) = &mut update {
-            let mut value = self.signals.borrow()[id].value.take().unwrap();
+        // We take the callback out because that requires a mut ref and we cannot hold that while
+        // running update itself.
+        let mut callback = self.nodes.borrow_mut()[id].callback.take();
+        let new_state = if let Some(update) = &mut callback {
+            let mut value = self.nodes.borrow_mut()[id].value.take().unwrap();
+
+            let prev_id = self.current_node.replace(id);
+            id.dispose_children(); // Destroy anything created in a previous update.
             let (changed, tracker) = self.tracked_scope(|| update(&mut value));
-            *self.signals.borrow()[id].value.borrow_mut() = Some(value);
-            tracker.create_signal_dependency_links(self, id);
-            changed
+            self.current_node.set(prev_id);
+
+            self.nodes.borrow_mut()[id].value = Some(value);
+
+            tracker.create_dependency_link(self, id);
+            if changed {
+                NodeState::Changed
+            } else {
+                NodeState::Unchanged
+            }
         } else {
-            false
+            NodeState::Unchanged
         };
-        // Put the update back in.
-        self.signals.borrow_mut()[id].update = update;
-        changed
-    }
-
-    /// Run the callback of the effect, also recreating any dependencies found by tracking signal
-    /// accesses inside the function. This method does _not_ delete existing dependency links.
-    ///
-    /// # Params
-    /// * `root` - The reactive root.
-    /// * `id` - The ID associated with this `EffectState`. This is because we are not storing the
-    /// `EffectId` inside the state itself.
-    fn run_effect_update(&self, id: EffectId) {
-        for dependency in self.effects.borrow_mut()[id].dependencies.drain(..) {
-            self.signals.borrow_mut()[dependency]
-                .effect_dependents
-                .retain(|&x| x != id);
-        }
-        // We take the update callback out because that requires a mut ref and we cannot hold that
-        // while running the callback itself.
-        let mut callback = self.effects.borrow_mut()[id]
-            .callback
-            .take()
-            .expect("callback should not be None");
-        let (_, tracker) = self.tracked_scope(&mut callback);
-        tracker.create_effect_dependency_links(self, id);
         // Put the callback back in.
-        self.effects.borrow_mut()[id].callback = Some(callback);
+        self.nodes.borrow_mut()[id].callback = callback;
+        new_state
     }
 
-    /// Runs and clears all the effects in `effect_queue`.
-    fn run_effects(&self) {
-        // 1 - Reset all values for `already_run_in_update`
-        let effect_queue = self.effect_queue.take();
-        for &effect_id in &effect_queue {
-            // Filter out all the effects that are already dead.
-            if let Some(effect) = self.effects.borrow_mut().get_mut(effect_id) {
-                effect.already_run_in_update = false;
-            }
-        }
-        // 2 - Run all the effects.
-        for &effect_id in &effect_queue {
-            let mut effects_mut = self.effects.borrow_mut();
-            // Filter out all the effects that are already dead.
-            if let Some(effect) = effects_mut.get_mut(effect_id) {
-                if !effect.already_run_in_update {
-                    // Prevent effects from running twice.
-                    effect.already_run_in_update = true;
-                    drop(effects_mut); // We can't hold on to self.effects because a signal might
-                                       // be set inside the effect.
-                    self.run_effect_update(effect_id);
-                }
-            }
+    /// If we are currently batching, defers calling the effect by adding it to the queue.
+    pub fn call_effect(&self, mut f: impl FnMut() + 'static) {
+        if self.batching.get() {
+            self.effect_queue.borrow_mut().push(Box::new(f));
+        } else {
+            f();
         }
     }
 
@@ -213,72 +148,49 @@ impl Root {
     /// Graph). We can therefore use DFS to get a topological sorting of all the reactive nodes.
     ///
     /// We then go through every node in this topological sorting and update only those nodes which
-    /// have dependencies that were updated. TODO: Is there a way to cut update short if nothing
-    /// changed?
-    #[cfg_attr(debug_assertions, track_caller)]
-    fn propagate_signal_updates(&self, start_node: SignalId) {
-        // Avoid allocation by reusing a `Vec` stored in the `Root`.
-        let mut rev_sorted = self
-            .rev_sorted_buf
-            .try_borrow_mut()
-            .expect("cannot update a signal inside a memo");
-        rev_sorted.clear();
+    /// have dependencies that were updated.
+    fn propagate_node_updates(&self, start_node: NodeId) {
+        let mut rev_sorted = Vec::new();
 
-        Self::dfs(start_node, &mut self.signals.borrow_mut(), &mut rev_sorted);
+        Self::dfs(start_node, &mut self.nodes.borrow_mut(), &mut rev_sorted);
 
         for &node in rev_sorted.iter().rev() {
-            let mut signals_mut = self.signals.borrow_mut();
-            let node_state = &mut signals_mut[node];
+            let mut nodes_mut = self.nodes.borrow_mut();
+            let node_state = &mut nodes_mut[node];
             node_state.mark = Mark::None; // Reset value.
 
             // Do not update the starting node since it has already been updated.
             if node == start_node {
-                node_state.changed_in_last_update = true;
-                self.effect_queue
-                    .borrow_mut()
-                    .extend(node_state.effect_dependents.drain(..));
+                node_state.state = NodeState::Changed;
                 continue;
             }
-            drop(signals_mut);
 
             // Check if dependencies are updated.
-            let any_dep_changed = self.signals.borrow()[node]
+            let any_dep_changed = nodes_mut[node]
                 .dependencies
                 .iter()
-                .any(|dep| self.signals.borrow()[*dep].changed_in_last_update);
+                .any(|dep| nodes_mut[*dep].state == NodeState::Changed);
+            drop(nodes_mut);
 
-            let changed = if any_dep_changed {
-                // Both dependencies and dependents have been erased by now.
-                self.run_signal_update(node)
+            let new_state = if any_dep_changed {
+                self.run_node_update(node)
             } else {
-                false
+                NodeState::Unchanged
             };
-            let mut signals_mut = self.signals.borrow_mut();
-            let node_state = &mut signals_mut[node];
-            node_state.changed_in_last_update = changed;
-
-            // If the signal value has changed, add all the effects that depend on it to the effect
-            // queue.
-            if changed {
-                self.effect_queue
-                    .borrow_mut()
-                    .extend(node_state.effect_dependents.drain(..));
-            }
+            let mut nodes_mut = self.nodes.borrow_mut();
+            let node_state = &mut nodes_mut[node];
+            node_state.state = new_state;
         }
     }
 
     /// Call this if `start_node` has been updated manually. This will automatically update all
-    /// signals that depend on `start_node` as well as call any effects as necessary.
+    /// signals that depend on `start_node`.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn propagate_updates(&'static self, start_node: SignalId) {
+    pub fn propagate_updates(&'static self, start_node: NodeId) {
         // Set the global root.
         let prev = Root::set_global(Some(self));
         // Propagate any signal updates.
-        self.propagate_signal_updates(start_node);
-        if !self.batching.get() {
-            // Run all the effects that have been queued.
-            self.run_effects();
-        }
+        self.propagate_node_updates(start_node);
         Root::set_global(prev);
     }
 
@@ -286,17 +198,13 @@ impl Root {
     ///
     /// Also resets `changed_in_last_update` and adds a [`Mark::Permanent`] for all signals
     /// traversed.
-    fn dfs(
-        current_id: SignalId,
-        signals: &mut SlotMap<SignalId, SignalState>,
-        buf: &mut Vec<SignalId>,
-    ) {
-        let Some(current) = signals.get_mut(current_id) else {
+    fn dfs(current_id: NodeId, nodes: &mut SlotMap<NodeId, ReactiveNode>, buf: &mut Vec<NodeId>) {
+        let Some(current) = nodes.get_mut(current_id) else {
             // If signal is dead, don't even visit it.
             return;
         };
 
-        current.changed_in_last_update = false; // Reset value.
+        current.state = NodeState::Unchanged; // Reset value.
         match current.mark {
             Mark::Temp => panic!("cylcic reactive dependency detected"),
             Mark::Permanent => return,
@@ -307,9 +215,9 @@ impl Root {
         let children = current.dependents.clone();
         current.dependents.clear();
         for child in children {
-            Self::dfs(child, signals, buf);
+            Self::dfs(child, nodes, buf);
         }
-        signals[current_id].mark = Mark::Permanent;
+        nodes[current_id].mark = Mark::Permanent;
         buf.push(current_id);
     }
 
@@ -321,7 +229,10 @@ impl Root {
     /// Sets the batch flag to `false` and run all the queued effects.
     fn end_batch(&self) {
         self.batching.set(false);
-        self.run_effects();
+        let effects = self.effect_queue.take();
+        for mut effect in effects {
+            effect();
+        }
     }
 }
 
@@ -348,128 +259,22 @@ impl RootHandle {
     }
 }
 
-/// Tracks signals that are accessed inside a reactive scope.
+/// Tracks nodes that are accessed inside a reactive scope.
 #[derive(Default)]
 pub(crate) struct DependencyTracker {
-    /// A list of signals that were accessed.
-    pub dependencies: Vec<SignalId>,
+    /// A list of reactive nodes that were accessed.
+    pub dependencies: Vec<NodeId>,
 }
 
 impl DependencyTracker {
-    /// Sets the `dependents` field for all the signals that have been tracked.
-    pub fn create_signal_dependency_links(self, root: &Root, dependent: SignalId) {
-        for signal in &self.dependencies {
-            root.signals.borrow_mut()[*signal]
-                .dependents
-                .push(dependent);
+    /// Sets the `dependents` field for all the nodes that have been tracked and updates
+    /// `dependencies` of the `dependent`.
+    pub fn create_dependency_link(self, root: &Root, dependent: NodeId) {
+        for node in &self.dependencies {
+            root.nodes.borrow_mut()[*node].dependents.push(dependent);
         }
         // Set the signal dependencies so that it is updated automatically.
-        root.signals.borrow_mut()[dependent].dependencies = self.dependencies;
-    }
-
-    /// Sets the `effect_dependents` field for all the signals that have been tracked.
-    pub fn create_effect_dependency_links(self, root: &Root, dependent: EffectId) {
-        for signal in &self.dependencies {
-            root.signals.borrow_mut()[*signal]
-                .effect_dependents
-                .push(dependent);
-        }
-        root.effects.borrow_mut()[dependent].dependencies = self.dependencies;
-    }
-}
-
-new_key_type! {
-    /// Id for [`ScopeState`].
-    pub(crate) struct ScopeId;
-}
-
-/// Internal state for [`Scope`].
-pub(crate) struct ScopeState {
-    /// A list of callbacks that will be called when the scope is dropped.
-    pub cleanups: Vec<Box<dyn FnOnce()>>,
-    /// A list of child scopes owned by this scope. The child scopes will also be dropped when this
-    /// scope is dropped.
-    pub child_scopes: Vec<ScopeId>,
-    /// A list of signals "owned" by this scope.
-    pub signals: Vec<SignalId>,
-    /// A list of effects "owned" by this scope.
-    pub effects: Vec<EffectId>,
-    /// A list of context values in this scope.
-    pub context: Vec<Box<dyn Any>>,
-    /// The ID of the parent scope, or `None` if this is the root scope.
-    pub parent: Option<ScopeId>,
-    pub root: &'static Root,
-}
-
-impl ScopeState {
-    /// Create a new `ScopeState` referencing the `root`. This does _not_ insert the `ScopeState`
-    /// into the `Root`.
-    fn new(root: &'static Root, parent: Option<ScopeId>) -> Self {
-        Self {
-            child_scopes: Vec::new(),
-            cleanups: Vec::new(),
-            signals: Vec::new(),
-            effects: Vec::new(),
-            context: Vec::new(),
-            parent,
-            root,
-        }
-    }
-}
-
-impl Drop for ScopeState {
-    fn drop(&mut self) {
-        for cleanup in std::mem::take(&mut self.cleanups) {
-            cleanup();
-        }
-        for child_scope in &self.child_scopes {
-            let data = self.root.scopes.borrow_mut().remove(*child_scope);
-            drop(data);
-        }
-        for signal in &self.signals {
-            let data = self.root.signals.borrow_mut().remove(*signal);
-            drop(data.expect("scope should not be dropped yet"));
-        }
-        for effect in &self.effects {
-            let data = self.root.effects.borrow_mut().remove(*effect);
-            drop(data.expect("scope should not be dropped yet"));
-        }
-    }
-}
-
-/// A reference to a reactive scope. This struct is `Copy`, allowing it to be copied into
-/// closures without any clones.
-///
-/// The intended way to access a [`Scope`] is with the [`create_child_scope`] function.
-#[derive(Clone, Copy)]
-pub struct Scope {
-    pub(crate) id: ScopeId,
-    pub(crate) root: &'static Root,
-}
-
-impl Scope {
-    /// Remove the scope from the root and drop it.
-    pub fn dispose(self) {
-        let data = self.root.scopes.borrow_mut().remove(self.id);
-        drop(data.expect("scope should not be dropped yet"));
-    }
-
-    /// Run the provided function inside the reactive scope. Sets the global root if it is in a
-    /// different root.
-    pub fn run_in<T>(self, f: impl FnOnce() -> T) -> T {
-        let prev_root = Root::set_global(Some(self.root));
-        let prev_scope = self.root.current_scope.get();
-        self.root.current_scope.set(self.id);
-        let ret = f();
-        self.root.current_scope.set(prev_scope);
-        Root::set_global(prev_root);
-        ret
-    }
-}
-
-impl fmt::Debug for Scope {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Scope").field("id", &self.id).finish()
+        root.nodes.borrow_mut()[dependent].dependencies = self.dependencies;
     }
 }
 
@@ -517,9 +322,9 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
 
 /// Create a child scope.
 ///
-/// Returns the created [`Scope`] which can be used to dispose it.
+/// Returns the created [`NodeHandle`] which can be used to dispose it.
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn create_child_scope(f: impl FnOnce()) -> Scope {
+pub fn create_child_scope(f: impl FnOnce()) -> NodeHandle {
     Root::global().create_child_scope(f)
 }
 
@@ -539,9 +344,11 @@ pub fn create_child_scope(f: impl FnOnce()) -> Scope {
 /// ```
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
     let root = Root::global();
-    root.scopes.borrow_mut()[root.current_scope.get()]
-        .cleanups
-        .push(Box::new(f));
+    if !root.current_node.get().is_null() {
+        root.nodes.borrow_mut()[root.current_node.get()]
+            .cleanups
+            .push(Box::new(f));
+    }
 }
 
 /// Batch updates from related signals together and only run effects at the end of the scope.
@@ -583,24 +390,6 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     ret
 }
 
-/// Get the current reactive scope from the global root.
-pub fn use_current_scope() -> Scope {
-    let root = Root::global();
-    Scope {
-        id: root.current_scope.get(),
-        root,
-    }
-}
-
-/// Get the root reactive scope from the global root.
-pub fn use_root_scope() -> Scope {
-    let root = Root::global();
-    Scope {
-        id: root.root_scope.get(),
-        root,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::*;
@@ -627,7 +416,7 @@ mod tests {
 
             let counter = create_signal(0);
 
-            create_effect_scoped(move || {
+            create_effect(move || {
                 trigger.track();
 
                 on_cleanup(move || {

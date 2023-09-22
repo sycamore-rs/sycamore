@@ -1,67 +1,14 @@
 //! Reactive signals.
 
-use std::any::Any;
-use std::cell::RefCell;
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
-use slotmap::new_key_type;
+use slotmap::Key;
 
-use crate::{create_memo, EffectId, Memo, Root};
-
-new_key_type! { pub(crate) struct SignalId; }
-
-/// Stores al the data associated with a signal.
-pub(crate) struct SignalState {
-    /// The value of the signal. This is wrapped inside an [`Option`] because this will allow us to
-    /// temporarily take the value out while we run signal updates so that we do not have to hold
-    /// on mutably to `root.signals`.
-    pub value: RefCell<Option<Box<dyn Any>>>,
-    /// List of signals whose value this signal depends on.
-    ///
-    /// If any of the dependency signals are updated, this signal will automatically be updated as
-    /// well.
-    pub dependencies: Vec<SignalId>,
-    /// List of signals which depend on the value of this signal.
-    ///
-    /// If this signal updates, any dependent signal will automatically be updated as well.
-    pub dependents: Vec<SignalId>,
-    pub effect_dependents: Vec<EffectId>,
-    /// A callback that automatically updates the value of the signal when one of its dependencies
-    /// updates.
-    ///
-    /// A signal created using [`create_signal`] can be thought of as a signal which is never
-    /// autoamtically updated. A signal created using [`create_memo`] can be thought of as a signal
-    /// that is always automatically updated.
-    ///
-    /// Note that the update function takes a `&mut dyn Any`. The update function should only ever
-    /// set this value to the same type as the signal.
-    ///
-    /// The return value of the update function is a `bool`. This should represent whether the
-    /// value has been changed or not. If `true` is returned, then dependent signals will also be
-    /// updated.
-    #[allow(clippy::type_complexity)]
-    pub update: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> bool>>,
-    /// An internal state used by `propagate_updates`. This should be `true` if the signal has been
-    /// updated in the last call to `propagate_updates` and was reacheable from the start node.
-    /// This is to stop propagation to dependents if this value is `false`.
-    pub changed_in_last_update: bool,
-    /// An internal state used by `propagate_updates`. This is used in DFS to detect cycles.
-    pub mark: Mark,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Mark {
-    /// Mark when DFS reaches node.
-    Temp,
-    /// Mark when DFS is done with node.
-    Permanent,
-    /// No mark.
-    None,
-}
+use crate::{create_memo, Mark, Memo, NodeId, NodeState, ReactiveNode, Root};
 
 /// A read-only reactive value.
 ///
@@ -87,7 +34,7 @@ pub(crate) enum Mark {
 ///
 /// See [`create_signal`] for more information.
 pub struct ReadSignal<T: 'static> {
-    pub(crate) id: SignalId,
+    pub(crate) id: NodeId,
     root: &'static Root,
     /// Keep track of where the signal was created for diagnostics.
     #[cfg(debug_assertions)]
@@ -161,23 +108,26 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_signal<T>(value: T) -> Signal<T> {
     let root = Root::global();
-    let data = SignalState {
-        value: RefCell::new(Some(Box::new(value))),
-        dependencies: Vec::new(),
-        effect_dependents: Vec::new(),
+    let id = root.nodes.borrow_mut().insert(ReactiveNode {
+        value: Some(Box::new(value)),
+        callback: None,
+        children: Vec::new(),
+        parent: root.current_node.get(),
         dependents: Vec::new(),
-        update: None,
-        changed_in_last_update: false,
+        dependencies: Vec::new(),
+        cleanups: Vec::new(),
+        context: Vec::new(),
+        state: NodeState::Unchanged,
         mark: Mark::None,
-    };
-    let key = root.signals.borrow_mut().insert(data);
-    // Add the signal the scope signal list so that it is properly dropped when the scope is
-    // dropped.
-    root.scopes.borrow_mut()[root.current_scope.get()]
-        .signals
-        .push(key);
+    });
+    // Add the signal to the parent's `children` list.
+    let current_node = root.current_node.get();
+    if !current_node.is_null() {
+        root.nodes.borrow_mut()[current_node].children.push(id);
+    }
+
     Signal(ReadSignal {
-        id: key,
+        id,
         root,
         #[cfg(debug_assertions)]
         created_at: std::panic::Location::caller(),
@@ -187,9 +137,9 @@ pub fn create_signal<T>(value: T) -> Signal<T> {
 
 impl<T> ReadSignal<T> {
     #[cfg_attr(debug_assertions, track_caller)]
-    pub(crate) fn get_data<U>(self, f: impl FnOnce(&SignalState) -> U) -> U {
-        let signals = self.root.signals.borrow();
-        let data = signals.get(self.id);
+    pub(crate) fn get_data<U>(self, f: impl FnOnce(&ReactiveNode) -> U) -> U {
+        let nodes = self.root.nodes.borrow();
+        let data = nodes.get(self.id);
         match data {
             Some(data) => f(data),
             None => panic!("{}", self.get_disposed_panic_message()),
@@ -197,9 +147,9 @@ impl<T> ReadSignal<T> {
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
-    pub(crate) fn get_data_mut<U>(self, f: impl FnOnce(&mut SignalState) -> U) -> U {
-        let mut signals = self.root.signals.borrow_mut();
-        let data = signals.get_mut(self.id);
+    pub(crate) fn get_data_mut<U>(self, f: impl FnOnce(&mut ReactiveNode) -> U) -> U {
+        let mut nodes = self.root.nodes.borrow_mut();
+        let data = nodes.get_mut(self.id);
         match data {
             Some(data) => f(data),
             None => panic!("{}", self.get_disposed_panic_message()),
@@ -299,7 +249,6 @@ impl<T> ReadSignal<T> {
         self.get_data(|signal| {
             f(signal
                 .value
-                .borrow()
                 .as_ref()
                 .expect("cannot get value while updating")
                 .downcast_ref()
@@ -373,10 +322,9 @@ impl<T> Signal<T> {
     /// inconsistencies.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn update_silent<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
-        self.0.get_data(|signal| {
+        self.0.get_data_mut(|signal| {
             f(signal
                 .value
-                .borrow_mut()
                 .as_mut()
                 .expect("cannot update while updating")
                 .downcast_mut()
@@ -576,8 +524,8 @@ impl<T: RemAssign<Rhs>, Rhs> RemAssign<Rhs> for Signal<T> {
     }
 }
 
-/// We need to implement this again for `Signal` despite `Signal` deref-ing to `ReadSignal` since
-/// we also have another implementation of `FnOnce` for `Signal`.
+// We need to implement this again for `Signal` despite `Signal` deref-ing to `ReadSignal` since
+// we also have another implementation of `FnOnce` for `Signal`.
 #[cfg(feature = "nightly")]
 impl<T: Copy> FnOnce<()> for Signal<T> {
     type Output = T;

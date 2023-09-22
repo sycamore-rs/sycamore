@@ -1,20 +1,9 @@
 //! Side effects!
 
-use slotmap::new_key_type;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::{create_child_scope, Root, Scope, SignalId};
-
-new_key_type! { pub(crate) struct EffectId; }
-
-pub(crate) struct EffectState {
-    /// The callback of the effect. This is an `Option` so that we can temporarily take the
-    /// callback out to call it without holding onto a mutable borrow of all the effects.
-    pub callback: Option<Box<dyn FnMut()>>,
-    /// A list of signals that will trigger this effect.
-    pub dependencies: Vec<SignalId>,
-    /// An internal state to prevent an effect from running twice in the same update.
-    pub already_run_in_update: bool,
-}
+use crate::{create_child_scope, create_memo, Root};
 
 /// Creates an effect on signals used inside the effect closure.
 ///
@@ -37,20 +26,12 @@ pub(crate) struct EffectState {
 /// `create_effect` should only be used for creating **side-effects**. It is generally not
 /// recommended to update signal states inside an effect. You probably should be using a
 /// [`create_memo`](crate::create_memo) instead.
-pub fn create_effect(mut f: impl FnMut() + 'static) {
-    let root = Root::global();
-    // Run the effect right now so we can get the dependencies.
-    let (_, tracker) = root.tracked_scope(&mut f);
-    let key = root.effects.borrow_mut().insert(EffectState {
-        callback: Some(Box::new(f)),
-        dependencies: Vec::new(),
-        already_run_in_update: false,
+pub fn create_effect(f: impl FnMut() + 'static) {
+    let f = Rc::new(RefCell::new(f));
+    create_memo(move || {
+        let f = Rc::clone(&f);
+        Root::global().call_effect(move || f.borrow_mut()());
     });
-    root.scopes.borrow_mut()[root.current_scope.get()]
-        .effects
-        .push(key);
-    // Add the dependency links.
-    tracker.create_effect_dependency_links(root, key);
 }
 
 /// Creates an effect on signals used inside the effect closure.
@@ -69,14 +50,9 @@ pub fn create_effect(mut f: impl FnMut() + 'static) {
 /// });
 /// # });
 /// ```
-pub fn create_effect_scoped(mut f: impl FnMut() + 'static) {
-    let mut child_scope: Option<Scope> = None;
-    create_effect(move || {
-        if let Some(child_scope) = child_scope {
-            child_scope.dispose();
-        }
-        child_scope = Some(create_child_scope(&mut f));
-    });
+#[deprecated(note = "same as create_effect")]
+pub fn create_effect_scoped(f: impl FnMut() + 'static) {
+    create_effect(f);
 }
 
 #[cfg(test)]
