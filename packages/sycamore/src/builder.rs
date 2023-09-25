@@ -563,7 +563,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
             el.append_child(&end_marker);
             render::insert(
                 el,
-                View::new_dyn_scoped(f),
+                View::new_dyn(f),
                 None,
                 Some(&end_marker),
                 true, /* We don't know if this is the only child or not so we
@@ -584,7 +584,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
             let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
             render::insert(
                 el,
-                View::new_dyn_scoped(f),
+                View::new_dyn(f),
                 initial,
                 None,
                 true, /* We don't know if this is the only child or not so we
@@ -595,7 +595,7 @@ impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
         // G is neither SsrNode nor HydrateNode. Proceed normally.
         let marker = G::marker();
         el.append_child(&marker);
-        render::insert(el, View::new_dyn_scoped(f), None, Some(&marker), true);
+        render::insert(el, View::new_dyn(f), None, Some(&marker), true);
     }
 
     /// Adds a dynamic child. Note that most times, [`dyn_if`](Self::dyn_if) can be used instead

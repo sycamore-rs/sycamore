@@ -4,7 +4,7 @@ use std::cell::{Cell, RefCell};
 
 use slotmap::{Key, SlotMap};
 
-use crate::{create_memo, create_signal, Mark, NodeHandle, NodeId, NodeState, ReactiveNode};
+use crate::{create_signal, Mark, NodeHandle, NodeId, NodeState, ReactiveNode};
 
 /// The struct managing the state of the reactive system. Only one should be created per running
 /// app.
@@ -79,7 +79,7 @@ impl Root {
         let prev = self.current_node.replace(node);
         f();
         self.current_node.set(prev);
-        NodeHandle(node)
+        NodeHandle(node, self)
     }
 
     /// Run the provided closure in a tracked scope. This will detect all the signals that are
@@ -101,7 +101,7 @@ impl Root {
     ///
     /// # Returns
     /// Returns the new node state.
-    fn run_node_update(&self, id: NodeId) -> NodeState {
+    fn run_node_update(&'static self, id: NodeId) -> NodeState {
         let dependencies = std::mem::take(&mut self.nodes.borrow_mut()[id].dependencies);
         for dependency in dependencies {
             self.nodes.borrow_mut()[dependency]
@@ -110,29 +110,21 @@ impl Root {
         }
         // We take the callback out because that requires a mut ref and we cannot hold that while
         // running update itself.
-        let mut callback = self.nodes.borrow_mut()[id].callback.take();
-        let new_state = if let Some(update) = &mut callback {
-            let mut value = self.nodes.borrow_mut()[id].value.take().unwrap();
+        let mut callback = self.nodes.borrow_mut()[id].callback.take().unwrap();
+        let mut value = self.nodes.borrow_mut()[id].value.take().unwrap();
 
-            let prev_id = self.current_node.replace(id);
-            id.dispose_children(); // Destroy anything created in a previous update.
-            let (changed, tracker) = self.tracked_scope(|| update(&mut value));
-            self.current_node.set(prev_id);
+        NodeHandle(id, self).dispose_children(); // Destroy anything created in a previous update.
 
-            self.nodes.borrow_mut()[id].value = Some(value);
+        let prev = self.current_node.replace(id);
+        let (changed, tracker) = self.tracked_scope(|| callback(&mut value));
+        self.current_node.set(prev);
 
-            tracker.create_dependency_link(self, id);
-            if changed {
-                NodeState::Changed
-            } else {
-                NodeState::Unchanged
-            }
-        } else {
-            NodeState::Unchanged
-        };
-        // Put the callback back in.
-        self.nodes.borrow_mut()[id].callback = callback;
-        new_state
+        tracker.create_dependency_link(self, id);
+
+        self.nodes.borrow_mut()[id].callback = Some(callback); // Put the callback back in.
+        self.nodes.borrow_mut()[id].value = Some(value);
+
+        changed
     }
 
     /// If we are currently batching, defers calling the effect by adding it to the queue.
@@ -149,13 +141,17 @@ impl Root {
     ///
     /// We then go through every node in this topological sorting and update only those nodes which
     /// have dependencies that were updated.
-    fn propagate_node_updates(&self, start_node: NodeId) {
+    fn propagate_node_updates(&'static self, start_node: NodeId) {
         let mut rev_sorted = Vec::new();
 
         Self::dfs(start_node, &mut self.nodes.borrow_mut(), &mut rev_sorted);
 
         for &node in rev_sorted.iter().rev() {
             let mut nodes_mut = self.nodes.borrow_mut();
+            // Only run if node is still alive.
+            if nodes_mut.get(node).is_none() {
+                continue;
+            }
             let node_state = &mut nodes_mut[node];
             node_state.mark = Mark::None; // Reset value.
 
@@ -177,9 +173,15 @@ impl Root {
             } else {
                 NodeState::Unchanged
             };
-            let mut nodes_mut = self.nodes.borrow_mut();
-            let node_state = &mut nodes_mut[node];
-            node_state.state = new_state;
+            self.nodes.borrow_mut()[node].state = new_state;
+        }
+
+        // Reset the states of all the nodes.
+        let mut nodes_mut = self.nodes.borrow_mut();
+        for node in rev_sorted {
+            if let Some(node) = nodes_mut.get_mut(node) {
+                node.state = NodeState::Unchanged;
+            }
         }
     }
 
@@ -204,16 +206,14 @@ impl Root {
             return;
         };
 
-        current.state = NodeState::Unchanged; // Reset value.
         match current.mark {
-            Mark::Temp => panic!("cylcic reactive dependency detected"),
+            Mark::Temp => panic!("cyclic reactive dependency"),
             Mark::Permanent => return,
             Mark::None => {}
         }
         current.mark = Mark::Temp;
 
         let children = current.dependents.clone();
-        current.dependents.clear();
         for child in children {
             Self::dfs(child, nodes, buf);
         }
@@ -315,7 +315,7 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
     }
 
     Root::set_global(Some(_ref));
-    f();
+    _ref.create_child_scope(f);
     Root::set_global(None);
     RootHandle { _ref }
 }
@@ -390,6 +390,16 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     ret
 }
 
+pub fn use_current_scope() -> NodeHandle {
+    let root = Root::global();
+    NodeHandle(root.current_node.get(), root)
+}
+
+pub fn use_global_scope() -> NodeHandle {
+    let root = Root::global();
+    NodeHandle(NodeId::null(), root)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;
@@ -441,7 +451,7 @@ mod tests {
 
             let counter = create_signal(0);
 
-            create_effect_scoped(move || {
+            create_effect(move || {
                 counter.set(counter.get_untracked() + 1);
 
                 on_cleanup(move || {

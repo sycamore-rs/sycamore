@@ -1,5 +1,6 @@
 //! Reactive signals.
 
+use std::cell::{Ref, RefMut};
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::Hash;
@@ -107,9 +108,17 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// closure of the `create_memo`.
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_signal<T>(value: T) -> Signal<T> {
+    let signal = create_empty_signal();
+    signal.get_mut().value = Some(Box::new(value));
+    signal
+}
+
+/// Creates a new [`Signal`] with the `value` field set to `None`.
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) fn create_empty_signal<T>() -> Signal<T> {
     let root = Root::global();
     let id = root.nodes.borrow_mut().insert(ReactiveNode {
-        value: Some(Box::new(value)),
+        value: None,
         callback: None,
         children: Vec::new(),
         parent: root.current_node.get(),
@@ -136,24 +145,29 @@ pub fn create_signal<T>(value: T) -> Signal<T> {
 }
 
 impl<T> ReadSignal<T> {
+    /// Get a immutable reference to the underlying node.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub(crate) fn get_data<U>(self, f: impl FnOnce(&ReactiveNode) -> U) -> U {
-        let nodes = self.root.nodes.borrow();
-        let data = nodes.get(self.id);
-        match data {
-            Some(data) => f(data),
-            None => panic!("{}", self.get_disposed_panic_message()),
-        }
+    pub(crate) fn get_ref(self) -> Ref<'static, ReactiveNode> {
+        Ref::map(self.root.nodes.borrow(), |nodes| {
+            nodes
+                .get(self.id)
+                .unwrap_or_else(|| panic!("{}", self.get_disposed_panic_message()))
+        })
     }
 
+    /// Get a mutable reference to the underlying node.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub(crate) fn get_data_mut<U>(self, f: impl FnOnce(&mut ReactiveNode) -> U) -> U {
-        let mut nodes = self.root.nodes.borrow_mut();
-        let data = nodes.get_mut(self.id);
-        match data {
-            Some(data) => f(data),
-            None => panic!("{}", self.get_disposed_panic_message()),
-        }
+    pub(crate) fn get_mut(self) -> RefMut<'static, ReactiveNode> {
+        RefMut::map(self.root.nodes.borrow_mut(), |nodes| {
+            nodes
+                .get_mut(self.id)
+                .unwrap_or_else(|| panic!("{}", self.get_disposed_panic_message()))
+        })
+    }
+
+    /// Returns `true` if the signal is still alive, i.e. has not yet been disposed.
+    pub fn is_alive(self) -> bool {
+        self.root.nodes.borrow().get(self.id).is_some()
     }
 
     fn get_disposed_panic_message(self) -> String {
@@ -246,14 +260,10 @@ impl<T> ReadSignal<T> {
     /// Get a value from the signal without tracking it.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn with_untracked<U>(self, f: impl FnOnce(&T) -> U) -> U {
-        self.get_data(|signal| {
-            f(signal
-                .value
-                .as_ref()
-                .expect("cannot get value while updating")
-                .downcast_ref()
-                .expect("wrong signal type in slotmap"))
-        })
+        let node = self.get_ref();
+        let value = node.value.as_ref().expect("value updating");
+        let ret = f(value.downcast_ref().expect("wrong signal type"));
+        ret
     }
 
     /// Get a value from the signal.
@@ -322,14 +332,10 @@ impl<T> Signal<T> {
     /// inconsistencies.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn update_silent<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
-        self.0.get_data_mut(|signal| {
-            f(signal
-                .value
-                .as_mut()
-                .expect("cannot update while updating")
-                .downcast_mut()
-                .expect("wrong signal type in slotmap"))
-        })
+        let mut value = self.get_mut().value.take().expect("value updating");
+        let ret = f(value.downcast_mut().expect("wrong signal type"));
+        self.get_mut().value = Some(value);
+        ret
     }
 
     /// Update the value of the signal and automatically update any dependents.
@@ -395,38 +401,45 @@ impl<T: PartialEq> PartialEq for ReadSignal<T> {
 }
 impl<T: Eq> Eq for ReadSignal<T> {}
 impl<T: PartialOrd> PartialOrd for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.with(|value| other.with(|other| value.partial_cmp(other)))
     }
 }
 impl<T: Ord> Ord for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.with(|value| other.with(|other| value.cmp(other)))
     }
 }
 impl<T: Hash> Hash for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.with(|value| value.hash(state))
     }
 }
 
 impl<T: PartialEq> PartialEq for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn eq(&self, other: &Self) -> bool {
         self.with(|value| other.with(|other| value == other))
     }
 }
 impl<T: Eq> Eq for Signal<T> {}
 impl<T: PartialOrd> PartialOrd for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.with(|value| other.with(|other| value.partial_cmp(other)))
     }
 }
 impl<T: Ord> Ord for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.with(|value| other.with(|other| value.cmp(other)))
     }
 }
 impl<T: Hash> Hash for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.with(|value| value.hash(state))
     }
@@ -442,22 +455,26 @@ impl<T> Deref for Signal<T> {
 
 // Formatting implementations for `ReadSignal` and `Signal`.
 impl<T: fmt::Debug> fmt::Debug for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
     }
 }
 impl<T: fmt::Debug> fmt::Debug for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
     }
 }
 
 impl<T: fmt::Display> fmt::Display for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
     }
 }
 impl<T: fmt::Display> fmt::Display for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
     }

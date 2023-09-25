@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::{create_child_scope, create_memo, Root};
+use crate::{create_memo, Root};
 
 /// Creates an effect on signals used inside the effect closure.
 ///
@@ -32,27 +32,6 @@ pub fn create_effect(f: impl FnMut() + 'static) {
         let f = Rc::clone(&f);
         Root::global().call_effect(move || f.borrow_mut()());
     });
-}
-
-/// Creates an effect on signals used inside the effect closure.
-///
-/// Unlike [`create_effect`], this function also provides a new reactive scope instead the
-/// effect closure. This scope is created for each new run of the effect.
-///
-/// # Example
-/// ```
-/// # use sycamore_reactive::*;
-/// # create_root(|| {
-/// create_effect_scoped(|| {
-///     // Use the scoped cx inside here.
-///     let _nested_signal = create_signal(0);
-///     // _nested_signal cannot escape out of the effect closure.
-/// });
-/// # });
-/// ```
-#[deprecated(note = "same as create_effect")]
-pub fn create_effect_scoped(f: impl FnMut() + 'static) {
-    create_effect(f);
 }
 
 #[cfg(test)]
@@ -169,14 +148,14 @@ mod tests {
     }
 
     #[test]
-    fn inner_effects_run_first() {
+    fn outer_effects_run_first() {
         let _ = create_root(|| {
             let trigger = create_signal(());
 
             let outer_counter = create_signal(0);
             let inner_counter = create_signal(0);
 
-            create_effect_scoped(move || {
+            create_effect(move || {
                 trigger.track();
                 outer_counter.set(outer_counter.get_untracked() + 1);
 
@@ -192,7 +171,7 @@ mod tests {
             trigger.set(());
 
             assert_eq!(outer_counter.get(), 2);
-            assert_eq!(inner_counter.get(), 3);
+            assert_eq!(inner_counter.get(), 2);
         });
     }
 
@@ -225,7 +204,7 @@ mod tests {
     fn effect_scoped_subscribing_to_own_signal() {
         let _ = create_root(|| {
             let trigger = create_signal(());
-            create_effect_scoped(move || {
+            create_effect(move || {
                 trigger.track();
                 let signal = create_signal(());
                 // Track own signal:

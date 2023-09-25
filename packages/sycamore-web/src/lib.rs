@@ -88,7 +88,7 @@ static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
 ///
 /// If called inside an async-component, the callback will be called after the next suspension
 /// point (when there is an `.await`).
-pub fn on_mount(f: impl Fn() + 'static) {
+pub fn on_mount(f: impl FnOnce() + 'static) {
     if cfg!(target_arch = "wasm32") {
         let is_alive = Rc::new(Cell::new(true));
         on_cleanup({
@@ -96,21 +96,24 @@ pub fn on_mount(f: impl Fn() + 'static) {
             move || is_alive.set(false)
         });
 
-        #[wasm_bindgen]
-        extern "C" {
-            #[wasm_bindgen(js_name = "queueMicrotask")]
-            fn queue_microtask(f: &JsValue);
-        }
-
         let scope = use_current_scope();
         let cb = move || {
             if is_alive.get() {
-                // Scope is still valid. We can call the callback.
                 scope.run_in(f);
             }
         };
-        queue_microtask(&Closure::once_into_js(cb));
+        queue_microtask(cb);
     }
+}
+
+/// Alias for `queueMicrotask`.
+pub fn queue_microtask(f: impl FnOnce() + 'static) {
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(js_name = "queueMicrotask")]
+        fn queue_microtask_js(f: &JsValue);
+    }
+    queue_microtask_js(&Closure::once_into_js(f));
 }
 
 /// Get `window.document`.

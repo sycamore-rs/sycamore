@@ -32,7 +32,7 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
         let f = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
         let g = Rc::clone(&f);
 
-        *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+        *g.borrow_mut() = Some(Closure::new(move || {
             if running.get() {
                 // Verified that scope is still valid. We can access `extended` in here.
                 cb();
@@ -44,7 +44,7 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
                     )
                     .unwrap_throw();
             }
-        })));
+        }));
         start = Rc::new(move || {
             if !running.get() {
                 running.set(true);

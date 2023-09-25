@@ -29,7 +29,7 @@ pub fn test_cleanup_in_root() {
 pub fn test_cleanup_in_effect() {
     let _ = create_root(|| {
         let trigger = create_signal(());
-        create_effect_scoped(move || {
+        create_effect(move || {
             trigger.track();
             on_cleanup(on_cleanup_callback);
         });

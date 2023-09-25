@@ -15,7 +15,7 @@ pub(crate) struct ReactiveNode {
     /// Value of the node, if any. If this node is a signal, should have a value.
     pub value: Option<Box<dyn Any>>,
     /// Callback when node needs to be updated.
-    pub callback: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> bool>>,
+    pub callback: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> NodeState>>,
     /// Nodes that are owned by this node.
     pub children: Vec<NodeId>,
     /// The parent of this node (i.e. the node that owns this node). If there is no parent, then
@@ -52,31 +52,38 @@ pub(crate) enum Mark {
     None,
 }
 
-#[derive(Debug)]
-pub struct NodeHandle(pub(crate) NodeId);
+#[derive(Clone, Copy)]
+pub struct NodeHandle(pub(crate) NodeId, pub(crate) &'static Root);
 
-impl NodeId {
+impl NodeHandle {
     pub fn dispose(self) {
-        let root = Root::global();
         self.dispose_children();
-        root.nodes.borrow_mut().remove(self);
+        self.1.nodes.borrow_mut().remove(self.0);
     }
 
     pub fn dispose_children(self) {
-        let root = Root::global();
-        let cleanup = std::mem::take(&mut root.nodes.borrow_mut()[self].cleanups);
-        let children = std::mem::take(&mut root.nodes.borrow_mut()[self].children);
+        // If node is already disposed, do nothing.
+        if self.1.nodes.borrow().get(self.0).is_none() {
+            return;
+        }
+        let cleanup = std::mem::take(&mut self.1.nodes.borrow_mut()[self.0].cleanups);
+        let children = std::mem::take(&mut self.1.nodes.borrow_mut()[self.0].children);
+
         for cb in cleanup {
             cb();
         }
         for child in children {
-            child.dispose();
+            Self(child, self.1).dispose();
         }
     }
-}
 
-impl NodeHandle {
-    pub fn dispose(self) {
-        self.0.dispose();
+    pub fn run_in<T>(&self, f: impl FnOnce() -> T) -> T {
+        let root = self.1;
+        let prev_root = Root::set_global(Some(root));
+        let prev_node = root.current_node.replace(self.0);
+        let ret = f();
+        root.current_node.set(prev_node);
+        Root::set_global(prev_root);
+        ret
     }
 }

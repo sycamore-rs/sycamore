@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::fmt::{self, Formatter};
 use std::ops::Deref;
 
-use crate::{create_signal, DependencyTracker, ReadSignal, Root, Signal};
+use crate::{create_empty_signal, create_signal, NodeState, ReadSignal, Root, Signal};
 
 /// A memoized derived signal.
 ///
@@ -50,26 +50,42 @@ impl<T: fmt::Display> fmt::Display for Memo<T> {
     }
 }
 
-/// Create a new [`Signal`] from an initial value, an initial list of dependencies, and an update
-/// function. Used in the implementation of [`create_memo`] and friends.
+/// Creates a memoized value from some signals.
+/// Unlike [`create_memo`], this function will not notify dependents of a
+/// change if the output is the same.
+///
+/// It takes a comparison function to compare the old and new value, which returns `true` if
+/// they are the same and `false` otherwise.
+///
+/// To use the type's [`PartialEq`] implementation instead of a custom function, use
+/// [`create_selector`].
 #[cfg_attr(debug_assertions, track_caller)]
-pub(crate) fn create_updated_signal<T>(
-    initial: T,
-    initial_deps: DependencyTracker,
-    mut f: impl FnMut(&mut T) -> bool + 'static,
-) -> Signal<T> {
+pub fn create_selector_with<T>(
+    mut f: impl FnMut() -> T + 'static,
+    mut eq: impl FnMut(&T, &T) -> bool + 'static,
+) -> Memo<T> {
     let root = Root::global();
-    let signal = create_signal(initial);
-    initial_deps.create_dependency_link(root, signal.0.id);
+    let signal = create_empty_signal();
+    let prev = root.current_node.replace(signal.id);
+    let (initial, tracker) = root.tracked_scope(&mut f);
+    root.current_node.set(prev);
 
-    // Set the signal update callback as f.
-    signal.0.get_data_mut(move |data| {
-        data.callback = Some(Box::new(move |any| {
-            f(any.downcast_mut().expect("could not downcast memo value"))
-        }))
-    });
+    tracker.create_dependency_link(root, signal.id);
 
-    signal
+    let mut signal_mut = signal.get_mut();
+    signal_mut.value = Some(Box::new(initial));
+    signal_mut.callback = Some(Box::new(move |value| {
+        let value = value.downcast_mut().expect("wrong memo type");
+        let new = f();
+        if eq(&new, value) {
+            NodeState::Unchanged
+        } else {
+            *value = new;
+            NodeState::Changed
+        }
+    }));
+
+    Memo { signal }
 }
 
 /// Creates a memoized computation from some signals.
@@ -115,45 +131,8 @@ pub(crate) fn create_updated_signal<T>(
 /// # });
 /// ```
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn create_memo<T>(mut f: impl FnMut() -> T + 'static) -> Memo<T> {
-    let root = Root::global();
-    // FIXME: run in scope of new node.
-    let (initial, tracker) = root.tracked_scope(&mut f);
-    let signal = create_updated_signal(initial, tracker, move |value| {
-        *value = f();
-        true
-    });
-
-    Memo { signal }
-}
-
-/// Creates a memoized value from some signals.
-/// Unlike [`create_memo`], this function will not notify dependents of a
-/// change if the output is the same.
-///
-/// It takes a comparison function to compare the old and new value, which returns `true` if
-/// they are the same and `false` otherwise.
-///
-/// To use the type's [`PartialEq`] implementation instead of a custom function, use
-/// [`create_selector`].
-#[cfg_attr(debug_assertions, track_caller)]
-pub fn create_selector_with<T>(
-    mut f: impl FnMut() -> T + 'static,
-    mut eq: impl FnMut(&T, &T) -> bool + 'static,
-) -> Memo<T> {
-    let root = Root::global();
-    let (initial, tracker) = root.tracked_scope(&mut f);
-    let signal = create_updated_signal(initial, tracker, move |value| {
-        let new = f();
-        if eq(&new, value) {
-            false
-        } else {
-            *value = new;
-            true
-        }
-    });
-
-    Memo { signal }
+pub fn create_memo<T>(f: impl FnMut() -> T + 'static) -> Memo<T> {
+    create_selector_with(f, |_, _| false)
 }
 
 /// Creates a memoized value from some signals.
@@ -375,8 +354,10 @@ mod tests {
             assert_eq!(counter.get(), 1);
 
             state.set(0);
+            state.set(0);
+            state.set(0);
             assert_eq!(double.get(), 0);
-            assert_eq!(counter.get(), 1); // calling set_state should not trigger the effect
+            assert_eq!(counter.get(), 1);
 
             state.set(2);
             assert_eq!(double.get(), 4);

@@ -69,7 +69,7 @@ impl Codegen {
             },
             ViewNode::Dyn(Dyn { value }) => {
                 quote! {
-                    ::sycamore::view::View::new_dyn_scoped(move || ::sycamore::view::ToView::to_view(&(#value)))
+                    ::sycamore::view::View::new_dyn(move || ::sycamore::view::ToView::to_view(&(#value)))
                 }
             }
         }
@@ -394,7 +394,7 @@ impl CodegenTemplate {
 
     fn dyn_marker(&mut self, Dyn { value }: &Dyn) -> TokenStream {
         let dyn_node = quote! {
-            ::sycamore::view::View::new_dyn_scoped(move || ::sycamore::view::ToView::to_view(&(#value)))
+            ::sycamore::view::View::new_dyn(move || ::sycamore::view::ToView::to_view(&(#value)))
         };
         self.dyn_values.push(dyn_node);
 

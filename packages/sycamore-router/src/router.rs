@@ -274,7 +274,7 @@ where
         node.event(ev::click, integration.click_handler());
     } else {
         let view = view.clone();
-        create_effect_scoped(move || {
+        create_effect(move || {
             for node in view.clone().flatten() {
                 node.event(ev::click, integration.click_handler());
             }

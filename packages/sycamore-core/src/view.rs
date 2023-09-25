@@ -55,12 +55,6 @@ impl<G: GenericNode> View<G> {
         }
     }
 
-    /// Create a new [`View`] from a [`FnMut`] while creating a new child reactive scope.
-    // #[deprecated(note = "TODO: make memos reactive scopes")]
-    pub fn new_dyn_scoped(f: impl FnMut() -> View<G> + 'static) -> Self {
-        Self::new_dyn(f)
-    }
-
     /// Create a new [`View`] fragment from a `Vec` of [`View`]s.
     pub fn new_fragment(fragment: Vec<View<G>>) -> Self {
         Self {

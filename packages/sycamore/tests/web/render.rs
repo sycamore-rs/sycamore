@@ -81,8 +81,8 @@ fn dyn_scoped_nested() {
     let _ = create_root(|| {
         let num = create_signal(0);
 
-        let node: View<DomNode> = View::new_dyn_scoped(move || {
-            View::new_dyn_scoped(move || {
+        let node: View<DomNode> = View::new_dyn(move || {
+            View::new_dyn(move || {
                 view! {
                     div {
                         (num.get())
@@ -106,7 +106,7 @@ fn regression_572() {
         {
             let signal = signal.clone();
             move || {
-                View::new_dyn_scoped(move || {
+                View::new_dyn(move || {
                     let signal = signal.clone();
                     View::new_dyn(move || {
                         signal.track();
