@@ -8,6 +8,7 @@ use std::marker::PhantomData;
 use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
 use slotmap::Key;
+use smallvec::SmallVec;
 
 use crate::{create_memo, Mark, Memo, NodeHandle, NodeId, NodeState, ReactiveNode, Root};
 
@@ -123,7 +124,7 @@ pub(crate) fn create_empty_signal<T>() -> Signal<T> {
         children: Vec::new(),
         parent: root.current_owner.get(),
         dependents: Vec::new(),
-        dependencies: Vec::new(),
+        dependencies: SmallVec::new(),
         cleanups: Vec::new(),
         context: Vec::new(),
         state: NodeState::Unchanged,

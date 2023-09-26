@@ -3,6 +3,7 @@
 use std::any::Any;
 
 use slotmap::new_key_type;
+use smallvec::SmallVec;
 
 use crate::Root;
 
@@ -25,7 +26,7 @@ pub(crate) struct ReactiveNode {
     /// Nodes that depend on this node.
     pub dependents: Vec<NodeId>,
     /// Nodes that this node depends on.
-    pub dependencies: Vec<NodeId>,
+    pub dependencies: SmallVec<[NodeId; 1]>,
     /// Callbacks called when node is disposed.
     pub cleanups: Vec<Box<dyn FnOnce()>>,
     /// Context values stored in this node.
