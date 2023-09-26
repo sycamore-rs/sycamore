@@ -157,6 +157,9 @@ fn App<G: Html>() -> View<G> {
                         view=move |row| {
                             let is_selected = create_selector(move || selected.get() == Some(row.id));
                             let handle_click = move |_| selected.set(Some(row.id));
+                            on_cleanup(move || {
+                                row.label.dispose();
+                            });
                             view! {
                                 tr(class=if is_selected.get() { "danger" } else { "" }) {
                                     td(class="col-md-1") { (row.id) }

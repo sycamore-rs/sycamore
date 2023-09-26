@@ -9,7 +9,7 @@ use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
 use slotmap::Key;
 
-use crate::{create_memo, Mark, Memo, NodeId, NodeState, ReactiveNode, Root};
+use crate::{create_memo, Mark, Memo, NodeHandle, NodeId, NodeState, ReactiveNode, Root};
 
 /// A read-only reactive value.
 ///
@@ -168,6 +168,12 @@ impl<T> ReadSignal<T> {
     /// Returns `true` if the signal is still alive, i.e. has not yet been disposed.
     pub fn is_alive(self) -> bool {
         self.root.nodes.borrow().get(self.id).is_some()
+    }
+
+    /// Disposes the signal, i.e. frees up the memory held on by this signal. Accessing a signal
+    /// after it has been disposed immediately causes a panic.
+    pub fn dispose(self) {
+        NodeHandle(self.id, self.root).dispose();
     }
 
     fn get_disposed_panic_message(self) -> String {
