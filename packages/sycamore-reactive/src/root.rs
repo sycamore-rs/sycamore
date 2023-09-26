@@ -390,11 +390,13 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     ret
 }
 
+/// Get a handle to the current reactive scope.
 pub fn use_current_scope() -> NodeHandle {
     let root = Root::global();
     NodeHandle(root.current_node.get(), root)
 }
 
+/// Get a handle to the root reactive scope.
 pub fn use_global_scope() -> NodeHandle {
     let root = Root::global();
     NodeHandle(NodeId::null(), root)

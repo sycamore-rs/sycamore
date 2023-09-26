@@ -39,7 +39,7 @@ where
     let mut disposers_tmp: Vec<Option<NodeHandle>> = Vec::new();
 
     // Diff and update signal each time list is updated.
-    create_memo(move || {
+    let mut update = move || {
         let new_items = list.value();
         if new_items.is_empty() {
             // Fast path for removing all items.
@@ -166,7 +166,9 @@ where
         items = new_items;
 
         mapped.clone()
-    })
+    };
+    let scope = use_current_scope();
+    create_memo(move || scope.run_in(&mut update))
 }
 
 /// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
@@ -196,7 +198,7 @@ where
     let mut disposers: Vec<NodeHandle> = Vec::new();
 
     // Diff and update signal each time list is updated.
-    create_memo(move || {
+    let mut update = move || {
         let new_items = list.value();
 
         if new_items.is_empty() {
@@ -251,7 +253,9 @@ where
 
         // Update signal to trigger updates.
         mapped.clone()
-    })
+    };
+    let scope = use_current_scope();
+    create_memo(move || scope.run_in(&mut update))
 }
 
 #[cfg(test)]
