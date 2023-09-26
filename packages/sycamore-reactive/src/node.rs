@@ -81,9 +81,9 @@ impl NodeHandle {
     pub fn run_in<T>(&self, f: impl FnOnce() -> T) -> T {
         let root = self.1;
         let prev_root = Root::set_global(Some(root));
-        let prev_node = root.current_node.replace(self.0);
+        let prev_node = root.current_owner.replace(self.0);
         let ret = f();
-        root.current_node.set(prev_node);
+        root.current_owner.set(prev_node);
         Root::set_global(prev_root);
         ret
     }

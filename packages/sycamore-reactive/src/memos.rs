@@ -66,11 +66,9 @@ pub fn create_selector_with<T>(
 ) -> Memo<T> {
     let root = Root::global();
     let signal = create_empty_signal();
-    let prev = root.current_node.replace(signal.id);
-    let (initial, tracker) = root.tracked_scope(&mut f);
-    root.current_node.set(prev);
-
-    tracker.create_dependency_link(root, signal.id);
+    let prev = root.current_owner.replace(signal.id);
+    let initial = root.tracked_scope(signal.id, &mut f);
+    root.current_owner.set(prev);
 
     let mut signal_mut = signal.get_mut();
     signal_mut.value = Some(Box::new(initial));
