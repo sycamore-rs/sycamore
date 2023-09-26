@@ -142,9 +142,17 @@ impl Root {
     /// We then go through every node in this topological sorting and update only those nodes which
     /// have dependencies that were updated.
     fn propagate_node_updates(&'static self, start_node: NodeId) {
+        // Try to reuse the shared buffer if possible.
         let mut rev_sorted = Vec::new();
+        let mut rev_sorted_buf = self.rev_sorted_buf.try_borrow_mut();
+        let rev_sorted = if let Ok(rev_sorted_buf) = rev_sorted_buf.as_mut() {
+            rev_sorted_buf.clear();
+            rev_sorted_buf
+        } else {
+            &mut rev_sorted
+        };
 
-        Self::dfs(start_node, &mut self.nodes.borrow_mut(), &mut rev_sorted);
+        Self::dfs(start_node, &mut self.nodes.borrow_mut(), rev_sorted);
 
         for &node in rev_sorted.iter().rev() {
             let mut nodes_mut = self.nodes.borrow_mut();
@@ -179,7 +187,7 @@ impl Root {
         // Reset the states of all the nodes.
         let mut nodes_mut = self.nodes.borrow_mut();
         for node in rev_sorted {
-            if let Some(node) = nodes_mut.get_mut(node) {
+            if let Some(node) = nodes_mut.get_mut(*node) {
                 node.state = NodeState::Unchanged;
             }
         }
@@ -213,10 +221,13 @@ impl Root {
         }
         current.mark = Mark::Temp;
 
-        let children = current.dependents.clone();
-        for child in children {
-            Self::dfs(child, nodes, buf);
+        // Take the `dependents` field out temporarily to avoid borrow checker.
+        let children = std::mem::take(&mut current.dependents);
+        for child in &children {
+            Self::dfs(*child, nodes, buf);
         }
+        nodes[current_id].dependents = children;
+
         nodes[current_id].mark = Mark::Permanent;
         buf.push(current_id);
     }

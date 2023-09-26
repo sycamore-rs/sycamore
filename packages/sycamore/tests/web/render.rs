@@ -19,17 +19,17 @@ fn dyn_view_static() {
 #[wasm_bindgen_test]
 fn dyn_view() {
     let _ = create_root(|| {
-        let template = create_signal(view! {
+        let view = create_signal(view! {
             "1"
         });
-        let node: View<DomNode> = View::new_dyn(move || template.get_clone());
+        let node: View<DomNode> = View::new_dyn(move || view.get_clone());
 
         sycamore::render_to(|| node, &test_container());
         let test_container = query("test-container");
 
         assert_text_content!(test_container, "1");
 
-        template.set(view! {
+        view.set(view! {
             "2"
         });
         assert_text_content!(test_container, "2");
@@ -100,22 +100,20 @@ fn dyn_scoped_nested() {
 
 #[wasm_bindgen_test]
 fn regression_572() {
-    let signal = create_signal(0);
+    let _ = create_root(|| {
+        let signal = create_signal(0);
 
-    sycamore::render_to(
-        {
-            let signal = signal.clone();
+        sycamore::render_to(
             move || {
                 View::new_dyn(move || {
-                    let signal = signal.clone();
                     View::new_dyn(move || {
                         signal.track();
                         View::empty()
                     })
                 })
-            }
-        },
-        &test_container(),
-    );
-    signal.set(0);
+            },
+            &test_container(),
+        );
+        signal.set(0);
+    });
 }
