@@ -49,6 +49,7 @@ impl<G: GenericNode> View<G> {
     }
 
     /// Create a new dynamic [`View`] from a [`FnMut`].
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn new_dyn(f: impl FnMut() -> View<G> + 'static) -> Self {
         Self {
             inner: ViewType::Dyn(*create_memo(f).inner_signal()),

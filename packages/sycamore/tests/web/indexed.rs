@@ -16,7 +16,7 @@ fn append() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
 
@@ -46,7 +46,7 @@ fn swap_rows() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -75,7 +75,7 @@ fn update_row() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -101,7 +101,7 @@ fn trigger_with_same_data() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -127,7 +127,7 @@ fn delete_row() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -153,7 +153,7 @@ fn delete_row_from_start() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -179,7 +179,7 @@ fn delete_row_from_end() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -205,7 +205,7 @@ fn clear() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -231,7 +231,7 @@ fn insert_front() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -257,7 +257,7 @@ fn nested_reactivity() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -265,7 +265,8 @@ fn nested_reactivity() {
         count.get_clone()[0].set(4);
         assert_text_content!(p, "423");
 
-        count.update(|count| count.push(create_signal(5)));
+        let new = create_signal(5);
+        count.update(|count| count.push(new));
         assert_text_content!(p, "4235");
     });
 }
@@ -287,7 +288,7 @@ fn fragment_template() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("div");
 
@@ -331,7 +332,7 @@ fn template_top_level() {
             )
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("#test-container");
 
@@ -361,7 +362,7 @@ fn template_dyn_top_level() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("#test-container");
 
@@ -400,7 +401,7 @@ fn template_with_other_nodes_at_same_level() {
             }
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let elem = query("ul");
 

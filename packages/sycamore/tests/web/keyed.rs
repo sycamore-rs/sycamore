@@ -272,10 +272,11 @@ fn nested_reactivity() {
         let p = query("ul");
         assert_text_content!(p, "123");
 
-        count.with(|count| count[0].set(4));
+        count.get_clone()[0].set(4);
         assert_text_content!(p, "423");
 
-        count.update(|count| count.push(create_signal(5)));
+        let new = create_signal(5);
+        count.update(|count| count.push(new));
         assert_text_content!(p, "4235");
     });
 }

@@ -148,10 +148,9 @@ impl<T> ReadSignal<T> {
     /// Get a immutable reference to the underlying node.
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_ref(self) -> Ref<'static, ReactiveNode> {
-        Ref::map(self.root.nodes.borrow(), |nodes| {
-            nodes
-                .get(self.id)
-                .unwrap_or_else(|| panic!("{}", self.get_disposed_panic_message()))
+        Ref::map(self.root.nodes.borrow(), |nodes| match nodes.get(self.id) {
+            Some(node) => node,
+            None => panic!("{}", self.get_disposed_panic_message()),
         })
     }
 
@@ -159,9 +158,10 @@ impl<T> ReadSignal<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_mut(self) -> RefMut<'static, ReactiveNode> {
         RefMut::map(self.root.nodes.borrow_mut(), |nodes| {
-            nodes
-                .get_mut(self.id)
-                .unwrap_or_else(|| panic!("{}", self.get_disposed_panic_message()))
+            match nodes.get_mut(self.id) {
+                Some(node) => node,
+                None => panic!("{}", self.get_disposed_panic_message()),
+            }
         })
     }
 

@@ -32,6 +32,7 @@ pub fn insert<G: GenericNode>(
     insert_expression(parent, &accessor, initial, marker, false, multi);
 }
 
+/// Implementaiton detail of [`insert`].
 fn insert_expression<G: GenericNode>(
     parent: &G,
     value: &View<G>,
@@ -179,44 +180,45 @@ pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option
     }
 }
 
-/// Normalizes a `Vec<Template<G>>` into a `Vec<G>`.
+/// Normalizes a `&[View<G>]` into a `Vec<View<G>>`.
 ///
-/// Returns whether the normalized `Vec<G>` is dynamic (and should be rendered in an effect).
+/// Returns whether the normalized `Vec<View<G>>` is dynamic (and should therefore be rendered in an
+/// effect).
 ///
 /// # Params
-/// * `v` - The [`Vec`] to write the output to.
-/// * `fragment` - The `Vec<Template<G>>` to normalize.
+/// * `buf` - The `Vec` to write the output to.
+/// * `fragment` - The `&[View<G>]` to normalize.
 /// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
 ///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
-    v: &mut Vec<View<G>>,
+    buf: &mut Vec<View<G>>,
     fragment: &[View<G>],
     unwrap: bool,
 ) -> bool {
     let mut dynamic = false;
 
-    for template in fragment {
-        match &template.inner {
-            ViewType::Node(_) => v.push(template.clone()),
-            ViewType::Dyn(f) if unwrap => {
-                let mut value = f.get_clone();
-                while let ViewType::Dyn(f) = &value.inner {
-                    value = f.get_clone();
+    for view in fragment {
+        match &view.inner {
+            ViewType::Node(_) => buf.push(view.clone()),
+            ViewType::Dyn(f) => {
+                if unwrap {
+                    let mut value = f.get_clone();
+                    while let ViewType::Dyn(f) = &value.inner {
+                        value = f.get_clone();
+                    }
+                    let fragment: Rc<[View<G>]> = match &value.inner {
+                        ViewType::Node(_) => Rc::new([value]),
+                        ViewType::Fragment(fragment) => Rc::clone(fragment),
+                        _ => unreachable!(),
+                    };
+                    dynamic = normalize_incoming_fragment(buf, &fragment, false) || dynamic;
+                } else {
+                    buf.push(view.clone());
+                    dynamic = true;
                 }
-                let fragment: Rc<[View<G>]> = match &value.inner {
-                    ViewType::Node(_) => Rc::new([value]),
-                    ViewType::Fragment(fragment) => Rc::clone(fragment),
-                    _ => unreachable!(),
-                };
-                dynamic = normalize_incoming_fragment(v, &fragment, false) || dynamic;
-            }
-            ViewType::Dyn(_) => {
-                // Not unwrap
-                v.push(template.clone());
-                dynamic = true;
             }
             ViewType::Fragment(fragment) => {
-                dynamic = normalize_incoming_fragment(v, fragment, false) || dynamic;
+                dynamic = normalize_incoming_fragment(buf, fragment, false) || dynamic;
             }
         }
     }
