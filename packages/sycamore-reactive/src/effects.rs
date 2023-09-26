@@ -77,7 +77,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn effect_cannot_create_infinite_loop() {
         let _ = create_root(|| {
             let state = create_signal(0);
@@ -149,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn inner_effects_run_first() {
+    fn outer_effects_run_first() {
         let _ = create_root(|| {
             let trigger = create_signal(());
 
@@ -172,7 +171,7 @@ mod tests {
             trigger.set(());
 
             assert_eq!(outer_counter.get(), 2);
-            assert_eq!(inner_counter.get(), 3);
+            assert_eq!(inner_counter.get(), 2);
         });
     }
 

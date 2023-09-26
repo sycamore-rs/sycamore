@@ -13,7 +13,7 @@ use crate::{NodeId, Root};
 /// allowed to have context values with the same type in _different_ scopes.
 pub fn provide_context<T: 'static>(value: T) {
     let root = Root::global();
-    provide_context_in_node(root.current_owner.get(), value);
+    provide_context_in_node(root.current_node.get(), value);
 }
 
 /// Internal implementation for [`provide_context`] and [`provide_global_context`].
@@ -42,7 +42,7 @@ pub fn try_use_context<T: Clone + 'static>() -> Option<T> {
     let root = Root::global();
     let nodes = root.nodes.borrow();
     // Walk up the scope stack until we find one with the context of the right type.
-    let mut current = Some(&nodes[root.current_owner.get()]);
+    let mut current = Some(&nodes[root.current_node.get()]);
     while let Some(next) = current {
         for value in &next.context {
             if let Some(value) = value.downcast_ref::<T>().cloned() {
@@ -79,7 +79,7 @@ pub fn use_context_or_else<T: Clone + 'static, F: FnOnce() -> T>(f: F) -> T {
 pub fn use_scope_depth() -> u32 {
     let root = Root::global();
     let nodes = root.nodes.borrow();
-    let mut current = Some(&nodes[root.current_owner.get()]);
+    let mut current = Some(&nodes[root.current_node.get()]);
     let mut depth = 0;
 
     while let Some(next) = current {

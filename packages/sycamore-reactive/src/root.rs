@@ -3,6 +3,7 @@
 use std::cell::{Cell, RefCell};
 
 use slotmap::{Key, SlotMap};
+use smallvec::SmallVec;
 
 use crate::{create_signal, Mark, NodeHandle, NodeId, NodeState, ReactiveNode};
 
@@ -15,21 +16,21 @@ use crate::{create_signal, Mark, NodeHandle, NodeId, NodeState, ReactiveNode};
 /// itself. Finally, the `Root` is expected to live for the whole duration of the app so this is
 /// not a problem.
 pub(crate) struct Root {
-    /// All the nodes created in this `Root`.
-    pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
+    /// If this is `Some`, that means we are tracking signal accesses.
+    pub tracker: RefCell<Option<DependencyTracker>>,
+    /// A temporary buffer used in `propagate_updates` to prevent allocating a new Vec every time
+    /// it is called.
+    pub rev_sorted_buf: RefCell<Vec<NodeId>>,
     /// The current node that owns everything created in its scope.
     /// If we are at the top-level, then this is the "null" key.
-    pub current_owner: Cell<NodeId>,
-    /// The current tracking node, if any.
-    pub current_tracker: Cell<Option<NodeId>>,
+    pub current_node: Cell<NodeId>,
+    /// All the nodes created in this `Root`.
+    pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
     /// A list of effects to be run after signal updates are over.
     pub effect_queue: RefCell<Vec<Box<dyn FnMut()>>>,
     /// Whether we are currently batching signal updatse. If this is true, we do not run
     /// `effect_queue` and instead wait until the end of the batch.
     pub batching: Cell<bool>,
-    /// A temporary buffer used in `propagate_updates` to prevent allocating a new Vec every time
-    /// it is called.
-    pub rev_sorted_buf: RefCell<Vec<NodeId>>,
 }
 
 thread_local! {
@@ -51,12 +52,12 @@ impl Root {
 
     pub fn new_static() -> &'static Self {
         let this = Self {
+            tracker: RefCell::new(None),
+            rev_sorted_buf: RefCell::new(Vec::new()),
+            current_node: Cell::new(NodeId::null()),
             nodes: RefCell::new(SlotMap::default()),
-            current_owner: Cell::new(NodeId::null()),
-            current_tracker: Cell::new(None),
             effect_queue: RefCell::new(Vec::new()),
             batching: Cell::new(false),
-            rev_sorted_buf: RefCell::new(Vec::new()),
         };
         let _ref = Box::leak(Box::new(this));
         _ref.reinit();
@@ -65,29 +66,29 @@ impl Root {
 
     /// Disposes of all the resources held on by this root and resets the state.
     pub fn reinit(&'static self) {
-        let _ = self.nodes.take();
-        let _ = self.current_owner.take();
-        let _ = self.current_tracker.take();
-        let _ = self.effect_queue.take();
-        self.batching.set(false);
+        let _ = self.tracker.take();
         let _ = self.rev_sorted_buf.take();
+        let _ = self.effect_queue.take();
+        let _ = self.current_node.take();
+        let _ = self.nodes.take();
+        self.batching.set(false);
     }
 
     /// Create a new child scope. Implementation detail for [`create_child_scope`].
     pub fn create_child_scope(&'static self, f: impl FnOnce()) -> NodeHandle {
         let node = create_signal(()).id;
-        let prev = self.current_owner.replace(node);
+        let prev = self.current_node.replace(node);
         f();
-        self.current_owner.set(prev);
+        self.current_node.set(prev);
         NodeHandle(node, self)
     }
 
-    /// Run the provided closure in a tracked scope.
-    pub fn tracked_scope<T>(&self, node: NodeId, f: impl FnOnce() -> T) -> T {
-        let prev = self.current_tracker.replace(Some(node));
+    /// Run the provided closure in a tracked scope. This will detect all the signals that are
+    /// accessed and track them in a dependency list.
+    pub fn tracked_scope<T>(&self, f: impl FnOnce() -> T) -> (T, DependencyTracker) {
+        let prev = self.tracker.replace(Some(DependencyTracker::default()));
         let ret = f();
-        self.current_tracker.set(prev);
-        ret
+        (ret, self.tracker.replace(prev).unwrap())
     }
 
     /// Run the update callback of the signal, also recreating any dependencies found by
@@ -110,17 +111,16 @@ impl Root {
         }
         // We take the callback out because that requires a mut ref and we cannot hold that while
         // running update itself.
-        let mut callback = self.nodes.borrow_mut()[id]
-            .callback
-            .take()
-            .expect("circular dependency");
+        let mut callback = self.nodes.borrow_mut()[id].callback.take().unwrap();
         let mut value = self.nodes.borrow_mut()[id].value.take().unwrap();
 
         NodeHandle(id, self).dispose_children(); // Destroy anything created in a previous update.
 
-        let prev = self.current_owner.replace(id);
-        let changed = self.tracked_scope(id, || callback(&mut value));
-        self.current_owner.set(prev);
+        let prev = self.current_node.replace(id);
+        let (changed, tracker) = self.tracked_scope(|| callback(&mut value));
+        self.current_node.set(prev);
+
+        tracker.create_dependency_link(self, id);
 
         self.nodes.borrow_mut()[id].callback = Some(callback); // Put the callback back in.
         self.nodes.borrow_mut()[id].value = Some(value);
@@ -216,7 +216,7 @@ impl Root {
         };
 
         match current.mark {
-            Mark::Temp => panic!("circular dependency"),
+            Mark::Temp => panic!("cyclic reactive dependency"),
             Mark::Permanent => return,
             Mark::None => {}
         }
@@ -268,6 +268,25 @@ impl RootHandle {
         let ret = f();
         Root::set_global(prev);
         ret
+    }
+}
+
+/// Tracks nodes that are accessed inside a reactive scope.
+#[derive(Default)]
+pub(crate) struct DependencyTracker {
+    /// A list of reactive nodes that were accessed.
+    pub dependencies: SmallVec<[NodeId; 1]>,
+}
+
+impl DependencyTracker {
+    /// Sets the `dependents` field for all the nodes that have been tracked and updates
+    /// `dependencies` of the `dependent`.
+    pub fn create_dependency_link(self, root: &Root, dependent: NodeId) {
+        for node in &self.dependencies {
+            root.nodes.borrow_mut()[*node].dependents.push(dependent);
+        }
+        // Set the signal dependencies so that it is updated automatically.
+        root.nodes.borrow_mut()[dependent].dependencies = self.dependencies;
     }
 }
 
@@ -337,8 +356,8 @@ pub fn create_child_scope(f: impl FnOnce()) -> NodeHandle {
 /// ```
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
     let root = Root::global();
-    if !root.current_owner.get().is_null() {
-        root.nodes.borrow_mut()[root.current_owner.get()]
+    if !root.current_node.get().is_null() {
+        root.nodes.borrow_mut()[root.current_node.get()]
             .cleanups
             .push(Box::new(f));
     }
@@ -377,16 +396,16 @@ pub fn batch<T>(f: impl FnOnce() -> T) -> T {
 /// ```
 pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
     let root = Root::global();
-    let prev = root.current_tracker.replace(None);
+    let prev = root.tracker.replace(None);
     let ret = f();
-    root.current_tracker.replace(prev);
+    root.tracker.replace(prev);
     ret
 }
 
 /// Get a handle to the current reactive scope.
 pub fn use_current_scope() -> NodeHandle {
     let root = Root::global();
-    NodeHandle(root.current_owner.get(), root)
+    NodeHandle(root.current_node.get(), root)
 }
 
 /// Get a handle to the root reactive scope.

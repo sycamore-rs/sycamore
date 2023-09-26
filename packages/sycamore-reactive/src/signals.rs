@@ -122,7 +122,7 @@ pub(crate) fn create_empty_signal<T>() -> Signal<T> {
         value: None,
         callback: None,
         children: Vec::new(),
-        parent: root.current_owner.get(),
+        parent: root.current_node.get(),
         dependents: Vec::new(),
         dependencies: SmallVec::new(),
         cleanups: Vec::new(),
@@ -131,7 +131,7 @@ pub(crate) fn create_empty_signal<T>() -> Signal<T> {
         mark: Mark::None,
     });
     // Add the signal to the parent's `children` list.
-    let current_node = root.current_owner.get();
+    let current_node = root.current_node.get();
     if !current_node.is_null() {
         root.nodes.borrow_mut()[current_node].children.push(id);
     }
@@ -285,11 +285,8 @@ impl<T> ReadSignal<T> {
     /// Track the signal in the current reactive scope. This is done automatically when calling
     /// [`ReadSignal::get`] and other similar methods.
     pub fn track(self) {
-        if let Some(node) = self.root.current_tracker.get() {
-            self.root.nodes.borrow_mut()[node]
-                .dependencies
-                .push(self.id);
-            self.get_mut().dependents.push(node);
+        if let Some(tracker) = &mut *self.root.tracker.borrow_mut() {
+            tracker.dependencies.push(self.id);
         }
     }
 }
