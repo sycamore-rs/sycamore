@@ -15,6 +15,7 @@ pub(crate) struct ReactiveNode {
     /// Value of the node, if any. If this node is a signal, should have a value.
     pub value: Option<Box<dyn Any>>,
     /// Callback when node needs to be updated.
+    #[allow(clippy::type_complexity)]
     pub callback: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> NodeState>>,
     /// Nodes that are owned by this node.
     pub children: Vec<NodeId>,
