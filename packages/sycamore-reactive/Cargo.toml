@@ -17,7 +17,6 @@ paste = "1.0.12"
 serde = { version = "1.0.188", optional = true }
 slotmap = "1.0.6"
 smallvec = { version = "1.11.1", features = ["union"] }
-sycamore-reactive-macro = { path = "../sycamore-reactive-macro" }
 
 [features]
 default = []
