@@ -29,29 +29,29 @@ pub fn insert<G: GenericNode>(
     marker: Option<&G>,
     multi: bool,
 ) {
-    insert_expression(parent, &accessor, initial, marker, false, multi);
+    insert_expression(
+        parent,
+        &accessor,
+        initial.map(View::flatten),
+        marker,
+        false,
+        multi,
+    );
 }
 
 /// Implementaiton detail of [`insert`].
 fn insert_expression<G: GenericNode>(
     parent: &G,
     value: &View<G>,
-    mut current: Option<View<G>>,
+    mut current: Option<Vec<G>>,
     marker: Option<&G>,
     unwrap_fragment: bool,
     multi: bool,
 ) {
-    while let Some(View {
-        inner: ViewType::Dyn(f),
-    }) = current
-    {
-        current = Some(f.get_clone());
-    }
-
     match &value.inner {
         ViewType::Node(node) => {
             if let Some(current) = current {
-                clean_children(parent, current.flatten(), marker, Some(node), multi);
+                clean_children(parent, current, marker, Some(node), multi);
             } else if marker.is_none() {
                 parent.append_child(node);
             } else {
@@ -75,13 +75,13 @@ fn insert_expression<G: GenericNode>(
                     false,
                     multi,
                 );
-                current = Some(value);
+                current = Some(value.flatten());
             });
         }
         ViewType::Fragment(fragment) => {
             let mut v = Vec::new();
             // normalize_incoming_fragment will subscribe to all dynamic nodes in the function so as
-            // to trigger the create_effect when the template changes.
+            // to trigger the create_effect when the view changes.
             let dynamic = normalize_incoming_fragment(&mut v, fragment.as_ref(), unwrap_fragment);
             if dynamic {
                 let parent = parent.clone();
@@ -98,9 +98,7 @@ fn insert_expression<G: GenericNode>(
                         true,
                         false,
                     );
-                    current = Some(View::new_fragment(
-                        value.flatten().into_iter().map(View::new_node).collect(),
-                    )); // TODO: do not perform unnecessary flattening of template
+                    current = Some(value.flatten()); // TODO: do not perform unnecessary flattenin
                 });
             } else {
                 let v = v
@@ -116,16 +114,15 @@ fn insert_expression<G: GenericNode>(
                     clean_children(parent, Vec::new(), None, None, false);
                 } else {
                     match current {
-                        Some(current) => match current.inner {
-                            ViewType::Node(node) => {
-                                reconcile_fragments(parent, &mut [node], &v);
+                        Some(mut current) => match &mut current[..] {
+                            [node] => {
+                                reconcile_fragments(parent, std::slice::from_mut(node), &v);
                             }
-                            ViewType::Dyn(_) => unreachable!(),
-                            ViewType::Fragment(ref fragment) => {
+                            fragment => {
                                 if fragment.is_empty() {
                                     append_nodes(parent, v, marker);
                                 } else {
-                                    reconcile_fragments(parent, &mut current.flatten(), &v);
+                                    reconcile_fragments(parent, fragment, &v);
                                 }
                             }
                         },
