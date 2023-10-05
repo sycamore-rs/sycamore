@@ -107,7 +107,7 @@ impl Root {
         for dependency in dependencies {
             self.nodes.borrow_mut()[dependency]
                 .dependents
-                .retain(|&x| x != id);
+                .retain(|&id| id != id);
         }
         // We take the callback out because that requires a mut ref and we cannot hold that while
         // running update itself.

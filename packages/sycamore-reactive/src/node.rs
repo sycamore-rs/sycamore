@@ -59,8 +59,16 @@ pub struct NodeHandle(pub(crate) NodeId, pub(crate) &'static Root);
 
 impl NodeHandle {
     pub fn dispose(self) {
+        // Dispose children first since this ndoe could be referenced in a cleanup.
         self.dispose_children();
-        self.1.nodes.borrow_mut().remove(self.0);
+        // Release memory.
+        let this = self.1.nodes.borrow_mut().remove(self.0).unwrap();
+        // Remove self from all dependencies.
+        for dependent in this.dependents {
+            self.1.nodes.borrow_mut()[dependent]
+                .dependencies
+                .retain(|&mut id| id != self.0);
+        }
     }
 
     pub fn dispose_children(self) {
