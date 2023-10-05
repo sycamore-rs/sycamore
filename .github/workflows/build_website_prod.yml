@@ -17,6 +17,7 @@ jobs:
         with:
           toolchain: nightly
           target: wasm32-unknown-unknown
+          default: true
 
       - name: Setup NodeJS
         uses: actions/setup-node@v3
