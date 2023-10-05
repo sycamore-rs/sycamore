@@ -11,7 +11,7 @@ fn dyn_view_static() {
             }
         });
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("div"), "Test");
     });
 }
@@ -24,7 +24,7 @@ fn dyn_view() {
         });
         let node: View<DomNode> = View::new_dyn(move || view.get_clone());
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let test_container = query("test-container");
 
         assert_text_content!(test_container, "1");
@@ -47,7 +47,7 @@ fn dyn_fragment() {
             "after"
         };
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let test_container = query("test-container");
 
         assert_text_content!(test_container, "before0after");
@@ -71,7 +71,7 @@ fn dyn_nested() {
             })
         });
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("div"), "Test");
     });
 }
@@ -91,7 +91,7 @@ fn dyn_scoped_nested() {
             })
         });
 
-        sycamore::render_to(|| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("div"), "0");
         num.set(1);
         assert_text_content!(query("div"), "1");
@@ -103,7 +103,7 @@ fn regression_572() {
     let _ = create_root(|| {
         let signal = create_signal(0);
 
-        sycamore::render_to(
+        sycamore::render_in_scope(
             move || {
                 View::new_dyn(move || {
                     View::new_dyn(move || {

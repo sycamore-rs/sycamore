@@ -66,6 +66,23 @@ impl Root {
 
     /// Disposes of all the resources held on by this root and resets the state.
     pub fn reinit(&'static self) {
+        // Dispose of all the top-level nodes.
+        let top_level = self
+            .nodes
+            .borrow()
+            .iter()
+            .filter_map(|(id, value)| {
+                if value.parent.is_null() {
+                    Some(id)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        for node in top_level {
+            NodeHandle(node, self).dispose();
+        }
+
         let _ = self.tracker.take();
         let _ = self.rev_sorted_buf.take();
         let _ = self.effect_queue.take();

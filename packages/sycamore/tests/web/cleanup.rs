@@ -7,7 +7,7 @@ fn assert_cleanup_called(f: impl FnOnce()) {
     CLEANUP_CALLED.with(|cleanup_called| {
         cleanup_called.set(false);
         f();
-        assert!(cleanup_called.get());
+        assert!(cleanup_called.get(), "cleanup was not called");
     });
 }
 
