@@ -42,7 +42,7 @@ impl Root {
     /// Get the current reactive root. Panics if no root is found.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn global() -> &'static Root {
-        GLOBAL_ROOT.with(|root| root.get().expect("no root found"))
+        GLOBAL_ROOT.with(|root| root.get()).expect("no root found")
     }
 
     /// Sets the current reactive root. Returns the previous root.
@@ -412,7 +412,11 @@ pub fn batch<T>(f: impl FnOnce() -> T) -> T {
 /// # });
 /// ```
 pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
-    let root = Root::global();
+    untrack_in_scope(f, Root::global())
+}
+
+/// Same as [`untrack`] but for a specific [`Root`].
+pub(crate) fn untrack_in_scope<T>(f: impl FnOnce() -> T, root: &'static Root) -> T {
     let prev = root.tracker.replace(None);
     let ret = f();
     root.tracker.replace(prev);

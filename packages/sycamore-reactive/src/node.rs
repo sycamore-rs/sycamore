@@ -5,7 +5,7 @@ use std::any::Any;
 use slotmap::new_key_type;
 use smallvec::SmallVec;
 
-use crate::{untrack, Root};
+use crate::{untrack_in_scope, Root};
 
 new_key_type! {
     pub struct NodeId;
@@ -61,13 +61,15 @@ impl NodeHandle {
     pub fn dispose(self) {
         // Dispose children first since this node could be referenced in a cleanup.
         self.dispose_children();
+        let mut nodes = self.1.nodes.borrow_mut();
         // Release memory.
-        let this = self.1.nodes.borrow_mut().remove(self.0).unwrap();
+        let this = nodes.remove(self.0).unwrap();
         // Remove self from all dependencies.
         for dependent in this.dependents {
-            self.1.nodes.borrow_mut()[dependent]
-                .dependencies
-                .retain(|&mut id| id != self.0);
+            // dependent might have been removed if it is a child node.
+            if let Some(dependent) = nodes.get_mut(dependent) {
+                dependent.dependencies.retain(|&mut id| id != self.0);
+            }
         }
     }
 
@@ -80,11 +82,14 @@ impl NodeHandle {
         let children = std::mem::take(&mut self.1.nodes.borrow_mut()[self.0].children);
 
         // Run the cleanup functions in an untracked scope so that we don't track dependencies.
-        untrack(move || {
-            for cb in cleanup {
-                cb();
-            }
-        });
+        untrack_in_scope(
+            move || {
+                for cb in cleanup {
+                    cb();
+                }
+            },
+            self.1,
+        );
         for child in children {
             Self(child, self.1).dispose();
         }

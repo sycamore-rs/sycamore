@@ -24,7 +24,7 @@ mod hello_world {
         let c = test_container();
         c.set_inner_html(&html);
 
-        sycamore::hydrate_to(v, &c);
+        sycamore::hydrate_in_scope(v, &c);
 
         // Hydration should not change inner html.
         assert_eq!(c.inner_html(), html);
@@ -49,7 +49,7 @@ mod hydrate_recursive {
         let c = test_container();
         c.set_inner_html(&html);
 
-        sycamore::hydrate_to(v, &c);
+        sycamore::hydrate_in_scope(v, &c);
 
         // Hydration should not change inner html.
         assert_eq!(c.inner_html(), html);
@@ -74,7 +74,7 @@ mod multiple_nodes_at_same_depth {
         let c = test_container();
         c.set_inner_html(&html);
 
-        sycamore::hydrate_to(v, &c);
+        sycamore::hydrate_in_scope(v, &c);
 
         // Hydration should not change inner html.
         assert_eq!(c.inner_html(), html);
@@ -99,7 +99,7 @@ mod top_level_fragment {
         let c = test_container();
         c.set_inner_html(&html);
 
-        sycamore::hydrate_to(v, &c);
+        sycamore::hydrate_in_scope(v, &c);
 
         // Hydration should not change inner html.
         assert_eq!(c.inner_html(), html);
@@ -127,7 +127,7 @@ mod dynamic {
         let _ = create_root(|| {
             let state = create_signal(0);
 
-            sycamore::hydrate_to(|| v(*state), &c);
+            sycamore::hydrate_in_scope(|| v(*state), &c);
 
             assert_text_content!(query("p"), "0");
 
@@ -162,7 +162,7 @@ mod dynamic_with_siblings {
         let _ = create_root(|| {
             let state = create_signal(0);
 
-            sycamore::hydrate_to(|| v(*state), &c);
+            sycamore::hydrate_in_scope(|| v(*state), &c);
 
             // Reactivity should work normally.
             state.set(1);
@@ -195,7 +195,7 @@ mod dynamic_template {
         let _ = create_root(|| {
             let state = create_signal(view! { "text" });
 
-            sycamore::hydrate_to(|| v(*state), &c);
+            sycamore::hydrate_in_scope(|| v(*state), &c);
 
             // Reactivity should work normally.
             state.set(view! { span { "nested node" } });
@@ -228,7 +228,7 @@ mod top_level_dynamic_with_siblings {
         let _ = create_root(|| {
             let state = create_signal(0);
 
-            sycamore::hydrate_to(|| v(*state), &c);
+            sycamore::hydrate_in_scope(|| v(*state), &c);
 
             // Reactivity should work normally.
             state.set(1);
