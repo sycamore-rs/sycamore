@@ -3,14 +3,14 @@
 Control flow in Sycamore can be achieved using the interpolation syntax. For example:
 
 ```rust
-let visible = create_signal(cx, true);
+let visible = create_signal(true);
 
-view! { cx,
+view! { 
     div {
         (if visible.get() {
-            view! { cx, "Now you see me" }
+            view! { "Now you see me" }
         } else {
-            view! { cx, } // Now you don't
+            view! { } // Now you don't
         })
     }
 }
@@ -27,15 +27,15 @@ Note the usage of `create_selector` here. The reason for this is to memoize the 
 every time `name` is changed. Rather, we only want it to be created when `name` becomes non-empty.
 
 ```rust
-let name = create_signal(cx, String::new());
-let is_empty = create_selector(cx, || !name.get().is_empty());
+let name = create_signal(String::new());
+let is_empty = create_selector(|| !name.get().is_empty());
 
-view! { cx,
+view! { 
     h1 {
         (if is_empty.get() {
-            view! { cx, span { (name.get()) } }
+            view! { span { (name.get()) } }
         } else {
-            view! { cx, span { "World" } }
+            view! { span { "World" } }
         })
     }
 }
