@@ -93,11 +93,17 @@ jobs:
       - name: Results
         run: cd ./js-framework-benchmark && npm run results
 
-      - name: Upload results
+      - name: Upload results JSON
         uses: actions/upload-artifact@v3
         with:
-          name: results
+          name: results-json
           path: js-framework-benchmark/webdriver-ts/results.json
+
+      - name: Upload results HTML
+        uses: actions/upload-artifact@v3
+        with:
+          name: results-html
+          path: js-framework-benchmark/webdriver-ts-results/dist
 
       - name: Log results
         run: |
