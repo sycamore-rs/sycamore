@@ -42,5 +42,8 @@ members = [
 	"packages/tools/bench-diff",
 ]
 
+[workspace.package]
+version = "0.9.0-beta.2"
+
 [profile.bench]
 debug = true
