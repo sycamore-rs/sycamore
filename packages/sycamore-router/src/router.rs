@@ -268,7 +268,7 @@ where
         }
     }));
     let route_signal = create_memo(move || pathname.with(|pathname| route.match_path(pathname)));
-    let view = view(*route_signal);
+    let view = view(route_signal);
     // Delegate click events from child <a> tags.
     if let Some(node) = view.as_node() {
         node.event(ev::click, integration.click_handler());

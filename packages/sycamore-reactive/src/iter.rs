@@ -23,7 +23,7 @@ pub fn map_keyed<T, K, U: 'static>(
     list: impl Accessor<Vec<T>> + Clone + 'static,
     map_fn: impl Fn(T) -> U + 'static,
     key_fn: impl Fn(&T) -> K + 'static,
-) -> Memo<Vec<U>>
+) -> ReadSignal<Vec<U>>
 where
     T: PartialEq + Clone + 'static,
     K: Eq + Hash,
@@ -187,7 +187,7 @@ where
 pub fn map_indexed<T, U: 'static>(
     list: impl Accessor<Vec<T>> + Clone + 'static,
     map_fn: impl Fn(T) -> U + 'static,
-) -> Memo<Vec<U>>
+) -> ReadSignal<Vec<U>>
 where
     T: PartialEq + Clone + 'static,
     U: Clone,
