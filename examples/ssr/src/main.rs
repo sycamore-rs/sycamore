@@ -1,19 +1,19 @@
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
-    let name = create_signal(cx, String::new());
+fn App<G: Html>() -> View<G> {
+    let name = create_signal(String::new());
 
     let handle_change = move |_| unreachable!();
 
-    view! { cx,
+    view! {
         div {
             h1 {
                 "Hello "
-                ({if !name.get().is_empty() {
-                    view! { cx, span { (name.get()) } }
+                ({if !name.with(String::is_empty) {
+                    view! { span { (name.get_clone()) } }
                 } else {
-                    view! { cx, span { "World" } }
+                    view! { span { "World" } }
                 }})
                 "!"
             }
@@ -24,6 +24,6 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 }
 
 fn main() {
-    let s = sycamore::render_to_string(|cx| view! { cx, App {} });
+    let s = sycamore::render_to_string(App);
     println!("{}", s);
 }

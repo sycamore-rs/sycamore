@@ -1,12 +1,12 @@
 use sycamore::prelude::*;
 
 #[component]
-fn Counter<G: Html>(cx: Scope) -> View<G> {
-    let state = create_signal(cx, 0i32);
-    let increment = |_| state.set(*state.get() + 1);
-    let decrement = |_| state.set(*state.get() - 1);
-    let reset = |_| state.set(0);
-    view! { cx,
+fn Counter<G: Html>() -> View<G> {
+    let mut state = create_signal(0i32);
+    let increment = move |_| state += 1;
+    let decrement = move |_| state -= 1;
+    let reset = move |_| state.set(0);
+    view! {
         div {
             p { "Value: " (state.get()) }
             button(on:click=increment) { "+" }
@@ -17,20 +17,20 @@ fn Counter<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-fn Hello<G: Html>(cx: Scope) -> View<G> {
-    let name = create_signal(cx, String::new());
-    let is_empty = create_selector(cx, || !name.get().is_empty());
+fn Hello<G: Html>() -> View<G> {
+    let name = create_signal(String::new());
+    let is_empty = create_selector(move || !name.with(String::is_empty));
 
-    view! { cx,
+    view! {
         div {
             p {
                 "Hello "
-                (if *is_empty.get() {
-                    view! { cx,
-                        span { (name.get()) }
+                (if is_empty.get() {
+                    view! {
+                        span { (name.get_clone()) }
                     }
                 } else {
-                    view! { cx, span { "World" } }
+                    view! { span { "World" } }
                 })
                 "!"
             }
@@ -40,8 +40,8 @@ fn Hello<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
-    view! { cx,
+fn App<G: Html>() -> View<G> {
+    view! {
         p { "Hydration" }
         br {}
         Hello {}
@@ -60,8 +60,8 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    let s = sycamore::render_to_string(|cx| view! { cx, App {} });
+    let s = sycamore::render_to_string(App);
     log::info!("{}", s);
 
-    sycamore::hydrate(|cx| view! { cx, App {} });
+    sycamore::hydrate(App);
 }

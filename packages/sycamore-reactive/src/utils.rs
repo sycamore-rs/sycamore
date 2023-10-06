@@ -118,7 +118,7 @@ impl_trackable_deps_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(0);
 ///

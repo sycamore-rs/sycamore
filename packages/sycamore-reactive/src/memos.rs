@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::fmt::{self, Formatter};
 use std::ops::Deref;
 
-use crate::{create_signal, DependencyTracker, ReadSignal, Root, Signal};
+use crate::{create_empty_signal, create_signal, ReadSignal, Root, Signal};
 
 /// A memoized derived signal.
 ///
@@ -50,25 +50,42 @@ impl<T: fmt::Display> fmt::Display for Memo<T> {
     }
 }
 
-/// Create a new [`Signal`] from an initial value, an initial list of dependencies, and an update
-/// function. Used in the implementation of [`create_memo`] and friends.
-pub(crate) fn create_updated_signal<T>(
-    initial: T,
-    initial_deps: DependencyTracker,
-    mut f: impl FnMut(&mut T) -> bool + 'static,
-) -> Signal<T> {
-    let root = Root::get_global();
-    let signal = create_signal(initial);
-    initial_deps.create_signal_dependency_links(root, signal.0.id);
+/// Creates a memoized value from some signals.
+/// Unlike [`create_memo`], this function will not notify dependents of a
+/// change if the output is the same.
+///
+/// It takes a comparison function to compare the old and new value, which returns `true` if
+/// they are the same and `false` otherwise.
+///
+/// To use the type's [`PartialEq`] implementation instead of a custom function, use
+/// [`create_selector`].
+#[cfg_attr(debug_assertions, track_caller)]
+pub fn create_selector_with<T>(
+    mut f: impl FnMut() -> T + 'static,
+    mut eq: impl FnMut(&T, &T) -> bool + 'static,
+) -> Memo<T> {
+    let root = Root::global();
+    let signal = create_empty_signal();
+    let prev = root.current_node.replace(signal.id);
+    let (initial, tracker) = root.tracked_scope(&mut f);
+    root.current_node.set(prev);
 
-    // Set the signal update callback as f.
-    signal.0.get_data_mut(move |data| {
-        data.update = Some(Box::new(move |any| {
-            f(any.downcast_mut().expect("could not downcast memo value"))
-        }))
-    });
+    tracker.create_dependency_link(root, signal.id);
 
-    signal
+    let mut signal_mut = signal.get_mut();
+    signal_mut.value = Some(Box::new(initial));
+    signal_mut.callback = Some(Box::new(move |value| {
+        let value = value.downcast_mut().expect("wrong memo type");
+        let new = f();
+        if eq(&new, value) {
+            false
+        } else {
+            *value = new;
+            true
+        }
+    }));
+
+    Memo { signal }
 }
 
 /// Creates a memoized computation from some signals.
@@ -83,7 +100,7 @@ pub(crate) fn create_updated_signal<T>(
 /// twice.
 ///
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(0);
 /// let double = || state.get() * 2;
@@ -103,7 +120,7 @@ pub(crate) fn create_updated_signal<T>(
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(0);
 /// let double = create_memo(move || state.get() * 2);
@@ -113,43 +130,9 @@ pub(crate) fn create_updated_signal<T>(
 /// assert_eq!(double.get(), 2);
 /// # });
 /// ```
-pub fn create_memo<T>(mut f: impl FnMut() -> T + 'static) -> Memo<T> {
-    let root = Root::get_global();
-    let (initial, tracker) = root.tracked_scope(&mut f);
-    let signal = create_updated_signal(initial, tracker, move |value| {
-        *value = f();
-        true
-    });
-
-    Memo { signal }
-}
-
-/// Creates a memoized value from some signals.
-/// Unlike [`create_memo`], this function will not notify dependents of a
-/// change if the output is the same.
-///
-/// It takes a comparison function to compare the old and new value, which returns `true` if
-/// they are the same and `false` otherwise.
-///
-/// To use the type's [`PartialEq`] implementation instead of a custom function, use
-/// [`create_selector`].
-pub fn create_selector_with<T>(
-    mut f: impl FnMut() -> T + 'static,
-    mut eq: impl FnMut(&T, &T) -> bool + 'static,
-) -> Memo<T> {
-    let root = Root::get_global();
-    let (initial, tracker) = root.tracked_scope(&mut f);
-    let signal = create_updated_signal(initial, tracker, move |value| {
-        let new = f();
-        if eq(&new, value) {
-            false
-        } else {
-            *value = new;
-            true
-        }
-    });
-
-    Memo { signal }
+#[cfg_attr(debug_assertions, track_caller)]
+pub fn create_memo<T>(f: impl FnMut() -> T + 'static) -> Memo<T> {
+    create_selector_with(f, |_, _| false)
 }
 
 /// Creates a memoized value from some signals.
@@ -160,7 +143,7 @@ pub fn create_selector_with<T>(
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let state = create_signal(1);
 /// let squared = create_selector(move || state.get() * state.get());
@@ -175,6 +158,7 @@ pub fn create_selector_with<T>(
 /// assert_eq!(squared.get(), 4);
 /// # });
 /// ```
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_selector<T>(f: impl FnMut() -> T + 'static) -> Memo<T>
 where
     T: PartialEq,
@@ -196,7 +180,7 @@ where
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// enum Msg {
 ///     Increment,
 ///     Decrement,
@@ -215,6 +199,7 @@ where
 /// assert_eq!(state.get(), 0);
 /// # });
 /// ```
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_reducer<T, Msg>(
     initial: T,
     reduce: impl FnMut(&T, Msg) -> T,
@@ -231,7 +216,7 @@ mod tests {
 
     #[test]
     fn memo() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = create_memo(move || state.get() * 2);
 
@@ -246,7 +231,7 @@ mod tests {
     /// Make sure value is memoized rather than executed on demand.
     #[test]
     fn memo_only_run_once() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
 
             let counter = create_signal(0);
@@ -265,7 +250,7 @@ mod tests {
 
     #[test]
     fn dependency_on_memo() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = create_memo(move || state.get() * 2);
             let quadruple = create_memo(move || double.get() * 2);
@@ -278,7 +263,7 @@ mod tests {
 
     #[test]
     fn untracked_memo() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(1);
             let double = create_memo(move || state.get_untracked() * 2);
 
@@ -292,7 +277,7 @@ mod tests {
 
     #[test]
     fn memos_should_recreate_dependencies_each_time() {
-        create_root(|| {
+        let _ = create_root(|| {
             let condition = create_signal(true);
 
             let state1 = create_signal(0);
@@ -330,7 +315,7 @@ mod tests {
 
     #[test]
     fn destroy_memos_on_scope_dispose() {
-        create_root(|| {
+        let _ = create_root(|| {
             let counter = create_signal(0);
 
             let trigger = create_signal(());
@@ -355,7 +340,7 @@ mod tests {
 
     #[test]
     fn selector() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = create_selector(move || state.get() * 2);
 
@@ -369,8 +354,10 @@ mod tests {
             assert_eq!(counter.get(), 1);
 
             state.set(0);
+            state.set(0);
+            state.set(0);
             assert_eq!(double.get(), 0);
-            assert_eq!(counter.get(), 1); // calling set_state should not trigger the effect
+            assert_eq!(counter.get(), 1);
 
             state.set(2);
             assert_eq!(double.get(), 4);
@@ -380,7 +367,7 @@ mod tests {
 
     #[test]
     fn reducer() {
-        create_root(|| {
+        let _ = create_root(|| {
             enum Msg {
                 Increment,
                 Decrement,
@@ -404,7 +391,7 @@ mod tests {
 
     #[test]
     fn memo_reducer() {
-        create_root(|| {
+        let _ = create_root(|| {
             enum Msg {
                 Increment,
                 Decrement,

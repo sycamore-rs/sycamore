@@ -1,66 +1,16 @@
 //! Reactive signals.
 
-use std::any::Any;
-use std::cell::RefCell;
+use std::cell::{Ref, RefMut};
 use std::fmt;
 use std::fmt::Formatter;
+use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 
-use slotmap::new_key_type;
+use slotmap::Key;
+use smallvec::SmallVec;
 
-use crate::{create_memo, EffectId, Memo, Root};
-
-new_key_type! { pub(crate) struct SignalId; }
-
-/// Stores al the data associated with a signal.
-pub(crate) struct SignalState {
-    /// The value of the signal. This is wrapped inside an [`Option`] because this will allow us to
-    /// temporarily take the value out while we run signal updates so that we do not have to hold
-    /// on mutably to `root.signals`.
-    pub value: RefCell<Option<Box<dyn Any>>>,
-    /// List of signals whose value this signal depends on.
-    ///
-    /// If any of the dependency signals are updated, this signal will automatically be updated as
-    /// well.
-    pub dependencies: Vec<SignalId>,
-    /// List of signals which depend on the value of this signal.
-    ///
-    /// If this signal updates, any dependent signal will automatically be updated as well.
-    pub dependents: Vec<SignalId>,
-    pub effect_dependents: Vec<EffectId>,
-    /// A callback that automatically updates the value of the signal when one of its dependencies
-    /// updates.
-    ///
-    /// A signal created using [`create_signal`] can be thought of as a signal which is never
-    /// autoamtically updated. A signal created using [`create_memo`] can be thought of as a signal
-    /// that is always automatically updated.
-    ///
-    /// Note that the update function takes a `&mut dyn Any`. The update function should only ever
-    /// set this value to the same type as the signal.
-    ///
-    /// The return value of the update function is a `bool`. This should represent whether the
-    /// value has been changed or not. If `true` is returned, then dependent signals will also be
-    /// updated.
-    #[allow(clippy::type_complexity)]
-    pub update: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> bool>>,
-    /// An internal state used by `propagate_updates`. This should be `true` if the signal has been
-    /// updated in the last call to `propagate_updates` and was reacheable from the start node.
-    /// This is to stop propagation to dependents if this value is `false`.
-    pub changed_in_last_update: bool,
-    /// An internal state used by `propagate_updates`. This is used in DFS to detect cycles.
-    pub mark: Mark,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Mark {
-    /// Mark when DFS reaches node.
-    Temp,
-    /// Mark when DFS is done with node.
-    Permanent,
-    /// No mark.
-    None,
-}
+use crate::{create_memo, Mark, Memo, NodeHandle, NodeId, NodeState, ReactiveNode, Root};
 
 /// A read-only reactive value.
 ///
@@ -73,7 +23,7 @@ pub(crate) enum Mark {
 ///
 /// # Example
 /// ```
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let signal: Signal<i32> = create_signal(123);
 /// let read_signal: ReadSignal<i32> = *signal;
@@ -86,8 +36,13 @@ pub(crate) enum Mark {
 ///
 /// See [`create_signal`] for more information.
 pub struct ReadSignal<T: 'static> {
-    pub(crate) id: SignalId,
+    pub(crate) id: NodeId,
     root: &'static Root,
+    /// Keep track of where the signal was created for diagnostics.
+    /// This is also stored in the Node but we want to have access to this when accessing a
+    /// disposed node so we store it here as well.
+    #[cfg(debug_assertions)]
+    created_at: &'static std::panic::Location<'static>,
     _phantom: PhantomData<T>,
 }
 
@@ -111,7 +66,7 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// clone the value for us.
 ///
 /// ```rust
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let signal = create_signal(1);
 /// signal.get(); // Should return 1.
@@ -132,7 +87,7 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// allows us to update related state whenever the signal is changed.
 ///
 /// ```rust
-/// # use sycamore_reactive3::*;
+/// # use sycamore_reactive::*;
 /// # create_root(|| {
 /// let signal = create_signal(1);
 /// // Note that we are accessing signal inside a closure in the line below. This will cause it to
@@ -156,48 +111,82 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// closure of the `create_memo`.
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_signal<T>(value: T) -> Signal<T> {
-    let root = Root::get_global();
-    let data = SignalState {
-        value: RefCell::new(Some(Box::new(value))),
-        dependencies: Vec::new(),
-        effect_dependents: Vec::new(),
+    let signal = create_empty_signal();
+    signal.get_mut().value = Some(Box::new(value));
+    signal
+}
+
+/// Creates a new [`Signal`] with the `value` field set to `None`.
+#[cfg_attr(debug_assertions, track_caller)]
+pub(crate) fn create_empty_signal<T>() -> Signal<T> {
+    let root = Root::global();
+    let id = root.nodes.borrow_mut().insert(ReactiveNode {
+        value: None,
+        callback: None,
+        children: Vec::new(),
+        parent: root.current_node.get(),
         dependents: Vec::new(),
-        update: None,
-        changed_in_last_update: false,
+        dependencies: SmallVec::new(),
+        cleanups: Vec::new(),
+        context: Vec::new(),
+        state: NodeState::Clean,
         mark: Mark::None,
-    };
-    let key = root.signals.borrow_mut().insert(data);
-    // Add the signal the scope signal list so that it is properly dropped when the scope is
-    // dropped.
-    root.scopes.borrow_mut()[root.current_scope.get()]
-        .signals
-        .push(key);
+        #[cfg(debug_assertions)]
+        created_at: std::panic::Location::caller(),
+    });
+    // Add the signal to the parent's `children` list.
+    let current_node = root.current_node.get();
+    if !current_node.is_null() {
+        root.nodes.borrow_mut()[current_node].children.push(id);
+    }
+
     Signal(ReadSignal {
-        id: key,
+        id,
         root,
+        #[cfg(debug_assertions)]
+        created_at: std::panic::Location::caller(),
         _phantom: PhantomData,
     })
 }
 
 impl<T> ReadSignal<T> {
+    /// Get a immutable reference to the underlying node.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub(crate) fn get_data<U>(self, f: impl FnOnce(&SignalState) -> U) -> U {
-        f(self
-            .root
-            .signals
-            .borrow()
-            .get(self.id)
-            .expect("signal is disposed"))
+    pub(crate) fn get_ref(self) -> Ref<'static, ReactiveNode> {
+        Ref::map(self.root.nodes.borrow(), |nodes| match nodes.get(self.id) {
+            Some(node) => node,
+            None => panic!("{}", self.get_disposed_panic_message()),
+        })
     }
 
+    /// Get a mutable reference to the underlying node.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub(crate) fn get_data_mut<U>(self, f: impl FnOnce(&mut SignalState) -> U) -> U {
-        f(self
-            .root
-            .signals
-            .borrow_mut()
-            .get_mut(self.id)
-            .expect("signal is disposed"))
+    pub(crate) fn get_mut(self) -> RefMut<'static, ReactiveNode> {
+        RefMut::map(self.root.nodes.borrow_mut(), |nodes| {
+            match nodes.get_mut(self.id) {
+                Some(node) => node,
+                None => panic!("{}", self.get_disposed_panic_message()),
+            }
+        })
+    }
+
+    /// Returns `true` if the signal is still alive, i.e. has not yet been disposed.
+    pub fn is_alive(self) -> bool {
+        self.root.nodes.borrow().get(self.id).is_some()
+    }
+
+    /// Disposes the signal, i.e. frees up the memory held on by this signal. Accessing a signal
+    /// after it has been disposed immediately causes a panic.
+    pub fn dispose(self) {
+        NodeHandle(self.id, self.root).dispose();
+    }
+
+    fn get_disposed_panic_message(self) -> String {
+        #[cfg(not(debug_assertions))]
+        return "signal was disposed".to_string();
+
+        #[cfg(debug_assertions)]
+        return format!("signal was disposed. Created at {}", self.created_at);
     }
 
     /// Get the value of the signal without tracking it. The type must implement [`Copy`]. If this
@@ -227,7 +216,7 @@ impl<T> ReadSignal<T> {
     ///
     /// # Example
     /// ```rust
-    /// # use sycamore_reactive3::*;
+    /// # use sycamore_reactive::*;
     /// # create_root(|| {
     /// let state = create_signal(0);
     /// assert_eq!(state.get(), 0);
@@ -256,7 +245,7 @@ impl<T> ReadSignal<T> {
     ///
     /// # Example
     /// ```rust
-    /// # use sycamore_reactive3::*;
+    /// # use sycamore_reactive::*;
     /// # create_root(|| {
     /// let greeting = create_signal("Hello".to_string());
     /// assert_eq!(greeting.get_clone(), "Hello".to_string());
@@ -282,15 +271,10 @@ impl<T> ReadSignal<T> {
     /// Get a value from the signal without tracking it.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn with_untracked<U>(self, f: impl FnOnce(&T) -> U) -> U {
-        self.get_data(|signal| {
-            f(signal
-                .value
-                .borrow()
-                .as_ref()
-                .expect("cannot get value while updating")
-                .downcast_ref()
-                .expect("wrong signal type in slotmap"))
-        })
+        let node = self.get_ref();
+        let value = node.value.as_ref().expect("value updating");
+        let ret = f(value.downcast_ref().expect("wrong signal type"));
+        ret
     }
 
     /// Get a value from the signal.
@@ -316,13 +300,25 @@ impl<T> Signal<T> {
     /// signals. As such, this is generally not recommended as it can easily lead to state
     /// inconsistencies.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn set_silent(self, new: T) -> T {
-        self.update_silent(|val| std::mem::replace(val, new))
+    pub fn set_silent(self, new: T) {
+        self.replace_silent(new);
     }
 
     /// Set a new value for the signal and automatically update any dependents.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn set(self, new: T) -> T {
+    pub fn set(self, new: T) {
+        self.replace(new);
+    }
+
+    /// Silently set a new value for the signal and return the previous value.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn replace_silent(self, new: T) -> T {
+        self.update_silent(|val| std::mem::replace(val, new))
+    }
+
+    /// Set a new value for the signal and return the previous value.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn replace(self, new: T) -> T {
         self.update(|val| std::mem::replace(val, new))
     }
 
@@ -331,7 +327,7 @@ impl<T> Signal<T> {
     where
         T: Default,
     {
-        self.set_silent(T::default())
+        self.replace_silent(T::default())
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
@@ -339,7 +335,7 @@ impl<T> Signal<T> {
     where
         T: Default,
     {
-        self.set(T::default())
+        self.replace(T::default())
     }
 
     /// Update the value of the signal silently. This will not trigger any updates in dependent
@@ -347,15 +343,10 @@ impl<T> Signal<T> {
     /// inconsistencies.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn update_silent<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
-        self.0.get_data(|signal| {
-            f(signal
-                .value
-                .borrow_mut()
-                .as_mut()
-                .expect("cannot update while updating")
-                .downcast_mut()
-                .expect("wrong signal type in slotmap"))
-        })
+        let mut value = self.get_mut().value.take().expect("value updating");
+        let ret = f(value.downcast_mut().expect("wrong signal type"));
+        self.get_mut().value = Some(value);
+        ret
     }
 
     /// Update the value of the signal and automatically update any dependents.
@@ -382,7 +373,7 @@ impl<T> Signal<T> {
     }
 
     pub fn split(self) -> (ReadSignal<T>, impl Fn(T) -> T) {
-        (*self, move |value| self.set(value))
+        (*self, move |value| self.replace(value))
     }
 }
 
@@ -401,6 +392,70 @@ impl<T> Clone for Signal<T> {
 }
 impl<T> Copy for Signal<T> {}
 
+// Implement `Default` for `ReadSignal` and `Signal`.
+impl<T: Default> Default for ReadSignal<T> {
+    fn default() -> Self {
+        *create_signal(Default::default())
+    }
+}
+impl<T: Default> Default for Signal<T> {
+    fn default() -> Self {
+        create_signal(Default::default())
+    }
+}
+
+// Forward `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` from inner type.
+impl<T: PartialEq> PartialEq for ReadSignal<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.with(|value| other.with(|other| value == other))
+    }
+}
+impl<T: Eq> Eq for ReadSignal<T> {}
+impl<T: PartialOrd> PartialOrd for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.with(|value| other.with(|other| value.partial_cmp(other)))
+    }
+}
+impl<T: Ord> Ord for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.with(|value| other.with(|other| value.cmp(other)))
+    }
+}
+impl<T: Hash> Hash for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.with(|value| value.hash(state))
+    }
+}
+
+impl<T: PartialEq> PartialEq for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn eq(&self, other: &Self) -> bool {
+        self.with(|value| other.with(|other| value == other))
+    }
+}
+impl<T: Eq> Eq for Signal<T> {}
+impl<T: PartialOrd> PartialOrd for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.with(|value| other.with(|other| value.partial_cmp(other)))
+    }
+}
+impl<T: Ord> Ord for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.with(|value| other.with(|other| value.cmp(other)))
+    }
+}
+impl<T: Hash> Hash for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.with(|value| value.hash(state))
+    }
+}
+
 impl<T> Deref for Signal<T> {
     type Target = ReadSignal<T>;
 
@@ -411,24 +466,54 @@ impl<T> Deref for Signal<T> {
 
 // Formatting implementations for `ReadSignal` and `Signal`.
 impl<T: fmt::Debug> fmt::Debug for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
     }
 }
 impl<T: fmt::Debug> fmt::Debug for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
     }
 }
 
 impl<T: fmt::Display> fmt::Display for ReadSignal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
     }
 }
 impl<T: fmt::Display> fmt::Display for Signal<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.with(|value| value.fmt(f))
+    }
+}
+
+// Serde implementations for `ReadSignal` and `Signal`.
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> serde::Serialize for ReadSignal<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.with(|value| value.serialize(serializer))
+    }
+}
+#[cfg(feature = "serde")]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for ReadSignal<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(*create_signal(T::deserialize(deserializer)?))
+    }
+}
+#[cfg(feature = "serde")]
+impl<T: serde::Serialize> serde::Serialize for Signal<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.with(|value| value.serialize(serializer))
+    }
+}
+#[cfg(feature = "serde")]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Signal<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(create_signal(T::deserialize(deserializer)?))
     }
 }
 
@@ -467,8 +552,8 @@ impl<T: RemAssign<Rhs>, Rhs> RemAssign<Rhs> for Signal<T> {
     }
 }
 
-/// We need to implement this again for `Signal` despite `Signal` deref-ing to `ReadSignal` since
-/// we also have another implementation of `FnOnce` for `Signal`.
+// We need to implement this again for `Signal` despite `Signal` deref-ing to `ReadSignal` since
+// we also have another implementation of `FnOnce` for `Signal`.
 #[cfg(feature = "nightly")]
 impl<T: Copy> FnOnce<()> for Signal<T> {
     type Output = T;
@@ -483,7 +568,7 @@ impl<T: Copy> FnOnce<(T,)> for Signal<T> {
     type Output = T;
 
     extern "rust-call" fn call_once(self, (val,): (T,)) -> Self::Output {
-        self.set(val)
+        self.replace(val)
     }
 }
 
@@ -493,7 +578,7 @@ mod tests {
 
     #[test]
     fn signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             assert_eq!(state.get(), 0);
 
@@ -507,7 +592,7 @@ mod tests {
 
     #[test]
     fn signal_composition() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = || state.get() * 2;
 
@@ -519,7 +604,7 @@ mod tests {
 
     #[test]
     fn set_silent_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = state.map(|&x| x * 2);
 
@@ -534,7 +619,7 @@ mod tests {
 
     #[test]
     fn read_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let readonly: ReadSignal<i32> = *state;
 
@@ -546,7 +631,7 @@ mod tests {
 
     #[test]
     fn map_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(0);
             let double = state.map(|&x| x * 2);
 
@@ -558,7 +643,7 @@ mod tests {
 
     #[test]
     fn take_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(123);
 
             let x = state.take();
@@ -569,7 +654,7 @@ mod tests {
 
     #[test]
     fn take_silent_signal() {
-        create_root(|| {
+        let _ = create_root(|| {
             let state = create_signal(123);
             let double = state.map(|&x| x * 2);
 
@@ -582,7 +667,7 @@ mod tests {
 
     #[test]
     fn signal_split() {
-        create_root(|| {
+        let _ = create_root(|| {
             let (state, set_state) = create_signal(0).split();
             assert_eq!(state.get(), 0);
 
@@ -593,7 +678,7 @@ mod tests {
 
     #[test]
     fn signal_display() {
-        create_root(|| {
+        let _ = create_root(|| {
             let signal = create_signal(0);
             assert_eq!(format!("{signal}"), "0");
             let read_signal: ReadSignal<_> = *signal;
@@ -605,7 +690,7 @@ mod tests {
 
     #[test]
     fn signal_debug() {
-        create_root(|| {
+        let _ = create_root(|| {
             let signal = create_signal(0);
             assert_eq!(format!("{signal:?}"), "0");
             let read_signal: ReadSignal<_> = *signal;
@@ -617,7 +702,7 @@ mod tests {
 
     #[test]
     fn signal_add_assign_update() {
-        create_root(|| {
+        let _ = create_root(|| {
             let mut signal = create_signal(0);
             let counter = create_signal(0);
             create_effect(move || {
@@ -634,7 +719,7 @@ mod tests {
 
     #[test]
     fn signal_update() {
-        create_root(|| {
+        let _ = create_root(|| {
             let signal = create_signal("Hello ".to_string());
             let counter = create_signal(0);
             create_effect(move || {

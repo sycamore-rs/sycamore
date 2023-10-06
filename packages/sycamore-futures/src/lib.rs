@@ -3,10 +3,13 @@
 #![deny(missing_debug_implementations)]
 
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use futures::future::abortable;
+use futures::stream::Abortable;
 use futures::Future;
-use sycamore_reactive::{on_cleanup, Scope};
+use pin_project::pin_project;
+use sycamore_reactive::{on_cleanup, use_current_scope, NodeHandle};
 
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`
 /// scope.
@@ -28,19 +31,43 @@ pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
 /// Spawns a `!Send` future on the current scope. If the scope is destroyed before the future is
 /// completed, it is aborted immediately. This ensures that it is impossible to access any
 /// values referencing the scope after they are destroyed.
-pub fn spawn_local_scoped<'a>(cx: Scope<'a>, f: impl Future<Output = ()> + 'a) {
-    let boxed: Pin<Box<dyn Future<Output = ()> + 'a>> = Box::pin(f);
-    // SAFETY: We are just transmuting the lifetime here so that we can spawn the future.
-    // This is safe because we wrap the future in an `Abortable` future which will be
-    // immediately aborted once the reactive scope is dropped.
-    let extended: Pin<Box<dyn Future<Output = ()> + 'static>> =
-        unsafe { std::mem::transmute(boxed) };
-    let (abortable, handle) = abortable(extended);
-    on_cleanup(cx, move || handle.abort());
+pub fn spawn_local_scoped(f: impl Future<Output = ()> + 'static) {
+    let fut = ScopedFuture::new_in_current_scope(f);
     #[cfg(not(target_arch = "wasm32"))]
-    tokio::task::spawn_local(abortable);
+    tokio::task::spawn_local(fut);
     #[cfg(target_arch = "wasm32")]
     wasm_bindgen_futures::spawn_local(async move {
-        let _ = abortable.await;
+        let _ = fut.await;
     });
+}
+
+/// A wrapper that runs the future on the current scope.
+#[pin_project]
+struct ScopedFuture<T> {
+    #[pin]
+    task: Abortable<T>,
+    scope: NodeHandle,
+}
+
+impl<T: Future> Future for ScopedFuture<T> {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.project();
+        this.scope.run_in(move || this.task.poll(cx).map(|_| ()))
+    }
+}
+
+impl<T: Future> ScopedFuture<T> {
+    pub fn new_in_current_scope(f: T) -> Self {
+        let (abortable, handle) = abortable(f);
+        on_cleanup(move || handle.abort());
+
+        let scope = use_current_scope();
+
+        Self {
+            task: abortable,
+            scope,
+        }
+    }
 }

@@ -13,8 +13,8 @@ convention to name components using `PascalCase`.
 
 ```rust
 #[component]
-fn MyComponent<G: Html>(cx: Scope) -> View<G> {
-    view! { cx,
+fn MyComponent<G: Html>() -> View<G> {
+    view! { 
         // ...
     }
 }
@@ -23,7 +23,7 @@ fn MyComponent<G: Html>(cx: Scope) -> View<G> {
 To use the component from elsewhere, the `view!` macro has some special syntax.
 
 ```rust
-view! { cx,
+view! { 
     MyComponent {}
 }
 ```
@@ -46,7 +46,7 @@ struct MyProps {
 The component can then be constructed by passing the properties to it from the `view!` macro.
 
 ```rust
-view! { cx,
+view! { 
     MyComponent(name="John Doe", email="...")
 }
 ```
@@ -64,12 +64,12 @@ updates the displayed value when the prop changes.
 
 ```rust
 #[derive(Props)]
-struct MyProps<'a> {
-    value: &'a ReadSignal<i32>,
+struct MyProps {
+    value: ReadSignal<i32>,
 }
 
 #[component]
-fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
+fn MyComponent<G: Html>(props: MyProps) -> View<G> {
     view! {
         div(class="my-component") {
             "Value: " (props.value.get())
@@ -77,7 +77,7 @@ fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
     }
 }
 
-let state = create_signal(cx, 0);
+let state = create_signal(0);
 view! {
     MyComponent(value=state)
 }
@@ -93,15 +93,15 @@ properties struct.
 
 ```rust
 #[derive(Props)]
-pub struct MyComponentProps<'a, G: Html> {
-    children: Children<'a, G>,
+pub struct MyComponentProps<G: Html> {
+    children: Children<G>,
     class: String
 }
 
 #[component]
-pub fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyComponentProps<'a, G>) -> View<G> {
-    let children = props.children.call(cx);
-    view! { cx,
+pub fn MyComponent<G: Html>(props: MyComponentProps<G>) -> View<G> {
+    let children = props.children.call();
+    view! { 
         div(class=props.class) {
             (children)
         }
@@ -129,7 +129,7 @@ struct MyProps {
     email: String,
 }
 
-view! { cx,
+view! { 
     // Since the `email` prop is left out, it will be set to the default value of "".
     MyComponent(name="John Doe")
 }
@@ -146,11 +146,11 @@ automatically generated.
 ```rust
 // Manual method.
 #[derive(Props)]
-struct MyProps<'a> {
-    value: &'a ReadSignal<i32>,
+struct MyProps {
+    value: ReadSignal<i32>,
 }
 #[component]
-fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
+fn MyComponent<G: Html>(props: MyProps) -> View<G> {
     view! {
         div(class="my-component") {
             "Value: " (props.value.get())
@@ -160,7 +160,7 @@ fn MyComponent<'a, G: Html>(cx: Scope<'a>, props: MyProps<'a>) -> View<G> {
 
 // inline_props for the win!
 #[component(inline_props)]
-fn MyComponent<'a, G: Html>(cx: Scope<'a>, value: &'a ReadSignal<i32>) -> View<G> {
+fn MyComponent<G: Html>(value: ReadSignal<i32>) -> View<G> {
     view! {
         div(class="my-component") {
             "Value: " (value.get())
@@ -188,8 +188,8 @@ can also be used to schedule a callback when the component is destroyed.
 
 ```rust
 #[component]
-fn MyComponent(cx: Scope) -> View<G> {
-    on_cleanup(cx, || {
+fn MyComponent() -> View<G> {
+    on_cleanup(|| {
         // Perform cleanup.
     });
     // ...

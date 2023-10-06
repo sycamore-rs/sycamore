@@ -13,7 +13,6 @@ use crate::view::ir::*;
 /// A struct for keeping track of the state when emitting Rust code.
 pub struct Codegen {
     pub elements_mod_path: syn::Path,
-    pub cx: Ident,
 }
 
 impl Codegen {
@@ -38,13 +37,11 @@ impl Codegen {
 
     /// Generate a `View` from a `ViewNode`. If the root is an element, create a `Template`.
     pub fn view_node(&self, view_node: &ViewNode) -> TokenStream {
-        let cx = &self.cx;
         match view_node {
             ViewNode::Element(_) => {
                 let template_id = rand::random::<u32>();
 
-                let mut codegen =
-                    CodegenTemplate::new(self.elements_mod_path.clone(), self.cx.clone());
+                let mut codegen = CodegenTemplate::new(self.elements_mod_path.clone());
 
                 let shape = codegen.node(view_node);
                 let dyn_values = codegen.dyn_values;
@@ -59,30 +56,20 @@ impl Codegen {
 
                     let __dyn_values = ::std::vec![#(#dyn_values),*];
                     let __result = ::sycamore::generic_node::__instantiate_template(&__TEMPLATE);
-                    ::sycamore::generic_node::__apply_dyn_values_to_template(#cx, &__result.dyn_markers, __dyn_values);
+                    ::sycamore::generic_node::__apply_dyn_values_to_template(&__result.dyn_markers, __dyn_values);
                     let __flagged = __result.flagged_nodes;
                     #flagged_nodes_quoted
 
                     ::sycamore::view::View::new_node(__result.root)
                 }}
             }
-            ViewNode::Component(component) => {
-                impl_component(&self.elements_mod_path, &self.cx, component)
-            }
+            ViewNode::Component(component) => impl_component(&self.elements_mod_path, component),
             ViewNode::Text(Text { value }) => quote! {
                 ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
-            ViewNode::Dyn(dyn_node @ Dyn { value }) => {
-                let cx = &self.cx;
-                let needs_cx = dyn_node.needs_cx(&cx.to_string());
-
-                match needs_cx {
-                    true => quote! {
-                        ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::ToView::to_view(&(#value)))
-                    },
-                    false => quote! {
-                        ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
-                    },
+            ViewNode::Dyn(Dyn { value }) => {
+                quote! {
+                    ::sycamore::view::View::new_dyn(move || ::sycamore::view::ToView::to_view(&(#value)))
                 }
             }
         }
@@ -92,17 +79,15 @@ impl Codegen {
 /// Codegen a `TemplateShape`.
 struct CodegenTemplate {
     elements_mod_path: syn::Path,
-    cx: Ident,
     flag_counter: usize,
     flagged_nodes_quoted: TokenStream,
     dyn_values: Vec<TokenStream>,
 }
 
 impl CodegenTemplate {
-    fn new(elements_mod_path: syn::Path, cx: Ident) -> Self {
+    fn new(elements_mod_path: syn::Path) -> Self {
         Self {
             elements_mod_path,
-            cx,
             flag_counter: 0,
             flagged_nodes_quoted: TokenStream::new(),
             dyn_values: Vec::new(),
@@ -168,7 +153,6 @@ impl CodegenTemplate {
     }
 
     fn attribute(&mut self, attr: &Attribute) -> (Option<TokenStream>, bool) {
-        let cx = &self.cx;
         let elements_mod_path = &self.elements_mod_path;
         let flag_counter = self.flag_counter;
 
@@ -192,7 +176,7 @@ impl CodegenTemplate {
                     if is_dynamic {
                         self.flagged_nodes_quoted.extend(quote! {
                             let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                            ::sycamore::reactive::create_effect(#cx, move || {
+                            ::sycamore::reactive::create_effect(move || {
                                 ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#name), #text);
                             });
                         });
@@ -215,7 +199,7 @@ impl CodegenTemplate {
                     };
                     self.flagged_nodes_quoted.extend(quote! {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                        ::sycamore::reactive::create_effect(#cx, move || { #quoted_set_attribute });
+                        ::sycamore::reactive::create_effect(move || { #quoted_set_attribute });
                     });
                     (None, true)
                 } else if let Expr::Lit(ExprLit {
@@ -245,7 +229,7 @@ impl CodegenTemplate {
                 if is_dynamic {
                     self.flagged_nodes_quoted.extend(quote! {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                        ::sycamore::reactive::create_effect(#cx, move || {
+                        ::sycamore::reactive::create_effect(move || {
                             ::sycamore::generic_node::GenericNode::dangerously_set_inner_html(
                                 &__el,
                                 <_ as ::std::convert::Into<_>>::into(#expr),
@@ -267,7 +251,6 @@ impl CodegenTemplate {
                 self.flagged_nodes_quoted.extend(quote! {
                     ::sycamore::generic_node::GenericNode::event(
                         &__flagged[#flag_counter],
-                        #cx,
                         #elements_mod_path::ev::#event,
                         #expr,
                     );
@@ -280,7 +263,7 @@ impl CodegenTemplate {
                 if is_dynamic {
                     self.flagged_nodes_quoted.extend(quote! {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                        ::sycamore::reactive::create_effect(#cx, move ||
+                        ::sycamore::reactive::create_effect(move ||
                             ::sycamore::generic_node::GenericNode::set_property(&__el, #prop, &#value)
                         );
                     });
@@ -318,20 +301,14 @@ impl CodegenTemplate {
 
                 let convert_into_jsvalue_fn = match property_ty {
                     JsPropertyType::Bool => quote! {
-                        ::sycamore::rt::JsValue::from_bool(
-                            *::sycamore::reactive::ReadSignal::get(&__expr)
-                        )
+                        ::sycamore::rt::JsValue::from_bool(__expr.get())
                     },
                     JsPropertyType::Number => quote! {
-                        ::sycamore::rt::JsValue::from_f64(
-                            *::sycamore::reactive::ReadSignal::get(&__expr)
-                        )
+                        ::sycamore::rt::JsValue::from_f64(__expr.get())
                     },
                     JsPropertyType::String => quote! {
-                        ::sycamore::rt::JsValue::from_str(
-                            &::std::string::ToString::to_string(
-                                &::sycamore::reactive::ReadSignal::get(&__expr),
-                            )
+                        __expr.with(|__expr|
+                            ::sycamore::rt::JsValue::from_str(&::std::string::ToString::to_string(__expr))
                         )
                     },
                 };
@@ -359,7 +336,7 @@ impl CodegenTemplate {
                     #[cfg(target_arch = "wasm32")]
                     {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                        ::sycamore::reactive::create_effect(#cx, {
+                        ::sycamore::reactive::create_effect({
                             let __expr = ::std::clone::Clone::clone(&#expr);
                             move ||::sycamore::generic_node::GenericNode::set_property(
                                 &__el,
@@ -369,11 +346,11 @@ impl CodegenTemplate {
                         });
                     }
                     ::sycamore::generic_node::GenericNode::event(
-                        &__flagged[#flag_counter], #cx, #elements_mod_path::ev::#event_name,
+                        &__flagged[#flag_counter], #elements_mod_path::ev::#event_name,
                         {
                             let __expr = ::std::clone::Clone::clone(&#expr);
                             ::std::boxed::Box::new(move |event: ::sycamore::rt::Event| {
-                                ::sycamore::reactive::Signal::set(&__expr, #convert_from_jsvalue_fn);
+                                ::sycamore::reactive::Signal::set(__expr, #convert_from_jsvalue_fn);
                             })
                         },
                     );
@@ -392,7 +369,7 @@ impl CodegenTemplate {
                     let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
                     for (name, value) in #expr.drain() {
                         let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                        ::sycamore::utils::apply_attribute(#cx, __el, ::std::clone::Clone::clone(&name), value);
+                        ::sycamore::utils::apply_attribute(__el, ::std::clone::Clone::clone(&name), value);
                     }
                 });
                 (None, true)
@@ -403,7 +380,7 @@ impl CodegenTemplate {
     fn component(&mut self, component: &Component) -> TokenStream {
         // Add a DynMarker and set the component as a dyn value.
         self.dyn_values
-            .push(impl_component(&self.elements_mod_path, &self.cx, component));
+            .push(impl_component(&self.elements_mod_path, component));
         quote! {
             ::sycamore::generic_node::TemplateShape::DynMarker
         }
@@ -415,17 +392,9 @@ impl CodegenTemplate {
         }
     }
 
-    fn dyn_marker(&mut self, dyn_node @ Dyn { value }: &Dyn) -> TokenStream {
-        let cx = &self.cx;
-        let needs_cx = dyn_node.needs_cx(&cx.to_string());
-
-        let dyn_node = match needs_cx {
-            true => quote! {
-                ::sycamore::view::View::new_dyn_scoped(#cx, move |#cx| ::sycamore::view::ToView::to_view(&(#value)))
-            },
-            false => quote! {
-                ::sycamore::view::View::new_dyn(#cx, move || ::sycamore::view::ToView::to_view(&(#value)))
-            },
+    fn dyn_marker(&mut self, Dyn { value }: &Dyn) -> TokenStream {
+        let dyn_node = quote! {
+            ::sycamore::view::View::new_dyn(move || ::sycamore::view::ToView::to_view(&(#value)))
         };
         self.dyn_values.push(dyn_node);
 
@@ -435,7 +404,7 @@ impl CodegenTemplate {
     }
 }
 
-fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Component) -> TokenStream {
+fn impl_component(elements_mod_path: &syn::Path, component: &Component) -> TokenStream {
     let Component {
         ident,
         props,
@@ -459,7 +428,7 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
     let attribute_entries_quoted = attributes
         .map(|(prefix, name, value)| {
             let prefix = prefix.as_ref().unwrap();
-            let value = to_attribute_value(prefix, name, value, cx, elements_mod_path)?;
+            let value = to_attribute_value(prefix, name, value, elements_mod_path)?;
             let name_str = if prefix == "attr" {
                 name.to_string()
             } else {
@@ -493,14 +462,11 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         .map(|children| {
             let codegen = Codegen {
                 elements_mod_path: elements_mod_path.clone(),
-                cx: cx.clone(),
             };
             let children = codegen.view_root(children);
             quote! {
                 .children(
-                    ::sycamore::component::Children::new(#cx, move |#cx| {
-                        #[allow(unused_variables)]
-                        let #cx: ::sycamore::reactive::BoundedScope = #cx;
+                    ::sycamore::component::Children::new(move || {
                         #children
                     })
                 )
@@ -511,7 +477,6 @@ fn impl_component(elements_mod_path: &syn::Path, cx: &Ident, component: &Compone
         let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
         ::sycamore::component::component_scope(move || ::sycamore::component::Component::create(
             __component,
-            #cx,
             ::sycamore::component::element_like_component_builder(__component)
                 #(.#prop_names(#prop_values))*
                 #children_quoted
@@ -525,7 +490,6 @@ fn to_attribute_value(
     prefix: &Ident,
     name: &str,
     value: &Expr,
-    cx: &Ident,
     elements_mod_path: &Path,
 ) -> Result<TokenStream, syn::Error> {
     match prefix.to_string().as_str() {
@@ -534,7 +498,7 @@ fn to_attribute_value(
 
             Ok(quote!(::sycamore::component::AttributeValue::Event(
                 #name,
-                ::sycamore::utils::erase_handler::<#elements_mod_path::ev::#event, _, _>(#cx, #value)
+                ::sycamore::utils::erase_handler::<#elements_mod_path::ev::#event, _, _>(#value)
             )))
         }
         "prop" => Ok(quote!(::sycamore::component::AttributeValue::Property(#name, #value))),

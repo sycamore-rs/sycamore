@@ -2,7 +2,6 @@
 //!
 //! _Documentation sources: <https://developer.mozilla.org/en-US/>_
 
-use sycamore::prelude::*;
 pub use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_web::on_mount;
 
@@ -131,8 +130,8 @@ macro_rules! define_element_builder_impl {
     ) => {
         #[allow(non_snake_case)]
         $(#[$attr])*
-        pub fn $el<'a, G: GenericNodeElements>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-            ElementBuilder::new(move |_| G::element::<$el>())
+        pub fn $el<G: GenericNodeElements>() -> ElementBuilder<G, impl FnOnce() -> G> {
+            ElementBuilder::new(move || G::element::<$el>())
         }
     };
     (

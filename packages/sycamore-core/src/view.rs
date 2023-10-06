@@ -1,7 +1,6 @@
 //! Abstractions for representing UI views.
 
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -16,10 +15,9 @@ pub(crate) enum ViewType<G: GenericNode> {
     /// A view node.
     Node(G),
     /// A dynamic [`View`].
-    Dyn(RcSignal<View<G>>),
+    Dyn(ReadSignal<View<G>>),
     /// A fragment (aka. list) of [`View`]s.
-    #[allow(clippy::redundant_allocation)] // Cannot create a `Rc<[T]>` directly.
-    Fragment(Rc<Box<[View<G>]>>),
+    Fragment(Rc<[View<G>]>),
 }
 
 /// Represents an UI view. Usually constructed using the `view!` macro or using the builder API.
@@ -28,8 +26,8 @@ pub(crate) enum ViewType<G: GenericNode> {
 /// ```
 /// # use sycamore::prelude::*;
 /// # #[component]
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
-/// let my_view: View<G> = view! { cx,
+/// # fn App<G: Html>() -> View<G> {
+/// let my_view: View<G> = view! {
 ///     div {
 ///         p { "A view." }
 ///     }
@@ -51,44 +49,17 @@ impl<G: GenericNode> View<G> {
     }
 
     /// Create a new dynamic [`View`] from a [`FnMut`].
-    pub fn new_dyn<'a>(cx: Scope<'a>, mut f: impl FnMut() -> View<G> + 'a) -> Self {
-        let signal = create_ref(cx, RefCell::new(None::<RcSignal<View<G>>>));
-        create_effect(cx, move || {
-            let view = f();
-            if signal.borrow().is_some() {
-                signal.borrow().as_ref().unwrap().set(view);
-            } else {
-                *signal.borrow_mut() = Some(create_rc_signal(view));
-            }
-        });
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn new_dyn(f: impl FnMut() -> View<G> + 'static) -> Self {
         Self {
-            inner: ViewType::Dyn(signal.borrow().as_ref().unwrap().clone()),
-        }
-    }
-
-    /// Create a new [`View`] from a [`FnMut`] while creating a new child reactive scope.
-    pub fn new_dyn_scoped<'a>(
-        cx: Scope<'a>,
-        mut f: impl FnMut(BoundedScope<'_, 'a>) -> View<G> + 'a,
-    ) -> Self {
-        let signal = create_ref(cx, RefCell::new(None::<RcSignal<View<G>>>));
-        create_effect_scoped(cx, move |cx| {
-            let view = f(cx);
-            if signal.borrow().is_some() {
-                signal.borrow().as_ref().unwrap().set(view);
-            } else {
-                *signal.borrow_mut() = Some(create_rc_signal(view));
-            }
-        });
-        Self {
-            inner: ViewType::Dyn(signal.borrow().as_ref().unwrap().clone()),
+            inner: ViewType::Dyn(*create_memo(f).inner_signal()),
         }
     }
 
     /// Create a new [`View`] fragment from a `Vec` of [`View`]s.
     pub fn new_fragment(fragment: Vec<View<G>>) -> Self {
         Self {
-            inner: ViewType::Fragment(Rc::from(fragment.into_boxed_slice())),
+            inner: ViewType::Fragment(Rc::from(fragment)),
         }
     }
 
@@ -119,9 +90,9 @@ impl<G: GenericNode> View<G> {
     }
 
     /// Try to cast to the underlying [`RcSignal`] for a dynamic view, or `None` if wrong type.
-    pub fn as_dyn(&self) -> Option<&RcSignal<View<G>>> {
+    pub fn as_dyn(&self) -> Option<ReadSignal<View<G>>> {
         if let ViewType::Dyn(v) = &self.inner {
-            Some(v)
+            Some(*v)
         } else {
             None
         }
@@ -168,7 +139,7 @@ impl<G: GenericNode> View<G> {
     pub fn flatten(self) -> Vec<G> {
         match self.inner {
             ViewType::Node(node) => vec![node],
-            ViewType::Dyn(lazy) => lazy.get().as_ref().clone().flatten(),
+            ViewType::Dyn(lazy) => lazy.get_clone().flatten(),
             ViewType::Fragment(fragment) => {
                 fragment.iter().flat_map(|x| x.clone().flatten()).collect()
             }
@@ -186,7 +157,7 @@ impl<G: GenericNode> fmt::Debug for View<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.inner {
             ViewType::Node(node) => node.fmt(f),
-            ViewType::Dyn(lazy) => lazy.get().fmt(f),
+            ViewType::Dyn(lazy) => lazy.with(|x| x.fmt(f)),
             ViewType::Fragment(fragment) => fragment.fmt(f),
         }
     }
@@ -205,9 +176,9 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 /// ```
 /// # use sycamore::prelude::*;
 ///
-/// # fn Component<G: Html>(cx: Scope) -> View<G> {
+/// # fn Component<G: Html>() -> View<G> {
 /// let text = "Hello!";
-/// view! { cx,
+/// view! {
 ///     (text)
 /// }
 /// # }
@@ -219,10 +190,10 @@ impl<G: GenericNode> fmt::Debug for View<G> {
 /// ```
 /// # use sycamore::prelude::*;
 ///
-/// # fn Component<G: Html>(cx: Scope) -> View<G> {
+/// # fn Component<G: Html>() -> View<G> {
 /// let show = true;
-/// view! { cx,
-///     (show.then(|| view! { cx, "Hello!" }))
+/// view! {
+///     (show.then(|| view! { "Hello!" }))
 /// }
 /// # }
 /// ```
@@ -351,7 +322,7 @@ mod tests {
         let option = Some("Hello!");
         let view = option.to_view();
         assert!(view.as_node().is_some());
-        let string = sycamore::render_to_string(|_| view);
+        let string = sycamore::render_to_string(|| view);
         assert_eq!(string, "Hello!");
     }
 
@@ -360,7 +331,7 @@ mod tests {
         let fragment = vec!["Hello", " ", "World!"];
         let view = fragment.to_view();
         assert!(view.as_fragment().is_some());
-        let string = sycamore::render_to_string(|_| view);
+        let string = sycamore::render_to_string(|| view);
         assert_eq!(string, "Hello World!");
     }
 }

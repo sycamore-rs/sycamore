@@ -9,14 +9,14 @@ use crate::prelude::*;
 
 /// Props for [`Keyed`].
 #[derive(Props, Debug)]
-pub struct KeyedProps<'a, T, F, G: GenericNode, K, Key>
+pub struct KeyedProps<T, F, G: GenericNode, K, Key>
 where
-    F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,
-    K: Fn(&T) -> Key + 'a,
+    F: Fn(T) -> View<G> + 'static,
+    K: Fn(&T) -> Key + 'static,
     Key: Clone + Hash + Eq,
-    T: Clone + PartialEq,
+    T: Clone + PartialEq + 'static,
 {
-    iterable: &'a ReadSignal<Vec<T>>,
+    iterable: ReadSignal<Vec<T>>,
     /// The map function that renders a [`View`] for each element in `iterable`.
     view: F,
     /// The key function that assigns each element in `iterable` an unique key.
@@ -40,17 +40,17 @@ where
 ///     id: u32,
 /// }
 ///
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
-/// let animals = create_signal(cx, vec![
+/// # fn App<G: Html>() -> View<G> {
+/// let animals = create_signal(vec![
 ///     AnimalInfo { name: "Dog", id: 1 },
 ///     AnimalInfo { name: "Cat", id: 2 },
 ///     AnimalInfo { name: "Fish", id: 3 },
 /// ]);
-/// view! { cx,
+/// view! {
 ///     ul {
 ///         Keyed(
-///             iterable=animals,
-///             view=|cx, animal| view! { cx,
+///             iterable=*animals,
+///             view=|animal| view! {
 ///                 li { (animal.name) }
 ///             },
 ///             key=|animal| animal.id,
@@ -60,13 +60,10 @@ where
 /// # }
 /// ```
 #[component]
-pub fn Keyed<'a, G: GenericNode, T, F, K, Key>(
-    cx: Scope<'a>,
-    props: KeyedProps<'a, T, F, G, K, Key>,
-) -> View<G>
+pub fn Keyed<G: GenericNode, T, F, K, Key>(props: KeyedProps<T, F, G, K, Key>) -> View<G>
 where
-    F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,
-    K: Fn(&T) -> Key + 'a,
+    F: Fn(T) -> View<G> + 'static,
+    K: Fn(&T) -> Key + 'static,
     Key: Clone + Hash + Eq,
     T: Clone + PartialEq,
 {
@@ -76,17 +73,17 @@ where
         key,
     } = props;
 
-    let mapped = map_keyed(cx, iterable, view, key);
-    View::new_dyn(cx, || View::new_fragment(mapped.get().as_ref().clone()))
+    let mapped = map_keyed(iterable, view, key);
+    View::new_dyn(move || View::new_fragment(mapped.get_clone()))
 }
 
 /// Props for [`Indexed`].
 #[derive(Props, Debug)]
-pub struct IndexedProps<'a, G: GenericNode, T, F>
+pub struct IndexedProps<G: GenericNode, T: 'static, F>
 where
-    F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,
+    F: Fn(T) -> View<G> + 'static,
 {
-    iterable: &'a ReadSignal<Vec<T>>,
+    iterable: ReadSignal<Vec<T>>,
     /// The map function that renders a [`View`] for each element in `iterable`.
     view: F,
 }
@@ -100,13 +97,13 @@ where
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
-/// let fib = create_signal(cx, vec![0, 1, 1, 2, 3, 5, 8]);
-/// view! { cx,
+/// # fn App<G: Html>() -> View<G> {
+/// let fib = create_signal(vec![0, 1, 1, 2, 3, 5, 8]);
+/// view! {
 ///     ul {
 ///         Indexed(
-///             iterable=fib,
-///             view=|cx, x| view! { cx,
+///             iterable=*fib,
+///             view=|x| view! {
 ///                 li { (x) }
 ///             },
 ///         )
@@ -115,13 +112,13 @@ where
 /// # }
 /// ```
 #[component]
-pub fn Indexed<'a, G: GenericNode, T, F>(cx: Scope<'a>, props: IndexedProps<'a, G, T, F>) -> View<G>
+pub fn Indexed<G: GenericNode, T, F>(props: IndexedProps<G, T, F>) -> View<G>
 where
     T: Clone + PartialEq,
-    F: Fn(BoundedScope<'_, 'a>, T) -> View<G> + 'a,
+    F: Fn(T) -> View<G> + 'static,
 {
     let IndexedProps { iterable, view } = props;
 
-    let mapped = map_indexed(cx, iterable, view);
-    View::new_dyn(cx, || View::new_fragment(mapped.get().as_ref().clone()))
+    let mapped = map_indexed(iterable, view);
+    View::new_dyn(move || View::new_fragment(mapped.get_clone()))
 }
