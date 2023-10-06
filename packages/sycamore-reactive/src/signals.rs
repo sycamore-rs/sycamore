@@ -10,7 +10,7 @@ use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 use slotmap::Key;
 use smallvec::SmallVec;
 
-use crate::{create_memo, Mark, Memo, NodeHandle, NodeId, NodeState, ReactiveNode, Root};
+use crate::{create_memo, Mark, NodeHandle, NodeId, NodeState, ReactiveNode, Root};
 
 /// A read-only reactive value.
 ///
@@ -368,7 +368,7 @@ impl<T> Signal<T> {
     }
 
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> Memo<U> {
+    pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
         create_memo(move || self.with(&mut f))
     }
 

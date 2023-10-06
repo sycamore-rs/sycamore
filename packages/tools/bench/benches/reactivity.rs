@@ -109,7 +109,7 @@ pub fn bench(c: &mut Criterion) {
         b.iter(|| {
             let d = create_root(|| {
                 let signal = create_signal(0);
-                let mut memos = Vec::<Memo<usize>>::new();
+                let mut memos = Vec::<ReadSignal<usize>>::new();
                 for _ in 0..1000usize {
                     if let Some(prev) = memos.last().copied() {
                         memos.push(create_memo(move || prev.get() + 1));

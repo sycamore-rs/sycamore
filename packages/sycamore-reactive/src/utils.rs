@@ -25,12 +25,6 @@ impl<T: Clone> Accessor<T> for ReadSignal<T> {
     }
 }
 
-impl<T: Clone> Accessor<T> for Memo<T> {
-    fn value(&self) -> T {
-        self.get_clone()
-    }
-}
-
 impl<T: Clone> Accessor<T> for T {
     fn value(&self) -> T {
         self.clone()
@@ -67,12 +61,6 @@ impl<T> Trackable for Signal<T> {
 }
 
 impl<T> Trackable for ReadSignal<T> {
-    fn _track(&self) {
-        self.track();
-    }
-}
-
-impl<T> Trackable for Memo<T> {
     fn _track(&self) {
         self.track();
     }

@@ -340,7 +340,7 @@ pub fn List<G: Html>() -> View<G> {
 
             ul(class="todo-list") {
                 Keyed(
-                    iterable=*filtered_todos,
+                    iterable=filtered_todos,
                     view=|todo| view! {
                         Item(todo=todo)
                     },

@@ -1,54 +1,8 @@
 //! Memos (aka. eager derived signals).
 
 use std::cell::RefCell;
-use std::fmt::{self, Formatter};
-use std::ops::Deref;
 
-use crate::{create_empty_signal, create_signal, ReadSignal, Root, Signal};
-
-/// A memoized derived signal.
-///
-/// Usually created using [`create_memo`], [`create_selector`], and [`create_selector_with`].
-pub struct Memo<T: 'static> {
-    signal: Signal<T>,
-}
-
-impl<T> Memo<T> {
-    /// Get the inner [`Signal`] that is backing this memo.
-    ///
-    /// Be careful when using this! Normally, you should not be able to update a memo manually
-    /// because that is already being done automatically. However, you can use this to create a
-    /// "writable memo", one which can be both updated manually and automatically.
-    pub fn inner_signal(self) -> Signal<T> {
-        self.signal
-    }
-}
-
-impl<T> Deref for Memo<T> {
-    type Target = ReadSignal<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.signal
-    }
-}
-
-impl<T> Clone for Memo<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<T> Copy for Memo<T> {}
-
-impl<T: fmt::Debug> fmt::Debug for Memo<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.with(|value| value.fmt(f))
-    }
-}
-impl<T: fmt::Display> fmt::Display for Memo<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.with(|value| value.fmt(f))
-    }
-}
+use crate::{create_empty_signal, create_signal, ReadSignal, Root};
 
 /// Creates a memoized value from some signals.
 /// Unlike [`create_memo`], this function will not notify dependents of a
@@ -63,7 +17,7 @@ impl<T: fmt::Display> fmt::Display for Memo<T> {
 pub fn create_selector_with<T>(
     mut f: impl FnMut() -> T + 'static,
     mut eq: impl FnMut(&T, &T) -> bool + 'static,
-) -> Memo<T> {
+) -> ReadSignal<T> {
     let root = Root::global();
     let signal = create_empty_signal();
     let prev = root.current_node.replace(signal.id);
@@ -85,7 +39,7 @@ pub fn create_selector_with<T>(
         }
     }));
 
-    Memo { signal }
+    *signal
 }
 
 /// Creates a memoized computation from some signals.
@@ -131,7 +85,7 @@ pub fn create_selector_with<T>(
 /// # });
 /// ```
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn create_memo<T>(f: impl FnMut() -> T + 'static) -> Memo<T> {
+pub fn create_memo<T>(f: impl FnMut() -> T + 'static) -> ReadSignal<T> {
     create_selector_with(f, |_, _| false)
 }
 
@@ -159,7 +113,7 @@ pub fn create_memo<T>(f: impl FnMut() -> T + 'static) -> Memo<T> {
 /// # });
 /// ```
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn create_selector<T>(f: impl FnMut() -> T + 'static) -> Memo<T>
+pub fn create_selector<T>(f: impl FnMut() -> T + 'static) -> ReadSignal<T>
 where
     T: PartialEq,
 {
@@ -203,11 +157,11 @@ where
 pub fn create_reducer<T, Msg>(
     initial: T,
     reduce: impl FnMut(&T, Msg) -> T,
-) -> (Memo<T>, impl Fn(Msg)) {
+) -> (ReadSignal<T>, impl Fn(Msg)) {
     let reduce = RefCell::new(reduce);
     let signal = create_signal(initial);
     let dispatch = move |msg| signal.update(|value| *value = reduce.borrow_mut()(value, msg));
-    (Memo { signal }, dispatch)
+    (*signal, dispatch)
 }
 
 #[cfg(test)]
