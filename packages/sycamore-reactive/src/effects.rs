@@ -1,9 +1,6 @@
 //! Side effects!
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::{create_memo, Root};
+use crate::create_memo;
 
 /// Creates an effect on signals used inside the effect closure.
 ///
@@ -28,11 +25,7 @@ use crate::{create_memo, Root};
 /// [`create_memo`](crate::create_memo) instead.
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_effect(f: impl FnMut() + 'static) {
-    let f = Rc::new(RefCell::new(f));
-    create_memo(move || {
-        let f = Rc::clone(&f);
-        Root::global().call_effect(move || f.borrow_mut()());
-    });
+    create_memo(f);
 }
 
 #[cfg(test)]
