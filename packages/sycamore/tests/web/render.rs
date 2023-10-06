@@ -2,37 +2,34 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn dyn_view_static() {
-    create_scope_immediate(|cx| {
-        let node: View<DomNode> = View::new_dyn(cx, move || {
-            view! { cx,
+    let _ = create_root(|| {
+        let node: View<DomNode> = View::new_dyn(move || {
+            view! {
                 div {
                     "Test"
                 }
             }
         });
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("div"), "Test");
     });
 }
 
 #[wasm_bindgen_test]
 fn dyn_view() {
-    create_scope_immediate(|cx| {
-        let template = create_signal(
-            cx,
-            view! { cx,
-                "1"
-            },
-        );
-        let node: View<DomNode> = View::new_dyn(cx, || (*template.get()).clone());
+    let _ = create_root(|| {
+        let view = create_signal(view! {
+            "1"
+        });
+        let node: View<DomNode> = View::new_dyn(move || view.get_clone());
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let test_container = query("test-container");
 
         assert_text_content!(test_container, "1");
 
-        template.set(view! { cx,
+        view.set(view! {
             "2"
         });
         assert_text_content!(test_container, "2");
@@ -41,16 +38,16 @@ fn dyn_view() {
 
 #[wasm_bindgen_test]
 fn dyn_fragment() {
-    create_scope_immediate(|cx| {
-        let num = create_signal(cx, 0);
+    let _ = create_root(|| {
+        let num = create_signal(0);
 
-        let node = view! { cx,
+        let node = view! {
             "before"
             p { (num.get()) }
             "after"
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         let test_container = query("test-container");
 
         assert_text_content!(test_container, "before0after");
@@ -63,10 +60,10 @@ fn dyn_fragment() {
 
 #[wasm_bindgen_test]
 fn dyn_nested() {
-    create_scope_immediate(|cx| {
-        let node: View<DomNode> = View::new_dyn(cx, move || {
-            View::new_dyn(cx, move || {
-                view! { cx,
+    let _ = create_root(|| {
+        let node: View<DomNode> = View::new_dyn(move || {
+            View::new_dyn(move || {
+                view! {
                     div {
                         "Test"
                     }
@@ -74,19 +71,19 @@ fn dyn_nested() {
             })
         });
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("div"), "Test");
     });
 }
 
 #[wasm_bindgen_test]
 fn dyn_scoped_nested() {
-    create_scope_immediate(|cx| {
-        let num = create_signal(cx, 0);
+    let _ = create_root(|| {
+        let num = create_signal(0);
 
-        let node: View<DomNode> = View::new_dyn_scoped(cx, move |cx| {
-            View::new_dyn_scoped(cx, move |cx| {
-                view! { cx,
+        let node: View<DomNode> = View::new_dyn(move || {
+            View::new_dyn(move || {
+                view! {
                     div {
                         (num.get())
                     }
@@ -94,7 +91,7 @@ fn dyn_scoped_nested() {
             })
         });
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("div"), "0");
         num.set(1);
         assert_text_content!(query("div"), "1");
@@ -103,22 +100,20 @@ fn dyn_scoped_nested() {
 
 #[wasm_bindgen_test]
 fn regression_572() {
-    let signal = create_rc_signal(0);
+    let _ = create_root(|| {
+        let signal = create_signal(0);
 
-    sycamore::render_to(
-        {
-            let signal = signal.clone();
-            |cx| {
-                View::new_dyn_scoped(cx, move |cx| {
-                    let signal = signal.clone();
-                    View::new_dyn(cx, move || {
+        sycamore::render_in_scope(
+            move || {
+                View::new_dyn(move || {
+                    View::new_dyn(move || {
                         signal.track();
                         View::empty()
                     })
                 })
-            }
-        },
-        &test_container(),
-    );
-    signal.set(0);
+            },
+            &test_container(),
+        );
+        signal.set(0);
+    });
 }

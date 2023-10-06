@@ -13,20 +13,22 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// let (component_id, id) = create_unique_id();
 /// ```
 pub fn create_unique_id() -> (Option<usize>, usize) {
-    static LAST_COMPONENT_ID: AtomicUsize = AtomicUsize::new(0);
-    static CURRENT_HOOK_ID: AtomicUsize = AtomicUsize::new(0);
-
     #[cfg(feature = "hydrate")]
-    if let Some((component_id, _)) = crate::hydrate::get_current_id() {
-        return if component_id == LAST_COMPONENT_ID.swap(component_id, Ordering::Relaxed) {
-            (
-                Some(component_id),
-                CURRENT_HOOK_ID.fetch_add(1, Ordering::Relaxed),
-            )
-        } else {
-            CURRENT_HOOK_ID.store(1, Ordering::Relaxed);
-            (Some(component_id), 0)
-        };
+    {
+        static LAST_COMPONENT_ID: AtomicUsize = AtomicUsize::new(0);
+        static CURRENT_HOOK_ID: AtomicUsize = AtomicUsize::new(0);
+
+        if let Some((component_id, _)) = crate::hydrate::get_current_id() {
+            return if component_id == LAST_COMPONENT_ID.swap(component_id, Ordering::Relaxed) {
+                (
+                    Some(component_id),
+                    CURRENT_HOOK_ID.fetch_add(1, Ordering::Relaxed),
+                )
+            } else {
+                CURRENT_HOOK_ID.store(1, Ordering::Relaxed);
+                (Some(component_id), 0)
+            };
+        }
     }
 
     // Unhydrated IDs don't have a component ID

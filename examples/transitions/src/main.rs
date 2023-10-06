@@ -21,11 +21,11 @@ impl Tab {
 }
 
 #[component(inline_props)]
-async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
+async fn Child<G: Html>(tab: Tab) -> View<G> {
     let delay_ms = rand::thread_rng().gen_range(200..500);
     TimeoutFuture::new(delay_ms).await;
 
-    view! { cx,
+    view! {
         div {
             p { "Content loaded after " (delay_ms) "ms" }
             p { (tab.content()) }
@@ -34,22 +34,22 @@ async fn Child<G: Html>(cx: Scope<'_>, tab: Tab) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
-    let tab = create_signal(cx, Tab::One);
-    let transition = use_transition(cx);
+fn App<G: Html>() -> View<G> {
+    let tab = create_signal(Tab::One);
+    let transition = use_transition();
     let update = move |x| transition.start(move || tab.set(x), || ());
 
-    view! { cx,
+    view! {
         div {
             p { "Suspense + Transitions" }
             p { "Transition state: " (if transition.is_pending() { "pending" } else { "done" }) }
             button(on:click=move |_| update(Tab::One)) { "One" }
             button(on:click=move |_| update(Tab::Two)) { "Two" }
             button(on:click=move |_| update(Tab::Three)) { "Three" }
-            Suspense(fallback=view! { cx, p { "Loading..." } }) {
+            Suspense(fallback=view! { p { "Loading..." } }) {
                 ({
-                    let tab = *tab.get();
-                    view! { cx, Child(tab=tab) }
+                    let tab = tab.get();
+                    view! { Child(tab=tab) }
                 })
             }
         }
@@ -60,5 +60,5 @@ fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|cx| view! { cx, App {} });
+    sycamore::render(App);
 }

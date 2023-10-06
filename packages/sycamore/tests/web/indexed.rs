@@ -1,95 +1,81 @@
-use std::iter::once;
-
 use super::*;
 
 #[wasm_bindgen_test]
 fn append() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
 
         assert_text_content!(p, "12");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.push(3);
-            tmp
-        });
+        count.update(|count| count.push(3));
         assert_text_content!(p, "123");
 
-        count.set(count.get()[1..].into());
+        count.update(|count| count.remove(0));
         assert_text_content!(p, "23");
     });
 }
 
 #[wasm_bindgen_test]
 fn swap_rows() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2, 3]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.swap(0, 2);
-            tmp
-        });
+        count.update(|count| count.swap(0, 2));
         assert_text_content!(p, "321");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.swap(0, 2);
-            tmp
-        });
+        count.update(|count| count.swap(0, 2));
         assert_text_content!(p, "123");
     });
 }
 
 #[wasm_bindgen_test]
 fn update_row() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -101,129 +87,125 @@ fn update_row() {
 
 #[wasm_bindgen_test]
 fn trigger_with_same_data() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
 
-        count.set(count.get().as_ref().clone());
+        count.update(|_| {});
         assert_text_content!(p, "12");
     });
 }
 
 #[wasm_bindgen_test]
 fn delete_row() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2, 3]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.remove(1);
-            tmp
-        });
+        count.update(|count| count.remove(1));
         assert_text_content!(p, "13");
     });
 }
 
 #[wasm_bindgen_test]
 fn delete_row_from_start() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
 
-        count.set(count.get().iter().cloned().skip(1).collect());
+        count.update(|count| count.remove(0));
         assert_text_content!(p, "2");
     });
 }
 
 #[wasm_bindgen_test]
 fn delete_row_from_end() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
 
-        count.set(count.get().iter().cloned().take(1).collect());
+        count.update(|count| count.truncate(1));
         assert_text_content!(p, "1");
     });
 }
 
 #[wasm_bindgen_test]
 fn clear() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2, 3]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -235,76 +217,70 @@ fn clear() {
 
 #[wasm_bindgen_test]
 fn insert_front() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2, 3]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.insert(0, 4);
-            tmp
-        });
+        count.update(|count| count.insert(0, 4));
         assert_text_content!(p, "4123");
     });
 }
 
 #[wasm_bindgen_test]
 fn nested_reactivity() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(
-            cx,
-            vec![1, 2, 3].into_iter().map(create_rc_signal).collect(),
-        );
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2, 3].into_iter().map(create_signal).collect());
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         li { (item.get()) }
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
 
-        count.get()[0].set(4);
+        count.get_clone()[0].set(4);
         assert_text_content!(p, "423");
 
-        count.modify().push(create_rc_signal(5));
+        let new = create_signal(5);
+        count.update(|count| count.push(new));
         assert_text_content!(p, "4235");
     });
 }
 
 #[wasm_bindgen_test]
 fn fragment_template() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             div {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         span { "The value is: " }
                         strong { (item) }
                     },
@@ -312,33 +288,29 @@ fn fragment_template() {
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
-        let div = query("div");
+        let p = query("div");
 
         assert_text_content!(
-            div,
+            p,
             "\
     The value is: 1\
     The value is: 2"
         );
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.push(3);
-            tmp
-        });
+        count.update(|count| count.push(3));
         assert_text_content!(
-            div,
+            p,
             "\
     The value is: 1\
     The value is: 2\
     The value is: 3"
         );
 
-        count.set(count.get()[1..].into());
+        count.update(|count| count.remove(0));
         assert_text_content!(
-            div,
+            p,
             "\
     The value is: 2\
     The value is: 3"
@@ -348,88 +320,80 @@ fn fragment_template() {
 
 #[wasm_bindgen_test]
 fn template_top_level() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             Indexed(
-                iterable=count,
-                view=|cx, item| view! { cx,
+                iterable=*count,
+                view=|item| view! {
                     li { (item) }
                 },
             )
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("#test-container");
 
         assert_text_content!(p, "12");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.push(3);
-            tmp
-        });
+        count.update(|count| count.push(3));
         assert_text_content!(p, "123");
 
-        count.set(count.get()[1..].into());
+        count.update(|count| count.remove(0));
         assert_text_content!(p, "23");
     });
 }
 
 #[wasm_bindgen_test]
 fn template_dyn_top_level() {
-    create_scope_immediate(|cx| {
-        let count = create_signal(cx, vec![1, 2]);
+    let _ = create_root(|| {
+        let count = create_signal(vec![1, 2]);
 
-        let node = view! { cx,
+        let node = view! {
             div {
                 Indexed(
-                    iterable=count,
-                    view=|cx, item| view! { cx,
+                    iterable=*count,
+                    view=|item| view! {
                         (item)
                     },
                 )
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let p = query("#test-container");
 
         assert_text_content!(p, "12");
 
-        count.set({
-            let mut tmp = (*count.get()).clone();
-            tmp.push(3);
-            tmp
-        });
+        count.update(|count| count.push(3));
         assert_text_content!(p, "123");
 
-        count.set(count.get()[1..].into());
+        count.update(|count| count.remove(0));
         assert_text_content!(p, "23");
     });
 }
 
 #[wasm_bindgen_test]
 fn template_with_other_nodes_at_same_level() {
-    create_scope_immediate(|cx| {
-        let vec1 = create_signal(cx, vec![1, 2]);
-        let vec2 = create_signal(cx, vec![4, 5]);
+    let _ = create_root(|| {
+        let vec1 = create_signal(vec![1, 2]);
+        let vec2 = create_signal(vec![4, 5]);
 
-        let node = view! { cx,
+        let node = view! {
             ul {
                 li { "before" }
                 Indexed(
-                    iterable=vec1,
-                    view=|cx, item| view! { cx,
+                    iterable=*vec1,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
                 Indexed(
-                    iterable=vec2,
-                    view=|cx, item| view! { cx,
+                    iterable=*vec2,
+                    view=|item| view! {
                         li { (item) }
                     },
                 )
@@ -437,13 +401,13 @@ fn template_with_other_nodes_at_same_level() {
             }
         };
 
-        sycamore::render_to(|_| node, &test_container());
+        sycamore::render_in_scope(|| node, &test_container());
 
         let elem = query("ul");
 
         assert_text_content!(elem, "before1245after");
 
-        vec1.set(vec1.get().iter().cloned().chain(once(3)).collect());
+        vec1.update(|vec1| vec1.push(3));
         assert_text_content!(elem, "before12345after");
 
         vec1.set(Vec::new());

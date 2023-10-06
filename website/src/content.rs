@@ -18,23 +18,23 @@ pub struct Outline {
 }
 
 #[component(inline_props)]
-pub fn OutlineView<G: Html>(cx: Scope, outline: Vec<Outline>) -> View<G> {
+pub fn OutlineView<G: Html>(outline: Vec<Outline>) -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
         .unwrap()
         .set_title("Sycamore"); // TODO: get title from markdown file
 
-    view! { cx,
+    view! {
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
             Indexed(
-                iterable=create_signal(cx, outline),
-                view=|cx, item| {
+                iterable=*create_signal(outline),
+                view=|item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
                         let name = x.name.clone();
                         let href = format!("#{}", x.name.trim().to_lowercase().replace(' ', "-"));
-                        view! { cx,
+                        view! {
                             li {
                                 a(
                                     class="hover:text-yellow-400 mb-1 inline-block transition-colors",
@@ -49,7 +49,7 @@ pub fn OutlineView<G: Html>(cx: Scope, outline: Vec<Outline>) -> View<G> {
 
                     let href = format!("#{}", name.trim().to_lowercase().replace(' ', "-"));
 
-                    view! { cx,
+                    view! {
                         li {
                             a(
                                 class="hover:text-yellow-400 mb-1 inline-block transition-colors",
@@ -77,23 +77,22 @@ pub struct ContentProps {
 
 #[component]
 pub fn Content<G: Html>(
-    cx: Scope,
     ContentProps {
         data: MarkdownPage { html, outline },
         sidebar,
     }: ContentProps,
 ) -> View<G> {
-    let sidebar = create_ref(cx, sidebar);
-    let show_sidebar = sidebar.is_some();
+    let sidebar = create_signal(sidebar);
+    let show_sidebar = sidebar.get_clone().is_some();
 
-    let sidebar_version = sidebar.as_ref().map(|x| x.0.clone());
+    let sidebar_version = sidebar.get_clone().as_ref().map(|x| x.0.clone());
 
-    view! { cx,
+    view! {
         div(class="flex w-full") {
-            (show_sidebar.then(|| view! { cx,
+            (show_sidebar.then(|| view! {
                 div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
                     div(class="p-3"){
-                        crate::sidebar::Sidebar(version=sidebar.clone().unwrap().0, data=sidebar.clone().unwrap().1)
+                        crate::sidebar::Sidebar(version=sidebar.get_clone().unwrap().0, data=sidebar.get_clone().unwrap().1)
                     }
                 }
             }))
@@ -103,7 +102,7 @@ pub fn Content<G: Html>(
                     if show_sidebar { "sm:ml-44" } else { "container mx-auto lg:ml-auto lg:pr-48" }),
                 ) {
                     (if sidebar_version.as_deref() == Some(crate::NEXT_VERSION) {
-                        view! { cx,
+                        view! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is unreleased documentation for Sycamore next version." }
                                 p {
@@ -116,7 +115,7 @@ pub fn Content<G: Html>(
                             }
                         }
                     } else if sidebar_version.is_some() && sidebar_version.as_deref() != Some(crate::LATEST_MAJOR_VERSION) {
-                        view! { cx,
+                        view! {
                             div(class="bg-yellow-500 text-white w-full rounded-md mt-4 mb-2 px-4 py-1") {
                                 p { "This is outdated documentation for Sycamore." }
                                 p {
@@ -130,7 +129,7 @@ pub fn Content<G: Html>(
                             }
                         }
                     } else {
-                        view! { cx, }
+                        view! { }
                     })
                     div(dangerously_set_inner_html=html.clone())
                 }

@@ -1,40 +1,47 @@
-# Project architecture
+# Architecture
 
-TODO: Update this page as this is fairly outdated.
-
-All non proc-macro related code is in `/packages/sycamore`. Proc-macro related code is in
-`/packages/sycamore-macro`.
+TODO: this is missing a lot of things
 
 ## Directory structure
 
-- #### Reactivity
+* Main crates (including `sycamore`, `sycamore-reactive`, etc...) are in `packages/`.
+* Integration tests are in `packages/sycamore/tests`.
+* Benchmarks are in `packages/tools/bench`.
+* Examples are in `examples/`.
+* The Sycamore website is in `website/`. This will eventually be moved out into a new repository.
+* The documentation is in `docs/`. This also contains a tool for pre-rendering the markdown files into HTMl.
 
-  - All the reactivity primitives are defined in live in the `sycamore-reactive` crate.
+## Crates
 
-- #### `GenericNode`
+### `sycamore`
 
-  - `GenericNode` is a trait that serves as an abstraction for different rendering backends. Most
-    commonly used types are `DomNode` for rendering in the browser to DOM nodes and `SsrNode` for
-    rendering on the server to static HTML.
+This is the main crate which is intended to be added to the `Cargo.toml` of a Sycamore project. This crate re-exports most of the APIs of the other crates.
 
-  - The `sycamore::utils::render` module contains backend agnostic utilities for rendering
-    nodes.
+### `sycamore-macro`
 
-- #### `View`
+This crate contains all the proc-macro logic for `view!`, `#[component]`, and `#[derive(Props)]`.
 
-  - `View` is a wrapper type around a `GenericNode` that is produced by the `view!` macro. A
-    `View` can be rendered using the utilities in `sycamore::utils::render`.
+### `sycamore-reactive`
 
-- #### `view!`
+This is the backbone of Sycamore's reactivity system. This crate can be used stand-alone without any of the other crates.
 
-  - The view macro is defined in `/packages/sycamore-macro/src/lib.rs`.
+### `sycamore-core`
 
-  - [`trybuild`](https://github.com/dtolnay/trybuild) is used for testing proc-macros.
+This crate contains all the core utilities for Sycamore's rendering logic. This includes, for example, machinery used by the component system and the view fragment diffing logic.
+This crate is backend-agnostic, meaning that there should be no dependence on `web-sys` or `wasm-bindgen`.
 
-## Fragment diffing
+### `sycamore-web`
 
-`View` fragments are diffed in the `sycamore::utils::render::reconcile_fragments(_)`
-method.
+This crate contains all the web specific rendering logic for Sycamore.
 
-The diffing done by `Keyed` and `Indexed` is independent of the diffing done when rendering
-fragments. Learn more about this in [`Iteration`](../basics/iteration).
+### `sycamore-futures`
+
+A lightweight crate to choose between `tokio` when on the server and `wasm-bindgen-futures` when on the client.
+
+### `sycamore-router` and `sycamore-router-macro`
+
+This is an implementation of a SPA router for Sycamore. This will eventually be moved into a new repository.
+
+## How reactivity works
+
+TOOD: explain reactivity system behind the scenes, including update propagation and reactive scopes.

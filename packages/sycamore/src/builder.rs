@@ -5,7 +5,6 @@
 
 use std::borrow::Cow;
 use std::iter::FromIterator;
-use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore_core::event::{EventDescriptor, EventHandler};
@@ -42,13 +41,8 @@ pub mod prelude {
 }
 
 /// A factory for building [`View`]s.
-pub struct ElementBuilder<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a>(
-    F,
-    PhantomData<&'a ()>,
-);
-impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> std::fmt::Debug
-    for ElementBuilder<'a, G, F>
-{
+pub struct ElementBuilder<G: GenericNode, F: FnOnce() -> G + 'static>(F);
+impl<G: GenericNode, F: FnOnce() -> G + 'static> std::fmt::Debug for ElementBuilder<G, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ElementBuilder").finish()
     }
@@ -56,22 +50,20 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> std::fmt::Debug
 
 /// A trait that is implemented only for [`ElementBuilder`] and [`View`].
 /// This should be considered implementation details and should not be used.
-pub trait ElementBuilderOrView<'a, G: GenericNode> {
+pub trait ElementBuilderOrView<G: GenericNode> {
     /// Convert into a [`View`].
-    fn into_view(self, cx: Scope<'a>) -> View<G>;
+    fn into_view(self) -> View<G>;
 }
 
-impl<'a, G: GenericNode> ElementBuilderOrView<'a, G> for View<G> {
-    fn into_view(self, _: Scope<'a>) -> View<G> {
+impl<G: GenericNode> ElementBuilderOrView<G> for View<G> {
+    fn into_view(self) -> View<G> {
         self
     }
 }
 
-impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a, G>
-    for ElementBuilder<'a, G, F>
-{
-    fn into_view(self, cx: Scope<'a>) -> View<G> {
-        self.view(cx)
+impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilderOrView<G> for ElementBuilder<G, F> {
+    fn into_view(self) -> View<G> {
+        self.view()
     }
 }
 
@@ -81,26 +73,26 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilderOrView<'a
 /// ```
 /// # use sycamore::builder::prelude::*;
 /// # use sycamore::prelude::*;
-/// # fn _test1<G: Html>(cx: Scope) -> View<G> {
+/// # fn _test1<G: Html>() -> View<G> {
 /// tag("a")      // Not recommended. Use `a()` instead.
-/// # .view(cx) }
-/// # fn _test2<G: Html>(cx: Scope) -> View<G> {
+/// # .view() }
+/// # fn _test2<G: Html>() -> View<G> {
 /// tag("button") // Not recommended. Use `button()` instead.
-/// # .view(cx) }
-/// # fn _test3<G: Html>(cx: Scope) -> View<G> {
+/// # .view() }
+/// # fn _test3<G: Html>() -> View<G> {
 /// tag("my-custom-element")
-/// # .view(cx) }
+/// # .view() }
 /// // etc...
 /// ```
-pub fn tag<'a, G: GenericNodeElements>(
-    t: impl Into<Cow<'static, str>> + 'a,
-) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-    ElementBuilder::new(move |_| G::element_from_tag(t.into()))
+pub fn tag<G: GenericNodeElements>(
+    t: impl Into<Cow<'static, str>> + 'static,
+) -> ElementBuilder<G, impl FnOnce() -> G> {
+    ElementBuilder::new(move || G::element_from_tag(t.into()))
 }
 
 //  Implementation note:
 //  It might be tempting to extract a common function for all of the functions of the form:
-//       let el = (self.0)(cx); ...
+//       let el = (self.0)(); ...
 //       el
 //  but we used to have one (called `map`) and it was removed on purpose.
 //  The trouble is that each call to this internal utility function will result in an expnentially
@@ -118,9 +110,9 @@ pub fn tag<'a, G: GenericNodeElements>(
 //      function name size
 //    - https://github.com/rustwasm/wasm-bindgen/issues/3362 wasm-bindgen issue for falure on
 //      mangled functions > 100_000 bytes in length
-impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
+impl<G: GenericNode, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     pub(crate) fn new(f: F) -> Self {
-        Self(f, PhantomData)
+        Self(f)
     }
 
     /// Set the attribute of the element.
@@ -129,17 +121,17 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// button().attr("type", "submit")
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn attr(
         self,
-        name: impl Into<Cow<'static, str>> + 'a,
-        value: impl Into<Cow<'static, str>> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        name: impl Into<Cow<'static, str>> + 'static,
+        value: impl Into<Cow<'static, str>> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             el.set_attribute(name.into(), value.into());
             el
         })
@@ -151,17 +143,17 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// input().bool_attr("required", true)
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn bool_attr(
         self,
-        name: impl Into<Cow<'static, str>> + 'a,
+        name: impl Into<Cow<'static, str>> + 'static,
         value: bool,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             if value {
                 el.set_attribute(name.into(), "".into());
             }
@@ -177,21 +169,21 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let input_type = create_signal(cx, "text");
-    /// input().dyn_attr("type", || Some(*input_type.get()))
-    /// # .view(cx) }
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let input_type = create_signal("text");
+    /// input().dyn_attr("type", move || Some(input_type.get()))
+    /// # .view() }
     /// ```
-    pub fn dyn_attr<S: Into<Cow<'static, str>> + 'a>(
+    pub fn dyn_attr<S: Into<Cow<'static, str>> + 'static>(
         self,
         name: impl Into<Cow<'static, str>>,
-        mut value: impl FnMut() -> Option<S> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        mut value: impl FnMut() -> Option<S> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
         let name = name.into();
-        ElementBuilder::new(move |cx| {
-            let el_ = (self.0)(cx);
+        ElementBuilder::new(move || {
+            let el_ = (self.0)();
             let el = el_.clone();
-            create_effect(cx, move || {
+            create_effect(move || {
                 let value = value();
                 if let Some(value) = value {
                     el.set_attribute(name.clone(), value.into());
@@ -209,21 +201,21 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let required = create_signal(cx, true);
-    /// input().dyn_bool_attr("required", || *required.get())
-    /// # .view(cx) }
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let required = create_signal(true);
+    /// input().dyn_bool_attr("required", move || required.get())
+    /// # .view() }
     /// ```
     pub fn dyn_bool_attr(
         self,
         name: impl Into<Cow<'static, str>>,
-        mut value: impl FnMut() -> bool + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        mut value: impl FnMut() -> bool + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
         let name = name.into();
-        ElementBuilder::new(move |cx| {
-            let el_ = (self.0)(cx);
+        ElementBuilder::new(move || {
+            let el_ = (self.0)();
             let el = el_.clone();
-            create_effect(cx, move || {
+            create_effect(move || {
                 if value() {
                     el.set_attribute(name.clone(), "".into());
                 } else {
@@ -244,16 +236,16 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// button().dangerously_set_inner_html("<p>Raw HTML!</p>")
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn dangerously_set_inner_html(
         self,
-        html: impl Into<Cow<'static, str>> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        html: impl Into<Cow<'static, str>> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             el.dangerously_set_inner_html(html.into());
             el
         })
@@ -269,21 +261,21 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// button().dyn_dangerously_set_inner_html(|| "<p>Raw HTML!</p>")
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn dyn_dangerously_set_inner_html<U>(
         self,
-        mut html: impl FnMut() -> U + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a>
+        mut html: impl FnMut() -> U + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static>
     where
-        U: Into<Cow<'static, str>> + 'a,
+        U: Into<Cow<'static, str>> + 'static,
     {
-        ElementBuilder::new(move |cx| {
-            let el_ = (self.0)(cx);
+        ElementBuilder::new(move || {
+            let el_ = (self.0)();
             let el = el_.clone();
-            create_effect(cx, move || {
+            create_effect(move || {
                 el.dangerously_set_inner_html(html().into());
             });
             el_
@@ -297,16 +289,16 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// button().class("bg-green-500").t("My button")
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn class(
         self,
-        class: impl AsRef<str> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        class: impl AsRef<str> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             el.add_class(class.as_ref());
             el
         })
@@ -321,22 +313,22 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let checked_class = create_signal(cx, false);
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let checked_class = create_signal(false);
     /// input()
     ///     .attr("type", "checkbox")
-    ///     .dyn_class("bg-red-500", || *checked_class.get())
-    /// # .view(cx) }
+    ///     .dyn_class("bg-red-500", move || checked_class.get())
+    /// # .view() }
     /// ```
     pub fn dyn_class(
         self,
-        class: impl AsRef<str> + 'a,
-        mut apply: impl FnMut() -> bool + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el_ = (self.0)(cx);
+        class: impl AsRef<str> + 'static,
+        mut apply: impl FnMut() -> bool + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el_ = (self.0)();
             let el = el_.clone();
-            create_effect(cx, move || {
+            create_effect(move || {
                 if apply() {
                     el.add_class(class.as_ref());
                 } else {
@@ -353,16 +345,16 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// button().id("my-button")
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn id(
         self,
-        class: impl Into<Cow<'static, str>> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        class: impl Into<Cow<'static, str>> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             el.set_attribute("id".into(), class.into());
             el
         })
@@ -374,17 +366,17 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// input().prop("value", "I am the value set.")
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn prop(
         self,
-        name: impl AsRef<str> + 'a,
-        property: impl Into<G::PropertyType> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        name: impl AsRef<str> + 'static,
+        property: impl Into<G::PropertyType> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             el.set_property(name.as_ref(), &property.into());
             el
         })
@@ -396,22 +388,22 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let checked = create_signal(cx, false);
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let checked = create_signal(false);
     /// input()
     ///     .attr("type", "checkbox")
-    ///     .dyn_prop("checked", || *checked.get())
-    /// # .view(cx) }
+    ///     .dyn_prop("checked", move || checked.get())
+    /// # .view() }
     /// ```
-    pub fn dyn_prop<V: Into<G::PropertyType> + 'a>(
+    pub fn dyn_prop<V: Into<G::PropertyType> + 'static>(
         self,
-        name: impl AsRef<str> + 'a,
-        mut property: impl FnMut() -> V + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el_ = (self.0)(cx);
+        name: impl AsRef<str> + 'static,
+        mut property: impl FnMut() -> V + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el_ = (self.0)();
             let el = el_.clone();
-            create_effect(cx, move || {
+            create_effect(move || {
                 el.set_property(name.as_ref(), &property().into());
             });
             el_
@@ -424,23 +416,23 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// p()
     ///     .t("Hello World!")
     ///     .t("Text nodes can be chained as well.")
     ///     .t("More text...")
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn t(
         self,
-        text: impl Into<Cow<'static, str>> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        text: impl Into<Cow<'static, str>> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
         #[allow(unused_imports)]
         use std::any::TypeId;
         // Only create a text node if we are not hydrating.
         #[cfg(feature = "hydrate")]
-        return ElementBuilder::new(|cx| {
-            let el = (self.0)(cx);
+        return ElementBuilder::new(|| {
+            let el = (self.0)();
             if TypeId::of::<G>() != TypeId::of::<crate::web::HydrateNode>()
                 || sycamore_core::hydrate::hydration_completed()
             {
@@ -449,8 +441,8 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             el
         });
         #[cfg(not(feature = "hydrate"))]
-        return ElementBuilder::new(|cx| {
-            let el = (self.0)(cx);
+        return ElementBuilder::new(|| {
+            let el = (self.0)();
             el.append_child(&G::text_node(text.into()));
             el
         });
@@ -462,24 +454,22 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let name = create_signal(cx, "Sycamore");
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let name = create_signal("Sycamore");
     /// p()
     ///     .t("Name: ")
-    ///     .dyn_t(|| name.get().to_string())
-    /// # .view(cx) }
+    ///     .dyn_t(move || name.get().to_string())
+    /// # .view() }
     /// ```
     pub fn dyn_t<S: AsRef<str> + 'static>(
         self,
-        f: impl FnMut() -> S + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(|cx| {
-            let el = (self.0)(cx);
-            let memo = create_memo(cx, f);
-            Self::dyn_c_internal(cx, &el, move || {
-                View::new_node(G::text_node(
-                    memo.get().as_ref().as_ref().to_string().into(),
-                ))
+        f: impl FnMut() -> S + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(|| {
+            let el = (self.0)();
+            let memo = create_memo(f);
+            Self::dyn_c_internal(&el, move || {
+                View::new_node(G::text_node(memo.with(|x| x.as_ref().to_string().into())))
             });
             el
         })
@@ -491,25 +481,25 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// div().c(
     ///     h1().t("I am a child")
     /// )
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn c(
         self,
-        c: impl ElementBuilderOrView<'a, G> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(|cx| {
-            let el = (self.0)(cx);
-            render::insert(cx, &el, c.into_view(cx), None, None, true);
+        c: impl ElementBuilderOrView<G> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(|| {
+            let el = (self.0)();
+            render::insert(&el, c.into_view(), None, None, true);
             el
         })
     }
 
     /// Internal implementation for [`Self::dyn_c`] and [`Self::dyn_t`].
-    fn dyn_c_internal(cx: Scope<'a>, el: &G, f: impl FnMut() -> View<G> + 'a) {
+    fn dyn_c_internal(el: &G, f: impl FnMut() -> View<G> + 'static) {
         #[allow(unused_imports)]
         use std::any::{Any, TypeId};
 
@@ -522,9 +512,8 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             let end_marker = G::marker_with_text("/".into());
             el.append_child(&end_marker);
             render::insert(
-                cx,
                 el,
-                View::new_dyn(cx, f),
+                View::new_dyn(f),
                 None,
                 Some(&end_marker),
                 true, /* We don't know if this is the only child or not so we pessimistically
@@ -544,9 +533,8 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             // __initial is wrapped inside ManuallyDrop to prevent double drop.
             let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
             render::insert(
-                cx,
                 el,
-                View::new_dyn(cx, f),
+                View::new_dyn(f),
                 initial,
                 None,
                 true, /* We don't know if this is the only child or not so we pessimistically
@@ -557,15 +545,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         // G is neither SsrNode nor HydrateNode. Proceed normally.
         let marker = G::marker();
         el.append_child(&marker);
-        render::insert(cx, el, View::new_dyn(cx, f), None, Some(&marker), true);
+        render::insert(el, View::new_dyn(f), None, Some(&marker), true);
     }
 
     /// Internal implementation for [`Self::dyn_c_scoped`] and [`Self::dyn_if`].
-    fn dyn_c_internal_scoped(
-        cx: Scope<'a>,
-        el: &G,
-        f: impl FnMut(BoundedScope<'_, 'a>) -> View<G> + 'a,
-    ) {
+    fn dyn_c_internal_scoped(el: &G, f: impl FnMut() -> View<G> + 'static) {
         #[allow(unused_imports)]
         use std::any::{Any, TypeId};
 
@@ -578,9 +562,8 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             let end_marker = G::marker_with_text("/".into());
             el.append_child(&end_marker);
             render::insert(
-                cx,
                 el,
-                View::new_dyn_scoped(cx, f),
+                View::new_dyn(f),
                 None,
                 Some(&end_marker),
                 true, /* We don't know if this is the only child or not so we
@@ -600,9 +583,8 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
             // __initial is wrapped inside ManuallyDrop to prevent double drop.
             let initial = unsafe { ::std::ptr::read(&initial as *const _ as *const _) };
             render::insert(
-                cx,
                 el,
-                View::new_dyn_scoped(cx, f),
+                View::new_dyn(f),
                 initial,
                 None,
                 true, /* We don't know if this is the only child or not so we
@@ -613,14 +595,7 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
         // G is neither SsrNode nor HydrateNode. Proceed normally.
         let marker = G::marker();
         el.append_child(&marker);
-        render::insert(
-            cx,
-            el,
-            View::new_dyn_scoped(cx, f),
-            None,
-            Some(&marker),
-            true,
-        );
+        render::insert(el, View::new_dyn(f), None, Some(&marker), true);
     }
 
     /// Adds a dynamic child. Note that most times, [`dyn_if`](Self::dyn_if) can be used instead
@@ -631,18 +606,18 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
     /// # fn some_view<G: Html>() -> View<G> { todo!() }
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// let a_view = || some_view();
     /// div().dyn_c(a_view)
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
-    pub fn dyn_c<O: ElementBuilderOrView<'a, G> + 'a>(
+    pub fn dyn_c<O: ElementBuilderOrView<G> + 'static>(
         self,
-        mut f: impl FnMut() -> O + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
-            Self::dyn_c_internal(cx, &el, move || f().into_view(cx));
+        mut f: impl FnMut() -> O + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
+            Self::dyn_c_internal(&el, move || f().into_view());
             el
         })
     }
@@ -653,36 +628,36 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let visible = create_signal(cx, true);
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let visible = create_signal(true);
     /// div().dyn_if(
-    ///     || *visible.get(),
+    ///     move || visible.get(),
     ///     || p().t("Now you see me"),
     ///     || p().t("Now you don't!"),
     /// )
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
-    pub fn dyn_if<O1: ElementBuilderOrView<'a, G> + 'a, O2: ElementBuilderOrView<'a, G> + 'a>(
+    pub fn dyn_if<O1: ElementBuilderOrView<G>, O2: ElementBuilderOrView<G>>(
         self,
-        cond: impl Fn() -> bool + 'a,
-        mut then: impl FnMut() -> O1 + 'a,
-        mut r#else: impl FnMut() -> O2 + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
+        cond: impl Fn() -> bool + 'static,
+        mut then: impl FnMut() -> O1 + 'static,
+        mut r#else: impl FnMut() -> O2 + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
         let cond = Rc::new(cond);
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             // FIXME: should be dyn_c_internal_scoped to prevent memory leaks.
-            Self::dyn_c_internal(cx, &el, move || {
-                if *create_selector(cx, {
+            Self::dyn_c_internal(&el, move || {
+                if create_selector({
                     let cond = Rc::clone(&cond);
                     #[allow(clippy::redundant_closure)] // FIXME: clippy false positive
                     move || cond()
                 })
                 .get()
                 {
-                    then().into_view(cx)
+                    then().into_view()
                 } else {
-                    r#else().into_view(cx)
+                    r#else().into_view()
                 }
             });
             el
@@ -695,11 +670,11 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// [`create_effect_scoped`].
     pub fn dyn_c_scoped(
         self,
-        f: impl FnMut(BoundedScope<'_, 'a>) -> View<G> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(|cx| {
-            let el = (self.0)(cx);
-            Self::dyn_c_internal_scoped(cx, &el, f);
+        f: impl FnMut() -> View<G> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(|| {
+            let el = (self.0)();
+            Self::dyn_c_internal_scoped(&el, f);
             el
         })
     }
@@ -710,20 +685,20 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
+    /// # fn _test<G: Html>() -> View<G> {
     /// button()
     ///     .t("My button")
     ///     .on(ev::click, |_| web_sys::console::log_1(&"Clicked".into()))
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn on<Ev: EventDescriptor<G::AnyEventData>, S>(
         self,
         ev: Ev,
-        handler: impl EventHandler<'a, G::AnyEventData, Ev, S> + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
-            el.event(cx, ev, handler);
+        handler: impl EventHandler<G::AnyEventData, Ev, S> + 'static,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
+            el.event(ev, handler);
             el
         })
     }
@@ -734,17 +709,14 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let node_ref = create_node_ref(cx);
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let node_ref = create_node_ref();
     /// input().bind_ref(node_ref.clone())
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
-    pub fn bind_ref(
-        self,
-        node_ref: NodeRef<G>,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+    pub fn bind_ref(self, node_ref: NodeRef<G>) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             node_ref.set(el.clone());
             el
         })
@@ -759,21 +731,21 @@ impl<'a, G: GenericNode, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
     /// #[component]
-    /// fn MyComponent<G: Html>(cx: Scope) -> View<G> {
+    /// fn MyComponent<G: Html>() -> View<G> {
     ///     div()
     ///         /* builder stuff... */
-    ///         .view(cx)
+    ///         .view()
     /// }
     /// ```
-    pub fn view(self, cx: Scope<'a>) -> View<G> {
-        let el = (self.0)(cx);
+    pub fn view(self) -> View<G> {
+        let el = (self.0)();
         View::new_node(el)
     }
 }
 
 /// HTML-specific builder methods.
 #[cfg(feature = "web")]
-impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
+impl<G: Html, F: FnOnce() -> G + 'static> ElementBuilder<G, F> {
     /// Binds a [`Signal`] to the `value` property of the node.
     ///
     /// The [`Signal`] will be automatically updated when the value is updated.
@@ -782,27 +754,23 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let value = create_signal(cx, String::new());
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let value = create_signal(String::new());
     /// input().bind_value(value)
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn bind_value(
         self,
-        sub: impl std::ops::Deref<Target = Signal<String>> + Clone + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        sub: Signal<String>,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             #[cfg(target_arch = "wasm32")]
-            create_effect(cx, {
+            create_effect({
                 let el = el.clone();
-                let sub = sub.clone();
-                move || {
-                    el.set_property("value", &sub.get().as_str().into());
-                }
+                move || sub.with(|sub| el.set_property("value", &sub.as_str().into()))
             });
             el.event(
-                cx,
                 ev::input,
                 Box::new(move |e: web_sys::Event| {
                     let val = js_sys::Reflect::get(
@@ -827,27 +795,26 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
     /// ```
     /// # use sycamore::builder::prelude::*;
     /// # use sycamore::prelude::*;
-    /// # fn _test<G: Html>(cx: Scope) -> View<G> {
-    /// let checked = create_signal(cx, true);
+    /// # fn _test<G: Html>() -> View<G> {
+    /// let checked = create_signal(true);
     /// input().attr("type", "checkbox").bind_checked(checked)
-    /// # .view(cx) }
+    /// # .view() }
     /// ```
     pub fn bind_checked(
         self,
-        sub: impl std::ops::Deref<Target = Signal<bool>> + Clone + 'a,
-    ) -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G + 'a> {
-        ElementBuilder::new(move |cx| {
-            let el = (self.0)(cx);
+        sub: Signal<bool>,
+    ) -> ElementBuilder<G, impl FnOnce() -> G + 'static> {
+        ElementBuilder::new(move || {
+            let el = (self.0)();
             #[cfg(target_arch = "wasm32")]
-            create_effect(cx, {
+            create_effect({
                 let el = el.clone();
                 let sub = sub.clone();
                 move || {
-                    el.set_property("checked", &(*sub.get()).into());
+                    el.set_property("checked", &(sub.get()).into());
                 }
             });
             el.event(
-                cx,
                 ev::change,
                 Box::new(move |e: web_sys::Event| {
                     let val = js_sys::Reflect::get(
@@ -872,13 +839,13 @@ impl<'a, G: Html, F: FnOnce(Scope<'a>) -> G + 'a> ElementBuilder<'a, G, F> {
 /// # use sycamore::builder::prelude::*;
 /// # use sycamore::prelude::*;
 /// #[component]
-/// fn MyComponent<G: Html>(cx: Scope) -> View<G> {
-///     h1().t("I am a component").view(cx)
+/// fn MyComponent<G: Html>() -> View<G> {
+///     h1().t("I am a component").view()
 /// }
 ///
 /// // Elsewhere...
-/// # fn view<G: Html>(cx: Scope) -> View<G> {
-/// component(|| MyComponent(cx))
+/// # fn view<G: Html>() -> View<G> {
+/// component(|| MyComponent())
 /// # }
 /// ```
 pub fn component<G>(f: impl FnOnce() -> View<G>) -> View<G>
@@ -894,10 +861,10 @@ where
 /// ```
 /// # use sycamore::builder::prelude::*;
 /// # use sycamore::prelude::*;
-/// # fn _test<G: Html>(cx: Scope) -> View<G> {
+/// # fn _test<G: Html>() -> View<G> {
 /// fragment([
-///     div().view(cx),
-///     div().view(cx),
+///     div().view(),
+///     div().view(),
 /// ])
 /// # }
 /// ```
@@ -914,13 +881,13 @@ where
 /// ```
 /// # use sycamore::builder::prelude::*;
 /// # use sycamore::prelude::*;
-/// # fn _test1<G: Html>(cx: Scope) -> View<G> {
+/// # fn _test1<G: Html>() -> View<G> {
 /// t("Hello!")
 /// # }
-/// # fn _test2<G: Html>(cx: Scope) -> View<G> {
+/// # fn _test2<G: Html>() -> View<G> {
 /// t("This is top level text.")
 /// # }
-/// # fn _test3<G: Html>(cx: Scope) -> View<G> {
+/// # fn _test3<G: Html>() -> View<G> {
 /// t("We aren't directly nested under an element.")
 /// # }
 /// // etc...
@@ -935,13 +902,12 @@ pub fn t<G: GenericNode>(t: impl Into<Cow<'static, str>>) -> View<G> {
 /// ```
 /// # use sycamore::builder::prelude::*;
 /// # use sycamore::prelude::*;
-/// # fn _test<G: Html>(cx: Scope) -> View<G> {
-/// dyn_t(cx, || "Hello!")
+/// # fn _test<G: Html>() -> View<G> {
+/// dyn_t(|| "Hello!")
 /// # }
 /// ```
-pub fn dyn_t<'a, G: GenericNode, S: Into<Cow<'static, str>>>(
-    cx: Scope<'a>,
-    mut f: impl FnMut() -> S + 'a,
+pub fn dyn_t<G: GenericNode, S: Into<Cow<'static, str>>>(
+    mut f: impl FnMut() -> S + 'static,
 ) -> View<G> {
-    View::new_dyn(cx, move || View::new_node(G::text_node(f().into())))
+    View::new_dyn(move || View::new_node(G::text_node(f().into())))
 }

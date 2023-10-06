@@ -7,7 +7,7 @@
     "prod": "cd ../docs && cargo run --release && cd ../website && trunk build --release && tailwindcss -i index.css -o dist/tailwind.css --minify"
   },
   "devDependencies": {
-    "postcss": "^8.4.5",
+    "postcss": "^8.4.31",
     "tailwindcss": "^3.0.17"
   },
   "private": true

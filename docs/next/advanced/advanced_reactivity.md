@@ -38,7 +38,7 @@ let update_names = || {
         last_name.set_fn(|last_name| last_name + "!");
     });
 }
-create_effect(cx, || {
+create_effect(|| {
     // This would run twice when `update_names` is called without batching. With batching, it only
     // runs once.
     format!("{} {}", first_name.get(), last_name.get());

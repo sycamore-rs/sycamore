@@ -19,6 +19,9 @@ mod hydrate_node;
 #[cfg(feature = "ssr")]
 mod ssr_node;
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 pub use dom_node::*;
 #[cfg(feature = "hydrate")]
 pub use hydrate_node::*;
@@ -85,31 +88,32 @@ static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
 ///
 /// If called inside an async-component, the callback will be called after the next suspension
 /// point (when there is an `.await`).
-pub fn on_mount<'a>(cx: Scope<'a>, f: impl Fn() + 'a) {
+pub fn on_mount(f: impl FnOnce() + 'static) {
     if cfg!(target_arch = "wasm32") {
-        let scope_status = use_scope_status(cx);
+        let is_alive = Rc::new(Cell::new(true));
+        on_cleanup({
+            let is_alive = Rc::clone(&is_alive);
+            move || is_alive.set(false)
+        });
 
-        #[wasm_bindgen]
-        extern "C" {
-            #[wasm_bindgen(js_name = "queueMicrotask")]
-            fn queue_microtask(f: &Closure<dyn Fn()>);
-        }
-
-        let f: Box<dyn Fn()> = Box::new(f);
-        // SAFETY: We do not access `f_extended` until we verify that the scope is still valid using
-        // `use_scope_status`.
-        let f_extended: Box<dyn Fn() + 'static> = unsafe { std::mem::transmute(f) };
-
+        let scope = use_current_scope();
         let cb = move || {
-            if *scope_status.get() {
-                // Scope is still valid. We can safely execute the callback.
-                f_extended();
+            if is_alive.get() {
+                scope.run_in(f);
             }
         };
-        let boxed: Box<dyn Fn()> = Box::new(cb);
-        let closure = create_ref(cx, Closure::wrap(boxed));
-        queue_microtask(closure);
+        queue_microtask(cb);
     }
+}
+
+/// Alias for `queueMicrotask`.
+pub fn queue_microtask(f: impl FnOnce() + 'static) {
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(js_name = "queueMicrotask")]
+        fn queue_microtask_js(f: &JsValue);
+    }
+    queue_microtask_js(&Closure::once_into_js(f));
 }
 
 /// Get `window.document`.

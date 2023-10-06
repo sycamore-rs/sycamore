@@ -11,14 +11,14 @@ of that type to your props,
 ```rust
 #[derive(Props)]
 struct Props {
-    attributes: Attributes<'cx, G>
+    attributes: Attributes<G>
 }
 ```
 
 and then "spread" the attributes onto an HTML element.
 
 ```rust
-view! { cx,
+view! { 
     p(..props.attributes) { "Hello World!" }
 }
 ```
@@ -31,7 +31,7 @@ The user can set attributes by prefixing them with `attr:`. Event handlers or bi
 automatically passed through.
 
 ```rust
-view! { cx,
+view! { 
     AccessibleLabel(attr:class = "bg-neutral-800 rounded", on:click = label_clicked) { "Label 1" }
 }
 ```

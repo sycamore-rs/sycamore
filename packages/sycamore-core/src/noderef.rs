@@ -18,25 +18,20 @@ use crate::generic_node::GenericNode;
 /// ```
 /// # use sycamore::prelude::*;
 /// #[component]
-/// fn Component<G: Html>(cx: Scope) -> View<G> {
-///     let div_ref = create_node_ref(cx);
-///     view! { cx,
+/// fn Component<G: Html>() -> View<G> {
+///     let div_ref = create_node_ref();
+///     view! {
 ///         div(ref=div_ref)
 ///     }
 /// }
 /// ```
-#[derive(Clone, PartialEq, Eq)]
-pub struct NodeRef<G: GenericNode>(RcSignal<Option<G>>);
+#[derive(PartialEq, Eq)]
+pub struct NodeRef<G: GenericNode>(Signal<Option<G>>);
 
 impl<G: GenericNode + Any> NodeRef<G> {
-    /// Creates an empty node ref.
-    ///
-    /// Generally, it is preferable to use [`create_node_ref`] instead.
-    /// Unlike [`create_node_ref`], this creates a node ref that is not behind a reference. This
-    /// makes it harder to pass around but can be desireable in certain cases.
+    /// Alias to [`create_node_ref`].
     pub fn new() -> Self {
-        let signal = create_rc_signal(None);
-        Self(signal)
+        create_node_ref()
     }
 
     /// Gets the raw node stored inside the node ref.
@@ -50,12 +45,12 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///
     /// ```
     /// # use sycamore::prelude::*;
-    /// # fn Component<G: Html>(cx: Scope) -> View<G> {
-    /// let div_ref = create_node_ref(cx);
-    /// on_mount(cx, || {
+    /// # fn Component<G: Html>() -> View<G> {
+    /// let div_ref = create_node_ref();
+    /// on_mount(move || {
     ///     let node = div_ref.get::<DomNode>();
     /// });
-    /// view! { cx,
+    /// view! {
     ///     div(ref=div_ref)
     /// }
     /// # }
@@ -75,8 +70,8 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///
     /// For a panicking version, see [`NodeRef::get`].
     pub fn try_get<T: GenericNode>(&self) -> Option<T> {
-        if let Some(g) = self.0.get().as_ref() {
-            (g as &dyn Any).downcast_ref().cloned()
+        if let Some(g) = self.0.get_clone() {
+            (&g as &dyn Any).downcast_ref().cloned()
         } else {
             None
         }
@@ -98,7 +93,7 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///
     /// For a panicking version, see [`NodeRef::get`].
     pub fn try_get_raw(&self) -> Option<G> {
-        self.0.get().as_ref().clone()
+        self.0.get_clone()
     }
 
     /// Sets the node ref with the specified node.
@@ -111,9 +106,9 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// ```
     /// # use sycamore::prelude::*;
     /// #[component]
-    /// fn Component<G: Html>(cx: Scope) -> View<G> {
-    ///     let div_ref = create_node_ref(cx);
-    ///     view! { cx,
+    /// fn Component<G: Html>() -> View<G> {
+    ///     let div_ref = create_node_ref();
+    ///     view! {
     ///         div(ref=div_ref) // This assigns the node ref a value.
     ///     }
     /// }
@@ -124,9 +119,9 @@ impl<G: GenericNode + Any> NodeRef<G> {
     /// # use sycamore::prelude::*;
     /// # use sycamore::web::html;
     /// #[component]
-    /// fn Component<G: Html>(cx: Scope) -> View<G> {
+    /// fn Component<G: Html>() -> View<G> {
     ///     let div = G::element::<html::div>();
-    ///     let div_ref = create_node_ref(cx);
+    ///     let div_ref = create_node_ref();
     ///     div_ref.set(div.clone());
     ///     View::new_node(div)
     /// }
@@ -144,9 +139,16 @@ impl<G: GenericNode> Default for NodeRef<G> {
 
 impl<G: GenericNode> fmt::Debug for NodeRef<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("NodeRef").field(&self.0.get()).finish()
+        f.debug_tuple("NodeRef").field(&self.0.get_clone()).finish()
     }
 }
+
+impl<G: GenericNode> Clone for NodeRef<G> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<G: GenericNode> Copy for NodeRef<G> {}
 
 /* Hook implementation */
 
@@ -158,11 +160,11 @@ impl<G: GenericNode> fmt::Debug for NodeRef<G> {
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
-/// # fn Component<G: Html>(cx: Scope) -> View<G> {
-/// let node_ref: &NodeRef<G> = create_node_ref(cx);
-/// # view! { cx, }
+/// # fn Component<G: Html>() -> View<G> {
+/// let node_ref: NodeRef<G> = create_node_ref();
+/// # view! {}
 /// # }
 /// ```
-pub fn create_node_ref<G: GenericNode>(cx: Scope<'_>) -> &NodeRef<G> {
-    create_ref(cx, NodeRef::new())
+pub fn create_node_ref<G: GenericNode>() -> NodeRef<G> {
+    NodeRef(create_signal(None))
 }

@@ -1,40 +1,40 @@
 error: unexpected end of input, expected either `(` or `{` after element tag
  --> tests/view/element-fail.rs:5:26
   |
-5 |         let _: View<G> = view! { cx, button };
-  |                          ^^^^^^^^^^^^^^^^^^^^
+5 |         let _: View<G> = view! { button };
+  |                          ^^^^^^^^^^^^^^^^
   |
   = note: this error originates in the macro `$crate::view_with_elements` which comes from the expansion of the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected `=`
- --> tests/view/element-fail.rs:6:53
+ --> tests/view/element-fail.rs:6:49
   |
-6 |         let _: View<G> = view! { cx, button(disabled) };
-  |                                                     ^
+6 |         let _: View<G> = view! { button(disabled) };
+  |                                                 ^
 
 error: expected `=`
- --> tests/view/element-fail.rs:7:53
+ --> tests/view/element-fail.rs:7:49
   |
-7 |         let _: View<G> = view! { cx, button(on:click) };
-  |                                                     ^
+7 |         let _: View<G> = view! { button(on:click) };
+  |                                                 ^
 
 error: expected `=`
- --> tests/view/element-fail.rs:8:58
+ --> tests/view/element-fail.rs:8:54
   |
-8 |         let _: View<G> = view! { cx, button(prop:disabled) };
-  |                                                          ^
+8 |         let _: View<G> = view! { button(prop:disabled) };
+  |                                                      ^
 
 error: unknown directive `unknown`
- --> tests/view/element-fail.rs:9:45
+ --> tests/view/element-fail.rs:9:41
   |
-9 |         let _: View<G> = view! { cx, button(unknown:directive="123") };
-  |                                             ^^^^^^^
+9 |         let _: View<G> = view! { button(unknown:directive="123") };
+  |                                         ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:13:46
+  --> tests/view/element-fail.rs:13:42
    |
-13 |         let _: View<G> = view! { cx, button(a.b.c="123") };
-   |                                              ^
+13 |         let _: View<G> = view! { button(a.b.c="123") };
+   |                                          ^
 
 error: children and dangerously_set_inner_html cannot be both set
   --> tests/view/element-fail.rs:16:15
@@ -43,13 +43,13 @@ error: children and dangerously_set_inner_html cannot be both set
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0412]: cannot find type `unknownelement` in module `$crate::web::html`
-  --> tests/view/element-fail.rs:10:38
+  --> tests/view/element-fail.rs:10:34
    |
-10 |         let _: View<G> = view! { cx, unknownelement {} };
-   |                                      ^^^^^^^^^^^^^^ not found in `$crate::web::html`
+10 |         let _: View<G> = view! { unknownelement {} };
+   |                                  ^^^^^^^^^^^^^^ not found in `$crate::web::html`
 
 error[E0425]: cannot find value `unknown_attributes` in this scope
-  --> tests/view/element-fail.rs:11:44
+  --> tests/view/element-fail.rs:11:40
    |
-11 |         let _: View<G> = view! { cx, div(..unknown_attributes) {} };
-   |                                            ^^^^^^^^^^^^^^^^^^ not found in this scope
+11 |         let _: View<G> = view! { div(..unknown_attributes) {} };
+   |                                        ^^^^^^^^^^^^^^^^^^ not found in this scope

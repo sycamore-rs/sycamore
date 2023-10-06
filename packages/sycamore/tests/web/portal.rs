@@ -13,19 +13,19 @@ fn test_portal() {
     let root = document().create_element("div").unwrap();
     test_container.append_child(&root).unwrap();
 
-    create_scope_immediate(|cx| {
-        let switch = create_signal(cx, true);
+    let _ = create_root(|| {
+        let switch = create_signal(true);
         sycamore::render_to(
-            |_| {
-                view! { cx,
-                    (if *switch.get() {
-                        view! { cx,
+            move || {
+                view! {
+                    (if switch.get() {
+                        view! {
                             Portal(selector="#portal-target") {
                                 "Hello from the other side!"
                             }
                         }
                     } else {
-                        view! { cx, }
+                        view! { }
                     })
                 }
             },

@@ -9,7 +9,7 @@ use std::time::Duration;
 use sycamore::easing;
 use sycamore::motion::create_tweened_signal;
 
-let tweened = create_tweened_signal(cx, 0.0f32, Duration::from_millis(250), easing::quad_out);
+let tweened = create_tweened_signal(0.0f32, Duration::from_millis(250), easing::quad_out);
 
 tweened.set(100.0);
 ```
