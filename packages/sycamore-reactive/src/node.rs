@@ -38,6 +38,7 @@ pub(crate) struct ReactiveNode {
     pub mark: Mark,
     /// Keep track of where the signal was created for diagnostics.
     #[cfg(debug_assertions)]
+    #[allow(dead_code)]
     pub created_at: &'static std::panic::Location<'static>,
 }
 
