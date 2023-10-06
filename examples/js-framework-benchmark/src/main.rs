@@ -97,13 +97,13 @@ fn App<G: Html>() -> View<G> {
     let remove = move |id| data.update(|d| d.retain(|row| row.id != id));
 
     let run = move || {
-        data.set(build_data(1000));
         selected.set(None);
+        data.set(build_data(1000));
     };
 
     let runlots = move || {
-        data.set(build_data(10000));
         selected.set(None);
+        data.set(build_data(10000));
     };
 
     let add = move || {
@@ -189,5 +189,6 @@ fn main() {
 
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
+
     sycamore::render_to(App, &mount_el);
 }

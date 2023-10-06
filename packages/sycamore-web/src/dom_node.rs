@@ -19,7 +19,7 @@ use web_sys::{Comment, Element, Node, Text};
 use crate::dom_node_template::{
     add_new_cached_template, execute_walk, try_get_cached_template, WalkResult,
 };
-use crate::{document, queue_microtask, Html};
+use crate::{document, Html};
 
 #[wasm_bindgen]
 extern "C" {
@@ -271,29 +271,14 @@ impl GenericNode for DomNode {
         event: Cow<'_, str>,
         mut handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     ) {
-        // Run the handler in the current scope where the event is attached.
         let scope = use_global_scope();
-        let signal = create_signal(None);
         let cb = Closure::new(move |x| {
-            // Take the closure out of the signal so that we can make sure it is alive for at least
-            // the duration of this call.
-            let closure = signal.replace(None).expect("recursive event handler");
             scope.run_in(|| handler(x));
-            if signal.is_alive() {
-                signal.set(Some(closure));
-            } else {
-                queue_microtask(move || drop(closure));
-            }
         });
-        signal.set(Some(cb));
-        signal.with(|closure| {
-            self.node
-                .add_event_listener_with_callback(
-                    &event,
-                    closure.as_ref().unwrap().as_ref().unchecked_ref(),
-                )
-                .unwrap_throw();
-        });
+        self.node
+            .add_event_listener_with_callback(&event, cb.as_ref().unchecked_ref())
+            .unwrap_throw();
+        on_cleanup(move || drop(cb));
     }
 
     fn update_inner_text(&self, text: Cow<'static, str>) {
