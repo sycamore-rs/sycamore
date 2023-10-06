@@ -127,7 +127,7 @@ pub(crate) fn create_empty_signal<T>() -> Signal<T> {
         dependencies: SmallVec::new(),
         cleanups: Vec::new(),
         context: Vec::new(),
-        state: NodeState::Unchanged,
+        state: NodeState::Clean,
         mark: Mark::None,
     });
     // Add the signal to the parent's `children` list.

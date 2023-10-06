@@ -15,9 +15,10 @@ new_key_type! {
 pub(crate) struct ReactiveNode {
     /// Value of the node, if any. If this node is a signal, should have a value.
     pub value: Option<Box<dyn Any>>,
-    /// Callback when node needs to be updated.
+    /// Callback when node needs to be updated. Returns a `bool` indicating whether the value has
+    /// changed or not.
     #[allow(clippy::type_complexity)]
-    pub callback: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> NodeState>>,
+    pub callback: Option<Box<dyn FnMut(&mut Box<dyn Any>) -> bool>>,
     /// Nodes that are owned by this node.
     pub children: Vec<NodeId>,
     /// The parent of this node (i.e. the node that owns this node). If there is no parent, then
@@ -39,8 +40,8 @@ pub(crate) struct ReactiveNode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum NodeState {
-    Changed,
-    Unchanged,
+    Clean,
+    Dirty,
 }
 
 /// A mark used for DFS traversal of the reactive graph.
@@ -63,12 +64,13 @@ impl NodeHandle {
         self.dispose_children();
         let mut nodes = self.1.nodes.borrow_mut();
         // Release memory.
-        let this = nodes.remove(self.0).unwrap();
-        // Remove self from all dependencies.
-        for dependent in this.dependents {
-            // dependent might have been removed if it is a child node.
-            if let Some(dependent) = nodes.get_mut(dependent) {
-                dependent.dependencies.retain(|&mut id| id != self.0);
+        if let Some(this) = nodes.remove(self.0) {
+            // Remove self from all dependencies.
+            for dependent in this.dependents {
+                // dependent might have been removed if it is a child node.
+                if let Some(dependent) = nodes.get_mut(dependent) {
+                    dependent.dependencies.retain(|&mut id| id != self.0);
+                }
             }
         }
     }

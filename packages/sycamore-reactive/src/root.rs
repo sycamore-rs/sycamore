@@ -109,40 +109,65 @@ impl Root {
     }
 
     /// Run the update callback of the signal, also recreating any dependencies found by
-    /// tracking signal accesses inside the function. This method does _not_ delete existing
-    /// dependency links.
+    /// tracking signal accesses inside the function.
+    ///
+    /// Also marks all the dependencies as dirty and marks the current node as clean.
     ///
     /// # Params
     /// * `root` - The reactive root.
     /// * `id` - The id associated with the reactive node.
     /// `SignalId` inside the state itself.
-    ///
-    /// # Returns
-    /// Returns the new node state.
-    fn run_node_update(&'static self, id: NodeId) -> NodeState {
-        let dependencies = std::mem::take(&mut self.nodes.borrow_mut()[id].dependencies);
+    fn run_node_update(&'static self, current: NodeId) {
+        debug_assert_eq!(
+            self.nodes.borrow()[current].state,
+            NodeState::Dirty,
+            "should only update when dirty"
+        );
+        // Remove old dependency links.
+        let dependencies = std::mem::take(&mut self.nodes.borrow_mut()[current].dependencies);
         for dependency in dependencies {
             self.nodes.borrow_mut()[dependency]
                 .dependents
-                .retain(|&x| x != id);
+                .retain(|&id| id != current);
         }
         // We take the callback out because that requires a mut ref and we cannot hold that while
         // running update itself.
-        let mut callback = self.nodes.borrow_mut()[id].callback.take().unwrap();
-        let mut value = self.nodes.borrow_mut()[id].value.take().unwrap();
+        let mut nodes_mut = self.nodes.borrow_mut();
+        let mut callback = nodes_mut[current].callback.take().unwrap();
+        let mut value = nodes_mut[current].value.take().unwrap();
+        drop(nodes_mut); // End RefMut borrow.
 
-        NodeHandle(id, self).dispose_children(); // Destroy anything created in a previous update.
+        NodeHandle(current, self).dispose_children(); // Destroy anything created in a previous update.
 
-        let prev = self.current_node.replace(id);
+        let prev = self.current_node.replace(current);
         let (changed, tracker) = self.tracked_scope(|| callback(&mut value));
         self.current_node.set(prev);
 
-        tracker.create_dependency_link(self, id);
+        tracker.create_dependency_link(self, current);
 
-        self.nodes.borrow_mut()[id].callback = Some(callback); // Put the callback back in.
-        self.nodes.borrow_mut()[id].value = Some(value);
+        let mut nodes_mut = self.nodes.borrow_mut();
+        nodes_mut[current].callback = Some(callback); // Put the callback back in.
+        nodes_mut[current].value = Some(value);
 
-        changed
+        // Mark this node as clean.
+        nodes_mut[current].state = NodeState::Clean;
+        drop(nodes_mut);
+
+        if changed {
+            self.mark_dependents_dirty(current);
+        }
+    }
+
+    // Mark any dependent node of the current node as dirty.
+    fn mark_dependents_dirty(&self, current: NodeId) {
+        let mut nodes_mut = self.nodes.borrow_mut();
+        let dependents = std::mem::take(&mut nodes_mut[current].dependents);
+        for &dependent in &dependents {
+            if let Some(dependent) = nodes_mut.get_mut(dependent) {
+                dependent.state = NodeState::Dirty;
+            }
+        }
+        nodes_mut[current].dependents = dependents;
     }
 
     /// If we are currently batching, defers calling the effect by adding it to the queue.
@@ -170,7 +195,10 @@ impl Root {
             &mut rev_sorted
         };
 
+        // Traverse reactive graph.
         Self::dfs(start_node, &mut self.nodes.borrow_mut(), rev_sorted);
+
+        self.mark_dependents_dirty(start_node);
 
         for &node in rev_sorted.iter().rev() {
             let mut nodes_mut = self.nodes.borrow_mut();
@@ -181,33 +209,11 @@ impl Root {
             let node_state = &mut nodes_mut[node];
             node_state.mark = Mark::None; // Reset value.
 
-            // Do not update the starting node since it has already been updated.
-            if node == start_node {
-                node_state.state = NodeState::Changed;
-                continue;
-            }
-
-            // Check if dependencies are updated.
-            let any_dep_changed = nodes_mut[node]
-                .dependencies
-                .iter()
-                .any(|dep| nodes_mut[*dep].state == NodeState::Changed);
-            drop(nodes_mut);
-
-            let new_state = if any_dep_changed {
+            // Check if this node needs to be updated.
+            if nodes_mut[node].state == NodeState::Dirty {
+                drop(nodes_mut); // End RefMut borrow.
                 self.run_node_update(node)
-            } else {
-                NodeState::Unchanged
             };
-            self.nodes.borrow_mut()[node].state = new_state;
-        }
-
-        // Reset the states of all the nodes.
-        let mut nodes_mut = self.nodes.borrow_mut();
-        for node in rev_sorted {
-            if let Some(node) = nodes_mut.get_mut(*node) {
-                node.state = NodeState::Unchanged;
-            }
         }
     }
 
@@ -223,9 +229,6 @@ impl Root {
     }
 
     /// Run depth-first-search on the reactive graph starting at `current`.
-    ///
-    /// Also resets `changed_in_last_update` and adds a [`Mark::Permanent`] for all signals
-    /// traversed.
     fn dfs(current_id: NodeId, nodes: &mut SlotMap<NodeId, ReactiveNode>, buf: &mut Vec<NodeId>) {
         let Some(current) = nodes.get_mut(current_id) else {
             // If signal is dead, don't even visit it.

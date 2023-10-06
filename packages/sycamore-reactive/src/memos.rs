@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::fmt::{self, Formatter};
 use std::ops::Deref;
 
-use crate::{create_empty_signal, create_signal, NodeState, ReadSignal, Root, Signal};
+use crate::{create_empty_signal, create_signal, ReadSignal, Root, Signal};
 
 /// A memoized derived signal.
 ///
@@ -78,10 +78,10 @@ pub fn create_selector_with<T>(
         let value = value.downcast_mut().expect("wrong memo type");
         let new = f();
         if eq(&new, value) {
-            NodeState::Unchanged
+            false
         } else {
             *value = new;
-            NodeState::Changed
+            true
         }
     }));
 
