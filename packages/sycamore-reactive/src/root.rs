@@ -26,8 +26,8 @@ pub(crate) struct Root {
     pub current_node: Cell<NodeId>,
     /// All the nodes created in this `Root`.
     pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
-    /// A list of effects to be run after signal updates are over.
-    pub effect_queue: RefCell<Vec<Box<dyn FnMut()>>>,
+    /// A list of signals who need their values to be propagated after the batch is over.
+    pub node_update_queue: RefCell<Vec<NodeId>>,
     /// Whether we are currently batching signal updatse. If this is true, we do not run
     /// `effect_queue` and instead wait until the end of the batch.
     pub batching: Cell<bool>,
@@ -56,7 +56,7 @@ impl Root {
             rev_sorted_buf: RefCell::new(Vec::new()),
             current_node: Cell::new(NodeId::null()),
             nodes: RefCell::new(SlotMap::default()),
-            effect_queue: RefCell::new(Vec::new()),
+            node_update_queue: RefCell::new(Vec::new()),
             batching: Cell::new(false),
         };
         let _ref = Box::leak(Box::new(this));
@@ -85,7 +85,7 @@ impl Root {
 
         let _ = self.tracker.take();
         let _ = self.rev_sorted_buf.take();
-        let _ = self.effect_queue.take();
+        let _ = self.node_update_queue.take();
         let _ = self.current_node.take();
         let _ = self.nodes.take();
         self.batching.set(false);
@@ -178,21 +178,12 @@ impl Root {
         nodes_mut[current].dependents = dependents;
     }
 
-    /// If we are currently batching, defers calling the effect by adding it to the queue.
-    pub fn call_effect(&self, mut f: impl FnMut() + 'static) {
-        if self.batching.get() {
-            self.effect_queue.borrow_mut().push(Box::new(f));
-        } else {
-            f();
-        }
-    }
-
     /// If there are no cyclic dependencies, then the reactive graph is a DAG (Directed Acylic
     /// Graph). We can therefore use DFS to get a topological sorting of all the reactive nodes.
     ///
     /// We then go through every node in this topological sorting and update only those nodes which
     /// have dependencies that were updated.
-    fn propagate_node_updates(&'static self, start_node: NodeId) {
+    fn propagate_node_updates(&'static self, start_nodes: &[NodeId]) {
         // Try to reuse the shared buffer if possible.
         let mut rev_sorted = Vec::new();
         let mut rev_sorted_buf = self.rev_sorted_buf.try_borrow_mut();
@@ -204,11 +195,12 @@ impl Root {
         };
 
         // Traverse reactive graph.
-        Self::dfs(start_node, &mut self.nodes.borrow_mut(), rev_sorted);
+        for &node in start_nodes {
+            Self::dfs(node, &mut self.nodes.borrow_mut(), rev_sorted);
+            self.mark_dependents_dirty(node);
+        }
         #[cfg(feature = "trace")]
         tracing::trace!("update len: {}", rev_sorted.len());
-
-        self.mark_dependents_dirty(start_node);
 
         for &node in rev_sorted.iter().rev() {
             let mut nodes_mut = self.nodes.borrow_mut();
@@ -229,6 +221,8 @@ impl Root {
 
     /// Call this if `start_node` has been updated manually. This will automatically update all
     /// signals that depend on `start_node`.
+    ///
+    /// If we are currently batching, defers updating the signal until the end of the batch.
     #[cfg_attr(debug_assertions, track_caller)]
     #[cfg_attr(
         all(feature = "trace", not(debug_assertions)),
@@ -239,11 +233,15 @@ impl Root {
         tracing::instrument(skip(self), fields(created_at = self.nodes.borrow()[start_node].created_at.to_string()))
     )]
     pub fn propagate_updates(&'static self, start_node: NodeId) {
-        // Set the global root.
-        let prev = Root::set_global(Some(self));
-        // Propagate any signal updates.
-        self.propagate_node_updates(start_node);
-        Root::set_global(prev);
+        if self.batching.get() {
+            self.node_update_queue.borrow_mut().push(start_node);
+        } else {
+            // Set the global root.
+            let prev = Root::set_global(Some(self));
+            // Propagate any signal updates.
+            self.propagate_node_updates(&[start_node]);
+            Root::set_global(prev);
+        }
     }
 
     /// Run depth-first-search on the reactive graph starting at `current`.
@@ -277,12 +275,10 @@ impl Root {
     }
 
     /// Sets the batch flag to `false` and run all the queued effects.
-    fn end_batch(&self) {
+    fn end_batch(&'static self) {
         self.batching.set(false);
-        let effects = self.effect_queue.take();
-        for mut effect in effects {
-            effect();
-        }
+        let nodes = self.node_update_queue.take();
+        self.propagate_node_updates(&nodes);
     }
 }
 
@@ -401,11 +397,23 @@ pub fn on_cleanup(f: impl FnOnce() + 'static) {
     }
 }
 
-/// Batch updates from related signals together and only run effects at the end of the scope.
+/// Batch updates from related signals together and only run memos and effects at the end of the
+/// scope.
 ///
-/// Note that this only batches effect updates, not memos. This is because we cannot defer updating
-/// of a signal because of methods like [`Signal::update`] which allow direct mutation to the
-/// underlying value.
+/// # Example
+///
+/// ```
+/// # use sycamore_reactive::*;
+/// # let _ = create_root(|| {
+/// let state = create_signal(1);
+/// let double = create_memo(move || state.get() * 2);
+/// batch(move || {
+///     state.set(2);
+///     assert_eq!(double.get(), 2);
+/// });
+/// assert_eq!(double.get(), 4);
+/// # });
+/// ```
 pub fn batch<T>(f: impl FnOnce() -> T) -> T {
     let root = Root::global();
     root.start_batch();
@@ -519,6 +527,19 @@ mod tests {
 
             trigger.set(());
             assert_eq!(counter.get(), 1);
+        });
+    }
+
+    #[test]
+    fn batch_memo() {
+        let _ = create_root(|| {
+            let state = create_signal(1);
+            let double = create_memo(move || state.get() * 2);
+            batch(move || {
+                state.set(2);
+                assert_eq!(double.get(), 2);
+            });
+            assert_eq!(double.get(), 4);
         });
     }
 
