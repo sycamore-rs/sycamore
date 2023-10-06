@@ -117,6 +117,14 @@ impl Root {
     /// * `root` - The reactive root.
     /// * `id` - The id associated with the reactive node.
     /// `SignalId` inside the state itself.
+    #[cfg_attr(
+        all(feature = "trace", not(debug_assertions)),
+        tracing::instrument(skip(self))
+    )]
+    #[cfg_attr(
+        all(feature = "trace", debug_assertions),
+        tracing::instrument(skip(self), fields(created_at = self.nodes.borrow()[current].created_at.to_string()))
+    )]
     fn run_node_update(&'static self, current: NodeId) {
         debug_assert_eq!(
             self.nodes.borrow()[current].state,
@@ -197,6 +205,8 @@ impl Root {
 
         // Traverse reactive graph.
         Self::dfs(start_node, &mut self.nodes.borrow_mut(), rev_sorted);
+        #[cfg(feature = "trace")]
+        tracing::trace!("update len: {}", rev_sorted.len());
 
         self.mark_dependents_dirty(start_node);
 
@@ -220,6 +230,14 @@ impl Root {
     /// Call this if `start_node` has been updated manually. This will automatically update all
     /// signals that depend on `start_node`.
     #[cfg_attr(debug_assertions, track_caller)]
+    #[cfg_attr(
+        all(feature = "trace", not(debug_assertions)),
+        tracing::instrument(skip(self))
+    )]
+    #[cfg_attr(
+        all(feature = "trace", debug_assertions),
+        tracing::instrument(skip(self), fields(created_at = self.nodes.borrow()[start_node].created_at.to_string()))
+    )]
     pub fn propagate_updates(&'static self, start_node: NodeId) {
         // Set the global root.
         let prev = Root::set_global(Some(self));

@@ -26,6 +26,7 @@ use crate::{create_memo, Root};
 /// `create_effect` should only be used for creating **side-effects**. It is generally not
 /// recommended to update signal states inside an effect. You probably should be using a
 /// [`create_memo`](crate::create_memo) instead.
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn create_effect(f: impl FnMut() + 'static) {
     let f = Rc::new(RefCell::new(f));
     create_memo(move || {

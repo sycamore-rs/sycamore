@@ -101,6 +101,7 @@ suspense = [
 	"sycamore-core/suspense",
 ]
 serde = ["sycamore-reactive/serde"]
+trace = ["sycamore-reactive/trace"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
 web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]
 

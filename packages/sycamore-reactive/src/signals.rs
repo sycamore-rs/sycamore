@@ -39,6 +39,8 @@ pub struct ReadSignal<T: 'static> {
     pub(crate) id: NodeId,
     root: &'static Root,
     /// Keep track of where the signal was created for diagnostics.
+    /// This is also stored in the Node but we want to have access to this when accessing a
+    /// disposed node so we store it here as well.
     #[cfg(debug_assertions)]
     created_at: &'static std::panic::Location<'static>,
     _phantom: PhantomData<T>,
@@ -129,6 +131,8 @@ pub(crate) fn create_empty_signal<T>() -> Signal<T> {
         context: Vec::new(),
         state: NodeState::Clean,
         mark: Mark::None,
+        #[cfg(debug_assertions)]
+        created_at: std::panic::Location::caller(),
     });
     // Add the signal to the parent's `children` list.
     let current_node = root.current_node.get();

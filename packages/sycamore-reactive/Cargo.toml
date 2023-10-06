@@ -17,7 +17,10 @@ paste = "1.0.12"
 serde = { version = "1.0.188", optional = true }
 slotmap = "1.0.6"
 smallvec = { version = "1.11.1", features = ["union"] }
+tracing = { version = "0.1.37", optional = true }
 
 [features]
 default = []
 nightly = []
+serde = ["dep:serde"]
+trace = ["dep:tracing"]

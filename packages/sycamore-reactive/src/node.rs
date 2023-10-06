@@ -36,6 +36,9 @@ pub(crate) struct ReactiveNode {
     pub state: NodeState,
     /// Used for DFS traversal of the reactive graph.
     pub mark: Mark,
+    /// Keep track of where the signal was created for diagnostics.
+    #[cfg(debug_assertions)]
+    pub created_at: &'static std::panic::Location<'static>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
