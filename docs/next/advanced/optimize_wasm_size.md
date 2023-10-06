@@ -12,19 +12,6 @@ A common mistake when building a Wasm binary is to forget to build in release mo
 trunk build --release
 ```
 
-## `wee_alloc`
-
-[`wee_alloc`](https://github.com/rustwasm/wee_alloc) is a memory allocator focused on targeting
-WebAssembly, producing a small .wasm code size, and having a simple, correct implementation.
-Replacing the default allocator with this one will result in a smaller binary size at the expense of
-speed and memory overhead.
-
-```rust
-// Use `wee_alloc` as the global allocator.
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-```
-
 ## `Cargo.toml`
 
 It is possible to configure release builds to be smaller by using various flags and configurations
