@@ -107,19 +107,7 @@
 					"href": "migration/0.8-to-0.9"
 				}
 			]
-		},
-		{
-			"title": "Contribute",
-			"items": [
-				{
-					"name": "Architecture",
-					"href": "contribute/architecture"
-				},
-				{
-					"name": "Development",
-					"href": "contribute/development"
-				}
-			]
 		}
 	]
 }
+

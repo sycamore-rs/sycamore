@@ -25,8 +25,6 @@
 <url><loc>https://sycamore-rs.netlify.app/docs/basics/iteration</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/basics/reactivity</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/basics/view</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-<url><loc>https://sycamore-rs.netlify.app/docs/contribute/architecture</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
-<url><loc>https://sycamore-rs.netlify.app/docs/contribute/development</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/getting_started/faq</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/getting_started/hello_world</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
 <url><loc>https://sycamore-rs.netlify.app/docs/getting_started/installation</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
