@@ -24,13 +24,13 @@ variables:
   # int = DIGIT / digit1-9 1*( DIGIT / "_" DIGIT )
   integer: '([\+\-]?) (?: [0-9] | [1-9] (?: [0-9] | _ [0-9] )+ )'
 
-  HEXDIG: '[0-9A-Fa-f]'
-  hex_int: '0x{{HEXDIG}}(?:{{HEXDIG}}|_{{HEXDIG}})*'
-  oct_int: '0o[0-7](?:[0-7]|_[0-7])*'
-  bin_int: '0b[0-1](?:[0-1]|_[0-1])*'
+  HEXDIG: "[0-9A-Fa-f]"
+  hex_int: "0x{{HEXDIG}}(?:{{HEXDIG}}|_{{HEXDIG}})*"
+  oct_int: "0o[0-7](?:[0-7]|_[0-7])*"
+  bin_int: "0b[0-1](?:[0-1]|_[0-1])*"
 
   # zero-prefixable-int = DIGIT *( DIGIT / underscore DIGIT )
-  zero_prefixable_int: '[0-9] (?: [0-9] | _ [0-9] )*'
+  zero_prefixable_int: "[0-9] (?: [0-9] | _ [0-9] )*"
   # frac = decimal-point zero-prefixable-int
   frac: '\. {{zero_prefixable_int}}'
   # exp = "e" float-exp-part
@@ -38,43 +38,43 @@ variables:
   exp: '[eE] [\+\-]? {{zero_prefixable_int}}'
 
   # date-time      = offset-date-time / local-date-time / local-date / local-time
-  date_time: '{{offset_date_time}} | {{local_date_time}} | {{local_date}} | {{local_time}}'
+  date_time: "{{offset_date_time}} | {{local_date_time}} | {{local_date}} | {{local_time}}"
   # date-fullyear  = 4DIGIT
-  date_fullyear: '[0-9]{4}'
+  date_fullyear: "[0-9]{4}"
   # date-month     = 2DIGIT  ; 01-12
-  date_month: '[0-1][0-9]'
+  date_month: "[0-1][0-9]"
   # date-mday      = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on month/year
-  date_mday: '[0-3][0-9]'
+  date_mday: "[0-3][0-9]"
   # time-hour      = 2DIGIT  ; 00-23
-  time_hour: '[0-2][0-9]'
+  time_hour: "[0-2][0-9]"
   # time-minute    = 2DIGIT  ; 00-59
-  time_minute: '[0-5][0-9]'
+  time_minute: "[0-5][0-9]"
   # time-second    = 2DIGIT  ; 00-58, 00-59, 00-60 based on leap second rules
-  time_second: '[0-6][0-9]'
+  time_second: "[0-6][0-9]"
   # time-secfrac   = "." 1*DIGIT
   time_secfrac: '\.[0-9]+'
   # time-numoffset = ( "+" / "-" ) time-hour ":" time-minute
-  time_numoffset: '[+-] {{time_hour}} : {{time_minute}}'
+  time_numoffset: "[+-] {{time_hour}} : {{time_minute}}"
   # time-offset    = "Z" / time-numoffset
-  time_offset: '(?: [zZ] | {{time_numoffset}} )'
+  time_offset: "(?: [zZ] | {{time_numoffset}} )"
   # partial-time   = time-hour ":" time-minute ":" time-second [time-secfrac]
-  partial_time: '{{time_hour}} : {{time_minute}} : {{time_second}} (?: {{time_secfrac}} )?'
+  partial_time: "{{time_hour}} : {{time_minute}} : {{time_second}} (?: {{time_secfrac}} )?"
   # full-date      = date-fullyear "-" date-month "-" date-mday
-  full_date: '{{date_fullyear}} - {{date_month}} - {{date_mday}}'
+  full_date: "{{date_fullyear}} - {{date_month}} - {{date_mday}}"
   # full-time      = partial-time time-offset
-  full_time: '{{partial_time}} {{time_offset}}'
+  full_time: "{{partial_time}} {{time_offset}}"
   # offset-date-time = full-date T|%20 full-time
-  offset_date_time: '{{full_date}} [tT ] {{full_time}}'
+  offset_date_time: "{{full_date}} [tT ] {{full_time}}"
   # local-date-time = full-date T|%20 partial-time
-  local_date_time: '{{full_date}} [tT ] {{partial_time}}'
+  local_date_time: "{{full_date}} [tT ] {{partial_time}}"
   # local-date = full-date
-  local_date: '{{full_date}}'
+  local_date: "{{full_date}}"
   # local-time = partial-time
-  local_time: '{{partial_time}}'
+  local_time: "{{partial_time}}"
 
 contexts:
   main:
-    - match: '^{{ws}}'
+    - match: "^{{ws}}"
       # Ignore leading whitespace for all expressions.
     - include: comments
     - include: tables
@@ -88,7 +88,7 @@ contexts:
         1: invalid.illegal.toml
 
   comments:
-    - match: '{{ws}}((#).*)'
+    - match: "{{ws}}((#).*)"
       captures:
         1: comment.line.number-sign.toml
         2: punctuation.definition.comment.toml
@@ -101,7 +101,7 @@ contexts:
     - include: float
     - include: integer
     - include: boolean
-    - match: '{{ws}}$'
+    - match: "{{ws}}$"
       # Don't show an incomplete line as invalid to avoid frequent red
       # highlighting while typing.
       pop: true
@@ -151,7 +151,7 @@ contexts:
       pop: true
 
   date-time:
-    - match: '(?x) {{date_time}}'
+    - match: "(?x) {{date_time}}"
       scope: constant.other.datetime.toml
       pop: true
 
@@ -196,7 +196,7 @@ contexts:
       scope: invalid.illegal.string.escape.toml
 
   literal-string:
-    - match: '('')[^'']*('')'
+    - match: "(')[^']*(')"
       # There is ambiguity in what is allowed in a literal string.
       # See: https://github.com/toml-lang/toml/issues/473
       scope: string.quoted.single.literal.toml
@@ -211,24 +211,24 @@ contexts:
       set: [maybe-empty-array, maybe-array-comments]
 
   maybe-empty-array:
-    - match: ']'
+    - match: "]"
       scope: punctuation.definition.array.end.toml
       pop: true
-    - match: ''
+    - match: ""
       set: [array-sep, data-types]
 
   array-sep:
-    - match: '{{wsnl}}'
+    - match: "{{wsnl}}"
     - include: comments
-    - match: ']'
+    - match: "]"
       scope: punctuation.definition.array.end.toml
       pop: true
-    - match: ','
+    - match: ","
       scope: punctuation.separator.array.toml
       set:
-        - match: '{{wsnl}}'
+        - match: "{{wsnl}}"
         - include: comments
-        - match: ']'
+        - match: "]"
           scope: punctuation.definition.array.end.toml
           pop: true
         - match: '(?=[^\n])'
@@ -237,7 +237,7 @@ contexts:
       scope: invalid.illegal.array.toml
 
   maybe-array-comments:
-    - match: '{{wsnl}}'
+    - match: "{{wsnl}}"
     - include: comments
     - match: '(?=[^\n])'
       pop: true
@@ -246,16 +246,16 @@ contexts:
     - match: '\{'
       scope: punctuation.definition.inline-table.begin.toml
       set:
-        - match: '{{ws}}'
+        - match: "{{ws}}"
         - match: '\}'
           # Empty table.
           scope: punctuation.definition.inline-table.end.toml
           pop: true
-        - match: ''
+        - match: ""
           set: [inline-keyval-sep, key]
 
   inline-keyval-sep:
-    - match: '{{ws}}(=){{ws}}'
+    - match: "{{ws}}(=){{ws}}"
       captures:
         1: punctuation.definition.key-value.toml
       set: [inline-table-keyvals, data-types]
@@ -264,54 +264,54 @@ contexts:
       pop: true
 
   inline-table-keyvals:
-    - match: '{{ws}}'
+    - match: "{{ws}}"
     - match: '\}'
       scope: punctuation.definition.inline-table.end.toml
       pop: true
-    - match: ','
+    - match: ","
       scope: punctuation.separator.inline-table.toml
       set:
-        - match: '{{ws}}'
-        - match: ''
+        - match: "{{ws}}"
+        - match: ""
           set: [inline-keyval-sep, key]
     - match: '(?=\w+|.)'
       scope: invalid.illegal.inline-key.toml
       pop: true
 
   keyval:
-    - match: '{{peek_key_start}}'
+    - match: "{{peek_key_start}}"
       push: [keyval-sep, key]
 
   keyval-sep:
-    - match: '{{ws}}(=){{ws}}'
+    - match: "{{ws}}(=){{ws}}"
       captures:
         # This could arguably be keyword.operator.assignment.toml, but since
         # Monokai uses the same color for non-C sources with entity.name.tag,
         # it doesn't have the appropriate visual distinction.
         1: punctuation.definition.key-value.toml
       set: [maybe-comment-eol, data-types]
-    - match: '{{ws}}$'
+    - match: "{{ws}}$"
       # Don't show an incomplete line as invalid to avoid flickering.
       pop: true
-    - match: '.+$'
+    - match: ".+$"
       scope: invalid.illegal.keyval.toml
       pop: true
 
   key:
     - meta_scope: meta.tag.key.toml
-    - match: '{{peek_key_start}}'
+    - match: "{{peek_key_start}}"
       push: [maybe-dot-key, key-simple]
-    - match: '(?={{ws}}=)'
+    - match: "(?={{ws}}=)"
       pop: true
-    - match: '{{ws}}$'
+    - match: "{{ws}}$"
       # Early exit to avoid errors while typing.
       pop: true
-    - match: '.'
+    - match: "."
       scope: invalid.illegal.key.toml
       pop: true
 
   key-simple:
-    - match: '[A-Za-z0-9_-]+'
+    - match: "[A-Za-z0-9_-]+"
       scope: entity.name.tag.toml
       pop: true
     - include: key-quoted
@@ -324,21 +324,21 @@ contexts:
     - include: literal-string
 
   maybe-dot-key:
-    - match: '{{dot_peek_key}}'
+    - match: "{{dot_peek_key}}"
       captures:
         1: punctuation.separator.key.toml
       push: key-simple
-    - match: '(?={{ws}}(?:=|$))'
+    - match: "(?={{ws}}(?:=|$))"
       pop: true
-    - match: '.'
+    - match: "."
       scope: invalid.illegal.key.toml
       pop: true
 
   maybe-comment-eol:
     - include: comments
-    - match: '$'
+    - match: "$"
       pop: true
-    - match: '.+'
+    - match: ".+"
       # This also highlights trailing whitespece.  Although that is valid
       # TOML, it doesn't seem bad to me.  If that's annoying, change this
       # to '[^ \n]+'.
@@ -378,28 +378,28 @@ contexts:
     - include: table-name-inc
 
   table-name-inc:
-    - match: '{{peek_key_start}}'
+    - match: "{{peek_key_start}}"
       push: [maybe-dot-table-name, table-name-simple]
     - match: '[^\]]+\]?'
       scope: invalid.illegal.table.toml
       pop: true
 
   table-name-simple:
-    - match: '[A-Za-z0-9_-]+'
+    - match: "[A-Za-z0-9_-]+"
       scope: entity.name.table.toml
       pop: true
     - include: key-quoted
-    - match: '.'
+    - match: "."
       scope: invalid.illegal.table.toml
       pop: true
 
   maybe-dot-table-name:
-    - match: '{{dot_peek_key}}'
+    - match: "{{dot_peek_key}}"
       captures:
         1: punctuation.separator.table.toml
       push: table-name-simple
     - match: '(?={{ws}}(?:\]|$))'
       pop: true
-    - match: '.'
+    - match: "."
       scope: invalid.illegal.table.toml
       pop: true

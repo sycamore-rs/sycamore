@@ -15,7 +15,7 @@ Creating HTML elements is easy as pie with the `view!` macro. Since you'll likel
 lot of elements in your app, there is a special terse syntax.
 
 ```rust
-view! { 
+view! {
     // A simple div
     div {}
     // A div with a class
@@ -33,7 +33,7 @@ Of course, in your app, you probably want to display some text. To create a text
 string literal.
 
 ```rust
-view! { 
+view! {
     "Hello World!"
 }
 ```
@@ -43,7 +43,7 @@ view! {
 Creating all these top-level nodes is not very useful. You can create nested nodes like so.
 
 ```rust
-view! { 
+view! {
     div {
         p {
             span { "Hello " }
@@ -61,7 +61,7 @@ automatically be inserted as text into the DOM tree. For example:
 ```rust
 let my_number = 123;
 
-view! { 
+view! {
     p {
         "This is my number: " (my_number)
     }
@@ -72,11 +72,11 @@ Other views created using the `view!` macro can also be interpolated using the s
 example:
 
 ```rust
-let inner_view = view! { 
+let inner_view = view! {
     "Inside"
 };
 
-let outer_view = view! { 
+let outer_view = view! {
     "Outside"
     div {
         (inner_view)
@@ -92,7 +92,7 @@ value of the expression. Learn more about this in [Reactivity](./reactivity).
 Attributes (including classes and ids) can also be specified.
 
 ```rust
-view! { 
+view! {
     p(class="my-class", id="my-paragraph", aria-label="My paragraph")
     button(disabled=true) {
        "My button"
@@ -107,7 +107,7 @@ element. This should generally be avoided because it is a possible security risk
 input to this attribute as that will create an XSS (Cross-Site Scripting) vulnerability.
 
 ```rust
-view! { 
+view! {
     div(dangerously_set_inner_html="<span>Inner HTML!</span>")
 
     // DO NOT DO THIS!!!
@@ -123,7 +123,7 @@ Instead, when displaying user input, use interpolation syntax instead.
 Properties are set using the `prop:*` directive.
 
 ```rust
-view! { 
+view! {
     input(type="checkbox", prop:indeterminate=true)
 }
 ```
@@ -141,7 +141,7 @@ the element property is not a `string`.
 Events are attached using the `on:*` directive.
 
 ```rust
-view! { 
+view! {
     button(on:click=|_| { /* do something */ }) {
         "Click me"
     }
@@ -154,7 +154,7 @@ As seen in previous examples, views can also be fragments. You can create as man
 at the top-level.
 
 ```rust
-view! { 
+view! {
     p { "First child" }
     p { "Second child" }
 }

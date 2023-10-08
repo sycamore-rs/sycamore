@@ -4,12 +4,12 @@ TODO: this is missing a lot of things
 
 ## Directory structure
 
-* Main crates (including `sycamore`, `sycamore-reactive`, etc...) are in `packages/`.
-* Integration tests are in `packages/sycamore/tests`.
-* Benchmarks are in `packages/tools/bench`.
-* Examples are in `examples/`.
-* The Sycamore website is in `website/`. This will eventually be moved out into a new repository.
-* The documentation is in `docs/`. This also contains a tool for pre-rendering the markdown files into HTMl.
+- Main crates (including `sycamore`, `sycamore-reactive`, etc...) are in `packages/`.
+- Integration tests are in `packages/sycamore/tests`.
+- Benchmarks are in `packages/tools/bench`.
+- Examples are in `examples/`.
+- The Sycamore website is in `website/`. This will eventually be moved out into a new repository.
+- The documentation is in `docs/`. This also contains a tool for pre-rendering the markdown files into HTMl.
 
 ## Crates
 

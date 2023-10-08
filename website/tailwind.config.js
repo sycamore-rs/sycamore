@@ -1,24 +1,22 @@
-const colors = require('tailwindcss/colors');
+const colors = require("tailwindcss/colors");
 
 module.exports = {
-  content: [
-    "./src/**/*.rs"
-  ],
+  content: ["./src/**/*.rs"],
   darkMode: "class", // or 'media' or 'class'
   theme: {
     fontFamily: {
-      body: ['Inter', 'system-ui', 'sans-serif'],
-      mono: ['IBM Plex Mono', 'Menlo', 'monospace'],
-      code: ['ui-monospace', 'monospace'],
+      body: ["Inter", "system-ui", "sans-serif"],
+      mono: ["IBM Plex Mono", "Menlo", "monospace"],
+      code: ["ui-monospace", "monospace"],
     },
     extend: {
       zIndex: {
-        'neg': -1
-      }
+        neg: -1,
+      },
     },
     colors: {
-      transparent: 'transparent',
-      current: 'currentColor',
+      transparent: "transparent",
+      current: "currentColor",
       black: colors.black,
       red: colors.red,
       gray: colors.gray,
@@ -26,7 +24,7 @@ module.exports = {
       amber: colors.amber,
       yellow: colors.yellow,
       white: colors.white,
-    }
+    },
   },
   plugins: [],
 };
