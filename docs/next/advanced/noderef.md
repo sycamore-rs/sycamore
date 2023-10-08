@@ -9,7 +9,7 @@ using the `ref` property in the `view!` macro.
 ```rust
 let node_ref = create_node_ref();
 
-view! { 
+view! {
     p(ref=node_ref) { "Hello World!" }
 }
 ```

@@ -1,113 +1,112 @@
 {
-	"sections": [
-		{
-			"title": "Getting Started",
-			"items": [
-				{
-					"name": "Installation",
-					"href": "getting_started/installation"
-				},
-				{
-					"name": "Hello World!",
-					"href": "getting_started/hello_world"
-				},
-				{
-					"name": "FAQ",
-					"href": "getting_started/faq"
-				}
-			]
-		},
-		{
-			"title": "Basics",
-			"items": [
-				{
-					"name": "view!",
-					"href": "basics/view"
-				},
-				{
-					"name": "Reactivity",
-					"href": "basics/reactivity"
-				},
-				{
-					"name": "Components",
-					"href": "basics/components"
-				},
-				{
-					"name": "Control Flow",
-					"href": "basics/control_flow"
-				},
-				{
-					"name": "Iteration",
-					"href": "basics/iteration"
-				},
-				{
-					"name": "Data Binding",
-					"href": "basics/data_binding"
-				}
-			]
-		},
-		{
-			"title": "Advanced Guides",
-			"items": [
-				{
-					"name": "NodeRef",
-					"href": "advanced/noderef"
-				},
-				{
-					"name": "Tweened",
-					"href": "advanced/tweened"
-				},
-				{
-					"name": "Contexts",
-					"href": "advanced/contexts"
-				},
-				{
-					"name": "Advanced Reactivity",
-					"href": "advanced/advanced_reactivity"
-				},
-				{
-					"name": "Attribute Passthrough",
-					"href": "advanced/attributes_prop"
-				},
-				{
-					"name": "Styling",
-					"href": "advanced/styling"
-				},
-				{
-					"name": "Testing",
-					"href": "advanced/testing"
-				},
-				{
-					"name": "Routing",
-					"href": "advanced/routing"
-				},
-				{
-					"name": "SSR",
-					"href": "advanced/ssr"
-				},
-				{
-					"name": "JS Interop",
-					"href": "advanced/js_interop"
-				},
-				{
-					"name": "Optimize Wasm Size",
-					"href": "advanced/optimize_wasm_size"
-				}
-			]
-		},
-		{
-			"title": "Migration Guides",
-			"items": [
-				{
-					"name": "v0.7 to v0.8",
-					"href": "migration/0.7-to-0.8"
-				},
-				{
-					"name": "v0.8 to v0.9",
-					"href": "migration/0.8-to-0.9"
-				}
-			]
-		}
-	]
+  "sections": [
+    {
+      "title": "Getting Started",
+      "items": [
+        {
+          "name": "Installation",
+          "href": "getting_started/installation"
+        },
+        {
+          "name": "Hello World!",
+          "href": "getting_started/hello_world"
+        },
+        {
+          "name": "FAQ",
+          "href": "getting_started/faq"
+        }
+      ]
+    },
+    {
+      "title": "Basics",
+      "items": [
+        {
+          "name": "view!",
+          "href": "basics/view"
+        },
+        {
+          "name": "Reactivity",
+          "href": "basics/reactivity"
+        },
+        {
+          "name": "Components",
+          "href": "basics/components"
+        },
+        {
+          "name": "Control Flow",
+          "href": "basics/control_flow"
+        },
+        {
+          "name": "Iteration",
+          "href": "basics/iteration"
+        },
+        {
+          "name": "Data Binding",
+          "href": "basics/data_binding"
+        }
+      ]
+    },
+    {
+      "title": "Advanced Guides",
+      "items": [
+        {
+          "name": "NodeRef",
+          "href": "advanced/noderef"
+        },
+        {
+          "name": "Tweened",
+          "href": "advanced/tweened"
+        },
+        {
+          "name": "Contexts",
+          "href": "advanced/contexts"
+        },
+        {
+          "name": "Advanced Reactivity",
+          "href": "advanced/advanced_reactivity"
+        },
+        {
+          "name": "Attribute Passthrough",
+          "href": "advanced/attributes_prop"
+        },
+        {
+          "name": "Styling",
+          "href": "advanced/styling"
+        },
+        {
+          "name": "Testing",
+          "href": "advanced/testing"
+        },
+        {
+          "name": "Routing",
+          "href": "advanced/routing"
+        },
+        {
+          "name": "SSR",
+          "href": "advanced/ssr"
+        },
+        {
+          "name": "JS Interop",
+          "href": "advanced/js_interop"
+        },
+        {
+          "name": "Optimize Wasm Size",
+          "href": "advanced/optimize_wasm_size"
+        }
+      ]
+    },
+    {
+      "title": "Migration Guides",
+      "items": [
+        {
+          "name": "v0.7 to v0.8",
+          "href": "migration/0.7-to-0.8"
+        },
+        {
+          "name": "v0.8 to v0.9",
+          "href": "migration/0.8-to-0.9"
+        }
+      ]
+    }
+  ]
 }
-

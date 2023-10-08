@@ -6,7 +6,7 @@ jobs:
   bench:
     name: Bench
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1

@@ -11,11 +11,11 @@ algorithm is used to determine which items need to be re-rendered according to t
 
 ```rust
 let count = create_signal(vec![1, 2]);
-view! { 
+view! {
     ul {
         Keyed(
             iterable=count,
-            view=|x| view! { 
+            view=|x| view! {
                 li { (x) }
             },
             key=|x| *x,
@@ -31,11 +31,11 @@ generally preferred over `Indexed` because it is more efficient in most scenario
 
 ```rust
 let count = create_signal(vec![1, 2]);
-view! { 
+view! {
     ul {
         Indexed(
             iterable=count,
-            view=|x| view! { 
+            view=|x| view! {
                 li { (x) }
             },
         )
@@ -56,7 +56,7 @@ let views = View::new_fragment(
     count.iter().map(|&x| view! { li { (x) } }).collect()
 );
 
-view! { 
+view! {
     ul {
         (views)
     }

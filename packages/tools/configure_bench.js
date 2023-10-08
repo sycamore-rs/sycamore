@@ -12,21 +12,21 @@ console.log("Configuring benchmarks");
 
 console.log("Building sycamore...");
 exec(
-  `cd ./sycamore/examples/js-framework-benchmark && trunk build --release --public-url "/frameworks/keyed/sycamore"`
+  `cd ./sycamore/examples/js-framework-benchmark && trunk build --release --public-url "/frameworks/keyed/sycamore"`,
 );
 console.log("Done building. Copying files...");
 exec(
-  `cp -r ./sycamore/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore`
+  `cp -r ./sycamore/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore`,
 );
 
 // ---
 console.log("Building sycamore-baseline...");
 exec(
-  `cd ./sycamore-baseline/examples/js-framework-benchmark && trunk build --release --public-url "/frameworks/keyed/sycamore-baseline"`
+  `cd ./sycamore-baseline/examples/js-framework-benchmark && trunk build --release --public-url "/frameworks/keyed/sycamore-baseline"`,
 );
 console.log("Done building. Copying files...");
 exec(
-  `cp -r ./sycamore-baseline/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore-baseline`
+  `cp -r ./sycamore-baseline/examples/js-framework-benchmark/dist ./js-framework-benchmark/frameworks/keyed/sycamore-baseline`,
 );
 
 console.log("Creating package.json files...");
@@ -51,7 +51,7 @@ const PACKAGE_JSON = (name, version) =>
 let sycamore_package_json = PACKAGE_JSON("sycamore", "head");
 let sycamore_baseline_package_json = PACKAGE_JSON(
   "sycamore-baseline",
-  "baseline"
+  "baseline",
 );
 
 console.log(sycamore_package_json);
@@ -60,10 +60,10 @@ console.log(sycamore_baseline_package_json);
 writeFileSync(
   "./js-framework-benchmark/frameworks/keyed/sycamore/package.json",
   sycamore_package_json,
-  { flag: "a+" }
+  { flag: "a+" },
 );
 writeFileSync(
   "./js-framework-benchmark/frameworks/keyed/sycamore-baseline/package.json",
   sycamore_baseline_package_json,
-  { flag: "a+" }
+  { flag: "a+" },
 );

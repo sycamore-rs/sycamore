@@ -25,7 +25,7 @@ Reactivity is based on reactive primitives. A `Signal` is one such example of a 
 At it's simplest, a `Signal` is simply a wrapper around a type that can be read and written to and
 which can be listened on whenever its wrapped value is mutated.
 
-To create a signal, we use `create_signal(...)`. 
+To create a signal, we use `create_signal(...)`.
 Here is an example of creating a signal, accessing it via `.get()`, and modifying it via
 `.set(...)`.
 
@@ -86,7 +86,7 @@ Reactivity is automatically built-in into the `view!` macro. Say we have the fol
 
 ```rust
 let state = create_signal(0);
-view! { 
+view! {
     p {
         (state.get())
     }

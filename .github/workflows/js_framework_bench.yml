@@ -64,7 +64,7 @@ jobs:
 
       - name: Configure benchmarks
         run: node ./sycamore/packages/tools/configure_bench.js
-      
+
       - name: Benchmark list
         run: |
           ls ./js-framework-benchmark/frameworks/keyed
@@ -111,13 +111,12 @@ jobs:
           echo "$results"
           mkdir bench-results
           echo "$results" &> bench-results/BENCH_RESULTS.txt
-      
+
       - name: Log PR number
         env:
           PR_NUMBER: ${{ github.event.number }}
         run: echo "$PR_NUMBER" &> bench-results/PR_NUMBER.txt
-          
-      
+
       - name: Upload bench diff
         uses: actions/upload-artifact@v3
         with:
