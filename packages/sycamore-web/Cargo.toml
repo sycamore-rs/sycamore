@@ -8,33 +8,33 @@ keywords = ["wasm", "gui", "reactive", "web"]
 license = "MIT"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.8.2"
+version.workspace = true
 
 [dependencies]
-hashbrown = "0.13.1"
+hashbrown = "0.14.1"
 html-escape = "0.2.12"
-indexmap = "1.9.2"
+indexmap = "2.0.2"
 js-sys = "0.3.60"
 once_cell = "1.16.0"
-sycamore-core = { path = "../sycamore-core", version = "0.8.0" }
-sycamore-reactive = { path = "../sycamore-reactive", version = "0.8.0" }
+sycamore-core = { path = "../sycamore-core", version = "0.9.0-beta.2" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.2" }
 wasm-bindgen = "0.2.83"
 web-sys = { version = "0.3.60", features = [
-    "console",
-    "Comment",
-    "Document",
-    "DocumentFragment",
-    "DomTokenList",
-    "Element",
-    "Event",
-    "HtmlCollection",
-    "HtmlElement",
-    "HtmlInputElement",
-    "HtmlTemplateElement",
-    "Node",
-    "NodeList",
-    "Text",
-    "Window",
+	"console",
+	"Comment",
+	"Document",
+	"DocumentFragment",
+	"DomTokenList",
+	"Element",
+	"Event",
+	"HtmlCollection",
+	"HtmlElement",
+	"HtmlInputElement",
+	"HtmlTemplateElement",
+	"Node",
+	"NodeList",
+	"Text",
+	"Window",
 ] }
 
 [dev-dependencies]

@@ -17,7 +17,7 @@ rustup target add wasm32-unknown-unknown
 
 ### Minimum Supported Rust Version (MSRV) and Rust edition
 
-The minimum supported Rust toolchain is `v1.63.0`. Sycamore is not guaranteed to (and probably
+The minimum supported Rust toolchain is `v1.72.0`. Sycamore is not guaranteed to (and probably
 won't) compile on older versions of Rust.
 
 Sycamore only works on Rust edition 2021. Even though most crates written in edition 2021 are
@@ -61,7 +61,7 @@ You now need to add Sycamore to your new project's dependencies. Add the followi
 `Cargo.toml` file in your project folder:
 
 ```toml
-sycamore = "0.8"
+sycamore = "0.9.0-beta.2"
 ```
 
 > **Note**: Sycamore is currently being developed at a rapid pace. To have access to the latest

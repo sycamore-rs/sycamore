@@ -266,20 +266,19 @@ impl GenericNode for DomNode {
         self.node.unchecked_ref::<Element>().remove();
     }
 
-    fn untyped_event<'a>(
+    fn untyped_event(
         &self,
-        cx: Scope<'a>,
         event: Cow<'_, str>,
-        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+        mut handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     ) {
-        // SAFETY: extend lifetime because the closure is dropped when the cx is disposed,
-        // preventing the handler from ever being accessed after its lifetime.
-        let handler: Box<dyn FnMut(Self::AnyEventData) + 'static> =
-            unsafe { std::mem::transmute(handler) };
-        let closure = create_ref(cx, Closure::wrap(handler));
+        let scope = use_global_scope();
+        let cb = Closure::new(move |x| {
+            scope.run_in(|| handler(x));
+        });
         self.node
-            .add_event_listener_with_callback(&event, closure.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(&event, cb.as_ref().unchecked_ref())
             .unwrap_throw();
+        on_cleanup(move || drop(cb));
     }
 
     fn update_inner_text(&self, text: Cow<'static, str>) {
@@ -384,7 +383,7 @@ impl Html for DomNode {
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render(view: impl FnOnce(Scope<'_>) -> View<DomNode>) {
+pub fn render(view: impl FnOnce() -> View<DomNode> + 'static) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
@@ -395,9 +394,9 @@ pub fn render(view: impl FnOnce(Scope<'_>) -> View<DomNode>) {
 /// For rendering under the `<body>` tag, use [`render`] instead.
 ///
 /// _This API requires the following crate features to be activated: `dom`_
-pub fn render_to(view: impl FnOnce(Scope<'_>) -> View<DomNode>, parent: &Node) {
+pub fn render_to(view: impl FnOnce() -> View<DomNode> + 'static, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
-    let _ = render_get_scope(view, parent);
+    let _ = create_root(|| render_in_scope(view, parent));
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
@@ -409,20 +408,16 @@ pub fn render_to(view: impl FnOnce(Scope<'_>) -> View<DomNode>, parent: &Node) {
 /// of your app long-term. For rendering a view that will never be unmounted from the dom, use
 /// [`render_to`] instead. For rendering under the `<body>` tag, use [`render`] instead.
 ///
+/// It is expected that this function will be called inside a reactive root, usually created using
+/// [`create_root`].
+///
 /// _This API requires the following crate features to be activated: `dom`_
-#[must_use = "please hold onto the ScopeDisposer until you want to clean things up, or use render_to() instead"]
-pub fn render_get_scope<'a>(
-    view: impl FnOnce(Scope<'_>) -> View<DomNode> + 'a,
-    parent: &'a Node,
-) -> ScopeDisposer<'a> {
-    create_scope(|cx| {
-        insert(
-            cx,
-            &DomNode::from_web_sys(parent.clone()),
-            view(cx),
-            None,
-            None,
-            false,
-        );
-    })
+pub fn render_in_scope(view: impl FnOnce() -> View<DomNode> + 'static, parent: &Node) {
+    insert(
+        &DomNode::from_web_sys(parent.clone()),
+        view(),
+        None,
+        None,
+        false,
+    );
 }

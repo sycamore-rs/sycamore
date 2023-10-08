@@ -7,28 +7,24 @@ extern "C" {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
-    let a = create_signal(cx, 0_f64);
-    let b = create_signal(cx, 0_f64);
-    let product = create_signal(cx, 0_f64);
+fn App<G: Html>() -> View<G> {
+    let a = create_signal(1_f64);
+    let b = create_signal(1_f64);
+    let product = create_signal(1_f64);
 
-    create_effect(cx, || {
-        product.set(multiply(*a.get(), *b.get()));
+    create_effect(move || {
+        product.set(multiply(a.get(), b.get()));
     });
 
-    view! { cx,
+    view! {
         input(type="number", bind:valueAsNumber=a)
         span { "*" }
         input(type="number", bind:valueAsNumber=b)
         span { "=" }
-        span { (*product.get()) }
+        span { (product.get()) }
     }
 }
 
 fn main() {
-    sycamore::render(|cx| {
-        view! { cx,
-            App
-        }
-    });
+    sycamore::render(App);
 }

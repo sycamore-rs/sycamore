@@ -7,31 +7,28 @@ struct Cat {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
-    let items = create_signal(
-        cx,
-        vec![
-            Cat {
-                id: "J---aiyznGQ",
-                name: "Keyboard Cat",
-            },
-            Cat {
-                id: "z_AbfPXTKms",
-                name: "Maru",
-            },
-            Cat {
-                id: "OUtn3pvWmpg",
-                name: "Henri The Existential Cat",
-            },
-        ],
-    );
+fn App<G: Html>() -> View<G> {
+    let items = create_signal(vec![
+        Cat {
+            id: "J---aiyznGQ",
+            name: "Keyboard Cat",
+        },
+        Cat {
+            id: "z_AbfPXTKms",
+            name: "Maru",
+        },
+        Cat {
+            id: "OUtn3pvWmpg",
+            name: "Henri The Existential Cat",
+        },
+    ]);
 
-    view! { cx,
+    view! {
         p { "The famous cats of YouTube" }
         ul {
             Indexed(
-                iterable=items,
-                view=|cx, Cat { id, name }| view! { cx,
+                iterable=*items,
+                view=|Cat { id, name }| view! {
                     li {
                         a(href=format!("https://www.youtube.com/watch?v={id}")) {
                             (name)
@@ -44,5 +41,5 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 }
 
 fn main() {
-    sycamore::render(|cx| view! { cx, App {} });
+    sycamore::render(App);
 }

@@ -9,7 +9,21 @@ use serde::Deserialize;
 struct Result {
     framework: String,
     benchmark: String,
-    values: Vec<f64>,
+    values: ResultValues,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+enum ResultValues {
+    Run {
+        #[allow(dead_code)]
+        total: Vec<f64>,
+        script: Vec<f64>,
+    },
+    Memory {
+        #[serde(rename = "DEFAULT")]
+        default: Vec<f64>,
+    },
 }
 
 #[derive(Default)]
@@ -20,23 +34,28 @@ struct BenchmarkResults {
 }
 
 fn main() {
-    let args = env::args().into_iter().collect::<Vec<_>>();
+    let args = env::args().collect::<Vec<_>>();
     let results_path = args
         .get(1)
         .expect("path to results file should be passed as an argument");
     let result_str = fs::read_to_string(results_path).expect("could not read results file");
+
     let results: Vec<Result> = serde_json::from_str(&result_str).expect("failed to deserialize");
     let mut benchmark_results: BTreeMap<String, BenchmarkResults> = BTreeMap::new();
     for result in results.into_iter() {
-        let value_sum: f64 = result.values.iter().sum();
-        let value_count = result.values.len();
+        let values = match result.values {
+            ResultValues::Run { total: _, script } => script,
+            ResultValues::Memory { default } => default,
+        };
+        let value_sum: f64 = values.iter().sum();
+        let value_count = values.len();
         let avg_val = if value_count > 0 {
             value_sum / value_count as f64
         } else {
             0f64
         };
 
-        let mut entry = benchmark_results.entry(result.benchmark).or_default();
+        let entry = benchmark_results.entry(result.benchmark).or_default();
         if result.framework.starts_with("wasm-bindgen") {
             entry.bindgen = avg_val
         } else if result.framework.starts_with("sycamore-baseline") {

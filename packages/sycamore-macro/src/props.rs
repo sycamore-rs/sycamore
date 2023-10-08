@@ -61,6 +61,8 @@ mod struct_info {
     use proc_macro2::TokenStream;
     use quote::quote;
     use syn::parse::Error;
+    use syn::punctuated::Punctuated;
+    use syn::Token;
 
     use super::field_info::{FieldBuilderAttr, FieldInfo};
     use super::util::{
@@ -669,27 +671,13 @@ mod struct_info {
         pub fn new(attrs: &[syn::Attribute]) -> Result<TypeBuilderAttr, Error> {
             let mut result = TypeBuilderAttr::default();
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
+                if !attr.path().is_ident("prop") {
                     continue;
                 }
-
-                if attr.tokens.is_empty() {
-                    continue;
-                }
-                let as_expr: syn::Expr = syn::parse2(attr.tokens.clone())?;
-
-                match as_expr {
-                    syn::Expr::Paren(body) => {
-                        result.apply_meta(*body.expr)?;
-                    }
-                    syn::Expr::Tuple(body) => {
-                        for expr in body.elems.into_iter() {
-                            result.apply_meta(expr)?;
-                        }
-                    }
-                    _ => {
-                        return Err(Error::new_spanned(attr.tokens.clone(), "Expected (<...>)"));
-                    }
+                let as_expr: Punctuated<syn::Expr, Token![,]> =
+                    attr.parse_args_with(Punctuated::parse_terminated)?;
+                for expr in as_expr {
+                    result.apply_meta(expr)?;
                 }
             }
 
@@ -773,7 +761,9 @@ mod field_info {
     use proc_macro2::{Span, TokenStream};
     use quote::quote;
     use syn::parse::Error;
+    use syn::punctuated::Punctuated;
     use syn::spanned::Spanned;
+    use syn::Token;
 
     use super::util::{
         expr_to_single_string, ident_to_type, path_to_single_string, strip_raw_ident_prefix,
@@ -805,8 +795,8 @@ mod field_info {
                         Some(syn::parse_quote!(::std::default::Default::default()));
                     builder_attr.setter.strip_option = Some(field.ty.span());
                 } else if name == "children" || name == "attributes" {
-                    // If this field is the `children` or `attributes` field, make it implicitly have a default
-                    // value.
+                    // If this field is the `children` or `attributes` field, make it implicitly
+                    // have a default value.
                     builder_attr.default =
                         Some(syn::parse_quote! { ::std::default::Default::default() });
                 }
@@ -869,27 +859,13 @@ mod field_info {
     impl FieldBuilderAttr {
         pub fn with(mut self, attrs: &[syn::Attribute]) -> Result<Self, Error> {
             for attr in attrs {
-                if path_to_single_string(&attr.path).as_deref() != Some("prop") {
+                if !attr.path().is_ident("prop") {
                     continue;
                 }
-
-                if attr.tokens.is_empty() {
-                    continue;
-                }
-
-                let as_expr: syn::Expr = syn::parse2(attr.tokens.clone())?;
-                match as_expr {
-                    syn::Expr::Paren(body) => {
-                        self.apply_meta(*body.expr)?;
-                    }
-                    syn::Expr::Tuple(body) => {
-                        for expr in body.elems.into_iter() {
-                            self.apply_meta(expr)?;
-                        }
-                    }
-                    _ => {
-                        return Err(Error::new_spanned(attr.tokens.clone(), "Expected (<...>)"));
-                    }
+                let as_expr: Punctuated<syn::Expr, Token![,]> =
+                    attr.parse_args_with(Punctuated::parse_terminated)?;
+                for expr in as_expr {
+                    self.apply_meta(expr)?;
                 }
             }
 

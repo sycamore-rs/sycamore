@@ -9,8 +9,13 @@ enum VersionedDocsLink {
 
 const VERSIONS: &[(&str, VersionedDocsLink)] = &[
     ("Next", VersionedDocsLink::Next),
-    // v0.8.0
-    ("v0.8.0", VersionedDocsLink::Some("v0.8")),
+    // v0.9.x
+    ("v0.9.0-beta.2", VersionedDocsLink::None),
+    ("v0.9.0-beta.1", VersionedDocsLink::None),
+    // v0.8.x
+    ("v0.8.2", VersionedDocsLink::Some("v0.8")),
+    ("v0.8.1", VersionedDocsLink::None),
+    ("v0.8.0", VersionedDocsLink::None),
     ("v0.8.0-beta.7", VersionedDocsLink::None),
     ("v0.8.0-beta.6", VersionedDocsLink::None),
     ("v0.8.0-beta.5", VersionedDocsLink::None),
@@ -36,12 +41,11 @@ const VERSIONS: &[(&str, VersionedDocsLink)] = &[
 
 #[component(inline_props)]
 fn VersionedDocsLink<G: Html>(
-    cx: Scope,
     name: &'static str,
     versioned_docs_link: VersionedDocsLink,
 ) -> View<G> {
     match versioned_docs_link {
-        VersionedDocsLink::Some(link) => view! { cx,
+        VersionedDocsLink::Some(link) => view! {
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("/docs/{}/getting_started/installation", link),
@@ -55,7 +59,7 @@ fn VersionedDocsLink<G: Html>(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::None => view! { cx,
+        VersionedDocsLink::None => view! {
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("https://docs.rs/sycamore/{}", &name[1..]),
@@ -65,7 +69,7 @@ fn VersionedDocsLink<G: Html>(
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
         },
-        VersionedDocsLink::Next => view! { cx,
+        VersionedDocsLink::Next => view! {
             a(
                 class="hover:text-yellow-500 transition-colors",
                 href="/docs/getting_started/installation",
@@ -80,7 +84,7 @@ fn VersionedDocsLink<G: Html>(
 }
 
 #[component]
-pub fn Versions<G: Html>(cx: Scope) -> View<G> {
+pub fn Versions<G: Html>() -> View<G> {
     web_sys::window()
         .unwrap()
         .document()
@@ -91,7 +95,7 @@ pub fn Versions<G: Html>(cx: Scope) -> View<G> {
         .iter()
         .copied()
         .map(|(name, versioned_docs_link)| {
-            view! { cx,
+            view! {
                 li {
                     h2(class="text-2xl font-light") { (name) }
                     div(class="flex flex-col divide-y dark:divide-gray-500 text-gray-600 dark:text-gray-300") {
@@ -103,7 +107,7 @@ pub fn Versions<G: Html>(cx: Scope) -> View<G> {
         .collect();
     let versions = View::new_fragment(versions);
 
-    view! { cx,
+    view! {
         div(class="container mx-auto") {
             h1(class="text-4xl font-bold") { "Versions" }
             ul(class="mt-5 ml-2 flex flex-col space-y-4") {

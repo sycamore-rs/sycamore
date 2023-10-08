@@ -1,12 +1,12 @@
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
-    let state = create_signal(cx, 0i32);
-    let increment = |_| state.set(*state.get() + 1);
-    let decrement = |_| state.set(*state.get() - 1);
-    let reset = |_| state.set(0);
-    view! { cx,
+fn App<G: Html>() -> View<G> {
+    let mut state = create_signal(0i32);
+    let increment = move |_| state += 1;
+    let decrement = move |_| state -= 1;
+    let reset = move |_| state.set(0);
+    view! {
         div {
             p { "Value: " (state.get()) }
             button(on:click=increment) { "+" }

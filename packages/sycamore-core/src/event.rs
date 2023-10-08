@@ -3,35 +3,33 @@
 #[cfg(feature = "suspense")]
 use std::future::Future;
 
-use sycamore_reactive::Scope;
-
 /// A trait that is implemented for all event handlers.
-pub trait EventHandler<'a, T, Ev, S>
+pub trait EventHandler<T, Ev, S>
 where
     Ev: EventDescriptor<T>,
 {
-    fn call(&mut self, cx: Scope<'a>, event: Ev::EventData);
+    fn call(&mut self, event: Ev::EventData);
 }
 
-impl<'a, T, Ev, F> EventHandler<'a, T, Ev, ()> for F
+impl<T, Ev, F> EventHandler<T, Ev, ()> for F
 where
     Ev: EventDescriptor<T>,
     F: FnMut(Ev::EventData),
 {
-    fn call(&mut self, _cx: Scope<'a>, event: Ev::EventData) {
+    fn call(&mut self, event: Ev::EventData) {
         self(event)
     }
 }
 
 #[cfg(feature = "suspense")]
-impl<'a, T, Ev, F, Fut> EventHandler<'a, T, Ev, ((), ())> for F
+impl<T, Ev, F, Fut> EventHandler<T, Ev, ((), ())> for F
 where
     Ev: EventDescriptor<T>,
     F: FnMut(Ev::EventData) -> Fut,
-    Fut: Future<Output = ()> + 'a,
+    Fut: Future<Output = ()> + 'static,
 {
-    fn call(&mut self, cx: Scope<'a>, event: Ev::EventData) {
-        sycamore_futures::spawn_local_scoped(cx, self(event));
+    fn call(&mut self, event: Ev::EventData) {
+        sycamore_futures::spawn_local_scoped(self(event));
     }
 }
 

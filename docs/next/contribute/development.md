@@ -22,7 +22,7 @@ cd sycamore
 To run unit tests and non Wasm integration tests, use:
 
 ```bash
-cargo test
+cargo test --all-features
 ```
 
 To run integration tests in the browser, you will need to have
@@ -33,6 +33,26 @@ wasm-pack test sycamore --firefox # or --chrome
 ```
 
 If you want to run the tests in a headless browser, pass the `--headless` flag as well.
+
+## Adding an example
+
+TOOD
+
+## Writing proc-macro code
+
+TODO: explain how to run UI tests with trybuild
+
+## Creating a new docs page
+
+TOOD: explain `docs` utility for generating HTML from markdown.
+
+## Benchmarking
+
+TOOD: explain benchmark tool.
+
+### Using the js-framework-benchmark CI
+
+To have the CI automatically run the `js-framework-benchmark`, simply add the `performance` label to your PR. This will automatically queue up a benchmark for every commit and the result of the run will be posted as a comment.
 
 ## PR Requirements
 

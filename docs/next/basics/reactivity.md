@@ -9,17 +9,15 @@ great match which is the whole point of Sycamore.
 
 ## Reactive scopes
 
-Whenever reactivity is used, there must be a reactive scope. Such a scope is provided by functions
-such as `sycamore::render` and `sycamore::render_to` as an argument to the render closure.
+Whenever reactivity is used, there must be a reactive scope that owns all the signals/memos created.
+A reactive scope is automatically created by functions such as `sycamore::render`.
 
 ```rust
-sycamore::render(|cx| {
-    // `cx` is the reactive scope.
-});
+sycamore::render(|| {
+    // We are now inside a reactive scope.
+    // This means we can use functions such as `create_signal` etc...
+})
 ```
-
-From this point on, we assume all code, unless otherwise specified, is run inside such a scope so
-that it can access `cx`.
 
 ## Signal
 
@@ -27,17 +25,12 @@ Reactivity is based on reactive primitives. A `Signal` is one such example of a 
 At it's simplest, a `Signal` is simply a wrapper around a type that can be read and written to and
 which can be listened on whenever its wrapped value is mutated.
 
-To create a signal, we use `create_signal(cx, ...)`. Note that the return value of this method is
-not actually `Signal` but `&Signal`. The reason for this is because the created signal is allocated
-on the reactive scope and therefore has its lifetime tied with the scope. Furthermore, this allows
-using Rust's lifetime system to make sure signals are not accessed once its enclosing scope has been
-destroyed.
-
+To create a signal, we use `create_signal(...)`. 
 Here is an example of creating a signal, accessing it via `.get()`, and modifying it via
 `.set(...)`.
 
 ```rust
-let state = create_signal(cx, 0); // Create a reactive atom with an initial value of `0`.
+let state = create_signal(0); // Create a reactive atom with an initial value of `0`.
 println!("The state is: {}", state.get()); // prints "The state is: 0"
 state.set(1);
 println!("The state is: {}", state.get()); // should now print "The state is: 1"
@@ -50,8 +43,8 @@ Let's do that! For example, imagine we wanted to print out every state change. T
 accomplished like so:
 
 ```rust
-let state = create_signal(cx, 0);
-create_effect(cx, || println!("The state changed. New value: {}", state.get()));
+let state = create_signal(0);
+create_effect(move || println!("The state changed. New value: {}", state.get()));
 // Prints "The state changed. New value: 0"
 // (note that the effect is always executed at least 1 regardless of state changes)
 
@@ -71,15 +64,15 @@ and calling `state.get()` inside this listener scope adds itself as a _dependenc
 Sure, effects are nice but Rust is a multi-paradigm language, not just an imperative language. Let's
 take advantage of the more functional side of Rust!
 
-In fact, we can easily create a derived state (also know as derive stores) using `create_memo(...)`.
+In fact, we can easily create a derived state (also known as derive stores) using `create_memo(...)`.
 
 ```rust
-let state = create_signal(cx, 0);
-let double = create_memo(cx, || *state.get() * 2);
+let state = create_signal(0);
+let double = create_memo(|| state.get() * 2);
 
-assert_eq!(*double.get(), 0);
+assert_eq!(double.get(), 0);
 state.set(1);
-assert_eq!(*double.get(), 2);
+assert_eq!(double.get(), 2);
 ```
 
 `create_memo(...)` automatically recomputes the derived value when any of its dependencies change.
@@ -92,8 +85,8 @@ is used together with UI rendering.
 Reactivity is automatically built-in into the `view!` macro. Say we have the following code:
 
 ```rust
-let state = create_signal(cx, 0);
-view! { cx,
+let state = create_signal(0);
+view! { 
     p {
         (state.get())
     }
@@ -103,13 +96,13 @@ view! { cx,
 This will expand to something approximately like:
 
 ```rust
-let state = create_signal(cx, 0);
+let state = create_signal(0);
 {
     let element = G::element(p);
     let text = G::text(String::new() /* placeholder */);
-    create_effect(cx, move || {
+    create_effect(move || {
         // Update text when `state` changes.
-        text.update_text(Some(&state.get()));
+        text.update_text(Some(&state.get(),to_string()));
     });
     element.append(&text);
     element
@@ -128,7 +121,7 @@ in a `create_effect`) returns.
 For example, code inside the `spawn_local` won't be tracked:
 
 ```rust
-create_effect(cx, move || {
+create_effect(move || {
     wasm_bindgen_futures::spawn_local(async move {
         // This scope is not tracked because spawn_local runs on the
         // next microtask tick once the effect closure has returned already.
@@ -144,7 +137,7 @@ around by accessing reactive dependencies as needed before going into a future, 
 fix:
 
 ```rust
-create_effect(cx, move || {
+create_effect(move || {
     signal.track(); // Same as calling `.get()` but without returning a value.
     wasm_bindgen_futures::spawn_local(async move {
         // This scope is not tracked because spawn_local runs on the next microtask tick (in other words, some time later).

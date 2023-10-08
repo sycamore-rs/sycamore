@@ -27,22 +27,22 @@ To make a context value accessible, we need to use the `provide_context_ref` met
 the context value to be reactive, we actually want a `Signal<DarkMode>` to be provided.
 
 ```rust
-let dark_mode = create_signal(cx, DarkMode(false));
-provide_context_ref(cx, dark_mode);
+let dark_mode = create_signal(DarkMode(false));
+provide_context_ref(dark_mode);
 ```
 
 You might notice that there are two different methods for providing context: `provide_context` and
-`provide_context_ref`. The first one is for providing a value, whereas the later is for providing a
+`provide_context_ref`. The first one is for providing a value, whereas the latter is for providing a
 reference. The first one is simply a wrapper around `create_ref` and `provide_context_ref`. For
 example, the two following code snippets are equivalent.
 
 ```rust
 let value = 123;
 
-let value_ref = create_ref(cx, value);
-provide_context_ref(cx, value_ref);
+let value_ref = create_ref(value);
+provide_context_ref(value_ref);
 // or equivalently...
-provide_context(cx, value);
+provide_context(value);
 ```
 
 ### Using contexts.
@@ -54,14 +54,14 @@ To access the context, use the `use_context` method.
 
 ```rust
 #[component]
-fn ChildComponent<G: Html>(cx: Scope) -> View<G> {
-    let dark_mode = use_context::<Signal<DarkMode>>(cx);
+fn ChildComponent<G: Html>() -> View<G> {
+    let dark_mode = use_context::<Signal<DarkMode>>();
     // ...
 }
 
-let dark_mode = create_signal(cx, DarkMode(false));
-provide_context_ref(cx, dark_mode);
-view! { cx,
+let dark_mode = create_signal(DarkMode(false));
+provide_context_ref(dark_mode);
+view! { 
     ChildComponent {}
 }
 ```

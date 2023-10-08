@@ -18,9 +18,10 @@ use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_core::render;
 use wasm_bindgen::JsValue;
 
+use crate::generic_node::GenericNode;
 use crate::prelude::*;
 use crate::rt::Event;
-use crate::{generic_node::GenericNode, web::html::ev};
+use crate::web::html::ev;
 
 /// If `el` is a `HydrateNode`, use `get_next_marker` to get the initial node value.
 pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
@@ -48,30 +49,26 @@ pub fn initial_node<G: GenericNode>(_el: &G) -> Option<View<G>> {
 }
 
 #[doc(hidden)]
-pub fn erase_handler<'a, Ev, Handler, S>(
-    cx: Scope<'a>,
-    mut handler: Handler,
-) -> Box<dyn FnMut(JsValue) + 'a>
+pub fn erase_handler<Ev, Handler, S>(mut handler: Handler) -> Box<dyn FnMut(JsValue) + 'static>
 where
-    Handler: EventHandler<'a, JsValue, Ev, S> + 'a,
+    Handler: EventHandler<JsValue, Ev, S> + 'static,
     Ev: EventDescriptor<JsValue>,
 {
-    Box::new(move |e: JsValue| handler.call(cx, e.into()))
+    Box::new(move |e: JsValue| handler.call(e.into()))
 }
 
 /// Apply an `AttributeValue` to an element. Used by the `view!` macro.
-pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType = JsValue>>(
-    cx: Scope<'cx>,
+pub fn apply_attribute<G: GenericNode<AnyEventData = JsValue, PropertyType = JsValue>>(
     el: G,
     name: Cow<'static, str>,
-    value: AttributeValue<'cx, G>,
+    value: AttributeValue<G>,
 ) {
     match value {
         AttributeValue::Str(s) => {
             el.set_attribute(name.clone(), Cow::Borrowed(s));
         }
         AttributeValue::DynamicStr(mut s) => {
-            create_effect(cx, {
+            create_effect({
                 let name = name.clone();
                 move || el.set_attribute(name.clone(), Cow::Owned(s()))
             });
@@ -82,7 +79,7 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
             }
         }
         AttributeValue::DynamicBool(mut value) => {
-            create_effect(cx, {
+            create_effect({
                 let name = name.clone();
                 move || {
                     if value() {
@@ -97,23 +94,23 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
             el.dangerously_set_inner_html(value.into());
         }
         AttributeValue::DynamicDangerouslySetInnerHtml(value) => {
-            create_effect(cx, move || {
+            create_effect(move || {
                 el.dangerously_set_inner_html(Cow::Owned(value.to_string()));
             });
         }
         AttributeValue::Event(event, handler) => {
-            el.untyped_event(cx, Cow::Borrowed(event), handler);
+            el.untyped_event(Cow::Borrowed(event), handler);
         }
         AttributeValue::BindBool(prop, signal) => {
             #[cfg(target_arch = "wasm32")]
             {
-                create_effect(cx, {
+                create_effect({
                     let signal = signal.clone();
                     let el = el.clone();
-                    move || el.set_property(prop, &JsValue::from_bool(*signal.get()))
+                    move || el.set_property(prop, &JsValue::from_bool(signal.get()))
                 });
             }
-            el.event(cx, ev::change, {
+            el.event(ev::change, {
                 move |event: Event| {
                     signal.set(
                         JsValue::as_bool(
@@ -127,13 +124,13 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
         AttributeValue::BindNumber(prop, signal) => {
             #[cfg(target_arch = "wasm32")]
             {
-                create_effect(cx, {
+                create_effect({
                     let signal = signal.clone();
                     let el = el.clone();
-                    move || el.set_property(prop, &JsValue::from_f64(*signal.get()))
+                    move || el.set_property(prop, &JsValue::from_f64(signal.get()))
                 });
             }
-            el.event(cx, ev::input, {
+            el.event(ev::input, {
                 move |event: Event| {
                     signal.set(
                         JsValue::as_f64(
@@ -147,13 +144,13 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
         AttributeValue::BindString(prop, signal) => {
             #[cfg(target_arch = "wasm32")]
             {
-                create_effect(cx, {
+                create_effect({
                     let signal = signal.clone();
                     let el = el.clone();
-                    move || el.set_property(prop, &JsValue::from_str(&*signal.get()))
+                    move || el.set_property(prop, &JsValue::from_str(&signal.get_clone()))
                 });
             }
-            el.event(cx, ev::input, {
+            el.event(ev::input, {
                 let signal = Clone::clone(&signal);
                 move |event: Event| {
                     signal.set(
@@ -166,7 +163,7 @@ pub fn apply_attribute<'cx, G: GenericNode<AnyEventData = JsValue, PropertyType 
             });
         }
         AttributeValue::Property(prop, value) => {
-            create_effect(cx, move || el.set_property(prop, &value));
+            create_effect(move || el.set_property(prop, &value));
         }
         AttributeValue::Ref(value) => {
             value.set(el);

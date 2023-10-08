@@ -72,7 +72,7 @@ impl Parse for Element {
             let content;
             parenthesized!(content in input);
             content
-                .parse_terminated::<Attribute, Token![,]>(Attribute::parse)?
+                .parse_terminated(Attribute::parse, Token![,])?
                 .into_iter()
                 .collect()
         } else {
@@ -204,7 +204,7 @@ impl Parse for AttributeName {
         let tag = input.call(Ident::parse_any)?;
         let mut extended = Vec::new();
         while input.peek(Token![-]) {
-            extended.push((input.parse()?, input.parse()?));
+            extended.push((input.parse()?, input.call(Ident::parse_any)?));
         }
 
         Ok(Self { tag, extended })
@@ -236,7 +236,7 @@ impl Parse for Component {
             // Parse props.
             let content;
             parenthesized!(content in input);
-            props = content.parse_terminated(ComponentProp::parse)?;
+            props = content.parse_terminated(ComponentProp::parse, Token![,])?;
         }
         if input.peek(Brace) {
             // Parse children.

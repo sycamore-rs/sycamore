@@ -51,7 +51,7 @@ pub mod utils;
 pub mod web;
 
 /* Re-export modules from sycamore-core */
-pub use sycamore_core::{component, generic_node, noderef, view};
+pub use sycamore_core::{component, generic_node, noderef, stable_id, view};
 /* Re-export of the sycamore-macro crate */
 pub use sycamore_macro::*;
 
@@ -67,9 +67,9 @@ pub use web::render_to_string;
 #[cfg(all(feature = "ssr", feature = "suspense"))]
 pub use web::render_to_string_await_suspense;
 #[cfg(all(feature = "web", feature = "hydrate"))]
-pub use web::{hydrate, hydrate_get_scope, hydrate_to};
+pub use web::{hydrate, hydrate_in_scope, hydrate_to};
 #[cfg(feature = "web")]
-pub use web::{render, render_get_scope, render_to};
+pub use web::{render, render_in_scope, render_to};
 
 /// The sycamore prelude.
 ///
@@ -87,6 +87,7 @@ pub mod prelude {
     pub use crate::generic_node::GenericNode;
     pub use crate::noderef::{create_node_ref, NodeRef};
     pub use crate::reactive::*;
+    pub use crate::stable_id::create_unique_id;
     pub use crate::view::View;
     #[cfg(feature = "web")]
     pub use crate::web::macros::{node, view};

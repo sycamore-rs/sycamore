@@ -3,19 +3,20 @@
 
   <h1>Sycamore</h1>
 </div>
-
+<div align="center">
 
 [![Crates.io](https://img.shields.io/crates/v/sycamore)](https://crates.io/crates/sycamore)
 [![docs.rs](https://img.shields.io/docsrs/sycamore?color=blue&label=docs.rs)](https://docs.rs/sycamore)
 [![GitHub contributors](https://img.shields.io/github/contributors/sycamore-rs/sycamore)](https://github.com/sycamore-rs/sycamore/graphs/contributors)
 [![Discord](https://img.shields.io/discord/820400041332179004?label=discord)](https://discord.gg/vDwFUmm6mU)
+</div>
 
 Sycamore is a _reactive_ library for creating web apps in **Rust** and **WebAssembly**.
 
 ```rust
 #[component]
-fn Hello<G: Html>(cx: Scope) -> View<G> {
-    view! { cx,
+fn Hello<G: Html>() -> View<G> {
+    view! { 
         p { "Hello World!" }
     }
 }
@@ -102,3 +103,5 @@ you!
 <a href="https://github.com/sycamore-rs/sycamore/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=sycamore-rs/sycamore" />
 </a>
+
+Special thanks to [@nate-sys](https://github.com/nate-sys) for designing the Sycamore logo!

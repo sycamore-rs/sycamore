@@ -2,14 +2,15 @@
 //!
 //! _Documentation sources: <https://developer.mozilla.org/en-US/>_
 
-use sycamore::prelude::*;
+pub use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_web::on_mount;
 
+#[allow(clippy::useless_attribute)] // Clippy bug: https://github.com/rust-lang/rust-clippy/issues/10878
+#[allow(ambiguous_glob_reexports)] // FIXME: fix this lint warning
 pub use self::html_tags::*;
 pub use self::svg_tags::*;
 use crate::builder::ElementBuilder;
 use crate::generic_node::{GenericNodeElements, SycamoreElement};
-pub use sycamore_core::event::{EventDescriptor, EventHandler};
 
 /// Macro for generating element definitions.
 macro_rules! define_elements {
@@ -129,8 +130,8 @@ macro_rules! define_element_builder_impl {
     ) => {
         #[allow(non_snake_case)]
         $(#[$attr])*
-        pub fn $el<'a, G: GenericNodeElements>() -> ElementBuilder<'a, G, impl FnOnce(Scope<'a>) -> G> {
-            ElementBuilder::new(move |_| G::element::<$el>())
+        pub fn $el<G: GenericNodeElements>() -> ElementBuilder<G, impl FnOnce() -> G> {
+            ElementBuilder::new(move || G::element::<$el>())
         }
     };
     (
@@ -435,9 +436,10 @@ macro_rules! define_events {
 
 /// HTML events definitions.
 pub mod ev {
-    use crate::web::html::EventDescriptor;
     use wasm_bindgen::JsValue;
     use web_sys::*;
+
+    use crate::web::html::EventDescriptor;
 
     define_events! {
         /*

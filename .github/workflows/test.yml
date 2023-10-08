@@ -16,14 +16,14 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.63.0
+          - 1.72.0
           - stable
           - nightly
         os:
           - ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -38,7 +38,7 @@ jobs:
         run: cargo generate-lockfile
 
       - name: Cargo cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/bin/
@@ -48,23 +48,27 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run tests with default features
+      - name: Run tests for packages/sycamore with default features
         # Only run tests for sycamore to prevent stray feature flags from other tests.
         run: cd packages/sycamore && cargo test
 
-      - name: Run tests with all features
-        if: matrix.rust == '1.63.0'
+      - name: Run tests (with UI tests) on 1.72.0
+        if: matrix.rust == '1.72.0'
         env:
           RUN_UI_TESTS: true
+        run: cargo test
+
+      - name: Run tests on stable
+        if: matrix.rust == 'stable'
+        run: cargo test
+
+      - name: Run all tests on nightly
+        if: matrix.rust == 'nightly'
         run: cargo test --all-features
 
-      - name: Run tests with all features excluding UI
-        if: matrix.rust != '1.63.0'
-        run: cargo test --all-features
-
-      - name: Run headless browser tests
+      - name: Run headless browser tests on nightly
         run: cd packages/sycamore && wasm-pack test --firefox --chrome --headless --all-features
-        if: always()
+        if: matrix.rust == 'nightly'
 
   clippy:
     name: Clippy
@@ -73,7 +77,7 @@ jobs:
       RUSTFLAGS: -Dwarnings
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -85,7 +89,7 @@ jobs:
         run: cargo generate-lockfile
 
       - name: Cargo cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/bin/
@@ -103,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Install Miri
         run: |
@@ -117,7 +121,7 @@ jobs:
         run: cargo generate-lockfile
 
       - name: Cargo cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/bin/

@@ -23,36 +23,35 @@ use crate::view::{View, ViewType};
 ///   the node to be inserted is the only child of `parent`, `multi` can still be set to `true` but
 ///   forgoes the optimization.
 pub fn insert<G: GenericNode>(
-    cx: Scope<'_>,
     parent: &G,
     accessor: View<G>,
     initial: Option<View<G>>,
     marker: Option<&G>,
     multi: bool,
 ) {
-    insert_expression(cx, parent, &accessor, initial, marker, false, multi);
+    insert_expression(
+        parent,
+        &accessor,
+        initial.map(View::flatten),
+        marker,
+        false,
+        multi,
+    );
 }
 
+/// Implementaiton detail of [`insert`].
 fn insert_expression<G: GenericNode>(
-    cx: Scope<'_>,
     parent: &G,
     value: &View<G>,
-    mut current: Option<View<G>>,
+    mut current: Option<Vec<G>>,
     marker: Option<&G>,
     unwrap_fragment: bool,
     multi: bool,
 ) {
-    while let Some(View {
-        inner: ViewType::Dyn(f),
-    }) = current
-    {
-        current = Some(f.get().as_ref().clone());
-    }
-
     match &value.inner {
         ViewType::Node(node) => {
             if let Some(current) = current {
-                clean_children(parent, current.flatten(), marker, Some(node), multi);
+                clean_children(parent, current, marker, Some(node), multi);
             } else if marker.is_none() {
                 parent.append_child(node);
             } else {
@@ -65,14 +64,10 @@ fn insert_expression<G: GenericNode>(
         ViewType::Dyn(f) => {
             let parent = parent.clone();
             let marker = marker.cloned();
-            let f = f.clone();
-            create_effect_scoped(cx, move |cx| {
-                let mut value = f.get();
-                while let ViewType::Dyn(f) = &value.inner {
-                    value = f.get();
-                }
+            let f = *f;
+            create_effect(move || {
+                let value = f.get_clone();
                 insert_expression(
-                    cx,
                     &parent,
                     &value,
                     current.clone(),
@@ -80,23 +75,22 @@ fn insert_expression<G: GenericNode>(
                     false,
                     multi,
                 );
-                current = Some(value.as_ref().clone());
+                current = Some(value.flatten());
             });
         }
         ViewType::Fragment(fragment) => {
             let mut v = Vec::new();
             // normalize_incoming_fragment will subscribe to all dynamic nodes in the function so as
-            // to trigger the create_effect when the template changes.
+            // to trigger the create_effect when the view changes.
             let dynamic = normalize_incoming_fragment(&mut v, fragment.as_ref(), unwrap_fragment);
             if dynamic {
                 let parent = parent.clone();
                 let marker = marker.cloned();
-                create_effect_scoped(cx, move |cx| {
+                create_effect(move || {
                     let value = View::new_fragment(v.clone());
                     // This will call normalize_incoming_fragment again, but this time with the
                     // unwrap_fragment arg set to true.
                     insert_expression(
-                        cx,
                         &parent,
                         &value,
                         current.clone(),
@@ -104,9 +98,7 @@ fn insert_expression<G: GenericNode>(
                         true,
                         false,
                     );
-                    current = Some(View::new_fragment(
-                        value.flatten().into_iter().map(View::new_node).collect(),
-                    )); // TODO: do not perform unnecessary flattening of template
+                    current = Some(value.flatten()); // TODO: do not perform unnecessary flattenin
                 });
             } else {
                 let v = v
@@ -122,16 +114,15 @@ fn insert_expression<G: GenericNode>(
                     clean_children(parent, Vec::new(), None, None, false);
                 } else {
                     match current {
-                        Some(current) => match current.inner {
-                            ViewType::Node(node) => {
-                                reconcile_fragments(parent, &mut [node], &v);
+                        Some(mut current) => match &mut current[..] {
+                            [node] => {
+                                reconcile_fragments(parent, std::slice::from_mut(node), &v);
                             }
-                            ViewType::Dyn(_) => unreachable!(),
-                            ViewType::Fragment(ref fragment) => {
+                            fragment => {
                                 if fragment.is_empty() {
                                     append_nodes(parent, v, marker);
                                 } else {
-                                    reconcile_fragments(parent, &mut current.flatten(), &v);
+                                    reconcile_fragments(parent, fragment, &v);
                                 }
                             }
                         },
@@ -186,46 +177,45 @@ pub fn append_nodes<G: GenericNode>(parent: &G, fragment: Vec<G>, marker: Option
     }
 }
 
-/// Normalizes a `Vec<Template<G>>` into a `Vec<G>`.
+/// Normalizes a `&[View<G>]` into a `Vec<View<G>>`.
 ///
-/// Returns whether the normalized `Vec<G>` is dynamic (and should be rendered in an effect).
+/// Returns whether the normalized `Vec<View<G>>` is dynamic (and should therefore be rendered in an
+/// effect).
 ///
 /// # Params
-/// * `v` - The [`Vec`] to write the output to.
-/// * `fragment` - The `Vec<Template<G>>` to normalize.
+/// * `buf` - The `Vec` to write the output to.
+/// * `fragment` - The `&[View<G>]` to normalize.
 /// * `unwrap` - If `true`, unwraps the `fragment` without setting `dynamic` to true. In most cases,
 ///   this should be `false`.
 pub fn normalize_incoming_fragment<G: GenericNode>(
-    v: &mut Vec<View<G>>,
+    buf: &mut Vec<View<G>>,
     fragment: &[View<G>],
     unwrap: bool,
 ) -> bool {
     let mut dynamic = false;
 
-    for template in fragment {
-        match &template.inner {
-            ViewType::Node(_) => v.push(template.clone()),
-            ViewType::Dyn(f) if unwrap => {
-                let mut value = f.get().as_ref().clone();
-                while let ViewType::Dyn(f) = &value.inner {
-                    value = f.get().as_ref().clone();
+    for view in fragment {
+        match &view.inner {
+            ViewType::Node(_) => buf.push(view.clone()),
+            ViewType::Dyn(f) => {
+                if unwrap {
+                    let mut value = f.get_clone();
+                    while let ViewType::Dyn(f) = &value.inner {
+                        value = f.get_clone();
+                    }
+                    let fragment: Rc<[View<G>]> = match &value.inner {
+                        ViewType::Node(_) => Rc::new([value]),
+                        ViewType::Fragment(fragment) => Rc::clone(fragment),
+                        _ => unreachable!(),
+                    };
+                    dynamic = normalize_incoming_fragment(buf, &fragment, false) || dynamic;
+                } else {
+                    buf.push(view.clone());
+                    dynamic = true;
                 }
-                let fragment: Rc<Box<[View<G>]>> = match &value.inner {
-                    ViewType::Node(_) => Rc::new(Box::new([value])),
-                    ViewType::Fragment(fragment) => Rc::clone(fragment),
-                    _ => unreachable!(),
-                };
-                dynamic =
-                    normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
-            }
-            ViewType::Dyn(_) => {
-                // Not unwrap
-                v.push(template.clone());
-                dynamic = true;
             }
             ViewType::Fragment(fragment) => {
-                dynamic =
-                    normalize_incoming_fragment(v, fragment.as_ref().as_ref(), false) || dynamic;
+                dynamic = normalize_incoming_fragment(buf, fragment, false) || dynamic;
             }
         }
     }
@@ -251,10 +241,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
     {
         for (i, node) in a.iter().enumerate() {
             if node.parent_node().as_ref() != Some(parent) {
-                panic!(
-                    "node {} in existing nodes Vec is not a child of parent. node = {:#?}",
-                    i, node
-                );
+                panic!("node {i} in existing nodes Vec is not a child of parent. node = {node:#?}",);
             }
         }
     }
@@ -366,8 +353,7 @@ pub fn reconcile_fragments<G: GenericNode>(parent: &G, a: &mut [G], b: &[G]) {
         for (i, node) in b.iter().enumerate() {
             if node.parent_node().as_ref() != Some(parent) {
                 panic!(
-                    "node {} in new nodes Vec is not a child of parent after reconciliation. node = {:#?}",
-                    i, node
+                    "node {i} in new nodes Vec is not a child of parent after reconciliation. node = {node:#?}",
                 );
             }
         }

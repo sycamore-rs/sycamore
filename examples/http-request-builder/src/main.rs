@@ -21,35 +21,31 @@ async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
 }
 
 #[component]
-async fn VisitsCount<G: Html>(cx: Scope<'_>) -> View<G> {
+async fn VisitsCount<G: Html>() -> View<G> {
     let id = "sycamore-builder-visits-counter";
     let visits = fetch_visits(id).await.unwrap_or_default();
 
     p().t("Total Visits: ")
         .c(span().dyn_t(move || visits.value.to_string()))
-        .view(cx)
+        .view()
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App<G: Html>() -> View<G> {
     div()
         .c(p().t("Page Visit Counter"))
         .c(Suspense(
-            cx,
-            // Take advantage that structs that derive `Props` have public builders even
-            // if the fields are private and come from a different crate (in this case the Sycamore
-            // crate).
             SuspenseProps::builder()
                 .fallback(t("Loading"))
-                .children(Children::new(cx, |cx| VisitsCount(cx)))
+                .children(Children::new(|| VisitsCount()))
                 .build(),
         ))
-        .view(cx)
+        .view()
 }
 
 fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|cx| App(cx));
+    sycamore::render(App);
 }

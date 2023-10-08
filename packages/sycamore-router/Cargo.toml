@@ -8,27 +8,27 @@ license = "MIT"
 name = "sycamore-router"
 readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
-version = "0.8.0"
+version.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sycamore = { path = "../sycamore", version = "0.8.0" }
-sycamore-router-macro = { path = "../sycamore-router-macro", version = "0.8.0" }
+sycamore = { path = "../sycamore", version = "0.9.0-beta.2" }
+sycamore-router-macro = { path = "../sycamore-router-macro", version = "0.9.0-beta.2" }
 wasm-bindgen = "0.2.83"
 
 [dependencies.web-sys]
 features = [
-  "Event",
-  "EventTarget",
-  "History",
-  "HtmlAnchorElement",
-  "HtmlBaseElement",
-  "KeyboardEvent",
-  "Location",
-  "PopStateEvent",
-  "Url",
-  "Window",
+	"Event",
+	"EventTarget",
+	"History",
+	"HtmlAnchorElement",
+	"HtmlBaseElement",
+	"KeyboardEvent",
+	"Location",
+	"PopStateEvent",
+	"Url",
+	"Window",
 ]
 version = "0.3.60"
 

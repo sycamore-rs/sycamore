@@ -6,7 +6,7 @@ updated, so is your `Signal`. Here is an example.
 ```rust
 use sycamore::prelude::*;
 
-let value = create_signal(cx, String::new());
+let value = create_signal(String::new());
 
 view! {
     input(bind:value=value)

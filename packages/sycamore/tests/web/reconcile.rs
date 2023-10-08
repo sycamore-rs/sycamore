@@ -10,7 +10,7 @@ use super::*;
 
 #[wasm_bindgen_test]
 fn insert_create_nodes() {
-    create_scope_immediate(|cx| {
+    let _ = create_root(|| {
         let nodes = [
             DomNode::text_node("1".into()),
             DomNode::text_node("2".into()),
@@ -19,7 +19,6 @@ fn insert_create_nodes() {
         let parent = DomNode::element::<html::div>();
 
         insert(
-            cx,
             &parent,
             View::new_fragment(nodes.iter().cloned().map(View::new_node).collect()),
             None,

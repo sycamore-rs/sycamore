@@ -11,7 +11,7 @@ To add routing to your Sycamore app, install the
 [`sycamore-router`](https://crates.io/crates/sycamore-router) crate from crates.io.
 
 ```toml
-sycamore-router = "0.8"
+sycamore-router = "0.9.0-beta.2"
 ```
 
 ### Compatibility with `sycamore`
@@ -197,20 +197,20 @@ enum Routes {
 To display content based on the route that matches, we can use a `Router`.
 
 ```rust
-view! {
+view! { 
     Router(
         integration=HistoryIntegration::new(),
-        view=|cx, route: &ReadSignal<AppRoutes>| {
+        view=|route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
-                        AppRoutes::Index => view! { cx,
+                        AppRoutes::Index => view! { 
                             "This is the index page"
                         },
-                        AppRoutes::About => view! { cx,
+                        AppRoutes::About => view! { 
                             "About this website"
                         },
-                        AppRoutes::NotFound => view! { cx,
+                        AppRoutes::NotFound => view! { 
                             "404 Not Found"
                         },
                     })
@@ -245,20 +245,20 @@ function.
 ```rust
 let route = AppRoutes::match_path(path);
 
-view! {
+view! { 
     StaticRouter(
         route=route,
-        view=|cx, route: &ReadSignal<AppRoutes>| {
+        view=|route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
-                        AppRoutes::Index => view! { cx,
+                        AppRoutes::Index => view! { 
                             "This is the index page"
                         },
-                        AppRoutes::About => view! { cx,
+                        AppRoutes::About => view! { 
                             "About this website"
                         },
-                        AppRoutes::NotFound => view! { cx,
+                        AppRoutes::NotFound => view! { 
                             "404 Not Found"
                         },
                     })
@@ -295,7 +295,7 @@ page. Sometimes, we just want the browser to handle navigation without being int
 router. To bypass the router, we can add the `rel="external"` attribute to the anchor tag.
 
 ```rust
-view! {
+view! { 
     a(href="path", rel="external") { "Path" }
 }
 ```

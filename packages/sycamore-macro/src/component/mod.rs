@@ -39,56 +39,48 @@ impl Parse for ComponentFn {
 
                 if let ReturnType::Default = sig.output {
                     return Err(syn::Error::new(
-                        sig.paren_token.span,
+                        sig.paren_token.span.close(),
                         "component must return `sycamore::view::View`",
                     ));
                 };
 
                 let inputs = sig.inputs.clone().into_iter().collect::<Vec<_>>();
 
-                if inputs.is_empty() {
-                    return Err(syn::Error::new(
-                        sig.paren_token.span,
-                        "component must take at least one argument of type `sycamore::reactive::Scope`",
-                    ));
-                }
-
-                if inputs.len() > 2 {
-                    return Err(syn::Error::new(
-                        sig.inputs
-                            .clone()
-                            .into_iter()
-                            .skip(2)
-                            .collect::<Punctuated<_, Token![,]>>()
-                            .span(),
-                        "component should not take more than 2 arguments",
-                    ));
-                }
-
-                if let FnArg::Typed(t) = &inputs[0] {
-                    if !matches!(&*t.pat, Pat::Ident(_)) {
-                        return Err(syn::Error::new(
-                            t.span(),
-                            "First argument to a component is expected to be a `sycamore::reactive::Scope`",
-                        ));
-                    }
-                } else {
-                    return Err(syn::Error::new(
-                        inputs[0].span(),
-                        "function components can't accept a receiver",
-                    ));
-                }
-
-                if let Some(FnArg::Typed(pat)) = inputs.get(1) {
-                    if let Type::Tuple(TypeTuple { elems, .. }) = &*pat.ty {
-                        if elems.is_empty() {
+                match &inputs[..] {
+                    [] => {}
+                    [input] => {
+                        if let FnArg::Receiver(_) = input {
                             return Err(syn::Error::new(
-                                pat.ty.span(),
-                                "taking an unit tuple as props is useless",
+                                input.span(),
+                                "components can't accept a receiver",
+                            ));
+                        }
+
+                        if let FnArg::Typed(pat) = input {
+                            if let Type::Tuple(TypeTuple { elems, .. }) = &*pat.ty {
+                                if elems.is_empty() {
+                                    return Err(syn::Error::new(
+                                        pat.ty.span(),
+                                        "taking an unit tuple as props is useless",
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                    [..] => {
+                        if inputs.len() > 1 {
+                            return Err(syn::Error::new(
+                                sig.inputs
+                                    .clone()
+                                    .into_iter()
+                                    .skip(2)
+                                    .collect::<Punctuated<_, Token![,]>>()
+                                    .span(),
+                                "component should not take more than 1 parameter",
                             ));
                         }
                     }
-                }
+                };
 
                 Ok(Self { f })
             }
@@ -101,7 +93,6 @@ impl Parse for ComponentFn {
 }
 
 struct AsyncCompInputs {
-    cx: Ident,
     sync_input: Punctuated<FnArg, Token![,]>,
     async_args: Vec<Expr>,
 }
@@ -121,19 +112,6 @@ fn async_comp_inputs_from_sig_inputs(inputs: &Punctuated<FnArg, Token![,]>) -> A
     }
 
     let mut inputs = inputs.iter();
-
-    let cx_fn_arg = inputs.next().unwrap();
-
-    let cx = if let FnArg::Typed(t) = cx_fn_arg {
-        if let Pat::Ident(id) = &*t.pat {
-            async_args.push(pat_ident_arm(&mut sync_input, cx_fn_arg, id));
-            id.ident.clone()
-        } else {
-            unreachable!("checked in parsing that the first argument is an Ident");
-        }
-    } else {
-        unreachable!("checked in parsing that the first argument is not a receiver");
-    };
 
     let prop_arg = inputs.next();
     let prop_arg = prop_arg.map(|prop_fn_arg| match prop_fn_arg {
@@ -177,7 +155,6 @@ fn async_comp_inputs_from_sig_inputs(inputs: &Punctuated<FnArg, Token![,]>) -> A
     }
 
     AsyncCompInputs {
-        cx,
         async_args,
         sync_input,
     }
@@ -208,7 +185,6 @@ impl ToTokens for ComponentFn {
             // caller.
             let inputs = &sig.inputs;
             let AsyncCompInputs {
-                cx,
                 sync_input,
                 async_args: args,
             } = async_comp_inputs_from_sig_inputs(inputs);
@@ -230,10 +206,10 @@ impl ToTokens for ComponentFn {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = ::sycamore::reactive::create_signal(#cx, ::sycamore::view::View::empty());
-                    let __view = ::sycamore::view::View::new_dyn(#cx, || <_ as ::std::clone::Clone>::clone(&*__dyn.get()));
+                    let __dyn = ::sycamore::reactive::create_signal(::sycamore::view::View::empty());
+                    let __view = ::sycamore::view::View::new_dyn(move || __dyn.get_clone());
 
-                    ::sycamore::suspense::suspense_scope(#cx, async move {
+                    ::sycamore::suspense::suspense_scope(async move {
                         let __async_view = #inner_ident(#(#args),*).await;
                         __dyn.set(__async_view);
                     });
@@ -291,13 +267,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let props_struct_ident = format_ident!("{}_Props", item.sig.ident);
 
     let inputs = item.sig.inputs.clone();
-    if inputs.is_empty() {
-        return Err(syn::Error::new(
-            item.sig.paren_token.span,
-            "component must take at least one argument of type `sycamore::reactive::Scope`",
-        ));
-    }
-    let props = inputs.into_iter().skip(1).collect::<Vec<_>>();
+    let props = inputs.into_iter().collect::<Vec<_>>();
 
     let generics = &item.sig.generics;
     let generics_phantoms = generics.params.iter().enumerate().filter_map(|(i, param)| {
@@ -342,13 +312,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     });
     // Rewrite function signature.
     let props_struct_generics = generics.split_for_impl().1;
-    let cx = item.sig.inputs.first().cloned();
-    item.sig.inputs = cx
-        .into_iter()
-        .chain(std::iter::once(
-            parse_quote! { __props: #props_struct_ident #props_struct_generics },
-        ))
-        .collect();
+    item.sig.inputs = parse_quote! { __props: #props_struct_ident #props_struct_generics };
     // Rewrite function body.
     let block = item.block.clone();
     item.block = parse_quote! {{

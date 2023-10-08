@@ -7,24 +7,24 @@ use sycamore::builder::prelude::*;
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
-    let name = create_signal(cx, String::new());
+fn App<G: Html>() -> View<G> {
+    let name = create_signal(String::new());
     div()
         .c(h1()
             .t("Hello ")
             .dyn_if(
-                || !name.get().is_empty(),
-                || span().dyn_t(|| name.get().to_string()),
-                || span().t("World"),
+                move || !name.with(String::is_empty),
+                move || span().dyn_t(move || name.get_clone()),
+                move || span().t("World"),
             )
             .t("!"))
         .c(input().bind_value(name))
-        .view(cx)
+        .view()
 }
 
 fn main() {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    sycamore::render(|cx| component(|| App(cx)));
+    sycamore::render(App);
 }

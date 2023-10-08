@@ -43,50 +43,57 @@ impl Filter {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct AppState {
-    pub todos: RcSignal<Vec<RcSignal<Todo>>>,
-    pub filter: RcSignal<Filter>,
+    pub todos: Signal<Vec<Signal<Todo>>>,
+    pub filter: Signal<Filter>,
 }
 
 impl AppState {
     fn add_todo(&self, title: String) {
-        self.todos.modify().push(create_rc_signal(Todo {
+        let new = create_signal(Todo {
             title,
             completed: false,
             id: Uuid::new_v4(),
-        }))
+        });
+        self.todos.update(|todos| todos.push(new));
     }
 
     fn remove_todo(&self, id: Uuid) {
-        self.todos.modify().retain(|todo| todo.get().id != id);
+        self.todos
+            .update(|todos| todos.retain(|todo| todo.with(|todo| todo.id) != id));
     }
 
     fn todos_left(&self) -> usize {
-        self.todos.get().iter().fold(
-            0,
-            |acc, todo| if todo.get().completed { acc } else { acc + 1 },
-        )
+        self.todos.with(|todos| {
+            todos.iter().fold(0, |acc, todo| {
+                if todo.with(|todo| todo.completed) {
+                    acc
+                } else {
+                    acc + 1
+                }
+            })
+        })
     }
 
     fn toggle_complete_all(&self) {
         if self.todos_left() == 0 {
             // make all todos active
-            for todo in self.todos.get().iter() {
-                if todo.get().completed {
+            for todo in self.todos.get_clone() {
+                if todo.with(|todo| todo.completed) {
                     todo.set(Todo {
                         completed: false,
-                        ..todo.get().as_ref().clone()
+                        ..todo.get_clone()
                     })
                 }
             }
         } else {
             // make all todos completed
-            for todo in self.todos.get().iter() {
-                if !todo.get().completed {
+            for todo in self.todos.get_clone() {
+                if !todo.with(|todo| todo.completed) {
                     todo.set(Todo {
                         completed: true,
-                        ..todo.get().as_ref().clone()
+                        ..todo.get_clone()
                     })
                 }
             }
@@ -94,7 +101,8 @@ impl AppState {
     }
 
     fn clear_completed(&self) {
-        self.todos.modify().retain(|todo| !todo.get().completed);
+        self.todos
+            .update(|todos| todos.retain(|todo| !todo.with(|todo| todo.completed)));
     }
 }
 
@@ -108,7 +116,7 @@ fn main() {
 }
 
 #[component]
-fn App<G: Html>(cx: Scope) -> View<G> {
+fn App<G: Html>() -> View<G> {
     // Initialize application state from localStorage.
     let local_storage = web_sys::window()
         .unwrap()
@@ -123,31 +131,30 @@ fn App<G: Html>(cx: Scope) -> View<G> {
     };
     let app_state = AppState {
         todos,
-        filter: create_rc_signal(Filter::get_filter_from_hash()),
+        filter: create_signal(Filter::get_filter_from_hash()),
     };
-    let app_state = provide_context(cx, app_state);
+    provide_context(app_state);
 
     // Set up an effect that runs whenever app_state.todos changes to save the todos to
     // localStorage.
-    create_effect(cx, move || {
-        for todo in app_state.todos.get().iter() {
-            todo.track();
-        }
-        local_storage
-            .set_item(
-                KEY,
-                &serde_json::to_string(app_state.todos.get().as_ref()).unwrap(),
-            )
-            .unwrap();
+    create_effect(move || {
+        app_state.todos.with(|todos| {
+            for todo in todos {
+                todo.track();
+            }
+            local_storage
+                .set_item(KEY, &serde_json::to_string(todos).unwrap())
+                .unwrap();
+        });
     });
 
-    let todos_empty = create_selector(cx, || app_state.todos.get().is_empty());
+    let todos_empty = create_selector(move || app_state.todos.with(Vec::is_empty));
 
-    view! { cx,
+    view! {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 Header {}
-                ((!*todos_empty.get()).then(|| view! { cx,
+                ((!todos_empty.get()).then(|| view! {
                     List {}
                     Footer {}
                 }))
@@ -158,8 +165,8 @@ fn App<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Copyright<G: Html>(cx: Scope) -> View<G> {
-    view! { cx,
+pub fn Copyright<G: Html>() -> View<G> {
+    view! {
         footer(class="info") {
             p { "Double click to edit a todo" }
             p {
@@ -175,14 +182,13 @@ pub fn Copyright<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component]
-pub fn Header<G: Html>(cx: Scope) -> View<G> {
-    let app_state = use_context::<AppState>(cx);
-    let input_value = create_signal(cx, String::new());
+pub fn Header<G: Html>() -> View<G> {
+    let app_state = use_context::<AppState>();
+    let input_value = create_signal(String::new());
 
-    let handle_keyup = |event: KeyboardEvent| {
+    let handle_keyup = move |event: KeyboardEvent| {
         if event.key() == "Enter" {
-            let mut task = input_value.get().as_ref().clone();
-            task = task.trim().to_string();
+            let task = input_value.with(|task| task.trim().to_string());
 
             if !task.is_empty() {
                 app_state.add_todo(task);
@@ -192,7 +198,7 @@ pub fn Header<G: Html>(cx: Scope) -> View<G> {
         }
     };
 
-    view! { cx,
+    view! {
         header(class="header") {
             h1 { "todos" }
             input(class="new-todo",
@@ -205,20 +211,18 @@ pub fn Header<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component(inline_props)]
-pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
-    let app_state = use_context::<AppState>(cx);
-    // Make `todo` live as long as the scope.
-    let todo = create_ref(cx, todo);
+pub fn Item<G: Html>(todo: Signal<Todo>) -> View<G> {
+    let app_state = use_context::<AppState>();
 
-    let title = || todo.get().title.clone();
-    let completed = create_selector(cx, || todo.get().completed);
-    let id = todo.get().id;
+    let title = move || todo.with(|todo| todo.title.clone());
+    let completed = create_selector(move || todo.with(|todo| todo.completed));
+    let id = todo.with(|todo| todo.id);
 
-    let is_editing = create_signal(cx, false);
-    let input_ref = create_node_ref(cx);
-    let input_value = create_signal(cx, "".to_string());
+    let is_editing = create_signal(false);
+    let input_ref = create_node_ref();
+    let input_value = create_signal("".to_string());
 
-    let toggle_completed = |_| todo.modify().completed = !todo.get().completed;
+    let toggle_completed = move |_| todo.update(|todo| todo.completed = !todo.completed);
 
     let handle_dblclick = move |_| {
         is_editing.set(true);
@@ -233,13 +237,12 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
     let handle_blur = move || {
         is_editing.set(false);
 
-        let mut value = input_value.get().as_ref().clone();
-        value = value.trim().to_string();
+        let value = input_value.with(|value| value.trim().to_string());
 
         if value.is_empty() {
             app_state.remove_todo(id);
         } else {
-            todo.modify().title = value;
+            todo.update(|todo| todo.title = value)
         }
     };
 
@@ -255,21 +258,21 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
 
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
-    let checked = create_signal(cx, false);
-    create_effect(cx, || {
+    let checked = create_signal(false);
+    create_effect(move || {
         // Calling checked.set will also update the `checked` property on the input element.
-        checked.set(*completed.get())
+        checked.set(completed.get())
     });
 
-    let class = || {
+    let class = move || {
         format!(
             "{} {}",
-            if *completed.get() { "completed" } else { "" },
-            if *is_editing.get() { "editing" } else { "" }
+            if completed.get() { "completed" } else { "" },
+            if is_editing.get() { "editing" } else { "" }
         )
     };
 
-    view! { cx,
+    view! {
         li(class=class()) {
             div(class="view") {
                 input(
@@ -284,7 +287,7 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
                 button(class="destroy", on:click=handle_destroy)
             }
 
-            (is_editing.get().then(|| view! { cx,
+            (is_editing.get().then(|| view! {
                 input(ref=input_ref,
                     class="edit",
                     bind:value=input_value,
@@ -297,19 +300,19 @@ pub fn Item<G: Html>(cx: Scope, todo: RcSignal<Todo>) -> View<G> {
 }
 
 #[component]
-pub fn List<G: Html>(cx: Scope) -> View<G> {
-    let app_state = use_context::<AppState>(cx);
-    let todos_left = create_selector(cx, || app_state.todos_left());
+pub fn List<G: Html>() -> View<G> {
+    let app_state = use_context::<AppState>();
+    let todos_left = create_selector(move || app_state.todos_left());
 
-    let filtered_todos = create_memo(cx, || {
+    let filtered_todos = create_memo(move || {
         app_state
             .todos
-            .get()
+            .get_clone()
             .iter()
-            .filter(|todo| match *app_state.filter.get() {
+            .filter(|todo| match app_state.filter.get() {
                 Filter::All => true,
-                Filter::Active => !todo.get().completed,
-                Filter::Completed => todo.get().completed,
+                Filter::Active => !todo.with(|todo| todo.completed),
+                Filter::Completed => todo.with(|todo| todo.completed),
             })
             .cloned()
             .collect::<Vec<_>>()
@@ -317,13 +320,13 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
 
     // We need a separate signal for checked because clicking the checkbox will detach the binding
     // between the attribute and the view.
-    let checked = create_signal(cx, false);
-    create_effect(cx, || {
+    let checked = create_signal(false);
+    create_effect(move || {
         // Calling checked.set will also update the `checked` property on the input element.
-        checked.set(*todos_left.get() == 0)
+        checked.set(todos_left.get() == 0)
     });
 
-    view! { cx,
+    view! {
         section(class="main") {
             input(
                 id="toggle-all",
@@ -331,17 +334,17 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
                 type="checkbox",
                 readonly=true,
                 bind:checked=checked,
-                on:input=|_| app_state.toggle_complete_all()
+                on:input=move |_| app_state.toggle_complete_all()
             )
             label(for="toggle-all")
 
             ul(class="todo-list") {
                 Keyed(
                     iterable=filtered_todos,
-                    view=|cx, todo| view! { cx,
+                    view=|todo| view! {
                         Item(todo=todo)
                     },
-                    key=|todo| todo.get().id,
+                    key=|todo| todo.with(|todo| todo.id),
                 )
             }
         }
@@ -349,12 +352,12 @@ pub fn List<G: Html>(cx: Scope) -> View<G> {
 }
 
 #[component(inline_props)]
-pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
-    let app_state = use_context::<AppState>(cx);
-    let selected = move || filter == *app_state.filter.get();
-    let set_filter = |filter| app_state.filter.set(filter);
+pub fn TodoFilter<G: Html>(filter: Filter) -> View<G> {
+    let app_state = use_context::<AppState>();
+    let selected = move || filter == app_state.filter.get();
+    let set_filter = move |filter| app_state.filter.set(filter);
 
-    view! { cx,
+    view! {
         li {
             a(
                 class=if selected() { "selected" } else { "" },
@@ -368,20 +371,20 @@ pub fn TodoFilter<G: Html>(cx: Scope, filter: Filter) -> View<G> {
 }
 
 #[component]
-pub fn Footer<G: Html>(cx: Scope) -> View<G> {
-    let app_state = use_context::<AppState>(cx);
+pub fn Footer<G: Html>() -> View<G> {
+    let app_state = use_context::<AppState>();
 
-    let items_text = || match app_state.todos_left() {
+    let items_text = move || match app_state.todos_left() {
         1 => "item",
         _ => "items",
     };
 
     let has_completed_todos =
-        create_selector(cx, || app_state.todos_left() < app_state.todos.get().len());
+        create_selector(move || app_state.todos_left() < app_state.todos.with(Vec::len));
 
-    let handle_clear_completed = |_| app_state.clear_completed();
+    let handle_clear_completed = move |_| app_state.clear_completed();
 
-    view! { cx,
+    view! {
         footer(class="footer") {
             span(class="todo-count") {
                 strong { (app_state.todos_left()) }
@@ -393,7 +396,7 @@ pub fn Footer<G: Html>(cx: Scope) -> View<G> {
                 TodoFilter(filter=Filter::Completed)
             }
 
-            (has_completed_todos.get().then(|| view! { cx,
+            (has_completed_todos.get().then(|| view! {
                 button(class="clear-completed", on:click=handle_clear_completed) {
                     "Clear completed"
                 }

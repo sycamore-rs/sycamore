@@ -8,17 +8,17 @@ pub struct MyComponentProps {
 }
 
 #[component]
-fn MyComponent<G: Html>(cx: Scope, props: MyComponentProps) -> View<G> {
-    view! { cx,
+fn MyComponent<G: Html>(props: MyComponentProps) -> View<G> {
+    view! {
         (props.value)
     }
 }
 
 fn higher_order_component<G: Html>(
-    Comp: &dyn Fn(Scope, MyComponentProps) -> View<G>,
-) -> impl Fn(Scope) -> View<G> + '_ {
-    move |cx| {
-        view! { cx,
+    Comp: &dyn Fn(MyComponentProps) -> View<G>,
+) -> impl Fn() -> View<G> + '_ {
+    move || {
+        view! {
             div {
                 Comp(value=42)
             }
@@ -27,10 +27,10 @@ fn higher_order_component<G: Html>(
 }
 
 fn main() {
-    sycamore::render(|cx| {
+    sycamore::render(|| {
         let EnhancedComponent = higher_order_component(&MyComponent);
-        view! { cx,
-            EnhancedComponent {}
+        view! {
+            EnhancedComponent()
         }
     });
 }

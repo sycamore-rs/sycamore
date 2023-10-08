@@ -182,13 +182,12 @@ impl GenericNode for HydrateNode {
     }
 
     #[inline]
-    fn untyped_event<'a>(
+    fn untyped_event(
         &self,
-        cx: Scope<'a>,
         event: Cow<'_, str>,
-        handler: Box<dyn FnMut(Self::AnyEventData) + 'a>,
+        handler: Box<dyn FnMut(Self::AnyEventData) + 'static>,
     ) {
-        self.node.untyped_event(cx, event, handler);
+        self.node.untyped_event(event, handler);
     }
 
     #[inline]
@@ -346,7 +345,7 @@ impl Html for HydrateNode {
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
-pub fn hydrate(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
+pub fn hydrate(view: impl FnOnce() -> View<HydrateNode>) {
     let window = web_sys::window().unwrap_throw();
     let document = window.document().unwrap_throw();
 
@@ -354,14 +353,14 @@ pub fn hydrate(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>) {
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
-/// hydration). For rendering under the `<body>` tag, use [`hydrate_to`] instead.
+/// hydration). For rendering under the `<body>` tag, use [`hydrate`] instead.
 ///
 /// For rendering without hydration, use [`render`](super::render) instead.
 ///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
-pub fn hydrate_to(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>, parent: &Node) {
+pub fn hydrate_to(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
     // Do not call the destructor function, effectively leaking the scope.
-    let _ = hydrate_get_scope(view, parent);
+    let _ = create_root(|| hydrate_in_scope(view, parent));
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
@@ -369,12 +368,11 @@ pub fn hydrate_to(view: impl FnOnce(Scope<'_>) -> View<HydrateNode>, parent: &No
 /// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
 /// modal is closed).
 ///
+/// It is expected that this function will be called inside a reactive root, usually created using
+/// [`create_root`].
+///
 /// _This API requires the following crate features to be activated: `hydrate`, `dom`_
-#[must_use = "please hold onto the ReactiveScope until you want to clean things up, or use render_to() instead"]
-pub fn hydrate_get_scope<'a>(
-    view: impl FnOnce(Scope<'_>) -> View<HydrateNode> + 'a,
-    parent: &'a Node,
-) -> ScopeDisposer<'a> {
+pub fn hydrate_in_scope(view: impl FnOnce() -> View<HydrateNode>, parent: &Node) {
     // Get children from parent into a View to set as the initial node value.
     let mut children = Vec::new();
     let child_nodes = parent.child_nodes();
@@ -386,14 +384,11 @@ pub fn hydrate_get_scope<'a>(
         .map(|x| View::new_node(HydrateNode::from_web_sys(x)))
         .collect::<Vec<_>>();
 
-    create_scope(|cx| {
-        insert(
-            cx,
-            &HydrateNode::from_web_sys(parent.clone()),
-            with_hydration_context(|| view(cx)),
-            Some(View::new_fragment(children)),
-            None,
-            false,
-        );
-    })
+    insert(
+        &HydrateNode::from_web_sys(parent.clone()),
+        with_hydration_context(view),
+        Some(View::new_fragment(children)),
+        None,
+        false,
+    );
 }

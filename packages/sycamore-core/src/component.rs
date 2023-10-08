@@ -7,8 +7,9 @@ use std::fmt::{self, Display};
 
 use sycamore_reactive::*;
 
+use crate::generic_node::GenericNode;
+use crate::noderef::NodeRef;
 use crate::view::View;
-use crate::{generic_node::GenericNode, noderef::NodeRef};
 
 /// Runs the given closure inside a new component scope. In other words, this does the following:
 /// * If hydration is enabled, create a new hydration context.
@@ -71,31 +72,31 @@ impl UnitBuilder {
 }
 
 /// A trait that is automatically implemented by all components.
-pub trait Component<'a, T: Props, G: GenericNode, S> {
+pub trait Component<T: Props, G: GenericNode, S> {
     /// Instantiate the component with the given props and reactive scope.
-    fn create(self, cx: Scope<'a>, props: T) -> View<G>;
+    fn create(self, props: T) -> View<G>;
 }
-impl<'a, F, T: Props, G: GenericNode> Component<'a, T, G, ((),)> for F
+impl<F, T: Props, G: GenericNode> Component<T, G, ((),)> for F
 where
-    F: FnOnce(Scope<'a>, T) -> View<G>,
+    F: FnOnce(T) -> View<G>,
 {
-    fn create(self, cx: Scope<'a>, props: T) -> View<G> {
-        self(cx, props)
+    fn create(self, props: T) -> View<G> {
+        self(props)
     }
 }
-impl<'a, F, G: GenericNode> Component<'a, (), G, ()> for F
+impl<F, G: GenericNode> Component<(), G, ()> for F
 where
-    F: FnOnce(Scope<'a>) -> View<G>,
+    F: FnOnce() -> View<G>,
 {
-    fn create(self, cx: Scope<'a>, _props: ()) -> View<G> {
-        self(cx)
+    fn create(self, _props: ()) -> View<G> {
+        self()
     }
 }
 
 /// Get the builder for the component function.
 #[doc(hidden)]
-pub fn element_like_component_builder<'a, G: GenericNode, T: Props, S>(
-    _f: &impl Component<'a, T, G, S>,
+pub fn element_like_component_builder<G: GenericNode, T: Props, S>(
+    _f: &impl Component<T, G, S>,
 ) -> T::Builder {
     T::builder()
 }
@@ -108,16 +109,16 @@ pub fn element_like_component_builder<'a, G: GenericNode, T: Props, S>(
 /// ```
 /// # use sycamore::prelude::*;
 /// #[derive(Props)]
-/// struct RowProps<'a, G: Html> {
+/// struct RowProps<G: Html> {
 ///     width: i32,
-///     children: Children<'a, G>,
+///     children: Children<G>,
 /// }
 ///
 /// #[component]
-/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
+/// fn Row<G: Html>(props: RowProps<G>) -> View<G> {
 ///     // Convert the `Children` into a `View<G>`.
-///     let children = props.children.call(cx);
-///     view! { cx,
+///     let children = props.children.call();
+///     view! {
 ///         div {
 ///             (children)
 ///         }
@@ -125,91 +126,91 @@ pub fn element_like_component_builder<'a, G: GenericNode, T: Props, S>(
 /// }
 ///
 /// # #[component]
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// # fn App<G: Html>() -> View<G> {
 /// // Using `Row` somewhere else in your app:
-/// view! { cx,
+/// view! {
 ///     Row(width=10) {
 ///         p { "This is a child node." }
 ///     }
 /// }
 /// # }
 /// ```
-pub struct Children<'a, G: GenericNode> {
-    f: Box<dyn FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a>,
+pub struct Children<G: GenericNode> {
+    f: Box<dyn FnOnce() -> View<G>>,
 }
-impl<'a, G: GenericNode> fmt::Debug for Children<'a, G> {
+impl<G: GenericNode> fmt::Debug for Children<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Children").finish()
     }
 }
 
-impl<'a, F, G: GenericNode> From<F> for Children<'a, G>
+impl<F, G: GenericNode> From<F> for Children<G>
 where
-    F: FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a,
+    F: FnOnce() -> View<G> + 'static,
 {
     fn from(f: F) -> Self {
         Self { f: Box::new(f) }
     }
 }
 
-impl<'a, G: GenericNode> From<View<G>> for Children<'a, G> {
+impl<G: GenericNode> From<View<G>> for Children<G> {
     fn from(view: View<G>) -> Self {
         Self {
-            f: Box::new(|_| view),
+            f: Box::new(|| view),
         }
     }
 }
 
-impl<'a, G: GenericNode> Default for Children<'a, G> {
+impl<G: GenericNode> Default for Children<G> {
     fn default() -> Self {
         Self {
-            f: Box::new(|_| View::default()),
+            f: Box::new(View::default),
         }
     }
 }
 
-impl<'a, G: GenericNode> Children<'a, G> {
+impl<G: GenericNode> Children<G> {
     /// Instantiate the child [`View`] with the passed [`Scope`].
-    pub fn call(self, cx: BoundedScope<'_, 'a>) -> View<G> {
-        (self.f)(cx)
+    pub fn call(self) -> View<G> {
+        (self.f)()
     }
 
     /// Create a new [`Children`] from a closure.
-    pub fn new(_cx: Scope<'a>, f: impl FnOnce(BoundedScope<'_, 'a>) -> View<G> + 'a) -> Self {
+    pub fn new(f: impl FnOnce() -> View<G> + 'static) -> Self {
         Self { f: Box::new(f) }
     }
 }
 
 /// The value of a passthrough attribute.
 /// The default for unknown attributes is [`AttributeValue::Str`] or [`AttributeValue::DynamicStr`]
-pub enum AttributeValue<'cx, G: GenericNode> {
+pub enum AttributeValue<G: GenericNode> {
     /// A string literal value. Example: `attr:id = "test"`
     Str(&'static str),
     /// A dynamic string value from a variable. Example: `attr:id = id_signal`
-    DynamicStr(Box<dyn FnMut() -> String + 'cx>),
+    DynamicStr(Box<dyn FnMut() -> String>),
     /// A boolean literal value. Example: `attr:disabled = true`
     Bool(bool),
     /// A dynamic boolean value from a variable. Example: `attr:disabled = disabled_signal`
-    DynamicBool(Box<dyn FnMut() -> bool + 'cx>),
+    DynamicBool(Box<dyn FnMut() -> bool>),
     /// Dangerously set inner HTML with a literal string value.
     DangerouslySetInnerHtml(&'static str),
     /// Dangerously set inner HTML with a dynamic value.
     DynamicDangerouslySetInnerHtml(Box<dyn Display>),
     /// An event binding
-    Event(&'static str, Box<dyn FnMut(G::AnyEventData) + 'cx>),
+    Event(&'static str, Box<dyn FnMut(G::AnyEventData)>),
     /// A binding to a boolean value
-    BindBool(&'static str, &'cx Signal<bool>),
+    BindBool(&'static str, Signal<bool>),
     /// A binding to a numeric value
-    BindNumber(&'static str, &'cx Signal<f64>),
+    BindNumber(&'static str, Signal<f64>),
     /// A binding to a string value
-    BindString(&'static str, &'cx Signal<String>),
+    BindString(&'static str, Signal<String>),
     /// A property value.
     Property(&'static str, G::PropertyType),
     /// A [`NodeRef`] value.
-    Ref(&'cx NodeRef<G>),
+    Ref(NodeRef<G>),
 }
 
-impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
+impl<G: GenericNode> fmt::Debug for AttributeValue<G> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AttributeValue").finish()
     }
@@ -224,17 +225,17 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
 /// ```
 /// # use sycamore::prelude::*;
 /// #[derive(Props)]
-/// struct RowProps<'a, G: Html> {
+/// struct RowProps<G: Html> {
 ///     width: i32,
-///     children: Children<'a, G>,
-///     attributes: Attributes<'a, G>,
+///     children: Children<G>,
+///     attributes: Attributes<G>,
 /// }
 ///
 /// #[component]
-/// fn Row<'a, G: Html>(cx: Scope<'a>, props: RowProps<'a, G>) -> View<G> {
-///     let children = props.children.call(cx);
+/// fn Row<G: Html>(props: RowProps<G>) -> View<G> {
+///     let children = props.children.call();
 ///     // Spread the `Attributes` onto the div.
-///     view! { cx,
+///     view! {
 ///         div(..props.attributes) {
 ///             (children)
 ///         }
@@ -242,9 +243,9 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
 /// }
 ///
 /// # #[component]
-/// # fn App<G: Html>(cx: Scope) -> View<G> {
+/// # fn App<G: Html>() -> View<G> {
 /// // Using `Row` somewhere else in your app:
-/// view! { cx,
+/// view! {
 ///     Row(width=10, attr:id = "row1", attr:class = "bg-neutral-400") {
 ///         p { "This is a child node." }
 ///     }
@@ -252,11 +253,11 @@ impl<'a, G: GenericNode> fmt::Debug for AttributeValue<'a, G> {
 /// # }
 /// ```
 #[derive(Debug)]
-pub struct Attributes<'cx, G: GenericNode> {
-    attrs: RefCell<HashMap<Cow<'static, str>, AttributeValue<'cx, G>>>,
+pub struct Attributes<G: GenericNode> {
+    attrs: RefCell<HashMap<Cow<'static, str>, AttributeValue<G>>>,
 }
 
-impl<'cx, G: GenericNode> Default for Attributes<'cx, G> {
+impl<G: GenericNode> Default for Attributes<G> {
     fn default() -> Self {
         Self {
             attrs: RefCell::new(Default::default()),
@@ -264,16 +265,16 @@ impl<'cx, G: GenericNode> Default for Attributes<'cx, G> {
     }
 }
 
-impl<'cx, G: GenericNode> Attributes<'cx, G> {
+impl<G: GenericNode> Attributes<G> {
     // Creates a new [`Attributes`] struct from a map of keys and values.
-    pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<'cx, G>>) -> Self {
+    pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<G>>) -> Self {
         Self {
             attrs: RefCell::new(attributes),
         }
     }
 }
 
-impl<'cx, G: GenericNode> Attributes<'cx, G> {
+impl<G: GenericNode> Attributes<G> {
     /// Read the string value of an attribute. Returns `Option::None` if the attribute is missing
     /// or not a string.
     pub fn get_str(&self, key: &str) -> Option<Cow<'static, str>> {
@@ -325,7 +326,8 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
         }
     }
 
-    /// Remove the `dangerously_set_inner_html` attribute from the attributes and return its previous value.
+    /// Remove the `dangerously_set_inner_html` attribute from the attributes and return its
+    /// previous value.
     pub fn remove_dangerously_set_inner_html(&self) -> Option<Cow<'static, str>> {
         match self.remove("dangerously_set_inner_html")? {
             AttributeValue::DangerouslySetInnerHtml(html) => Some(Cow::Borrowed(html)),
@@ -339,14 +341,14 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     /// Fetch the ref from the attributes if it exists.
     pub fn get_ref(&self) -> Option<Ref<NodeRef<G>>> {
         Ref::filter_map(self.get("ref")?, |value| match value {
-            AttributeValue::Ref(node_ref) => Some(*node_ref),
+            AttributeValue::Ref(node_ref) => Some(node_ref),
             _ => None,
         })
         .ok()
     }
 
     /// Remove the `ref` from the attributes and return its previous value.
-    pub fn remove_ref(&self) -> Option<&'cx NodeRef<G>> {
+    pub fn remove_ref(&self) -> Option<NodeRef<G>> {
         match self.remove("ref")? {
             AttributeValue::Ref(node_ref) => Some(node_ref),
             _ => None,
@@ -361,17 +363,17 @@ impl<'cx, G: GenericNode> Attributes<'cx, G> {
     }
 
     /// Get an attribute value if it exists.
-    pub fn get(&self, key: &str) -> Option<Ref<AttributeValue<'cx, G>>> {
+    pub fn get(&self, key: &str) -> Option<Ref<AttributeValue<G>>> {
         Ref::filter_map(self.attrs.borrow(), |attrs| attrs.get(key)).ok()
     }
 
     /// Remove an attribute value and return its previous value
-    pub fn remove(&self, key: &str) -> Option<AttributeValue<'cx, G>> {
+    pub fn remove(&self, key: &str) -> Option<AttributeValue<G>> {
         self.attrs.borrow_mut().remove(key)
     }
 
     /// INTERNAL: used in the `view!` macro to apply attributes
-    pub fn drain(&self) -> Vec<(Cow<'static, str>, AttributeValue<'cx, G>)> {
+    pub fn drain(&self) -> Vec<(Cow<'static, str>, AttributeValue<G>)> {
         self.attrs.borrow_mut().drain().collect()
     }
 }

@@ -3,8 +3,7 @@
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
-use proc_macro2::{Span, TokenStream, TokenTree};
-use quote::ToTokens;
+use proc_macro2::Span;
 use syn::punctuated::Punctuated;
 use syn::token::Brace;
 use syn::{Expr, Ident, LitStr, Path, Token};
@@ -122,61 +121,4 @@ pub struct Text {
 
 pub struct Dyn {
     pub value: Expr,
-}
-
-fn needs_cx(ts: TokenStream, cx: &str) -> bool {
-    for t in ts {
-        match t {
-            TokenTree::Ident(id) => {
-                if id == cx {
-                    return true;
-                }
-            }
-            TokenTree::Group(g) => {
-                if needs_cx(g.stream(), cx) {
-                    return true;
-                }
-            }
-            _ => (),
-        }
-    }
-    false
-}
-
-impl Dyn {
-    /// Returns `true` if the wrapped [`Expr`] has the identifier `cx` somewhere.
-    pub fn needs_cx(&self, cx: &str) -> bool {
-        let ts = self.value.to_token_stream();
-        needs_cx(ts, cx)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use syn::parse_quote;
-
-    use super::*;
-
-    #[test]
-    fn needs_cx_if_cx_ident_inside_expr() {
-        let ts: Dyn = parse_quote! {
-            (create_signal(cx, 0))
-        };
-        assert!(ts.needs_cx("cx"));
-        assert!(!ts.needs_cx("not_cx"));
-
-        let not_cx: Dyn = parse_quote! {
-            (123)
-        };
-        assert!(!not_cx.needs_cx("cx"));
-        assert!(!not_cx.needs_cx("not_cx"));
-
-        let ts_in_braces: Dyn = parse_quote! {
-            ({
-                create_signal(cx, 0)
-            })
-        };
-        assert!(ts_in_braces.needs_cx("cx"));
-        assert!(!ts_in_braces.needs_cx("not_cx"));
-    }
 }
