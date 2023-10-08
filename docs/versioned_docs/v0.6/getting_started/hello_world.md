@@ -53,7 +53,7 @@ the template into. Copy the following code to a file called `index.html` in the 
 (alongside `Cargo.toml`):
 
 ```html
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />

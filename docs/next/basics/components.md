@@ -14,7 +14,7 @@ convention to name components using `PascalCase`.
 ```rust
 #[component]
 fn MyComponent<G: Html>() -> View<G> {
-    view! { 
+    view! {
         // ...
     }
 }
@@ -23,7 +23,7 @@ fn MyComponent<G: Html>() -> View<G> {
 To use the component from elsewhere, the `view!` macro has some special syntax.
 
 ```rust
-view! { 
+view! {
     MyComponent {}
 }
 ```
@@ -46,7 +46,7 @@ struct MyProps {
 The component can then be constructed by passing the properties to it from the `view!` macro.
 
 ```rust
-view! { 
+view! {
     MyComponent(name="John Doe", email="...")
 }
 ```
@@ -101,7 +101,7 @@ pub struct MyComponentProps<G: Html> {
 #[component]
 pub fn MyComponent<G: Html>(props: MyComponentProps<G>) -> View<G> {
     let children = props.children.call();
-    view! { 
+    view! {
         div(class=props.class) {
             (children)
         }
@@ -129,7 +129,7 @@ struct MyProps {
     email: String,
 }
 
-view! { 
+view! {
     // Since the `email` prop is left out, it will be set to the default value of "".
     MyComponent(name="John Doe")
 }

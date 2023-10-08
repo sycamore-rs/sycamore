@@ -197,20 +197,20 @@ enum Routes {
 To display content based on the route that matches, we can use a `Router`.
 
 ```rust
-view! { 
+view! {
     Router(
         integration=HistoryIntegration::new(),
         view=|route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
-                        AppRoutes::Index => view! { 
+                        AppRoutes::Index => view! {
                             "This is the index page"
                         },
-                        AppRoutes::About => view! { 
+                        AppRoutes::About => view! {
                             "About this website"
                         },
-                        AppRoutes::NotFound => view! { 
+                        AppRoutes::NotFound => view! {
                             "404 Not Found"
                         },
                     })
@@ -245,20 +245,20 @@ function.
 ```rust
 let route = AppRoutes::match_path(path);
 
-view! { 
+view! {
     StaticRouter(
         route=route,
         view=|route: &ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
                     (match route.get().as_ref() {
-                        AppRoutes::Index => view! { 
+                        AppRoutes::Index => view! {
                             "This is the index page"
                         },
-                        AppRoutes::About => view! { 
+                        AppRoutes::About => view! {
                             "About this website"
                         },
-                        AppRoutes::NotFound => view! { 
+                        AppRoutes::NotFound => view! {
                             "404 Not Found"
                         },
                     })
@@ -295,7 +295,7 @@ page. Sometimes, we just want the browser to handle navigation without being int
 router. To bypass the router, we can add the `rel="external"` attribute to the anchor tag.
 
 ```rust
-view! { 
+view! {
     a(href="path", rel="external") { "Path" }
 }
 ```

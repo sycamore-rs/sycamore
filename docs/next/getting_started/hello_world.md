@@ -10,7 +10,7 @@ Here it is:
 use sycamore::prelude::*;
 
 fn main() {
-    sycamore::render(|| view! { 
+    sycamore::render(|| view! {
         p { "Hello, World!" }
     });
 }
@@ -33,7 +33,7 @@ This function is provided by Sycamore and is used to render your app to the DOM 
 `render` accepts a closure (aka. lambda function) which should return a view to be rendered.
 
 ```rust
-view! { 
+view! {
     p { "Hello, World!" }
 }
 ```
@@ -53,7 +53,7 @@ the view into. Copy the following code to a file called `index.html` in the root
 (alongside `Cargo.toml`):
 
 ```html
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />

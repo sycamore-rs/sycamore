@@ -5,7 +5,7 @@ Control flow in Sycamore can be achieved using the interpolation syntax. For exa
 ```rust
 let visible = create_signal(true);
 
-view! { 
+view! {
     div {
         (if visible.get() {
             view! { "Now you see me" }
@@ -30,7 +30,7 @@ every time `name` is changed. Rather, we only want it to be created when `name` 
 let name = create_signal(String::new());
 let is_empty = create_selector(|| !name.get().is_empty());
 
-view! { 
+view! {
     h1 {
         (if is_empty.get() {
             view! { span { (name.get()) } }

@@ -130,7 +130,7 @@ updated!
 
 ## Common pitfalls
 
-Dependency tracking is *topological*, which means that reactive dependencies (like a `Signal`) must be accessed (and thus recorded as reactive dependencies) *before* the tracking scope (like a `create_effect`) returns.
+Dependency tracking is _topological_, which means that reactive dependencies (like a `Signal`) must be accessed (and thus recorded as reactive dependencies) _before_ the tracking scope (like a `create_effect`) returns.
 
 For example, this code won't work as intended:
 

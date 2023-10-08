@@ -61,7 +61,7 @@ fn ChildComponent<G: Html>() -> View<G> {
 
 let dark_mode = create_signal(DarkMode(false));
 provide_context_ref(dark_mode);
-view! { 
+view! {
     ChildComponent {}
 }
 ```
