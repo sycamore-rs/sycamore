@@ -3,8 +3,7 @@
 Any serious UI framework needs a way to compose and abstract UI elements. In Sycamore, this can be
 accomplished using components.
 
-Components in `sycamore` are simply functions slapped with the `#[component]` attribute that take an
-argument of type `Scope` (a reactive scope). Component functions only run once (unlike React where
+Components in `sycamore` are simply functions slapped with the `#[component]` attribute. Component functions only run once (unlike React where
 functional-components are called on every render). Think of it as a builder-pattern for constructing
 UI.
 
@@ -55,8 +54,8 @@ view! {
 
 Accepting data from the parent sure is nice but it would be even better if updating the data in the
 parent also updates the view in the child component! For components to automatically react to prop
-changes, they should accept a signal. Most of the times, you'll want a `&ReadSignal` unless you want
-mutable access to the data in which case you should use a `&Signal`. This way, updating the signal
+changes, they should accept a signal. Most of the times, you'll want a `ReadSignal` unless you want
+mutable access to the data in which case you should use a `Signal`. This way, updating the signal
 will automatically update whatever is listening to it, even if it is inside the child component.
 
 Here is an example of a simple component that displays the value of its prop and that automatically
@@ -83,8 +82,6 @@ view! {
 }
 state.set(1); // automatically updates value in MyComponent
 ```
-
-Note how the `'a` lifetime is used to ensure that the data lives as long as the `Scope`.
 
 ## Component children
 
