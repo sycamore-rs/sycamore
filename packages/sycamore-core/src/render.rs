@@ -156,15 +156,21 @@ pub fn clean_children<G: GenericNode>(
         if let Some(replacement) = replacement {
             parent.append_child(replacement);
         }
-        return;
-    }
-
-    for node in current {
-        if node.parent_node().as_ref() == Some(parent) {
-            if let Some(replacement) = replacement {
-                parent.replace_child(&node, replacement);
+    } else {
+        debug_assert!(!current.is_empty());
+        for node in current {
+            if node.parent_node().as_ref() == Some(parent) {
+                if let Some(replacement) = replacement {
+                    parent.replace_child(&node, replacement);
+                } else {
+                    parent.remove_child(&node);
+                }
             } else {
-                parent.remove_child(&node);
+                // debug_assert_eq!(node.parent_node().as_ref(), Some(parent), "{node:?}");
+                // FIXME
+                if let Some(replacement) = replacement {
+                    parent.append_child(replacement);
+                }
             }
         }
     }
