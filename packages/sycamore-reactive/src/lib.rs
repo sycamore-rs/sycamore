@@ -36,6 +36,7 @@
 //! ```
 //! Of course, the stable `.get()` also works on nightly as well if that's what you prefer.
 
+#![warn(missing_docs)]
 #![cfg_attr(feature = "nightly", feature(fn_traits, unboxed_closures))]
 
 mod context;

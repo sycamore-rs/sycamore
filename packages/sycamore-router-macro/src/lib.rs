@@ -1,4 +1,7 @@
+//! Macro support for the `sycamore-router` crate.
+
 #![deny(missing_debug_implementations)]
+#![warn(missing_docs)]
 
 mod parser;
 mod route;

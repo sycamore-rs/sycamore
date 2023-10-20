@@ -11,12 +11,12 @@ use crate::create_memo;
 /// let state = create_signal(0);
 ///
 /// create_effect(move || {
-///     println!("State changed. New state value = {}", state.get());
+///     println!("new state = {}", state.get());
 /// });
-/// // Prints "State changed. New state value = 0"
+/// // Prints "new state = 0"
 ///
 /// state.set(1);
-/// // Prints "State changed. New state value = 1"
+/// // Prints "new state = 1"
 /// # });
 /// ```
 ///

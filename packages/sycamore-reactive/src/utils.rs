@@ -51,6 +51,7 @@ pub fn derived<T>(f: impl Fn() -> T) -> impl Accessor<T> {
 ///
 /// Also implemented for tuples containing `Trackable`s.
 pub trait Trackable {
+    /// Track the data reactively.
     fn _track(&self);
 }
 

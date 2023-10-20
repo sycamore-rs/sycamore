@@ -1,6 +1,7 @@
 //! Proc-macros used in [Sycamore](https://sycamore-rs.netlify.app).
 
 #![deny(missing_debug_implementations)]
+#![warn(missing_docs)]
 
 use proc_macro::TokenStream;
 use quote::quote;

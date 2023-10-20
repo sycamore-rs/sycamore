@@ -8,6 +8,7 @@ pub trait EventHandler<T, Ev, S>
 where
     Ev: EventDescriptor<T>,
 {
+    /// Call the event handler.
     fn call(&mut self, event: Ev::EventData);
 }
 

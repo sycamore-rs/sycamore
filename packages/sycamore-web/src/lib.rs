@@ -9,6 +9,7 @@
 //! using this crate directly.
 
 #![deny(missing_debug_implementations)]
+#![warn(missing_docs)]
 
 mod dom_node;
 mod dom_node_template;
