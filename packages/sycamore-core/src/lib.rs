@@ -8,6 +8,7 @@
 //! - `hydrate` - Enables the hydration API.
 
 #![deny(missing_debug_implementations)]
+#![warn(missing_docs)]
 
 pub mod component;
 pub mod event;

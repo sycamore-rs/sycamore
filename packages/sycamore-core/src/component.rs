@@ -266,7 +266,7 @@ impl<G: GenericNode> Default for Attributes<G> {
 }
 
 impl<G: GenericNode> Attributes<G> {
-    // Creates a new [`Attributes`] struct from a map of keys and values.
+    /// Creates a new [`Attributes`] struct from a map of keys and values.
     pub fn new(attributes: HashMap<Cow<'static, str>, AttributeValue<G>>) -> Self {
         Self {
             attrs: RefCell::new(attributes),

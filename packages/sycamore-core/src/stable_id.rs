@@ -1,3 +1,5 @@
+//! Unique IDs that are stable between SSR and hydration.
+
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Create a unique ID that's stable between SSR and hydration.

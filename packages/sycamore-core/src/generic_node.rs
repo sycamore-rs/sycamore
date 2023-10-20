@@ -136,6 +136,8 @@ pub trait GenericNode: fmt::Debug + Clone + PartialEq + Eq + Hash + 'static {
         self.untyped_event(Cow::Borrowed(Ev::EVENT_NAME), boxed)
     }
 
+    /// Add an untyped event handler for the event. This API is string-ly typed and can potentially
+    /// panic.
     fn untyped_event(
         &self,
         event: Cow<'_, str>,
@@ -231,13 +233,20 @@ pub fn __apply_dyn_values_to_template<G: GenericNodeElements>(
 /// filled in later.
 #[derive(Debug)]
 pub enum TemplateShape {
+    /// An element with children and attributes.
     Element {
+        /// The element tag.
         tag: &'static str,
+        /// The element namespace (e.g. HTML or SVG).
         ns: Option<&'static str>,
+        /// Element children.
         children: &'static [TemplateShape],
+        /// A list of attributes to set on the element.
         attributes: &'static [(&'static str, Cow<'static, str>)],
+        /// Flag this element so that we can refer to it later.
         flag: bool,
     },
+    /// A text node.
     Text(&'static str),
     /// A dynamic view "hole". This is where a dynamic view should be inserted.
     DynMarker,
@@ -250,31 +259,45 @@ pub struct TemplateId(pub u32);
 /// A template that can be instantiated.
 #[derive(Debug)]
 pub struct Template {
+    /// Unique ID of the template.
     pub id: TemplateId,
+    /// Shape of the template. Can be thought of as a view "schema".
     pub shape: TemplateShape,
 }
 
 /// Result of a template instantiation.
 #[derive(Debug)]
 pub struct TemplateResult<G: GenericNode> {
+    /// Reference to root node.
     pub root: G,
+    /// List of all flagged nodes that we can refer to.
     pub flagged_nodes: Vec<G>,
+    /// A list of dynamic markers.
     pub dyn_markers: Vec<DynMarkerResult<G>>,
 }
 
 /// Info extracted from a dynamic marker in a template.
 #[derive(Debug)]
 pub struct DynMarkerResult<G: GenericNode> {
+    /// Parent of the marker.
     pub parent: G,
+    /// Element before the marker.
     pub before: Option<G>,
+    /// Initial value of the marker.
     pub initial: Option<View<G>>,
+    /// Whether the marker is the only child or not.
     pub multi: bool,
 }
 
+/// Options for [`instantiate_template_universal`].
 pub struct InstantiateUniversalOpts<G: GenericNodeElements> {
+    /// Start of the marker.
     pub start_marker: Option<&'static str>,
+    /// End of the marker.
     pub end_marker: Option<&'static str>,
+    /// Function to create an element from a tag.
     pub create_element: fn(Cow<'static, str>) -> G,
+    /// Function to create an element from a tag and namespace.
     pub create_element_ns: fn(Cow<'static, str>, Cow<'static, str>) -> G,
 }
 

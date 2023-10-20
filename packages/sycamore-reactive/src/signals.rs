@@ -322,6 +322,7 @@ impl<T> Signal<T> {
         self.update(|val| std::mem::replace(val, new))
     }
 
+    /// Silently gets the value of the signal and sets the new value to the default value.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn take_silent(self) -> T
     where
@@ -330,6 +331,7 @@ impl<T> Signal<T> {
         self.replace_silent(T::default())
     }
 
+    /// Gets the value of the signal and sets the new value to the default value.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn take(self) -> T
     where
@@ -357,21 +359,26 @@ impl<T> Signal<T> {
         ret
     }
 
+    /// Use a function to produce a new value and sets the value silently.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_fn_silent(self, f: impl FnOnce(&T) -> T) {
         self.update_silent(move |val| *val = f(val));
     }
 
+    /// Use a function to produce a new value and sets the value.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_fn(self, f: impl FnOnce(&T) -> T) {
         self.update_silent(move |val| *val = f(val));
     }
 
+    /// Creates a new [memo](create_memo) from this signal and a function. The resulting memo will
+    /// be created in the current reactive scope.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
         create_memo(move || self.with(&mut f))
     }
 
+    /// Split the signal into a reader/writter pair.
     pub fn split(self) -> (ReadSignal<T>, impl Fn(T) -> T) {
         (*self, move |value| self.replace(value))
     }

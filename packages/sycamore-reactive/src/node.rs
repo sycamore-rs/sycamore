@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 use crate::{untrack_in_scope, Root};
 
 new_key_type! {
-    pub struct NodeId;
+    pub(crate) struct NodeId;
 }
 
 /// A reactive node inside the reactive grpah.
@@ -59,10 +59,16 @@ pub(crate) enum Mark {
     None,
 }
 
+/// A handle to a reactive node (signal, memo, effect) that lets you run further tasks in it or
+/// manually dispose it.
 #[derive(Clone, Copy)]
 pub struct NodeHandle(pub(crate) NodeId, pub(crate) &'static Root);
 
 impl NodeHandle {
+    /// Disposes the node that is being referenced by this handle. If the node has already been
+    /// disposed, this does nothing.
+    ///
+    /// Automatically calls [`NodeHandle::dispose_children`].
     pub fn dispose(self) {
         // Dispose children first since this node could be referenced in a cleanup.
         self.dispose_children();
@@ -79,6 +85,7 @@ impl NodeHandle {
         }
     }
 
+    /// Dispose all the children of the node but not the node itself.
     pub fn dispose_children(self) {
         // If node is already disposed, do nothing.
         if self.1.nodes.borrow().get(self.0).is_none() {
@@ -101,6 +108,7 @@ impl NodeHandle {
         }
     }
 
+    /// Run a closure under this reactive node.
     pub fn run_in<T>(&self, f: impl FnOnce() -> T) -> T {
         let root = self.1;
         let prev_root = Root::set_global(Some(root));
