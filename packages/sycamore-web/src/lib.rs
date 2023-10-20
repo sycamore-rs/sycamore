@@ -31,9 +31,20 @@ pub use ssr_node::*;
 use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
-pub use web_sys;
-pub use js_sys;
-pub use wasm_bindgen;
+/// Re-export of `js-sys` and `wasm-bindgen` for convenience.
+#[doc(no_inline)]
+pub use {js_sys, wasm_bindgen};
+
+/// Re-export of HTML event types from `web-sys` for convenience.
+pub mod events {
+    pub use web_sys::{
+        AnimationEvent, BeforeUnloadEvent, CompositionEvent, DeviceMotionEvent,
+        DeviceOrientationEvent, DragEvent, ErrorEvent, Event, FocusEvent, GamepadEvent,
+        HashChangeEvent, KeyboardEvent, MessageEvent, MouseEvent, PageTransitionEvent,
+        PointerEvent, PopStateEvent, ProgressEvent, StorageEvent, TouchEvent, TransitionEvent,
+        UiEvent, WheelEvent,
+    };
+}
 
 /// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
 pub trait Html:
