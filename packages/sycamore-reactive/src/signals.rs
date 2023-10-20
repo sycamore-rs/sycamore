@@ -48,7 +48,7 @@ pub struct ReadSignal<T: 'static> {
 
 /// A reactive value that can be read and written to.
 ///
-/// This is the writable analog of [`ReadSignal`].
+/// This is the writable version of [`ReadSignal`].
 ///
 /// See [`create_signal`] for more information.
 pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
@@ -192,6 +192,19 @@ impl<T> ReadSignal<T> {
     /// Get the value of the signal without tracking it. The type must implement [`Copy`]. If this
     /// is not the case, use [`ReadSignal::get_clone_untracked`] or [`ReadSignal::with_untracked`]
     /// instead.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(0);
+    /// // Note that we have used `get_untracked` here so the signal is not actually being tracked
+    /// // by the memo.
+    /// let doubled = create_memo(move || state.get_untracked() * 2);
+    /// state.set(1);
+    /// assert_eq!(doubled.get(), 0);
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn get_untracked(self) -> T
     where
@@ -201,6 +214,8 @@ impl<T> ReadSignal<T> {
     }
 
     /// Get the value of the signal without tracking it. The type is [`Clone`]-ed automatically.
+    ///
+    /// This is the cloned equivalent of [`ReadSignal::get_untracked`].
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn get_clone_untracked(self) -> T
     where
@@ -215,7 +230,7 @@ impl<T> ReadSignal<T> {
     /// When called inside a reactive scope, the signal will be automatically tracked.
     ///
     /// # Example
-    /// ```rust
+    /// ```
     /// # use sycamore_reactive::*;
     /// # create_root(|| {
     /// let state = create_signal(0);
@@ -244,7 +259,7 @@ impl<T> ReadSignal<T> {
     /// If the value implements [`Copy`], you should use [`ReadSignal::get`] instead.
     ///
     /// # Example
-    /// ```rust
+    /// ```
     /// # use sycamore_reactive::*;
     /// # create_root(|| {
     /// let greeting = create_signal("Hello".to_string());
@@ -288,6 +303,19 @@ impl<T> ReadSignal<T> {
 
     /// Track the signal in the current reactive scope. This is done automatically when calling
     /// [`ReadSignal::get`] and other similar methods.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(0);
+    /// create_effect(move || {
+    ///     state.track(); // Track the signal without getting its value.
+    ///     println!("Yipee!");
+    /// });
+    /// state.set(1); // Prints "Yipee!"
+    /// # });
+    /// ```
     pub fn track(self) {
         if let Some(tracker) = &mut *self.root.tracker.borrow_mut() {
             tracker.dependencies.push(self.id);
@@ -299,30 +327,69 @@ impl<T> Signal<T> {
     /// Silently set a new value for the signal. This will not trigger any updates in dependent
     /// signals. As such, this is generally not recommended as it can easily lead to state
     /// inconsistencies.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(0);
+    /// let doubled = create_memo(move || state.get() * 2);
+    /// assert_eq!(doubled.get(), 0);
+    /// state.set_silent(1);
+    /// assert_eq!(doubled.get(), 0); // We now have inconsistent state!
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_silent(self, new: T) {
         self.replace_silent(new);
     }
 
     /// Set a new value for the signal and automatically update any dependents.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(0);
+    /// let doubled = create_memo(move || state.get() * 2);
+    /// assert_eq!(doubled.get(), 0);
+    /// state.set(1);
+    /// assert_eq!(doubled.get(), 2);
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set(self, new: T) {
         self.replace(new);
     }
 
     /// Silently set a new value for the signal and return the previous value.
+    ///
+    /// This is the silent version of [`Signal::replace`].
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn replace_silent(self, new: T) -> T {
         self.update_silent(|val| std::mem::replace(val, new))
     }
 
     /// Set a new value for the signal and return the previous value.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(123);
+    /// let prev = state.replace(456);
+    /// assert_eq!(state.get(), 456);
+    /// assert_eq!(prev, 123);
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn replace(self, new: T) -> T {
         self.update(|val| std::mem::replace(val, new))
     }
 
     /// Silently gets the value of the signal and sets the new value to the default value.
+    ///
+    /// This is the silent version of [`Signal::take`].
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn take_silent(self) -> T
     where
@@ -332,6 +399,17 @@ impl<T> Signal<T> {
     }
 
     /// Gets the value of the signal and sets the new value to the default value.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(Some(123));
+    /// let prev = state.take();
+    /// assert_eq!(state.get(), None);
+    /// assert_eq!(prev, Some(123));
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn take(self) -> T
     where
@@ -343,6 +421,8 @@ impl<T> Signal<T> {
     /// Update the value of the signal silently. This will not trigger any updates in dependent
     /// signals. As such, this is generally not recommended as it can easily lead to state
     /// inconsistencies.
+    ///
+    /// This is the silent version of [`Signal::update`].
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn update_silent<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
         let mut value = self.get_mut().value.take().expect("value updating");
@@ -352,6 +432,20 @@ impl<T> Signal<T> {
     }
 
     /// Update the value of the signal and automatically update any dependents.
+    ///
+    /// Using this has the advantage of not needing to clone the value when updating it, especially
+    /// with types that do not implement `Copy` where cloning can be expensive, or for types that
+    /// do not implement `Clone` at all.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal("Hello".to_string());
+    /// state.update(|val| val.push_str(" Sycamore!"));
+    /// assert_eq!(state.get_clone(), "Hello Sycamore!");
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn update<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
         let ret = self.update_silent(f);
@@ -360,12 +454,24 @@ impl<T> Signal<T> {
     }
 
     /// Use a function to produce a new value and sets the value silently.
+    ///
+    /// This is the silent version of [`Signal::set_fn`].
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_fn_silent(self, f: impl FnOnce(&T) -> T) {
         self.update_silent(move |val| *val = f(val));
     }
 
     /// Use a function to produce a new value and sets the value.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(123);
+    /// state.set_fn(|val| *val + 1);
+    /// assert_eq!(state.get(), 124);
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_fn(self, f: impl FnOnce(&T) -> T) {
         self.update_silent(move |val| *val = f(val));
@@ -373,12 +479,35 @@ impl<T> Signal<T> {
 
     /// Creates a new [memo](create_memo) from this signal and a function. The resulting memo will
     /// be created in the current reactive scope.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(0);
+    /// let doubled = state.map(|val| *val * 2);
+    /// assert_eq!(doubled.get(), 0);
+    /// state.set(1);
+    /// assert_eq!(doubled.get(), 2);
+    /// # });
+    /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
         create_memo(move || self.with(&mut f))
     }
 
     /// Split the signal into a reader/writter pair.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let (read_signal, mut write_signal) = create_signal(0).split();
+    /// assert_eq!(read_signal.get(), 0);
+    /// write_signal(1);
+    /// assert_eq!(read_signal.get(), 1);
+    /// # });
+    /// ```
     pub fn split(self) -> (ReadSignal<T>, impl Fn(T) -> T) {
         (*self, move |value| self.replace(value))
     }
