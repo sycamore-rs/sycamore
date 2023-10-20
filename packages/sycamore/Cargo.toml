@@ -25,52 +25,7 @@ sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.2" }
 sycamore-web = { path = "../sycamore-web", version = "0.9.0-beta.2", optional = true }
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
-
-[dependencies.web-sys]
-features = [
-	"console",
-	"Comment",
-	"Document",
-	"DocumentFragment",
-	"DomTokenList",
-	"Element",
-	"HtmlElement",
-	"HtmlInputElement",
-	"HtmlCollection",
-	"Node",
-	"NodeList",
-	"Text",
-	"Window",
-	# Event types
-	"AnimationEvent",
-	"BeforeUnloadEvent",
-	"CompositionEvent",
-	"DeviceMotionEvent",
-	"DeviceOrientationEvent",
-	"DragEvent",
-	"ErrorEvent",
-	"Event",
-	"FocusEvent",
-	"GamepadEvent",
-	"HashChangeEvent",
-	"InputEvent",
-	"KeyboardEvent",
-	"MessageEvent",
-	"MouseEvent",
-	"PageTransitionEvent",
-	"PointerEvent",
-	"PopStateEvent",
-	"ProgressEvent",
-	"PromiseRejectionEvent",
-	"SecurityPolicyViolationEvent",
-	"StorageEvent",
-	"SubmitEvent",
-	"TouchEvent",
-	"TransitionEvent",
-	"WheelEvent",
-]
-version = "0.3.60"
-optional = true
+web-sys = { version = "0.3.60", optional = true }
 
 [dev-dependencies]
 expect-test = "1.4.0"
