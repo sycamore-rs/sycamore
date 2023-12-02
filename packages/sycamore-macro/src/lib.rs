@@ -22,29 +22,6 @@ pub fn view(input: TokenStream) -> TokenStream {
     view::Codegen {}.root(&root).into()
 }
 
-/// Like [`view_with_elements!`] but only creates a single raw node instead.
-///
-/// # Example
-///
-/// ```
-/// use sycamore::prelude::*;
-///
-/// #[component]
-/// pub fn MyComponent<G: Html>() -> View<G> {
-///     let cool_button: G = node! { button { "The coolest 😎" } };
-///
-///     cool_button.set_property("myProperty", &"Epic!".into());
-///
-///     View::new_node(cool_button)
-/// }
-/// ```
-#[proc_macro]
-pub fn node(input: TokenStream) -> TokenStream {
-    let node = parse_macro_input!(input as sycamore_view_parser::ir::Node);
-
-    view::Codegen {}.node(&node).into()
-}
-
 /// A macro for creating components from functions.
 ///
 /// Add this attribute to a `fn` to create a component from that function.
