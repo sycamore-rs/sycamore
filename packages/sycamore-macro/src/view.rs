@@ -169,6 +169,7 @@ impl CodegenTemplate {
 
         match &attr.ty {
             PropType::Plain { ident } => {
+                let ident = ident.to_string();
                 if ident == "dangerously_set_inner_html" {
                     if is_dynamic {
                         self.flagged_nodes_quoted.extend(quote! {
@@ -191,32 +192,6 @@ impl CodegenTemplate {
                         (None, true)
                     }
                 } else if is_bool_attr(&ident.to_string()) {
-                    if let Expr::Lit(ExprLit {
-                        lit: Lit::Str(text),
-                        ..
-                    }) = value
-                    {
-                        (
-                            Some(quote! { (#ident, ::std::borrow::Cow::Borrowed(#text)) }),
-                            false,
-                        )
-                    } else {
-                        let text = quote! { ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#value)) };
-                        if is_dynamic {
-                            self.flagged_nodes_quoted.extend(quote! {
-                                let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                                ::sycamore::reactive::create_effect(move || {
-                                    ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#ident), #text);
-                                });
-                            });
-                        } else {
-                            self.flagged_nodes_quoted.extend(quote! {
-                                ::sycamore::generic_node::GenericNode::set_attribute(&__flagged[#flag_counter], ::std::borrow::Cow::Borrowed(#ident), #text);
-                            });
-                        }
-                        (None, true)
-                    }
-                } else {
                     if is_dynamic {
                         let quoted_set_attribute = quote! {
                             if #value {
@@ -251,6 +226,32 @@ impl CodegenTemplate {
                             ),
                             false,
                         )
+                    }
+                } else {
+                    if let Expr::Lit(ExprLit {
+                        lit: Lit::Str(text),
+                        ..
+                    }) = value
+                    {
+                        (
+                            Some(quote! { (#ident, ::std::borrow::Cow::Borrowed(#text)) }),
+                            false,
+                        )
+                    } else {
+                        let text = quote! { ::std::borrow::Cow::Owned(::std::string::ToString::to_string(&#value)) };
+                        if is_dynamic {
+                            self.flagged_nodes_quoted.extend(quote! {
+                                let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
+                                ::sycamore::reactive::create_effect(move || {
+                                    ::sycamore::generic_node::GenericNode::set_attribute(&__el, ::std::borrow::Cow::Borrowed(#ident), #text);
+                                });
+                            });
+                        } else {
+                            self.flagged_nodes_quoted.extend(quote! {
+                                ::sycamore::generic_node::GenericNode::set_attribute(&__flagged[#flag_counter], ::std::borrow::Cow::Borrowed(#ident), #text);
+                            });
+                        }
+                        (None, true)
                     }
                 }
             }
@@ -322,10 +323,11 @@ impl CodegenTemplate {
                         },
                     };
 
+                    let event = ident.to_string();
                     let event_target_prop = quote! {
                         ::sycamore::rt::Reflect::get(
                             &event.target().unwrap(),
-                            &::std::convert::Into::<::sycamore::rt::JsValue>::into(#ident)
+                            &::std::convert::Into::<::sycamore::rt::JsValue>::into(#event)
                         ).unwrap()
                     };
 
@@ -430,7 +432,7 @@ fn impl_component(node: &TagNode) -> TokenStream {
         ..
     } = node;
     let ident = match ident {
-        TagIdent::Path(path) => path.get_ident().unwrap(),
+        TagIdent::Path(path) => path,
         TagIdent::Hyphenated(_) => unreachable!("hyphenated tags are not components"),
     };
 
@@ -620,4 +622,3 @@ fn is_component(ident: &TagIdent) -> bool {
         TagIdent::Hyphenated(_) => false,
     }
 }
-

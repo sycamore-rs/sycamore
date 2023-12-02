@@ -127,16 +127,16 @@ impl Parse for PropType {
             let _2dot = input.parse::<Token![..]>()?;
             Ok(Self::Spread)
         } else if lookahead.peek(Ident::peek_any) {
-            let ident: Ident = input.call(Ident::parse_any)?;
+            let name: Ident = input.call(Ident::parse_any)?;
 
-            if ident.to_string() == "ref" {
+            if name.to_string() == "ref" {
                 Ok(Self::Ref)
             } else if input.peek(Token![:]) {
                 let _colon: Token![:] = input.parse()?;
-                let dir = input.call(Ident::parse_any)?;
-                Ok(Self::Directive { dir, ident })
+                let ident = input.call(Ident::parse_any)?;
+                Ok(Self::Directive { dir: name, ident })
             } else {
-                Ok(Self::Plain { ident })
+                Ok(Self::Plain { ident: name })
             }
         } else {
             Err(lookahead.error())
