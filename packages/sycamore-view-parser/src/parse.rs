@@ -82,7 +82,7 @@ impl Parse for TagNode {
         Ok(Self {
             ident,
             props: attrs,
-            children,
+            children: Root(children),
         })
     }
 }

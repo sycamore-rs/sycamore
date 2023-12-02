@@ -19,6 +19,7 @@ proc-macro2 = "1.0.47"
 quote = "1.0.21"
 rand = "0.8.5"
 syn = { version = "2.0.10", features = ["extra-traits", "full"] }
+sycamore-view-parser = { path = "../sycamore-view-parser" }
 
 [dev-dependencies]
 sycamore = { path = "../sycamore", features = ["hydrate", "suspense"] }

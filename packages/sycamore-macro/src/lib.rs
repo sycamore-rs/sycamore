@@ -10,6 +10,7 @@ use syn::{parse_macro_input, DeriveInput};
 mod component;
 mod props;
 mod view;
+mod view2;
 
 /// A macro for ergonomically creating complex UI complex layouts.
 ///
@@ -46,6 +47,18 @@ pub fn node_with_elements(input: TokenStream) -> TokenStream {
     let elem = parse_macro_input!(input as view::WithArgs<view::ir::Element>);
 
     view::node_impl(elem).into()
+}
+
+/// A macro for ergonomically creating complex UI complex layouts.
+///
+/// To learn more about the view syntax, see [the chapter on views](https://sycamore-rs.netlify.app/docs/basics/view)
+/// in the Sycamore Book.
+#[proc_macro]
+pub fn view(input: TokenStream) -> TokenStream {
+    let root = parse_macro_input!(input as sycamore_view_parser::ir::Root);
+
+    let codegen = view2::Codegen {};
+    codegen.root(&root).into()
 }
 
 /// A macro for creating components from functions.

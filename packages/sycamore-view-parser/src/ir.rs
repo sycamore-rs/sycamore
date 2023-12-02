@@ -3,6 +3,7 @@
 use proc_macro2::Span;
 use syn::{Expr, Ident, LitStr, Path};
 
+/// A list of nodes. This is the top-level syntax node and entry-point for parsing.
 pub struct Root(pub Vec<Node>);
 
 pub enum Node {
@@ -20,7 +21,7 @@ pub enum NodeType {
 pub struct TagNode {
     pub ident: TagIdent,
     pub props: Vec<Prop>,
-    pub children: Vec<Node>,
+    pub children: Root,
 }
 
 pub enum TagIdent {
