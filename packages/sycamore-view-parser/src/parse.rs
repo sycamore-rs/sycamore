@@ -143,7 +143,7 @@ impl Parse for PropType {
             } else {
                 let name: Ident = input.call(Ident::parse_any)?;
 
-                if name.to_string() == "ref" {
+                if name == "ref" {
                     Ok(Self::Ref)
                 } else if input.peek(Token![:]) {
                     let _colon: Token![:] = input.parse()?;

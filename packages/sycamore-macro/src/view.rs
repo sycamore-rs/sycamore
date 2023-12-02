@@ -232,6 +232,7 @@ impl CodegenTemplate {
                         )
                     }
                 } else {
+                    // Normal string attribute.
                     if let Expr::Lit(ExprLit {
                         lit: Lit::Str(text),
                         ..
@@ -458,7 +459,7 @@ fn impl_component(node: &TagNode) -> TokenStream {
     });
     let attribute_entries_quoted = attributes
         .map(|(dir, name, value)| {
-            let value = to_attribute_value(&dir, name, &value)?;
+            let value = to_attribute_value(dir, name, &value)?;
             let name_str = if dir == "attr" {
                 name.to_string()
             } else {
