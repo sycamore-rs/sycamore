@@ -48,7 +48,6 @@ pub struct Prop {
     pub span: Span,
 }
 
-#[derive(PartialEq, Eq)]
 pub enum PropType {
     /// Syntax: `<name>=<expr>`.
     Plain { ident: Ident },
