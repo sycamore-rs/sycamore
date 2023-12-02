@@ -1,6 +1,7 @@
 //! Intermediate representation for `view!` macro syntax.
 
 use proc_macro2::Span;
+use syn::spanned::Spanned;
 use syn::{Expr, Ident, LitStr, Path};
 
 /// A list of nodes. This is the top-level syntax node and entry-point for parsing.
@@ -30,6 +31,15 @@ pub enum TagIdent {
     /// A hyphenated ident. Can not include any paths.
     /// This is used for custom elements support.
     Hyphenated(String),
+}
+
+impl TagIdent {
+    pub fn span(&self) -> Span {
+        match self {
+            Self::Path(path) => path.span(),
+            Self::Hyphenated(_) => Span::call_site(),
+        }
+    }
 }
 
 pub struct Prop {

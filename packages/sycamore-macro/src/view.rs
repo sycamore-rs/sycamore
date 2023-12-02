@@ -6,7 +6,7 @@
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 use sycamore_view_parser::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
 use syn::{Expr, ExprLit, Ident, Lit, LitBool};
@@ -137,7 +137,7 @@ impl CodegenTemplate {
         });
         if has_children && has_dangerously_set_inner_html {
             return syn::Error::new(
-                Span::call_site(),
+                ident.span(),
                 "children and `dangerously_set_inner_html` cannot both be set",
             )
             .to_compile_error();
