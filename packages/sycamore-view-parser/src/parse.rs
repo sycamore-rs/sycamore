@@ -127,7 +127,7 @@ impl Parse for PropType {
             let _2dot = input.parse::<Token![..]>()?;
             Ok(Self::Spread)
         } else if lookahead.peek(Ident::peek_any) {
-            let ident: Ident = input.parse()?;
+            let ident: Ident = input.call(Ident::parse_any)?;
 
             if ident.to_string() == "ref" {
                 Ok(Self::Ref)
