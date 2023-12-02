@@ -4,7 +4,7 @@ error: unexpected end of input, expected either `(` or `{` after element tag
 5 |         let _: View<G> = view! { button };
   |                          ^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the macro `$crate::view_with_elements` which comes from the expansion of the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected `=`
  --> tests/view/element-fail.rs:6:49
@@ -36,17 +36,24 @@ error: expected `=`
 13 |         let _: View<G> = view! { button(a.b.c="123") };
    |                                          ^
 
-error: children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:16:15
+error: children and `dangerously_set_inner_html` cannot both be set
+  --> tests/view/element-fail.rs:15:26
    |
-16 |             p(dangerously_set_inner_html="<span>Test</span>") {
-   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 |           let _: View<G> = view! {
+   |  __________________________^
+16 | |             p(dangerously_set_inner_html="<span>Test</span>") {
+17 | |                 "Error"
+18 | |             }
+19 | |         };
+   | |_________^
+   |
+   = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0412]: cannot find type `unknownelement` in module `$crate::web::html`
+error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
   --> tests/view/element-fail.rs:10:34
    |
 10 |         let _: View<G> = view! { unknownelement {} };
-   |                                  ^^^^^^^^^^^^^^ not found in `$crate::web::html`
+   |                                  ^^^^^^^^^^^^^^ not found in `sycamore::web::html`
 
 error[E0425]: cannot find value `unknown_attributes` in this scope
   --> tests/view/element-fail.rs:11:40

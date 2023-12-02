@@ -132,7 +132,7 @@ impl Parse for PropType {
                 let mut segments: Vec<Ident> = vec![input.call(Ident::parse_any)?];
                 while input.peek(Token![-]) {
                     let _: Token![-] = input.parse()?;
-                    segments.push(input.parse()?);
+                    segments.push(input.call(Ident::parse_any)?);
                 }
                 let ident = segments
                     .into_iter()

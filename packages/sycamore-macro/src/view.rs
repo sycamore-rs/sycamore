@@ -6,7 +6,7 @@
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use sycamore_view_parser::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
 use syn::{Expr, ExprLit, Ident, Lit, LitBool};
@@ -126,6 +126,23 @@ impl CodegenTemplate {
         if flag {
             self.flag_counter += 1;
         }
+
+        // Make sure we don't have both children and dangerously_set_inner_html.
+        let has_children = !children.0.is_empty();
+        let has_dangerously_set_inner_html = props.iter().any(|prop| {
+            matches!(
+                &prop.ty,
+                PropType::Plain { ident } if ident == "dangerously_set_inner_html"
+            )
+        });
+        if has_children && has_dangerously_set_inner_html {
+            return syn::Error::new(
+                Span::call_site(),
+                "children and `dangerously_set_inner_html` cannot both be set",
+            )
+            .to_compile_error();
+        }
+
         // We run codegen for children after attrs to make sure that we have the correct flag
         // counter.
         let children = children
@@ -377,11 +394,8 @@ impl CodegenTemplate {
                 }
                 _ => (
                     Some(
-                        syn::Error::new(
-                            ident.span(),
-                            format!("property `{}` is not supported with `bind:`", ident),
-                        )
-                        .to_compile_error(),
+                        syn::Error::new(dir.span(), format!("unknown directive `{dir}`"))
+                            .to_compile_error(),
                     ),
                     false,
                 ),
