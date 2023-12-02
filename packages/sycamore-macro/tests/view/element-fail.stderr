@@ -36,16 +36,22 @@ error: expected `=`
 12 |         let _: View<G> = view! { button(a.b.c="123") };
    |                                          ^
 
-error: expected a valid node
-  --> tests/view/element-fail.rs:13:34
+error: property `notbind` is not supported with `bind:`
+  --> tests/view/element-fail.rs:13:46
    |
-13 |         let _: View<G> = view! { * };
+13 |         let _: View<G> = view! { button(bind:notbind=todo!()) };
+   |                                              ^^^^^^^
+
+error: expected a valid node
+  --> tests/view/element-fail.rs:14:34
+   |
+14 |         let _: View<G> = view! { * };
    |                                  ^
 
 error: children and `dangerously_set_inner_html` cannot both be set
-  --> tests/view/element-fail.rs:16:13
+  --> tests/view/element-fail.rs:17:13
    |
-16 |             p(dangerously_set_inner_html="<span>Test</span>") {
+17 |             p(dangerously_set_inner_html="<span>Test</span>") {
    |             ^
 
 error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
