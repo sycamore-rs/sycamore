@@ -31,10 +31,16 @@ error: unknown directive `unknown`
   |                                         ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:13:42
+  --> tests/view/element-fail.rs:12:42
    |
-13 |         let _: View<G> = view! { button(a.b.c="123") };
+12 |         let _: View<G> = view! { button(a.b.c="123") };
    |                                          ^
+
+error: expected a valid node
+  --> tests/view/element-fail.rs:13:34
+   |
+13 |         let _: View<G> = view! { * };
+   |                                  ^
 
 error: children and `dangerously_set_inner_html` cannot both be set
   --> tests/view/element-fail.rs:16:13
