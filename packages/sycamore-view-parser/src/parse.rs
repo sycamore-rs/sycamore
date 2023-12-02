@@ -127,16 +127,31 @@ impl Parse for PropType {
             let _2dot = input.parse::<Token![..]>()?;
             Ok(Self::Spread)
         } else if lookahead.peek(Ident::peek_any) {
-            let name: Ident = input.call(Ident::parse_any)?;
-
-            if name.to_string() == "ref" {
-                Ok(Self::Ref)
-            } else if input.peek(Token![:]) {
-                let _colon: Token![:] = input.parse()?;
-                let ident = input.call(Ident::parse_any)?;
-                Ok(Self::Directive { dir: name, ident })
+            // Check if we are parsing a hyphenated attribute.
+            if input.peek2(Token![-]) {
+                let mut segments: Vec<Ident> = vec![input.call(Ident::parse_any)?];
+                while input.peek(Token![-]) {
+                    let _: Token![-] = input.parse()?;
+                    segments.push(input.parse()?);
+                }
+                let ident = segments
+                    .into_iter()
+                    .map(|i| i.to_string())
+                    .collect::<Vec<_>>()
+                    .join("-");
+                Ok(Self::PlainHyphenated { ident })
             } else {
-                Ok(Self::Plain { ident: name })
+                let name: Ident = input.call(Ident::parse_any)?;
+
+                if name.to_string() == "ref" {
+                    Ok(Self::Ref)
+                } else if input.peek(Token![:]) {
+                    let _colon: Token![:] = input.parse()?;
+                    let ident = input.call(Ident::parse_any)?;
+                    Ok(Self::Directive { dir: name, ident })
+                } else {
+                    Ok(Self::Plain { ident: name })
+                }
             }
         } else {
             Err(lookahead.error())

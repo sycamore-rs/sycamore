@@ -42,6 +42,8 @@ pub struct Prop {
 pub enum PropType {
     /// Syntax: `<name>=<expr>`.
     Plain { ident: Ident },
+    /// Syntax: `<hyphenated-name>=<expr>`.
+    PlainHyphenated { ident: String },
     /// Syntax: `<dir>:<prop>=<expr>`.
     Directive { dir: Ident, ident: Ident },
     /// Syntax: `ref=<expr>`.

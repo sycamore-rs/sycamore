@@ -168,8 +168,12 @@ impl CodegenTemplate {
         let is_dynamic = !matches!(value, Expr::Lit(ExprLit { .. }));
 
         match &attr.ty {
-            PropType::Plain { ident } => {
-                let ident = ident.to_string();
+            PropType::Plain { .. } | PropType::PlainHyphenated { .. } => {
+                let ident = match &attr.ty {
+                    PropType::Plain { ident } => ident.to_string(),
+                    PropType::PlainHyphenated { ident } => ident.clone(),
+                    _ => unreachable!(),
+                };
                 if ident == "dangerously_set_inner_html" {
                     if is_dynamic {
                         self.flagged_nodes_quoted.extend(quote! {
@@ -267,6 +271,7 @@ impl CodegenTemplate {
                     (None, true)
                 }
                 "prop" => {
+                    let ident = ident.to_string();
                     let value =
                         quote! { ::std::convert::Into::<::sycamore::rt::JsValue>::into(#value) };
 
@@ -293,14 +298,16 @@ impl CodegenTemplate {
                         Number,
                     }
 
-                    let (event_name, property_ty) = match ident.to_string().as_str() {
+                    let span = ident.span();
+                    let ident = ident.to_string();
+                    let (event_name, property_ty) = match ident.as_str() {
                         "value" => (quote! { input }, JsPropertyType::String),
                         "valueAsNumber" => (quote! { input }, JsPropertyType::Number),
                         "checked" => (quote! { change }, JsPropertyType::Bool),
                         _ => {
                             self.flagged_nodes_quoted.extend(
                                 syn::Error::new(
-                                    ident.span(),
+                                    span,
                                     format!("property `{}` is not supported with `bind:`", ident),
                                 )
                                 .to_compile_error(),
@@ -323,11 +330,10 @@ impl CodegenTemplate {
                         },
                     };
 
-                    let event = ident.to_string();
                     let event_target_prop = quote! {
                         ::sycamore::rt::Reflect::get(
                             &event.target().unwrap(),
-                            &::std::convert::Into::<::sycamore::rt::JsValue>::into(#event)
+                            &::std::convert::Into::<::sycamore::rt::JsValue>::into(#ident)
                         ).unwrap()
                     };
 
