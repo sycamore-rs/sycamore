@@ -200,10 +200,10 @@ To display content based on the route that matches, we can use a `Router`.
 view! {
     Router(
         integration=HistoryIntegration::new(),
-        view=|route: &ReadSignal<AppRoutes>| {
+        view=|route: ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
-                    (match route.get().as_ref() {
+                    (match route.get() {
                         AppRoutes::Index => view! {
                             "This is the index page"
                         },
@@ -248,10 +248,10 @@ let route = AppRoutes::match_path(path);
 view! {
     StaticRouter(
         route=route,
-        view=|route: &ReadSignal<AppRoutes>| {
+        view=|route: ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
-                    (match route.get().as_ref() {
+                    (match route.get() {
                         AppRoutes::Index => view! {
                             "This is the index page"
                         },
