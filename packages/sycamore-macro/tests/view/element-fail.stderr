@@ -4,7 +4,7 @@ error: unexpected end of input, expected either `(` or `{` after element tag
 5 |         let _: View<G> = view! { button };
   |                          ^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the macro `$crate::view_with_elements` which comes from the expansion of the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected `=`
  --> tests/view/element-fail.rs:6:49
@@ -31,22 +31,34 @@ error: unknown directive `unknown`
   |                                         ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:13:42
+  --> tests/view/element-fail.rs:12:42
    |
-13 |         let _: View<G> = view! { button(a.b.c="123") };
+12 |         let _: View<G> = view! { button(a.b.c="123") };
    |                                          ^
 
-error: children and dangerously_set_inner_html cannot be both set
-  --> tests/view/element-fail.rs:16:15
+error: property `notbind` is not supported with `bind:`
+  --> tests/view/element-fail.rs:13:46
    |
-16 |             p(dangerously_set_inner_html="<span>Test</span>") {
-   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |         let _: View<G> = view! { button(bind:notbind=todo!()) };
+   |                                              ^^^^^^^
 
-error[E0412]: cannot find type `unknownelement` in module `$crate::web::html`
+error: expected a valid node
+  --> tests/view/element-fail.rs:14:34
+   |
+14 |         let _: View<G> = view! { * };
+   |                                  ^
+
+error: children and `dangerously_set_inner_html` cannot both be set
+  --> tests/view/element-fail.rs:17:13
+   |
+17 |             p(dangerously_set_inner_html="<span>Test</span>") {
+   |             ^
+
+error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
   --> tests/view/element-fail.rs:10:34
    |
 10 |         let _: View<G> = view! { unknownelement {} };
-   |                                  ^^^^^^^^^^^^^^ not found in `$crate::web::html`
+   |                                  ^^^^^^^^^^^^^^ not found in `sycamore::web::html`
 
 error[E0425]: cannot find value `unknown_attributes` in this scope
   --> tests/view/element-fail.rs:11:40

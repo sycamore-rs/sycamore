@@ -1,7 +1,7 @@
 [package]
-name = "sycamore-macro"
+name = "sycamore-view-parser"
 categories = ["gui", "wasm", "web-programming"]
-description = "proc-macro crate for Sycamore"
+description = "parser for Sycamore view syntax"
 edition = "2021"
 homepage = "https://github.com/sycamore-rs/sycamore"
 keywords = ["wasm", "gui", "reactive"]
@@ -10,22 +10,7 @@ readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
 version.workspace = true
 
-[lib]
-proc-macro = true
-
 [dependencies]
-once_cell = "1.16.0"
 proc-macro2 = "1.0.47"
 quote = "1.0.21"
-rand = "0.8.5"
 syn = { version = "2.0.10", features = ["extra-traits", "full"] }
-sycamore-view-parser = { path = "../sycamore-view-parser" }
-
-[dev-dependencies]
-sycamore = { path = "../sycamore", features = ["hydrate", "suspense"] }
-trybuild = "1.0.71"
-
-[features]
-default = []
-hydrate = []
-ssr = []

@@ -90,8 +90,6 @@ pub mod prelude {
     pub use crate::stable_id::create_unique_id;
     pub use crate::view::View;
     #[cfg(feature = "web")]
-    pub use crate::web::macros::{node, view};
-    #[cfg(feature = "web")]
     pub use crate::web::on_mount;
     #[cfg(all(feature = "web", feature = "hydrate"))]
     pub use crate::web::HydrateNode;
