@@ -56,12 +56,19 @@ fn App<G: Html>() -> View<G> {
         }
     }
 }
+
 fn main() {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
-    let s = sycamore::render_to_string(App);
-    log::info!("{}", s);
-
-    sycamore::hydrate(App);
+    if cfg!(target_arch = "wasm32") {
+        console_error_panic_hook::set_once();
+        console_log::init_with_level(log::Level::Debug).unwrap();
+        sycamore::hydrate(App);
+    } else {
+        // Create inedx.html from template.html and insert the rendered HTML.
+        let html = sycamore::render_to_string(App);
+        let template =
+            std::fs::read_to_string("template.html").expect("failed to read template.html");
+        let rendered = template.replace("%sycamore.html%", &html);
+        std::fs::write("index.html", rendered).expect("failed to write index.html");
+        println!("Wrote index.html");
+    }
 }
