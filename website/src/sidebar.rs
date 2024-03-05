@@ -18,20 +18,29 @@ pub struct SidebarData {
     sections: Vec<SidebarSection>,
 }
 
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Sidebar {
+    pub version: String,
+    pub path: String,
+    pub data: SidebarData,
+}
+
 #[component(inline_props)]
-pub fn Sidebar<G: Html>(version: String, data: SidebarData) -> View<G> {
-    let sections = data
+pub fn Sidebar<G: Html>(sidebar: Sidebar) -> View<G> {
+    let sections = sidebar.data
         .sections
         .into_iter()
         .map(|SidebarSection { title, items }| {
             let pages = items
                 .into_iter()
                 .map(|SidebarItem { name, href }| {
+                    let selected = if href == sidebar.path{"font-bold underline"}else{""};
+                    let class = format!("py-2 sm:py-0 text-sm pl-4 hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition {}", selected);
                     view! {
                         li {
                             a(
                                 href=format!("../{}", href),
-                                class="py-2 sm:py-0 text-sm pl-4 hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
+                                class=class,
                             ) {
                                 (name)
                             }
@@ -63,7 +72,7 @@ pub fn Sidebar<G: Html>(version: String, data: SidebarData) -> View<G> {
                     class="py-2 sm:py-0 text-sm pl-4 font-bold text-gray-700 dark:text-gray-300 \
                     hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition",
                 ) {
-                    "Version: " (version)
+                    "Version: " (sidebar.version)
                 }
             }
             (sections)

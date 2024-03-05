@@ -1,7 +1,7 @@
 use serde_lite::Deserialize;
 use sycamore::prelude::*;
 
-use crate::sidebar::SidebarData;
+use crate::sidebar::Sidebar;
 
 // Sync definition with docs/build.rs
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -72,7 +72,7 @@ pub fn OutlineView<G: Html>(outline: Vec<Outline>) -> View<G> {
 pub struct ContentProps {
     pub data: MarkdownPage,
     #[prop(default, setter(strip_option))]
-    pub sidebar: Option<(String, SidebarData)>,
+    pub sidebar: Option<Sidebar>,
 }
 
 #[component]
@@ -85,14 +85,13 @@ pub fn Content<G: Html>(
     let sidebar = create_signal(sidebar);
     let show_sidebar = sidebar.get_clone().is_some();
 
-    let sidebar_version = sidebar.get_clone().as_ref().map(|x| x.0.clone());
-
+    let sidebar_version = sidebar.get_clone().as_ref().map(|x| x.version.clone());
     view! {
         div(class="flex w-full") {
             (show_sidebar.then(|| view! {
                 div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
                     div(class="p-3"){
-                        crate::sidebar::Sidebar(version=sidebar.get_clone().unwrap().0, data=sidebar.get_clone().unwrap().1)
+                        crate::sidebar::Sidebar(sidebar=sidebar.get_clone().unwrap())
                     }
                 }
             }))
