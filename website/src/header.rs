@@ -133,7 +133,7 @@ pub fn HamburgerMenu<G: Html>() -> View<G> {
                 let sidebar = Sidebar{
                     version:version.unwrap_or_else(|| "next".to_string()),
                     path:"".to_owned(),
-                    data:data,
+                    data,
                 };
                 view! {
                     div(class="opacity-25 mx-2 p-px my-2 bg-current")

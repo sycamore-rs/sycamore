@@ -119,7 +119,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
                             content::Content(
                                 data=data.clone(),
                                 sidebar=Sidebar{
-                                    version:version,
+                                    version,
                                     path:path.get_clone().unwrap(),
                                     data:cached_sidebar_data.1.clone(),
                                 },
