@@ -13,7 +13,7 @@ use sycamore::futures::{create_resource, spawn_local_scoped};
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router};
 
-use crate::sidebar::Sidebar;
+use crate::sidebar::SidebarCurrent;
 
 const LATEST_MAJOR_VERSION: &str = "v0.8";
 const NEXT_VERSION: &str = "next";
@@ -92,7 +92,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
                         view! {
                             content::Content(
                                 data=data.clone(),
-                                sidebar=Sidebar{
+                                sidebar=SidebarCurrent{
                                     version : "next".to_string(),
                                     path : path.get_clone(),
                                     data:cached_sidebar_data.1.clone(),
@@ -118,7 +118,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
                         view! {
                             content::Content(
                                 data=data.clone(),
-                                sidebar=Sidebar{
+                                sidebar=SidebarCurrent{
                                     version,
                                     path:path.get_clone(),
                                     data:cached_sidebar_data.1.clone(),

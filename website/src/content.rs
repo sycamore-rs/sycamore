@@ -1,7 +1,7 @@
 use serde_lite::Deserialize;
 use sycamore::prelude::*;
 
-use crate::sidebar::Sidebar;
+use crate::sidebar::SidebarCurrent;
 
 // Sync definition with docs/build.rs
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -72,7 +72,7 @@ pub fn OutlineView<G: Html>(outline: Vec<Outline>) -> View<G> {
 pub struct ContentProps {
     pub data: MarkdownPage,
     #[prop(default, setter(strip_option))]
-    pub sidebar: Option<Sidebar>,
+    pub sidebar: Option<SidebarCurrent>,
 }
 
 #[component]

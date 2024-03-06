@@ -19,14 +19,14 @@ pub struct SidebarData {
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct Sidebar {
+pub struct SidebarCurrent {
     pub version: String,
     pub path: String,
     pub data: SidebarData,
 }
 
 #[component(inline_props)]
-pub fn Sidebar<G: Html>(sidebar: Sidebar) -> View<G> {
+pub fn Sidebar<G: Html>(sidebar: SidebarCurrent) -> View<G> {
     let sections = sidebar.data
         .sections
         .into_iter()
