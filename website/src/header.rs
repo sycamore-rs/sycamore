@@ -2,7 +2,7 @@ use sycamore::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
-use crate::sidebar::{SidebarData, SidebarCurrent};
+use crate::sidebar::{SidebarCurrent, SidebarData};
 use crate::DarkMode;
 
 #[component]
