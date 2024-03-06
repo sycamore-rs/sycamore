@@ -85,7 +85,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         },
         Routes::Docs(a, b) => {
             let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json",));
-            let path: Signal<Option<String>> = create_signal(Some(format!("{a}/{b}")));
+            let path: Signal<String> = create_signal(format!("{a}/{b}"));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
@@ -94,7 +94,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
                                 data=data.clone(),
                                 sidebar=Sidebar{
                                     version : "next".to_string(),
-                                    path : path.get_clone().unwrap(),
+                                    path : path.get_clone(),
                                     data:cached_sidebar_data.1.clone(),
                                 },
                             )
@@ -110,7 +110,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         Routes::VersionedDocs(version, a, b) => {
             let version = version.clone();
             let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
-            let path: Signal<Option<String>> = create_signal(Some(format!("{a}/{b}")));
+            let path: Signal<String> = create_signal(format!("{a}/{b}"));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
@@ -120,7 +120,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
                                 data=data.clone(),
                                 sidebar=Sidebar{
                                     version,
-                                    path:path.get_clone().unwrap(),
+                                    path:path.get_clone(),
                                     data:cached_sidebar_data.1.clone(),
                                 },
                             )
