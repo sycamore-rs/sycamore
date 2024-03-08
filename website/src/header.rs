@@ -129,9 +129,9 @@ pub fn HamburgerMenu<G: Html>() -> View<G> {
         ) {
             NavLinks {}
             (if let Some((version, data)) = sidebar.get_clone() {
-                let sidebar_current = SidebarCurrent{
-                    version:version.unwrap_or_else(|| "next".to_string()),
-                    path:"".to_owned(),
+                let sidebar_current = SidebarCurrent {
+                    version: version.unwrap_or_else(|| "next".to_string()),
+                    path: String::new(),
                     data,
                 };
                 view! {
