@@ -84,7 +84,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
             }
         },
         Routes::Docs(a, b) => {
-            let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json",));
+            let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
             let path = create_signal(format!("{a}/{b}"));
             view! {
                 (if let Some(data) = data.get_clone() {
