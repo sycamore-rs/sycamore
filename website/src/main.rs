@@ -85,7 +85,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         },
         Routes::Docs(a, b) => {
             let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json",));
-            let path: Signal<String> = create_signal(format!("{a}/{b}"));
+            let path = create_signal(format!("{a}/{b}"));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
