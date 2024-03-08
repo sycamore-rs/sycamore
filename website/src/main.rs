@@ -110,7 +110,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         Routes::VersionedDocs(version, a, b) => {
             let version = version.clone();
             let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
-            let path: Signal<String> = create_signal(format!("{a}/{b}"));
+            let path = create_signal(format!("{a}/{b}"));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
