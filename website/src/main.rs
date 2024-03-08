@@ -120,8 +120,8 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
                                 data=data.clone(),
                                 sidebar=SidebarCurrent {
                                     version,
-                                    path:path.get_clone(),
-                                    data:cached_sidebar_data.1.clone(),
+                                    path: path.get_clone(),
+                                    data: cached_sidebar_data.1.clone(),
                                 },
                             )
                         }
