@@ -13,6 +13,8 @@ use sycamore::futures::{create_resource, spawn_local_scoped};
 use sycamore::prelude::*;
 use sycamore_router::{HistoryIntegration, Route, Router};
 
+use crate::sidebar::SidebarCurrent;
+
 const LATEST_MAJOR_VERSION: &str = "v0.8";
 const NEXT_VERSION: &str = "next";
 
@@ -83,16 +85,18 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         },
         Routes::Docs(a, b) => {
             let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
+            let path = create_signal(format!("{a}/{b}"));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
                         view! {
                             content::Content(
                                 data=data.clone(),
-                                sidebar=(
-                                    "next".to_string(),
-                                    cached_sidebar_data.1.clone(),
-                                ),
+                                sidebar=SidebarCurrent {
+                                    version: "next".to_string(),
+                                    path: path.get_clone(),
+                                    data: cached_sidebar_data.1.clone(),
+                                },
                             )
                         }
                     } else {
@@ -106,6 +110,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         Routes::VersionedDocs(version, a, b) => {
             let version = version.clone();
             let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
+            let path = create_signal(format!("{a}/{b}"));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
@@ -113,10 +118,11 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
                         view! {
                             content::Content(
                                 data=data.clone(),
-                                sidebar=(
+                                sidebar=SidebarCurrent {
                                     version,
-                                    cached_sidebar_data.1.clone(),
-                                ),
+                                    path: path.get_clone(),
+                                    data: cached_sidebar_data.1.clone(),
+                                },
                             )
                         }
                     } else {
