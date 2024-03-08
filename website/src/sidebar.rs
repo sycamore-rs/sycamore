@@ -34,7 +34,7 @@ pub fn Sidebar<G: Html>(sidebar: SidebarCurrent) -> View<G> {
             let pages = items
                 .into_iter()
                 .map(|SidebarItem { name, href }| {
-                    let selected = if href == sidebar.path{"font-bold underline"}else{""};
+                    let selected = if href == sidebar.path { "font-bold underline" } else { "" };
                     let class = format!("py-2 sm:py-0 text-sm pl-4 hover:bg-gray-300 dark:hover:bg-gray-700 w-full inline-block rounded transition {}", selected);
                     view! {
                         li {
