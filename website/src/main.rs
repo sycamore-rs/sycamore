@@ -89,16 +89,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
-                        view! {
-                            content::Content(
-                                data=data.clone(),
-                                sidebar=SidebarCurrent {
-                                    version: "next".to_string(),
-                                    path: path.get_clone(),
-                                    data: cached_sidebar_data.1.clone(),
-                                },
-                            )
-                        }
+                        view! { div(){"cached_sidebar_data"}}
                     } else {
                         view! { }
                     }
