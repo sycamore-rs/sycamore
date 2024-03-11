@@ -67,14 +67,14 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
 fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
     let cached_sidebar_data = create_signal(None::<(Option<String>, SidebarData)>);
     provide_context(cached_sidebar_data);
+    if cached_sidebar_data.with(|x| x.is_none() || x.as_ref().unwrap().0.is_some()) {
+        spawn_local_scoped(async move {
+            cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
+        });
+    }
 
     let fetch_docs_data = move |url| {
         let data = create_resource(docs_preload(url));
-        if cached_sidebar_data.with(|x| x.is_none() || x.as_ref().unwrap().0.is_some()) {
-            spawn_local_scoped(async move {
-                cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
-            });
-        }
         data
     };
     let view = create_memo(on(route, move || match route.get_clone() {
@@ -89,7 +89,16 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
-                        view! { div(){"cached_sidebar_data"}}
+                        view! {
+                            content::Content(
+                                data=data.clone(),
+                                sidebar=SidebarCurrent {
+                                    version: "next".to_string(),
+                                    path: path.get_clone(),
+                                    data: cached_sidebar_data.1.clone(),
+                                },
+                            )
+                        }
                     } else {
                         view! { }
                     }
