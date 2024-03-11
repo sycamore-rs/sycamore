@@ -73,9 +73,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         });
     }
 
-    let fetch_docs_data = move |url| {
-        create_resource(docs_preload(url))
-    };
+    let fetch_docs_data = move |url| create_resource(docs_preload(url));
     let view = create_memo(on(route, move || match route.get_clone() {
         Routes::Index => view! {
             div(class="container mx-auto") {
