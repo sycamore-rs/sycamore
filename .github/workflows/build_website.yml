@@ -3,12 +3,10 @@ name: Build website
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
 
 jobs:
   deploy:
-    name: Deploy Draft
+    name: Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -90,4 +88,4 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.DEV_NETLIFY_SITE_ID }}
         with:
-          args: deploy
+          args: deploy --prod
