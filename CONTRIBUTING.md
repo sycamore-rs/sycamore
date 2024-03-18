@@ -147,16 +147,16 @@ If you want to run the tests in a headless instead, just pass the `--headless` f
 
 #### Macro diagnostics snapshot tests
 
-The proc-macro crates have additional tests for ensuring that we have good diagnostics for common errors. For this, you will need to install the MSRV version of Rust (currently 1.72).
+The proc-macro crates have additional tests for ensuring that we have good diagnostics for common errors. For this, you will need to install the MSRV version of Rust (currently 1.73).
 
 ```bash
-rustup toolchain add 1.72
+rustup toolchain add 1.73
 ```
 
 The macro tests are disabled by default since when running on other versions of Rust, they are usually slightly different and thus would cause a lot of churn. To enable them, set the `RUN_UI_TESTS` env variable to `true`. In addition, if you want to overwrite the existing snapshot, set the `TRYBUILD` env variable to `overwrite`. The final command would look something like:
 
 ```bash
-RUN_UI_TESTS=true TRYBUILD=overwrite cargo +1.72 test
+RUN_UI_TESTS=true TRYBUILD=overwrite cargo +1.73 test
 ```
 
 ## Adding an example

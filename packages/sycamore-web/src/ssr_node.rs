@@ -145,7 +145,10 @@ impl GenericNode for SsrNode {
     }
 
     fn remove_attribute(&self, name: Cow<'static, str>) {
-        self.unwrap_element().borrow_mut().attributes.remove(&name);
+        self.unwrap_element()
+            .borrow_mut()
+            .attributes
+            .swap_remove(&name);
     }
 
     fn set_class_name(&self, value: Cow<'static, str>) {
