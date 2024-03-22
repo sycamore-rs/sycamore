@@ -4,7 +4,6 @@
 //! HTML.
 
 use std::borrow::Cow;
-use std::iter::FromIterator;
 use std::rc::Rc;
 
 use sycamore_core::event::{EventDescriptor, EventHandler};

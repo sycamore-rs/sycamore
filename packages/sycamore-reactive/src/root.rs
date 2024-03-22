@@ -35,7 +35,7 @@ pub(crate) struct Root {
 
 thread_local! {
     /// The current reactive root.
-    static GLOBAL_ROOT: Cell<Option<&'static Root>> = Cell::new(None);
+    static GLOBAL_ROOT: Cell<Option<&'static Root>> = const { Cell::new(None) };
 }
 
 impl Root {
@@ -346,6 +346,7 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
     {
         /// An unsafe wrapper around a raw pointer which we promise to never touch, effectively
         /// making it thread-safe.
+        #[allow(dead_code)]
         struct UnsafeSendPtr<T>(*const T);
         /// We never ever touch the pointer inside so surely this is safe!
         unsafe impl<T> Send for UnsafeSendPtr<T> {}

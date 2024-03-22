@@ -5,7 +5,6 @@ use std::rc::Rc;
 use sycamore::prelude::*;
 use sycamore::web::html::ev;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
 
 use crate::Route;
@@ -25,7 +24,7 @@ pub trait Integration {
 }
 
 thread_local! {
-    static PATHNAME: Cell<Option<Signal<String>>> = Cell::new(None);
+    static PATHNAME: Cell<Option<Signal<String>>> = const { Cell::new(None) };
 }
 
 /// A router integration that uses the

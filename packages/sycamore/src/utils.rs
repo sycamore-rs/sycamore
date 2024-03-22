@@ -18,7 +18,6 @@ use sycamore_core::event::{EventDescriptor, EventHandler};
 pub use sycamore_core::render;
 use wasm_bindgen::JsValue;
 
-use crate::generic_node::GenericNode;
 use crate::prelude::*;
 use crate::rt::Event;
 use crate::web::html::ev;

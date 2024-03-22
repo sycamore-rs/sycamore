@@ -12,8 +12,8 @@ use sycamore_core::generic_node::{
 use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
+use wasm_bindgen::intern;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::{intern, JsCast};
 use web_sys::{Comment, Element, Node, Text};
 
 use crate::dom_node_template::{
@@ -23,13 +23,15 @@ use crate::{document, Html};
 
 #[wasm_bindgen]
 extern "C" {
+    /// Extend [`Node`] with an id field. This is used to make `Node` hashable.
     #[wasm_bindgen(extends = Node)]
     pub(super) type NodeWithId;
     #[wasm_bindgen(method, getter, js_name = "$$$nodeId")]
-    pub fn node_id(this: &NodeWithId) -> Option<usize>;
+    pub(crate) fn node_id(this: &NodeWithId) -> Option<usize>;
     #[wasm_bindgen(method, setter, js_name = "$$$nodeId")]
-    pub fn set_node_id(this: &NodeWithId, id: usize);
+    pub(crate) fn set_node_id(this: &NodeWithId, id: usize);
 
+    /// Extend [`Element`] with a failable `className` setter.
     #[wasm_bindgen(extends = Element)]
     type ElementTrySetClassName;
     #[wasm_bindgen(method, catch, setter, js_name = "className")]
@@ -42,7 +44,7 @@ pub(super) struct NodeId(pub usize);
 
 impl NodeId {
     pub fn new_with_node(node: &Node) -> Self {
-        thread_local!(static NODE_ID_COUNTER: Cell<usize> = Cell::new(1)); // 0 is reserved for default value.
+        thread_local!(static NODE_ID_COUNTER: Cell<usize> = const { Cell::new(1) }); // 0 is reserved for default value.
 
         let id = NODE_ID_COUNTER.with(|x| {
             let tmp = x.get();
