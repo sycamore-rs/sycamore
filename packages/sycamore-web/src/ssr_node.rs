@@ -4,7 +4,6 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use std::iter::FromIterator;
 use std::rc::{Rc, Weak};
 
 use indexmap::map::IndexMap;
