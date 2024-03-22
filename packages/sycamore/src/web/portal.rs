@@ -4,7 +4,6 @@ use std::any::Any;
 
 use wasm_bindgen::prelude::*;
 
-use crate::component::Children;
 use crate::prelude::*;
 
 /// Props for [`Portal`].

@@ -19,7 +19,7 @@ use crate::*;
 /// * `key_fn` - A closure that returns an _unique_ key to each entry.
 ///
 ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
-pub fn map_keyed<T, K, U: 'static>(
+pub fn map_keyed<T, K, U>(
     list: impl Accessor<Vec<T>> + 'static,
     mut map_fn: impl FnMut(T) -> U + 'static,
     key_fn: impl Fn(&T) -> K + 'static,
@@ -186,7 +186,7 @@ where
 /// * `list` - The list to be mapped. The list must be a [`ReadSignal`] (obtained from a [`Signal`])
 ///   and therefore reactive.
 /// * `map_fn` - A closure that maps from the input type to the output type.
-pub fn map_indexed<T, U: 'static>(
+pub fn map_indexed<T, U>(
     list: impl Accessor<Vec<T>> + 'static,
     mut map_fn: impl FnMut(T) -> U + 'static,
 ) -> ReadSignal<Vec<U>>

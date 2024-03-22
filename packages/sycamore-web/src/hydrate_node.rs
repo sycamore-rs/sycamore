@@ -12,7 +12,6 @@ use sycamore_core::render::insert;
 use sycamore_core::view::View;
 use sycamore_reactive::*;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 use web_sys::Node;
 
 use crate::dom_node::{DomNode, NodeId};

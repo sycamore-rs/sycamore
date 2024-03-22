@@ -35,7 +35,7 @@ pub(crate) struct Root {
 
 thread_local! {
     /// The current reactive root.
-    static GLOBAL_ROOT: Cell<Option<&'static Root>> = Cell::new(None);
+    static GLOBAL_ROOT: Cell<Option<&'static Root>> = const { Cell::new(None) };
 }
 
 impl Root {

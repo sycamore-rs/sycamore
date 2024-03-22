@@ -6,7 +6,7 @@
 use std::cell::RefCell;
 
 thread_local! {
-    static HYDRATION_CONTEXT: RefCell<Option<HydrationRegistry>> = RefCell::new(None);
+    static HYDRATION_CONTEXT: RefCell<Option<HydrationRegistry>> = const { RefCell::new(None) };
 }
 
 /// Run the closure inside a hydration context. If already inside a hydration context, creates a
