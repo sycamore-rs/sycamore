@@ -36,7 +36,7 @@ pub fn custom_element(tag: &'static str) -> CustomElement {
     CustomElement(element(tag), Default::default())
 }
 
-impl From<CustomElement> for View<HtmlNode> {
+impl From<CustomElement> for View {
     fn from(el: CustomElement) -> Self {
         View::node(HtmlNode::element(el.0, el.1))
     }
@@ -118,7 +118,7 @@ macro_rules! impl_element {
                 [<Html $name:camel>](element($tag), Default::default())
             }
 
-            impl From<[<Html $name:camel>]> for View<HtmlNode> {
+            impl From<[<Html $name:camel>]> for View {
                 fn from(el: [<Html $name:camel>]) -> Self {
                     View::node(HtmlNode::element(el.0, el.1))
                 }
@@ -209,7 +209,7 @@ macro_rules! impl_svg_element {
                 [<Svg $name:camel>](svg_element($tag), Default::default())
             }
 
-            impl From<[<Svg $name:camel>]> for View<HtmlNode> {
+            impl From<[<Svg $name:camel>]> for View {
                 fn from(el: [<Svg $name:camel>]) -> Self {
                     View::node(HtmlNode::element(el.0, el.1))
                 }
@@ -863,7 +863,8 @@ impl_svg_elements! {
     view {},
 }
 
-/// A trait that is implemented for all SVG elements and which provides all the global SVG attributes.
+/// A trait that is implemented for all SVG elements and which provides all the global SVG
+/// attributes.
 ///
 /// Reference: <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute>
 #[allow(private_bounds)]
@@ -1146,7 +1147,7 @@ pub trait GlobalAttributes: AsHtmlElement + Sized {
     }
 
     /// Set the children of an element.
-    fn children(mut self, children: impl Into<View<HtmlNode>>) -> Self {
+    fn children(mut self, children: impl Into<View>) -> Self {
         self.as_mut_element().children.extend(children.into().nodes);
         self
     }

@@ -39,7 +39,7 @@ pub(crate) enum HtmlNodeKind {
     Marker,
 }
 
-impl From<&'static str> for View<HtmlNode> {
+impl From<&'static str> for View {
     fn from(t: &'static str) -> Self {
         View::node(HtmlNode::text(
             HtmlText { text: t.into() },
@@ -47,7 +47,7 @@ impl From<&'static str> for View<HtmlNode> {
         ))
     }
 }
-impl From<String> for View<HtmlNode> {
+impl From<String> for View {
     fn from(t: String) -> Self {
         View::node(HtmlNode::text(
             HtmlText { text: t.into() },
@@ -56,9 +56,7 @@ impl From<String> for View<HtmlNode> {
     }
 }
 
-impl<F: FnMut() -> U + 'static, U: Into<View<HtmlNode>> + Any + 'static> From<F>
-    for View<HtmlNode>
-{
+impl<F: FnMut() -> U + 'static, U: Into<View> + Any + 'static> From<F> for View {
     fn from(mut f: F) -> Self {
         // Specialize for U = String.
         if TypeId::of::<U>() == TypeId::of::<String>() {
@@ -71,10 +69,8 @@ impl<F: FnMut() -> U + 'static, U: Into<View<HtmlNode>> + Any + 'static> From<F>
     }
 }
 
-fn render_dynamic_view<U: Into<View<HtmlNode>>>(
-    mut f: impl FnMut() -> U + 'static,
-) -> View<HtmlNode> {
-    let mut nodes = vec![];
+fn render_dynamic_view<U: Into<View>>(mut f: impl FnMut() -> U + 'static) -> View {
+    let mut nodes: Vec<Rc<OnceCell<web_sys::Node>>> = vec![];
 
     let view = Rc::new(RefCell::new(None));
     let view2 = view.clone();
@@ -115,7 +111,7 @@ fn render_dynamic_view<U: Into<View<HtmlNode>>>(
     view.take().unwrap()
 }
 
-fn render_dynamic_text(mut f: impl FnMut() -> String + 'static) -> View<HtmlNode> {
+fn render_dynamic_text(mut f: impl FnMut() -> String + 'static) -> View {
     // Create an effect that will update the text content when the signal changes.
     let this = Rc::new(RefCell::new(None));
     let mut node = None;
@@ -139,13 +135,13 @@ fn render_dynamic_text(mut f: impl FnMut() -> String + 'static) -> View<HtmlNode
     View::node(this.take().unwrap())
 }
 
-impl From<HtmlNode> for View<HtmlNode> {
+impl From<HtmlNode> for View {
     fn from(node: HtmlNode) -> Self {
         View::node(node)
     }
 }
 
-impl View<HtmlNode> {
+impl View {
     /// Returns a list of web-sys nodes that are part of the view.
     pub fn as_web_sys(&self) -> Vec<Rc<OnceCell<web_sys::Node>>> {
         self.nodes

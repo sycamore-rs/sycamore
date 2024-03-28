@@ -67,5 +67,5 @@ web-sys = { version = "0.3.60", features = [
 sycamore = { path = "../sycamore", features = ["ssr"] }
 
 [features]
-hydrate = ["sycamore-core/hydrate"]
+hydrate = []
 ssr = ["hydrate"]

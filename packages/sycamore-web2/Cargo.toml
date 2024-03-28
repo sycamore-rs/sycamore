@@ -1,5 +1,3 @@
-workspace = { members = ["examples/js-framework-benchmark", "examples/simple"] }
-
 [package]
 name = "sycamore-web2"
 version = "0.9.0-beta.2"
@@ -10,6 +8,7 @@ html-escape = { version = "0.2.13", optional = true }
 js-sys = "0.3.67"
 paste = "1.0.14"
 once_cell = "1.19.0"
+sycamore-core = { path = "../sycamore-core", version = "0.9.0-beta.2" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.2" }
 wasm-bindgen = "0.2.92"
 web-sys = { version = "0.3.69", features = [
@@ -56,15 +55,6 @@ web-sys = { version = "0.3.69", features = [
 
 [dev-dependencies]
 expect-test = "1.4.1"
-
-[profile.dev]
-panic = "abort"
-opt-level = 0
-debug = 1
-
-[profile.release]
-panic = "abort"
-opt-level = "z"
 
 [features]
 default = ["dom", "wasm-bindgen-interning"]

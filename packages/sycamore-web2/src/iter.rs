@@ -1,6 +1,10 @@
 #![allow(non_snake_case)]
 
-use std::{cell::Cell, collections::HashMap, hash::Hash, ops::Deref};
+use std::cell::Cell;
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::ops::Deref;
+
 use wasm_bindgen::prelude::*;
 
 use crate::*;

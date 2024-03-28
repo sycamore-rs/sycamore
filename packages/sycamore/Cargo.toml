@@ -34,12 +34,7 @@ wasm-bindgen-test = "0.3.33"
 
 [features]
 default = ["web", "wasm-bindgen-interning"]
-hydrate = [
-	"web",
-	"sycamore-macro/hydrate",
-	"sycamore-core/hydrate",
-	"sycamore-web/hydrate",
-]
+hydrate = ["web", "sycamore-macro/hydrate", "sycamore-web/hydrate"]
 nightly = ["sycamore-reactive/nightly"]
 ssr = [
 	"web",

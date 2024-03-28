@@ -4,30 +4,31 @@ mod elements;
 pub mod events;
 mod iter;
 mod node;
+mod noderef;
 mod portal;
 #[cfg(feature = "ssr")]
 mod ssr;
 mod view;
+
+use std::any::{Any, TypeId};
+use std::borrow::Cow;
+use std::cell::{OnceCell, RefCell};
+use std::rc::Rc;
 
 #[cfg(feature = "dom")]
 pub use dom::*;
 pub use elements::*;
 pub use iter::*;
 pub use node::*;
+pub use noderef::*;
 pub use portal::*;
 #[cfg(feature = "ssr")]
 pub use ssr::*;
-pub use view::*;
-
-use std::{
-    any::{Any, TypeId},
-    borrow::Cow,
-    cell::{OnceCell, RefCell},
-    rc::Rc,
-};
-
-pub use sycamore_reactive::*;
+use sycamore_reactive::*;
 use wasm_bindgen::JsCast;
+
+/// A type alias for [`View`] with [`HtmlNode`] as the node type.
+pub type View = self::view::View<HtmlNode>;
 
 /// A struct for keeping track of state used for hydration.
 #[derive(Debug, Clone, Copy)]

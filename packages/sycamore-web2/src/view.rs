@@ -1,13 +1,21 @@
-use crate::*;
+//! This module contains the [`View`] struct which represents a view tree.
+
+use std::fmt;
 
 /// Represents a view tree.
-pub struct View<T = HtmlNode> {
+pub struct View<T> {
     pub(crate) nodes: Vec<T>,
 }
 
 impl<T> Default for View<T> {
     fn default() -> Self {
         View { nodes: Vec::new() }
+    }
+}
+
+impl<T> fmt::Debug for View<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("View").finish()
     }
 }
 
@@ -25,13 +33,13 @@ impl<T> From<Vec<View<T>>> for View<T> {
     }
 }
 
-// Implement `From` for all tuples of types that implement `Into<View<HtmlNode>>`.
+// Implement `From` for all tuples of types that implement `Into<View<U>>`.
 macro_rules! impl_from_tuple {
     ($($name:ident),*) => {
         paste::paste! {
-            impl<$($name),*> From<($($name,)*)> for View<HtmlNode>
+            impl<U, $($name),*> From<($($name,)*)> for View<U>
             where
-                $($name: Into<View<HtmlNode>>),*
+                $($name: Into<View<U>>),*
             {
                 fn from(t: ($($name,)*)) -> Self {
                     let ($([<$name:lower>]),*) = t;

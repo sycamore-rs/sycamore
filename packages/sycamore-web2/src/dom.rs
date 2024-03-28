@@ -62,22 +62,17 @@ impl DomRenderer {
         raw_node
     }
 
-    pub fn render_before(
-        &self,
-        root: &web_sys::Node,
-        view: View<HtmlNode>,
-        marker: Option<&web_sys::Node>,
-    ) {
+    pub fn render_before(&self, root: &web_sys::Node, view: View, marker: Option<&web_sys::Node>) {
         for node in view.nodes {
             self.render_node(node, root, marker);
         }
     }
 
-    pub fn render(&self, root: &web_sys::Node, view: View<HtmlNode>) {
+    pub fn render(&self, root: &web_sys::Node, view: View) {
         self.render_before(root, view, None);
     }
 
-    pub fn render_view_detatched(&self, view: View<HtmlNode>) {
+    pub fn render_view_detatched(&self, view: View) {
         for node in view.nodes {
             self.render_node_detatched(node);
         }
@@ -190,7 +185,7 @@ impl DomHydrateRenderer {
         }
     }
 
-    pub fn render(&mut self, root: &web_sys::Node, view: View<HtmlNode>) {
+    pub fn render(&mut self, root: &web_sys::Node, view: View) {
         self.collect_nodes(root);
         for node in view.nodes {
             self.hydrate_node(node, root);

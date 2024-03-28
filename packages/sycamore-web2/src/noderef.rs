@@ -4,12 +4,9 @@
 //!
 //! You can create a [`NodeRef`] by using [`create_node_ref`].
 
-use std::any::Any;
 use std::fmt;
 
-use sycamore_reactive::*;
-
-use crate::generic_node::GenericNode;
+use crate::*;
 
 /// A reference to a [`GenericNode`].
 /// This allows imperatively accessing the node.
@@ -26,9 +23,9 @@ use crate::generic_node::GenericNode;
 /// }
 /// ```
 #[derive(PartialEq, Eq)]
-pub struct NodeRef<G: GenericNode>(Signal<Option<G>>);
+pub struct NodeRef(Signal<Rc<OnceCell<web_sys::Node>>>);
 
-impl<G: GenericNode + Any> NodeRef<G> {
+impl NodeRef {
     /// Alias to [`create_node_ref`].
     pub fn new() -> Self {
         create_node_ref()
@@ -61,39 +58,18 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///
     /// For a non panicking version, see [`NodeRef::try_get`].
     #[track_caller]
-    pub fn get<T: GenericNode>(&self) -> T {
+    pub fn get(&self) -> web_sys::Node {
         self.try_get().expect("NodeRef is not set")
     }
 
-    /// Tries to get the T stored inside the node ref or `None` if it is not yet set or
-    /// the wrong type.
-    ///
-    /// For a panicking version, see [`NodeRef::get`].
-    pub fn try_get<T: GenericNode>(&self) -> Option<T> {
-        if let Some(g) = self.0.get_clone() {
-            (&g as &dyn Any).downcast_ref().cloned()
+    /// Tries to get the raw web_sys node stored inside the node ref. Returns `None` if the node
+    /// ref has not yet been set (i.e. the node has not yet been rendered into the DOM).
+    pub fn try_get(&self) -> Option<web_sys::Node> {
+        if let Some(node) = self.0.get_clone().get() {
+            Some(node.clone())
         } else {
             None
         }
-    }
-
-    /// Gets the raw node stored inside the node ref.
-    ///
-    /// # Panics
-    /// Panics if the node ref is not set yet.
-    ///
-    /// For a non panicking version, see [`NodeRef::try_get_raw`].
-    #[track_caller]
-    pub fn get_raw(&self) -> G {
-        self.try_get().expect("NodeRef is not set")
-    }
-
-    /// Tries to get the raw node stored inside the node ref or `None` if it is
-    /// not yet set.
-    ///
-    /// For a panicking version, see [`NodeRef::get`].
-    pub fn try_get_raw(&self) -> Option<G> {
-        self.0.get_clone()
     }
 
     /// Sets the node ref with the specified node.
@@ -126,29 +102,29 @@ impl<G: GenericNode + Any> NodeRef<G> {
     ///     View::new_node(div)
     /// }
     /// ```
-    pub fn set(&self, node: G) {
-        self.0.set(Some(node));
+    pub fn set(&self, node: Rc<OnceCell<web_sys::Node>>) {
+        self.0.set(node);
     }
 }
 
-impl<G: GenericNode> Default for NodeRef<G> {
+impl Default for NodeRef {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<G: GenericNode> fmt::Debug for NodeRef<G> {
+impl fmt::Debug for NodeRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("NodeRef").field(&self.0.get_clone()).finish()
     }
 }
 
-impl<G: GenericNode> Clone for NodeRef<G> {
+impl Clone for NodeRef {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<G: GenericNode> Copy for NodeRef<G> {}
+impl Copy for NodeRef {}
 
 /* Hook implementation */
 
@@ -165,6 +141,6 @@ impl<G: GenericNode> Copy for NodeRef<G> {}
 /// # view! {}
 /// # }
 /// ```
-pub fn create_node_ref<G: GenericNode>() -> NodeRef<G> {
-    NodeRef(create_signal(None))
+pub fn create_node_ref() -> NodeRef {
+    NodeRef(create_signal(Rc::new(OnceCell::new())))
 }
