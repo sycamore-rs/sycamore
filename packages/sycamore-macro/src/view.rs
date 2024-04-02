@@ -3,13 +3,10 @@
 //! Implementation note: We are not using the `quote::ToTokens` trait because we need to pass
 //! additional information to the codegen such as which mode (Client, Hydrate, SSR), etc...
 
-use std::collections::HashSet;
-
-use once_cell::sync::Lazy;
 use proc_macro2::TokenStream;
 use quote::quote;
 use sycamore_view_parser::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
-use syn::{Expr, Ident};
+use syn::Expr;
 
 pub struct Codegen {
     // TODO: configure mode: Client, Hydrate, SSR
@@ -141,40 +138,6 @@ impl Codegen {
         let plain_names = plain.iter().map(|(ident, _)| ident);
         let plain_values = plain.iter().map(|(_, value)| value);
 
-        let attributes = props.iter().filter_map(|prop| match &prop.ty {
-            PropType::Directive { dir, ident } => Some((dir, ident, prop.value.clone())),
-            _ => None,
-        });
-        let attribute_entries_quoted = attributes
-            .map(|(dir, name, value)| {
-                let value = to_attribute_value(dir, name, &value)?;
-                let name_str = if dir == "attr" {
-                    name.to_string()
-                } else {
-                    format!("{dir}:{name}")
-                };
-                Ok(quote! {
-                    attributes.insert(::std::borrow::Cow::Borrowed(#name_str), #value)
-                })
-            })
-            .collect::<Result<Vec<_>, syn::Error>>()
-            .map_err(|err| err.to_compile_error());
-        let attributes_quoted = if let Ok(attributes) = attribute_entries_quoted {
-            if !attributes.is_empty() {
-                quote! {
-                    .attributes({
-                        let mut attributes = ::std::collections::HashMap::default();
-                        #(#attributes;)*
-                        ::sycamore::rt::Attributes::new(attributes)
-                    })
-                }
-            } else {
-                quote!()
-            }
-        } else {
-            quote!()
-        };
-
         let children_quoted = if children.0.is_empty() {
             quote! {}
         } else {
@@ -195,110 +158,11 @@ impl Codegen {
                 ::sycamore::rt::element_like_component_builder(__component)
                     #(.#plain_names(#plain_values))*
                     #children_quoted
-                    #attributes_quoted
+                    // #attributes_quoted
                     .build()
             ))
         }}
     }
-}
-
-fn to_attribute_value(dir: &Ident, ident: &Ident, value: &Expr) -> Result<TokenStream, syn::Error> {
-    match dir.to_string().as_str() {
-        "on" => {
-            let event = ident.to_string();
-
-            Ok(quote!(::sycamore::component::AttributeValue::Event(
-                #event,
-                ::sycamore::utils::erase_handler::<::sycamore::web::html::ev::#ident, _, _>(#value)
-            )))
-        }
-        "prop" => Ok(quote!(::sycamore::component::AttributeValue::Property(#ident, #value))),
-        "bind" => match ident.to_string().as_str() {
-            "value" => {
-                Ok(quote!(::sycamore::component::AttributeValue::BindString("value", #value)))
-            }
-            "valueAsNumber" => Ok(
-                quote!(::sycamore::component::AttributeValue::BindNumber("valueAsNumber", #value)),
-            ),
-            "checked" => {
-                Ok(quote!(::sycamore::component::AttributeValue::BindBool("checked", #value)))
-            }
-            _ => Err(syn::Error::new(
-                ident.span(),
-                format!("property `{}` is not supported with `bind:`", ident),
-            )),
-        },
-        "attr" => {
-            if ident == "ref" {
-                Ok(quote!(::sycamore::component::AttributeValue::Ref(#value)))
-            } else if ident == "dangerously_set_inner_html" {
-                if matches!(value, Expr::Lit(_)) {
-                    Ok(
-                        quote!(::sycamore::component::AttributeValue::DangerouslySetInnerHtml(#value.to_string())),
-                    )
-                } else {
-                    Ok(
-                        quote!(::sycamore::component::AttributeValue::DynamicDangerouslySetInnerHtml(Box::new(#value))),
-                    )
-                }
-            } else if is_bool_attr(&ident.to_string()) {
-                if matches!(value, Expr::Lit(_)) {
-                    Ok(quote!(::sycamore::component::AttributeValue::Bool(#value)))
-                } else {
-                    Ok(quote!(::sycamore::component::AttributeValue::DynamicBool(
-                        Box::new(move || #value)
-                    )))
-                }
-            } else if matches!(value, Expr::Lit(_)) {
-                Ok(quote!(::sycamore::component::AttributeValue::Str(#value)))
-            } else {
-                Ok(quote!(::sycamore::component::AttributeValue::DynamicStr(
-                    Box::new(move || ::std::string::ToString::to_string(#value))
-                )))
-            }
-        }
-        _ => Err(syn::Error::new_spanned(
-            ident,
-            format!("unknown directive `{}`", ident),
-        )),
-    }
-}
-
-pub fn is_bool_attr(name: &str) -> bool {
-    // Boolean attributes list from the WHATWG attributes table:
-    // https://html.spec.whatwg.org/multipage/indices.html#attributes-3
-    static BOOLEAN_ATTRIBUTES_SET: Lazy<HashSet<&str>> = Lazy::new(|| {
-        vec![
-            "allowfullscreen",
-            "async",
-            "autofocus",
-            "autoplay",
-            "checked",
-            "controls",
-            "default",
-            "defer",
-            "disabled",
-            "formnovalidate",
-            "hidden",
-            "inert",
-            "ismap",
-            "itemscope",
-            "loop",
-            "multiple",
-            "muted",
-            "nomodule",
-            "novalidate",
-            "open",
-            "playsinline",
-            "readonly",
-            "required",
-            "reversed",
-            "selected",
-        ]
-        .into_iter()
-        .collect()
-    });
-    BOOLEAN_ATTRIBUTES_SET.contains(name)
 }
 
 fn is_component(ident: &TagIdent) -> bool {
