@@ -1171,6 +1171,21 @@ pub trait GlobalAttributes: AsHtmlElement + Sized {
         self
     }
 
+    fn bind<T: bind::BindDescriptor>(mut self, _: T, signal: Signal<T::ValueTy>) -> Self {
+        let scope = use_current_scope(); // Run handler inside the current scope.
+        self.as_mut_element().events.push((
+            <T::Event as events::EventDescriptor>::NAME,
+            Box::new(move |ev| {
+                scope.run_in(|| {
+                    let value = js_sys::Reflect::get(&ev, &T::TARGET_PROPERTY.into()).unwrap();
+                    signal
+                        .set(T::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
+                })
+            }),
+        ));
+        self.prop(T::TARGET_PROPERTY, move || signal.get_clone().into())
+    }
+
     /// Set the inner html of an element.
     fn dangerously_set_inner_html(mut self, inner_html: impl Into<String>) -> Self {
         self.as_mut_element().inner_html = Some(inner_html.into());

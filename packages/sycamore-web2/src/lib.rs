@@ -1,3 +1,4 @@
+pub mod bind;
 #[cfg(feature = "dom")]
 mod dom;
 mod elements;
@@ -97,9 +98,11 @@ pub fn create_client_effect(f: impl FnMut() + 'static) {
 
 #[sycamore_macro::component]
 fn Test() -> View {
+    let checked = create_signal(true);
     sycamore_macro::view! {
         div(class="test", on:click=|_| todo!(), prop:value=1) {
             "hello, world!"
+            button(bind:checked=checked)
             Test()
         }
     }

@@ -9,8 +9,11 @@ use web_sys::{
     TouchEvent, TransitionEvent, UiEvent, WheelEvent,
 };
 
+/// Description of a type of event.
 pub trait EventDescriptor {
+    /// The JS type of the event data that is passed to the event handler.
     type EventTy: Into<Event> + JsCast;
+    /// The name of the event.
     const NAME: &'static str;
 }
 
