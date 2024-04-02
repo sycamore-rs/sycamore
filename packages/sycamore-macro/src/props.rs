@@ -212,7 +212,7 @@ mod struct_info {
             }
 
             Ok(quote! {
-                impl #impl_generics ::sycamore::component::Props for #name #ty_generics #where_clause {
+                impl #impl_generics ::sycamore::rt::Props for #name #ty_generics #where_clause {
                     type Builder = #builder_name #generics_with_empty;
                     #[doc = #builder_method_doc]
                     #[allow(dead_code, clippy::default_trait_access)]

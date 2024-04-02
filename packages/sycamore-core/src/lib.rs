@@ -6,4 +6,6 @@
 #![deny(missing_debug_implementations)]
 #![warn(missing_docs)]
 
-// TODO: we currently don't have anything in this crate!
+mod component;
+
+pub use component::*;

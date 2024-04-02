@@ -296,7 +296,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let ret = Ok(quote! {
         #[allow(non_camel_case_types)]
         #[doc = #doc_comment]
-        #[derive(::sycamore::Props)]
+        #[derive(::sycamore::rt::Props)]
         #props_vis struct #props_struct_ident #generics {
             #(#props,)*
             #(#generics_phantoms,)*

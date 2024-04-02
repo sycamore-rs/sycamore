@@ -71,7 +71,7 @@ impl SsrRenderer {
         }
     }
 
-    pub fn render(&self, buf: &mut String, view: View<HtmlNode>) {
+    pub fn render(&self, buf: &mut String, view: View) {
         for node in view.nodes {
             self.render_node(buf, node);
         }
@@ -93,8 +93,8 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
             let handle = create_child_scope(|| {
                 // We run this in a new scope so that we can dispose everything after we render it.
 
-                // If the dom feature is also enabled, we use context to tell us at runtime that we are in
-                // SSR mode.
+                // If the dom feature is also enabled, we use context to tell us at runtime that we
+                // are in SSR mode.
                 if cfg!(feature = "dom") {
                     provide_context(SsrMode);
                 }
@@ -108,8 +108,9 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use expect_test::{expect, Expect};
+
+    use super::*;
 
     fn check(view: impl Into<View>, expected: Expect) {
         let actual = render_to_string(|| view.into());

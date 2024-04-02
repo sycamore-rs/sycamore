@@ -5,22 +5,40 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::Deref;
 
+use sycamore_macro::{component, Props};
 use wasm_bindgen::prelude::*;
 
 use crate::*;
 
+/// Props for [`Keyed`].
+#[derive(Props)]
+pub struct KeyedProps<T, K, U, List, F, Key>
+where
+    List: Accessor<Vec<T>> + 'static,
+    F: Fn(T) -> U + 'static,
+    Key: Fn(&T) -> K + 'static,
+{
+    list: List,
+    view: F,
+    key_fn: Key,
+    _phantom: std::marker::PhantomData<(T, K, U)>,
+}
+
 /// Render a list of items by key.
-#[allow(non_snake_case)]
-pub fn Keyed<T, K, U>(
-    list: impl Accessor<Vec<T>> + 'static,
-    view: impl Fn(T) -> U + 'static,
-    key_fn: impl Fn(&T) -> K + 'static,
-) -> View
+#[component]
+pub fn Keyed<T, K, U, List, F, Key>(props: KeyedProps<T, K, U, List, F, Key>) -> View
 where
     T: PartialEq + Clone + 'static,
     K: Hash + Eq + 'static,
     U: Into<View>,
+    List: Accessor<Vec<T>> + 'static,
+    F: Fn(T) -> U + 'static,
+    Key: Fn(&T) -> K + 'static,
 {
+    let KeyedProps {
+        list, view, key_fn, ..
+    } = props;
+
     let end_marker = HtmlNode::marker(Default::default());
     let end_marker_node = end_marker.as_web_sys().clone();
 
@@ -73,13 +91,29 @@ where
     (initial_view.take().unwrap(), end_marker).into()
 }
 
+/// Props for [`Keyed`].
+#[derive(Props)]
+pub struct IndexedProps<T, U, List, F>
+where
+    List: Accessor<Vec<T>> + 'static,
+    F: Fn(T) -> U + 'static,
+{
+    list: List,
+    view: F,
+    _phantom: std::marker::PhantomData<(T, U)>,
+}
+
 /// Render a list of items by index.
-#[allow(non_snake_case)]
-pub fn Indexed<T, U>(list: impl Accessor<Vec<T>> + 'static, view: impl Fn(T) -> U + 'static) -> View
+#[component]
+pub fn Indexed<T, U, List, F>(props: IndexedProps<T, U, List, F>) -> View
 where
     T: PartialEq + Clone + 'static,
     U: Into<View>,
+    List: Accessor<Vec<T>> + 'static,
+    F: Fn(T) -> U + 'static,
 {
+    let IndexedProps { list, view, .. } = props;
+
     let end_marker = HtmlNode::marker(Default::default());
     let end_marker_node = end_marker.as_web_sys().clone();
 

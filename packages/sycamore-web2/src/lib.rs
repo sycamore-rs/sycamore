@@ -27,6 +27,14 @@ pub use ssr::*;
 use sycamore_reactive::*;
 use wasm_bindgen::JsCast;
 
+/// We add this to make the macros from `sycamore-macro` work properly.
+extern crate self as sycamore;
+mod rt {
+    pub use sycamore_core::*;
+
+    pub use crate::*;
+}
+
 /// A type alias for [`View`] with [`HtmlNode`] as the node type.
 pub type View = self::view::View<HtmlNode>;
 
@@ -84,5 +92,14 @@ pub fn is_client() -> bool {
 pub fn create_client_effect(f: impl FnMut() + 'static) {
     if !is_ssr() {
         create_effect(f);
+    }
+}
+
+#[sycamore_macro::component]
+fn Test() -> View {
+    sycamore_macro::view! {
+        div(class="test") {
+            "hello, world!"
+        }
     }
 }

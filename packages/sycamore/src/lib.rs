@@ -104,6 +104,8 @@ pub mod prelude {
 pub mod rt {
     #[cfg(feature = "web")]
     pub use js_sys::Reflect;
+    pub use sycamore_core::*;
+    pub use sycamore_web2::*;
     #[cfg(feature = "web")]
     pub use wasm_bindgen::{intern, JsCast, JsValue};
     #[cfg(feature = "web")]

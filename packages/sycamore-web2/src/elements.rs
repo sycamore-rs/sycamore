@@ -263,445 +263,519 @@ macro_rules! impl_svg_elements {
     };
 }
 
-impl_elements! {
-    /// The `<a>` HTML element (or anchor element), with its `href` attribute, creates a hyperlink to web pages, files, email addresses, locations in the same page, or anything else a URL can address.
-    ///
-    /// Content within each `<a>` should indicate the link's destination. If the `href` attribute is present, pressing the enter key while focused on the `<a>` element will activate it.
-    a {
-        download: MaybeDynString,
-        href: MaybeDynString,
-        hreflang: MaybeDynString,
-        target: MaybeDynString,
-        r#type("type"): MaybeDynString,
-        ping: MaybeDynString,
-        rel: MaybeDynString,
-    },
-    abbr {},
-    address {},
-    area {
-        alt: MaybeDynString,
-        coords: MaybeDynString,
-        download: MaybeDynString,
-        href: MaybeDynString,
-        hreflang: MaybeDynString,
-        media: MaybeDynString,
-        referrerpolicy: MaybeDynString,
-        ping: MaybeDynString,
-        rel: MaybeDynString,
-        shape: MaybeDynString,
-        target: MaybeDynString,
-        r#type("type"): MaybeDynString,
-    },
-    article {},
-    aside {},
-    audio {
-        autoplay: MaybeDynBool,
-        controls: MaybeDynBool,
-        crossorigin: MaybeDynString,
-        muted: MaybeDynBool,
-        preload: MaybeDynString,
-        src: MaybeDynString,
-        r#loop("loop"): MaybeDynBool,
-    },
-    b {},
-    base {
-        href: MaybeDynString,
-        target: MaybeDynString,
-    },
-    bdi {},
-    bdo {},
-    blockquote {
-        cite: MaybeDynString,
-    },
-    body {},
-    br {},
-    /// The `<button>` HTML element represents a clickable button, used to submit forms or anywhere in a document for accessible, standard button functionality.
-    ///
-    /// By default, HTML buttons are presented in a style resembling the platform the user agent runs on, but you can change buttons’ appearance with CSS.
-    button {
-        autofocus: MaybeDynBool,
-        disabled: MaybeDynBool,
-        form: MaybeDynString,
-        formaction: MaybeDynString,
-        formenctype: MaybeDynString,
-        formmethod: MaybeDynString,
-        formnovalidate: MaybeDynBool,
-        formtarget: MaybeDynString,
-        name: MaybeDynString,
-        r#type("type"): MaybeDynString,
-        value: MaybeDynString,
-    },
-    canvas {
-        height: MaybeDynString, // TODO: int value
-        width: MaybeDynString, // TODO: int value
-    },
-    caption {},
-    cite {},
-    code {
-        language: MaybeDynString,
-    },
-    col {
-        span: MaybeDynString, // TODO: int value
-    },
-    colgroup {
-        span: MaybeDynString, // TODO: int value
-    },
-    data {
-        value: MaybeDynString,
-    },
-    datalist {},
-    dd {},
-    del {
-        cite: MaybeDynString,
-        datetime: MaybeDynString,
-    },
-    details {
-        open: MaybeDynBool,
-    },
-    dfn {},
-    dialog {},
-    /// The `<div>` HTML element is the generic container for flow content. It has no effect on the content or layout until styled in some way using CSS (e.g. styling is directly applied to it, or some kind of layout model like Flexbox is applied to its parent element).
-    ///
-    /// As a "pure" container, the `<div>` element does not inherently represent anything. Instead, it's used to group content so it can be easily styled using the class or id attributes, marking a section of a document as being written in a different language (using the lang attribute), and so on.
-    ///
-    /// # Usage notes
-    /// The `<div>` element should be used only when no other semantic element (such as `<article>` or `<nav>`) is appropriate.
-    div {},
-    dl {},
-    dt {},
-    em {},
-    embed {
-        height: MaybeDynString,
-        src: MaybeDynString,
-        r#type("type"): MaybeDynString,
-        width: MaybeDynString, // TODO: int value
-    },
-    fieldset {},
-    figcaption {},
-    figure {},
-    footer {},
-    form {
-        acceptcharset: MaybeDynString,
-        action: MaybeDynString,
-        autocomplete: MaybeDynString,
-        enctype: MaybeDynString,
-        method: MaybeDynString,
-        name: MaybeDynString,
-        novalidate: MaybeDynBool,
-        target: MaybeDynString,
-    },
-    head {},
-    header {},
-    hgroup {},
-    h1 {},
-    h2 {},
-    h3 {},
-    h4 {},
-    h5 {},
-    h6 {},
-    hr {},
-    html {},
-    i {},
-    iframe {
-        allow: MaybeDynString,
-        allowfullscreen: MaybeDynBool,
-        allowpaymentrequest: MaybeDynBool,
-        height: MaybeDynString,
-        loading: MaybeDynString,
-        name: MaybeDynString,
-        referrerpolicy: MaybeDynString,
-        sandbox: MaybeDynBool,
-        src: MaybeDynString,
-        srcdoc: MaybeDynString,
-        width: MaybeDynString,
-    },
-    img {
-        alt: MaybeDynString,
-        crossorigin: MaybeDynString,
-        decoding: MaybeDynString,
-        height: MaybeDynString,
-        ismap: MaybeDynBool,
-        loading: MaybeDynString,
-        referrerpolicy: MaybeDynString,
-        sizes: MaybeDynString,
-        src: MaybeDynString,
-        srcset: MaybeDynString,
-        usemap: MaybeDynString,
-        width: MaybeDynString,
-    },
-    /// The `<input>` HTML element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and user agent. The `<input>` element is one of the most powerful and complex in all of HTML due to the sheer number of combinations of input types and attributes.
-    input {
-        accept: MaybeDynString,
-        alt: MaybeDynString,
-        autocomplete: MaybeDynString,
-        autofocus: MaybeDynBool,
-        capture: MaybeDynString,
-        checked: MaybeDynBool,
-        directory: MaybeDynString,
-        disabled: MaybeDynBool,
-        form: MaybeDynString,
-        formaction: MaybeDynString,
-        formenctype: MaybeDynString,
-        formmethod: MaybeDynString,
-        formnovalidate: MaybeDynBool,
-        formtarget: MaybeDynString,
-        height: MaybeDynString, // TODO: int value
-        initial_checked: MaybeDynBool,
-        initial_value: MaybeDynString,
-        list: MaybeDynString,
-        max: MaybeDynString,
-        maxlength: MaybeDynString, // TODO: int value
-        min: MaybeDynString,
-        minlength: MaybeDynString, // TODO: int value
-        multiple: MaybeDynBool,
-        name: MaybeDynString,
-        pattern: MaybeDynString,
-        placeholder: MaybeDynString,
-        readonly: MaybeDynBool,
-        required: MaybeDynBool,
-        size: MaybeDynString, // TODO: int value
-        spellcheck: MaybeDynBool,
-        src: MaybeDynString,
-        step: MaybeDynString,
-        tabindex: MaybeDynString, // TODO: int value
-        r#type("type"): MaybeDynString,
-        value: MaybeDynString,
-        width: MaybeDynString, // TODO: int value
-    },
-    ins {
-        cite: MaybeDynString,
-        datetime: MaybeDynString,
-    },
-    kbd {},
-    keygen {},
-    /// The `<label>` HTML element represents a caption for an item in a user interface.
-    ///
-    /// Associating a `<label>` with an `<input>` element offers some major advantages:
-    /// * The label text is not only visually associated with its corresponding text input; it is programmatically associated with it too. This means that, for example, a screen reader will read out the label when the user is focused on the form input, making it easier for an assistive technology user to understand what data should be entered.
-    /// * When a user clicks or touches/taps a label, the browser passes the focus to its associated input (the resulting event is also raised for the input). That increased hit area for focusing the input provides an advantage to anyone trying to activate it — including those using a touch-screen device.
-    ///
-    /// To associate the `<label>` with an `<input>` element, you need to give the `<input>` an `id` attribute. The `<label>` then needs a for attribute whose value is the same as the input's `id`.
-    ///
-    /// Alternatively, you can nest the `<input>` directly inside the `<label>`, in which case the `for` and `id` attributes are not needed because the association is implicit:
-    ///
-    /// ```html
-    /// <label>Do you like peas?
-    ///   <input type="checkbox" name="peas">
-    /// </label>
-    /// ```
-    /// The form control that a label is labeling is called the labeled control of the label element. Multiple labels can be associated with the same form control:
-    ///
-    /// ```html
-    /// <label for="username">Enter your username:</label>
-    /// <input id="username">
-    /// <label for="username">Forgot your username?</label>
-    /// ```
-    /// Elements that can be associated with a `<label>` element include `<button>`, `<input>` (except for `type="hidden"`), `<meter>`, `<output>`, `<progress>`, `<select>` and `<textarea>`.
-    label {
-        form: MaybeDynString,
-        r#for("for"): MaybeDynString,
-    },
-    legend {},
-    /// The `<li>` HTML element is used to represent an item in a list. It must be contained in a parent element: an ordered list (`<ol>`), an unordered list (`<ul>`), or a menu (`<menu>`). In menus and unordered lists, list items are usually displayed using bullet points. In ordered lists, they are usually displayed with an ascending counter on the left, such as a number or letter.
-    li {
-        value: MaybeDynString, // TODO: int value
-    },
-    link {
-        crossorigin: MaybeDynString,
-        href: MaybeDynString,
-        hreflang: MaybeDynString,
-        media: MaybeDynString,
-        rel: MaybeDynString,
-        sizes: MaybeDynString,
-        title: MaybeDynString,
-        r#type("type"): MaybeDynString,
-        integrity: MaybeDynString,
-    },
-    main {},
-    map {
-        name: MaybeDynString,
-    },
-    mark {},
-    menu {},
-    menuitem {},
-    meta {
-        charset: MaybeDynString,
-        content: MaybeDynString,
-        http_equiv("http-equiv"): MaybeDynString,
-        name: MaybeDynString,
-    },
-    meter {
-        value: MaybeDynString, // TODO: int value
-        min: MaybeDynString, // TODO: int value
-        max: MaybeDynString, // TODO: int value
-        low: MaybeDynString, // TODO: int value
-        high: MaybeDynString, // TODO: int value
-        optimum: MaybeDynString, // TODO: int value
-        form: MaybeDynString,
-    },
-    nav {},
-    noscript {},
-    object {
-        data: MaybeDynString,
-        form: MaybeDynString,
-        height: MaybeDynString, // TODO: int value
-        name: MaybeDynString,
-        r#type("type"): MaybeDynString,
-        typemustmatch: MaybeDynBool,
-        usemap: MaybeDynString,
-        width: MaybeDynString,
-    },
-    /// The `<ol>` HTML element represents an ordered list of items — typically rendered as a numbered list.
-    ol {
-        reversed: MaybeDynBool,
-        start: MaybeDynString, // TODO: int value
-        r#type("type"): MaybeDynString,
-    },
-    optgroup {
-        disabled: MaybeDynBool,
-        label: MaybeDynString,
-    },
-    option {
-        disabled: MaybeDynBool,
-        initial_selected: MaybeDynBool,
-        label: MaybeDynString,
-        selected: MaybeDynBool,
-        value: MaybeDynString,
-    },
-    output {
-        r#for("for"): MaybeDynString,
-        form: MaybeDynString,
-        name: MaybeDynString,
-    },
-    /// The `<p>` HTML element represents a paragraph. Paragraphs are usually represented in visual media as blocks of text separated from adjacent blocks by blank lines and/or first-line indentation, but HTML paragraphs can be any structural grouping of related content, such as images or form fields.
-    ///
-    /// Paragraphs are block-level elements, and notably will automatically close if another block-level element is parsed before the closing `</p>` tag.
-    p {},
-    param {
-        name: MaybeDynString,
-        value: MaybeDynString,
-    },
-    picture {},
-    pre {},
-    progress {
-        value: MaybeDynString, // TODO: f64 value
-        max: MaybeDynString, // TODO: f64 value
-    },
-    q {
-        cite: MaybeDynString,
-    },
-    rp {},
-    rt {},
-    ruby {},
-    s {},
-    samp {},
-    script {
-        r#async: MaybeDynBool,
-        crossorigin: MaybeDynString,
-        defer: MaybeDynBool,
-        integrity: MaybeDynString,
-        nomodule: MaybeDynBool,
-        nonce: MaybeDynString,
-        src: MaybeDynString,
-        script: MaybeDynString,
-        text: MaybeDynString,
-        r#type("type"): MaybeDynString,
-    },
-    section {},
-    select {
-        autocomplete: MaybeDynString,
-        autofocus: MaybeDynBool,
-        disabled: MaybeDynBool,
-        form: MaybeDynString,
-        multiple: MaybeDynBool,
-        name: MaybeDynString,
-        required: MaybeDynBool,
-        size: MaybeDynString, // TODO: int value
-        value: MaybeDynString,
-    },
-    small {},
-    source {
-        src: MaybeDynString,
-        r#type("type"): MaybeDynString,
-    },
-    /// The `<span>` HTML element is a generic inline container for phrasing content, which does not inherently represent anything. It can be used to group elements for styling purposes (using the class or id attributes), or because they share attribute values, such as lang. It should be used only when no other semantic element is appropriate. `<span>` is very much like a `<div>` element, but `<div>` is a block-level element whereas a `<span>` is an inline element.
-    span {},
-    strong {},
-    style {
-        media: MaybeDynString,
-        nonce: MaybeDynString,
-        title: MaybeDynString,
-        r#type("type"): MaybeDynString,
-    },
-    sub {},
-    summary {},
-    sup {},
-    table {},
-    tbody {},
-    td {
-        colspan: MaybeDynString, // TODO: int value
-        headers: MaybeDynString,
-        rowspan: MaybeDynString, // TODO: int value
-    },
-    template {},
-    textarea {
-        autocomplete: MaybeDynString,
-        autofocus: MaybeDynBool,
-        cols: MaybeDynString, // TODO: int value
-        disabled: MaybeDynBool,
-        form: MaybeDynString,
-        initial_value: MaybeDynString,
-        maxlength: MaybeDynString, // TODO: int value
-        minlength: MaybeDynString, // TODO: int value
-        name: MaybeDynString,
-        placeholder: MaybeDynString,
-        readonly: MaybeDynBool,
-        required: MaybeDynBool,
-        rows: MaybeDynString, // TODO: int value
-        spellcheck: MaybeDynBool,
-        r#type("type"): MaybeDynString,
-        value: MaybeDynString,
-        wrap: MaybeDynString,
-    },
-    tfoot {},
-    th {
-        abbr: MaybeDynString,
-        colspan: MaybeDynString, // TODO: int value
-        headers: MaybeDynString,
-        rowspan: MaybeDynString, // TODO: int value
-        scope: MaybeDynString,
-    },
-    thead {},
-    time {
-        datetime: MaybeDynString,
-    },
-    title {},
-    tr {},
-    track {
-        default: MaybeDynBool,
-        kind: MaybeDynString,
-        label: MaybeDynString,
-        src: MaybeDynString,
-        srclang: MaybeDynString,
-    },
-    u {},
-    /// The `<ul>` HTML element represents an unordered list of items, typically rendered as a bulleted list.
-    ul {},
-    var {},
-    video {
-        autoplay: MaybeDynBool,
-        controls: MaybeDynBool,
-        crossorigin: MaybeDynString,
-        height: MaybeDynString, // TODO: int value
-        r#loop("loop"): MaybeDynBool,
-        muted: MaybeDynBool,
-        playsinline: MaybeDynBool,
-        poster: MaybeDynString,
-        preload: MaybeDynString,
-        src: MaybeDynString,
-        width: MaybeDynString, // TODO: int value
-    },
-    wbr {},
+/// Definition of all the HTML and SVG elements.
+pub mod tags {
+    use super::*;
+
+    impl_elements! {
+        /// The `<a>` HTML element (or anchor element), with its `href` attribute, creates a hyperlink to web pages, files, email addresses, locations in the same page, or anything else a URL can address.
+        ///
+        /// Content within each `<a>` should indicate the link's destination. If the `href` attribute is present, pressing the enter key while focused on the `<a>` element will activate it.
+        a {
+            download: MaybeDynString,
+            href: MaybeDynString,
+            hreflang: MaybeDynString,
+            target: MaybeDynString,
+            r#type("type"): MaybeDynString,
+            ping: MaybeDynString,
+            rel: MaybeDynString,
+        },
+        abbr {},
+        address {},
+        area {
+            alt: MaybeDynString,
+            coords: MaybeDynString,
+            download: MaybeDynString,
+            href: MaybeDynString,
+            hreflang: MaybeDynString,
+            media: MaybeDynString,
+            referrerpolicy: MaybeDynString,
+            ping: MaybeDynString,
+            rel: MaybeDynString,
+            shape: MaybeDynString,
+            target: MaybeDynString,
+            r#type("type"): MaybeDynString,
+        },
+        article {},
+        aside {},
+        audio {
+            autoplay: MaybeDynBool,
+            controls: MaybeDynBool,
+            crossorigin: MaybeDynString,
+            muted: MaybeDynBool,
+            preload: MaybeDynString,
+            src: MaybeDynString,
+            r#loop("loop"): MaybeDynBool,
+        },
+        b {},
+        base {
+            href: MaybeDynString,
+            target: MaybeDynString,
+        },
+        bdi {},
+        bdo {},
+        blockquote {
+            cite: MaybeDynString,
+        },
+        body {},
+        br {},
+        /// The `<button>` HTML element represents a clickable button, used to submit forms or anywhere in a document for accessible, standard button functionality.
+        ///
+        /// By default, HTML buttons are presented in a style resembling the platform the user agent runs on, but you can change buttons’ appearance with CSS.
+        button {
+            autofocus: MaybeDynBool,
+            disabled: MaybeDynBool,
+            form: MaybeDynString,
+            formaction: MaybeDynString,
+            formenctype: MaybeDynString,
+            formmethod: MaybeDynString,
+            formnovalidate: MaybeDynBool,
+            formtarget: MaybeDynString,
+            name: MaybeDynString,
+            r#type("type"): MaybeDynString,
+            value: MaybeDynString,
+        },
+        canvas {
+            height: MaybeDynString, // TODO: int value
+            width: MaybeDynString, // TODO: int value
+        },
+        caption {},
+        cite {},
+        code {
+            language: MaybeDynString,
+        },
+        col {
+            span: MaybeDynString, // TODO: int value
+        },
+        colgroup {
+            span: MaybeDynString, // TODO: int value
+        },
+        data {
+            value: MaybeDynString,
+        },
+        datalist {},
+        dd {},
+        del {
+            cite: MaybeDynString,
+            datetime: MaybeDynString,
+        },
+        details {
+            open: MaybeDynBool,
+        },
+        dfn {},
+        dialog {},
+        /// The `<div>` HTML element is the generic container for flow content. It has no effect on the content or layout until styled in some way using CSS (e.g. styling is directly applied to it, or some kind of layout model like Flexbox is applied to its parent element).
+        ///
+        /// As a "pure" container, the `<div>` element does not inherently represent anything. Instead, it's used to group content so it can be easily styled using the class or id attributes, marking a section of a document as being written in a different language (using the lang attribute), and so on.
+        ///
+        /// # Usage notes
+        /// The `<div>` element should be used only when no other semantic element (such as `<article>` or `<nav>`) is appropriate.
+        div {},
+        dl {},
+        dt {},
+        em {},
+        embed {
+            height: MaybeDynString,
+            src: MaybeDynString,
+            r#type("type"): MaybeDynString,
+            width: MaybeDynString, // TODO: int value
+        },
+        fieldset {},
+        figcaption {},
+        figure {},
+        footer {},
+        form {
+            acceptcharset: MaybeDynString,
+            action: MaybeDynString,
+            autocomplete: MaybeDynString,
+            enctype: MaybeDynString,
+            method: MaybeDynString,
+            name: MaybeDynString,
+            novalidate: MaybeDynBool,
+            target: MaybeDynString,
+        },
+        head {},
+        header {},
+        hgroup {},
+        h1 {},
+        h2 {},
+        h3 {},
+        h4 {},
+        h5 {},
+        h6 {},
+        hr {},
+        html {},
+        i {},
+        iframe {
+            allow: MaybeDynString,
+            allowfullscreen: MaybeDynBool,
+            allowpaymentrequest: MaybeDynBool,
+            height: MaybeDynString,
+            loading: MaybeDynString,
+            name: MaybeDynString,
+            referrerpolicy: MaybeDynString,
+            sandbox: MaybeDynBool,
+            src: MaybeDynString,
+            srcdoc: MaybeDynString,
+            width: MaybeDynString,
+        },
+        img {
+            alt: MaybeDynString,
+            crossorigin: MaybeDynString,
+            decoding: MaybeDynString,
+            height: MaybeDynString,
+            ismap: MaybeDynBool,
+            loading: MaybeDynString,
+            referrerpolicy: MaybeDynString,
+            sizes: MaybeDynString,
+            src: MaybeDynString,
+            srcset: MaybeDynString,
+            usemap: MaybeDynString,
+            width: MaybeDynString,
+        },
+        /// The `<input>` HTML element is used to create interactive controls for web-based forms in order to accept data from the user; a wide variety of types of input data and control widgets are available, depending on the device and user agent. The `<input>` element is one of the most powerful and complex in all of HTML due to the sheer number of combinations of input types and attributes.
+        input {
+            accept: MaybeDynString,
+            alt: MaybeDynString,
+            autocomplete: MaybeDynString,
+            autofocus: MaybeDynBool,
+            capture: MaybeDynString,
+            checked: MaybeDynBool,
+            directory: MaybeDynString,
+            disabled: MaybeDynBool,
+            form: MaybeDynString,
+            formaction: MaybeDynString,
+            formenctype: MaybeDynString,
+            formmethod: MaybeDynString,
+            formnovalidate: MaybeDynBool,
+            formtarget: MaybeDynString,
+            height: MaybeDynString, // TODO: int value
+            initial_checked: MaybeDynBool,
+            initial_value: MaybeDynString,
+            list: MaybeDynString,
+            max: MaybeDynString,
+            maxlength: MaybeDynString, // TODO: int value
+            min: MaybeDynString,
+            minlength: MaybeDynString, // TODO: int value
+            multiple: MaybeDynBool,
+            name: MaybeDynString,
+            pattern: MaybeDynString,
+            placeholder: MaybeDynString,
+            readonly: MaybeDynBool,
+            required: MaybeDynBool,
+            size: MaybeDynString, // TODO: int value
+            spellcheck: MaybeDynBool,
+            src: MaybeDynString,
+            step: MaybeDynString,
+            tabindex: MaybeDynString, // TODO: int value
+            r#type("type"): MaybeDynString,
+            value: MaybeDynString,
+            width: MaybeDynString, // TODO: int value
+        },
+        ins {
+            cite: MaybeDynString,
+            datetime: MaybeDynString,
+        },
+        kbd {},
+        keygen {},
+        /// The `<label>` HTML element represents a caption for an item in a user interface.
+        ///
+        /// Associating a `<label>` with an `<input>` element offers some major advantages:
+        /// * The label text is not only visually associated with its corresponding text input; it is programmatically associated with it too. This means that, for example, a screen reader will read out the label when the user is focused on the form input, making it easier for an assistive technology user to understand what data should be entered.
+        /// * When a user clicks or touches/taps a label, the browser passes the focus to its associated input (the resulting event is also raised for the input). That increased hit area for focusing the input provides an advantage to anyone trying to activate it — including those using a touch-screen device.
+        ///
+        /// To associate the `<label>` with an `<input>` element, you need to give the `<input>` an `id` attribute. The `<label>` then needs a for attribute whose value is the same as the input's `id`.
+        ///
+        /// Alternatively, you can nest the `<input>` directly inside the `<label>`, in which case the `for` and `id` attributes are not needed because the association is implicit:
+        ///
+        /// ```html
+        /// <label>Do you like peas?
+        ///   <input type="checkbox" name="peas">
+        /// </label>
+        /// ```
+        /// The form control that a label is labeling is called the labeled control of the label element. Multiple labels can be associated with the same form control:
+        ///
+        /// ```html
+        /// <label for="username">Enter your username:</label>
+        /// <input id="username">
+        /// <label for="username">Forgot your username?</label>
+        /// ```
+        /// Elements that can be associated with a `<label>` element include `<button>`, `<input>` (except for `type="hidden"`), `<meter>`, `<output>`, `<progress>`, `<select>` and `<textarea>`.
+        label {
+            form: MaybeDynString,
+            r#for("for"): MaybeDynString,
+        },
+        legend {},
+        /// The `<li>` HTML element is used to represent an item in a list. It must be contained in a parent element: an ordered list (`<ol>`), an unordered list (`<ul>`), or a menu (`<menu>`). In menus and unordered lists, list items are usually displayed using bullet points. In ordered lists, they are usually displayed with an ascending counter on the left, such as a number or letter.
+        li {
+            value: MaybeDynString, // TODO: int value
+        },
+        link {
+            crossorigin: MaybeDynString,
+            href: MaybeDynString,
+            hreflang: MaybeDynString,
+            media: MaybeDynString,
+            rel: MaybeDynString,
+            sizes: MaybeDynString,
+            title: MaybeDynString,
+            r#type("type"): MaybeDynString,
+            integrity: MaybeDynString,
+        },
+        main {},
+        map {
+            name: MaybeDynString,
+        },
+        mark {},
+        menu {},
+        menuitem {},
+        meta {
+            charset: MaybeDynString,
+            content: MaybeDynString,
+            http_equiv("http-equiv"): MaybeDynString,
+            name: MaybeDynString,
+        },
+        meter {
+            value: MaybeDynString, // TODO: int value
+            min: MaybeDynString, // TODO: int value
+            max: MaybeDynString, // TODO: int value
+            low: MaybeDynString, // TODO: int value
+            high: MaybeDynString, // TODO: int value
+            optimum: MaybeDynString, // TODO: int value
+            form: MaybeDynString,
+        },
+        nav {},
+        noscript {},
+        object {
+            data: MaybeDynString,
+            form: MaybeDynString,
+            height: MaybeDynString, // TODO: int value
+            name: MaybeDynString,
+            r#type("type"): MaybeDynString,
+            typemustmatch: MaybeDynBool,
+            usemap: MaybeDynString,
+            width: MaybeDynString,
+        },
+        /// The `<ol>` HTML element represents an ordered list of items — typically rendered as a numbered list.
+        ol {
+            reversed: MaybeDynBool,
+            start: MaybeDynString, // TODO: int value
+            r#type("type"): MaybeDynString,
+        },
+        optgroup {
+            disabled: MaybeDynBool,
+            label: MaybeDynString,
+        },
+        option {
+            disabled: MaybeDynBool,
+            initial_selected: MaybeDynBool,
+            label: MaybeDynString,
+            selected: MaybeDynBool,
+            value: MaybeDynString,
+        },
+        output {
+            r#for("for"): MaybeDynString,
+            form: MaybeDynString,
+            name: MaybeDynString,
+        },
+        /// The `<p>` HTML element represents a paragraph. Paragraphs are usually represented in visual media as blocks of text separated from adjacent blocks by blank lines and/or first-line indentation, but HTML paragraphs can be any structural grouping of related content, such as images or form fields.
+        ///
+        /// Paragraphs are block-level elements, and notably will automatically close if another block-level element is parsed before the closing `</p>` tag.
+        p {},
+        param {
+            name: MaybeDynString,
+            value: MaybeDynString,
+        },
+        picture {},
+        pre {},
+        progress {
+            value: MaybeDynString, // TODO: f64 value
+            max: MaybeDynString, // TODO: f64 value
+        },
+        q {
+            cite: MaybeDynString,
+        },
+        rp {},
+        rt {},
+        ruby {},
+        s {},
+        samp {},
+        script {
+            r#async: MaybeDynBool,
+            crossorigin: MaybeDynString,
+            defer: MaybeDynBool,
+            integrity: MaybeDynString,
+            nomodule: MaybeDynBool,
+            nonce: MaybeDynString,
+            src: MaybeDynString,
+            script: MaybeDynString,
+            text: MaybeDynString,
+            r#type("type"): MaybeDynString,
+        },
+        section {},
+        select {
+            autocomplete: MaybeDynString,
+            autofocus: MaybeDynBool,
+            disabled: MaybeDynBool,
+            form: MaybeDynString,
+            multiple: MaybeDynBool,
+            name: MaybeDynString,
+            required: MaybeDynBool,
+            size: MaybeDynString, // TODO: int value
+            value: MaybeDynString,
+        },
+        small {},
+        source {
+            src: MaybeDynString,
+            r#type("type"): MaybeDynString,
+        },
+        /// The `<span>` HTML element is a generic inline container for phrasing content, which does not inherently represent anything. It can be used to group elements for styling purposes (using the class or id attributes), or because they share attribute values, such as lang. It should be used only when no other semantic element is appropriate. `<span>` is very much like a `<div>` element, but `<div>` is a block-level element whereas a `<span>` is an inline element.
+        span {},
+        strong {},
+        style {
+            media: MaybeDynString,
+            nonce: MaybeDynString,
+            title: MaybeDynString,
+            r#type("type"): MaybeDynString,
+        },
+        sub {},
+        summary {},
+        sup {},
+        table {},
+        tbody {},
+        td {
+            colspan: MaybeDynString, // TODO: int value
+            headers: MaybeDynString,
+            rowspan: MaybeDynString, // TODO: int value
+        },
+        template {},
+        textarea {
+            autocomplete: MaybeDynString,
+            autofocus: MaybeDynBool,
+            cols: MaybeDynString, // TODO: int value
+            disabled: MaybeDynBool,
+            form: MaybeDynString,
+            initial_value: MaybeDynString,
+            maxlength: MaybeDynString, // TODO: int value
+            minlength: MaybeDynString, // TODO: int value
+            name: MaybeDynString,
+            placeholder: MaybeDynString,
+            readonly: MaybeDynBool,
+            required: MaybeDynBool,
+            rows: MaybeDynString, // TODO: int value
+            spellcheck: MaybeDynBool,
+            r#type("type"): MaybeDynString,
+            value: MaybeDynString,
+            wrap: MaybeDynString,
+        },
+        tfoot {},
+        th {
+            abbr: MaybeDynString,
+            colspan: MaybeDynString, // TODO: int value
+            headers: MaybeDynString,
+            rowspan: MaybeDynString, // TODO: int value
+            scope: MaybeDynString,
+        },
+        thead {},
+        time {
+            datetime: MaybeDynString,
+        },
+        title {},
+        tr {},
+        track {
+            default: MaybeDynBool,
+            kind: MaybeDynString,
+            label: MaybeDynString,
+            src: MaybeDynString,
+            srclang: MaybeDynString,
+        },
+        u {},
+        /// The `<ul>` HTML element represents an unordered list of items, typically rendered as a bulleted list.
+        ul {},
+        var {},
+        video {
+            autoplay: MaybeDynBool,
+            controls: MaybeDynBool,
+            crossorigin: MaybeDynString,
+            height: MaybeDynString, // TODO: int value
+            r#loop("loop"): MaybeDynBool,
+            muted: MaybeDynBool,
+            playsinline: MaybeDynBool,
+            poster: MaybeDynString,
+            preload: MaybeDynString,
+            src: MaybeDynString,
+            width: MaybeDynString, // TODO: int value
+        },
+        wbr {},
+    }
+
+    impl_svg_elements! {
+        svg {},
+        svg_a("a") {},
+        animate {},
+        animateMotion {},
+        animateTransform {},
+        circle {},
+        clipPath {},
+        defs {},
+        desc {},
+        discard {},
+        ellipse {},
+        feBlend {},
+        feColorMatrix {},
+        feComponentTransfer {},
+        feComposite {},
+        feConvolveMatrix {},
+        feDiffuseLighting {},
+        feDisplacementMap {},
+        feDistantLight {},
+        feDropShadow {},
+        feFlood {},
+        feFuncA {},
+        feFuncB {},
+        feFuncG {},
+        feFuncR {},
+        feGaussianBlur {},
+        feImage {},
+        feMerge {},
+        feMergeNode {},
+        feMorphology {},
+        feOffset {},
+        fePointLight {},
+        feSpecularLighting {},
+        feSpotLight {},
+        feTile {},
+        feTurbulence {},
+        filter {},
+        foreignObject {},
+        g {},
+        hatch {},
+        hatchpath {},
+        image {},
+        line {},
+        linearGradient {},
+        marker {},
+        mask {},
+        metadata {},
+        mpath {},
+        path {},
+        pattern {},
+        polygon {},
+        polyline {},
+        radialGradient {},
+        rect {},
+        svg_script("script") {},
+        set {},
+        stop {},
+        svg_style("style") {},
+        switch {},
+        symbol {},
+        text {},
+        textPath {},
+        svg_title("title") {},
+        tspan {},
+        r#use("use") {},
+        view {},
+    }
 }
 
 /// A trait that is implemented for all elements and which provides all the global HTML attributes.
@@ -792,75 +866,6 @@ pub trait HtmlGlobalAttributes: AsHtmlElement + Sized {
         /// `manual`, which decouples focus and tap on the element from the virtual keyboard's state.
         virtualkeyboardpolicy: MaybeDynString,
     }
-}
-
-impl_svg_elements! {
-    svg {},
-    svg_a("a") {},
-    animate {},
-    animateMotion {},
-    animateTransform {},
-    circle {},
-    clipPath {},
-    defs {},
-    desc {},
-    discard {},
-    ellipse {},
-    feBlend {},
-    feColorMatrix {},
-    feComponentTransfer {},
-    feComposite {},
-    feConvolveMatrix {},
-    feDiffuseLighting {},
-    feDisplacementMap {},
-    feDistantLight {},
-    feDropShadow {},
-    feFlood {},
-    feFuncA {},
-    feFuncB {},
-    feFuncG {},
-    feFuncR {},
-    feGaussianBlur {},
-    feImage {},
-    feMerge {},
-    feMergeNode {},
-    feMorphology {},
-    feOffset {},
-    fePointLight {},
-    feSpecularLighting {},
-    feSpotLight {},
-    feTile {},
-    feTurbulence {},
-    filter {},
-    foreignObject {},
-    g {},
-    hatch {},
-    hatchpath {},
-    image {},
-    line {},
-    linearGradient {},
-    marker {},
-    mask {},
-    metadata {},
-    mpath {},
-    path {},
-    pattern {},
-    polygon {},
-    polyline {},
-    radialGradient {},
-    rect {},
-    svg_script("script") {},
-    set {},
-    stop {},
-    svg_style("style") {},
-    switch {},
-    symbol {},
-    text {},
-    textPath {},
-    svg_title("title") {},
-    tspan {},
-    r#use("use") {},
-    view {},
 }
 
 /// A trait that is implemented for all SVG elements and which provides all the global SVG

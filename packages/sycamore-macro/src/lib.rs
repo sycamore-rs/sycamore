@@ -10,6 +10,7 @@ use syn::{parse_macro_input, DeriveInput};
 mod component;
 mod props;
 mod view;
+mod view_old;
 
 /// A macro for ergonomically creating complex UI complex layouts.
 ///

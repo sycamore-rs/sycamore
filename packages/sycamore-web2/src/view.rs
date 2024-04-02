@@ -7,6 +7,18 @@ pub struct View<T> {
     pub(crate) nodes: Vec<T>,
 }
 
+impl<T> View<T> {
+    /// Create a new blank view.
+    pub fn new() -> Self {
+        View { nodes: Vec::new() }
+    }
+
+    /// Create a new view with a single node.
+    pub fn node(node: T) -> Self {
+        View { nodes: vec![node] }
+    }
+}
+
 impl<T> Default for View<T> {
     fn default() -> Self {
         View { nodes: Vec::new() }
@@ -19,12 +31,6 @@ impl<T> fmt::Debug for View<T> {
     }
 }
 
-impl<T> View<T> {
-    /// Create a new view with a single node.
-    pub fn node(node: T) -> Self {
-        View { nodes: vec![node] }
-    }
-}
 impl<T> From<Vec<View<T>>> for View<T> {
     fn from(nodes: Vec<View<T>>) -> Self {
         View {

@@ -7,7 +7,7 @@ use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 use sycamore_view_parser::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
 use syn::{Expr, ExprLit, Ident, Lit, LitBool};
 
@@ -19,91 +19,62 @@ impl Codegen {
     pub fn root(&self, root: &Root) -> TokenStream {
         match &root.0[..] {
             [] => quote! {
-                ::sycamore::rt::View::new()
+                ::sycamore::view::View::empty()
             },
             [node] => self.node(node),
             nodes => {
                 let nodes = nodes.iter().map(|node| self.node(node));
                 quote! {
-                    ::std::convert::Into::<::sycamore::rt::View>::into(::std::vec![#(#nodes),*])
+                    ::sycamore::view::View::new_fragment({
+                        ::std::vec![
+                            #(#nodes),*
+                        ]
+                    })
                 }
             }
         }
     }
 
-    /// Generate a `View` from a `Node`.
+    /// Generate a `View` from a `Node`. If the root is an element, create a `Template`.
     pub fn node(&self, node: &Node) -> TokenStream {
         match node {
             Node::Tag(tag) => {
                 if is_component(&tag.ident) {
                     impl_component(tag)
                 } else {
-                    self.element(tag)
+                    let template_id = rand::random::<u32>();
+
+                    let mut codegen = CodegenTemplate::new();
+
+                    let shape = codegen.node(node);
+                    let dyn_values = codegen.dyn_values;
+                    let flagged_nodes_quoted = codegen.flagged_nodes_quoted;
+                    quote! {{
+                        use ::sycamore::generic_node::SycamoreElement as _;
+
+                        static __TEMPLATE: ::sycamore::generic_node::Template = ::sycamore::generic_node::Template {
+                            id: ::sycamore::generic_node::TemplateId(#template_id),
+                            shape: #shape,
+                        };
+
+                        let __dyn_values = ::std::vec![#(#dyn_values),*];
+                        let __result = ::sycamore::generic_node::__instantiate_template(&__TEMPLATE);
+                        ::sycamore::generic_node::__apply_dyn_values_to_template(&__result.dyn_markers, __dyn_values);
+                        let __flagged = __result.flagged_nodes;
+                        #flagged_nodes_quoted
+
+                        ::sycamore::view::View::new_node(__result.root)
+                    }}
                 }
             }
             Node::Text(TextNode { value }) => quote! {
-                ::std::convert::Into::<::sycamore::rt::View>::into(#value)
+                ::sycamore::view::View::new_node(::sycamore::generic_node::GenericNode::text_node(::std::borrow::Cow::Borrowed(#value)))
             },
             Node::Dyn(DynNode { value }) => {
                 quote! {
-                    ::std::convert::Into::<::sycamore::rt::View>::into(
-                        move || ::std::convert::Into::<::sycamore::rt::View>::into(&(#value))
-                    )
+                    ::sycamore::view::View::new_dyn(move || ::sycamore::view::ToView::to_view(&(#value)))
                 }
             }
-        }
-    }
-
-    pub fn element(&self, element: &TagNode) -> TokenStream {
-        let TagNode {
-            ident,
-            props,
-            children,
-        } = element;
-
-        let attributes = props.iter().map(|attr| self.attribute(attr));
-
-        let children = children
-            .0
-            .iter()
-            .map(|child| self.node(child))
-            .collect::<Vec<_>>();
-
-        match ident {
-            TagIdent::Path(tag) => {
-                assert!(tag.get_ident().is_some(), "elements must be an ident");
-                quote! {
-                    ::sycamore::rt::View::from(
-                        ::sycamore::rt::tags::#tag().children(::std::vec![#(#children),*])#(#attributes)*
-                    )
-                }
-            }
-            TagIdent::Hyphenated(tag) => quote! {
-                ::sycamore::rt::View::from(
-                    ::sycamore::rt::custom_element(#tag).children(::std::vec![#(#children),*])#(#attributes)*
-                )
-            },
-        }
-    }
-
-    pub fn attribute(&self, attr: &Prop) -> TokenStream {
-        let is_dynamic = !matches!(attr.value, Expr::Lit(_));
-        let value = &attr.value;
-        let value = if is_dynamic {
-            quote! { move || #value }
-        } else {
-            value.into_token_stream()
-        };
-        match &attr.ty {
-            PropType::Plain { ident } => {
-                quote! {
-                    .#ident(#value)
-                }
-            }
-            PropType::PlainHyphenated { ident } => todo!(),
-            PropType::Directive { dir, ident } => todo!(),
-            PropType::Ref => todo!(),
-            PropType::Spread => todo!(),
         }
     }
 }
@@ -537,7 +508,7 @@ fn impl_component(node: &TagNode) -> TokenStream {
         let children = codegen.root(children);
         quote! {
             .children(
-                ::sycamore::rt::Children::new(move || {
+                ::sycamore::component::Children::new(move || {
                     #children
                 })
             )

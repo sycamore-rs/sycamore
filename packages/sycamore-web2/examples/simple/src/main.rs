@@ -51,7 +51,8 @@ fn indexed_test() -> View {
             .on(events::click, remove_one)
             .disabled(move || list.with(|x| x.is_empty()))
             .children("Pop"),
-        ul().children(Indexed(list, |item| li().children(item))),
+        // ul().children(Indexed(list, |item| li().children(item))),
+        ul().children(Indexed(IndexedProps::builder().list(list).view(|item| li().children(item)).build(),
     )
         .into()
 }
