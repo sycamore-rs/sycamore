@@ -164,6 +164,8 @@ where
 
 #[wasm_bindgen]
 extern "C" {
+    /// Extend [`web_sys::Node`] type with an id field. This is used to make `Node` hashable from
+    /// Rust.
     #[wasm_bindgen(extends = web_sys::Node)]
     pub(super) type NodeWithId;
     #[wasm_bindgen(method, getter, js_name = "$id")]
@@ -172,11 +174,12 @@ extern "C" {
     pub fn set_node_id(this: &NodeWithId, id: usize);
 }
 
+/// A wrapper around [`web_sys::Node`] that implements `Hash` and `Eq`.
 struct HashableNode<'a>(&'a NodeWithId, usize);
 
 impl<'a> HashableNode<'a> {
     thread_local! {
-        static NEXT_ID: Cell<usize> = Cell::new(0);
+        static NEXT_ID: Cell<usize> = const { Cell::new(0) };
     }
 
     fn new(node: &'a web_sys::Node) -> Self {

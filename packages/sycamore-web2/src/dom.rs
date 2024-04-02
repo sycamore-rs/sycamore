@@ -1,5 +1,5 @@
 use wasm_bindgen::closure::Closure;
-use wasm_bindgen::intern;
+use wasm_bindgen::{intern, JsValue};
 
 use crate::*;
 
@@ -32,6 +32,10 @@ impl DomRenderer {
                 for attr in node.attributes {
                     let name = intern(attr.name.as_ref());
                     el.set_attribute(name, attr.value.as_ref()).unwrap();
+                }
+                for prop in node.props {
+                    let name = intern(prop.name.as_ref());
+                    js_sys::Reflect::set(&el, &JsValue::from(name), &prop.value).unwrap();
                 }
                 if let Some(inner_html) = node.inner_html {
                     assert!(
@@ -103,7 +107,7 @@ impl DomHydrateRenderer {
                         .unwrap();
                 }
 
-                if let Some(_) = node.inner_html {
+                if node.inner_html.is_some() {
                     assert!(
                         node.children.is_empty(),
                         "inner_html and children are mutually exclusive"
@@ -125,11 +129,11 @@ impl DomHydrateRenderer {
                 while let Some(current) = next {
                     next = current.next_sibling();
 
-                    if current.node_type() == web_sys::Node::COMMENT_NODE {
-                        if current.text_content().unwrap() == "" {
-                            parent.remove_child(&current).unwrap();
-                            break;
-                        }
+                    if current.node_type() == web_sys::Node::COMMENT_NODE
+                        && current.text_content().unwrap() == ""
+                    {
+                        parent.remove_child(&current).unwrap();
+                        break;
                     }
                 }
                 if let Some(el) = next {
@@ -144,11 +148,11 @@ impl DomHydrateRenderer {
                 let mut next = parent.first_child();
                 let mut marker = None;
                 while let Some(current) = next {
-                    if current.node_type() == web_sys::Node::COMMENT_NODE {
-                        if current.text_content().unwrap() == "/" {
-                            marker = Some(current);
-                            break;
-                        }
+                    if current.node_type() == web_sys::Node::COMMENT_NODE
+                        && current.text_content().unwrap() == "/"
+                    {
+                        marker = Some(current);
+                        break;
                     }
                     next = current.next_sibling();
                 }
@@ -223,7 +227,7 @@ pub fn render_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 /// It is expected that this function will be called inside a reactive root, usually created using
 /// [`create_root`].
 pub fn render_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
-    DomRenderer.render(&parent, view());
+    DomRenderer.render(parent, view());
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side

@@ -10,19 +10,19 @@ pub fn Portal(selector: &str, children: impl Into<View>) -> View {
             .unwrap()
             .document()
             .unwrap()
-            .query_selector(&selector)
+            .query_selector(selector)
             .unwrap()
             .expect("could not find element matching selector");
         let children = children.into();
 
         let nodes = children.as_web_sys();
 
-        DomRenderer.render(&parent, children.into());
+        DomRenderer.render(&parent, children);
 
         on_cleanup(move || {
             for node in nodes {
                 let node = node.get().unwrap();
-                parent.remove_child(&node).unwrap();
+                parent.remove_child(node).unwrap();
             }
         });
     }

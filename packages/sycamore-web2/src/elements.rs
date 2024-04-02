@@ -12,6 +12,7 @@ pub(crate) fn element(tag: &'static str) -> HtmlElement {
         tag: Cow::Borrowed(tag),
         is_svg: false,
         attributes: vec![],
+        props: vec![],
         children: vec![],
         inner_html: None,
         events: vec![],
@@ -22,8 +23,9 @@ pub(crate) fn element(tag: &'static str) -> HtmlElement {
 pub(crate) fn svg_element(tag: &'static str) -> HtmlElement {
     HtmlElement {
         tag: Cow::Borrowed(tag),
-        is_svg: false,
+        is_svg: true,
         attributes: vec![],
+        props: vec![],
         children: vec![],
         inner_html: None,
         events: vec![],
@@ -1127,7 +1129,22 @@ pub trait SvgGlobalAttributes: AsHtmlElement + Sized {
 #[allow(private_bounds)]
 pub trait GlobalAttributes: AsHtmlElement + Sized {
     /// Set attribute `name` with `value`.
-    fn attr<T: AttributeValue>(mut self, name: &'static str, value: impl Into<T>) -> Self {
+    fn attr<T: AttributeValue>(
+        mut self,
+        name: &'static str,
+        value: impl Into<MaybeDynString>,
+    ) -> Self {
+        let node = self.to_node();
+        set_attribute(self.as_mut_element(), node, name, value.into());
+        self
+    }
+
+    /// Set attribute `name` with `value`.
+    fn bool_attr<T: AttributeValue>(
+        mut self,
+        name: &'static str,
+        value: impl Into<MaybeDynBool>,
+    ) -> Self {
         let node = self.to_node();
         set_attribute(self.as_mut_element(), node, name, value.into());
         self
@@ -1136,7 +1153,7 @@ pub trait GlobalAttributes: AsHtmlElement + Sized {
     /// Set JS property `name` with `value`.
     fn prop(mut self, name: &'static str, value: impl Into<MaybeDynJsValue>) -> Self {
         let node = self.to_node();
-        set_property(self.as_mut_element(), node, name, value.into());
+        set_attribute(self.as_mut_element(), node, name, value.into());
         self
     }
 
@@ -1243,7 +1260,7 @@ impl AttributeValue for MaybeDynBool {
                             if let Some(node) = node.get() {
                                 let node = node.unchecked_ref::<web_sys::Element>();
                                 if value {
-                                    node.set_attribute(name, &"").unwrap();
+                                    node.set_attribute(name, "").unwrap();
                                 } else {
                                     node.remove_attribute(name).unwrap();
                                 }
@@ -1262,44 +1279,40 @@ impl AttributeValue for MaybeDynBool {
     }
 }
 
-/// Helper function for setting a dynamic property.
-fn set_property(
-    el: &mut HtmlElement,
-    node: Rc<OnceCell<web_sys::Node>>,
-    name: &'static str,
-    value: MaybeDynJsValue,
-) {
-    match value {
-        MaybeDyn::Static(value) => {
-            if is_client() {
-                todo!("set_property: {:?}", value);
+impl AttributeValue for MaybeDynJsValue {
+    fn set_self(self, el: &mut HtmlElement, node: Rc<OnceCell<web_sys::Node>>, name: &'static str) {
+        match self {
+            MaybeDyn::Static(value) => {
+                if is_client() {
+                    el.props.push(HtmlProp {
+                        name: Cow::Borrowed(name),
+                        value,
+                    });
+                }
             }
-        }
-        MaybeDyn::Dynamic(mut value) => {
-            let mut initial = true;
-            let initial_value = Rc::new(RefCell::new(None));
-            create_effect({
-                let initial_value = initial_value.clone();
-                move || {
-                    if initial {
-                        *initial_value.borrow_mut() = Some(value());
-                        initial = false;
-                    } else if is_client() {
-                        let value = value();
-                        if let Some(node) = node.get() {
-                            // node.unchecked_ref::<web_sys::Element>()
-                            //     .set_attribute(name, &value)
-                            //     .unwrap();
-                            todo!("set property: {:?}", value);
+            MaybeDyn::Dynamic(mut value) => {
+                let mut initial = true;
+                let initial_value = Rc::new(RefCell::new(None));
+                create_effect({
+                    let initial_value = initial_value.clone();
+                    move || {
+                        if initial {
+                            *initial_value.borrow_mut() = Some(value());
+                            initial = false;
+                        } else if is_client() {
+                            let value = value();
+                            if let Some(node) = node.get() {
+                                js_sys::Reflect::set(node, &JsValue::from_str(name), &value)
+                                    .unwrap();
+                            }
                         }
                     }
-                }
-            });
-            // el.attributes.push(HtmlAttribute {
-            //     name: Cow::Borrowed(name),
-            //     value: initial_value.take().as_ref().unwrap().clone(),
-            // });
-            // TODO
+                });
+                el.props.push(HtmlProp {
+                    name: Cow::Borrowed(name),
+                    value: initial_value.take().as_ref().unwrap().clone(),
+                });
+            }
         }
     }
 }

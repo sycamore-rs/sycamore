@@ -65,11 +65,7 @@ impl NodeRef {
     /// Tries to get the raw web_sys node stored inside the node ref. Returns `None` if the node
     /// ref has not yet been set (i.e. the node has not yet been rendered into the DOM).
     pub fn try_get(&self) -> Option<web_sys::Node> {
-        if let Some(node) = self.0.get_clone().get() {
-            Some(node.clone())
-        } else {
-            None
-        }
+        self.0.get_clone().get().cloned()
     }
 
     /// Sets the node ref with the specified node.

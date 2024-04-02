@@ -1,3 +1,5 @@
+use wasm_bindgen::JsValue;
+
 use crate::*;
 
 /// A node in an HTML [`View`] tree.
@@ -92,7 +94,7 @@ fn render_dynamic_view<U: Into<View>>(mut f: impl FnMut() -> U + 'static) -> Vie
             for node in &nodes {
                 if let Some(node) = node.get() {
                     let parent = node.parent_node().unwrap();
-                    parent.remove_child(&node).unwrap();
+                    parent.remove_child(node).unwrap();
                 }
             }
 
@@ -161,13 +163,18 @@ impl View {
     }
 }
 
+/// Type of a raw (type-erased) event handler.
+type RawEventHandler = Box<dyn FnMut(web_sys::Event)>;
+
+/// Represents an HTML element. This can be upgraded to a real DOM node by using [`DomRenderer`].
 pub(crate) struct HtmlElement {
     pub tag: Cow<'static, str>,
     pub is_svg: bool,
     pub attributes: Vec<HtmlAttribute>,
+    pub props: Vec<HtmlProp>,
     pub children: Vec<HtmlNode>,
     pub inner_html: Option<String>,
-    pub events: Vec<(&'static str, Box<dyn FnMut(web_sys::Event)>)>,
+    pub events: Vec<(&'static str, RawEventHandler)>,
 }
 
 pub(crate) struct HtmlText {
@@ -177,6 +184,11 @@ pub(crate) struct HtmlText {
 pub(crate) struct HtmlAttribute {
     pub name: Cow<'static, str>,
     pub value: Cow<'static, str>,
+}
+
+pub(crate) struct HtmlProp {
+    pub name: Cow<'static, str>,
+    pub value: JsValue,
 }
 
 pub(crate) trait AsHtmlElement {
