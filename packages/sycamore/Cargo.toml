@@ -23,7 +23,6 @@ sycamore-futures = { path = "../sycamore-futures", version = "0.9.0-beta.2", opt
 sycamore-macro = { path = "../sycamore-macro", version = "0.9.0-beta.2" }
 sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.2" }
 sycamore-web = { path = "../sycamore-web", version = "0.9.0-beta.2", optional = true }
-sycamore-web2 = { path = "../sycamore-web2", version = "0.9.0-beta.2", optional = true }
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 web-sys = { version = "0.3.60", optional = true }
@@ -35,7 +34,7 @@ wasm-bindgen-test = "0.3.33"
 
 [features]
 default = ["web", "wasm-bindgen-interning"]
-hydrate = ["web", "sycamore-macro/hydrate", "sycamore-web/hydrate"]
+hydrate = ["web", "sycamore-macro/hydrate"]
 nightly = ["sycamore-reactive/nightly"]
 ssr = [
 	"web",
@@ -43,9 +42,8 @@ ssr = [
 	"once_cell",
 	"hydrate",
 	"sycamore-macro/ssr",
+	"dep:sycamore-web",
 	"sycamore-web/ssr",
-	"dep:sycamore-web2",
-	"sycamore-web2/ssr",
 ]
 suspense = [
 	"futures",
@@ -56,7 +54,7 @@ suspense = [
 serde = ["sycamore-reactive/serde"]
 trace = ["sycamore-reactive/trace"]
 wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
-web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web", "dep:sycamore-web2"]
+web = ["wasm-bindgen", "web-sys", "js-sys", "dep:sycamore-web"]
 
 [[test]]
 name = "web"

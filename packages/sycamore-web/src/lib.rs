@@ -1,141 +1,109 @@
-//! Web renderer for the Sycamore UI framework.
-//!
-//! Sycamore on its own is a backend-agnostic UI framework. This crate provides web support to
-//! Sycamore. With this crate, it is possible to render Sycamore views to the DOM (using
-//! [`DomNode`]), "hydrate" existing DOM nodes (using [`HydrateNode`]), or render a static string
-//! (using [`SsrNode`]).
-//!
-//! This crate is re-exported in the `sycamore` crate. It is recommended to use that instead of
-//! using this crate directly.
-
-#![deny(missing_debug_implementations)]
-#![warn(missing_docs)]
-
-mod dom_node;
-mod dom_node_template;
-#[cfg(feature = "hydrate")]
-pub mod hydrate;
-#[cfg(feature = "hydrate")]
-mod hydrate_node;
+pub mod bind;
+#[cfg(feature = "dom")]
+mod dom;
+mod elements;
+pub mod events;
+mod iter;
+mod node;
+mod noderef;
+mod portal;
 #[cfg(feature = "ssr")]
-mod ssr_node;
+mod ssr;
+mod view;
 
-use std::cell::Cell;
+use std::any::{Any, TypeId};
+use std::borrow::Cow;
+use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
-pub use dom_node::*;
-#[cfg(feature = "hydrate")]
-pub use hydrate_node::*;
-use once_cell::sync::Lazy;
+#[cfg(feature = "dom")]
+pub use dom::*;
+pub use elements::*;
+pub use iter::*;
+pub use node::*;
+pub use noderef::*;
+pub use portal::*;
 #[cfg(feature = "ssr")]
-pub use ssr_node::*;
-use sycamore_core::generic_node::{GenericNode, GenericNodeElements};
+pub use ssr::*;
 use sycamore_reactive::*;
-use wasm_bindgen::prelude::*;
-/// Re-export of `js-sys` and `wasm-bindgen` for convenience.
-#[doc(no_inline)]
-pub use {js_sys, wasm_bindgen};
+use wasm_bindgen::JsCast;
 
-/// Re-export of HTML event types from `web-sys` for convenience.
-pub mod events {
-    pub use web_sys::{
-        AnimationEvent, BeforeUnloadEvent, CompositionEvent, DeviceMotionEvent,
-        DeviceOrientationEvent, DragEvent, ErrorEvent, Event, FocusEvent, GamepadEvent,
-        HashChangeEvent, KeyboardEvent, MessageEvent, MouseEvent, PageTransitionEvent,
-        PointerEvent, PopStateEvent, ProgressEvent, StorageEvent, TouchEvent, TransitionEvent,
-        UiEvent, WheelEvent,
-    };
+/// We add this to make the macros from `sycamore-macro` work properly.
+extern crate self as sycamore;
+mod rt {
+    pub use sycamore_core::*;
+
+    pub use crate::*;
 }
 
-/// Trait that is implemented by all [`GenericNode`] backends that render to HTML.
-pub trait Html:
-    GenericNode<AnyEventData = JsValue, PropertyType = JsValue> + GenericNodeElements
-{
-    /// A boolean indicating whether this node is rendered in a browser context.
-    ///
-    /// A value of `false` does not necessarily mean that it is not being rendered in WASM or even
-    /// in the browser. It only means that it does not create DOM nodes.
-    const IS_BROWSER: bool;
+/// A type alias for [`View`] with [`HtmlNode`] as the node type.
+pub type View = self::view::View<HtmlNode>;
 
-    /// Convert this node into a raw [`web_sys::Node`].
-    ///
-    /// For certain backends, this is not possible (e.g. [`SsrNode`]). In that case, calling this
-    /// will panic at runtime.
-    fn to_web_sys(&self) -> web_sys::Node;
-
-    /// Convert a raw [`web_sys::Node`] into a [`GenericNode`].
-    ///
-    /// This is the inverse of [`to_web_sys`]. For certain backends, this is not possible (e.g.
-    /// [`SsrNode`]). In that case, calling this will panic at runtime.
-    ///
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use sycamore::prelude::*;
-    /// # fn get_web_sys_node() -> web_sys::Node {
-    /// #     todo!()
-    /// # }
-    /// # fn my_raw_node_view<G: Html>() -> View<G> {
-    /// let raw_node: web_sys::Node = get_web_sys_node();
-    /// let node = G::from_web_sys(raw_node);
-    /// let view = View::new_node(node);
-    /// # view
-    /// # }
-    /// ```
-    fn from_web_sys(node: web_sys::Node) -> Self;
+/// A struct for keeping track of state used for hydration.
+#[derive(Debug, Clone, Copy)]
+struct HydrationRegistry {
+    next_key: Signal<u32>,
 }
 
-static VOID_ELEMENTS: Lazy<hashbrown::HashSet<&'static str>> = Lazy::new(|| {
-    vec![
-        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
-        "source", "track", "wbr", "command", "keygen", "menuitem",
-    ]
-    .into_iter()
-    .collect()
-});
+impl HydrationRegistry {
+    pub fn new() -> Self {
+        HydrationRegistry {
+            next_key: create_signal(0),
+        }
+    }
 
-/// Queue up a callback to be executed when the component is mounted.
-///
-/// If not on `wasm32` target, does nothing.
-///
-/// # Potential Pitfalls
-///
-/// If called inside an async-component, the callback will be called after the next suspension
-/// point (when there is an `.await`).
-pub fn on_mount(f: impl FnOnce() + 'static) {
-    if cfg!(target_arch = "wasm32") {
-        let is_alive = Rc::new(Cell::new(true));
-        on_cleanup({
-            let is_alive = Rc::clone(&is_alive);
-            move || is_alive.set(false)
-        });
-
-        let scope = use_current_scope();
-        let cb = move || {
-            if is_alive.get() {
-                scope.run_in(f);
-            }
-        };
-        queue_microtask(cb);
+    /// Get the next hydration key and increment the internal state. This new key will be unique.
+    pub fn next_key(self) -> u32 {
+        let key = self.next_key.get();
+        self.next_key.set(key + 1);
+        key
     }
 }
 
-/// Alias for `queueMicrotask`.
-pub fn queue_microtask(f: impl FnOnce() + 'static) {
-    #[wasm_bindgen]
-    extern "C" {
-        #[wasm_bindgen(js_name = "queueMicrotask")]
-        fn queue_microtask_js(f: &JsValue);
+impl Default for HydrationRegistry {
+    fn default() -> Self {
+        Self::new()
     }
-    queue_microtask_js(&Closure::once_into_js(f));
 }
 
-/// Get `window.document`.
-pub(crate) fn document() -> web_sys::Document {
-    thread_local! {
-        /// Cache document since it is frequently accessed to prevent going through js-interop.
-        static DOCUMENT: web_sys::Document = web_sys::window().unwrap_throw().document().unwrap_throw();
-    };
-    DOCUMENT.with(|document| document.clone())
+/// Marker struct to be inserted into reactive context to indicate that we are in SSR mode.
+#[derive(Clone, Copy)]
+struct SsrMode;
+
+/// Returns whether we are in SSR mode or not.
+pub fn is_ssr() -> bool {
+    if cfg!(feature = "dom") && !cfg!(feature = "ssr") {
+        false
+    } else if cfg!(feature = "ssr") && !cfg!(feature = "dom") {
+        true
+    } else {
+        // Do a runtime check.
+        try_use_context::<SsrMode>().is_some()
+    }
+}
+
+/// Returns whether we are in client side rendering (CSR) mode or not.
+///
+/// This is the opposite of [`is_ssr`].
+pub fn is_client() -> bool {
+    !is_ssr()
+}
+
+/// Create a new effect, but only if we are not in SSR mode.
+pub fn create_client_effect(f: impl FnMut() + 'static) {
+    if !is_ssr() {
+        create_effect(f);
+    }
+}
+
+#[sycamore_macro::component]
+fn Test() -> View {
+    let checked = create_signal(true);
+    sycamore_macro::view! {
+        div(class="test", on:click=|_| todo!(), prop:value=1) {
+            "hello, world!"
+            button(bind:checked=checked)
+            Test()
+        }
+    }
 }
