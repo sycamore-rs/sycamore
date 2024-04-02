@@ -38,7 +38,6 @@
 #[allow(unused_extern_crates)] // False positive
 extern crate self as sycamore;
 
-pub mod builder;
 pub mod easing;
 pub mod flow;
 #[cfg(feature = "suspense")]
@@ -105,7 +104,7 @@ pub mod rt {
     #[cfg(feature = "web")]
     pub use js_sys::Reflect;
     pub use sycamore_core::*;
-    pub use sycamore_web2::*;
+    pub use sycamore_web::*;
     #[cfg(feature = "web")]
     pub use wasm_bindgen::{intern, JsCast, JsValue};
     #[cfg(feature = "web")]
