@@ -1,9 +1,11 @@
+use sycamore_macro::component;
+
 use crate::*;
 
 /// A portal into a different part of the DOM. Only renders in client side rendering (CSR) mode.
 /// Does nothing in SSR mode.
-#[allow(non_snake_case)]
-pub fn Portal(selector: &str, children: impl Into<View>) -> View {
+#[component(inline_props)]
+pub fn Portal<'a, T: Into<View> + Default>(selector: &'a str, children: T) -> View {
     web_sys::console::log_1(&format!("is_client: {}", is_client()).into());
     if is_client() {
         let parent = web_sys::window()

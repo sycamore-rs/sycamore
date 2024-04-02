@@ -32,12 +32,15 @@ use wasm_bindgen::JsCast;
 extern crate self as sycamore;
 mod rt {
     pub use sycamore_core::*;
+    pub use sycamore_macro::*;
 
     pub use crate::*;
 }
 
-/// A type alias for [`View`] with [`HtmlNode`] as the node type.
+/// A type alias for [`View`](self::view::View) with [`HtmlNode`] as the node type.
 pub type View = self::view::View<HtmlNode>;
+/// A type alias for [`Children`](sycamore_core::Children) with [`HtmlNode`] as the node type.
+pub type Children = sycamore_core::Children<View>;
 
 /// A struct for keeping track of state used for hydration.
 #[derive(Debug, Clone, Copy)]

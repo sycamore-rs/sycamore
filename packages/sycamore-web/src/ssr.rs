@@ -24,19 +24,19 @@ impl SsrRenderer {
             HtmlNodeKind::Element(node) => {
                 let key = self.reg.next_key();
 
-                buf.push_str("<");
+                buf.push('<');
                 buf.push_str(&node.tag);
                 for attr in &node.attributes {
-                    buf.push_str(" ");
+                    buf.push(' ');
                     buf.push_str(&attr.name);
                     buf.push_str("=\"");
                     html_escape::encode_double_quoted_attribute_to_string(&attr.value, buf);
-                    buf.push_str("\"");
+                    buf.push('"');
                 }
 
                 buf.push_str(" data-hk=");
                 buf.push_str(&key.to_string());
-                buf.push_str(">");
+                buf.push('>');
 
                 if VOID_ELEMENTS.contains(node.tag.as_ref()) {
                     assert!(
@@ -59,7 +59,7 @@ impl SsrRenderer {
 
                 buf.push_str("</");
                 buf.push_str(&node.tag);
-                buf.push_str(">");
+                buf.push('>');
             }
             HtmlNodeKind::Text(node) => {
                 buf.push_str("<!-->");
@@ -111,6 +111,7 @@ mod tests {
     use expect_test::{expect, Expect};
 
     use super::*;
+    use crate::tags::*;
 
     fn check(view: impl Into<View>, expected: Expect) {
         let actual = render_to_string(|| view.into());

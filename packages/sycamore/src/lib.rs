@@ -39,18 +39,14 @@
 extern crate self as sycamore;
 
 pub mod easing;
-pub mod flow;
 #[cfg(feature = "suspense")]
 pub mod futures;
 pub mod motion;
 #[cfg(feature = "suspense")]
 pub mod suspense;
-pub mod utils;
 #[cfg(feature = "web")]
 pub mod web;
 
-/* Re-export modules from sycamore-core */
-pub use sycamore_core::{component, generic_node, noderef, stable_id, view};
 /* Re-export of the sycamore-macro crate */
 pub use sycamore_macro::*;
 
@@ -79,23 +75,16 @@ pub use web::{render, render_in_scope, render_to};
 /// use sycamore::prelude::*;
 /// ```
 pub mod prelude {
+    pub use sycamore_core::{Component, Props};
+    #[cfg(feature = "web")]
     pub use sycamore_macro::*;
 
-    pub use crate::component::{AttributeValue, Attributes, Children};
-    pub use crate::flow::*;
-    pub use crate::generic_node::GenericNode;
-    pub use crate::noderef::{create_node_ref, NodeRef};
     pub use crate::reactive::*;
-    pub use crate::stable_id::create_unique_id;
-    pub use crate::view::View;
     #[cfg(feature = "web")]
-    pub use crate::web::on_mount;
-    #[cfg(all(feature = "web", feature = "hydrate"))]
-    pub use crate::web::HydrateNode;
-    #[cfg(feature = "ssr")]
-    pub use crate::web::SsrNode;
-    #[cfg(feature = "web")]
-    pub use crate::web::{DomNode, Html};
+    pub use crate::web::{
+        is_client, is_ssr, Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed,
+        SvgGlobalAttributes, View,
+    };
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.
@@ -103,7 +92,7 @@ pub mod prelude {
 pub mod rt {
     #[cfg(feature = "web")]
     pub use js_sys::Reflect;
-    pub use sycamore_core::*;
+    pub use sycamore_core::{component_scope, element_like_component_builder, Component, Props};
     pub use sycamore_web::*;
     #[cfg(feature = "web")]
     pub use wasm_bindgen::{intern, JsCast, JsValue};

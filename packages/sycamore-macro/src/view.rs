@@ -43,8 +43,8 @@ impl Codegen {
             },
             Node::Dyn(DynNode { value }) => {
                 quote! {
-                    ::std::convert::Into::<::sycamore::rt::View>::into(
-                        move || ::std::convert::Into::<::sycamore::rt::View>::into(&(#value))
+                    ::sycamore::rt::View::new_dyn(
+                        move || ::std::convert::Into::<::sycamore::rt::View>::into(#value)
                     )
                 }
             }

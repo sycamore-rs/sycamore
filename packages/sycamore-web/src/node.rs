@@ -71,6 +71,13 @@ impl<F: FnMut() -> U + 'static, U: Into<View> + Any + 'static> From<F> for View 
     }
 }
 
+impl View {
+    /// Create a new dynamic [`View`] from a function.
+    pub fn new_dyn<F: FnMut() -> U + 'static, U: Into<View> + Any + 'static>(f: F) -> Self {
+        f.into()
+    }
+}
+
 fn render_dynamic_view<U: Into<View>>(mut f: impl FnMut() -> U + 'static) -> View {
     let mut nodes: Vec<Rc<OnceCell<web_sys::Node>>> = vec![];
 

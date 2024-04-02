@@ -3,6 +3,9 @@
 //! The [`Suspense`] component is used to "suspend" execution and wait until async tasks are
 //! finished before rendering.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use futures::channel::oneshot;
 use futures::Future;
 use sycamore_futures::spawn_local_scoped;
@@ -17,11 +20,11 @@ struct SuspenseState {
 
 /// Props for [`Suspense`].
 #[derive(Props, Debug)]
-pub struct SuspenseProps<G: GenericNode> {
+pub struct SuspenseProps {
     /// The fallback [`View`] to display while the child nodes are being awaited.
     #[prop(default)]
-    fallback: View<G>,
-    children: Children<G>,
+    fallback: View,
+    children: Children,
 }
 
 /// `Suspense` lets you wait for `async` tasks to complete before rendering the UI. This is useful
@@ -53,17 +56,26 @@ pub struct SuspenseProps<G: GenericNode> {
 /// }
 /// ```
 #[component]
-pub fn Suspense<G: GenericNode>(props: SuspenseProps<G>) -> View<G> {
-    let v = create_signal(None);
+pub fn Suspense(props: SuspenseProps) -> View {
+    let SuspenseProps { fallback, children } = props;
+    let mut fallback = Some(fallback);
+
+    let show = create_signal(false);
+    let view = Rc::new(RefCell::new(None));
     // If the Suspense is nested under another Suspense, we want the other Suspense to await this
     // one as well.
-    suspense_scope(async move {
-        let res = await_suspense(async move { props.children.call() }).await;
-        v.set(Some(res));
+    suspense_scope({
+        let view = Rc::clone(&view);
+        async move {
+            let res = await_suspense(async move { children.call() }).await;
+
+            *view.borrow_mut() = Some(res);
+            show.set(true);
+        }
     });
 
     view! {
-        (if let Some(v) = v.get_clone() { v.clone() } else { props.fallback.clone() })
+        (if show.get() { view.take().unwrap() } else { fallback.take().unwrap() })
     }
 }
 
@@ -166,7 +178,7 @@ mod tests {
     #[tokio::test]
     async fn suspense() {
         #[component]
-        async fn Comp<G: Html>() -> View<G> {
+        async fn Comp() -> View {
             view! { "Hello Suspense!" }
         }
 
@@ -192,7 +204,7 @@ mod tests {
             let disposer = create_root(|| {
                 let trigger = create_signal(());
                 let transition = use_transition();
-                let _: View<SsrNode> = view! {
+                let _: View = view! {
                     Suspense(
                         children=Children::new(move || {
                             create_effect(move || {

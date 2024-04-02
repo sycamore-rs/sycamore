@@ -55,6 +55,7 @@ web-sys = { version = "0.3.69", features = [
 ] }
 
 [dev-dependencies]
+sycamore = { path = "../sycamore" }
 expect-test = "1.4.1"
 
 [features]

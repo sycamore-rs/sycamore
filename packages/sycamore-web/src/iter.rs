@@ -1,3 +1,8 @@
+//! Iteration utility components.
+//!
+//! Iteration can be either _"keyed"_ or _"non keyed"_ by using the [`Keyed`] or [`Indexed`] utility
+//! components respectively.
+
 #![allow(non_snake_case)]
 
 use std::cell::Cell;
@@ -24,7 +29,42 @@ where
     _phantom: std::marker::PhantomData<(T, K, U)>,
 }
 
-/// Render a list of items by key.
+/// Keyed iteration. Use this instead of directly rendering an array of [`View`]s.
+/// Using this will minimize re-renders instead of re-rendering every view node on every
+/// state change.
+///
+/// For non keyed iteration, see [`Indexed`].
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// #[derive(Clone, PartialEq)]
+/// struct AnimalInfo {
+///     // The name of the animal.
+///     name: &'static str,
+///     // An unique id to identify the animal.
+///     id: u32,
+/// }
+///
+/// # fn App<G: Html>() -> View<G> {
+/// let animals = create_signal(vec![
+///     AnimalInfo { name: "Dog", id: 1 },
+///     AnimalInfo { name: "Cat", id: 2 },
+///     AnimalInfo { name: "Fish", id: 3 },
+/// ]);
+/// view! {
+///     ul {
+///         Keyed(
+///             iterable=*animals,
+///             view=|animal| view! {
+///                 li { (animal.name) }
+///             },
+///             key=|animal| animal.id,
+///         )
+///     }
+/// }
+/// # }
+/// ```
 #[component]
 pub fn Keyed<T, K, U, List, F, Key>(props: KeyedProps<T, K, U, List, F, Key>) -> View
 where
@@ -103,7 +143,29 @@ where
     _phantom: std::marker::PhantomData<(T, U)>,
 }
 
-/// Render a list of items by index.
+/// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of
+/// [`View`]s. Using this will minimize re-renders instead of re-rendering every single
+/// node on every state change.
+///
+/// For keyed iteration, see [`Keyed`].
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// # fn App<G: Html>() -> View<G> {
+/// let fib = create_signal(vec![0, 1, 1, 2, 3, 5, 8]);
+/// view! {
+///     ul {
+///         Indexed(
+///             iterable=*fib,
+///             view=|x| view! {
+///                 li { (x) }
+///             },
+///         )
+///     }
+/// }
+/// # }
+/// ```
 #[component]
 pub fn Indexed<T, U, List, F>(props: IndexedProps<T, U, List, F>) -> View
 where
