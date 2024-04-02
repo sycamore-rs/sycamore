@@ -2,6 +2,8 @@
 
 use std::cell::Cell;
 
+use wasm_bindgen::JsValue;
+
 use super::*;
 
 /// Create an HTML element with `tag`.
@@ -1125,9 +1127,16 @@ pub trait SvgGlobalAttributes: AsHtmlElement + Sized {
 #[allow(private_bounds)]
 pub trait GlobalAttributes: AsHtmlElement + Sized {
     /// Set attribute `name` with `value`.
-    fn attr(mut self, name: &'static str, value: impl Into<MaybeDynString>) -> Self {
+    fn attr<T: AttributeValue>(mut self, name: &'static str, value: impl Into<T>) -> Self {
         let node = self.to_node();
         set_attribute(self.as_mut_element(), node, name, value.into());
+        self
+    }
+
+    /// Set JS property `name` with `value`.
+    fn prop(mut self, name: &'static str, value: impl Into<MaybeDynJsValue>) -> Self {
+        let node = self.to_node();
+        set_property(self.as_mut_element(), node, name, value.into());
         self
     }
 
@@ -1253,6 +1262,48 @@ impl AttributeValue for MaybeDynBool {
     }
 }
 
+/// Helper function for setting a dynamic property.
+fn set_property(
+    el: &mut HtmlElement,
+    node: Rc<OnceCell<web_sys::Node>>,
+    name: &'static str,
+    value: MaybeDynJsValue,
+) {
+    match value {
+        MaybeDyn::Static(value) => {
+            if is_client() {
+                todo!("set_property: {:?}", value);
+            }
+        }
+        MaybeDyn::Dynamic(mut value) => {
+            let mut initial = true;
+            let initial_value = Rc::new(RefCell::new(None));
+            create_effect({
+                let initial_value = initial_value.clone();
+                move || {
+                    if initial {
+                        *initial_value.borrow_mut() = Some(value());
+                        initial = false;
+                    } else if is_client() {
+                        let value = value();
+                        if let Some(node) = node.get() {
+                            // node.unchecked_ref::<web_sys::Element>()
+                            //     .set_attribute(name, &value)
+                            //     .unwrap();
+                            todo!("set property: {:?}", value);
+                        }
+                    }
+                }
+            });
+            // el.attributes.push(HtmlAttribute {
+            //     name: Cow::Borrowed(name),
+            //     value: initial_value.take().as_ref().unwrap().clone(),
+            // });
+            // TODO
+        }
+    }
+}
+
 /// Represents a value that can be either static or dynamic.
 pub enum MaybeDyn<T> {
     Static(T),
@@ -1268,29 +1319,43 @@ impl<T, F: FnMut() -> U + 'static, U: Into<T>> From<F> for MaybeDyn<T> {
 /// A possibly dynamic string value.
 pub type MaybeDynString = MaybeDyn<Cow<'static, str>>;
 
-impl From<&'static str> for MaybeDynString {
-    fn from(value: &'static str) -> Self {
-        Self::Static(value.into())
-    }
-}
-
-impl From<String> for MaybeDynString {
-    fn from(value: String) -> Self {
-        Self::Static(value.into())
-    }
-}
-
-impl From<Cow<'static, str>> for MaybeDynString {
-    fn from(value: Cow<'static, str>) -> Self {
-        Self::Static(value)
-    }
-}
-
 /// A possibly dynamic boolean value.
 pub type MaybeDynBool = MaybeDyn<bool>;
 
-impl From<bool> for MaybeDynBool {
-    fn from(value: bool) -> Self {
-        Self::Static(value)
-    }
+/// A possibly dynamic [`JsValue`].
+pub type MaybeDynJsValue = MaybeDyn<JsValue>;
+
+macro_rules! impl_from_maybe_dyn {
+    ($struct:ty, $($ty:ty),*) => {
+        $(
+            impl From<$ty> for $struct {
+                fn from(value: $ty) -> Self {
+                    Self::Static(value.into())
+                }
+            }
+        )*
+    };
 }
+
+impl_from_maybe_dyn!(MaybeDynString, &'static str, String, Cow<'static, str>);
+
+impl_from_maybe_dyn!(MaybeDynBool, bool);
+
+impl_from_maybe_dyn!(
+    MaybeDynJsValue,
+    JsValue,
+    String,
+    bool,
+    i8,
+    i16,
+    i32,
+    i64,
+    i128,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    f32,
+    f64
+);

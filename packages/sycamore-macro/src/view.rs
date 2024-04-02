@@ -105,24 +105,7 @@ impl Codegen {
                 "on" => quote! { .on(::sycamore::rt::events::#ident, #value) },
                 "prop" => {
                     let ident = ident.to_string();
-                    let value =
-                        quote! { ::std::convert::Into::<::sycamore::rt::JsValue>::into(#value) };
-
-                    // if is_dynamic {
-                    //     self.flagged_nodes_quoted.extend(quote! {
-                    //     let __el = ::std::clone::Clone::clone(&__flagged[#flag_counter]);
-                    //     ::sycamore::reactive::create_effect(move ||
-                    //         ::sycamore::generic_node::GenericNode::set_property(&__el, #ident,
-                    // &#value)     );
-                    // });
-                    // } else {
-                    //     self.flagged_nodes_quoted.extend(quote! {
-                    //     ::sycamore::generic_node::GenericNode::set_property(&__flagged[#
-                    // flag_counter], #ident, &#value); });
-                    // }
-                    //
-                    // (None, true)
-                    todo!("prop directive")
+                    quote! { .prop(#ident, #dyn_value) }
                 }
                 "bind" => {
                     #[derive(Clone, Copy)]

@@ -98,7 +98,7 @@ pub fn create_client_effect(f: impl FnMut() + 'static) {
 #[sycamore_macro::component]
 fn Test() -> View {
     sycamore_macro::view! {
-        div(class="test", on:click=|_| todo!()) {
+        div(class="test", on:click=|_| todo!(), prop:value=1) {
             "hello, world!"
             Test()
         }
