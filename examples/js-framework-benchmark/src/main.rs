@@ -42,10 +42,10 @@ static NOUNS: &[&str] = &[
 ];
 
 #[component(inline_props)]
-fn Button<G: Html>(id: &'static str, text: &'static str, callback: Box<dyn Fn()>) -> View<G> {
+fn Button(id: &'static str, text: &'static str, callback: Box<dyn Fn()>) -> View {
     view! {
         div(class="col-sm-6 smallpad") {
-            button(id=id, class="btn btn-primary btn-block", type="button", on:click=move |_| callback()) {
+            button(id=id, class="btn btn-primary btn-block", r#type="button", on:click=move |_| callback()) {
                 (text)
             }
         }
@@ -90,7 +90,7 @@ fn build_data(count: usize) -> Vec<RowData> {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let data = create_signal(Vec::<RowData>::new());
     let selected = create_signal(None::<usize>);
 
@@ -153,7 +153,7 @@ fn App<G: Html>() -> View<G> {
             table(class="table table-hover table-striped test-data") {
                 tbody {
                     Keyed(
-                        iterable=*data,
+                        list=*data,
                         view=move |row| {
                             let is_selected = create_selector(move || selected.get() == Some(row.id));
                             let handle_click = move |_| selected.set(Some(row.id));

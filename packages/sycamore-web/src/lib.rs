@@ -33,8 +33,6 @@ extern crate self as sycamore;
 mod rt {
     pub use sycamore_core::*;
     pub use sycamore_macro::*;
-
-    pub use crate::*;
 }
 
 /// A type alias for [`View`](self::view::View) with [`HtmlNode`] as the node type.
@@ -96,17 +94,5 @@ pub fn is_client() -> bool {
 pub fn create_client_effect(f: impl FnMut() + 'static) {
     if !is_ssr() {
         create_effect(f);
-    }
-}
-
-#[sycamore_macro::component]
-fn Test() -> View {
-    let checked = create_signal(true);
-    sycamore_macro::view! {
-        div(class="test", on:click=|_| todo!(), prop:value=1) {
-            "hello, world!"
-            button(bind:checked=checked)
-            Test()
-        }
     }
 }

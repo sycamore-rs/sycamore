@@ -39,6 +39,12 @@ impl<T> From<Vec<View<T>>> for View<T> {
     }
 }
 
+impl<T> From<Option<View<T>>> for View<T> {
+    fn from(node: Option<View<T>>) -> Self {
+        node.unwrap_or_default()
+    }
+}
+
 // Implement `From` for all tuples of types that implement `Into<View<U>>`.
 macro_rules! impl_from_tuple {
     ($($name:ident),*) => {

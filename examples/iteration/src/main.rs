@@ -7,7 +7,7 @@ struct Cat {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let items = create_signal(vec![
         Cat {
             id: "J---aiyznGQ",
@@ -27,7 +27,7 @@ fn App<G: Html>() -> View<G> {
         p { "The famous cats of YouTube" }
         ul {
             Indexed(
-                iterable=*items,
+                list=items,
                 view=|Cat { id, name }| view! {
                     li {
                         a(href=format!("https://www.youtube.com/watch?v={id}")) {

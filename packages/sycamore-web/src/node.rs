@@ -41,22 +41,38 @@ pub(crate) enum HtmlNodeKind {
     Marker,
 }
 
-impl From<&'static str> for View {
-    fn from(t: &'static str) -> Self {
-        View::node(HtmlNode::text(
-            HtmlText { text: t.into() },
-            Default::default(),
-        ))
+macro_rules! impl_view_from {
+    ($($ty:ty),*) => {
+        $(
+            impl From<$ty> for View {
+                fn from(t: $ty) -> Self {
+                    View::node(HtmlNode::text(
+                        HtmlText { text: t.into() },
+                        Default::default(),
+                    ))
+                }
+            }
+        )*
     }
 }
-impl From<String> for View {
-    fn from(t: String) -> Self {
-        View::node(HtmlNode::text(
-            HtmlText { text: t.into() },
-            Default::default(),
-        ))
+
+macro_rules! impl_view_from_to_string {
+    ($($ty:ty),*) => {
+        $(
+            impl From<$ty> for View {
+                fn from(t: $ty) -> Self {
+                    View::node(HtmlNode::text(
+                        HtmlText { text: t.to_string().into() },
+                        Default::default(),
+                    ))
+                }
+            }
+        )*
     }
 }
+
+impl_view_from!(&'static str, String);
+impl_view_from_to_string!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64);
 
 impl<F: FnMut() -> U + 'static, U: Into<View> + Any + 'static> From<F> for View {
     fn from(mut f: F) -> Self {

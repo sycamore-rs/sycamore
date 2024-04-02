@@ -25,7 +25,8 @@ where
 {
     list: List,
     view: F,
-    key_fn: Key,
+    key: Key,
+    #[prop(default)]
     _phantom: std::marker::PhantomData<(T, K, U)>,
 }
 
@@ -76,7 +77,7 @@ where
     Key: Fn(&T) -> K + 'static,
 {
     let KeyedProps {
-        list, view, key_fn, ..
+        list, view, key, ..
     } = props;
 
     let end_marker = HtmlNode::marker(Default::default());
@@ -98,7 +99,7 @@ where
                 node
             }
         },
-        key_fn,
+        key,
     );
     let mut initial_nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
     let mut prev_nodes: Vec<web_sys::Node> = Vec::new();
@@ -140,6 +141,7 @@ where
 {
     list: List,
     view: F,
+    #[prop(default)]
     _phantom: std::marker::PhantomData<(T, U)>,
 }
 

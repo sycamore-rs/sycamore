@@ -93,6 +93,7 @@ pub mod rt {
     #[cfg(feature = "web")]
     pub use js_sys::Reflect;
     pub use sycamore_core::{component_scope, element_like_component_builder, Component, Props};
+    pub use sycamore_macro::*;
     pub use sycamore_web::*;
     #[cfg(feature = "web")]
     pub use wasm_bindgen::{intern, JsCast, JsValue};

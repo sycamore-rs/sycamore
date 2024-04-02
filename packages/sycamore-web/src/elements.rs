@@ -1129,22 +1129,14 @@ pub trait SvgGlobalAttributes: AsHtmlElement + Sized {
 #[allow(private_bounds)]
 pub trait GlobalAttributes: AsHtmlElement + Sized {
     /// Set attribute `name` with `value`.
-    fn attr<T: AttributeValue>(
-        mut self,
-        name: &'static str,
-        value: impl Into<MaybeDynString>,
-    ) -> Self {
+    fn attr(mut self, name: &'static str, value: impl Into<MaybeDynString>) -> Self {
         let node = self.to_node();
         set_attribute(self.as_mut_element(), node, name, value.into());
         self
     }
 
     /// Set attribute `name` with `value`.
-    fn bool_attr<T: AttributeValue>(
-        mut self,
-        name: &'static str,
-        value: impl Into<MaybeDynBool>,
-    ) -> Self {
+    fn bool_attr(mut self, name: &'static str, value: impl Into<MaybeDynBool>) -> Self {
         let node = self.to_node();
         set_attribute(self.as_mut_element(), node, name, value.into());
         self
@@ -1379,11 +1371,13 @@ impl_from_maybe_dyn!(
     i32,
     i64,
     i128,
+    isize,
     u8,
     u16,
     u32,
     u64,
     u128,
+    usize,
     f32,
     f64
 );

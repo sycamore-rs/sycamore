@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
-use sycamore::web::html::ev;
 use wasm_bindgen::prelude::*;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
 
@@ -141,25 +140,23 @@ fn base_pathname() -> String {
 
 /// Props for [`Router`].
 #[derive(Props, Debug)]
-pub struct RouterProps<R, F, I, G>
+pub struct RouterProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     view: F,
     integration: I,
     #[prop(default, setter(skip))]
-    _phantom: PhantomData<(R, G)>,
+    _phantom: PhantomData<R>,
 }
 
-impl<R, F, I, G> RouterProps<R, F, I, G>
+impl<R, F, I> RouterProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     /// Create a new [`RouterProps`].
     pub fn new(integration: I, view: F) -> Self {
@@ -173,24 +170,22 @@ where
 
 /// Props for [`RouterBase`].
 #[derive(Props, Debug)]
-pub struct RouterBaseProps<R, F, I, G>
+pub struct RouterBaseProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     view: F,
     integration: I,
     route: R,
 }
 
-impl<R, F, I, G> RouterBaseProps<R, F, I, G>
+impl<R, F, I> RouterBaseProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     /// Create a new [`RouterBaseProps`].
     pub fn new(integration: I, view: F, route: R) -> Self {
@@ -205,10 +200,10 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<G: Html, R, F, I>(props: RouterProps<R, F, I, G>) -> View<G>
+pub fn Router<R, F, I>(props: RouterProps<R, F, I>) -> View
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration + 'static,
 {
     view! {
@@ -226,10 +221,10 @@ where
 ///
 /// This is a very specific use-case, and you probably actually want [`Router`]!
 #[component]
-pub fn RouterBase<G: Html, R, F, I>(props: RouterBaseProps<R, F, I, G>) -> View<G>
+pub fn RouterBase<R, F, I>(props: RouterBaseProps<R, F, I>) -> View
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration + 'static,
 {
     let RouterBaseProps {
@@ -284,21 +279,19 @@ where
 
 /// Props for [`StaticRouter`].
 #[derive(Props, Debug)]
-pub struct StaticRouterProps<R, F, G>
+pub struct StaticRouterProps<R, F>
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
-    G: GenericNode,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     view: F,
     route: R,
 }
 
-impl<R, F, G> StaticRouterProps<R, F, G>
+impl<R, F> StaticRouterProps<R, F>
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
-    G: GenericNode,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     /// Create a new [`StaticRouterProps`].
     pub fn new(route: R, view: F) -> Self {
@@ -311,10 +304,10 @@ where
 /// This is useful for SSR where we want the HTML to be rendered instantly instead of waiting for
 /// the route preload to finish loading.
 #[component]
-pub fn StaticRouter<G: Html, R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
+pub fn StaticRouter<R, F>(props: StaticRouterProps<R, F>) -> View
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     view! {
         StaticRouterBase(view=props.view, route=props.route)
@@ -324,10 +317,10 @@ where
 /// Implementation detail for [`StaticRouter`]. The extra component is needed to make sure hydration
 /// keys are consistent.
 #[component]
-fn StaticRouterBase<G: Html, R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
+fn StaticRouterBase<R, F>(props: StaticRouterProps<R, F>) -> View
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     let StaticRouterProps { view, route } = props;
 
@@ -414,7 +407,7 @@ mod tests {
         }
 
         #[component(inline_props)]
-        fn Comp<G: Html>(path: String) -> View<G> {
+        fn Comp(path: String) -> View {
             let route = Routes::match_route(
                 // The user would never use this directly, so they'd never have to do this trick
                 // It doesn't matter which variant we provide here, it just needs to conform to
