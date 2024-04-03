@@ -13,7 +13,7 @@ mod view;
 
 use std::any::{Any, TypeId};
 use std::borrow::Cow;
-use std::cell::{OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 use std::rc::Rc;
 
 #[cfg(feature = "dom")]
@@ -26,7 +26,7 @@ pub use portal::*;
 #[cfg(feature = "ssr")]
 pub use ssr::*;
 use sycamore_reactive::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::*;
 
 /// We add this to make the macros from `sycamore-macro` work properly.
 extern crate self as sycamore;
@@ -95,4 +95,40 @@ pub fn create_client_effect(f: impl FnMut() + 'static) {
     if !is_ssr() {
         create_effect(f);
     }
+}
+
+/// Queue up a callback to be executed when the component is mounted.
+///
+/// If not on `wasm32` target, does nothing.
+///
+/// # Potential Pitfalls
+///
+/// If called inside an async-component, the callback will be called after the next suspension
+/// point (when there is an `.await`).
+pub fn on_mount(f: impl FnOnce() + 'static) {
+    if cfg!(target_arch = "wasm32") {
+        let is_alive = Rc::new(Cell::new(true));
+        on_cleanup({
+            let is_alive = Rc::clone(&is_alive);
+            move || is_alive.set(false)
+        });
+
+        let scope = use_current_scope();
+        let cb = move || {
+            if is_alive.get() {
+                scope.run_in(f);
+            }
+        };
+        queue_microtask(cb);
+    }
+}
+
+/// Alias for `queueMicrotask`.
+pub fn queue_microtask(f: impl FnOnce() + 'static) {
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(js_name = "queueMicrotask")]
+        fn queue_microtask_js(f: &wasm_bindgen::JsValue);
+    }
+    queue_microtask_js(&Closure::once_into_js(f));
 }
