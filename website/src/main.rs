@@ -64,7 +64,7 @@ async fn get_sidebar(version: Option<&str>) -> SidebarData {
     }
 }
 
-fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
+fn switch(route: ReadSignal<Routes>) -> View {
     let cached_sidebar_data = create_signal(None::<(Option<String>, SidebarData)>);
     provide_context(cached_sidebar_data);
     if cached_sidebar_data.with(|x| x.is_none() || x.as_ref().unwrap().0.is_some()) {
@@ -74,7 +74,7 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
     }
 
     let fetch_docs_data = move |url| create_resource(docs_preload(url));
-    let view = create_memo(on(route, move || match route.get_clone() {
+    let view = move || match route.get_clone() {
         Routes::Index => view! {
             div(class="container mx-auto") {
                 index::Index {}
@@ -151,20 +151,20 @@ fn switch<G: Html>(route: ReadSignal<Routes>) -> View<G> {
         Routes::NotFound => view! {
             "404 Not Found"
         },
-    }));
+    };
 
     view! {
         div(class="font-body pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors"
         ) {
             header::Header {}
-            (view.get_clone())
+            (view)
         }
     }
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let local_storage = web_sys::window().unwrap().local_storage().unwrap();
     // Get dark mode from media query.
     let dark_mode_mq = web_sys::window()

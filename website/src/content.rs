@@ -18,7 +18,7 @@ pub struct Outline {
 }
 
 #[component(inline_props)]
-pub fn OutlineView<G: Html>(outline: Vec<Outline>) -> View<G> {
+pub fn OutlineView(outline: Vec<Outline>) -> View {
     web_sys::window()
         .unwrap()
         .document()
@@ -28,7 +28,7 @@ pub fn OutlineView<G: Html>(outline: Vec<Outline>) -> View<G> {
     view! {
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {
             Indexed(
-                iterable=*create_signal(outline),
+                list=create_signal(outline),
                 view=|item| {
                     let Outline { name, children } = item;
                     let nested = children.iter().map(|x| {
@@ -44,8 +44,7 @@ pub fn OutlineView<G: Html>(outline: Vec<Outline>) -> View<G> {
                                 }
                             }
                         }
-                    }).collect();
-                    let nested = View::new_fragment(nested);
+                    }).collect::<Vec<_>>();
 
                     let href = format!("#{}", name.trim().to_lowercase().replace(' ', "-"));
 
@@ -76,12 +75,12 @@ pub struct ContentProps {
 }
 
 #[component]
-pub fn Content<G: Html>(
+pub fn Content(
     ContentProps {
         data: MarkdownPage { html, outline },
         sidebar,
     }: ContentProps,
-) -> View<G> {
+) -> View {
     let sidebar = create_signal(sidebar);
     let show_sidebar = sidebar.get_clone().is_some();
 
@@ -130,7 +129,7 @@ pub fn Content<G: Html>(
                     } else {
                         view! { }
                     })
-                    div(dangerously_set_inner_html=html.clone())
+                    div(dangerously_set_inner_html=html)
                 }
             }
             div(class="flex-none hidden lg:block lg:w-44 fixed right-0 top-0 pt-12 max-h-full overflow-y-auto") {

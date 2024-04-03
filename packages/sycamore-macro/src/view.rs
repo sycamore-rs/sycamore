@@ -42,10 +42,17 @@ impl Codegen {
                 ::std::convert::Into::<::sycamore::rt::View>::into(#value)
             },
             Node::Dyn(DynNode { value }) => {
-                quote! {
-                    ::sycamore::rt::View::new_dyn(
-                        move || ::std::convert::Into::<::sycamore::rt::View>::into(#value)
-                    )
+                let is_dynamic = !matches!(value, Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_));
+                if is_dynamic {
+                    quote! {
+                        ::sycamore::rt::View::new_dyn(
+                            move || ::std::convert::Into::<::sycamore::rt::View>::into(#value)
+                        )
+                    }
+                } else {
+                    quote! {
+                        ::std::convert::Into::<::sycamore::rt::View>::into(#value)
+                    }
                 }
             }
         }
@@ -85,7 +92,7 @@ impl Codegen {
 
     pub fn attribute(&self, attr: &Prop) -> TokenStream {
         let value = &attr.value;
-        let is_dynamic = !matches!(value, Expr::Lit(_) | Expr::Closure(_));
+        let is_dynamic = !matches!(value, Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_));
         let dyn_value = if is_dynamic {
             quote! { move || #value }
         } else {

@@ -40,10 +40,7 @@ const VERSIONS: &[(&str, VersionedDocsLink)] = &[
 ];
 
 #[component(inline_props)]
-fn VersionedDocsLink<G: Html>(
-    name: &'static str,
-    versioned_docs_link: VersionedDocsLink,
-) -> View<G> {
+fn VersionedDocsLink(name: &'static str, versioned_docs_link: VersionedDocsLink) -> View {
     match versioned_docs_link {
         VersionedDocsLink::Some(link) => view! {
             a(
@@ -84,14 +81,14 @@ fn VersionedDocsLink<G: Html>(
 }
 
 #[component]
-pub fn Versions<G: Html>() -> View<G> {
+pub fn Versions() -> View {
     web_sys::window()
         .unwrap()
         .document()
         .unwrap()
         .set_title("Versions - Sycamore");
 
-    let versions = VERSIONS
+    let versions: View = VERSIONS
         .iter()
         .copied()
         .map(|(name, versioned_docs_link)| {
@@ -104,8 +101,7 @@ pub fn Versions<G: Html>() -> View<G> {
                 }
             }
         })
-        .collect();
-    let versions = View::new_fragment(versions);
+        .collect::<Vec<_>>().into();
 
     view! {
         div(class="container mx-auto") {
