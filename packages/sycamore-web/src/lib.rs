@@ -42,8 +42,8 @@ pub mod events {
         AnimationEvent, BeforeUnloadEvent, CompositionEvent, DeviceMotionEvent,
         DeviceOrientationEvent, DragEvent, ErrorEvent, Event, FocusEvent, GamepadEvent,
         HashChangeEvent, KeyboardEvent, MessageEvent, MouseEvent, PageTransitionEvent,
-        PointerEvent, PopStateEvent, ProgressEvent, StorageEvent, TouchEvent, TransitionEvent,
-        UiEvent, WheelEvent,
+        PointerEvent, PopStateEvent, ProgressEvent, StorageEvent, SubmitEvent, TouchEvent,
+        TransitionEvent, UiEvent, WheelEvent,
     };
 }
 
