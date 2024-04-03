@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
 use uuid::Uuid;
+use wasm_bindgen::prelude::*;
 use web_sys::{HtmlInputElement, KeyboardEvent};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -227,7 +228,7 @@ pub fn Item(todo: Signal<Todo>) -> View {
     let handle_dblclick = move |_| {
         is_editing.set(true);
         input_ref
-            .get::<DomNode>()
+            .get()
             .unchecked_into::<HtmlInputElement>()
             .focus()
             .unwrap();

@@ -56,6 +56,7 @@ impl DomRenderer {
                         closure.as_ref().unchecked_ref(),
                     )
                     .unwrap();
+                    // TODO: manage Closure in reactive scope
                 }
                 el.into()
             }

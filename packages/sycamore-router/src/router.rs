@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
+use sycamore::web::on_mount;
 use wasm_bindgen::prelude::*;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
 
@@ -263,17 +264,17 @@ where
     }));
     let route_signal = create_memo(move || pathname.with(|pathname| route.match_path(pathname)));
     let view = view(route_signal);
-    // Delegate click events from child <a> tags.
-    if let Some(node) = view.as_node() {
-        node.event(ev::click, integration.click_handler());
-    } else {
-        let view = view.clone();
-        create_effect(move || {
-            for node in view.clone().flatten() {
-                node.event(ev::click, integration.click_handler());
-            }
-        });
-    }
+    let nodes = view.as_web_sys();
+    on_mount(move || {
+        for node in nodes {
+            let node = node.get().unwrap_throw();
+            let handler: Closure<dyn FnMut(web_sys::MouseEvent)> =
+                Closure::new(integration.click_handler());
+            node.add_event_listener_with_callback("click", handler.into_js_value().unchecked_ref())
+                .unwrap(); // TODO: manage in scope
+        }
+        // TODO: this does not work for dynamic views
+    });
     view
 }
 

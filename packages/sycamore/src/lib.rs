@@ -82,8 +82,8 @@ pub mod prelude {
     pub use crate::reactive::*;
     #[cfg(feature = "web")]
     pub use crate::web::{
-        is_client, is_ssr, Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed,
-        SvgGlobalAttributes, View,
+        create_node_ref, is_client, is_ssr, Children, GlobalAttributes, HtmlGlobalAttributes,
+        Indexed, Keyed, NodeRef, SvgGlobalAttributes, View,
     };
 }
 
