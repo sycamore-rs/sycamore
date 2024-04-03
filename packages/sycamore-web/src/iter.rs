@@ -5,7 +5,6 @@
 
 #![allow(non_snake_case)]
 
-use std::cell::Cell;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::Deref;

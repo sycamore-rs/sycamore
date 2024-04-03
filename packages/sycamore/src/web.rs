@@ -13,6 +13,7 @@ use crate::prelude::*;
 /// _This API requires the following crate features to be activated: `suspense`, `ssr`_
 #[cfg(all(feature = "ssr", feature = "suspense"))]
 pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View + 'static) -> String {
+    let _ = view;
     // use std::cell::RefCell;
     // use std::rc::Rc;
     //

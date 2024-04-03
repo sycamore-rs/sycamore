@@ -1,5 +1,4 @@
-use wasm_bindgen::closure::Closure;
-use wasm_bindgen::{intern, JsValue};
+use wasm_bindgen::intern;
 
 use crate::*;
 

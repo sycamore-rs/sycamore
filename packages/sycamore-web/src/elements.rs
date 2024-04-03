@@ -1,10 +1,6 @@
 #![allow(non_snake_case)]
 
-use std::cell::Cell;
-
-use wasm_bindgen::JsValue;
-
-use super::*;
+use crate::*;
 
 /// Create an HTML element with `tag`.
 pub(crate) fn element(tag: &'static str) -> HtmlElement {

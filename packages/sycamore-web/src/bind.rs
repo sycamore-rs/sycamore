@@ -1,8 +1,6 @@
 //! Definition for bind-able attributes/properties.
 
-use wasm_bindgen::JsValue;
-
-use self::events::EventDescriptor;
+use crate::events::EventDescriptor;
 use crate::*;
 
 /// Description for a bind-able attribute/property.
