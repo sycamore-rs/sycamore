@@ -22,7 +22,7 @@ use crate::*;
 ///     }
 /// }
 /// ```
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub struct NodeRef(Signal<Rc<OnceCell<web_sys::Node>>>);
 
 impl NodeRef {
@@ -114,13 +114,6 @@ impl fmt::Debug for NodeRef {
         f.debug_tuple("NodeRef").field(&self.0.get_clone()).finish()
     }
 }
-
-impl Clone for NodeRef {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl Copy for NodeRef {}
 
 /* Hook implementation */
 

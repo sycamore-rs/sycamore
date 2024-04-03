@@ -340,7 +340,7 @@ pub fn List() -> View {
 
             ul(class="todo-list") {
                 Keyed(
-                    iterable=filtered_todos,
+                    list=filtered_todos,
                     view=|todo| view! {
                         Item(todo=todo)
                     },

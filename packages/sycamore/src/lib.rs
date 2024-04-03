@@ -90,13 +90,14 @@ pub mod prelude {
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.
 #[doc(hidden)]
 pub mod rt {
-    #[cfg(feature = "web")]
-    pub use js_sys::Reflect;
     pub use sycamore_core::{component_scope, element_like_component_builder, Component, Props};
     pub use sycamore_macro::*;
+    pub use sycamore_reactive::*;
+    #[cfg(feature = "web")]
     pub use sycamore_web::*;
     #[cfg(feature = "web")]
-    pub use wasm_bindgen::{intern, JsCast, JsValue};
-    #[cfg(feature = "web")]
     pub use web_sys::Event;
+
+    #[cfg(feature = "suspense")]
+    pub use crate::suspense::*;
 }

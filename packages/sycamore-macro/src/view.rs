@@ -104,14 +104,12 @@ impl Codegen {
                     let ident = ident.to_string();
                     quote! { .prop(#ident, #dyn_value) }
                 }
-                "bind" => {
-                    quote! { .bind(::sycamore::rt::bind::#ident, #value) }
-                }
+                "bind" => quote! { .bind(::sycamore::rt::bind::#ident, #value) },
                 _ => syn::Error::new(dir.span(), format!("unknown directive `{dir}`"))
                     .to_compile_error(),
             },
-            PropType::Ref => todo!(),
-            PropType::Spread => todo!(),
+            PropType::Ref => quote! { .r#ref(#value) },
+            PropType::Spread => todo!("spread not yet supported"),
         }
     }
 

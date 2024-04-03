@@ -5,7 +5,7 @@ use sycamore::motion::create_tweened_signal;
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let rotate = create_tweened_signal(0f64, Duration::from_millis(800), easing::quad_inout);
 
     view! {

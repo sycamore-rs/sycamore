@@ -206,12 +206,12 @@ impl ToTokens for ComponentFn {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = ::sycamore::reactive::create_signal(::sycamore::view::View::empty());
-                    let __view = ::sycamore::view::View::new_dyn(move || __dyn.get_clone());
+                    let __dyn = ::sycamore::rt::create_signal(::std::rc::Rc::new(::std::cell::RefCell::new(::sycamore::rt::View::new())));
+                    let __view = ::sycamore::rt::View::new_dyn(move || __dyn.get_clone().take());
 
-                    ::sycamore::suspense::suspense_scope(async move {
+                    ::sycamore::rt::suspense_scope(async move {
                         let __async_view = #inner_ident(#(#args),*).await;
-                        __dyn.set(__async_view);
+                        __dyn.set(::std::rc::Rc::new(::std::cell::RefCell::new(__async_view)));
                     });
 
                     __view

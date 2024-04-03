@@ -713,7 +713,9 @@ pub mod tags {
     }
 
     impl_svg_elements! {
-        svg {},
+        svg {
+            xmlns: MaybeDynString,
+        },
         svg_a("a") {},
         animate {},
         animateMotion {},
@@ -1144,8 +1146,10 @@ pub trait GlobalAttributes: AsHtmlElement + Sized {
 
     /// Set JS property `name` with `value`.
     fn prop(mut self, name: &'static str, value: impl Into<MaybeDynJsValue>) -> Self {
-        let node = self.to_node();
-        set_attribute(self.as_mut_element(), node, name, value.into());
+        if is_client() {
+            let node = self.to_node();
+            set_attribute(self.as_mut_element(), node, name, value.into());
+        }
         self
     }
 
@@ -1169,7 +1173,11 @@ pub trait GlobalAttributes: AsHtmlElement + Sized {
             <T::Event as events::EventDescriptor>::NAME,
             Box::new(move |ev| {
                 scope.run_in(|| {
-                    let value = js_sys::Reflect::get(&ev, &T::TARGET_PROPERTY.into()).unwrap();
+                    let value = js_sys::Reflect::get(
+                        &ev.current_target().unwrap(),
+                        &T::TARGET_PROPERTY.into(),
+                    )
+                    .unwrap();
                     signal
                         .set(T::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
                 })
@@ -1187,6 +1195,11 @@ pub trait GlobalAttributes: AsHtmlElement + Sized {
     /// Set the children of an element.
     fn children(mut self, children: impl Into<View>) -> Self {
         self.as_mut_element().children.extend(children.into().nodes);
+        self
+    }
+
+    fn r#ref(self, noderef: NodeRef) -> Self {
+        noderef.set(self.to_node());
         self
     }
 }
@@ -1290,12 +1303,10 @@ impl AttributeValue for MaybeDynJsValue {
     fn set_self(self, el: &mut HtmlElement, node: Rc<OnceCell<web_sys::Node>>, name: &'static str) {
         match self {
             MaybeDyn::Static(value) => {
-                if is_client() {
-                    el.props.push(HtmlProp {
-                        name: Cow::Borrowed(name),
-                        value,
-                    });
-                }
+                el.props.push(HtmlProp {
+                    name: Cow::Borrowed(name),
+                    value,
+                });
             }
             MaybeDyn::Dynamic(mut value) => {
                 let mut initial = true;
