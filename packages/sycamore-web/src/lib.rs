@@ -1,3 +1,18 @@
+//! # `sycamore-web`
+//!
+//! Web rendering backend for [`sycamore`](https://docs.rs/sycamore). This is already re-exported
+//! in the main `sycamore` crate, so you should rarely need to use this crate directly.
+//!
+//! ## Feature flags
+//!
+//! - `dom` (_default_) - Enables the DOM rendering backend.
+//!
+//! - `ssr` - Enables server-side rendering (SSR) support.
+//!
+//! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
+//!   improves performance at a slight cost in binary size. If you want to minimize the size of the
+//!   resulting `.wasm` binary, you might want to disable this.
+
 pub mod bind;
 #[cfg(feature = "dom")]
 mod dom;

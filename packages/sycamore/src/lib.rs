@@ -7,16 +7,18 @@
 //!
 //! ## Feature Flags
 //!
-//! - `hydrate` - Enables client-side hydration support.
+//! - `dom` (_default_) - Enables the DOM rendering backend.
+//!
+//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
+//!   `serde`.
+//!
+//! - `ssr` - Enables server-side rendering (SSR) support.
 //!
 //! - `suspense` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
 //!   reactive scope into an `async` function.
 //!
-//! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering /
-//!   Pre-rendering).
-//!
-//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
-//!   `serde`.
+//! - `nightly` - Enables nightly-only features. This makes it slightly more ergonomic to use
+//!   signals.
 //!
 //! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
 //!   improves performance at a slight cost in binary size. If you want to minimize the size of the
@@ -61,10 +63,8 @@ pub mod reactive {
 pub use web::render_to_string;
 #[cfg(all(feature = "ssr", feature = "suspense"))]
 pub use web::render_to_string_await_suspense;
-#[cfg(all(feature = "web", feature = "hydrate"))]
-pub use web::{hydrate, hydrate_in_scope, hydrate_to};
 #[cfg(feature = "web")]
-pub use web::{render, render_in_scope, render_to};
+pub use web::{hydrate, hydrate_in_scope, hydrate_to, render, render_in_scope, render_to};
 
 /// The sycamore prelude.
 ///

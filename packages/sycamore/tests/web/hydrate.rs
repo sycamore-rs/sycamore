@@ -8,7 +8,7 @@ fn check(actual: &str, expect: Expect) {
 
 mod hello_world {
     use super::*;
-    fn v<G: Html>() -> View<G> {
+    fn v() -> View {
         view! { p { "Hello World!" } }
     }
     #[test]
@@ -33,7 +33,7 @@ mod hello_world {
 
 mod hydrate_recursive {
     use super::*;
-    fn v<G: Html>() -> View<G> {
+    fn v() -> View {
         view! { div { p { "Nested" } } }
     }
     #[test]
@@ -58,7 +58,7 @@ mod hydrate_recursive {
 
 mod multiple_nodes_at_same_depth {
     use super::*;
-    fn v<G: Html>() -> View<G> {
+    fn v() -> View {
         view! { div { p { "First" } p { "Second" } } }
     }
     #[test]
@@ -83,7 +83,7 @@ mod multiple_nodes_at_same_depth {
 
 mod top_level_fragment {
     use super::*;
-    fn v<G: Html>() -> View<G> {
+    fn v() -> View {
         view! { p { "First" } p { "Second" } }
     }
     #[test]
@@ -108,7 +108,7 @@ mod top_level_fragment {
 
 mod dynamic {
     use super::*;
-    fn v<G: Html>(state: ReadSignal<i32>) -> View<G> {
+    fn v(state: ReadSignal<i32>) -> View {
         view! { p { (state.get()) } }
     }
     #[test]
@@ -143,7 +143,7 @@ mod dynamic {
 
 mod dynamic_with_siblings {
     use super::*;
-    fn v<G: Html>(state: ReadSignal<i32>) -> View<G> {
+    fn v(state: ReadSignal<i32>) -> View {
         view! { p { "Value: " (state.get()) "!" } }
     }
     #[test]
@@ -176,7 +176,7 @@ mod dynamic_with_siblings {
 
 mod dynamic_template {
     use super::*;
-    fn v<G: Html>(state: ReadSignal<View<G>>) -> View<G> {
+    fn v(state: ReadSignal<View>) -> View<G> {
         view! { p { "before" (state.get_clone()) "after" } }
     }
     #[test]
@@ -209,7 +209,7 @@ mod dynamic_template {
 
 mod top_level_dynamic_with_siblings {
     use super::*;
-    fn v<G: Html>(state: ReadSignal<i32>) -> View<G> {
+    fn v(state: ReadSignal<i32>) -> View {
         view! { "Value: " (state.get()) "!" }
     }
     #[test]
