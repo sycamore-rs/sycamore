@@ -17,8 +17,7 @@ impl DomRenderer {
     }
 
     pub fn render_node_detatched(&self, node: HtmlNode) -> web_sys::Node {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
+        let document = document();
         let raw_node: web_sys::Node = match node.kind {
             HtmlNodeKind::Element(node) => {
                 let tag = intern(node.tag.as_ref());
@@ -202,10 +201,7 @@ impl DomHydrateRenderer {
 ///
 /// _This API requires the following crate features to be activated: `dom`_
 pub fn render(view: impl FnOnce() -> View) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-
-    render_to(view, &document.body().unwrap());
+    render_to(view, &document().body().unwrap());
 }
 
 /// Render a [`View`] under a `parent` node.
@@ -235,10 +231,7 @@ pub fn render_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 ///
 /// For rendering without hydration, use [`render`](super::render) instead.
 pub fn hydrate(view: impl FnOnce() -> View) {
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-
-    hydrate_to(view, &document.body().unwrap());
+    hydrate_to(view, &document().body().unwrap());
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side

@@ -4,6 +4,7 @@ use once_cell::sync::Lazy;
 
 use crate::*;
 
+/// A list of all the void HTML elements. We need this to know how to render them to a string.
 static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     [
         "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
@@ -13,6 +14,7 @@ static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     .collect()
 });
 
+/// Renderer for server-side rendering (SSR).
 #[derive(Default, Debug, Clone)]
 pub(crate) struct SsrRenderer {
     reg: HydrationRegistry,

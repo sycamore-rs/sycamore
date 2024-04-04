@@ -8,15 +8,11 @@ use crate::*;
 pub fn Portal<'a, T: Into<View> + Default>(selector: &'a str, children: T) -> View {
     web_sys::console::log_1(&format!("is_client: {}", is_client()).into());
     if is_client() {
-        let parent = web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .query_selector(selector)
-            .unwrap()
-            .expect("could not find element matching selector");
-        let children = children.into();
+        let Some(parent) = document().query_selector(selector).unwrap() else {
+            panic!("element matching selector `{selector}` not found");
+        };
 
+        let children = children.into();
         let nodes = children.as_web_sys();
 
         DomRenderer.render(&parent, children);
