@@ -46,7 +46,7 @@ where
 ///     id: u32,
 /// }
 ///
-/// # fn App<G: Html>() -> View<G> {
+/// # fn App() -> View {
 /// let animals = create_signal(vec![
 ///     AnimalInfo { name: "Dog", id: 1 },
 ///     AnimalInfo { name: "Cat", id: 2 },
@@ -55,7 +55,7 @@ where
 /// view! {
 ///     ul {
 ///         Keyed(
-///             iterable=*animals,
+///             list=animals,
 ///             view=|animal| view! {
 ///                 li { (animal.name) }
 ///             },
@@ -153,12 +153,12 @@ where
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
-/// # fn App<G: Html>() -> View<G> {
+/// # fn App() -> View {
 /// let fib = create_signal(vec![0, 1, 1, 2, 3, 5, 8]);
 /// view! {
 ///     ul {
 ///         Indexed(
-///             iterable=*fib,
+///             list=fib,
 ///             view=|x| view! {
 ///                 li { (x) }
 ///             },
