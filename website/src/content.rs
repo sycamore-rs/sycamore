@@ -19,11 +19,7 @@ pub struct Outline {
 
 #[component(inline_props)]
 pub fn OutlineView(outline: Vec<Outline>) -> View {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("Sycamore"); // TODO: get title from markdown file
+    document().set_title("Sycamore"); // TODO: get title from markdown file
 
     view! {
         ul(class="mt-4 text-sm pl-2 border-l border-gray-400 dark:border-gray-500 text-gray-600 dark:text-gray-300") {

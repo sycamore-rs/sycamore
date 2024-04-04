@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
-use sycamore::web::on_mount;
 use wasm_bindgen::prelude::*;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
 
@@ -46,17 +45,12 @@ impl HistoryIntegration {
 
 impl Integration for HistoryIntegration {
     fn current_pathname(&self) -> String {
-        web_sys::window()
-            .unwrap_throw()
-            .location()
-            .pathname()
-            .unwrap_throw()
+        window().location().pathname().unwrap_throw()
     }
 
     fn on_popstate(&self, f: Box<dyn FnMut()>) {
         let closure = Closure::wrap(f);
-        web_sys::window()
-            .unwrap_throw()
+        window()
             .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())
             .unwrap_throw();
         closure.forget();
@@ -71,7 +65,7 @@ impl Integration for HistoryIntegration {
                 .closest("a[href]")
                 .unwrap_throw()
             {
-                let location = web_sys::window().unwrap_throw().location();
+                let location = window().location();
 
                 let a = a.unchecked_into::<HtmlAnchorElement>();
 
@@ -100,12 +94,11 @@ impl Integration for HistoryIntegration {
                             pathname.set(path.to_string());
 
                             // Update History API.
-                            let window = web_sys::window().unwrap_throw();
-                            let history = window.history().unwrap_throw();
+                            let history = window().history().unwrap_throw();
                             history
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a_pathname))
                                 .unwrap_throw();
-                            window.scroll_to_with_x_and_y(0.0, 0.0);
+                            window().scroll_to_with_x_and_y(0.0, 0.0);
                         });
                     } else {
                         // Same page. Do nothing.
@@ -119,12 +112,7 @@ impl Integration for HistoryIntegration {
 
 /// Gets the base pathname from `document.baseURI`.
 fn base_pathname() -> String {
-    match web_sys::window()
-        .unwrap_throw()
-        .document()
-        .unwrap_throw()
-        .query_selector("base[href]")
-    {
+    match document().query_selector("base[href]") {
         Ok(Some(base)) => {
             let base = base.unchecked_into::<HtmlBaseElement>().href();
 
@@ -347,12 +335,11 @@ pub fn navigate(url: &str) {
         pathname.set(path.to_string());
 
         // Update History API.
-        let window = web_sys::window().unwrap_throw();
-        let history = window.history().unwrap_throw();
+        let history = window().history().unwrap_throw();
         history
             .push_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
-        window.scroll_to_with_x_and_y(0.0, 0.0);
+        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
@@ -376,12 +363,11 @@ pub fn navigate_replace(url: &str) {
         pathname.set(path.to_string());
 
         // Update History API.
-        let window = web_sys::window().unwrap_throw();
-        let history = window.history().unwrap_throw();
+        let history = window().history().unwrap_throw();
         history
             .replace_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
-        window.scroll_to_with_x_and_y(0.0, 0.0);
+        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 

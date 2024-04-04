@@ -34,7 +34,7 @@ impl Filter {
     }
 
     fn get_filter_from_hash() -> Self {
-        let hash = web_sys::window().unwrap().location().hash().unwrap();
+        let hash = window().location().hash().unwrap();
 
         match hash.as_str() {
             "#/active" => Filter::Active,
@@ -119,8 +119,7 @@ fn main() {
 #[component]
 fn App() -> View {
     // Initialize application state from localStorage.
-    let local_storage = web_sys::window()
-        .unwrap()
+    let local_storage = window()
         .local_storage()
         .unwrap()
         .expect("user has not enabled localStorage");

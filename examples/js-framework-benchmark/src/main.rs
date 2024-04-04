@@ -184,8 +184,7 @@ fn App() -> View {
 }
 
 fn main() {
-    let document = web_sys::window().unwrap().document().unwrap();
-    let mount_el = document.query_selector("#main").unwrap().unwrap();
+    let mount_el = document().query_selector("#main").unwrap().unwrap();
 
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();

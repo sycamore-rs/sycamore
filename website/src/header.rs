@@ -15,8 +15,7 @@ fn DarkModeToggle() -> View {
 
     // Update color-scheme when `dark_mode` changes.
     create_effect(move || {
-        let document = web_sys::window().unwrap().document().unwrap();
-        let document_element = document
+        let document_element = document()
             .document_element()
             .unwrap()
             .unchecked_into::<HtmlElement>();
@@ -24,7 +23,7 @@ fn DarkModeToggle() -> View {
             .style()
             .set_property("overflow", "hidden")
             .unwrap();
-        document.body().unwrap().client_width(); // Trigger reflow.
+        document().body().unwrap().client_width(); // Trigger reflow.
         document_element
             .set_attribute(
                 "data-color-scheme",

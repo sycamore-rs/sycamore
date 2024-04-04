@@ -30,11 +30,7 @@ static POSTS: &[(&str, &str, &str)] = &[
 
 #[component]
 pub fn NewsIndex() -> View {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("News - Sycamore");
+    document().set_title("News - Sycamore");
 
     let posts = POSTS
         .iter()

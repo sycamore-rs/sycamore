@@ -82,11 +82,7 @@ fn VersionedDocsLink(name: &'static str, versioned_docs_link: VersionedDocsLink)
 
 #[component]
 pub fn Versions() -> View {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("Versions - Sycamore");
+    document().set_title("Versions - Sycamore");
 
     let versions: View = VERSIONS
         .iter()

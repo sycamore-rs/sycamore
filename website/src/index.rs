@@ -2,11 +2,7 @@ use sycamore::prelude::*;
 
 #[component]
 pub fn Index() -> View {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("Sycamore");
+    document().set_title("Sycamore");
 
     view! {
         div(class="pb-10 mx-4") {

@@ -165,10 +165,9 @@ fn switch(route: ReadSignal<Routes>) -> View {
 
 #[component]
 fn App() -> View {
-    let local_storage = web_sys::window().unwrap().local_storage().unwrap();
+    let local_storage = window().local_storage().unwrap();
     // Get dark mode from media query.
-    let dark_mode_mq = web_sys::window()
-        .unwrap()
+    let dark_mode_mq = window()
         .match_media("(prefers-color-scheme: dark)")
         .unwrap()
         .unwrap()
