@@ -30,9 +30,12 @@ use wasm_bindgen::prelude::*;
 
 /// We add this to make the macros from `sycamore-macro` work properly.
 extern crate self as sycamore;
-mod rt {
+#[doc(hidden)]
+pub mod rt {
     pub use sycamore_core::*;
     pub use sycamore_macro::*;
+    #[allow(unused_imports)] // Needed for macro support.
+    pub use web_sys;
 }
 
 /// A type alias for [`View`](self::view::View) with [`HtmlNode`] as the node type.
@@ -145,4 +148,71 @@ pub fn document() -> web_sys::Document {
         static DOCUMENT: web_sys::Document = window().document().expect("no `document` exists");
     }
     DOCUMENT.with(Clone::clone)
+}
+
+/// Log a message to the JavaScript console if on wasm32. Otherwise logs it to stdout.
+///
+/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
+/// the JS console.
+#[macro_export]
+macro_rules! console_log {
+    ($($arg:tt)*) => {
+        if cfg!(target_arch = "wasm32") {
+            $crate::rt::web_sys::console::log_1(&::std::format!($($arg)*).into());
+        } else {
+            ::std::println!($($arg)*);
+        }
+    };
+}
+
+/// Prints an error message to the JavaScript console if on wasm32. Otherwise logs it to stderr.
+///
+/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
+/// the JS console.
+#[macro_export]
+macro_rules! console_error {
+    ($($arg:tt)*) => {
+        if cfg!(target_arch = "wasm32") {
+            $crate::rt::web_sys::console::error_1(&::std::format!($($arg)*).into());
+        } else {
+            ::std::eprintln!($($arg)*);
+        }
+    };
+}
+
+/// Debug the value of a variable to the JavaScript console if on wasm32. Otherwise logs it to
+/// stdout.
+///
+/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
+/// the JS console.
+#[macro_export]
+macro_rules! console_dbg {
+    () => {
+        if cfg!(target_arch = "wasm32") {
+            $crate::rt::web_sys::console::log_1(
+                &::std::format!("[{}:{}]", ::std::file!(), ::std::line!(),).into(),
+            );
+        } else {
+            ::std::dbg!($arg);
+        }
+    };
+    ($arg:expr $(,)?) => {
+        if cfg!(target_arch = "wasm32") {
+            $crate::rt::web_sys::console::log_1(
+                &::std::format!(
+                    "[{}:{}] {} = {:#?}",
+                    ::std::file!(),
+                    ::std::line!(),
+                    ::std::stringify!($arg),
+                    $arg
+                )
+                .into(),
+            );
+        } else {
+            ::std::dbg!($arg);
+        }
+    };
+    ($($arg:expr),+ $(,)?) => {
+        $($crate::console_dbg!($arg);)+
+    }
 }

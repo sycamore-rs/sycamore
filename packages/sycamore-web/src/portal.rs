@@ -6,7 +6,6 @@ use crate::*;
 /// Does nothing in SSR mode.
 #[component(inline_props)]
 pub fn Portal<'a, T: Into<View> + Default>(selector: &'a str, children: T) -> View {
-    web_sys::console::log_1(&format!("is_client: {}", is_client()).into());
     if is_client() {
         let Some(parent) = document().query_selector(selector).unwrap() else {
             panic!("element matching selector `{selector}` not found");
