@@ -115,20 +115,20 @@ mod tests {
     use super::*;
     use crate::tags::*;
 
-    fn check(view: impl Into<View>, expected: Expect) {
-        let actual = render_to_string(|| view.into());
-        expected.assert_eq(&actual);
+    fn check<T: Into<View>>(view: impl Fn() -> T, expect: Expect) {
+        let actual = render_to_string(move || view().into());
+        expect.assert_eq(&actual);
     }
 
     #[test]
     fn hello_world() {
-        check("Hello, world!", expect![[r#"<!-->Hello, world!"#]]);
+        check(move || "Hello, world!", expect![[r#"<!-->Hello, world!"#]]);
     }
 
     #[test]
     fn render_escaped_text() {
         check(
-            "<script>alert('xss')</script>",
+            move || "<script>alert('xss')</script>",
             expect!["<!-->&lt;script&gt;alert('xss')&lt;/script&gt;"],
         );
     }
@@ -136,13 +136,80 @@ mod tests {
     #[test]
     fn render_inner_html() {
         check(
-            div().dangerously_set_inner_html("<p>hello</p>"),
+            move || div().dangerously_set_inner_html("<p>hello</p>"),
             expect!["<div data-hk=0><p>hello</p></div>"],
         );
     }
 
     #[test]
     fn render_void_element() {
-        check(br(), expect!["<br data-hk=0>"]);
+        check(br, expect!["<br data-hk=0>"]);
+        check(
+            move || input().value("value"),
+            expect![[r#"<input value="value" data-hk=0>"#]],
+        );
+    }
+
+    #[test]
+    fn fragments() {
+        check(
+            move || (p().children("1"), p().children("2"), p().children("3")),
+            expect!["<p data-hk=0><!-->1</p><p data-hk=1><!-->2</p><p data-hk=2><!-->3</p>"],
+        );
+    }
+
+    #[test]
+    fn indexed() {
+        check(
+            move || {
+                sycamore_macro::view! {
+                    ul {
+                        Indexed(
+                            list=vec![1, 2],
+                            view=|i| sycamore_macro::view! { li { (i) } },
+                        )
+                    }
+                }
+            },
+            expect![
+                "<ul data-hk=0><li data-hk=1><!-->1</li><li data-hk=2><!-->2</li><!--/--></ul>"
+            ],
+        );
+    }
+
+    #[test]
+    fn bind() {
+        // bind always attaches to a JS prop so it is not rendered in SSR.
+        check(
+            move || {
+                let value = create_signal(String::new());
+                sycamore_macro::view! {
+                    input(bind:value=value)
+                }
+            },
+            expect!["<input data-hk=0>"],
+        );
+    }
+
+    #[test]
+    fn svg_element() {
+        check(
+            move || {
+                sycamore_macro::view! {
+                    svg(xmlns="http://www.w2.org/2000/svg") {
+                        rect()
+                    }
+                }
+            },
+            expect![[r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk=0><rect data-hk=1></rect></svg>"#]],
+        );
+        check(
+            move || {
+                sycamore_macro::view! {
+                    svg_a()
+                }
+            },
+            expect!["<a data-hk=0></a>"],
+        );
     }
 }

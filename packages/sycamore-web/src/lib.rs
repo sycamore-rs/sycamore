@@ -46,11 +46,14 @@ use wasm_bindgen::prelude::*;
 /// We add this to make the macros from `sycamore-macro` work properly.
 extern crate self as sycamore;
 #[doc(hidden)]
+#[allow(ambiguous_glob_reexports)]
 pub mod rt {
     pub use sycamore_core::*;
     pub use sycamore_macro::*;
     #[allow(unused_imports)] // Needed for macro support.
     pub use web_sys;
+
+    pub use crate::*;
 }
 
 /// A type alias for [`View`](self::view::View) with [`HtmlNode`] as the node type.

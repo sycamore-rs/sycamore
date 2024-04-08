@@ -53,10 +53,6 @@ web = ["dep:wasm-bindgen", "dep:web-sys", "dep:sycamore-web"]
 name = "web"
 required-features = ["ssr"]
 
-[[test]]
-name = "ssr"
-required-features = ["ssr"]
-
 [package.metadata.docs.rs]
 all-features = true
 default-target = "wasm32-unknown-unknown"
