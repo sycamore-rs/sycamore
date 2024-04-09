@@ -62,4 +62,5 @@ expect-test = "1.4.1"
 default = ["dom", "wasm-bindgen-interning"]
 dom = []
 ssr = ["dep:html-escape"]
+suspense = []
 wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]

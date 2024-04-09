@@ -16,7 +16,7 @@ impl DomRenderer {
         }
     }
 
-    pub fn render_node_detatched(&self, node: HtmlNode) -> web_sys::Node {
+    fn render_node_detatched(&self, node: HtmlNode) -> web_sys::Node {
         let document = document();
         let raw_node: web_sys::Node = match node.kind {
             HtmlNodeKind::Element(node) => {

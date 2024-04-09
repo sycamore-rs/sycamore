@@ -4,6 +4,7 @@ use std::fmt;
 
 /// Represents a view tree.
 pub struct View<T> {
+    /// The nodes in the view tree.
     pub(crate) nodes: Vec<T>,
 }
 

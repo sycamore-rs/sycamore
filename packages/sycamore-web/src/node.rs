@@ -2,7 +2,9 @@ use crate::*;
 
 /// A node in an HTML [`View`] tree.
 pub struct HtmlNode {
+    /// The internal data of the node.
     pub(crate) kind: HtmlNodeKind,
+    /// A reference to the web-sys node once it is upgraded.
     pub(crate) node: Rc<OnceCell<web_sys::Node>>,
 }
 
@@ -28,11 +30,14 @@ impl HtmlNode {
         }
     }
 
+    /// Return the reference to the web-sys node. If the node is not yet upgraded, the reference
+    /// will be `None`.
     pub(crate) fn as_web_sys(&self) -> &Rc<OnceCell<web_sys::Node>> {
         &self.node
     }
 }
 
+/// Internal representation of an HTML node.
 pub(crate) enum HtmlNodeKind {
     Element(HtmlElement),
     Text(HtmlText),

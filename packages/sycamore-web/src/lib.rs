@@ -9,6 +9,8 @@
 //!
 //! - `ssr` - Enables server-side rendering (SSR) support.
 //!
+//! - `suspense` - Enables suspense support.
+//!
 //! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
 //!   improves performance at a slight cost in binary size. If you want to minimize the size of the
 //!   resulting `.wasm` binary, you might want to disable this.
