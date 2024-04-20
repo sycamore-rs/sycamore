@@ -1,4 +1,4 @@
-use sycamore::web::portal::Portal;
+use sycamore::web::Portal;
 
 use super::*;
 

@@ -5,7 +5,7 @@ use sycamore::motion::{create_raf, create_tweened_signal};
 use sycamore::prelude::*;
 
 #[component]
-fn CreateRAF<G: Html>() -> View<G> {
+fn CreateRAF() -> View {
     let mut state = create_signal(0i32);
     let (_running, start, stop) = create_raf(move || {
         state += 1;
@@ -20,7 +20,7 @@ fn CreateRAF<G: Html>() -> View<G> {
 }
 
 #[component]
-fn Tweened<G: Html>() -> View<G> {
+fn Tweened() -> View {
     let progress =
         create_tweened_signal([0.0f32, 1.0], Duration::from_millis(250), easing::quad_out);
 

@@ -7,7 +7,7 @@ extern "C" {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let a = create_signal(1_f64);
     let b = create_signal(1_f64);
     let product = create_signal(1_f64);
@@ -17,9 +17,9 @@ fn App<G: Html>() -> View<G> {
     });
 
     view! {
-        input(type="number", bind:valueAsNumber=a)
+        input(r#type="number", bind:valueAsNumber=a)
         span { "*" }
-        input(type="number", bind:valueAsNumber=b)
+        input(r#type="number", bind:valueAsNumber=b)
         span { "=" }
         span { (product.get()) }
     }

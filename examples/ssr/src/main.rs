@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let name = create_signal(String::new());
 
     let handle_change = move |_| unreachable!();

@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component(inline_props)]
-fn MyComponent<G: Html>(value: Signal<i32>) -> View<G> {
+fn MyComponent(value: Signal<i32>) -> View {
     view! {
         div(class="my-component") {
             "My component"
@@ -14,7 +14,7 @@ fn MyComponent<G: Html>(value: Signal<i32>) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let mut state = create_signal(0);
 
     let increment = move |_| state += 1;

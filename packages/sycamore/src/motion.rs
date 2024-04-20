@@ -29,6 +29,8 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
 
         use wasm_bindgen::prelude::*;
 
+        use crate::web::window;
+
         let f = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
         let g = Rc::clone(&f);
 
@@ -37,8 +39,7 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
                 // Verified that scope is still valid. We can access `extended` in here.
                 cb();
                 // Request the next raf frame.
-                web_sys::window()
-                    .unwrap_throw()
+                window()
                     .request_animation_frame(
                         f.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
                     )
@@ -48,8 +49,7 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
         start = Rc::new(move || {
             if !running.get() {
                 running.set(true);
-                web_sys::window()
-                    .unwrap_throw()
+                window()
                     .request_animation_frame(
                         g.borrow().as_ref().unwrap_throw().as_ref().unchecked_ref(),
                     )

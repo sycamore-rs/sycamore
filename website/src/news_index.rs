@@ -29,12 +29,8 @@ static POSTS: &[(&str, &str, &str)] = &[
 ];
 
 #[component]
-pub fn NewsIndex<G: Html>() -> View<G> {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("News - Sycamore");
+pub fn NewsIndex() -> View {
+    document().set_title("News - Sycamore");
 
     let posts = POSTS
         .iter()
@@ -42,14 +38,13 @@ pub fn NewsIndex<G: Html>() -> View<G> {
             view! {
                 li(class="hover:text-yellow-500 transition-colors") {
                     a(href=format!("/news/{}", url)) {
-                        h2(class="text-2xl font-light") { (title) }
-                        p(class="text-gray-600 dark:text-gray-400") { (subtitle) }
+                        h2(class="text-2xl font-light") { (*title) }
+                        p(class="text-gray-600 dark:text-gray-400") { (*subtitle) }
                     }
                 }
             }
         })
-        .collect();
-    let posts = View::new_fragment(posts);
+        .collect::<Vec<_>>();
 
     view! {
         div(class="container mx-auto") {

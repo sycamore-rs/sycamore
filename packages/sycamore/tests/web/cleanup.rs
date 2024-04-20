@@ -41,7 +41,7 @@ pub fn test_cleanup_in_effect() {
 }
 
 #[component]
-fn CleanupComp<G: Html>() -> View<G> {
+fn CleanupComp() -> View {
     on_cleanup(on_cleanup_callback);
     view! {}
 }
@@ -49,7 +49,7 @@ fn CleanupComp<G: Html>() -> View<G> {
 #[wasm_bindgen_test]
 fn component_cleanup_on_root_destroyed() {
     let root = create_root(|| {
-        let _: View<DomNode> = view! {
+        let _: View = view! {
             CleanupComp {}
         };
     });

@@ -4,15 +4,15 @@ use sycamore::prelude::*;
 use sycamore::suspense::Suspense;
 
 // API that counts visits to the web-page
-const API_BASE_URL: &str = "https://api.countapi.xyz/hit";
+const API_BASE_URL: &str = "https://api.counterapi.dev/v1/sycamore-example";
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 struct Visits {
-    value: u64,
+    count: u64,
 }
 
 async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
-    let url = format!("{}/{}/hits", API_BASE_URL, id);
+    let url = format!("{API_BASE_URL}/{id}/up");
     let resp = Request::get(&url).send().await?;
 
     let body = resp.json::<Visits>().await?;
@@ -20,7 +20,7 @@ async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
 }
 
 #[component]
-async fn VisitsCount<G: Html>() -> View<G> {
+async fn VisitsCount() -> View {
     let id = "sycamore-visits-counter";
     let visits = fetch_visits(id).await.unwrap_or_default();
 
@@ -28,14 +28,14 @@ async fn VisitsCount<G: Html>() -> View<G> {
         p {
             "Total visits: "
             span {
-                (visits.value)
+                (visits.count)
             }
         }
     }
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     view! {
         div {
             p { "Page Visit Counter" }
