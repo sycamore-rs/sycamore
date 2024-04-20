@@ -1,7 +1,5 @@
-#[cfg(all(feature = "hydrate"))]
 pub mod builder_hydrate;
 pub mod cleanup;
-#[cfg(feature = "hydrate")]
 pub mod hydrate;
 pub mod indexed;
 pub mod keyed;
@@ -12,9 +10,7 @@ pub mod svg;
 
 mod utils;
 
-use sycamore::generic_node::GenericNodeElements;
 use sycamore::prelude::*;
-use sycamore::web::html;
 use utils::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
