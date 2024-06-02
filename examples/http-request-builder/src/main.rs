@@ -6,7 +6,7 @@ use sycamore::prelude::*;
 use sycamore::suspense::{Suspense, SuspenseProps};
 
 // API that counts visits to the web-page
-const API_BASE_URL: &str = "https://api.countapi.xyz/hit";
+const API_BASE_URL: &str = "https://abacus.jasoncameron.dev/hit";
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 struct Visits {
