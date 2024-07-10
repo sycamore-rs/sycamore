@@ -155,10 +155,10 @@ impl CodegenTemplate {
             TagIdent::Path(tag) => {
                 assert!(tag.get_ident().is_some(), "elements must be an ident");
                 quote! {{
-                    type __tag = ::sycamore::web::html::#tag;
+                    type __Tag = ::sycamore::web::html::#tag;
                     ::sycamore::generic_node::TemplateShape::Element {
-                        tag: __tag::TAG_NAME,
-                        ns: __tag::NAMESPACE,
+                        tag: __Tag::TAG_NAME,
+                        ns: __Tag::NAMESPACE,
                         children: &[#(#children),*],
                         attributes: &[#(#attrs),*],
                         flag: #flag,
