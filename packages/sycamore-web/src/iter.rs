@@ -29,7 +29,9 @@ where
     _phantom: std::marker::PhantomData<(T, K, U)>,
 }
 
-/// Keyed iteration. Use this instead of directly rendering an array of [`View`]s.
+/// Keyed iteration.
+///
+/// Use this instead of directly rendering an array of [`View`]s.
 /// Using this will minimize re-renders instead of re-rendering every view node on every
 /// state change.
 ///
@@ -144,7 +146,9 @@ where
     _phantom: std::marker::PhantomData<(T, U)>,
 }
 
-/// Non keyed iteration (or keyed by index). Use this instead of directly rendering an array of
+/// Non keyed iteration (or keyed by index).
+///
+/// Use this instead of directly rendering an array of
 /// [`View`]s. Using this will minimize re-renders instead of re-rendering every single
 /// node on every state change.
 ///

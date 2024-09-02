@@ -29,9 +29,11 @@ pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
     }
 }
 
-/// Spawns a `!Send` future on the current scope. If the scope is destroyed before the future is
-/// completed, it is aborted immediately. This ensures that it is impossible to access any
-/// values referencing the scope after they are destroyed.
+/// Spawns a `!Send` future on the current scope.
+///
+/// If the scope is destroyed before the future is completed, it is aborted immediately. This
+/// ensures that it is impossible to access any values referencing the scope after they are
+/// destroyed.
 pub fn spawn_local_scoped(f: impl Future<Output = ()> + 'static) {
     let fut = ScopedFuture::new_in_current_scope(f);
     #[cfg(not(target_arch = "wasm32"))]

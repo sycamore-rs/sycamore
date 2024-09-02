@@ -115,8 +115,7 @@ impl Root {
     ///
     /// # Params
     /// * `root` - The reactive root.
-    /// * `id` - The id associated with the reactive node.
-    /// `SignalId` inside the state itself.
+    /// * `id` - The id associated with the reactive node. `SignalId` inside the state itself.
     #[cfg_attr(
         all(feature = "trace", not(debug_assertions)),
         tracing::instrument(skip(self))

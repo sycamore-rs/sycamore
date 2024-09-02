@@ -212,6 +212,7 @@ pub fn render_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
+///
 /// This function is intended to be used for injecting an ephemeral sycamore view into a
 /// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
 /// modal is closed).
@@ -227,16 +228,18 @@ pub fn render_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
-/// hydration). Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
+/// hydration).
 ///
+/// Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
 /// For rendering without hydration, use [`render`](super::render) instead.
 pub fn hydrate(view: impl FnOnce() -> View) {
     hydrate_to(view, &document().body().unwrap());
 }
 
 /// Render a [`View`] under a `parent` node by reusing existing nodes (client side
-/// hydration). For rendering under the `<body>` tag, use [`hydrate`] instead.
+/// hydration).
 ///
+/// For rendering under the `<body>` tag, use [`hydrate`] instead.
 /// For rendering without hydration, use [`render`](super::render) instead.
 pub fn hydrate_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
     // Do not call the destructor function, effectively leaking the scope.
@@ -244,6 +247,7 @@ pub fn hydrate_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 }
 
 /// Render a [`View`] under a `parent` node, in a way that can be cleaned up.
+///
 /// This function is intended to be used for injecting an ephemeral sycamore view into a
 /// non-sycamore app (for example, a file upload modal where you want to cancel the upload if the
 /// modal is closed).
