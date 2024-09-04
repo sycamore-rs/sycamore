@@ -53,19 +53,18 @@ pub fn create_effect(f: impl FnMut() + 'static) {
 /// ```
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_effect_initial<T: 'static>(
-    mut f: impl FnMut() -> (Box<dyn FnMut() + 'static>, T) + 'static,
+    f: impl FnOnce() -> (Box<dyn FnMut() + 'static>, T) + 'static,
 ) -> T {
     let ret = Rc::new(RefCell::new(None));
+    let mut f = Some(f);
     let mut effect = None;
-    let mut initial = true;
 
     create_effect({
         let ret = Rc::clone(&ret);
         move || {
-            if initial {
-                initial = false;
-                let (f, value) = f();
-                effect = Some(f);
+            if let Some(f) = f.take() {
+                let (new_f, value) = f();
+                effect = Some(new_f);
                 *ret.borrow_mut() = Some(value);
             } else {
                 effect.as_mut().unwrap()()
