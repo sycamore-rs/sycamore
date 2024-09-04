@@ -2,43 +2,42 @@
 
 use crate::*;
 
-cfg_not_ssr_item!(
-    mod dom;
-);
+mod dom;
 cfg_ssr_item!(
     mod ssr;
 );
 
-#[cfg_not_ssr]
 pub use dom::*;
 #[cfg_ssr]
 pub use ssr::*;
 
-/// A trait that should be implemented for anything that represents a node in the view tree (UI
-/// tree).
-pub trait ViewNode: Into<View> + Sized {
-    fn append_child(&self, child: Self);
-
-    fn append_dynamic(&self, dynamic: impl FnMut() -> crate::view::View<Self>);
-}
-
 /// A trait that should be implemented for anything that represents an HTML node.
 pub trait ViewHtmlNode {
+    /// Create a new HTML element.
     fn create_element(tag: Cow<'static, str>) -> Self;
+    /// Create a new HTML element with a XML namespace.
     fn create_element_ns(namespace: &'static str, tag: Cow<'static, str>) -> Self;
+    /// Create a new HTML text node.
     fn create_text_node(text: Cow<'static, str>) -> Self;
+    /// Create a new HTML marker (comment) node.
     fn create_marker_node() -> Self;
 
+    /// Set an HTML attribute.
     fn set_attribute(&mut self, name: &'static str, value: MaybeDynString);
+    /// Set a boolean HTML attribute.
     fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool);
+    /// Set a JS property on an element.
     fn set_property(&mut self, name: &'static str, value: MaybeDynJsValue);
+    /// Set an event handler on an element.
     fn set_event_handler(
         &mut self,
         name: &'static str,
         handler: impl FnMut(web_sys::Event) + 'static,
     );
+    /// Set the inner HTML value of an element.
     fn set_inner_html(&mut self, inner_html: Cow<'static, str>);
 
+    /// Return the raw web-sys node.
     fn as_web_sys(&self) -> &web_sys::Node;
 }
 

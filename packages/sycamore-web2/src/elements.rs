@@ -1170,7 +1170,7 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
 
     /// Set the children of an element.
     fn children(mut self, children: impl Into<View>) -> Self {
-        todo!("children");
+        self.as_html_node_mut().append_view(children.into());
         self
     }
 

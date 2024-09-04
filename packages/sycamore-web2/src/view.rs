@@ -27,6 +27,23 @@ impl<T> View<T> {
             nodes: smallvec![node],
         }
     }
+
+    /// Create a new dynamic view from a function that returns a view.
+    ///
+    /// Internally, this works by creating two marker nodes corresponding to the start and end of
+    /// the dynamic view. An effect is then created that will update the view whenever one of the
+    /// reactive dependencies of the function is triggered.
+    pub fn from_dynamic(f: impl FnMut() -> Self) -> Self
+    where
+        T: ViewHtmlNode,
+    {
+        let start = T::create_marker_node();
+        let end = T::create_marker_node();
+
+        Self {
+            nodes: smallvec![start, end],
+        }
+    }
 }
 
 impl<T> Default for View<T> {
@@ -38,14 +55,6 @@ impl<T> Default for View<T> {
 impl<T> fmt::Debug for View<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("View").finish()
-    }
-}
-
-/// We cannot provide a general implementation for `T: ViewNode` since we also define From for
-/// tuuples. Hence, only implement it for [`HtmlNode`].
-impl From<HtmlNode> for View<HtmlNode> {
-    fn from(node: HtmlNode) -> Self {
-        View::from_node(node)
     }
 }
 
@@ -90,16 +99,9 @@ macro_rules! impl_view_from_to_string {
 impl_view_from!(&'static str, String, Cow<'static, str>);
 impl_view_from_to_string!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64);
 
-impl<T, F: FnMut() -> U + 'static, U: Into<View<T>> + Any + 'static> From<F> for View<T> {
-    fn from(mut f: F) -> Self {
-        // Specialize for U = String.
-        if TypeId::of::<U>() == TypeId::of::<String>() {
-            render_dynamic_text(move || {
-                (&f() as &dyn Any).downcast_ref::<String>().unwrap().clone()
-            })
-        } else {
-            render_dynamic_view(f)
-        }
+impl<T: ViewNode, F: FnMut() -> U + 'static, U: Into<View<T>> + Any + 'static> From<F> for View<T> {
+    fn from(f: F) -> Self {
+        T::create_dynamic_view(f)
     }
 }
 // Implement `From` for all tuples of types that implement `Into<View<U>>`.
@@ -134,3 +136,36 @@ impl_from_tuple!(A, B, C, D, E, F, G);
 impl_from_tuple!(A, B, C, D, E, F, G, H);
 impl_from_tuple!(A, B, C, D, E, F, G, H, I);
 impl_from_tuple!(A, B, C, D, E, F, G, H, I, J);
+
+/// A trait that should be implemented for anything that represents a node in the view tree (UI
+/// tree).
+///
+/// Examples include `DomNode` and `SsrNode` which are used to render views to the browser DOM and
+/// to a string respectively. This trait can be implemented for other types to create custom render
+/// backends.
+pub trait ViewNode: Into<View<Self>> + Sized {
+    /// Appends a child to the node. Panics if the node is not an element or other node that can
+    /// have children (e.g. text node).
+    fn append_child(&mut self, child: Self);
+
+    /// Append a view to this node. Since a view is just a list of nodes, this essentially appends
+    /// every node in the view to this node.
+    fn append_view(&mut self, view: View<Self>) {
+        for node in view.nodes {
+            self.append_child(node);
+        }
+    }
+
+    /// Create a dynamic view from a function that returns a view.
+    ///
+    /// The returned view will no longer be a function and can be treated as a normal view and,
+    /// e.g., appended as a child to another node.
+    ///
+    /// Some render backends may not support dynamic views (e.g. `SsrNode`). In that case, the
+    /// default behavior is to simply evaluate the function as a static view.
+    fn create_dynamic_view<U: Into<View<Self>> + 'static>(
+        mut f: impl FnMut() -> U + 'static,
+    ) -> View<Self> {
+        f().into()
+    }
+}

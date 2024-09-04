@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
@@ -19,10 +20,37 @@ pub enum SsrNode {
     Marker,
 }
 
-impl ViewNode for SsrNode {
-    fn append_child(&self, _child: Self) {}
+impl From<SsrNode> for View<SsrNode> {
+    fn from(node: SsrNode) -> Self {
+        View::from_node(node)
+    }
+}
 
-    fn append_dynamic(&self, _dynamic: impl FnMut() -> View<Self>) {}
+impl ViewNode for SsrNode {
+    fn append_child(&mut self, child: Self) {
+        match self {
+            Self::Element { children, .. } => {
+                children.push(child);
+            }
+            _ => panic!("can only append child to an element"),
+        }
+    }
+
+    fn create_dynamic_view<U: Into<View<Self>> + 'static>(
+        mut f: impl FnMut() -> U + 'static,
+    ) -> View<Self> {
+        // If `view` is just a single text node, we can just return this node since text nodes are
+        // specialized. Otherwise, we must create two marker nodes to represent start and end
+        // respectively.
+        if TypeId::of::<U>() == TypeId::of::<String>() {
+            f().into()
+        } else {
+            let start = Self::create_marker_node();
+            let view = f().into();
+            let end = Self::create_marker_node();
+            View::from((start, view, end))
+        }
+    }
 }
 
 impl ViewHtmlNode for SsrNode {

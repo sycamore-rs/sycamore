@@ -32,7 +32,7 @@ mod portal;
 mod view;
 
 use std::borrow::Cow;
-use std::cell::{Cell, OnceCell, RefCell};
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 pub use elements::*;
@@ -42,6 +42,7 @@ pub use noderef::*;
 pub use portal::*;
 use sycamore_macro::{cfg_not_ssr, cfg_ssr};
 use sycamore_reactive::*;
+pub use view::*;
 use wasm_bindgen::prelude::*;
 
 /// We add this to make the macros from `sycamore-macro` work properly.
@@ -89,7 +90,7 @@ macro_rules! cfg_ssr_item {
 #[macro_export]
 macro_rules! cfg_not_ssr_item {
     ($($item:tt)*) => {
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
         $($item)*
     };
 }

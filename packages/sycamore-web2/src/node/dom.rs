@@ -1,3 +1,5 @@
+use std::any::{Any, TypeId};
+
 use wasm_bindgen::intern;
 
 use crate::*;
@@ -7,34 +9,107 @@ pub struct DomNode {
     pub(crate) raw: web_sys::Node,
 }
 
-impl Renderer for Dom {
-    fn append_child(&self, child: Self) {
-        self.raw.append_child(&child.raw).unwrap();
-    }
-
-    fn append_dynamic(&self, mut dynamic: impl FnMut() -> crate::view::View<Self>) {
-        let view = dynamic();
-        for node in view.nodes {
-            self.append_child(node);
-        }
-        // TODO: actually make this dynamic
+impl From<DomNode> for View<DomNode> {
+    fn from(node: DomNode) -> Self {
+        View::from_node(node)
     }
 }
 
-impl HtmlRenderer for Dom {
-    fn create_element(tag: &str) -> Self {
+impl ViewNode for DomNode {
+    fn append_child(&mut self, child: Self) {
+        self.raw.append_child(&child.raw).unwrap();
+    }
+
+    fn create_dynamic_view<U: Into<View<Self>> + 'static>(
+        mut f: impl FnMut() -> U + 'static,
+    ) -> View<Self> {
+        // If `view` is just a single text node, we can just return this node and set up an
+        // effect to update its text value without ever creating more nodes.
+        if TypeId::of::<U>() == TypeId::of::<String>() {
+            create_effect_initial(move || {
+                let view = f().into();
+                debug_assert_eq!(
+                    view.nodes.len(),
+                    1,
+                    "dynamic text view should have exactly one text node"
+                );
+                let node = view.nodes[0].as_web_sys().clone();
+                (
+                    Box::new(move || {
+                        let text = f();
+                        let text = (&text as &dyn Any).downcast_ref::<String>().unwrap();
+                        node.set_text_content(Some(text));
+                    }),
+                    view,
+                )
+            })
+        } else {
+            let start = Self::create_marker_node();
+            let view = f().into();
+            // TODO: create effect
+            let end = Self::create_marker_node();
+            View::from((start, view, end))
+        }
+    }
+}
+
+impl ViewHtmlNode for DomNode {
+    fn create_element(tag: Cow<'static, str>) -> Self {
         Self {
-            raw: document().create_element(tag).unwrap().into(),
+            raw: document().create_element(&tag).unwrap().into(),
         }
     }
 
-    fn create_element_ns(namespace: &str, tag: &str) -> Self {
+    fn create_element_ns(namespace: &str, tag: Cow<'static, str>) -> Self {
         Self {
             raw: document()
-                .create_element_ns(Some(namespace), tag)
+                .create_element_ns(Some(namespace), &tag)
                 .unwrap()
                 .into(),
         }
+    }
+
+    fn create_text_node(text: Cow<'static, str>) -> Self {
+        Self {
+            raw: document().create_text_node(&text).into(),
+        }
+    }
+
+    fn create_marker_node() -> Self {
+        Self {
+            raw: document().create_comment("").into(),
+        }
+    }
+
+    fn set_attribute(&mut self, name: &'static str, value: MaybeDynString) {
+        todo!()
+        // REMINDER: set the attribute with correct namespace.
+    }
+
+    fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool) {
+        todo!()
+    }
+
+    fn set_property(&mut self, name: &'static str, value: MaybeDynJsValue) {
+        todo!()
+    }
+
+    fn set_event_handler(
+        &mut self,
+        name: &'static str,
+        handler: impl FnMut(web_sys::Event) + 'static,
+    ) {
+        todo!()
+    }
+
+    fn set_inner_html(&mut self, inner_html: Cow<'static, str>) {
+        self.raw
+            .unchecked_ref::<web_sys::Element>()
+            .set_inner_html(&inner_html);
+    }
+
+    fn as_web_sys(&self) -> &web_sys::Node {
+        &self.raw
     }
 }
 
