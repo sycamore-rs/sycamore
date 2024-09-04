@@ -82,16 +82,59 @@ impl ViewHtmlNode for DomNode {
     }
 
     fn set_attribute(&mut self, name: &'static str, value: MaybeDynString) {
-        todo!()
-        // REMINDER: set the attribute with correct namespace.
+        // FIXME: use setAttributeNS if SVG
+        match value {
+            MaybeDyn::Static(value) => {
+                self.raw
+                    .unchecked_ref::<web_sys::Element>()
+                    .set_attribute(name, &value)
+                    .unwrap();
+            }
+            MaybeDyn::Dynamic(mut f) => {
+                let node = self.raw.clone().unchecked_into::<web_sys::Element>();
+                create_effect(move || {
+                    node.set_attribute(name, &f()).unwrap();
+                });
+            }
+        }
     }
 
     fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool) {
-        todo!()
+        // FIXME: use setAttributeNS if SVG
+        match value {
+            MaybeDyn::Static(value) => {
+                if value {
+                    self.raw
+                        .unchecked_ref::<web_sys::Element>()
+                        .set_attribute(name, "")
+                        .unwrap();
+                }
+            }
+            MaybeDyn::Dynamic(mut f) => {
+                let node = self.raw.clone().unchecked_into::<web_sys::Element>();
+                create_effect(move || {
+                    if f() {
+                        node.set_attribute(name, "").unwrap();
+                    } else {
+                        node.remove_attribute(name).unwrap();
+                    }
+                });
+            }
+        }
     }
 
     fn set_property(&mut self, name: &'static str, value: MaybeDynJsValue) {
-        todo!()
+        match value {
+            MaybeDyn::Static(value) => {
+                assert!(js_sys::Reflect::set(&self.raw, &name.into(), &value).unwrap_throw())
+            }
+            MaybeDyn::Dynamic(mut f) => {
+                let node = self.raw.clone().unchecked_into::<web_sys::Element>();
+                create_effect(move || {
+                    assert!(js_sys::Reflect::set(&node, &name.into(), &f()).unwrap_throw())
+                });
+            }
+        }
     }
 
     fn set_event_handler(
@@ -99,7 +142,9 @@ impl ViewHtmlNode for DomNode {
         name: &'static str,
         handler: impl FnMut(web_sys::Event) + 'static,
     ) {
-        todo!()
+        let cb = Closure::wrap(Box::new(handler) as Box<dyn FnMut(_)>);
+        self.raw
+            .add_event_listener_with_callback(name, cb.as_ref().unchecked_ref());
     }
 
     fn set_inner_html(&mut self, inner_html: Cow<'static, str>) {
@@ -113,200 +158,6 @@ impl ViewHtmlNode for DomNode {
     }
 }
 
-///// Renderer for rendering a [`View`] to DOM nodes.
-//#[derive(Debug, Clone)]
-//pub(crate) struct DomRenderer;
-//
-//impl DomRenderer {
-//    fn render_node(&self, node: HtmlNode, parent: &web_sys::Node, marker: Option<&web_sys::Node>)
-// {        let raw_node = self.render_node_detatched(node);
-//        if let Some(marker) = marker {
-//            parent.insert_before(&raw_node, Some(marker)).unwrap();
-//        } else {
-//            parent.append_child(&raw_node).unwrap();
-//        }
-//    }
-//
-//    fn render_node_detatched(&self, node: HtmlNode) -> web_sys::Node {
-//        let document = document();
-//        let raw_node: web_sys::Node = match node.kind {
-//            HtmlNodeKind::Element(node) => {
-//                let tag = intern(node.tag.as_ref());
-//                let el = if node.is_svg {
-//                    let svg_ns = Some("http://www.w3.org/2000/svg");
-//                    document.create_element_ns(svg_ns, tag).unwrap()
-//                } else {
-//                    document.create_element(tag).unwrap()
-//                };
-//                for attr in node.attributes {
-//                    let name = intern(attr.name.as_ref());
-//                    el.set_attribute(name, attr.value.as_ref()).unwrap();
-//                }
-//                for prop in node.props {
-//                    let name = intern(prop.name.as_ref());
-//                    js_sys::Reflect::set(&el, &JsValue::from(name), &prop.value).unwrap();
-//                }
-//                if let Some(inner_html) = node.inner_html {
-//                    assert!(
-//                        node.children.is_empty(),
-//                        "inner_html and children are mutually exclusive"
-//                    );
-//                    el.set_inner_html(inner_html.as_ref());
-//                } else {
-//                    for child in node.children {
-//                        self.render_node(child, &el, None);
-//                    }
-//                }
-//                for (name, handler) in node.events {
-//                    let closure =
-//                        Closure::wrap(Box::new(handler) as Box<dyn FnMut(_)>).into_js_value();
-//                    el.add_event_listener_with_callback(
-//                        intern(name),
-//                        closure.as_ref().unchecked_ref(),
-//                    )
-//                    .unwrap();
-//                    // TODO: manage Closure in reactive scope
-//                }
-//                el.into()
-//            }
-//            HtmlNodeKind::Text(node) => document.create_text_node(node.text.as_ref()).into(),
-//            HtmlNodeKind::Marker => document.create_comment("").into(),
-//        };
-//        node.node.set(raw_node.clone()).unwrap();
-//        raw_node
-//    }
-//
-//    pub fn render_before(&self, root: &web_sys::Node, view: View, marker: Option<&web_sys::Node>)
-// {        for node in view.nodes {
-//            self.render_node(node, root, marker);
-//        }
-//    }
-//
-//    pub fn render(&self, root: &web_sys::Node, view: View) {
-//        self.render_before(root, view, None);
-//    }
-//
-//    pub fn render_view_detatched(&self, view: View) {
-//        for node in view.nodes {
-//            self.render_node_detatched(node);
-//        }
-//    }
-//}
-//
-///// Renderer for rendering a [`View`] by hydrating existing DOM nodes.
-//#[derive(Default)]
-//pub(crate) struct DomHydrateRenderer {
-//    /// Keep track of current hydration state.
-//    reg: HydrationRegistry,
-//    /// ALl nodes with data-hk attribute, indexed by hydration key.
-//    nodes: Vec<web_sys::Node>,
-//}
-//
-//impl DomHydrateRenderer {
-//    fn hydrate_node(&self, node: HtmlNode, parent: &web_sys::Node) {
-//        let raw_node = match node.kind {
-//            HtmlNodeKind::Element(node) => {
-//                let key = self.reg.next_key();
-//                let el = self.nodes[key as usize].clone();
-//
-//                // Attach event handlers.
-//                for (name, handler) in node.events {
-//                    let closure =
-//                        Closure::wrap(Box::new(handler) as Box<dyn FnMut(_)>).into_js_value();
-//                    el.add_event_listener_with_callback(name, closure.as_ref().unchecked_ref())
-//                        .unwrap();
-//                }
-//
-//                if node.inner_html.is_some() {
-//                    assert!(
-//                        node.children.is_empty(),
-//                        "inner_html and children are mutually exclusive"
-//                    );
-//                    // We can't hydrate anything.
-//                } else {
-//                    // Hydrate the children.
-//                    for child in node.children {
-//                        self.hydrate_node(child, &el);
-//                    }
-//                }
-//
-//                el
-//            }
-//            HtmlNodeKind::Text(_) => {
-//                // Iterate through parent's children until we find a blank marker node. Remove
-// this                // marker node. The next node is the text node to hydrate.
-//                let mut next = parent.first_child();
-//                while let Some(current) = next {
-//                    next = current.next_sibling();
-//
-//                    if current.node_type() == web_sys::Node::COMMENT_NODE
-//                        && current.text_content().unwrap() == ""
-//                    {
-//                        parent.remove_child(&current).unwrap();
-//                        break;
-//                    }
-//                }
-//                if let Some(el) = next {
-//                    debug_assert!(el.node_type() == web_sys::Node::TEXT_NODE);
-//                    el
-//                } else {
-//                    panic!("no text node found after hydration marker")
-//                }
-//            }
-//            HtmlNodeKind::Marker => {
-//                // Iterate through parent's children until we find a marker node.
-//                let mut next = parent.first_child();
-//                let mut marker = None;
-//                while let Some(current) = next {
-//                    if current.node_type() == web_sys::Node::COMMENT_NODE
-//                        && current.text_content().unwrap() == "/"
-//                    {
-//                        marker = Some(current);
-//                        break;
-//                    }
-//                    next = current.next_sibling();
-//                }
-//                marker.expect("no marker node found with hydration key")
-//            }
-//        };
-//        // Set the node to hydrate it.
-//        node.node.set(raw_node).unwrap();
-//    }
-//
-//    fn collect_nodes(&mut self, root: &web_sys::Node) {
-//        // Query all nodes with data-hk attribute and store them inside self.nodes.
-//        let query = root
-//            .unchecked_ref::<web_sys::Element>()
-//            .query_selector_all("[data-hk]")
-//            .unwrap();
-//
-//        let n = query.length() as usize;
-//        self.nodes.reserve(n);
-//        for i in 0..n {
-//            let node = query.get(i as u32).unwrap();
-//            self.nodes.push(node);
-//        }
-//
-//        // Now sort the nodes into the right order by hydration key.
-//        for i in 0..n {
-//            let key = self.nodes[i]
-//                .unchecked_ref::<web_sys::Element>()
-//                .get_attribute("data-hk")
-//                .unwrap()
-//                .parse::<usize>()
-//                .unwrap();
-//            self.nodes.swap(i, key);
-//        }
-//    }
-//
-//    pub fn render(&mut self, root: &web_sys::Node, view: View) {
-//        self.collect_nodes(root);
-//        for node in view.nodes {
-//            self.hydrate_node(node, root);
-//        }
-//    }
-//}
-//
 ///// Render a [`View`] into the DOM.
 ///// Alias for [`render_to`] with `parent` being the `<body>` tag.
 /////
