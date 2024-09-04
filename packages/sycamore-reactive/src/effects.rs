@@ -1,5 +1,8 @@
 //! Side effects!
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::create_memo;
 
 /// Creates an effect on signals used inside the effect closure.
@@ -26,6 +29,51 @@ use crate::create_memo;
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_effect(f: impl FnMut() + 'static) {
     create_memo(f);
+}
+
+/// Creates an effect that runs a different code path on the first run.
+///
+/// The initial function is expected to return a tuple containing a function for subsequent runs
+/// and an optional value that will be returned by the effect.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_root(|| {
+/// let state = create_signal(0);
+///
+/// let initial_value = create_effect_initial(move || {
+///     state.set(100);
+///     (
+///         Box::new(move || state.set(state.get() + 1)),
+///         state.get(), // This value will be returned and assigned to `initial_value`.
+///     )
+/// });
+/// # });
+/// ```
+#[cfg_attr(debug_assertions, track_caller)]
+pub fn create_effect_initial<T: 'static>(
+    mut f: impl FnMut() -> (Box<dyn FnMut() + 'static>, T) + 'static,
+) -> T {
+    let ret = Rc::new(RefCell::new(None));
+    let mut effect = None;
+    let mut initial = true;
+
+    create_effect({
+        let ret = Rc::clone(&ret);
+        move || {
+            if initial {
+                initial = false;
+                let (f, value) = f();
+                effect = Some(f);
+                *ret.borrow_mut() = Some(value);
+            } else {
+                effect.as_mut().unwrap()()
+            }
+        }
+    });
+
+    ret.take().unwrap()
 }
 
 #[cfg(test)]
