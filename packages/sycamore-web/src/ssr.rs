@@ -201,7 +201,9 @@ mod tests {
                     }
                 }
             },
-            expect![[r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk=0><rect data-hk=1></rect></svg>"#]],
+            expect![[
+                r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk=0><rect data-hk=1></rect></svg>"#
+            ]],
         );
         check(
             move || {

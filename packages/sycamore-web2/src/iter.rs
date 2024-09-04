@@ -81,7 +81,7 @@ where
         list, view, key, ..
     } = props;
 
-    let end_marker = HtmlNode::marker(Default::default());
+    let end_marker = HtmlNode::create_marker_node();
     let end_marker_node = end_marker.as_web_sys().clone();
 
     let initial_view = Rc::new(RefCell::new(Some(vec![])));
@@ -181,7 +181,7 @@ where
 {
     let IndexedProps { list, view, .. } = props;
 
-    let end_marker = HtmlNode::marker(Default::default());
+    let end_marker = HtmlNode::create_marker_node();
     let end_marker_node = end_marker.as_web_sys().clone();
 
     let initial_view = Rc::new(RefCell::new(Some(vec![])));
@@ -204,26 +204,24 @@ where
         // Flatten nodes.
         let nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
 
-        if let Some(end_marker_node) = end_marker_node.get() {
-            // This will only run if this is the first time we are updating the list.
-            if prev_nodes.is_empty() {
-                prev_nodes = initial_nodes
-                    .drain(..)
-                    .map(|x| x.get().unwrap().clone())
-                    .collect();
-                prev_nodes.push(end_marker_node.clone());
-            }
-            let parent = end_marker_node.parent_node().unwrap();
-            let mut nodes = nodes
-                .iter()
+        // This will only run if this is the first time we are updating the list.
+        if prev_nodes.is_empty() {
+            prev_nodes = initial_nodes
+                .drain(..)
                 .map(|x| x.get().unwrap().clone())
-                .collect::<Vec<_>>();
-
-            nodes.push(end_marker_node.clone());
-
-            reconcile_fragments(&parent, &mut prev_nodes, &nodes);
-            prev_nodes = nodes;
+                .collect();
+            prev_nodes.push(end_marker_node.clone());
         }
+        let parent = end_marker_node.parent_node().unwrap();
+        let mut nodes = nodes
+            .iter()
+            .map(|x| x.get().unwrap().clone())
+            .collect::<Vec<_>>();
+
+        nodes.push(end_marker_node.clone());
+
+        reconcile_fragments(&parent, &mut prev_nodes, &nodes);
+        prev_nodes = nodes;
     });
 
     (initial_view.take().unwrap(), end_marker).into()
