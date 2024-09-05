@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::create_memo;
+use crate::{create_memo, use_current_scope};
 
 /// Creates an effect on signals used inside the effect closure.
 ///
@@ -53,17 +53,23 @@ pub fn create_effect(f: impl FnMut() + 'static) {
 /// ```
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_effect_initial<T: 'static>(
-    f: impl FnOnce() -> (Box<dyn FnMut() + 'static>, T) + 'static,
+    initial: impl FnOnce() -> (Box<dyn FnMut() + 'static>, T) + 'static,
 ) -> T {
     let ret = Rc::new(RefCell::new(None));
-    let mut f = Some(f);
+    let mut initial = Some(initial);
     let mut effect = None;
+
+    // Run the initial function in the outer scope, not the effect scope.
+    // This is because we might want to create signals and other things managed by the reactive
+    // tree that will be used in furture triggers of this effect. These things must therefore live
+    // as long as the effect.
+    let scope = use_current_scope();
 
     create_effect({
         let ret = Rc::clone(&ret);
         move || {
-            if let Some(f) = f.take() {
-                let (new_f, value) = f();
+            if let Some(initial) = initial.take() {
+                let (new_f, value) = scope.run_in(initial);
                 effect = Some(new_f);
                 *ret.borrow_mut() = Some(value);
             } else {
