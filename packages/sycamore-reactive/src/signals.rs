@@ -301,6 +301,25 @@ impl<T> ReadSignal<T> {
         self.with_untracked(f)
     }
 
+    /// Creates a new [memo](create_memo) from this signal and a function. The resulting memo will
+    /// be created in the current reactive scope.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(0);
+    /// let doubled = state.map(|val| *val * 2);
+    /// assert_eq!(doubled.get(), 0);
+    /// state.set(1);
+    /// assert_eq!(doubled.get(), 2);
+    /// # });
+    /// ```
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
+        create_memo(move || self.with(&mut f))
+    }
+
     /// Track the signal in the current reactive scope. This is done automatically when calling
     /// [`ReadSignal::get`] and other similar methods.
     ///
@@ -475,25 +494,6 @@ impl<T> Signal<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_fn(self, f: impl FnOnce(&T) -> T) {
         self.update_silent(move |val| *val = f(val));
-    }
-
-    /// Creates a new [memo](create_memo) from this signal and a function. The resulting memo will
-    /// be created in the current reactive scope.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore_reactive::*;
-    /// # create_root(|| {
-    /// let state = create_signal(0);
-    /// let doubled = state.map(|val| *val * 2);
-    /// assert_eq!(doubled.get(), 0);
-    /// state.set(1);
-    /// assert_eq!(doubled.get(), 2);
-    /// # });
-    /// ```
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
-        create_memo(move || self.with(&mut f))
     }
 
     /// Split the signal into a reader/writter pair.
