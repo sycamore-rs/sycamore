@@ -1,7 +1,5 @@
 #![allow(non_snake_case)]
 
-use tags::set;
-
 use crate::*;
 
 /// Create an HTML element with `tag`.

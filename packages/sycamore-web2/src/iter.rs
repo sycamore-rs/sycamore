@@ -38,6 +38,7 @@ where
 /// For non keyed iteration, see [`Indexed`].
 ///
 /// # Example
+///
 /// ```
 /// # use sycamore::prelude::*;
 /// #[derive(Clone, PartialEq)]
@@ -81,56 +82,62 @@ where
         list, view, key, ..
     } = props;
 
-    let end_marker = HtmlNode::create_marker_node();
-    let end_marker_node = end_marker.as_web_sys().clone();
+    let start = HtmlNode::create_marker_node();
+    let start_node = start.as_web_sys().clone();
+    let end = HtmlNode::create_marker_node();
+    let end_node = end.as_web_sys().clone();
 
-    let initial_view = Rc::new(RefCell::new(Some(vec![])));
-    let nodes = map_keyed(
-        list,
-        {
-            let initial_view = initial_view.clone();
-            move |x| {
-                let view = view(x).into();
-                let node = view.as_web_sys();
-                if let Some(initial_view) = initial_view.borrow_mut().as_mut() {
-                    initial_view.push(view);
-                } else {
-                    DomRenderer.render_view_detatched(view);
-                }
-                node
-            }
-        },
-        key,
-    );
-    let mut initial_nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-    let mut prev_nodes: Vec<web_sys::Node> = Vec::new();
-    create_effect(move || {
-        // Flatten nodes.
-        let nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+    //create_effect_initial(move || {
+    //    let nodes = map_keyed(list, move |x| view(x).into(), key);
+    //    (Box::new(move || {}), (start, end).into())
+    //})
+    todo!()
 
-        if let Some(end_marker_node) = end_marker_node.get() {
-            // This will only run if this is the first time we are updating the list.
-            if prev_nodes.is_empty() {
-                prev_nodes = initial_nodes
-                    .drain(..)
-                    .map(|x| x.get().unwrap().clone())
-                    .collect();
-                prev_nodes.push(end_marker_node.clone());
-            }
-            let parent = end_marker_node.parent_node().unwrap();
-            let mut nodes = nodes
-                .iter()
-                .map(|x| x.get().unwrap().clone())
-                .collect::<Vec<_>>();
-
-            nodes.push(end_marker_node.clone());
-
-            reconcile_fragments(&parent, &mut prev_nodes, &nodes);
-            prev_nodes = nodes;
-        }
-    });
-
-    (initial_view.take().unwrap(), end_marker).into()
+    //let initial_view = Rc::new(RefCell::new(Some(vec![])));
+    //let nodes = map_keyed(
+    //    list,
+    //    {
+    //        let initial_view = initial_view.clone();
+    //        move |x| {
+    //            let view = view(x).into();
+    //            let node = view.as_web_sys();
+    //            if let Some(initial_view) = initial_view.borrow_mut().as_mut() {
+    //                initial_view.push(view);
+    //            } else {
+    //                DomRenderer.render_view_detatched(view);
+    //            }
+    //            node
+    //        }
+    //    },
+    //    key,
+    //);
+    //let mut initial_nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+    //let mut prev_nodes: Vec<web_sys::Node> = Vec::new();
+    //create_effect(move || {
+    //    // Flatten nodes.
+    //    let nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+    //
+    //    if let Some(end_marker_node) = end_node.get() {
+    //        // This will only run if this is the first time we are updating the list.
+    //        if prev_nodes.is_empty() {
+    //            prev_nodes = initial_nodes
+    //                .drain(..)
+    //                .map(|x| x.get().unwrap().clone())
+    //                .collect();
+    //            prev_nodes.push(end_marker_node.clone());
+    //        }
+    //        let parent = end_marker_node.parent_node().unwrap();
+    //        let mut nodes = nodes
+    //            .iter()
+    //            .map(|x| x.get().unwrap().clone())
+    //            .collect::<Vec<_>>();
+    //
+    //        nodes.push(end_marker_node.clone());
+    //
+    //        reconcile_fragments(&parent, &mut prev_nodes, &nodes);
+    //        prev_nodes = nodes;
+    //    }
+    //});
 }
 
 /// Props for [`Keyed`].
@@ -181,50 +188,51 @@ where
 {
     let IndexedProps { list, view, .. } = props;
 
-    let end_marker = HtmlNode::create_marker_node();
-    let end_marker_node = end_marker.as_web_sys().clone();
-
-    let initial_view = Rc::new(RefCell::new(Some(vec![])));
-    let nodes = map_indexed(list, {
-        let initial_view = initial_view.clone();
-        move |x| {
-            let view = view(x).into();
-            let node = view.as_web_sys();
-            if let Some(initial_view) = initial_view.borrow_mut().as_mut() {
-                initial_view.push(view);
-            } else {
-                DomRenderer.render_view_detatched(view);
-            }
-            node
-        }
-    });
-    let mut initial_nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-    let mut prev_nodes: Vec<web_sys::Node> = Vec::new();
-    create_effect(move || {
-        // Flatten nodes.
-        let nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-
-        // This will only run if this is the first time we are updating the list.
-        if prev_nodes.is_empty() {
-            prev_nodes = initial_nodes
-                .drain(..)
-                .map(|x| x.get().unwrap().clone())
-                .collect();
-            prev_nodes.push(end_marker_node.clone());
-        }
-        let parent = end_marker_node.parent_node().unwrap();
-        let mut nodes = nodes
-            .iter()
-            .map(|x| x.get().unwrap().clone())
-            .collect::<Vec<_>>();
-
-        nodes.push(end_marker_node.clone());
-
-        reconcile_fragments(&parent, &mut prev_nodes, &nodes);
-        prev_nodes = nodes;
-    });
-
-    (initial_view.take().unwrap(), end_marker).into()
+    //let end_marker = HtmlNode::create_marker_node();
+    //let end_marker_node = end_marker.as_web_sys().clone();
+    //
+    //let initial_view = Rc::new(RefCell::new(Some(vec![])));
+    //let nodes = map_indexed(list, {
+    //    let initial_view = initial_view.clone();
+    //    move |x| {
+    //        let view = view(x).into();
+    //        let node = view.as_web_sys();
+    //        if let Some(initial_view) = initial_view.borrow_mut().as_mut() {
+    //            initial_view.push(view);
+    //        } else {
+    //            DomRenderer.render_view_detatched(view);
+    //        }
+    //        node
+    //    }
+    //});
+    //let mut initial_nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+    //let mut prev_nodes: Vec<web_sys::Node> = Vec::new();
+    //create_effect(move || {
+    //    // Flatten nodes.
+    //    let nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+    //
+    //    // This will only run if this is the first time we are updating the list.
+    //    if prev_nodes.is_empty() {
+    //        prev_nodes = initial_nodes
+    //            .drain(..)
+    //            .map(|x| x.get().unwrap().clone())
+    //            .collect();
+    //        prev_nodes.push(end_marker_node.clone());
+    //    }
+    //    let parent = end_marker_node.parent_node().unwrap();
+    //    let mut nodes = nodes
+    //        .iter()
+    //        .map(|x| x.get().unwrap().clone())
+    //        .collect::<Vec<_>>();
+    //
+    //    nodes.push(end_marker_node.clone());
+    //
+    //    reconcile_fragments(&parent, &mut prev_nodes, &nodes);
+    //    prev_nodes = nodes;
+    //});
+    //
+    //(initial_view.take().unwrap(), end_marker).into()
+    todo!()
 }
 
 #[wasm_bindgen]
@@ -422,4 +430,31 @@ fn reconcile_fragments(parent: &web_sys::Node, a: &mut [web_sys::Node], b: &[web
             }
         }
     }
+}
+
+/// Get all nodes between `start` and `end`.
+///
+/// If `end` is before `start`, all nodes after `start` will be returned.
+fn get_nodes_between(start: &web_sys::Node, end: &web_sys::Node) -> Vec<web_sys::Node> {
+    let parent = start.parent_node().unwrap();
+    debug_assert_eq!(
+        parent,
+        end.parent_node().unwrap(),
+        "parents of `start` and `end` do not match"
+    );
+
+    let mut nodes = Vec::new();
+
+    let mut next = start.next_sibling();
+    while let Some(current) = next {
+        let tmp = current.next_sibling();
+        if &current == end {
+            break;
+        } else {
+            nodes.push(current);
+        }
+        next = tmp;
+    }
+
+    nodes
 }

@@ -134,10 +134,6 @@ impl Default for HydrationRegistry {
     }
 }
 
-/// Marker struct to be inserted into reactive context to indicate that we are in SSR mode.
-#[derive(Clone, Copy)]
-struct SsrMode;
-
 /// Create a new effect, but only if we are not in SSR mode.
 pub fn create_client_effect(f: impl FnMut() + 'static) {
     if is_not_ssr!() {

@@ -144,7 +144,8 @@ impl ViewHtmlNode for DomNode {
     ) {
         let cb = Closure::wrap(Box::new(handler) as Box<dyn FnMut(_)>);
         self.raw
-            .add_event_listener_with_callback(name, cb.as_ref().unchecked_ref());
+            .add_event_listener_with_callback(name, cb.as_ref().unchecked_ref())
+            .unwrap();
     }
 
     fn set_inner_html(&mut self, inner_html: Cow<'static, str>) {

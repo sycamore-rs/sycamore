@@ -27,23 +27,6 @@ impl<T> View<T> {
             nodes: smallvec![node],
         }
     }
-
-    /// Create a new dynamic view from a function that returns a view.
-    ///
-    /// Internally, this works by creating two marker nodes corresponding to the start and end of
-    /// the dynamic view. An effect is then created that will update the view whenever one of the
-    /// reactive dependencies of the function is triggered.
-    pub fn from_dynamic(f: impl FnMut() -> Self) -> Self
-    where
-        T: ViewHtmlNode,
-    {
-        let start = T::create_marker_node();
-        let end = T::create_marker_node();
-
-        Self {
-            nodes: smallvec![start, end],
-        }
-    }
 }
 
 impl<T> Default for View<T> {
