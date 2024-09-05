@@ -207,7 +207,7 @@ impl ToTokens for ComponentFn {
                     #inner_sig #block
 
                     let __dyn = ::sycamore::rt::create_signal(::std::rc::Rc::new(::std::cell::RefCell::new(::sycamore::rt::View::new())));
-                    let __view = ::sycamore::rt::View::new_dyn(move || __dyn.get_clone().take());
+                    let __view = ::sycamore::rt::View::from_dynamic(move || __dyn.get_clone().take());
 
                     ::sycamore::rt::suspense_scope(async move {
                         let __async_view = #inner_ident(#(#args),*).await;

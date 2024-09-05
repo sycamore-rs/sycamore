@@ -27,6 +27,15 @@ impl<T> View<T> {
             nodes: smallvec![node],
         }
     }
+
+    /// Create a new view from a function that returns a view. An alias to
+    /// [`ViewNode::create_dynamic_view`].
+    pub fn from_dynamic<U: Into<Self> + 'static>(f: impl FnMut() -> U + 'static) -> Self
+    where
+        T: ViewNode,
+    {
+        T::create_dynamic_view(f)
+    }
 }
 
 impl<T> Default for View<T> {

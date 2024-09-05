@@ -3,7 +3,7 @@ use super::*;
 #[wasm_bindgen_test]
 fn dyn_view_static() {
     let _ = create_root(|| {
-        let node: View = View::new_dyn(move || {
+        let node: View = View::from_dynamic(move || {
             view! {
                 div {
                     "Test"
@@ -22,7 +22,7 @@ fn dyn_view() {
         let view = create_signal(view! {
             "1"
         });
-        let node: View = View::new_dyn(move || view.get_clone());
+        let node: View = View::from_dynamic(move || view.get_clone());
 
         sycamore::render_in_scope(|| node, &test_container());
         let test_container = query("test-container");
@@ -61,8 +61,8 @@ fn dyn_fragment() {
 #[wasm_bindgen_test]
 fn dyn_nested() {
     let _ = create_root(|| {
-        let node: View = View::new_dyn(move || {
-            View::new_dyn(move || {
+        let node: View = View::from_dynamic(move || {
+            View::from_dynamic(move || {
                 view! {
                     div {
                         "Test"
@@ -81,8 +81,8 @@ fn dyn_scoped_nested() {
     let _ = create_root(|| {
         let num = create_signal(0);
 
-        let node: View = View::new_dyn(move || {
-            View::new_dyn(move || {
+        let node: View = View::from_dynamic(move || {
+            View::from_dynamic(move || {
                 view! {
                     div {
                         (num.get())
@@ -105,8 +105,8 @@ fn regression_572() {
 
         sycamore::render_in_scope(
             move || {
-                View::new_dyn(move || {
-                    View::new_dyn(move || {
+                View::from_dynamic(move || {
+                    View::from_dynamic(move || {
                         signal.track();
                         View::empty()
                     })

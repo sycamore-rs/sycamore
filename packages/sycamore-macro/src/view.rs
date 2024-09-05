@@ -45,7 +45,7 @@ impl Codegen {
                 let is_dynamic = !matches!(value, Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_));
                 if is_dynamic {
                     quote! {
-                        ::sycamore::rt::View::new_dyn(
+                        ::sycamore::rt::View::from_dynamic(
                             move || ::std::convert::Into::<::sycamore::rt::View>::into(#value)
                         )
                     }

@@ -45,9 +45,30 @@ impl ViewNode for DomNode {
             })
         } else {
             let start = Self::create_marker_node();
-            let view = f().into();
-            // TODO: create effect
+            let start_node = start.as_web_sys().clone();
             let end = Self::create_marker_node();
+            let end_node = end.as_web_sys().clone();
+            let view = create_effect_initial(move || {
+                let view = f().into();
+                (
+                    Box::new(move || {
+                        let new = f().into();
+                        if let Some(parent) = start_node.parent_node() {
+                            // Clear all the old nodes away.
+                            let old = iter::get_nodes_between(&start_node, &end_node);
+                            for node in old {
+                                parent.remove_child(&node).unwrap();
+                            }
+                            // Insert the new nodes in their place.
+                            for node in new.nodes {
+                                parent.insert_before(&node.raw, Some(&end_node)).unwrap();
+                            }
+                        }
+                    }),
+                    view,
+                )
+            });
+
             View::from((start, view, end))
         }
     }
@@ -146,6 +167,7 @@ impl ViewHtmlNode for DomNode {
         self.raw
             .add_event_listener_with_callback(name, cb.as_ref().unchecked_ref())
             .unwrap();
+        on_cleanup(|| drop(cb));
     }
 
     fn set_inner_html(&mut self, inner_html: Cow<'static, str>) {

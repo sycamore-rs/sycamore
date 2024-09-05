@@ -393,7 +393,7 @@ fn dyn_fragment_reuse_nodes() {
         sycamore::render_in_scope(
             {
                 let nodes = nodes.clone();
-                || View::new_dyn(move || View::new_fragment(nodes.clone()))
+                || View::from_dynamic(move || View::new_fragment(nodes.clone()))
             },
             &test_container(),
         );

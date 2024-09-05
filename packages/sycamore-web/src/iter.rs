@@ -435,7 +435,8 @@ fn reconcile_fragments(parent: &web_sys::Node, a: &mut [web_sys::Node], b: &[web
 /// Get all nodes between `start` and `end`.
 ///
 /// If `end` is before `start`, all nodes after `start` will be returned.
-fn get_nodes_between(start: &web_sys::Node, end: &web_sys::Node) -> Vec<web_sys::Node> {
+#[must_use]
+pub(crate) fn get_nodes_between(start: &web_sys::Node, end: &web_sys::Node) -> Vec<web_sys::Node> {
     let parent = start.parent_node().unwrap();
     debug_assert_eq!(
         parent,

@@ -46,8 +46,8 @@ impl ViewNode for SsrNode {
             f().into()
         } else {
             let start = Self::create_marker_node();
-            let view = f().into();
             let end = Self::create_marker_node();
+            let view = f().into();
             View::from((start, view, end))
         }
     }
