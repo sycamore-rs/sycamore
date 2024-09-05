@@ -169,7 +169,8 @@ pub fn use_transition() -> TransitionHandle {
     TransitionHandle { is_pending }
 }
 
-#[cfg(all(test, feature = "ssr", not(miri)))]
+#[cfg_ssr]
+#[cfg(test)]
 mod tests {
     use sycamore_futures::provide_executor_scope;
 

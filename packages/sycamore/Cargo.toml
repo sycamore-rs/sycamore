@@ -31,9 +31,7 @@ wasm-bindgen-test = "0.3.33"
 
 [features]
 default = ["web", "wasm-bindgen-interning"]
-dom = ["dep:sycamore-web"]
 nightly = ["sycamore-reactive/nightly"]
-ssr = ["web", "dep:sycamore-web"] # TODO: remove `dom` and `ssr` features.
 suspense = [
 	"futures",
 	"wasm-bindgen-futures",
@@ -51,7 +49,6 @@ web = ["dep:wasm-bindgen", "dep:web-sys", "dep:sycamore-web"]
 
 [[test]]
 name = "web"
-required-features = ["ssr"]
 
 [package.metadata.docs.rs]
 all-features = true

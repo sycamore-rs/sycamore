@@ -135,7 +135,7 @@ static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     .collect()
 });
 
-fn render_recursive(node: SsrNode, buf: &mut String) {
+pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
     match node {
         SsrNode::Element {
             tag,
@@ -200,33 +200,6 @@ fn render_recursive(node: SsrNode, buf: &mut String) {
             buf.push_str("<!--/-->");
         }
     }
-}
-
-/// Render a [`View`] into a static [`String`]. Useful for rendering to a string on the server side.
-#[must_use]
-pub fn render_to_string(view: impl FnOnce() -> View) -> String {
-    thread_local! {
-        /// Use a static variable here so that we can reuse the same root for multiple calls to
-        /// this function.
-        static SSR_ROOT: Lazy<RootHandle> = Lazy::new(|| create_root(|| {}));
-    }
-    let mut buf = String::new();
-    SSR_ROOT.with(|root| {
-        root.dispose();
-        root.run_in(|| {
-            let handle = create_child_scope(|| {
-                // We run this in a new scope so that we can dispose everything after we render it.
-                provide_context(HydrationRegistry::new());
-
-                let view = view();
-                for node in view.nodes {
-                    render_recursive(node, &mut buf);
-                }
-            });
-            handle.dispose();
-        });
-    });
-    buf
 }
 
 #[cfg(test)]

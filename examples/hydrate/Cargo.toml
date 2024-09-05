@@ -9,5 +9,5 @@ edition = "2021"
 console_error_panic_hook = "0.1.7"
 console_log = "0.2.0"
 log = "0.4.17"
-sycamore = { path = "../../packages/sycamore", features = ["ssr"] }
+sycamore = { path = "../../packages/sycamore" }
 wasm-bindgen = "0.2.83"

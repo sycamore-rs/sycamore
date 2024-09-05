@@ -4,8 +4,7 @@
 
 use sycamore::utils::render::{append_nodes, insert, reconcile_fragments};
 use sycamore_web::tags::*;
-use sycamore_web::IntoHtmlNode;
-use sycamore_web::ViewNode;
+use sycamore_web::{IntoHtmlNode, ViewNode};
 use wasm_bindgen_test::*;
 
 use super::*;

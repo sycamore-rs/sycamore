@@ -59,12 +59,11 @@ pub mod reactive {
     pub use sycamore_reactive::*;
 }
 
-#[cfg(feature = "ssr")]
-pub use web::render_to_string;
-#[cfg(all(feature = "ssr", feature = "suspense"))]
+#[cfg(feature = "suspense")]
 pub use web::render_to_string_await_suspense;
-#[cfg(feature = "web")]
-pub use web::{hydrate, hydrate_in_scope, hydrate_to, render, render_in_scope, render_to};
+pub use web::{
+    hydrate, hydrate_in_scope, hydrate_to, render, render_in_scope, render_to, render_to_string,
+};
 
 /// The sycamore prelude.
 ///

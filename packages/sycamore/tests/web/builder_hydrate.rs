@@ -60,7 +60,9 @@ mod hydrate_recursive {
 mod multiple_nodes_at_same_depth {
     use super::*;
     fn v() -> View {
-        div().children((p().children("First"), p().children("Second"))).into()
+        div()
+            .children((p().children("First"), p().children("Second")))
+            .into()
     }
     #[test]
     fn ssr() {
