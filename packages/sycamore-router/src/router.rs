@@ -255,7 +255,6 @@ where
     let nodes = view.as_web_sys();
     on_mount(move || {
         for node in nodes {
-            let node = node.get().unwrap_throw();
             let handler: Closure<dyn FnMut(web_sys::MouseEvent)> =
                 Closure::new(integration.click_handler());
             node.add_event_listener_with_callback("click", handler.into_js_value().unchecked_ref())
