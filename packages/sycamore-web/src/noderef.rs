@@ -23,7 +23,7 @@ use crate::*;
 /// }
 /// ```
 #[derive(PartialEq, Eq, Clone, Copy)]
-pub struct NodeRef(Signal<Rc<OnceCell<web_sys::Node>>>);
+pub struct NodeRef(Signal<Option<web_sys::Node>>);
 
 impl NodeRef {
     /// Alias to [`create_node_ref`].
@@ -65,7 +65,7 @@ impl NodeRef {
     /// Tries to get the raw web_sys node stored inside the node ref. Returns `None` if the node
     /// ref has not yet been set (i.e. the node has not yet been rendered into the DOM).
     pub fn try_get(&self) -> Option<web_sys::Node> {
-        self.0.get_clone().get().cloned()
+        self.0.get_clone()
     }
 
     /// Sets the node ref with the specified node.
@@ -85,7 +85,7 @@ impl NodeRef {
     ///     }
     /// }
     /// ```
-    pub fn set(&self, node: Rc<OnceCell<web_sys::Node>>) {
+    pub fn set(&self, node: Option<web_sys::Node>) {
         self.0.set(node);
     }
 }
@@ -118,5 +118,5 @@ impl fmt::Debug for NodeRef {
 /// # }
 /// ```
 pub fn create_node_ref() -> NodeRef {
-    NodeRef(create_signal(Rc::new(OnceCell::new())))
+    NodeRef(create_signal(None))
 }

@@ -82,7 +82,7 @@ pub mod prelude {
     pub use crate::reactive::*;
     #[cfg(feature = "web")]
     pub use crate::web::{
-        console_dbg, console_log, create_node_ref, document, is_client, is_ssr, on_mount, window,
+        console_dbg, console_log, create_node_ref, document, is_not_ssr, is_ssr, on_mount, window,
         Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed, NodeRef,
         SvgGlobalAttributes, View,
     };

@@ -5,48 +5,49 @@
 //!
 //! ## Feature flags
 //!
-//! - `dom` (_default_) - Enables the DOM rendering backend.
-//!
-//! - `ssr` - Enables server-side rendering (SSR) support.
-//!
 //! - `suspense` - Enables suspense support.
 //!
 //! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
 //!   improves performance at a slight cost in binary size. If you want to minimize the size of the
 //!   resulting `.wasm` binary, you might want to disable this.
+//!
+//! ## Server Side Rendering
+//!
+//! This crate uses target detection to determine whether to use DOM or SSR as the rendering
+//! backend. If the target arch is `wasm32`, DOM rendering will be used. Otherwise, SSR will be
+//! used. Sometimes, this isn't desirable (e.g., if using server side wasm). To override this
+//! behavior, you can set `--cfg sycamore_force_ssr` in your `RUSTFLAGS` environment variable when
+//! compiling to force SSR mode even on `wasm32`.
 
+// NOTE: Determining whether we are in SSR mode or not uses the cfg_ssr! and cfg_not_ssr! macros.
+// For dependencies, we have to put in the conditions manually.
 pub mod bind;
-#[cfg(feature = "dom")]
-mod dom;
-mod elements;
 pub mod events;
+
+mod elements;
 mod iter;
 mod node;
 mod noderef;
 mod portal;
-#[cfg(feature = "ssr")]
-mod ssr;
 mod view;
 
-use std::any::{Any, TypeId};
 use std::borrow::Cow;
-use std::cell::{Cell, OnceCell, RefCell};
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-#[cfg(feature = "dom")]
-pub use dom::*;
 pub use elements::*;
 pub use iter::*;
 pub use node::*;
 pub use noderef::*;
 pub use portal::*;
-#[cfg(feature = "ssr")]
-pub use ssr::*;
+use sycamore_macro::{cfg_not_ssr, cfg_ssr};
 use sycamore_reactive::*;
+pub use view::*;
 use wasm_bindgen::prelude::*;
 
 /// We add this to make the macros from `sycamore-macro` work properly.
 extern crate self as sycamore;
+
 #[doc(hidden)]
 #[allow(ambiguous_glob_reexports)]
 pub mod rt {
@@ -58,8 +59,51 @@ pub mod rt {
     pub use crate::*;
 }
 
-/// A type alias for [`View`](self::view::View) with [`HtmlNode`] as the node type.
-pub type View = self::view::View<HtmlNode>;
+/// A macro that expands to whether we are in SSR mode or not.
+#[macro_export]
+macro_rules! is_ssr {
+    () => {
+        cfg!(any(not(target_arch = "wasm32"), sycamore_force_ssr))
+    };
+}
+
+/// A macro that expands to whether we are in DOM mode or not.
+#[macro_export]
+macro_rules! is_not_ssr {
+    () => {
+        !$crate::is_ssr!()
+    };
+}
+
+/// `macro_rules!` equivalent of [`cfg_ssr`]. This is to get around the limitation of not being
+/// able to put proc-macros on `mod` items.
+#[macro_export]
+macro_rules! cfg_ssr_item {
+    ($($item:tt)*) => {
+        #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
+        $($item)*
+    };
+}
+
+/// `macro_rules!` equivalent of [`cfg_not_ssr`]. This is to get around the limitation of not being
+/// able to put proc-macros on `mod` items.
+#[macro_export]
+macro_rules! cfg_not_ssr_item {
+    ($($item:tt)*) => {
+        #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
+        $($item)*
+    };
+}
+
+#[cfg_ssr]
+type HtmlNode = SsrNode;
+#[cfg_not_ssr]
+type HtmlNode = DomNode;
+
+/// A type alias for [`View`](self::view::View) automatically selecting either dom or ssr node type
+/// depending on the feature flags enabled.
+pub type View<T = HtmlNode> = self::view::View<T>;
+
 /// A type alias for [`Children`](sycamore_core::Children) with [`HtmlNode`] as the node type.
 pub type Children = sycamore_core::Children<View>;
 
@@ -90,32 +134,9 @@ impl Default for HydrationRegistry {
     }
 }
 
-/// Marker struct to be inserted into reactive context to indicate that we are in SSR mode.
-#[derive(Clone, Copy)]
-struct SsrMode;
-
-/// Returns whether we are in SSR mode or not.
-pub fn is_ssr() -> bool {
-    if cfg!(feature = "dom") && !cfg!(feature = "ssr") {
-        false
-    } else if cfg!(feature = "ssr") && !cfg!(feature = "dom") {
-        true
-    } else {
-        // Do a runtime check.
-        try_use_context::<SsrMode>().is_some()
-    }
-}
-
-/// Returns whether we are in client side rendering (CSR) mode or not.
-///
-/// This is the opposite of [`is_ssr`].
-pub fn is_client() -> bool {
-    !is_ssr()
-}
-
 /// Create a new effect, but only if we are not in SSR mode.
 pub fn create_client_effect(f: impl FnMut() + 'static) {
-    if !is_ssr() {
+    if is_not_ssr!() {
         create_effect(f);
     }
 }
@@ -177,7 +198,7 @@ pub fn document() -> web_sys::Document {
 #[macro_export]
 macro_rules! console_log {
     ($($arg:tt)*) => {
-        if cfg!(target_arch = "wasm32") {
+        if is_not_ssr!() {
             $crate::rt::web_sys::console::log_1(&::std::format!($($arg)*).into());
         } else {
             ::std::println!($($arg)*);
@@ -192,7 +213,7 @@ macro_rules! console_log {
 #[macro_export]
 macro_rules! console_error {
     ($($arg:tt)*) => {
-        if cfg!(target_arch = "wasm32") {
+        if is_not_ssr!() {
             $crate::rt::web_sys::console::error_1(&::std::format!($($arg)*).into());
         } else {
             ::std::eprintln!($($arg)*);
@@ -208,7 +229,7 @@ macro_rules! console_error {
 #[macro_export]
 macro_rules! console_dbg {
     () => {
-        if cfg!(target_arch = "wasm32") {
+        if is_not_ssr!() {
             $crate::rt::web_sys::console::log_1(
                 &::std::format!("[{}:{}]", ::std::file!(), ::std::line!(),).into(),
             );
@@ -217,7 +238,7 @@ macro_rules! console_dbg {
         }
     };
     ($arg:expr $(,)?) => {
-        if cfg!(target_arch = "wasm32") {
+        if is_not_ssr!() {
             $crate::rt::web_sys::console::log_1(
                 &::std::format!(
                     "[{}:{}] {} = {:#?}",

@@ -79,9 +79,10 @@ pub fn Suspense(props: SuspenseProps) -> View {
     }
 }
 
-/// Creates a new "suspense scope". This scope is used to signal to a [`Suspense`] component higher
-/// up in the component hierarchy that there is some async task that should be awaited before
-/// rendering the UI.
+/// Creates a new "suspense scope".
+///
+/// This scope is used to signal to a [`Suspense`] component higher up in the component hierarchy
+/// that there is some async task that should be awaited before rendering the UI.
 ///
 /// The scope ends when the future is resolved.
 pub fn suspense_scope(f: impl Future<Output = ()> + 'static) {

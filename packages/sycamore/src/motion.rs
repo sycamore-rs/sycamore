@@ -194,7 +194,7 @@ impl<T: Lerp + Clone> Tweened<T> {
     pub fn set(&self, _new_value: T) {
         #[cfg(all(target_arch = "wasm32", feature = "web"))]
         {
-            use js_sys::Date;
+            use web_sys::js_sys::Date;
 
             let start = self.signal().get_clone_untracked();
             let easing_fn = Rc::clone(&self.0.with(|this| this.easing_fn.clone()));

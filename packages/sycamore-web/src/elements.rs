@@ -3,54 +3,39 @@
 use crate::*;
 
 /// Create an HTML element with `tag`.
-pub(crate) fn element(tag: &'static str) -> HtmlElement {
-    HtmlElement {
-        tag: Cow::Borrowed(tag),
-        is_svg: false,
-        attributes: vec![],
-        props: vec![],
-        children: vec![],
-        inner_html: None,
-        events: vec![],
-    }
+// TODO: deprecate
+pub(crate) fn element(tag: &'static str) -> HtmlNode {
+    HtmlNode::create_element(tag.into())
 }
 
 /// Create a SVG element with `tag`.
-pub(crate) fn svg_element(tag: &'static str) -> HtmlElement {
-    HtmlElement {
-        tag: Cow::Borrowed(tag),
-        is_svg: true,
-        attributes: vec![],
-        props: vec![],
-        children: vec![],
-        inner_html: None,
-        events: vec![],
-    }
+pub(crate) fn svg_element(tag: &'static str) -> HtmlNode {
+    HtmlNode::create_element_ns("http://www.w3.org/2000/svg", tag.into())
 }
 
 /// A struct representing a custom element. This can be created by calling [`custom_element`].
-pub struct CustomElement(HtmlElement, Rc<OnceCell<web_sys::Node>>);
+pub struct CustomElement(HtmlNode);
 
 /// Create a new custom element with `tag`.
 pub fn custom_element(tag: &'static str) -> CustomElement {
-    CustomElement(element(tag), Default::default())
+    CustomElement(element(tag))
 }
 
 impl From<CustomElement> for View {
     fn from(el: CustomElement) -> Self {
-        View::node(HtmlNode::element(el.0, el.1))
+        View::from_node(el.0)
     }
 }
 
-impl AsHtmlElement for CustomElement {
-    fn as_element(&self) -> &HtmlElement {
+impl IntoHtmlNode for CustomElement {
+    fn into_html_node(self) -> HtmlNode {
+        self.0
+    }
+    fn as_html_node(&self) -> &HtmlNode {
         &self.0
     }
-    fn as_mut_element(&mut self) -> &mut HtmlElement {
+    fn as_html_node_mut(&mut self) -> &mut HtmlNode {
         &mut self.0
-    }
-    fn to_node(&self) -> Rc<OnceCell<web_sys::Node>> {
-        self.1.clone()
     }
 }
 
@@ -63,8 +48,7 @@ macro_rules! impl_attribute {
     ($(#[$attr:meta])* $v:vis $ident:ident ($name:expr): $ty:ty) => {
         $(#[$attr])*
         $v fn $ident(mut self, value: impl Into<$ty>) -> Self {
-            let node = self.to_node();
-            set_attribute(self.as_mut_element(), node, $name, value.into());
+            set_attribute(self.as_html_node_mut(), $name, value.into());
             self
         }
     }
@@ -109,30 +93,30 @@ macro_rules! impl_element {
     ) => {
         paste::paste! {
             #[doc = "The `<" $name ">` HTML element. This can be created by calling [`" $name "()`]."]
-            pub struct [<Html $name:camel>] (HtmlElement, Rc<OnceCell<web_sys::Node>>);
+            pub struct [<Html $name:camel>] (HtmlNode);
 
             #[doc = "Create a `<" $name ">` element."]
             #[doc = ""]
             $(#[$attr])*
             pub fn $name() -> [<Html $name:camel>] {
-                [<Html $name:camel>](element($tag), Default::default())
+                [<Html $name:camel>](element($tag))
             }
 
             impl From<[<Html $name:camel>]> for View {
                 fn from(el: [<Html $name:camel>]) -> Self {
-                    View::node(HtmlNode::element(el.0, el.1))
+                    View::from_node(el.0)
                 }
             }
 
-            impl AsHtmlElement for [<Html $name:camel>] {
-                fn as_element(&self) -> &HtmlElement {
+            impl IntoHtmlNode for [<Html $name:camel>] {
+                fn into_html_node(self) -> HtmlNode {
+                    self.0
+                }
+                fn as_html_node(&self) -> &HtmlNode {
                     &self.0
                 }
-                fn as_mut_element(&mut self) -> &mut HtmlElement {
+                fn as_html_node_mut(&mut self) -> &mut HtmlNode {
                     &mut self.0
-                }
-                fn to_node(&self) -> Rc<OnceCell<web_sys::Node>> {
-                    self.1.clone()
                 }
             }
 
@@ -200,30 +184,30 @@ macro_rules! impl_svg_element {
     ) => {
         paste::paste! {
             #[doc = "The `<" $name ">` SVG element. This can be created by calling [`" $name "()`]."]
-            pub struct [<Svg $name:camel>] (HtmlElement, Rc<OnceCell<web_sys::Node>>);
+            pub struct [<Svg $name:camel>] (HtmlNode);
 
             #[doc = "Create a `<" $name ">` element."]
             #[doc = ""]
             $(#[$attr])*
             pub fn $name() -> [<Svg $name:camel>] {
-                [<Svg $name:camel>](svg_element($tag), Default::default())
+                [<Svg $name:camel>](svg_element($tag))
             }
 
             impl From<[<Svg $name:camel>]> for View {
                 fn from(el: [<Svg $name:camel>]) -> Self {
-                    View::node(HtmlNode::element(el.0, el.1))
+                    View::from_node(el.0)
                 }
             }
 
-            impl AsHtmlElement for [<Svg $name:camel>] {
-                fn as_element(&self) -> &HtmlElement {
+            impl IntoHtmlNode for [<Svg $name:camel>] {
+                fn into_html_node(self) -> HtmlNode {
+                    self.0
+                }
+                fn as_html_node(&self) -> &HtmlNode {
                     &self.0
                 }
-                fn as_mut_element(&mut self) -> &mut HtmlElement {
+                fn as_html_node_mut(&mut self) -> &mut HtmlNode {
                     &mut self.0
-                }
-                fn to_node(&self) -> Rc<OnceCell<web_sys::Node>> {
-                    self.1.clone()
                 }
             }
 
@@ -784,7 +768,7 @@ pub mod tags {
 ///
 /// Reference: <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes>
 #[allow(private_bounds)]
-pub trait HtmlGlobalAttributes: AsHtmlElement + Sized {
+pub trait HtmlGlobalAttributes: IntoHtmlNode + Sized {
     impl_attributes! {
         /// Provides a hint for generating a keyboard shortcut for the current element. This attribute consists of a space-separated list of characters. The browser should use the first one that exists on the computer keyboard layout.
         accesskey: MaybeDynString,
@@ -875,7 +859,7 @@ pub trait HtmlGlobalAttributes: AsHtmlElement + Sized {
 ///
 /// Reference: <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute>
 #[allow(private_bounds)]
-pub trait SvgGlobalAttributes: AsHtmlElement + Sized {
+pub trait SvgGlobalAttributes: IntoHtmlNode + Sized {
     impl_attributes! {
         accentHeight("accent-height"): MaybeDynString,
         accumulate: MaybeDynString,
@@ -1125,27 +1109,25 @@ pub trait SvgGlobalAttributes: AsHtmlElement + Sized {
 
 /// Attributes that are available on all elements.
 #[allow(private_bounds)]
-pub trait GlobalAttributes: AsHtmlElement + Sized {
+pub trait GlobalAttributes: IntoHtmlNode + Sized {
     /// Set attribute `name` with `value`.
     fn attr(mut self, name: &'static str, value: impl Into<MaybeDynString>) -> Self {
-        let node = self.to_node();
-        set_attribute(self.as_mut_element(), node, name, value.into());
+        let node = self.as_html_node_mut();
+        set_attribute(node, name, value.into());
         self
     }
 
     /// Set attribute `name` with `value`.
     fn bool_attr(mut self, name: &'static str, value: impl Into<MaybeDynBool>) -> Self {
-        let node = self.to_node();
-        set_attribute(self.as_mut_element(), node, name, value.into());
+        let node = self.as_html_node_mut();
+        set_attribute(node, name, value.into());
         self
     }
 
     /// Set JS property `name` with `value`.
     fn prop(mut self, name: &'static str, value: impl Into<MaybeDynJsValue>) -> Self {
-        if is_client() {
-            let node = self.to_node();
-            set_attribute(self.as_mut_element(), node, name, value.into());
-        }
+        let node = self.as_html_node_mut();
+        set_attribute(node, name, value.into());
         self
     }
 
@@ -1156,235 +1138,49 @@ pub trait GlobalAttributes: AsHtmlElement + Sized {
         mut handler: impl FnMut(T::EventTy) + 'static,
     ) -> Self {
         let scope = use_current_scope(); // Run handler inside the current scope.
-        self.as_mut_element().events.push((
-            T::NAME,
-            Box::new(move |ev| scope.run_in(|| handler(ev.unchecked_into()))),
-        ));
+        let handler = move |ev: web_sys::Event| scope.run_in(|| handler(ev.unchecked_into()));
+        let node = self.as_html_node_mut();
+        node.set_event_handler(T::NAME, handler);
         self
     }
 
     fn bind<T: bind::BindDescriptor>(mut self, _: T, signal: Signal<T::ValueTy>) -> Self {
+        let node = self.as_html_node_mut();
         let scope = use_current_scope(); // Run handler inside the current scope.
-        self.as_mut_element().events.push((
-            <T::Event as events::EventDescriptor>::NAME,
-            Box::new(move |ev| {
-                scope.run_in(|| {
-                    let value = js_sys::Reflect::get(
-                        &ev.current_target().unwrap(),
-                        &T::TARGET_PROPERTY.into(),
-                    )
-                    .unwrap();
-                    signal
-                        .set(T::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
-                })
-            }),
-        ));
+        let handler = move |ev: web_sys::Event| {
+            scope.run_in(|| {
+                let value =
+                    js_sys::Reflect::get(&ev.current_target().unwrap(), &T::TARGET_PROPERTY.into())
+                        .unwrap();
+                signal.set(T::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
+            })
+        };
+        node.set_event_handler(<T::Event as events::EventDescriptor>::NAME, handler);
+
         self.prop(T::TARGET_PROPERTY, move || signal.get_clone().into())
     }
 
     /// Set the inner html of an element.
-    fn dangerously_set_inner_html(mut self, inner_html: impl Into<String>) -> Self {
-        self.as_mut_element().inner_html = Some(inner_html.into());
+    fn dangerously_set_inner_html(mut self, inner_html: impl Into<Cow<'static, str>>) -> Self {
+        self.as_html_node_mut().set_inner_html(inner_html.into());
         self
     }
 
     /// Set the children of an element.
     fn children(mut self, children: impl Into<View>) -> Self {
-        self.as_mut_element().children.extend(children.into().nodes);
+        self.as_html_node_mut().append_view(children.into());
         self
     }
 
     fn r#ref(self, noderef: NodeRef) -> Self {
-        noderef.set(self.to_node());
+        if is_not_ssr!() {
+            noderef.set(Some(self.as_html_node().as_web_sys().clone()));
+        }
         self
     }
 }
 
 /// Helper function for setting a dynamic attribute.
-fn set_attribute<T: AttributeValue>(
-    el: &mut HtmlElement,
-    node: Rc<OnceCell<web_sys::Node>>,
-    name: &'static str,
-    value: T,
-) {
-    value.set_self(el, node, name);
+fn set_attribute(el: &mut HtmlNode, name: &'static str, value: impl AttributeValue) {
+    value.set_self(el, name);
 }
-
-trait AttributeValue {
-    fn set_self(self, el: &mut HtmlElement, node: Rc<OnceCell<web_sys::Node>>, name: &'static str);
-}
-
-impl AttributeValue for MaybeDynString {
-    fn set_self(self, el: &mut HtmlElement, node: Rc<OnceCell<web_sys::Node>>, name: &'static str) {
-        match self {
-            MaybeDyn::Static(value) => {
-                el.attributes.push(HtmlAttribute {
-                    name: Cow::Borrowed(name),
-                    value,
-                });
-            }
-            MaybeDyn::Dynamic(mut value) => {
-                let mut initial = true;
-                let initial_value = Rc::new(RefCell::new(None));
-                create_effect({
-                    let initial_value = initial_value.clone();
-                    move || {
-                        if initial {
-                            *initial_value.borrow_mut() = Some(value());
-                            initial = false;
-                        } else if is_client() {
-                            let value = value();
-                            if let Some(node) = node.get() {
-                                node.unchecked_ref::<web_sys::Element>()
-                                    .set_attribute(name, &value)
-                                    .unwrap();
-                            }
-                        }
-                    }
-                });
-                el.attributes.push(HtmlAttribute {
-                    name: Cow::Borrowed(name),
-                    value: initial_value.take().as_ref().unwrap().clone(),
-                });
-            }
-        }
-    }
-}
-
-impl AttributeValue for MaybeDynBool {
-    fn set_self(self, el: &mut HtmlElement, node: Rc<OnceCell<web_sys::Node>>, name: &'static str) {
-        match self {
-            MaybeDyn::Static(value) => {
-                if value {
-                    el.attributes.push(HtmlAttribute {
-                        name: Cow::Borrowed(name),
-                        value: Cow::Borrowed(""),
-                    });
-                }
-            }
-            MaybeDyn::Dynamic(mut value) => {
-                let mut initial = true;
-                let initial_value = Rc::new(Cell::new(false));
-                create_effect({
-                    let initial_value = initial_value.clone();
-                    move || {
-                        if initial {
-                            initial_value.set(value());
-                            initial = false;
-                        } else if is_client() {
-                            let value = value();
-                            if let Some(node) = node.get() {
-                                let node = node.unchecked_ref::<web_sys::Element>();
-                                if value {
-                                    node.set_attribute(name, "").unwrap();
-                                } else {
-                                    node.remove_attribute(name).unwrap();
-                                }
-                            }
-                        }
-                    }
-                });
-                if initial_value.get() {
-                    el.attributes.push(HtmlAttribute {
-                        name: Cow::Borrowed(name),
-                        value: Cow::Borrowed(""),
-                    });
-                }
-            }
-        }
-    }
-}
-
-impl AttributeValue for MaybeDynJsValue {
-    fn set_self(self, el: &mut HtmlElement, node: Rc<OnceCell<web_sys::Node>>, name: &'static str) {
-        match self {
-            MaybeDyn::Static(value) => {
-                el.props.push(HtmlProp {
-                    name: Cow::Borrowed(name),
-                    value,
-                });
-            }
-            MaybeDyn::Dynamic(mut value) => {
-                let mut initial = true;
-                let initial_value = Rc::new(RefCell::new(None));
-                create_effect({
-                    let initial_value = initial_value.clone();
-                    move || {
-                        if initial {
-                            *initial_value.borrow_mut() = Some(value());
-                            initial = false;
-                        } else if is_client() {
-                            let value = value();
-                            if let Some(node) = node.get() {
-                                js_sys::Reflect::set(node, &JsValue::from_str(name), &value)
-                                    .unwrap();
-                            }
-                        }
-                    }
-                });
-                el.props.push(HtmlProp {
-                    name: Cow::Borrowed(name),
-                    value: initial_value.take().as_ref().unwrap().clone(),
-                });
-            }
-        }
-    }
-}
-
-/// Represents a value that can be either static or dynamic.
-pub enum MaybeDyn<T> {
-    Static(T),
-    Dynamic(Box<dyn FnMut() -> T>),
-}
-
-impl<T, F: FnMut() -> U + 'static, U: Into<T>> From<F> for MaybeDyn<T> {
-    fn from(mut f: F) -> Self {
-        Self::Dynamic(Box::new(move || f().into()))
-    }
-}
-
-/// A possibly dynamic string value.
-pub type MaybeDynString = MaybeDyn<Cow<'static, str>>;
-
-/// A possibly dynamic boolean value.
-pub type MaybeDynBool = MaybeDyn<bool>;
-
-/// A possibly dynamic [`JsValue`].
-pub type MaybeDynJsValue = MaybeDyn<JsValue>;
-
-macro_rules! impl_from_maybe_dyn {
-    ($struct:ty, $($ty:ty),*) => {
-        $(
-            impl From<$ty> for $struct {
-                fn from(value: $ty) -> Self {
-                    Self::Static(value.into())
-                }
-            }
-        )*
-    };
-}
-
-impl_from_maybe_dyn!(MaybeDynString, &'static str, String, Cow<'static, str>);
-
-impl_from_maybe_dyn!(MaybeDynBool, bool);
-
-impl_from_maybe_dyn!(
-    MaybeDynJsValue,
-    JsValue,
-    String,
-    bool,
-    i8,
-    i16,
-    i32,
-    i64,
-    i128,
-    isize,
-    u8,
-    u16,
-    u32,
-    u64,
-    u128,
-    usize,
-    f32,
-    f64
-);

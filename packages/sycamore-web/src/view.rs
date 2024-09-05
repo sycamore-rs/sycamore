@@ -1,28 +1,37 @@
 //! This module contains the [`View`] struct which represents a view tree.
 
+use std::any::{Any, TypeId};
 use std::fmt;
+
+use smallvec::{smallvec, SmallVec};
+
+use crate::*;
 
 /// Represents a view tree.
 pub struct View<T> {
     /// The nodes in the view tree.
-    pub(crate) nodes: Vec<T>,
+    pub(crate) nodes: SmallVec<[T; 1]>,
 }
 
 impl<T> View<T> {
     /// Create a new blank view.
     pub fn new() -> Self {
-        View { nodes: Vec::new() }
+        Self {
+            nodes: SmallVec::new(),
+        }
     }
 
     /// Create a new view with a single node.
-    pub fn node(node: T) -> Self {
-        View { nodes: vec![node] }
+    pub fn from_node(node: T) -> Self {
+        Self {
+            nodes: smallvec![node],
+        }
     }
 }
 
 impl<T> Default for View<T> {
     fn default() -> Self {
-        View { nodes: Vec::new() }
+        Self::new()
     }
 }
 
@@ -46,6 +55,38 @@ impl<T> From<Option<View<T>>> for View<T> {
     }
 }
 
+macro_rules! impl_view_from {
+    ($($ty:ty),*) => {
+        $(
+            impl<T: ViewHtmlNode> From<$ty> for View<T> {
+                fn from(t: $ty) -> Self {
+                    View::from_node(T::create_text_node(t.into()))
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! impl_view_from_to_string {
+    ($($ty:ty),*) => {
+        $(
+            impl<T: ViewHtmlNode> From<$ty> for View<T> {
+                fn from(t: $ty) -> Self {
+                    View::from_node(T::create_text_node(t.to_string().into()))
+                }
+            }
+        )*
+    }
+}
+
+impl_view_from!(&'static str, String, Cow<'static, str>);
+impl_view_from_to_string!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64);
+
+impl<T: ViewNode, F: FnMut() -> U + 'static, U: Into<View<T>> + Any + 'static> From<F> for View<T> {
+    fn from(f: F) -> Self {
+        T::create_dynamic_view(f)
+    }
+}
 // Implement `From` for all tuples of types that implement `Into<View<U>>`.
 macro_rules! impl_from_tuple {
     ($($name:ident),*) => {
@@ -57,7 +98,7 @@ macro_rules! impl_from_tuple {
                 fn from(t: ($($name,)*)) -> Self {
                     let ($([<$name:lower>]),*) = t;
                     #[allow(unused_mut)]
-                    let mut nodes = Vec::new();
+                    let mut nodes = SmallVec::new();
                     $(
                         nodes.extend([<$name:lower>].into().nodes);
                     )*
@@ -78,3 +119,36 @@ impl_from_tuple!(A, B, C, D, E, F, G);
 impl_from_tuple!(A, B, C, D, E, F, G, H);
 impl_from_tuple!(A, B, C, D, E, F, G, H, I);
 impl_from_tuple!(A, B, C, D, E, F, G, H, I, J);
+
+/// A trait that should be implemented for anything that represents a node in the view tree (UI
+/// tree).
+///
+/// Examples include `DomNode` and `SsrNode` which are used to render views to the browser DOM and
+/// to a string respectively. This trait can be implemented for other types to create custom render
+/// backends.
+pub trait ViewNode: Into<View<Self>> + Sized {
+    /// Appends a child to the node. Panics if the node is not an element or other node that can
+    /// have children (e.g. text node).
+    fn append_child(&mut self, child: Self);
+
+    /// Append a view to this node. Since a view is just a list of nodes, this essentially appends
+    /// every node in the view to this node.
+    fn append_view(&mut self, view: View<Self>) {
+        for node in view.nodes {
+            self.append_child(node);
+        }
+    }
+
+    /// Create a dynamic view from a function that returns a view.
+    ///
+    /// The returned view will no longer be a function and can be treated as a normal view and,
+    /// e.g., appended as a child to another node.
+    ///
+    /// Some render backends may not support dynamic views (e.g. `SsrNode`). In that case, the
+    /// default behavior is to simply evaluate the function as a static view.
+    fn create_dynamic_view<U: Into<View<Self>> + 'static>(
+        mut f: impl FnMut() -> U + 'static,
+    ) -> View<Self> {
+        f().into()
+    }
+}
