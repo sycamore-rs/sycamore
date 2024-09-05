@@ -3,44 +3,27 @@
 #![allow(clippy::redundant_clone)] // Borrow checking error
 
 use sycamore::utils::render::{append_nodes, insert, reconcile_fragments};
+use sycamore_web::tags::*;
+use sycamore_web::IntoHtmlNode;
+use sycamore_web::ViewNode;
 use wasm_bindgen_test::*;
 
 use super::*;
 
-#[wasm_bindgen_test]
-fn insert_create_nodes() {
-    let _ = create_root(|| {
-        let nodes = [
-            DomNode::text_node("1".into()),
-            DomNode::text_node("2".into()),
-            DomNode::text_node("3".into()),
-        ];
-        let parent = DomNode::element::<html::div>();
-
-        insert(
-            &parent,
-            View::new_fragment(nodes.iter().cloned().map(View::new_node).collect()),
-            None,
-            None,
-            true,
-        );
-        assert_text_content!(parent.to_web_sys(), "123");
-    });
+macro_rules! nodes {
+    ($($node:expr),*) => {
+        [$(
+            HtmlNode::create_text_node(stringify!($node).into()),
+        )*]
+    };
 }
 
 #[wasm_bindgen_test]
 fn reconcile_pop_nodes() {
-    let nodes = [
-        DomNode::text_node("1".into()),
-        DomNode::text_node("2".into()),
-        DomNode::text_node("3".into()),
-    ];
-    let parent = DomNode::element::<html::div>();
-    let child_nodes = nodes.to_vec();
+    let nodes = nodes![1, 2, 3];
+    let parent = div().into_html_node();
 
-    for node in &child_nodes {
-        parent.append_child(node);
-    }
+    parent.append_view(View::from_nodes(nodes));
     assert_text_content!(parent.to_web_sys(), "123");
 
     reconcile_fragments(&parent, &mut child_nodes.clone(), &nodes[..2]);

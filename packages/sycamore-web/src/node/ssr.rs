@@ -149,15 +149,15 @@ fn render_recursive(node: SsrNode, buf: &mut String) {
             buf.push_str(&tag);
             for (name, value) in &attributes {
                 buf.push(' ');
-                buf.push_str(&name);
+                buf.push_str(name);
                 buf.push_str("=\"");
-                html_escape::encode_double_quoted_attribute_to_string(&value, buf);
+                html_escape::encode_double_quoted_attribute_to_string(value, buf);
                 buf.push('"');
             }
             for (name, value) in &bool_attributes {
                 if *value {
                     buf.push(' ');
-                    buf.push_str(&name);
+                    buf.push_str(name);
                 }
             }
 

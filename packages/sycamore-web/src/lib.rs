@@ -32,7 +32,7 @@ mod portal;
 mod view;
 
 use std::borrow::Cow;
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::rc::Rc;
 
 pub use elements::*;

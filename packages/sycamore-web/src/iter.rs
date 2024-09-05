@@ -107,19 +107,22 @@ where
                         .collect(),
                 )
             });
-            (Box::new(move || {
-                // Get all nodes between start and end and reconcile with new nodes.
-                let mut new = flattened.get_clone();
-                let mut old = get_nodes_between(&start_node, &end_node);
-                // We must include the end node in case `old` is empty (precondition for
-                // reconcile_fragments).
-                new.push(end_node.clone());
-                old.push(end_node.clone());
+            (
+                Box::new(move || {
+                    // Get all nodes between start and end and reconcile with new nodes.
+                    let mut new = flattened.get_clone();
+                    let mut old = get_nodes_between(&start_node, &end_node);
+                    // We must include the end node in case `old` is empty (precondition for
+                    // reconcile_fragments).
+                    new.push(end_node.clone());
+                    old.push(end_node.clone());
 
-                if let Some(parent) = start_node.parent_node() {
-                    reconcile_fragments(&parent, &mut old, &new);
-                }
-            }), (start, view, end).into())
+                    if let Some(parent) = start_node.parent_node() {
+                        reconcile_fragments(&parent, &mut old, &new);
+                    }
+                }),
+                (start, view, end).into(),
+            )
         })
     }
 }
@@ -197,19 +200,22 @@ where
                         .collect(),
                 )
             });
-            (Box::new(move || {
-                // Get all nodes between start and end and reconcile with new nodes.
-                let mut new = flattened.get_clone();
-                let mut old = get_nodes_between(&start_node, &end_node);
-                // We must include the end node in case `old` is empty (precondition for
-                // reconcile_fragments).
-                new.push(end_node.clone());
-                old.push(end_node.clone());
+            (
+                Box::new(move || {
+                    // Get all nodes between start and end and reconcile with new nodes.
+                    let mut new = flattened.get_clone();
+                    let mut old = get_nodes_between(&start_node, &end_node);
+                    // We must include the end node in case `old` is empty (precondition for
+                    // reconcile_fragments).
+                    new.push(end_node.clone());
+                    old.push(end_node.clone());
 
-                if let Some(parent) = start_node.parent_node() {
-                    reconcile_fragments(&parent, &mut old, &new);
-                }
-            }), (start, view, end).into())
+                    if let Some(parent) = start_node.parent_node() {
+                        reconcile_fragments(&parent, &mut old, &new);
+                    }
+                }),
+                (start, view, end).into(),
+            )
         })
     }
 }

@@ -6,8 +6,9 @@ use std::mem;
 
 use crate::*;
 
-/// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
-/// computed, meaning that it's value will only be updated when requested. Modifications to the
+/// Function that maps a `Vec` to another `Vec` via a map function and a key.
+///
+/// The mapped `Vec` is lazily computed, meaning that it's value will only be updated when requested. Modifications to the
 /// input `Vec` are diffed using keys to prevent recomputing values that have not changed.
 ///
 /// This function is the underlying utility behind `Keyed`.
@@ -173,8 +174,9 @@ where
     create_memo(move || scope.run_in(&mut update))
 }
 
-/// Function that maps a `Vec` to another `Vec` via a map function. The mapped `Vec` is lazy
-/// computed, meaning that it's value will only be updated when requested. Modifications to the
+/// Function that maps a `Vec` to another `Vec` via a map function.
+///
+/// The mapped `Vec` is lazily computed, meaning that it's value will only be updated when requested. Modifications to the
 /// input `Vec` are diffed by index to prevent recomputing values that have not changed.
 ///
 /// Generally, it is preferred to use [`map_keyed`] instead when a key function
