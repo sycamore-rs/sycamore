@@ -881,6 +881,7 @@ pub trait SvgGlobalAttributes: IntoHtmlNode + Sized {
         by: MaybeDynString,
         calcMode("calcMode"): MaybeDynString,
         capHeight("cap-height"): MaybeDynString,
+        class: MaybeDynString,
         clipPathUnits("clipPathUnits"): MaybeDynString,
         clipPath("clip-path"): MaybeDynString,
         clipRule("clip-rule"): MaybeDynString,

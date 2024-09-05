@@ -1,4 +1,5 @@
 use std::any::{Any, TypeId};
+use std::cell::RefCell;
 
 use wasm_bindgen::intern;
 
@@ -76,17 +77,25 @@ impl ViewNode for DomNode {
 
 impl ViewHtmlNode for DomNode {
     fn create_element(tag: Cow<'static, str>) -> Self {
-        Self {
-            raw: document().create_element(&tag).unwrap().into(),
+        if IS_HYDRATING.get() {
+            HYDRATE_NODES.with(|x| x.borrow_mut().pop().expect("no node found to hydrate"))
+        } else {
+            Self {
+                raw: document().create_element(&tag).unwrap().into(),
+            }
         }
     }
 
     fn create_element_ns(namespace: &str, tag: Cow<'static, str>) -> Self {
-        Self {
-            raw: document()
-                .create_element_ns(Some(namespace), &tag)
-                .unwrap()
-                .into(),
+        if IS_HYDRATING.get() {
+            HYDRATE_NODES.with(|x| x.borrow_mut().pop().expect("no node found to hydrate"))
+        } else {
+            Self {
+                raw: document()
+                    .create_element_ns(Some(namespace), &tag)
+                    .unwrap()
+                    .into(),
+            }
         }
     }
 
@@ -183,4 +192,11 @@ impl ViewHtmlNode for DomNode {
     fn from_web_sys(node: web_sys::Node) -> Self {
         Self { raw: node }
     }
+}
+
+thread_local! {
+    /// A list of nodes to be hydrated. The `Vec` should be sorted in reverse order of hydration
+    /// key. Every time a node is hydrated, it should be popped from this list.
+    pub(crate) static HYDRATE_NODES: RefCell<Vec<DomNode>> = const { RefCell::new(Vec::new()) };
+    pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };
 }

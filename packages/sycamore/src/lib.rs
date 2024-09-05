@@ -7,12 +7,8 @@
 //!
 //! ## Feature Flags
 //!
-//! - `dom` (_default_) - Enables the DOM rendering backend.
-//!
 //! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
 //!   `serde`.
-//!
-//! - `ssr` - Enables server-side rendering (SSR) support.
 //!
 //! - `suspense` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
 //!   reactive scope into an `async` function.

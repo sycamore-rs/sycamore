@@ -1,9 +1,10 @@
 //! This module contains the [`View`] struct which represents a view tree.
 
-use std::any::{Any, TypeId};
+use std::any::Any;
 use std::fmt;
 
 use smallvec::{smallvec, SmallVec};
+use sycamore_core::Children;
 
 use crate::*;
 
@@ -65,6 +66,12 @@ impl<T> Default for View<T> {
 impl<T> fmt::Debug for View<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("View").finish()
+    }
+}
+
+impl<T> From<Children<Self>> for View<T> {
+    fn from(children: Children<Self>) -> Self {
+        children.call()
     }
 }
 

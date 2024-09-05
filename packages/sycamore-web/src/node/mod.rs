@@ -2,9 +2,9 @@
 
 use crate::*;
 
-cfg_not_ssr_item!(
-    mod dom;
-);
+//cfg_not_ssr_item!(
+mod dom;
+//);
 cfg_ssr_item!(
     mod ssr;
 );
@@ -174,9 +174,13 @@ pub fn render_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 /// It is expected that this function will be called inside a reactive root, usually created using
 /// [`create_root`].
 pub fn render_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
-    let nodes = view().nodes;
-    for node in nodes {
-        parent.append_child(node.as_web_sys()).unwrap();
+    if is_ssr!() {
+        panic!("`render_in_scope` is not available in SSR mode");
+    } else {
+        let nodes = view().nodes;
+        for node in nodes {
+            parent.append_child(node.as_web_sys()).unwrap();
+        }
     }
 }
 
@@ -208,13 +212,46 @@ pub fn hydrate_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 /// It is expected that this function will be called inside a reactive root, usually created using
 /// [`create_root`].
 pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
-    todo!("hydrate")
+    cfg_ssr_item! {{
+        let _ = view;
+        let _ = parent;
+        panic!("`hydrate_in_scope` is not available in SSR mode");
+    }}
+    cfg_not_ssr_item! {{
+        provide_context(HydrationRegistry::new());
+        // Get all nodes with `data-hk` attribute.
+        let mut existing_nodes = parent
+            .unchecked_ref::<web_sys::Element>()
+            .query_selector_all("[data-hk]")
+            .unwrap();
+        let len = existing_nodes.length();
+        let mut temp = vec![None; len as usize];
+        for i in 0..len {
+            let node = existing_nodes.get(i).unwrap();
+            let hk = node.unchecked_ref::<web_sys::Element>().get_attribute("data-hk").unwrap();
+            let hk = hk.parse::<usize>().unwrap();
+            temp[hk] = Some(node);
+        }
+
+        // Now assign every element in temp to HYDRATION_NODES
+        HYDRATE_NODES.with(|nodes| {
+            *nodes.borrow_mut() = temp.into_iter().map(|x| HtmlNode::from_web_sys(x.unwrap())).rev().collect();
+        });
+
+        IS_HYDRATING.set(true);
+        view();
+        IS_HYDRATING.set(false);
+    }}
 }
 
 /// Render a [`View`] into a static [`String`]. Useful for rendering to a string on the server side.
 #[must_use]
 pub fn render_to_string(view: impl FnOnce() -> View) -> String {
-    cfg_ssr_item! {
+    cfg_not_ssr_item! {{
+        let _ = view;
+        panic!("`render_to_string` only available in SSR mode");
+    }}
+    cfg_ssr_item! {{
         use std::cell::LazyCell;
 
         thread_local! {
@@ -239,8 +276,5 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
             });
         });
         buf
-    }
-    cfg_not_ssr_item! {
-        panic!("`render_to_string` only available in SSR mode");
-    }
+    }}
 }
