@@ -179,6 +179,10 @@ impl ViewHtmlNode for DomNode {
     fn as_web_sys(&self) -> &web_sys::Node {
         &self.raw
     }
+
+    fn from_web_sys(node: web_sys::Node) -> Self {
+        Self { raw: node }
+    }
 }
 
 /// Render a [`View`] into the DOM.

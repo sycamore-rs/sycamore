@@ -82,62 +82,46 @@ where
         list, view, key, ..
     } = props;
 
-    let start = HtmlNode::create_marker_node();
-    let start_node = start.as_web_sys().clone();
-    let end = HtmlNode::create_marker_node();
-    let end_node = end.as_web_sys().clone();
+    if is_ssr!() {
+        // In SSR mode, just create a static view.
+        View::from(
+            list.value()
+                .into_iter()
+                .map(|x| view(x).into())
+                .collect::<Vec<_>>(),
+        )
+    } else {
+        let start = HtmlNode::create_marker_node();
+        let start_node = start.as_web_sys().clone();
+        let end = HtmlNode::create_marker_node();
+        let end_node = end.as_web_sys().clone();
 
-    //create_effect_initial(move || {
-    //    let nodes = map_keyed(list, move |x| view(x).into(), key);
-    //    (Box::new(move || {}), (start, end).into())
-    //})
-    todo!()
+        create_effect_initial(move || {
+            let nodes = map_keyed(list, move |x| view(x).into().as_web_sys(), key);
+            // Flatten nodes.
+            let flattened = nodes.map(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+            let view = flattened.with(|x| {
+                View::from_nodes(
+                    x.iter()
+                        .map(|x| HtmlNode::from_web_sys(x.clone()))
+                        .collect(),
+                )
+            });
+            (Box::new(move || {
+                // Get all nodes between start and end and reconcile with new nodes.
+                let mut new = flattened.get_clone();
+                let mut old = get_nodes_between(&start_node, &end_node);
+                // We must include the end node in case `old` is empty (precondition for
+                // reconcile_fragments).
+                new.push(end_node.clone());
+                old.push(end_node.clone());
 
-    //let initial_view = Rc::new(RefCell::new(Some(vec![])));
-    //let nodes = map_keyed(
-    //    list,
-    //    {
-    //        let initial_view = initial_view.clone();
-    //        move |x| {
-    //            let view = view(x).into();
-    //            let node = view.as_web_sys();
-    //            if let Some(initial_view) = initial_view.borrow_mut().as_mut() {
-    //                initial_view.push(view);
-    //            } else {
-    //                DomRenderer.render_view_detatched(view);
-    //            }
-    //            node
-    //        }
-    //    },
-    //    key,
-    //);
-    //let mut initial_nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-    //let mut prev_nodes: Vec<web_sys::Node> = Vec::new();
-    //create_effect(move || {
-    //    // Flatten nodes.
-    //    let nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-    //
-    //    if let Some(end_marker_node) = end_node.get() {
-    //        // This will only run if this is the first time we are updating the list.
-    //        if prev_nodes.is_empty() {
-    //            prev_nodes = initial_nodes
-    //                .drain(..)
-    //                .map(|x| x.get().unwrap().clone())
-    //                .collect();
-    //            prev_nodes.push(end_marker_node.clone());
-    //        }
-    //        let parent = end_marker_node.parent_node().unwrap();
-    //        let mut nodes = nodes
-    //            .iter()
-    //            .map(|x| x.get().unwrap().clone())
-    //            .collect::<Vec<_>>();
-    //
-    //        nodes.push(end_marker_node.clone());
-    //
-    //        reconcile_fragments(&parent, &mut prev_nodes, &nodes);
-    //        prev_nodes = nodes;
-    //    }
-    //});
+                if let Some(parent) = start_node.parent_node() {
+                    reconcile_fragments(&parent, &mut old, &new);
+                }
+            }), (start, view, end).into())
+        })
+    }
 }
 
 /// Props for [`Keyed`].
@@ -188,51 +172,46 @@ where
 {
     let IndexedProps { list, view, .. } = props;
 
-    //let end_marker = HtmlNode::create_marker_node();
-    //let end_marker_node = end_marker.as_web_sys().clone();
-    //
-    //let initial_view = Rc::new(RefCell::new(Some(vec![])));
-    //let nodes = map_indexed(list, {
-    //    let initial_view = initial_view.clone();
-    //    move |x| {
-    //        let view = view(x).into();
-    //        let node = view.as_web_sys();
-    //        if let Some(initial_view) = initial_view.borrow_mut().as_mut() {
-    //            initial_view.push(view);
-    //        } else {
-    //            DomRenderer.render_view_detatched(view);
-    //        }
-    //        node
-    //    }
-    //});
-    //let mut initial_nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-    //let mut prev_nodes: Vec<web_sys::Node> = Vec::new();
-    //create_effect(move || {
-    //    // Flatten nodes.
-    //    let nodes = nodes.with(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-    //
-    //    // This will only run if this is the first time we are updating the list.
-    //    if prev_nodes.is_empty() {
-    //        prev_nodes = initial_nodes
-    //            .drain(..)
-    //            .map(|x| x.get().unwrap().clone())
-    //            .collect();
-    //        prev_nodes.push(end_marker_node.clone());
-    //    }
-    //    let parent = end_marker_node.parent_node().unwrap();
-    //    let mut nodes = nodes
-    //        .iter()
-    //        .map(|x| x.get().unwrap().clone())
-    //        .collect::<Vec<_>>();
-    //
-    //    nodes.push(end_marker_node.clone());
-    //
-    //    reconcile_fragments(&parent, &mut prev_nodes, &nodes);
-    //    prev_nodes = nodes;
-    //});
-    //
-    //(initial_view.take().unwrap(), end_marker).into()
-    todo!()
+    if is_ssr!() {
+        // In SSR mode, just create a static view.
+        View::from(
+            list.value()
+                .into_iter()
+                .map(|x| view(x).into())
+                .collect::<Vec<_>>(),
+        )
+    } else {
+        let start = HtmlNode::create_marker_node();
+        let start_node = start.as_web_sys().clone();
+        let end = HtmlNode::create_marker_node();
+        let end_node = end.as_web_sys().clone();
+
+        create_effect_initial(move || {
+            let nodes = map_indexed(list, move |x| view(x).into().as_web_sys());
+            // Flatten nodes.
+            let flattened = nodes.map(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+            let view = flattened.with(|x| {
+                View::from_nodes(
+                    x.iter()
+                        .map(|x| HtmlNode::from_web_sys(x.clone()))
+                        .collect(),
+                )
+            });
+            (Box::new(move || {
+                // Get all nodes between start and end and reconcile with new nodes.
+                let mut new = flattened.get_clone();
+                let mut old = get_nodes_between(&start_node, &end_node);
+                // We must include the end node in case `old` is empty (precondition for
+                // reconcile_fragments).
+                new.push(end_node.clone());
+                old.push(end_node.clone());
+
+                if let Some(parent) = start_node.parent_node() {
+                    reconcile_fragments(&parent, &mut old, &new);
+                }
+            }), (start, view, end).into())
+        })
+    }
 }
 
 #[wasm_bindgen]

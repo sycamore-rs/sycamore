@@ -119,6 +119,10 @@ impl ViewHtmlNode for SsrNode {
     fn as_web_sys(&self) -> &web_sys::Node {
         panic!("`as_web_sys()` is not supported in SSR mode")
     }
+
+    fn from_web_sys(_node: web_sys::Node) -> Self {
+        panic!("`from_web_sys()` is not supported in SSR mode")
+    }
 }
 
 /// A list of all the void HTML elements. We need this to know how to render them to a string.

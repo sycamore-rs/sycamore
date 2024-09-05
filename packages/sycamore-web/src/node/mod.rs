@@ -39,6 +39,8 @@ pub trait ViewHtmlNode {
 
     /// Return the raw web-sys node.
     fn as_web_sys(&self) -> &web_sys::Node;
+    /// Wrap a raw web-sys node.
+    fn from_web_sys(node: web_sys::Node) -> Self;
 }
 
 /// A trait for unwrapping a type into an `HtmlNode`.

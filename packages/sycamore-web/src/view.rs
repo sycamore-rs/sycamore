@@ -28,6 +28,13 @@ impl<T> View<T> {
         }
     }
 
+    /// Create a new view with multiple nodes.
+    pub fn from_nodes(nodes: Vec<T>) -> Self {
+        Self {
+            nodes: nodes.into(),
+        }
+    }
+
     /// Create a new view from a function that returns a view. An alias to
     /// [`ViewNode::create_dynamic_view`].
     pub fn from_dynamic<U: Into<Self> + 'static>(f: impl FnMut() -> U + 'static) -> Self
@@ -35,6 +42,17 @@ impl<T> View<T> {
         T: ViewNode,
     {
         T::create_dynamic_view(f)
+    }
+
+    /// Create a flat list of all the web-sys nodes in the view.
+    pub fn as_web_sys(&self) -> Vec<web_sys::Node>
+    where
+        T: ViewHtmlNode,
+    {
+        self.nodes
+            .iter()
+            .map(|node| node.as_web_sys().clone())
+            .collect()
     }
 }
 
