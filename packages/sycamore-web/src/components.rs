@@ -4,6 +4,10 @@ use sycamore_macro::{component, view};
 
 use crate::*;
 
+/// Component that is only renders its children on the client side.
+///
+/// This is useful when wrapping parts of your app that are not intended to be server-side
+/// rendered, e.g. highly interactive components such as graphs, etc...
 #[component(inline_props)]
 pub fn NoSsr(children: Children) -> View {
     if is_ssr!() {
@@ -25,6 +29,10 @@ pub fn NoSsr(children: Children) -> View {
     }
 }
 
+/// Components that do not need, or should not be hydrated on the client side.
+///
+/// This is useful when large parts of your app do not require client-side interactivity such as
+/// static content.
 #[component(inline_props)]
 pub fn NoHydrate(children: Children) -> View {
     if is_ssr!() {

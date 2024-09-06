@@ -145,11 +145,8 @@ type HtmlNode = DomNode;
 #[cfg(feature = "hydrate")]
 type HtmlNode = HydrateNode;
 
-/// A type alias for [`View`](self::view::View) automatically selecting either dom or ssr node type
-/// depending on the feature flags enabled.
-pub type View<T = HtmlNode> = self::view::View<T>;
-
-/// A type alias for [`Children`](sycamore_core::Children) with [`HtmlNode`] as the node type.
+/// A type alias for [`Children`](sycamore_core::Children) automatically selecting the correct node
+/// type.
 pub type Children = sycamore_core::Children<View>;
 
 /// A struct for keeping track of state used for hydration.

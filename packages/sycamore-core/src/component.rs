@@ -145,7 +145,7 @@ impl<V: Default + 'static> Default for Children<V> {
 }
 
 impl<V> Children<V> {
-    /// Instantiate the child [`View`] with the passed [`Scope`].
+    /// Instantiates the child view.
     pub fn call(self) -> V {
         (self.f)()
     }

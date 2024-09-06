@@ -67,7 +67,7 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
 /// fn server_only() {}
 /// ```
 ///
-/// See also [`cfg_not_ssr`].
+/// See also [`macro@cfg_not_ssr`].
 #[proc_macro_attribute]
 pub fn cfg_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
@@ -90,7 +90,7 @@ pub fn cfg_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
 /// fn browser_only() {}
 /// ```
 ///
-/// See also [`cfg_ssr`].
+/// See also [`macro@cfg_ssr`].
 #[proc_macro_attribute]
 pub fn cfg_not_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();

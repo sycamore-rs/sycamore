@@ -152,6 +152,7 @@ static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     .collect()
 });
 
+/// Recursively render `node` by appending to `buf`.
 pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
     match node {
         SsrNode::Element {

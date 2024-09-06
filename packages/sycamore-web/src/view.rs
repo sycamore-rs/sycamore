@@ -9,7 +9,10 @@ use sycamore_core::Children;
 use crate::*;
 
 /// Represents a view tree.
-pub struct View<T> {
+///
+/// Internally, this stores a list of nodes. This is the main type that is returned from
+/// components.
+pub struct View<T = HtmlNode> {
     /// The nodes in the view tree.
     pub(crate) nodes: SmallVec<[T; 1]>,
 }

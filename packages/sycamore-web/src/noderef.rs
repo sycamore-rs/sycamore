@@ -8,8 +8,8 @@ use std::fmt;
 
 use crate::*;
 
-/// A reference to a [`GenericNode`].
-/// This allows imperatively accessing the node.
+/// A reference to a [`web_sys::Node`].
+/// This allows imperative access to the node.
 ///
 /// # Example
 /// ```
@@ -104,7 +104,7 @@ impl fmt::Debug for NodeRef {
 
 /* Hook implementation */
 
-/// Create a new [`NodeRef`] on the current [`Scope`].
+/// Create a new [`NodeRef`].
 ///
 /// The node ref does not point to anything until it is set, either by assigning it to a node in the
 /// view or by explicitly calling [`NodeRef::set`].

@@ -10,7 +10,7 @@ use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 use slotmap::Key;
 use smallvec::SmallVec;
 
-use crate::{create_memo, Mark, NodeHandle, NodeId, NodeState, ReactiveNode, Root};
+use crate::*;
 
 /// A read-only reactive value.
 ///
@@ -81,10 +81,11 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// performance overhead of cloning your value everytime you read it.
 ///
 /// # Reactivity
-/// What makes signals so powerful, as opposed to some other wrapper type like [`RefCell`] is the
-/// automatic dependency tracking. This means that accessing a signal will automatically add it as
-/// a dependency in certain contexts (such as inside a [`create_memo`](crate::create_memo)) which
-/// allows us to update related state whenever the signal is changed.
+/// What makes signals so powerful, as opposed to some other wrapper type like
+/// [`RefCell`](std::cell::RefCell) is the automatic dependency tracking. This means that accessing
+/// a signal will automatically add it as a dependency in certain contexts (such as inside a
+/// [`create_memo`](crate::create_memo)) which allows us to update related state whenever the signal
+/// is changed.
 ///
 /// ```rust
 /// # use sycamore_reactive::*;
@@ -102,10 +103,11 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// ```
 ///
 /// # Ownership
-/// Signals are always associated with a [`Scope`]. This is what performs the memory management for
-/// the actual value of the signal. What is returned from this function is just a handle/reference
-/// to the signal allocted in the [`Scope`]. This allows us to freely copy this handle around and
-/// use it in closures and event handlers without worrying about ownership of the signal.
+/// Signals are always associated with a reactive node. This is what performs the memory management
+/// for the actual value of the signal. What is returned from this function is just a
+/// handle/reference to the signal allocted in the reactive node. This allows us to freely copy this
+/// handle around and use it in closures and event handlers without worrying about ownership of the
+/// signal.
 ///
 /// This is why in the above example, we could access `signal` even after it was moved in to the
 /// closure of the `create_memo`.

@@ -5,7 +5,7 @@ use std::cell::{Cell, RefCell};
 use slotmap::{Key, SlotMap};
 use smallvec::SmallVec;
 
-use crate::{create_signal, Mark, NodeHandle, NodeId, NodeState, ReactiveNode};
+use crate::*;
 
 /// The struct managing the state of the reactive system. Only one should be created per running
 /// app.
@@ -323,8 +323,8 @@ impl DependencyTracker {
     }
 }
 
-/// Creates a new reactive root with a top-level [`Scope`]. The returned [`RootHandle`] can be used
-/// to [`dispose`](RootHandle::dispose) the root.
+/// Creates a new reactive root with a top-level reactive node. The returned [`RootHandle`] can be
+/// used to [`dispose`](RootHandle::dispose) the root.
 ///
 /// # Example
 /// ```rust
@@ -424,7 +424,7 @@ pub fn batch<T>(f: impl FnOnce() -> T) -> T {
 
 /// Run the passed closure inside an untracked dependency scope.
 ///
-/// See also [`ReadSignal::get_untracked()`].
+/// See also [`ReadSignal::get_untracked`].
 ///
 /// # Example
 ///

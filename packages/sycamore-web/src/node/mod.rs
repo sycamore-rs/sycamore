@@ -165,8 +165,6 @@ impl_from_maybe_dyn!(
 
 /// Render a [`View`] into the DOM.
 /// Alias for [`render_to`] with `parent` being the `<body>` tag.
-///
-/// _This API requires the following crate features to be activated: `dom`_
 pub fn render(view: impl FnOnce() -> View) {
     render_to(view, &document().body().unwrap());
 }

@@ -128,7 +128,7 @@ where
 /// It uses a reducer function that takes the previous value and a message and returns the next
 /// value.
 ///
-/// Returns a [`Memo`] and a dispatch function to send messages to the reducer.
+/// Returns a [`ReadSignal`] and a dispatch function to send messages to the reducer.
 ///
 /// # Params
 /// * `initial` - The initial value of the state.
