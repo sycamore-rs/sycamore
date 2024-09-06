@@ -63,8 +63,9 @@ expect-test = "1.4.1"
 
 [features]
 default = ["wasm-bindgen-interning"]
+hydrate = []
 suspense = []
 wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ["cfg(sycamore_force_ssr)"] }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(sycamore_force_ssr)", "cfg(rust_analyzer)"] }

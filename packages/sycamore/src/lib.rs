@@ -7,6 +7,9 @@
 //!
 //! ## Feature Flags
 //!
+//! - `hydrate` - Enables hydration support in DOM nodes. By default, hydration is disabled to
+//!   reduce binary size.
+//!
 //! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
 //!   `serde`.
 //!
@@ -57,9 +60,9 @@ pub mod reactive {
 
 #[cfg(feature = "suspense")]
 pub use web::render_to_string_await_suspense;
-pub use web::{
-    hydrate, hydrate_in_scope, hydrate_to, render, render_in_scope, render_to, render_to_string,
-};
+#[cfg(feature = "hydrate")]
+pub use web::{hydrate, hydrate_in_scope, hydrate_to};
+pub use web::{render, render_in_scope, render_to, render_to_string};
 
 /// The sycamore prelude.
 ///

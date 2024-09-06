@@ -2,26 +2,43 @@
 
 use crate::*;
 
-//cfg_not_ssr_item!(
-mod dom;
-//);
+cfg_not_ssr_item!(
+    mod dom;
+);
+cfg_not_ssr_item!(
+    #[cfg(feature = "hydrate")]
+    mod hydrate;
+);
 cfg_ssr_item!(
     mod ssr;
 );
 
+// We add this so that we get IDE support in Rust Analyzer.
+#[cfg(rust_analyzer)]
+mod dom;
+#[cfg(rust_analyzer)]
+mod hydrate;
+
 #[cfg_not_ssr]
 pub use dom::*;
+#[cfg_not_ssr]
+#[cfg(feature = "hydrate")]
+pub use hydrate::*;
 #[cfg_ssr]
 pub use ssr::*;
 
 /// A trait that should be implemented for anything that represents an HTML node.
-pub trait ViewHtmlNode {
+pub trait ViewHtmlNode: ViewNode {
     /// Create a new HTML element.
     fn create_element(tag: Cow<'static, str>) -> Self;
     /// Create a new HTML element with a XML namespace.
     fn create_element_ns(namespace: &'static str, tag: Cow<'static, str>) -> Self;
     /// Create a new HTML text node.
     fn create_text_node(text: Cow<'static, str>) -> Self;
+    /// Create a new HTML text node whose value will be changed dynamically.
+    fn create_dynamic_text_node(text: Cow<'static, str>) -> Self {
+        Self::create_text_node(text)
+    }
     /// Create a new HTML marker (comment) node.
     fn create_marker_node() -> Self;
 
@@ -86,7 +103,7 @@ pub enum MaybeDyn<T> {
 
 impl<T> MaybeDyn<T> {
     /// Evaluate the value by consuming itself.
-    fn evaluate(self) -> T {
+    pub fn evaluate(self) -> T {
         match self {
             Self::Static(value) => value,
             Self::Dynamic(mut f) => f(),
@@ -189,6 +206,7 @@ pub fn render_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 ///
 /// Alias for [`hydrate_to`] with `parent` being the `<body>` tag.
 /// For rendering without hydration, use [`render`](super::render) instead.
+#[cfg(feature = "hydrate")]
 pub fn hydrate(view: impl FnOnce() -> View) {
     hydrate_to(view, &document().body().unwrap());
 }
@@ -198,6 +216,7 @@ pub fn hydrate(view: impl FnOnce() -> View) {
 ///
 /// For rendering under the `<body>` tag, use [`hydrate`] instead.
 /// For rendering without hydration, use [`render`](super::render) instead.
+#[cfg(feature = "hydrate")]
 pub fn hydrate_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
     // Do not call the destructor function, effectively leaking the scope.
     let _ = create_root(|| hydrate_in_scope(view, parent));
@@ -211,16 +230,17 @@ pub fn hydrate_to(view: impl FnOnce() -> View, parent: &web_sys::Node) {
 ///
 /// It is expected that this function will be called inside a reactive root, usually created using
 /// [`create_root`].
+#[cfg(feature = "hydrate")]
 pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
-    cfg_ssr_item! {{
+    is_ssr! {
         let _ = view;
         let _ = parent;
         panic!("`hydrate_in_scope` is not available in SSR mode");
-    }}
-    cfg_not_ssr_item! {{
+    }
+    is_not_ssr! {
         provide_context(HydrationRegistry::new());
         // Get all nodes with `data-hk` attribute.
-        let mut existing_nodes = parent
+        let existing_nodes = parent
             .unchecked_ref::<web_sys::Element>()
             .query_selector_all("[data-hk]")
             .unwrap();
@@ -241,17 +261,17 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
         IS_HYDRATING.set(true);
         view();
         IS_HYDRATING.set(false);
-    }}
+    }
 }
 
 /// Render a [`View`] into a static [`String`]. Useful for rendering to a string on the server side.
 #[must_use]
 pub fn render_to_string(view: impl FnOnce() -> View) -> String {
-    cfg_not_ssr_item! {{
+    is_not_ssr! {
         let _ = view;
         panic!("`render_to_string` only available in SSR mode");
-    }}
-    cfg_ssr_item! {{
+    }
+    is_ssr! {
         use std::cell::LazyCell;
 
         thread_local! {
@@ -276,5 +296,5 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
             });
         });
         buf
-    }}
+    }
 }

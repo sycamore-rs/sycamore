@@ -160,7 +160,7 @@ impl_from_tuple!(A, B, C, D, E, F, G, H, I, J);
 /// Examples include `DomNode` and `SsrNode` which are used to render views to the browser DOM and
 /// to a string respectively. This trait can be implemented for other types to create custom render
 /// backends.
-pub trait ViewNode: Into<View<Self>> + Sized {
+pub trait ViewNode: Into<View<Self>> + Sized + 'static {
     /// Appends a child to the node. Panics if the node is not an element or other node that can
     /// have children (e.g. text node).
     fn append_child(&mut self, child: Self);

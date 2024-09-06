@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
@@ -14,7 +14,10 @@ pub enum SsrNode {
         inner_html: Option<Cow<'static, str>>,
         hk_key: u32,
     },
-    Text {
+    TextDynamic {
+        text: Cow<'static, str>,
+    },
+    TextStatic {
         text: Cow<'static, str>,
     },
     Marker,
@@ -43,7 +46,12 @@ impl ViewNode for SsrNode {
         // specialized. Otherwise, we must create two marker nodes to represent start and end
         // respectively.
         if TypeId::of::<U>() == TypeId::of::<String>() {
-            f().into()
+            let text = (Box::new(f()) as Box<dyn Any>)
+                .downcast::<String>()
+                .unwrap();
+            View::from(SsrNode::TextDynamic {
+                text: (*text).into(),
+            })
         } else {
             let start = Self::create_marker_node();
             let end = Self::create_marker_node();
@@ -72,7 +80,11 @@ impl ViewHtmlNode for SsrNode {
     }
 
     fn create_text_node(text: Cow<'static, str>) -> Self {
-        Self::Text { text }
+        Self::TextStatic { text }
+    }
+
+    fn create_dynamic_text_node(text: Cow<'static, str>) -> Self {
+        Self::TextDynamic { text }
     }
 
     fn create_marker_node() -> Self {
@@ -192,8 +204,12 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
                 buf.push('>');
             }
         }
-        SsrNode::Text { text } => {
-            buf.push_str("<!-->");
+        SsrNode::TextDynamic { text } => {
+            buf.push_str("<!--t-->"); // For dynamic text, add a marker for hydrating it.
+            html_escape::encode_text_to_string(&text, buf);
+            buf.push_str("<!-->"); // End of dynamic text.
+        }
+        SsrNode::TextStatic { text } => {
             html_escape::encode_text_to_string(&text, buf);
         }
         SsrNode::Marker => {

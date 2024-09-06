@@ -5,6 +5,9 @@
 //!
 //! ## Feature flags
 //!
+//! - `hydrate` - Enables hydration support in DOM node. By default, hydration is disabled to reduce
+//!   binary size.
+//!
 //! - `suspense` - Enables suspense support.
 //!
 //! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
@@ -60,18 +63,54 @@ pub mod rt {
 }
 
 /// A macro that expands to whether we are in SSR mode or not.
+///
+/// Can also be used with a block to only include the code inside the block if in SSR mode.
+///
+/// # Example
+/// ```
+/// # use sycamore_web::*;
+/// if is_ssr!() {
+///     println!("We are running on the server!");
+/// }
+///
+/// is_ssr! {
+///     // Do some server only things in here.
+/// }
+/// ```
 #[macro_export]
 macro_rules! is_ssr {
     () => {
         cfg!(any(not(target_arch = "wasm32"), sycamore_force_ssr))
     };
+    ($($tt:tt)*) => {
+        #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
+        { $($tt)* }
+    };
 }
 
 /// A macro that expands to whether we are in DOM mode or not.
+///
+/// Can also be used with a block to only include the code inside the block if in DOM mode.
+///
+/// # Example
+/// ```
+/// # use sycamore_web::*;
+/// if is_not_ssr!() {
+///     console_log!("We are running in the browser!");
+/// }
+///
+/// is_not_ssr! {
+///     // Access browser only APIs in here.
+/// }
+/// ```
 #[macro_export]
 macro_rules! is_not_ssr {
     () => {
         !$crate::is_ssr!()
+    };
+    ($($tt:tt)*) => {
+        #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
+        { $($tt)* }
     };
 }
 
@@ -79,9 +118,9 @@ macro_rules! is_not_ssr {
 /// able to put proc-macros on `mod` items.
 #[macro_export]
 macro_rules! cfg_ssr_item {
-    ($($item:tt)*) => {
+    ($item:item) => {
         #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
-        $($item)*
+        $item
     };
 }
 
@@ -89,16 +128,20 @@ macro_rules! cfg_ssr_item {
 /// able to put proc-macros on `mod` items.
 #[macro_export]
 macro_rules! cfg_not_ssr_item {
-    ($($item:tt)*) => {
+    ($item:item) => {
         #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
-        $($item)*
+        $item
     };
 }
 
 #[cfg_ssr]
 type HtmlNode = SsrNode;
 #[cfg_not_ssr]
+#[cfg(not(feature = "hydrate"))]
 type HtmlNode = DomNode;
+#[cfg_not_ssr]
+#[cfg(feature = "hydrate")]
+type HtmlNode = HydrateNode;
 
 /// A type alias for [`View`](self::view::View) automatically selecting either dom or ssr node type
 /// depending on the feature flags enabled.
@@ -121,6 +164,7 @@ impl HydrationRegistry {
     }
 
     /// Get the next hydration key and increment the internal state. This new key will be unique.
+    #[allow(unused, reason = "Unused in DOM mode.")]
     pub fn next_key(self) -> u32 {
         let key = self.next_key.get();
         self.next_key.set(key + 1);

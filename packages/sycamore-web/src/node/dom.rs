@@ -1,5 +1,4 @@
 use std::any::{Any, TypeId};
-use std::cell::RefCell;
 
 use wasm_bindgen::intern;
 
@@ -22,80 +21,84 @@ impl ViewNode for DomNode {
     }
 
     fn create_dynamic_view<U: Into<View<Self>> + 'static>(
-        mut f: impl FnMut() -> U + 'static,
+        f: impl FnMut() -> U + 'static,
     ) -> View<Self> {
-        // If `view` is just a single text node, we can just return this node and set up an
-        // effect to update its text value without ever creating more nodes.
-        if TypeId::of::<U>() == TypeId::of::<String>() {
-            create_effect_initial(move || {
-                let view = f().into();
-                debug_assert_eq!(
-                    view.nodes.len(),
-                    1,
-                    "dynamic text view should have exactly one text node"
-                );
-                let node = view.nodes[0].as_web_sys().clone();
-                (
-                    Box::new(move || {
-                        let text = f();
-                        let text = (&text as &dyn Any).downcast_ref::<String>().unwrap();
-                        node.set_text_content(Some(text));
-                    }),
-                    view,
-                )
-            })
-        } else {
-            let start = Self::create_marker_node();
-            let start_node = start.as_web_sys().clone();
-            let end = Self::create_marker_node();
-            let end_node = end.as_web_sys().clone();
-            let view = create_effect_initial(move || {
-                let view = f().into();
-                (
-                    Box::new(move || {
-                        let new = f().into();
-                        if let Some(parent) = start_node.parent_node() {
-                            // Clear all the old nodes away.
-                            let old = iter::get_nodes_between(&start_node, &end_node);
-                            for node in old {
-                                parent.remove_child(&node).unwrap();
-                            }
-                            // Insert the new nodes in their place.
-                            for node in new.nodes {
-                                parent.insert_before(&node.raw, Some(&end_node)).unwrap();
-                            }
-                        }
-                    }),
-                    view,
-                )
-            });
+        _create_dynamic_view(f)
+    }
+}
 
-            View::from((start, view, end))
-        }
+/// Internal implementation that is shared between `DomNode` and `HydrateNode`.
+pub(crate) fn _create_dynamic_view<T: ViewHtmlNode, U: Into<View<T>> + 'static>(
+    mut f: impl FnMut() -> U + 'static,
+) -> View<T> {
+    // If `view` is just a single text node, we can just return this node and set up an
+    // effect to update its text value without ever creating more nodes.
+    if TypeId::of::<U>() == TypeId::of::<String>() {
+        create_effect_initial(move || {
+            let text = (Box::new(f()) as Box<dyn Any>)
+                .downcast::<String>()
+                .unwrap();
+            let view = View::from_node(T::create_dynamic_text_node((*text).into()));
+            debug_assert_eq!(
+                view.nodes.len(),
+                1,
+                "dynamic text view should have exactly one text node"
+            );
+            let node = view.nodes[0].as_web_sys().clone();
+            (
+                Box::new(move || {
+                    let text = f();
+                    let text = (&text as &dyn Any).downcast_ref::<String>().unwrap();
+                    node.set_text_content(Some(text));
+                }),
+                view,
+            )
+        })
+    } else {
+        let start = T::create_marker_node();
+        let start_node = start.as_web_sys().clone();
+        let end = T::create_marker_node();
+        let end_node = end.as_web_sys().clone();
+        let view = create_effect_initial(move || {
+            let view = f().into();
+            (
+                Box::new(move || {
+                    let new = f().into();
+                    if let Some(parent) = start_node.parent_node() {
+                        // Clear all the old nodes away.
+                        let old = iter::get_nodes_between(&start_node, &end_node);
+                        for node in old {
+                            parent.remove_child(&node).unwrap();
+                        }
+                        // Insert the new nodes in their place.
+                        for node in new.nodes {
+                            parent
+                                .insert_before(node.as_web_sys(), Some(&end_node))
+                                .unwrap();
+                        }
+                    }
+                }),
+                view,
+            )
+        });
+
+        View::from((start, view, end))
     }
 }
 
 impl ViewHtmlNode for DomNode {
     fn create_element(tag: Cow<'static, str>) -> Self {
-        if IS_HYDRATING.get() {
-            HYDRATE_NODES.with(|x| x.borrow_mut().pop().expect("no node found to hydrate"))
-        } else {
-            Self {
-                raw: document().create_element(&tag).unwrap().into(),
-            }
+        Self {
+            raw: document().create_element(intern(&tag)).unwrap().into(),
         }
     }
 
-    fn create_element_ns(namespace: &str, tag: Cow<'static, str>) -> Self {
-        if IS_HYDRATING.get() {
-            HYDRATE_NODES.with(|x| x.borrow_mut().pop().expect("no node found to hydrate"))
-        } else {
-            Self {
-                raw: document()
-                    .create_element_ns(Some(namespace), &tag)
-                    .unwrap()
-                    .into(),
-            }
+    fn create_element_ns(namespace: &'static str, tag: Cow<'static, str>) -> Self {
+        Self {
+            raw: document()
+                .create_element_ns(Some(namespace), intern(&tag))
+                .unwrap()
+                .into(),
         }
     }
 
@@ -192,11 +195,4 @@ impl ViewHtmlNode for DomNode {
     fn from_web_sys(node: web_sys::Node) -> Self {
         Self { raw: node }
     }
-}
-
-thread_local! {
-    /// A list of nodes to be hydrated. The `Vec` should be sorted in reverse order of hydration
-    /// key. Every time a node is hydrated, it should be popped from this list.
-    pub(crate) static HYDRATE_NODES: RefCell<Vec<DomNode>> = const { RefCell::new(Vec::new()) };
-    pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };
 }

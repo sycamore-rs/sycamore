@@ -32,6 +32,7 @@ wasm-bindgen-test = "0.3.33"
 [features]
 default = ["web", "wasm-bindgen-interning"]
 nightly = ["sycamore-reactive/nightly"]
+hydrate = ["web", "sycamore-web/hydrate"]
 suspense = [
 	"futures",
 	"wasm-bindgen-futures",
