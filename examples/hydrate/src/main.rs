@@ -48,13 +48,12 @@ fn App() -> View {
         br {}
         Counter {}
 
-        // TODO: implement these components
-        // sycamore::web::NoHydrate {
-        //     p { "This paragraph is not hydrated!" }
-        // }
-        // sycamore::web::NoSsr {
-        //     p { "This paragraph is only rendered on the client side" }
-        // }
+        sycamore::web::NoHydrate {
+            p { "This paragraph is not hydrated!" }
+        }
+        sycamore::web::NoSsr {
+            p { "This paragraph is only rendered on the client side" }
+        }
     }
 }
 

@@ -287,7 +287,9 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
                     // We run this in a new scope so that we can dispose everything after we render it.
                     provide_context(HydrationRegistry::new());
 
+                    IS_HYDRATING.set(true);
                     let view = view();
+                    IS_HYDRATING.set(false);
                     for node in view.nodes {
                         ssr::render_recursive(node, &mut buf);
                     }
@@ -297,4 +299,9 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
         });
         buf
     }
+}
+
+thread_local! {
+    /// Whether we are in hydration mode or not.
+    pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };
 }

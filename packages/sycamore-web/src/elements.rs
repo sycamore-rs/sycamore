@@ -39,6 +39,7 @@ impl IntoHtmlNode for CustomElement {
     }
 }
 
+impl GlobalAttributes for CustomElement {}
 impl HtmlGlobalAttributes for CustomElement {}
 
 macro_rules! impl_attribute {
@@ -1173,6 +1174,7 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
         self
     }
 
+    /// Set a [`NodeRef`] on this element.
     fn r#ref(self, noderef: NodeRef) -> Self {
         if is_not_ssr!() {
             noderef.set(Some(self.as_html_node().as_web_sys().clone()));

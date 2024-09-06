@@ -272,5 +272,4 @@ thread_local! {
     /// A list of nodes to be hydrated. The `Vec` should be sorted in reverse order of hydration
     /// key. Every time a node is hydrated, it should be popped from this list.
     pub(crate) static HYDRATE_NODES: RefCell<Vec<HydrateNode>> = const { RefCell::new(Vec::new()) };
-    pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };
 }

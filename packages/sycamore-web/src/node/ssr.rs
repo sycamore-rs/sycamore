@@ -12,7 +12,7 @@ pub enum SsrNode {
         bool_attributes: Vec<(&'static str, bool)>,
         children: Vec<Self>,
         inner_html: Option<Cow<'static, str>>,
-        hk_key: u32,
+        hk_key: Option<u32>,
     },
     TextDynamic {
         text: Cow<'static, str>,
@@ -63,14 +63,19 @@ impl ViewNode for SsrNode {
 
 impl ViewHtmlNode for SsrNode {
     fn create_element(tag: Cow<'static, str>) -> Self {
-        let reg: HydrationRegistry = use_context();
+        let hk_key = if IS_HYDRATING.get() {
+            let reg: HydrationRegistry = use_context();
+            Some(reg.next_key())
+        } else {
+            None
+        };
         Self::Element {
             tag,
             attributes: Vec::new(),
             bool_attributes: Vec::new(),
             children: Vec::new(),
             inner_html: None,
-            hk_key: reg.next_key(),
+            hk_key,
         }
     }
 
@@ -173,8 +178,10 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
                 }
             }
 
-            buf.push_str(" data-hk=");
-            buf.push_str(&hk_key.to_string());
+            if let Some(hk_key) = hk_key {
+                buf.push_str(" data-hk=");
+                buf.push_str(&hk_key.to_string());
+            }
             buf.push('>');
 
             let is_void = VOID_ELEMENTS.contains(tag.as_ref());

@@ -27,6 +27,7 @@
 pub mod bind;
 pub mod events;
 
+mod components;
 mod elements;
 mod iter;
 mod node;
@@ -38,6 +39,7 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::rc::Rc;
 
+pub use components::*;
 pub use elements::*;
 pub use iter::*;
 pub use node::*;
