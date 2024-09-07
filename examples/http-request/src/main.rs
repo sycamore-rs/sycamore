@@ -8,15 +8,14 @@ const API_BASE_URL: &str = "https://abacus.jasoncameron.dev/hit";
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 struct Visits {
-    count: u64,
+    value: u64,
 }
 
 async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
-    let url = format!("{API_BASE_URL}/{id}/up");
+    let url = format!("{API_BASE_URL}/{id}/http-request");
     let resp = Request::get(&url).send().await?;
 
-    let body = resp.json::<Visits>().await?;
-    Ok(body)
+    resp.json::<Visits>().await
 }
 
 #[component]
@@ -28,7 +27,7 @@ async fn VisitsCount() -> View {
         p {
             "Total visits: "
             span {
-                (visits.count)
+                (visits.value)
             }
         }
     }

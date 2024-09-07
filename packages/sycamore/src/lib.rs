@@ -51,9 +51,9 @@ pub mod web;
 /* Re-export of the sycamore-macro crate */
 pub use sycamore_macro::*;
 
-/// Re-export of the `sycamore-reactive` crate.
-///
 /// Reactive primitives for Sycamore.
+///
+/// Re-export of the [`sycamore_reactive`] crate.
 pub mod reactive {
     pub use sycamore_reactive::*;
 }
@@ -64,7 +64,7 @@ pub use web::render_to_string_await_suspense;
 pub use web::{hydrate, hydrate_in_scope, hydrate_to};
 pub use web::{render, render_in_scope, render_to, render_to_string};
 
-/// The sycamore prelude.
+/// The Sycamore prelude.
 ///
 /// In most cases, it is idiomatic to use a glob import (aka wildcard import) at the beginning of
 /// your Rust source file.

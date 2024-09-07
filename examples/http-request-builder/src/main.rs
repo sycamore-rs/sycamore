@@ -13,7 +13,7 @@ struct Visits {
 }
 
 async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
-    let url = format!("{}/{}/hits", API_BASE_URL, id);
+    let url = format!("{API_BASE_URL}/{id}/http-request-builder");
     let resp = Request::get(&url).send().await?;
 
     resp.json::<Visits>().await
