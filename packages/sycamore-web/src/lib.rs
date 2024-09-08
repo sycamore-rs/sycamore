@@ -42,6 +42,7 @@ mod iter;
 mod node;
 mod noderef;
 mod portal;
+mod stable_counter;
 #[cfg(feature = "suspense")]
 mod suspense;
 mod view;
@@ -52,6 +53,7 @@ pub use self::iter::*;
 pub use self::node::*;
 pub use self::noderef::*;
 pub use self::portal::*;
+pub use self::stable_counter::*;
 #[cfg(feature = "suspense")]
 pub use self::suspense::*;
 pub use self::view::*;
