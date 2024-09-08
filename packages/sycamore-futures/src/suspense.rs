@@ -10,8 +10,8 @@ use sycamore_reactive::*;
 use crate::*;
 
 /// Internal context state used by suspense.
-#[derive(Clone, Copy)]
-struct SuspenseState {
+#[derive(Clone, Copy, Debug)]
+pub struct SuspenseState {
     async_counts: Signal<Vec<Signal<u32>>>,
 }
 

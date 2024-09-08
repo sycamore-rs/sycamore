@@ -299,41 +299,6 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
     }
 }
 
-/// Render a [`View`] into a static [`String`] while waiting for suspense to resolve.
-#[cfg(feature = "suspense")]
-#[must_use]
-pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View + 'static) -> String {
-    is_not_ssr! {
-        let _ = view;
-        panic!("`render_to_string_await_suspense` only available in SSR mode");
-    }
-    is_ssr! {
-        use futures::channel::oneshot;
-        use sycamore_futures::spawn_local_scoped;
-
-        let mut buf = String::new();
-        let (sender, receiver) = oneshot::channel();
-        let disposer = create_root(move || {
-            spawn_local_scoped(async move {
-                IS_HYDRATING.set(true);
-                let view = view();
-                IS_HYDRATING.set(false);
-                sender
-                    .send(view)
-                    .expect("receiving end should not be dropped");
-            });
-        });
-        let view = receiver.await.expect("rendering should complete");
-        for node in view.nodes {
-            render_recursive(node, &mut buf);
-        }
-
-        disposer.dispose(); // TODO: store this in a lazy static variable to not leak memory.
-
-        buf
-    }
-}
-
 thread_local! {
     /// Whether we are in hydration mode or not.
     pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };

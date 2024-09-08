@@ -60,7 +60,6 @@ pub use self::view::*;
 extern crate self as sycamore;
 
 #[doc(hidden)]
-#[allow(ambiguous_glob_reexports)]
 pub mod rt {
     pub use sycamore_core::*;
     #[cfg(feature = "suspense")]
@@ -70,7 +69,7 @@ pub mod rt {
     #[allow(unused_imports)] // Needed for macro support.
     pub use web_sys;
 
-    pub use crate::{bind, custom_element, tags, View};
+    pub use crate::{bind, custom_element, tags, View, WrapAsync};
 }
 
 /// A macro that expands to whether we are in SSR mode or not.

@@ -1,19 +1,19 @@
-use sycamore::prelude::{component, view, Html, Signal, View};
+use sycamore::prelude::{component, view, Signal, View};
 
 #[component(inline_props)]
-fn NoProps<G: Html>() -> View<G> {
+fn NoProps() -> View {
     view! {}
 }
 
 #[component(inline_props)]
-fn SimpleComponent<G: Html>(my_number: u32) -> View<G> {
+fn SimpleComponent(my_number: u32) -> View {
     view! {
         (my_number)
     }
 }
 
 #[component(inline_props)]
-fn MultiProps<G: Html>(my_number: u32, my_string: String) -> View<G> {
+fn MultiProps(my_number: u32, my_string: String) -> View {
     view! {
         (my_number)
         (my_string)
@@ -21,19 +21,19 @@ fn MultiProps<G: Html>(my_number: u32, my_string: String) -> View<G> {
 }
 
 #[component(inline_props)]
-fn PropsWithGenericLifetime<G: Html>(data: Signal<u32>) -> View<G> {
+fn PropsWithGenericLifetime(data: Signal<u32>) -> View {
     view! {
         (data.get())
     }
 }
 
 #[component(inline_props)]
-fn UnusedGeneric<G: Html, T>() -> View<G> {
+fn UnusedGeneric<T>() -> View {
     view! {}
 }
 
 #[component(inline_props)]
-fn PropsWithGenericTypes<G: Html, T: std::fmt::Display + 'static>(foo: T) -> View<G> {
+fn PropsWithGenericTypes<T: std::fmt::Display + 'static>(foo: T) -> View {
     view! {
         (foo.to_string())
     }

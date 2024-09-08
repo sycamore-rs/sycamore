@@ -60,7 +60,7 @@ web-sys = { version = "0.3.69", features = [
 html-escape = "0.2.13"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-tokio = { version = "1.22.0", features = ["rt"] }
+tokio = { version = "1.22.0", features = ["rt", "macros"] }
 
 [dev-dependencies]
 sycamore = { path = "../sycamore" }

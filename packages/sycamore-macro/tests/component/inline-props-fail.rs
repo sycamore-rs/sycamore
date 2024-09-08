@@ -1,14 +1,14 @@
 use sycamore::prelude::*;
 
 #[component(inline_props)]
-fn ImplTraitInArgs<G: Html>(foo: impl std::fmt::Display) -> View<G> {
+fn ImplTraitInArgs(foo: impl std::fmt::Display) -> View {
     view! {
         (foo)
     }
 }
 
 #[component(not_inline_props)]
-fn NotInlineProps<G: Html>() -> View<G> {
+fn NotInlineProps() -> View {
     view! {}
 }
 

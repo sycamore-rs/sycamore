@@ -1,24 +1,24 @@
 #![no_implicit_prelude]
-use ::sycamore::prelude::{component, Html, View};
+use ::sycamore::prelude::{component, View};
 
 #[component]
-fn CompNoProps<G: Html>() -> View<G> {
+fn CompNoProps() -> View {
     ::std::todo!();
 }
 
 #[component]
-fn CompWithProps<G: Html>(prop: ::std::primitive::i32) -> View<G> {
+fn CompWithProps(prop: ::std::primitive::i32) -> View {
     let _ = prop;
     ::std::todo!();
 }
 
 #[component]
-async fn AsyncCompNoProps<G: Html>() -> View<G> {
+async fn AsyncCompNoProps() -> View {
     ::std::todo!();
 }
 
 #[component]
-async fn AsyncCompWithProps<G: Html>(prop: ::std::primitive::i32) -> View<G> {
+async fn AsyncCompWithProps(prop: ::std::primitive::i32) -> View {
     let _ = prop;
     ::std::todo!();
 }

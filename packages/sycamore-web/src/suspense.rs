@@ -28,15 +28,15 @@ pub struct SuspenseProps {
 /// # Example
 /// ```
 /// use sycamore::prelude::*;
-/// use sycamore::suspense::Suspense;
+/// use sycamore::web::Suspense;
 ///
 /// #[component]
-/// async fn AsyncComp<G: Html>() -> View<G> {
+/// async fn AsyncComp() -> View {
 ///     view! { "Hello Suspense!" }
 /// }
 ///
 /// #[component]
-/// fn App<G: Html>() -> View<G> {
+/// fn App() -> View {
 ///     view! {
 ///         Suspense(fallback=view! { "Loading..." }) {
 ///             AsyncComp {}
@@ -82,30 +82,9 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
 #[cfg(test)]
 mod tests {
     use futures::channel::oneshot;
-    use sycamore_futures::{provide_executor_scope, use_transition};
+    use sycamore_futures::{provide_executor_scope, use_transition, SuspenseState};
 
     use super::*;
-
-    #[tokio::test]
-    async fn suspense() {
-        #[component]
-        async fn Comp() -> View {
-            view! { "Hello Suspense!" }
-        }
-
-        let view = provide_executor_scope(async {
-            render_to_string_await_suspense(|| {
-                view! {
-                    Suspense(fallback=view! { "Loading..." }) {
-                        Comp {}
-                    }
-                }
-            })
-            .await
-        })
-        .await;
-        assert_eq!(view, "Hello Suspense!");
-    }
 
     #[tokio::test]
     async fn transition() {

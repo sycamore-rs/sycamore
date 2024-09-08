@@ -208,7 +208,7 @@ impl ToTokens for ComponentFn {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    ::sycamore::web::WrapAsync(move || #inner_ident(#(#args),*))
+                    ::sycamore::rt::WrapAsync(move || #inner_ident(#(#args),*))
                 }
             });
         } else {
