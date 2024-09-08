@@ -262,6 +262,21 @@ macro_rules! console_log {
     };
 }
 
+/// Log a warning to the JavaScript console if on wasm32. Otherwise logs it to stderr.
+///
+/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
+/// the JS console.
+#[macro_export]
+macro_rules! console_warn {
+    ($($arg:tt)*) => {
+        if is_not_ssr!() {
+            $crate::rt::web_sys::console::warn_1(&::std::format!($($arg)*).into());
+        } else {
+            ::std::eprintln!($($arg)*);
+        }
+    };
+}
+
 /// Prints an error message to the JavaScript console if on wasm32. Otherwise logs it to stderr.
 ///
 /// Note: this does not work properly for server-side WASM since it will mistakenly try to log to

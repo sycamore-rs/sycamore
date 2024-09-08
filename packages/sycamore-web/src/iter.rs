@@ -390,7 +390,7 @@ fn reconcile_fragments(parent: &web_sys::Node, a: &mut [web_sys::Node], b: &[web
                             b_start += 1;
                         }
                     } else {
-                        parent.replace_child(&a[a_start], &b[b_start]).unwrap();
+                        parent.replace_child(&b[b_start], &a[a_start]).unwrap();
                         a_start += 1;
                         b_start += 1;
                     }

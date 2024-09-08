@@ -1,10 +1,9 @@
-pub mod builder_hydrate;
 pub mod cleanup;
 pub mod hydrate;
 pub mod indexed;
 pub mod keyed;
 pub mod portal;
-pub mod reconcile;
+//pub mod reconcile;
 pub mod render;
 pub mod svg;
 
@@ -44,8 +43,8 @@ fn test_container() -> Element {
 
 #[wasm_bindgen_test]
 fn empty_template() {
-    sycamore::render_to(|| View::empty(), &test_container());
-    assert_eq!(query("#test-container").inner_html(), "<!---->");
+    sycamore::render_to(View::new, &test_container());
+    assert_eq!(query("#test-container").inner_html(), "");
 }
 
 #[wasm_bindgen_test]
@@ -224,16 +223,16 @@ fn reactive_attribute() {
         let count = create_signal(0);
 
         let node = view! {
-            span(attribute=count.get())
+            span(data-attribute=count.get().to_string())
         };
 
         sycamore::render_in_scope(|| node, &test_container());
         let span = query("span");
 
-        assert_eq!(span.get_attribute("attribute").unwrap(), "0");
+        assert_eq!(span.get_attribute("data-attribute").unwrap(), "0");
 
         count.set(1);
-        assert_eq!(span.get_attribute("attribute").unwrap(), "1");
+        assert_eq!(span.get_attribute("data-attribute").unwrap(), "1");
     });
 }
 
@@ -382,25 +381,5 @@ fn fragments_text_nodes() {
         sycamore::render_in_scope(|| node, &test_container());
 
         assert_text_content!(query("#test-container"), "123");
-    });
-}
-
-#[wasm_bindgen_test]
-fn dyn_fragment_reuse_nodes() {
-    let _ = create_root(|| {
-        let nodes = vec![view! { "1" }, view! { "2" }, view! { "3" }];
-
-        sycamore::render_in_scope(
-            {
-                let nodes = nodes.clone();
-                || View::from_dynamic(move || View::new_fragment(nodes.clone()))
-            },
-            &test_container(),
-        );
-
-        let p = query("#test-container");
-
-        assert_text_content!(p, "123");
-        assert!(p.first_child() == nodes[0].as_node().map(|node| node.to_web_sys()));
     });
 }

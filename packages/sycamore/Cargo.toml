@@ -28,6 +28,7 @@ web-sys = { version = "0.3.60", optional = true }
 expect-test = "1.4.0"
 tokio = { version = "1.22.0", features = ["macros", "rt"] }
 wasm-bindgen-test = "0.3.33"
+web-sys = { version = "0.3.60", features = ["HtmlInputElement"] }
 
 [features]
 default = ["web", "wasm-bindgen-interning"]
@@ -51,6 +52,7 @@ web = ["dep:wasm-bindgen", "dep:web-sys", "dep:sycamore-web"]
 
 [[test]]
 name = "web"
+required-features = ["hydrate"]
 
 [package.metadata.docs.rs]
 all-features = true

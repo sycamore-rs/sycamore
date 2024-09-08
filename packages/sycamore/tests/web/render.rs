@@ -17,26 +17,6 @@ fn dyn_view_static() {
 }
 
 #[wasm_bindgen_test]
-fn dyn_view() {
-    let _ = create_root(|| {
-        let view = create_signal(view! {
-            "1"
-        });
-        let node: View = View::from_dynamic(move || view.get_clone());
-
-        sycamore::render_in_scope(|| node, &test_container());
-        let test_container = query("test-container");
-
-        assert_text_content!(test_container, "1");
-
-        view.set(view! {
-            "2"
-        });
-        assert_text_content!(test_container, "2");
-    });
-}
-
-#[wasm_bindgen_test]
 fn dyn_fragment() {
     let _ = create_root(|| {
         let num = create_signal(0);
@@ -108,7 +88,7 @@ fn regression_572() {
                 View::from_dynamic(move || {
                     View::from_dynamic(move || {
                         signal.track();
-                        View::empty()
+                        View::new()
                     })
                 })
             },

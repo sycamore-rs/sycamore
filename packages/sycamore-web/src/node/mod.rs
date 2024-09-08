@@ -257,7 +257,13 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
         });
 
         IS_HYDRATING.set(true);
-        view();
+        let nodes = view().nodes;
+        // We need to append `nodes` to the `parent` so that the top level nodes also get properly
+        // hydrated.
+        let mut parent = HydrateNode::from_web_sys(parent.clone());
+        for node in nodes {
+            parent.append_child(node);
+        }
         IS_HYDRATING.set(false);
     }
 }

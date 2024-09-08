@@ -177,65 +177,59 @@ impl ViewHtmlNode for HydrateNode {
 
     fn set_attribute(&mut self, name: &'static str, value: MaybeDynString) {
         // FIXME: use setAttributeNS if SVG
-        match value {
-            MaybeDyn::Static(value) => {
-                if IS_HYDRATING.get() {
-                    return;
-                } else {
-                    self.as_web_sys()
-                        .unchecked_ref::<web_sys::Element>()
-                        .set_attribute(name, &value)
-                        .unwrap();
+        if IS_HYDRATING.get() {
+            match value {
+                MaybeDyn::Static(_) => {
+                    // Noop for hydration since attributes are already set.
+                }
+                MaybeDyn::Dynamic(mut f) => {
+                    let node = self
+                        .as_web_sys()
+                        .clone()
+                        .unchecked_into::<web_sys::Element>();
+                    create_effect_initial(move || {
+                        let _ = f(); // Track dependencies of f.
+                        (
+                            Box::new(move || node.set_attribute(name, &f()).unwrap()),
+                            (),
+                        )
+                    });
                 }
             }
-            MaybeDyn::Dynamic(mut f) => {
-                let node = self
-                    .as_web_sys()
-                    .clone()
-                    .unchecked_into::<web_sys::Element>();
-                create_effect_initial(move || {
-                    let _ = f(); // Track dependencies of f.
-                    (
-                        Box::new(move || node.set_attribute(name, &f()).unwrap()),
-                        (),
-                    )
-                });
-            }
+        } else {
+            self.0.unwrap_mut().set_attribute(name, value);
         }
     }
 
     fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool) {
         // FIXME: use setAttributeNS if SVG
-        match value {
-            MaybeDyn::Static(value) => {
-                if IS_HYDRATING.get() {
-                    return;
-                } else if value {
-                    self.as_web_sys()
-                        .unchecked_ref::<web_sys::Element>()
-                        .set_attribute(name, "")
-                        .unwrap();
+        if IS_HYDRATING.get() {
+            match value {
+                MaybeDyn::Static(_) => {
+                    // Noop for hydration since attributes are already set.
+                }
+                MaybeDyn::Dynamic(mut f) => {
+                    let node = self
+                        .as_web_sys()
+                        .clone()
+                        .unchecked_into::<web_sys::Element>();
+                    create_effect_initial(move || {
+                        let _ = f(); // Track dependencies of f.
+                        (
+                            Box::new(move || {
+                                if f() {
+                                    node.set_attribute(name, "").unwrap();
+                                } else {
+                                    node.remove_attribute(name).unwrap();
+                                }
+                            }),
+                            (),
+                        )
+                    });
                 }
             }
-            MaybeDyn::Dynamic(mut f) => {
-                let node = self
-                    .as_web_sys()
-                    .clone()
-                    .unchecked_into::<web_sys::Element>();
-                create_effect_initial(move || {
-                    let _ = f(); // Track dependencies of f.
-                    (
-                        Box::new(move || {
-                            if f() {
-                                node.set_attribute(name, "").unwrap();
-                            } else {
-                                node.remove_attribute(name).unwrap();
-                            }
-                        }),
-                        (),
-                    )
-                });
-            }
+        } else {
+            self.0.unwrap_mut().set_bool_attribute(name, value);
         }
     }
 
