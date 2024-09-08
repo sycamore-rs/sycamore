@@ -19,7 +19,6 @@ pub fn component_scope<T>(f: impl FnOnce() -> T) -> T {
 /// # Example
 /// Deriving an implementation and using the builder to construct an instance of the struct:
 /// ```
-/// # use sycamore::component::Props;
 /// # use sycamore::prelude::*;
 /// #[derive(Props)]
 /// struct ButtonProps {
@@ -92,14 +91,14 @@ pub fn element_like_component_builder<T: Props, V, S>(_f: &impl Component<T, V, 
 /// ```
 /// # use sycamore::prelude::*;
 /// #[derive(Props)]
-/// struct RowProps<G: Html> {
+/// struct RowProps {
 ///     width: i32,
-///     children: Children<G>,
+///     children: Children,
 /// }
 ///
 /// #[component]
-/// fn Row<G: Html>(props: RowProps<G>) -> View<G> {
-///     // Convert the `Children` into a `View<G>`.
+/// fn Row(props: RowProps) -> View {
+///     // Convert the `Children` into a `View`.
 ///     let children = props.children.call();
 ///     view! {
 ///         div {
@@ -109,7 +108,7 @@ pub fn element_like_component_builder<T: Props, V, S>(_f: &impl Component<T, V, 
 /// }
 ///
 /// # #[component]
-/// # fn App<G: Html>() -> View<G> {
+/// # fn App() -> View {
 /// // Using `Row` somewhere else in your app:
 /// view! {
 ///     Row(width=10) {

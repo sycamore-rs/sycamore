@@ -69,7 +69,9 @@ pub mod rt {
     #[allow(unused_imports)] // Needed for macro support.
     pub use web_sys;
 
-    pub use crate::{bind, custom_element, tags, View, WrapAsync};
+    #[cfg(feature = "suspense")]
+    pub use crate::WrapAsync;
+    pub use crate::{bind, custom_element, tags, View};
 }
 
 /// A macro that expands to whether we are in SSR mode or not.
