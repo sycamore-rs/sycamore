@@ -208,15 +208,7 @@ impl ToTokens for ComponentFn {
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = ::sycamore::rt::create_signal(::std::option::Option::None);
-                    let __view = ::sycamore::rt::view! { ({__dyn.track(); __dyn.update_silent(|x| x.take())}) };
-
-                    ::sycamore::rt::suspense_scope(async move {
-                        let __async_view = #inner_ident(#(#args),*).await;
-                        __dyn.set(::std::option::Option::Some(__async_view));
-                    });
-
-                    __view
+                    ::sycamore::web::WrapAsync(move || #inner_ident(#(#args),*))
                 }
             });
         } else {

@@ -35,10 +35,12 @@ pub fn suspense_scope(f: impl Future<Output = ()> + 'static) {
     spawn_local_scoped(f);
 }
 
-/// Waits until all suspense tasks created within the scope are finished.
+/// Calls the given function and returns a tuple with the result and a future that resolves when
+/// all suspense tasks created within the function are completed.
+///
 /// If called inside an outer suspense scope, this will also make the outer suspense scope suspend
 /// until this resolves.
-pub async fn await_suspense<U>(f: impl Future<Output = U>) -> U {
+pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>) {
     let state = use_context_or_else(|| SuspenseState {
         async_counts: create_signal(Vec::new()),
     });
@@ -47,12 +49,11 @@ pub async fn await_suspense<U>(f: impl Future<Output = U>) -> U {
     // Push a new suspense state.
     let count = create_signal(0);
     state.async_counts.update(|counts| counts.push(count));
-    let ready = create_selector(move || count.get() == 0);
 
     if let Some(mut outer_count) = outer_count {
         outer_count += 1;
     }
-    let ret = f.await;
+    let ret = f();
     // Pop the suspense state.
     state.async_counts.update(|counts| counts.pop().unwrap());
 
@@ -60,17 +61,18 @@ pub async fn await_suspense<U>(f: impl Future<Output = U>) -> U {
     let mut sender = Some(sender);
 
     create_effect(move || {
-        if ready.get() {
+        if count.get() == 0 {
             if let Some(sender) = sender.take() {
                 let _ = sender.send(());
             }
         }
     });
-    let _ = receiver.await;
-    if let Some(mut outer_count) = outer_count {
-        outer_count -= 1;
-    }
-    ret
+    (ret, async move {
+        let _ = receiver.await;
+        if let Some(mut outer_count) = outer_count {
+            outer_count -= 1;
+        }
+    })
 }
 
 /// A struct to handle transitions. Created using [`use_transition`].
@@ -90,7 +92,8 @@ impl TransitionHandle {
     pub fn start(self, f: impl FnOnce() + 'static, done: impl FnOnce() + 'static) {
         spawn_local_scoped(async move {
             self.is_pending.set(true);
-            await_suspense(async move { f() }).await;
+            let (_, suspend) = await_suspense(f);
+            suspend.await;
             self.is_pending.set(false);
             done();
         });

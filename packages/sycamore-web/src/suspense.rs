@@ -1,6 +1,6 @@
 //! Components for suspense.
 
-use std::cell::RefCell;
+use std::future::Future;
 
 use sycamore_futures::{await_suspense, suspense_scope};
 use sycamore_macro::{component, view, Props};
@@ -50,22 +50,33 @@ pub fn Suspense(props: SuspenseProps) -> View {
     let mut fallback = Some(fallback);
 
     let show = create_signal(false);
-    let view = Rc::new(RefCell::new(None));
+    let (view, suspend) = await_suspense(move || children.call());
     // If the Suspense is nested under another Suspense, we want the other Suspense to await this
     // one as well.
-    suspense_scope({
-        let view = Rc::clone(&view);
-        async move {
-            let res = await_suspense(async move { children.call() }).await;
-
-            *view.borrow_mut() = Some(res);
-            show.set(true);
-        }
+    suspense_scope(async move {
+        suspend.await;
+        show.set(true);
     });
 
     view! {
-        (if show.get() { view.take().unwrap() } else { fallback.take().unwrap() })
+        (view)
+        (if !show.get() { fallback.take().unwrap() } else { View::default() })
     }
+}
+
+/// Convert an async component to a regular sync component. Also wraps the async component inside a
+/// suspense scope so that content is properly suspended.
+#[component]
+pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> View {
+    let view = create_signal(View::default());
+    let ret = view! { ({
+        view.track();
+        view.update_silent(std::mem::take)
+    }) };
+    suspense_scope(async move {
+        view.set(f().await);
+    });
+    ret
 }
 
 #[cfg(test)]
