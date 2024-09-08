@@ -181,8 +181,7 @@ impl ToTokens for ComponentFn {
             // again as an argument to the inner async function which has the user defined
             // destructured pattern which will work as expected.
             //
-            // Note: that the change to the signature is not semantically different to a would be
-            // caller.
+            // Note: this does not affect the signature of the function.
             let inputs = &sig.inputs;
             let AsyncCompInputs {
                 sync_input,
@@ -200,18 +199,21 @@ impl ToTokens for ComponentFn {
                 ..sig.clone()
             };
             tokens.extend(quote! {
+                // Create a new function that is not async so that it is just a standard component.
                 #(#attrs)*
                 #[::sycamore::component]
                 #vis #non_async_sig {
+                    // Define the original function as a nested function so that it cannot be
+                    // called from outside.
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = ::sycamore::rt::create_signal(::std::rc::Rc::new(::std::cell::RefCell::new(::sycamore::rt::View::new())));
-                    let __view = ::sycamore::rt::View::from_dynamic(move || __dyn.get_clone().take());
+                    let __dyn = ::sycamore::rt::create_signal(::std::option::Option::None);
+                    let __view = ::sycamore::rt::view! { ({__dyn.track(); __dyn.update_silent(|x| x.take())}) };
 
                     ::sycamore::rt::suspense_scope(async move {
                         let __async_view = #inner_ident(#(#args),*).await;
-                        __dyn.set(::std::rc::Rc::new(::std::cell::RefCell::new(__async_view)));
+                        __dyn.set(::std::option::Option::Some(__async_view));
                     });
 
                     __view

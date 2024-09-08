@@ -1,6 +1,6 @@
 //! # Sycamore API Documentation
 //!
-//! Sycamore is a VDOM-less web library with fine-grained reactivity.
+//! Sycamore is a **reactive** library for creating web apps in **Rust** and **WebAssembly**.
 //!
 //! This is the API docs for sycamore. If you are looking for the usage docs, checkout the
 //! [Sycamore Book](https://sycamore-rs.netlify.app/docs/getting_started/installation).
@@ -40,13 +40,7 @@
 extern crate self as sycamore;
 
 pub mod easing;
-#[cfg(feature = "suspense")]
-pub mod futures;
 pub mod motion;
-#[cfg(feature = "suspense")]
-pub mod suspense;
-#[cfg(feature = "web")]
-pub mod web;
 
 /* Re-export of the sycamore-macro crate */
 pub use sycamore_macro::*;
@@ -58,11 +52,25 @@ pub mod reactive {
     pub use sycamore_reactive::*;
 }
 
+/// Web support for Sycamore.
+///
+/// Re-export of the [`sycamore_web`] crate.
+pub mod web {
+    pub use sycamore_web::*;
+}
+
+/// Utilities for working with async.
+///
+/// Re-export of the [`sycamore_futures`] crate.
+pub mod futures {
+    pub use sycamore_futures::*;
+}
+
 #[cfg(feature = "suspense")]
-pub use web::render_to_string_await_suspense;
+pub use sycamore_web::render_to_string_await_suspense;
 #[cfg(feature = "hydrate")]
-pub use web::{hydrate, hydrate_in_scope, hydrate_to};
-pub use web::{render, render_in_scope, render_to, render_to_string};
+pub use sycamore_web::{hydrate, hydrate_in_scope, hydrate_to};
+pub use sycamore_web::{render, render_in_scope, render_to, render_to_string};
 
 /// The Sycamore prelude.
 ///
@@ -76,27 +84,26 @@ pub mod prelude {
     pub use sycamore_core::{Component, Props};
     #[cfg(feature = "web")]
     pub use sycamore_macro::*;
-
-    pub use crate::reactive::*;
     #[cfg(feature = "web")]
-    pub use crate::web::{
+    pub use sycamore_web::{
         console_dbg, console_log, create_node_ref, document, is_not_ssr, is_ssr, on_mount, window,
         Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed, NodeRef,
         SvgGlobalAttributes, View,
     };
+
+    pub use crate::reactive::*;
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.
 #[doc(hidden)]
 pub mod rt {
     pub use sycamore_core::{component_scope, element_like_component_builder, Component, Props};
+    #[cfg(feature = "suspense")]
+    pub use sycamore_futures::*;
     pub use sycamore_macro::*;
     pub use sycamore_reactive::*;
     #[cfg(feature = "web")]
     pub use sycamore_web::*;
     #[cfg(feature = "web")]
     pub use web_sys::Event;
-
-    #[cfg(feature = "suspense")]
-    pub use crate::suspense::*;
 }

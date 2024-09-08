@@ -1,7 +1,7 @@
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
-use sycamore::suspense::Suspense;
+use sycamore::web::Suspense;
 
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://abacus.jasoncameron.dev/hit";

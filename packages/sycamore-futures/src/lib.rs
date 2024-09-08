@@ -3,6 +3,9 @@
 #![deny(missing_debug_implementations)]
 #![warn(missing_docs)]
 
+mod resource;
+mod suspense;
+
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -12,17 +15,20 @@ use futures::Future;
 use pin_project::pin_project;
 use sycamore_reactive::{on_cleanup, use_current_scope, NodeHandle};
 
+pub use self::resource::*;
+pub use self::suspense::*;
+
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`
 /// scope.
 ///
 /// Normally, you do not need to call this as it is handled internally by Sycamore when creating
 /// your app.
 pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
     {
         f.await
     }
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
     {
         let local = tokio::task::LocalSet::new();
         local.run_until(f).await
@@ -36,9 +42,9 @@ pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
 /// destroyed.
 pub fn spawn_local_scoped(f: impl Future<Output = ()> + 'static) {
     let fut = ScopedFuture::new_in_current_scope(f);
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
     tokio::task::spawn_local(fut);
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
     wasm_bindgen_futures::spawn_local(async move {
         let _ = fut.await;
     });

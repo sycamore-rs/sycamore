@@ -14,12 +14,9 @@
 
 use std::future::Future;
 
-// Re-export `sycamore-futures` crate.
-pub use sycamore_futures::*;
-// Re-export `wasm_bindgen_futures` crate.
-pub use wasm_bindgen_futures::*;
+use sycamore_reactive::{create_signal, Signal};
 
-use crate::prelude::*;
+pub use crate::*;
 
 /// Create a new async resource.
 ///

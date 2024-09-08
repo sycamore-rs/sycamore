@@ -24,6 +24,15 @@
 
 // NOTE: Determining whether we are in SSR mode or not uses the cfg_ssr! and cfg_not_ssr! macros.
 // For dependencies, we have to put in the conditions manually.
+
+use std::borrow::Cow;
+use std::cell::Cell;
+use std::rc::Rc;
+
+use sycamore_macro::*;
+use sycamore_reactive::*;
+use wasm_bindgen::prelude::*;
+
 pub mod bind;
 pub mod events;
 
@@ -33,22 +42,19 @@ mod iter;
 mod node;
 mod noderef;
 mod portal;
+#[cfg(feature = "suspense")]
+mod suspense;
 mod view;
 
-use std::borrow::Cow;
-use std::cell::Cell;
-use std::rc::Rc;
-
-pub use components::*;
-pub use elements::*;
-pub use iter::*;
-pub use node::*;
-pub use noderef::*;
-pub use portal::*;
-use sycamore_macro::{cfg_not_ssr, cfg_ssr};
-use sycamore_reactive::*;
-pub use view::*;
-use wasm_bindgen::prelude::*;
+pub use self::components::*;
+pub use self::elements::*;
+pub use self::iter::*;
+pub use self::node::*;
+pub use self::noderef::*;
+pub use self::portal::*;
+#[cfg(feature = "suspense")]
+pub use self::suspense::*;
+pub use self::view::*;
 
 /// We add this to make the macros from `sycamore-macro` work properly.
 extern crate self as sycamore;
@@ -57,11 +63,13 @@ extern crate self as sycamore;
 #[allow(ambiguous_glob_reexports)]
 pub mod rt {
     pub use sycamore_core::*;
+    pub use sycamore_futures::*;
     pub use sycamore_macro::*;
+    pub use sycamore_reactive::*;
     #[allow(unused_imports)] // Needed for macro support.
     pub use web_sys;
 
-    pub use crate::*;
+    pub use crate::{custom_element, View};
 }
 
 /// A macro that expands to whether we are in SSR mode or not.

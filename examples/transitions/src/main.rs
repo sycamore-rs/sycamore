@@ -1,7 +1,8 @@
 use gloo_timers::future::TimeoutFuture;
 use rand::Rng;
+use sycamore::futures::use_transition;
 use sycamore::prelude::*;
-use sycamore::suspense::{use_transition, Suspense};
+use sycamore::web::Suspense;
 
 #[derive(Debug, Clone, Copy)]
 enum Tab {

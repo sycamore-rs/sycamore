@@ -38,6 +38,7 @@ suspense = [
 	"wasm-bindgen-futures",
 	"sycamore-futures",
 	"sycamore-core/suspense",
+	"sycamore-web/suspense",
 ]
 serde = ["sycamore-reactive/serde"]
 trace = ["sycamore-reactive/trace"]
