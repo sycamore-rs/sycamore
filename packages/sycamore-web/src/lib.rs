@@ -63,13 +63,14 @@ extern crate self as sycamore;
 #[allow(ambiguous_glob_reexports)]
 pub mod rt {
     pub use sycamore_core::*;
+    #[cfg(feature = "suspense")]
     pub use sycamore_futures::*;
     pub use sycamore_macro::*;
     pub use sycamore_reactive::*;
     #[allow(unused_imports)] // Needed for macro support.
     pub use web_sys;
 
-    pub use crate::{custom_element, View};
+    pub use crate::{bind, custom_element, tags, View};
 }
 
 /// A macro that expands to whether we are in SSR mode or not.
@@ -79,12 +80,14 @@ pub mod rt {
 /// # Example
 /// ```
 /// # use sycamore_web::*;
+/// # fn access_database() {}
 /// if is_ssr!() {
 ///     println!("We are running on the server!");
 /// }
 ///
 /// is_ssr! {
-///     // Do some server only things in here.
+///     // Access server only APIs in here.
+///     let _ = access_database();
 /// }
 /// ```
 #[macro_export]
@@ -111,6 +114,7 @@ macro_rules! is_ssr {
 ///
 /// is_not_ssr! {
 ///     // Access browser only APIs in here.
+///     let document = document();
 /// }
 /// ```
 #[macro_export]

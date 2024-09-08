@@ -62,6 +62,7 @@ pub mod web {
 /// Utilities for working with async.
 ///
 /// Re-export of the [`sycamore_futures`] crate.
+#[cfg(feature = "suspense")]
 pub mod futures {
     pub use sycamore_futures::*;
 }

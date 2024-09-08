@@ -240,14 +240,14 @@ mod tests {
 
     #[test]
     fn hello_world() {
-        check(move || "Hello, world!", expect![[r#"<!-->Hello, world!"#]]);
+        check(move || "Hello, world!", expect!["Hello, world!"]);
     }
 
     #[test]
     fn render_escaped_text() {
         check(
             move || "<script>alert('xss')</script>",
-            expect!["<!-->&lt;script&gt;alert('xss')&lt;/script&gt;"],
+            expect!["&lt;script&gt;alert('xss')&lt;/script&gt;"],
         );
     }
 
@@ -272,7 +272,7 @@ mod tests {
     fn fragments() {
         check(
             move || (p().children("1"), p().children("2"), p().children("3")),
-            expect!["<p data-hk=0><!-->1</p><p data-hk=1><!-->2</p><p data-hk=2><!-->3</p>"],
+            expect!["<p data-hk=0>1</p><p data-hk=1>2</p><p data-hk=2>3</p>"],
         );
     }
 
@@ -289,9 +289,7 @@ mod tests {
                     }
                 }
             },
-            expect![
-                "<ul data-hk=0><li data-hk=1><!-->1</li><li data-hk=2><!-->2</li><!--/--></ul>"
-            ],
+            expect!["<ul data-hk=0><li data-hk=1>1</li><li data-hk=2>2</li></ul>"],
         );
     }
 
