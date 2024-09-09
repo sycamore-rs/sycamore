@@ -22,3 +22,29 @@ pub fn use_stable_counter() -> u32 {
     counter.next.set(next + 1);
     next
 }
+
+#[cfg(test)]
+mod tests {
+    use sycamore_reactive::*;
+
+    use super::*;
+
+    #[test]
+    fn stable_counter_works() {
+        let _ = create_root(|| {
+            let counter = use_stable_counter();
+            assert_eq!(counter, 0);
+
+            let counter = use_stable_counter();
+            assert_eq!(counter, 1);
+
+            let _ = create_child_scope(|| {
+                let counter = use_stable_counter();
+                assert_eq!(counter, 2);
+            });
+
+            let counter = use_stable_counter();
+            assert_eq!(counter, 3);
+        });
+    }
+}
