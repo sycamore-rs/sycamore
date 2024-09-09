@@ -11,18 +11,24 @@ pub fn Portal<'a, T: Into<View> + Default>(selector: &'a str, children: T) -> Vi
             panic!("element matching selector `{selector}` not found");
         };
 
-        let children = children.into();
-        let nodes = children.as_web_sys();
+        let start = HtmlNode::create_marker_node();
+        let start_node = start.as_web_sys().clone();
+        let end = HtmlNode::create_marker_node();
+        let end_node = end.as_web_sys().clone();
+        let children: View = (start, children.into(), end).into();
 
+        let nodes = children.as_web_sys();
         for node in &nodes {
             parent.append_child(node).unwrap();
         }
 
         on_cleanup(move || {
-            // FIXME: we should be using start and end nodes to remove dynamic elements.
+            let nodes = get_nodes_between(&start_node, &end_node);
             for node in nodes {
                 parent.remove_child(&node).unwrap();
             }
+            parent.remove_child(&start_node).unwrap();
+            parent.remove_child(&end_node).unwrap();
         });
     }
     View::default()
