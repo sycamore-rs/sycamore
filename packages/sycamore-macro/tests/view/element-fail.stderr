@@ -1,67 +1,95 @@
 error: unexpected end of input, expected either `(` or `{` after element tag
- --> tests/view/element-fail.rs:5:26
+ --> tests/view/element-fail.rs:5:23
   |
-5 |         let _: View<G> = view! { button };
-  |                          ^^^^^^^^^^^^^^^^
+5 |         let _: View = view! { button };
+  |                       ^^^^^^^^^^^^^^^^
   |
   = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected `=`
- --> tests/view/element-fail.rs:6:49
+ --> tests/view/element-fail.rs:6:46
   |
-6 |         let _: View<G> = view! { button(disabled) };
-  |                                                 ^
+6 |         let _: View = view! { button(disabled) };
+  |                                              ^
 
 error: expected `=`
- --> tests/view/element-fail.rs:7:49
+ --> tests/view/element-fail.rs:7:46
   |
-7 |         let _: View<G> = view! { button(on:click) };
-  |                                                 ^
+7 |         let _: View = view! { button(on:click) };
+  |                                              ^
 
 error: expected `=`
- --> tests/view/element-fail.rs:8:54
+ --> tests/view/element-fail.rs:8:51
   |
-8 |         let _: View<G> = view! { button(prop:disabled) };
-  |                                                      ^
+8 |         let _: View = view! { button(prop:disabled) };
+  |                                                   ^
+
+error: expected one of `)`, `,`, `.`, `?`, or an operator, found `::`
+ --> tests/view/element-fail.rs:9:38
+  |
+9 |         let _: View = view! { button(unknown:directive="123") };
+  |                                      ^^^^^^^                   - help: missing `,`
+  |                                      |
+  |                                      expected one of `)`, `,`, `.`, `?`, or an operator
 
 error: unknown directive `unknown`
- --> tests/view/element-fail.rs:9:41
+ --> tests/view/element-fail.rs:9:38
   |
-9 |         let _: View<G> = view! { button(unknown:directive="123") };
-  |                                         ^^^^^^^
+9 |         let _: View = view! { button(unknown:directive="123") };
+  |                                      ^^^^^^^
+
+error: proc macro panicked
+  --> tests/view/element-fail.rs:11:23
+   |
+11 |         let _: View = view! { div(..unknown_attributes) {} };
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: message: not yet implemented: spread not yet supported
 
 error: expected `=`
-  --> tests/view/element-fail.rs:12:42
+  --> tests/view/element-fail.rs:12:39
    |
-12 |         let _: View<G> = view! { button(a.b.c="123") };
-   |                                          ^
-
-error: property `notbind` is not supported with `bind:`
-  --> tests/view/element-fail.rs:13:46
-   |
-13 |         let _: View<G> = view! { button(bind:notbind=todo!()) };
-   |                                              ^^^^^^^
+12 |         let _: View = view! { button(a.b.c="123") };
+   |                                       ^
 
 error: expected a valid node
-  --> tests/view/element-fail.rs:14:34
+  --> tests/view/element-fail.rs:14:31
    |
-14 |         let _: View<G> = view! { * };
-   |                                  ^
+14 |         let _: View = view! { * };
+   |                               ^
 
-error: children and `dangerously_set_inner_html` cannot both be set
-  --> tests/view/element-fail.rs:17:13
+error[E0425]: cannot find function `unknownelement` in module `sycamore::rt::tags`
+  --> tests/view/element-fail.rs:10:31
    |
-17 |             p(dangerously_set_inner_html="<span>Test</span>") {
-   |             ^
+10 |         let _: View = view! { unknownelement {} };
+   |                               ^^^^^^^^^^^^^^ not found in `sycamore::rt::tags`
 
-error[E0412]: cannot find type `unknownelement` in module `sycamore::web::html`
-  --> tests/view/element-fail.rs:10:34
+error[E0425]: cannot find value `notbind` in module `sycamore::rt::bind`
+  --> tests/view/element-fail.rs:13:43
    |
-10 |         let _: View<G> = view! { unknownelement {} };
-   |                                  ^^^^^^^^^^^^^^ not found in `sycamore::web::html`
+13 |         let _: View = view! { button(bind:notbind=todo!()) };
+   |                                           ^^^^^^^ not found in `sycamore::rt::bind`
 
-error[E0425]: cannot find value `unknown_attributes` in this scope
-  --> tests/view/element-fail.rs:11:40
+error[E0061]: this function takes 1 argument but 2 arguments were supplied
+ --> tests/view/element-fail.rs:9:23
+  |
+9 |         let _: View = view! { button(unknown:directive="123") };
+  |                       ^^^^^^^^^^^^^^^-------^^^^^^^^^^^^^^^^^^^
+  |                                      |
+  |                                      unexpected argument #2
+  |
+note: associated function defined here
+ --> $RUST/core/src/convert/mod.rs
+  = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unreachable call
+  --> tests/view/element-fail.rs:13:23
    |
-11 |         let _: View<G> = view! { div(..unknown_attributes) {} };
-   |                                        ^^^^^^^^^^^^^^^^^^ not found in this scope
+13 |         let _: View = view! { button(bind:notbind=todo!()) };
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------^^^
+   |                       |                           |
+   |                       |                           any code following this expression is unreachable
+   |                       unreachable call
+   |
+   = note: `#[warn(unreachable_code)]` on by default
+   = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)

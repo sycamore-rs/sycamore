@@ -31,7 +31,7 @@ fn CompWithMultipleProps(prop1: i32, prop2: i32) -> View {
 }
 
 #[component]
-fn CompWithUnitProps(prop: ()) -> View {
+fn CompWithUnitProps(_prop: ()) -> View {
     ::std::todo!();
 }
 
