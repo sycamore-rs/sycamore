@@ -270,7 +270,6 @@ fn static_property() {
 }
 
 #[wasm_bindgen_test]
-#[ignore]
 fn two_way_bind_to_props() {
     let _ = create_root(|| {
         let value = create_signal(String::new());

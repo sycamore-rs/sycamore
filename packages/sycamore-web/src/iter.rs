@@ -96,33 +96,40 @@ where
         let end = HtmlNode::create_marker_node();
         let end_node = end.as_web_sys().clone();
 
+        // Run the initial function in the outer scope, not the effect scope.
+        // This is because we might want to create signals and other things managed by the reactive
+        // tree that will be used in furture triggers of this effect. These things must therefore
+        // live as long as the effect.
+        let scope = use_current_scope();
         create_effect_initial(move || {
-            let nodes = map_keyed(list, move |x| view(x).into().as_web_sys(), key);
-            // Flatten nodes.
-            let flattened = nodes.map(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-            let view = flattened.with(|x| {
-                View::from_nodes(
-                    x.iter()
-                        .map(|x| HtmlNode::from_web_sys(x.clone()))
-                        .collect(),
-                )
-            });
-            (
-                Box::new(move || {
-                    // Get all nodes between start and end and reconcile with new nodes.
-                    let mut new = flattened.get_clone();
-                    let mut old = get_nodes_between(&start_node, &end_node);
-                    // We must include the end node in case `old` is empty (precondition for
-                    // reconcile_fragments).
-                    new.push(end_node.clone());
-                    old.push(end_node.clone());
+            scope.run_in(move || {
+                let nodes = map_keyed(list, move |x| view(x).into().as_web_sys(), key);
+                // Flatten nodes.
+                let flattened = nodes.map(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+                let view = flattened.with(|x| {
+                    View::from_nodes(
+                        x.iter()
+                            .map(|x| HtmlNode::from_web_sys(x.clone()))
+                            .collect(),
+                    )
+                });
+                (
+                    Box::new(move || {
+                        // Get all nodes between start and end and reconcile with new nodes.
+                        let mut new = flattened.get_clone();
+                        let mut old = get_nodes_between(&start_node, &end_node);
+                        // We must include the end node in case `old` is empty (precondition for
+                        // reconcile_fragments).
+                        new.push(end_node.clone());
+                        old.push(end_node.clone());
 
-                    if let Some(parent) = start_node.parent_node() {
-                        reconcile_fragments(&parent, &mut old, &new);
-                    }
-                }),
-                (start, view, end).into(),
-            )
+                        if let Some(parent) = start_node.parent_node() {
+                            reconcile_fragments(&parent, &mut old, &new);
+                        }
+                    }) as Box<dyn FnMut()>,
+                    (start, view, end).into(),
+                )
+            })
         })
     }
 }
@@ -189,33 +196,40 @@ where
         let end = HtmlNode::create_marker_node();
         let end_node = end.as_web_sys().clone();
 
+        // Run the initial function in the outer scope, not the effect scope.
+        // This is because we might want to create signals and other things managed by the reactive
+        // tree that will be used in furture triggers of this effect. These things must therefore
+        // live as long as the effect.
+        let scope = use_current_scope();
         create_effect_initial(move || {
-            let nodes = map_indexed(list, move |x| view(x).into().as_web_sys());
-            // Flatten nodes.
-            let flattened = nodes.map(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
-            let view = flattened.with(|x| {
-                View::from_nodes(
-                    x.iter()
-                        .map(|x| HtmlNode::from_web_sys(x.clone()))
-                        .collect(),
-                )
-            });
-            (
-                Box::new(move || {
-                    // Get all nodes between start and end and reconcile with new nodes.
-                    let mut new = flattened.get_clone();
-                    let mut old = get_nodes_between(&start_node, &end_node);
-                    // We must include the end node in case `old` is empty (precondition for
-                    // reconcile_fragments).
-                    new.push(end_node.clone());
-                    old.push(end_node.clone());
+            scope.run_in(move || {
+                let nodes = map_indexed(list, move |x| view(x).into().as_web_sys());
+                // Flatten nodes.
+                let flattened = nodes.map(|x| x.iter().flatten().cloned().collect::<Vec<_>>());
+                let view = flattened.with(|x| {
+                    View::from_nodes(
+                        x.iter()
+                            .map(|x| HtmlNode::from_web_sys(x.clone()))
+                            .collect(),
+                    )
+                });
+                (
+                    Box::new(move || {
+                        // Get all nodes between start and end and reconcile with new nodes.
+                        let mut new = flattened.get_clone();
+                        let mut old = get_nodes_between(&start_node, &end_node);
+                        // We must include the end node in case `old` is empty (precondition for
+                        // reconcile_fragments).
+                        new.push(end_node.clone());
+                        old.push(end_node.clone());
 
-                    if let Some(parent) = start_node.parent_node() {
-                        reconcile_fragments(&parent, &mut old, &new);
-                    }
-                }),
-                (start, view, end).into(),
-            )
+                        if let Some(parent) = start_node.parent_node() {
+                            reconcile_fragments(&parent, &mut old, &new);
+                        }
+                    }) as Box<dyn FnMut()>,
+                    (start, view, end).into(),
+                )
+            })
         })
     }
 }
