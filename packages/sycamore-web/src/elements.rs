@@ -1187,6 +1187,5 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
 
 /// Helper function for setting a dynamic attribute.
 fn set_attribute(el: &mut HtmlNode, name: &'static str, value: impl AttributeValue) {
-    console_warn!("setting attribute `{name}`");
     value.set_self(el, name);
 }
