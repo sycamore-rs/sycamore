@@ -24,6 +24,8 @@ pub(crate) struct Root {
     /// The current node that owns everything created in its scope.
     /// If we are at the top-level, then this is the "null" key.
     pub current_node: Cell<NodeId>,
+    /// The root node of the reactive graph.
+    pub root_node: Cell<NodeId>,
     /// All the nodes created in this `Root`.
     pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
     /// A list of signals who need their values to be propagated after the batch is over.
@@ -50,11 +52,13 @@ impl Root {
         GLOBAL_ROOT.with(|r| r.replace(root))
     }
 
+    /// Create a new reactive root. This root is leaked and so lives until the end of the program.
     pub fn new_static() -> &'static Self {
         let this = Self {
             tracker: RefCell::new(None),
             rev_sorted_buf: RefCell::new(Vec::new()),
             current_node: Cell::new(NodeId::null()),
+            root_node: Cell::new(NodeId::null()),
             nodes: RefCell::new(SlotMap::default()),
             node_update_queue: RefCell::new(Vec::new()),
             batching: Cell::new(false),
@@ -66,29 +70,22 @@ impl Root {
 
     /// Disposes of all the resources held on by this root and resets the state.
     pub fn reinit(&'static self) {
-        // Dispose of all the top-level nodes.
-        let top_level = self
-            .nodes
-            .borrow()
-            .iter()
-            .filter_map(|(id, value)| {
-                if value.parent.is_null() {
-                    Some(id)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-        for node in top_level {
-            NodeHandle(node, self).dispose();
-        }
+        // Dispose the root node.
+        NodeHandle(self.root_node.get(), self).dispose();
 
         let _ = self.tracker.take();
         let _ = self.rev_sorted_buf.take();
         let _ = self.node_update_queue.take();
         let _ = self.current_node.take();
+        let _ = self.root_node.take();
         let _ = self.nodes.take();
         self.batching.set(false);
+
+        // Create a new root node.
+        Root::set_global(Some(self));
+        let root_node = create_child_scope(|| {});
+        Root::set_global(None);
+        self.root_node.set(root_node.0);
     }
 
     /// Create a new child scope. Implementation detail for [`create_child_scope`].
@@ -361,7 +358,7 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
     }
 
     Root::set_global(Some(_ref));
-    _ref.create_child_scope(f);
+    f();
     Root::set_global(None);
     RootHandle { _ref }
 }
@@ -461,7 +458,7 @@ pub fn use_current_scope() -> NodeHandle {
 /// Get a handle to the root reactive scope.
 pub fn use_global_scope() -> NodeHandle {
     let root = Root::global();
-    NodeHandle(NodeId::null(), root)
+    NodeHandle(root.root_node.get(), root)
 }
 
 #[cfg(test)]
