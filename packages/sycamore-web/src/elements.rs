@@ -1144,7 +1144,7 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
         let scope = use_current_scope(); // Run handler inside the current scope.
         let handler = move |ev: web_sys::Event| scope.run_in(|| handler.call(ev.unchecked_into()));
         let node = self.as_html_node_mut();
-        node.set_event_handler(T::NAME, handler);
+        node.set_event_handler(T::NAME.into(), handler);
         self
     }
 
@@ -1159,7 +1159,7 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
                 signal.set(T::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
             })
         };
-        node.set_event_handler(<T::Event as events::EventDescriptor>::NAME, handler);
+        node.set_event_handler(<T::Event as events::EventDescriptor>::NAME.into(), handler);
 
         self.prop(T::TARGET_PROPERTY, move || signal.get_clone().into())
     }
