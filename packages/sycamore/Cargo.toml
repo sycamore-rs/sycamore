@@ -15,11 +15,11 @@ futures = { version = "0.3.25", optional = true }
 hashbrown = "0.14.1"
 indexmap = { version = "2.0.2", features = ["std"] }
 paste = "1.0.9"
-sycamore-core = { path = "../sycamore-core", version = "0.9.0-beta.2" }
-sycamore-futures = { path = "../sycamore-futures", version = "0.9.0-beta.2", optional = true }
-sycamore-macro = { path = "../sycamore-macro", version = "0.9.0-beta.2" }
-sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.2" }
-sycamore-web = { path = "../sycamore-web", version = "0.9.0-beta.2", optional = true }
+sycamore-core = { path = "../sycamore-core", version = "0.9.0-beta.3" }
+sycamore-futures = { path = "../sycamore-futures", version = "0.9.0-beta.3", optional = true }
+sycamore-macro = { path = "../sycamore-macro", version = "0.9.0-beta.3" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.3" }
+sycamore-web = { path = "../sycamore-web", version = "0.9.0-beta.3", optional = true }
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 web-sys = { version = "0.3.60", optional = true }

@@ -13,8 +13,8 @@ version.workspace = true
 [dependencies]
 futures = "0.3.25"
 pin-project = "1.1.3"
-sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.2" }
-sycamore-macro = { path = "../sycamore-macro", version = "0.9.0-beta.2" }
+sycamore-reactive = { path = "../sycamore-reactive", version = "0.9.0-beta.3" }
+sycamore-macro = { path = "../sycamore-macro", version = "0.9.0-beta.3" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.33"
