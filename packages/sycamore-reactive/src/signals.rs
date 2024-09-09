@@ -495,7 +495,7 @@ impl<T> Signal<T> {
     /// ```
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_fn(self, f: impl FnOnce(&T) -> T) {
-        self.update_silent(move |val| *val = f(val));
+        self.update(move |val| *val = f(val));
     }
 
     /// Split the signal into a reader/writter pair.
