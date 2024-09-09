@@ -1,1 +1,0 @@
-{"rustc":11057030108216015697,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[3359357198272701864,"build_script_build",false,5165018345524486085]],"local":[{"Precalculated":"0.9.6"}],"rustflags":["--cfg","sycamore_ssr"],"metadata":0,"config":0,"compile_kind":0}
