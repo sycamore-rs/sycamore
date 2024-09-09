@@ -4,13 +4,13 @@ Sometimes we want to be able to reference a node in the DOM directly. We can do 
 `NodeRef`.
 
 A `NodeRef` can be created by using `create_node_ref`. This can be assigned, in turn, to a node
-using the `ref` property in the `view!` macro.
+using the `r#ref` property.
 
 ```rust
 let node_ref = create_node_ref();
 
 view! {
-    p(ref=node_ref) { "Hello World!" }
+    p(r#ref=node_ref) { "Hello World!" }
 }
 ```
 
@@ -19,9 +19,8 @@ view! {
 We can access the raw node using the `.get()` method on `NodeRef`.
 
 ```rust
-node_ref.get::<DomNode>()
+let node = node_ref.get();
 ```
 
-Note that this method will `panic!` if the `NodeRef` has not been assigned to a node or if the
-`NodeRef` has the wrong type. That means that calling `node_ref.get::<DomNode>()` will `panic!` in a
-server side rendering context (which uses `SsrNode` instead of `DomNode`).
+Note that this method will `panic!` if the `NodeRef` has not been assigned to a node or is being accessed on the server.
+For this reason, `NodeRef`s are usually accessed within `on_mount` or event handlers that are never run on the server.

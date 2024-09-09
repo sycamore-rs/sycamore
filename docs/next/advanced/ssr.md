@@ -22,8 +22,6 @@ let html = render_to_string(|| view! {
 // Respond to the client with the rendered html.
 ```
 
-Note that you will need to enable the `"ssr"` feature on `sycamore` in your `Cargo.toml` file.
-
 ## Hydration
 
 Now that your app is rendered on the server and sent to the client as HTML, you don't want the
