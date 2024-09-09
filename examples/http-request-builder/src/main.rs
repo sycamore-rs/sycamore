@@ -1,9 +1,8 @@
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
-use sycamore::builder::prelude::*;
-use sycamore::component::Props;
 use sycamore::prelude::*;
-use sycamore::suspense::{Suspense, SuspenseProps};
+use sycamore::web::tags::*;
+use sycamore::web::{Suspense, SuspenseProps};
 
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://abacus.jasoncameron.dev/hit";
@@ -14,33 +13,34 @@ struct Visits {
 }
 
 async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
-    let url = format!("{}/{}/hits", API_BASE_URL, id);
+    let url = format!("{API_BASE_URL}/{id}/http-request-builder");
     let resp = Request::get(&url).send().await?;
 
     resp.json::<Visits>().await
 }
 
 #[component]
-async fn VisitsCount<G: Html>() -> View<G> {
+async fn VisitsCount() -> View {
     let id = "sycamore-builder-visits-counter";
     let visits = fetch_visits(id).await.unwrap_or_default();
 
-    p().t("Total Visits: ")
-        .c(span().dyn_t(move || visits.value.to_string()))
-        .view()
+    p().children(("Total Visits: ", span().children(move || visits.value)))
+        .into()
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     div()
-        .c(p().t("Page Visit Counter"))
-        .c(Suspense(
-            SuspenseProps::builder()
-                .fallback(t("Loading"))
-                .children(Children::new(|| VisitsCount()))
-                .build(),
+        .children((
+            p().children("Page Visit Counter"),
+            Suspense(
+                SuspenseProps::builder()
+                    .fallback("Loading".into())
+                    .children(Children::new(VisitsCount))
+                    .build(),
+            ),
         ))
-        .view()
+        .into()
 }
 
 fn main() {

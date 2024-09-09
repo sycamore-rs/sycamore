@@ -13,10 +13,7 @@ version.workspace = true
 [dependencies]
 futures = { version = "0.3.25", optional = true }
 hashbrown = "0.14.1"
-html-escape = { version = "0.2.12", optional = true }
 indexmap = { version = "2.0.2", features = ["std"] }
-js-sys = { version = "0.3.60", optional = true }
-once_cell = { version = "1.16.0", optional = true }
 paste = "1.0.9"
 sycamore-core = { path = "../sycamore-core", version = "0.9.0-beta.2" }
 sycamore-futures = { path = "../sycamore-futures", version = "0.9.0-beta.2", optional = true }
@@ -31,42 +28,31 @@ web-sys = { version = "0.3.60", optional = true }
 expect-test = "1.4.0"
 tokio = { version = "1.22.0", features = ["macros", "rt"] }
 wasm-bindgen-test = "0.3.33"
+web-sys = { version = "0.3.60", features = ["HtmlInputElement"] }
 
 [features]
 default = ["web", "wasm-bindgen-interning"]
-hydrate = [
-	"web",
-	"sycamore-macro/hydrate",
-	"sycamore-core/hydrate",
-	"sycamore-web/hydrate",
-]
 nightly = ["sycamore-reactive/nightly"]
-ssr = [
-	"web",
-	"html-escape",
-	"once_cell",
-	"hydrate",
-	"sycamore-macro/ssr",
-	"sycamore-web/ssr",
-]
+hydrate = ["web", "sycamore-web/hydrate"]
 suspense = [
 	"futures",
 	"wasm-bindgen-futures",
 	"sycamore-futures",
 	"sycamore-core/suspense",
+	"sycamore-web/suspense",
 ]
 serde = ["sycamore-reactive/serde"]
 trace = ["sycamore-reactive/trace"]
-wasm-bindgen-interning = ["web", "wasm-bindgen/enable-interning"]
-web = ["wasm-bindgen", "web-sys", "js-sys", "sycamore-web"]
+wasm-bindgen-interning = [
+	"web",
+	"dep:wasm-bindgen",
+	"wasm-bindgen/enable-interning",
+]
+web = ["dep:wasm-bindgen", "dep:web-sys", "dep:sycamore-web"]
 
 [[test]]
 name = "web"
-required-features = ["ssr"]
-
-[[test]]
-name = "ssr"
-required-features = ["ssr"]
+required-features = ["hydrate"]
 
 [package.metadata.docs.rs]
 all-features = true

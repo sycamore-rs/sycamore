@@ -1,12 +1,8 @@
 use sycamore::prelude::*;
 
 #[component]
-pub fn Index<G: Html>() -> View<G> {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .set_title("Sycamore");
+pub fn Index() -> View {
+    document().set_title("Sycamore");
 
     view! {
         div(class="pb-10 mx-4") {

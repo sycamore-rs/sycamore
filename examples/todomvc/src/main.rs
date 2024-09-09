@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
 use uuid::Uuid;
+use wasm_bindgen::prelude::*;
 use web_sys::{HtmlInputElement, KeyboardEvent};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -33,7 +34,7 @@ impl Filter {
     }
 
     fn get_filter_from_hash() -> Self {
-        let hash = web_sys::window().unwrap().location().hash().unwrap();
+        let hash = window().location().hash().unwrap();
 
         match hash.as_str() {
             "#/active" => Filter::Active,
@@ -116,10 +117,9 @@ fn main() {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     // Initialize application state from localStorage.
-    let local_storage = web_sys::window()
-        .unwrap()
+    let local_storage = window()
         .local_storage()
         .unwrap()
         .expect("user has not enabled localStorage");
@@ -165,7 +165,7 @@ fn App<G: Html>() -> View<G> {
 }
 
 #[component]
-pub fn Copyright<G: Html>() -> View<G> {
+pub fn Copyright() -> View {
     view! {
         footer(class="info") {
             p { "Double click to edit a todo" }
@@ -182,7 +182,7 @@ pub fn Copyright<G: Html>() -> View<G> {
 }
 
 #[component]
-pub fn Header<G: Html>() -> View<G> {
+pub fn Header() -> View {
     let app_state = use_context::<AppState>();
     let input_value = create_signal(String::new());
 
@@ -211,7 +211,7 @@ pub fn Header<G: Html>() -> View<G> {
 }
 
 #[component(inline_props)]
-pub fn Item<G: Html>(todo: Signal<Todo>) -> View<G> {
+pub fn Item(todo: Signal<Todo>) -> View {
     let app_state = use_context::<AppState>();
 
     let title = move || todo.with(|todo| todo.title.clone());
@@ -227,7 +227,7 @@ pub fn Item<G: Html>(todo: Signal<Todo>) -> View<G> {
     let handle_dblclick = move |_| {
         is_editing.set(true);
         input_ref
-            .get::<DomNode>()
+            .get()
             .unchecked_into::<HtmlInputElement>()
             .focus()
             .unwrap();
@@ -277,7 +277,7 @@ pub fn Item<G: Html>(todo: Signal<Todo>) -> View<G> {
             div(class="view") {
                 input(
                     class="toggle",
-                    type="checkbox",
+                    r#type="checkbox",
                     on:input=toggle_completed,
                     bind:checked=checked
                 )
@@ -300,7 +300,7 @@ pub fn Item<G: Html>(todo: Signal<Todo>) -> View<G> {
 }
 
 #[component]
-pub fn List<G: Html>() -> View<G> {
+pub fn List() -> View {
     let app_state = use_context::<AppState>();
     let todos_left = create_selector(move || app_state.todos_left());
 
@@ -331,16 +331,16 @@ pub fn List<G: Html>() -> View<G> {
             input(
                 id="toggle-all",
                 class="toggle-all",
-                type="checkbox",
+                r#type="checkbox",
                 readonly=true,
                 bind:checked=checked,
                 on:input=move |_| app_state.toggle_complete_all()
             )
-            label(for="toggle-all")
+            label(r#for="toggle-all")
 
             ul(class="todo-list") {
                 Keyed(
-                    iterable=filtered_todos,
+                    list=filtered_todos,
                     view=|todo| view! {
                         Item(todo=todo)
                     },
@@ -352,7 +352,7 @@ pub fn List<G: Html>() -> View<G> {
 }
 
 #[component(inline_props)]
-pub fn TodoFilter<G: Html>(filter: Filter) -> View<G> {
+pub fn TodoFilter(filter: Filter) -> View {
     let app_state = use_context::<AppState>();
     let selected = move || filter == app_state.filter.get();
     let set_filter = move |filter| app_state.filter.set(filter);
@@ -371,7 +371,7 @@ pub fn TodoFilter<G: Html>(filter: Filter) -> View<G> {
 }
 
 #[component]
-pub fn Footer<G: Html>() -> View<G> {
+pub fn Footer() -> View {
     let app_state = use_context::<AppState>();
 
     let items_text = move || match app_state.todos_left() {

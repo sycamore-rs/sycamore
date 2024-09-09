@@ -1,7 +1,7 @@
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
-use sycamore::suspense::Suspense;
+use sycamore::web::Suspense;
 
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://abacus.jasoncameron.dev/hit";
@@ -12,15 +12,14 @@ struct Visits {
 }
 
 async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
-    let url = format!("{}/{}/hits", API_BASE_URL, id);
+    let url = format!("{API_BASE_URL}/{id}/http-request");
     let resp = Request::get(&url).send().await?;
 
-    let body = resp.json::<Visits>().await?;
-    Ok(body)
+    resp.json::<Visits>().await
 }
 
 #[component]
-async fn VisitsCount<G: Html>() -> View<G> {
+async fn VisitsCount() -> View {
     let id = "sycamore-visits-counter";
     let visits = fetch_visits(id).await.unwrap_or_default();
 
@@ -35,7 +34,7 @@ async fn VisitsCount<G: Html>() -> View<G> {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     view! {
         div {
             p { "Page Visit Counter" }

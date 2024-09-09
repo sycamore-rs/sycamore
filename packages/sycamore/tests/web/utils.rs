@@ -1,13 +1,6 @@
+use sycamore::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Document, Element, HtmlElement, Window};
-
-pub(crate) fn window() -> Window {
-    web_sys::window().unwrap()
-}
-
-pub(crate) fn document() -> Document {
-    window().document().unwrap()
-}
+use web_sys::{Element, HtmlElement};
 
 /// Query the `Document` for the first `Element` that matches the selectors.
 ///

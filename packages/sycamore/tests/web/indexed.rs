@@ -8,7 +8,7 @@ fn append() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -38,7 +38,7 @@ fn swap_rows() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -67,7 +67,7 @@ fn update_row() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -93,7 +93,7 @@ fn trigger_with_same_data() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -119,7 +119,7 @@ fn delete_row() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -145,7 +145,7 @@ fn delete_row_from_start() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -171,7 +171,7 @@ fn delete_row_from_end() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -197,7 +197,7 @@ fn clear() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -223,7 +223,7 @@ fn insert_front() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item) }
                     },
@@ -249,7 +249,7 @@ fn nested_reactivity() {
         let node = view! {
             ul {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         li { (item.get()) }
                     },
@@ -279,7 +279,7 @@ fn fragment_template() {
         let node = view! {
             div {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         span { "The value is: " }
                         strong { (item) }
@@ -325,7 +325,7 @@ fn template_top_level() {
 
         let node = view! {
             Indexed(
-                iterable=*count,
+                list=count,
                 view=|item| view! {
                     li { (item) }
                 },
@@ -354,7 +354,7 @@ fn template_dyn_top_level() {
         let node = view! {
             div {
                 Indexed(
-                    iterable=*count,
+                    list=count,
                     view=|item| view! {
                         (item)
                     },
@@ -386,13 +386,13 @@ fn template_with_other_nodes_at_same_level() {
             ul {
                 li { "before" }
                 Indexed(
-                    iterable=*vec1,
+                    list=vec1,
                     view=|item| view! {
                         li { (item) }
                     },
                 )
                 Indexed(
-                    iterable=*vec2,
+                    list=vec2,
                     view=|item| view! {
                         li { (item) }
                     },

@@ -181,8 +181,7 @@ impl ToTokens for ComponentFn {
             // again as an argument to the inner async function which has the user defined
             // destructured pattern which will work as expected.
             //
-            // Note: that the change to the signature is not semantically different to a would be
-            // caller.
+            // Note: this does not affect the signature of the function.
             let inputs = &sig.inputs;
             let AsyncCompInputs {
                 sync_input,
@@ -200,21 +199,16 @@ impl ToTokens for ComponentFn {
                 ..sig.clone()
             };
             tokens.extend(quote! {
+                // Create a new function that is not async so that it is just a standard component.
                 #(#attrs)*
                 #[::sycamore::component]
                 #vis #non_async_sig {
+                    // Define the original function as a nested function so that it cannot be
+                    // called from outside.
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    let __dyn = ::sycamore::reactive::create_signal(::sycamore::view::View::empty());
-                    let __view = ::sycamore::view::View::new_dyn(move || __dyn.get_clone());
-
-                    ::sycamore::suspense::suspense_scope(async move {
-                        let __async_view = #inner_ident(#(#args),*).await;
-                        __dyn.set(__async_view);
-                    });
-
-                    __view
+                    ::sycamore::rt::WrapAsync(move || #inner_ident(#(#args),*))
                 }
             });
         } else {
@@ -296,7 +290,7 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let ret = Ok(quote! {
         #[allow(non_camel_case_types)]
         #[doc = #doc_comment]
-        #[derive(::sycamore::Props)]
+        #[derive(::sycamore::rt::Props)]
         #props_vis struct #props_struct_ident #generics {
             #(#props,)*
             #(#generics_phantoms,)*

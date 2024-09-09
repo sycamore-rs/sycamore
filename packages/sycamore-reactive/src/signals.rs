@@ -10,7 +10,7 @@ use std::ops::{AddAssign, Deref, DivAssign, MulAssign, RemAssign, SubAssign};
 use slotmap::Key;
 use smallvec::SmallVec;
 
-use crate::{create_memo, Mark, NodeHandle, NodeId, NodeState, ReactiveNode, Root};
+use crate::*;
 
 /// A read-only reactive value.
 ///
@@ -81,10 +81,11 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// performance overhead of cloning your value everytime you read it.
 ///
 /// # Reactivity
-/// What makes signals so powerful, as opposed to some other wrapper type like [`RefCell`] is the
-/// automatic dependency tracking. This means that accessing a signal will automatically add it as
-/// a dependency in certain contexts (such as inside a [`create_memo`](crate::create_memo)) which
-/// allows us to update related state whenever the signal is changed.
+/// What makes signals so powerful, as opposed to some other wrapper type like
+/// [`RefCell`](std::cell::RefCell) is the automatic dependency tracking. This means that accessing
+/// a signal will automatically add it as a dependency in certain contexts (such as inside a
+/// [`create_memo`](crate::create_memo)) which allows us to update related state whenever the signal
+/// is changed.
 ///
 /// ```rust
 /// # use sycamore_reactive::*;
@@ -102,10 +103,11 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// ```
 ///
 /// # Ownership
-/// Signals are always associated with a [`Scope`]. This is what performs the memory management for
-/// the actual value of the signal. What is returned from this function is just a handle/reference
-/// to the signal allocted in the [`Scope`]. This allows us to freely copy this handle around and
-/// use it in closures and event handlers without worrying about ownership of the signal.
+/// Signals are always associated with a reactive node. This is what performs the memory management
+/// for the actual value of the signal. What is returned from this function is just a
+/// handle/reference to the signal allocted in the reactive node. This allows us to freely copy this
+/// handle around and use it in closures and event handlers without worrying about ownership of the
+/// signal.
 ///
 /// This is why in the above example, we could access `signal` even after it was moved in to the
 /// closure of the `create_memo`.
@@ -301,6 +303,25 @@ impl<T> ReadSignal<T> {
         self.with_untracked(f)
     }
 
+    /// Creates a new [memo](create_memo) from this signal and a function. The resulting memo will
+    /// be created in the current reactive scope.
+    ///
+    /// # Example
+    /// ```
+    /// # use sycamore_reactive::*;
+    /// # create_root(|| {
+    /// let state = create_signal(0);
+    /// let doubled = state.map(|val| *val * 2);
+    /// assert_eq!(doubled.get(), 0);
+    /// state.set(1);
+    /// assert_eq!(doubled.get(), 2);
+    /// # });
+    /// ```
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
+        create_memo(move || self.with(&mut f))
+    }
+
     /// Track the signal in the current reactive scope. This is done automatically when calling
     /// [`ReadSignal::get`] and other similar methods.
     ///
@@ -475,25 +496,6 @@ impl<T> Signal<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_fn(self, f: impl FnOnce(&T) -> T) {
         self.update_silent(move |val| *val = f(val));
-    }
-
-    /// Creates a new [memo](create_memo) from this signal and a function. The resulting memo will
-    /// be created in the current reactive scope.
-    ///
-    /// # Example
-    /// ```
-    /// # use sycamore_reactive::*;
-    /// # create_root(|| {
-    /// let state = create_signal(0);
-    /// let doubled = state.map(|val| *val * 2);
-    /// assert_eq!(doubled.get(), 0);
-    /// state.set(1);
-    /// assert_eq!(doubled.get(), 2);
-    /// # });
-    /// ```
-    #[cfg_attr(debug_assertions, track_caller)]
-    pub fn map<U>(self, mut f: impl FnMut(&T) -> U + 'static) -> ReadSignal<U> {
-        create_memo(move || self.with(&mut f))
     }
 
     /// Split the signal into a reader/writter pair.

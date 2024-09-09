@@ -1,5 +1,8 @@
 //! Side effects!
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::create_memo;
 
 /// Creates an effect on signals used inside the effect closure.
@@ -26,6 +29,56 @@ use crate::create_memo;
 #[cfg_attr(debug_assertions, track_caller)]
 pub fn create_effect(f: impl FnMut() + 'static) {
     create_memo(f);
+}
+
+/// Creates an effect that runs a different code path on the first run.
+///
+/// The initial function is expected to return a tuple containing a function for subsequent runs
+/// and an optional value that will be returned by the effect.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive::*;
+/// # create_root(|| {
+/// let state = create_signal(0);
+///
+/// let initial_value = create_effect_initial(move || {
+///     state.set(100);
+///     (
+///         Box::new(move || state.set(state.get() + 1)),
+///         state.get(), // This value will be returned and assigned to `initial_value`.
+///     )
+/// });
+/// # });
+/// ```
+///
+/// Note that the initial function is also called within the effect scope. This means that signals
+/// created within the initial function will no longer be alive in subsequet runs. If you want to
+/// create signals that are alive in subsequent runs, you should use
+/// [`use_current_scope`](crate::use_current_scope) and
+/// [`NodeHandle::run_in`](crate::NodeHandle::run_in).
+#[cfg_attr(debug_assertions, track_caller)]
+pub fn create_effect_initial<T: 'static>(
+    initial: impl FnOnce() -> (Box<dyn FnMut() + 'static>, T) + 'static,
+) -> T {
+    let ret = Rc::new(RefCell::new(None));
+    let mut initial = Some(initial);
+    let mut effect = None;
+
+    create_effect({
+        let ret = Rc::clone(&ret);
+        move || {
+            if let Some(initial) = initial.take() {
+                let (new_f, value) = initial();
+                effect = Some(new_f);
+                *ret.borrow_mut() = Some(value);
+            } else {
+                effect.as_mut().unwrap()()
+            }
+        }
+    });
+
+    ret.take().unwrap()
 }
 
 #[cfg(test)]

@@ -1,22 +1,22 @@
 use sycamore::prelude::*;
 
 #[component]
-fn Comp1<G: Html>() {
+fn Comp1() {
     todo!();
 }
 
 #[component]
-const fn Comp2<G: Html>() -> View<G> {
+const fn Comp2() -> View {
     todo!();
 }
 
 #[component]
-extern "C" fn Comp3<G: Html>() -> View<G> {
+extern "C" fn Comp3() -> View {
     todo!();
 }
 
 #[component]
-fn Comp4<G: Html>(self) -> View<G> {
+fn Comp4(self) -> View {
     todo!();
 }
 
@@ -24,14 +24,14 @@ fn Comp4<G: Html>(self) -> View<G> {
 struct Comp5;
 
 #[component]
-fn CompWithMultipleProps<G: Html>(prop1: i32, prop2: i32) -> View<G> {
+fn CompWithMultipleProps(prop1: i32, prop2: i32) -> View {
     let _ = prop1;
     let _ = prop2;
     ::std::todo!();
 }
 
 #[component]
-fn CompWithUnitProps<G: Html>(prop: ()) -> View<G> {
+fn CompWithUnitProps(_prop: ()) -> View {
     ::std::todo!();
 }
 

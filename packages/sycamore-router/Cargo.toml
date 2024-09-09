@@ -31,6 +31,3 @@ features = [
 	"Window",
 ]
 version = "0.3.60"
-
-[dev-dependencies]
-sycamore = { path = "../sycamore", features = ["ssr"] }

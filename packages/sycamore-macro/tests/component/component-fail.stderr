@@ -1,26 +1,26 @@
 error: component must return `sycamore::view::View`
- --> tests/component/component-fail.rs:4:19
+ --> tests/component/component-fail.rs:4:10
   |
-4 | fn Comp1<G: Html>() {
-  |                   ^
+4 | fn Comp1() {
+  |          ^
 
 error: const functions can't be components
  --> tests/component/component-fail.rs:9:1
   |
-9 | const fn Comp2<G: Html>() -> View<G> {
+9 | const fn Comp2() -> View {
   | ^^^^^
 
 error: extern functions can't be components
   --> tests/component/component-fail.rs:14:1
    |
-14 | extern "C" fn Comp3<G: Html>() -> View<G> {
+14 | extern "C" fn Comp3() -> View {
    | ^^^^^^
 
 error: components can't accept a receiver
-  --> tests/component/component-fail.rs:19:19
+  --> tests/component/component-fail.rs:19:10
    |
-19 | fn Comp4<G: Html>(self) -> View<G> {
-   |                   ^^^^
+19 | fn Comp4(self) -> View {
+   |          ^^^^
 
 error: the `component` attribute can only be applied to functions
   --> tests/component/component-fail.rs:24:1
@@ -37,15 +37,15 @@ error: component should not take more than 1 parameter
    = note: this error originates in the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: taking an unit tuple as props is useless
-  --> tests/component/component-fail.rs:34:37
+  --> tests/component/component-fail.rs:34:29
    |
-34 | fn CompWithUnitProps<G: Html>(prop: ()) -> View<G> {
-   |                                     ^^
+34 | fn CompWithUnitProps(_prop: ()) -> View {
+   |                             ^^
 
 error: `self` parameter is only allowed in associated functions
-  --> tests/component/component-fail.rs:19:19
+  --> tests/component/component-fail.rs:19:10
    |
-19 | fn Comp4<G: Html>(self) -> View<G> {
-   |                   ^^^^ not semantically valid as function parameter
+19 | fn Comp4(self) -> View {
+   |          ^^^^ not semantically valid as function parameter
    |
    = note: associated functions are those in `impl` or `trait` definitions

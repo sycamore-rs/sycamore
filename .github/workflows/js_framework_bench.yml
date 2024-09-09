@@ -37,8 +37,10 @@ jobs:
         with:
           node-version: 18.x
 
-      - name: Install chromedriver
-        uses: nanasess/setup-chromedriver@v2
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          install-chromedriver: true
 
       # Checkout repositories into respective directories
       - uses: actions/checkout@v4

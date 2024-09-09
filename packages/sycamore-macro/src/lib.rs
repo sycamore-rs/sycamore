@@ -54,3 +54,51 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
+
+/// A macro for feature gating code that should only be run on the server.
+///
+/// By default, the target is used to determine the rendering mode. However, `--cfg
+/// sycamore_force_ssr` can be used to override this behavior.
+///
+/// # Example
+///
+/// ```
+/// # use sycamore_macro::*;
+/// #[cfg_ssr]
+/// fn server_only() {}
+/// ```
+///
+/// See also [`macro@cfg_not_ssr`].
+#[proc_macro_attribute]
+pub fn cfg_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let input: proc_macro2::TokenStream = input.into();
+    quote! {
+        #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
+        #input
+    }
+    .into()
+}
+
+/// A macro for feature gating code that should only be run on the web.
+///
+/// By default, the target is used to determine the rendering mode. However, `--cfg
+/// sycamore_force_ssr` can be used to override this behavior.
+///
+/// # Example
+///
+/// ```
+/// # use sycamore_macro::*;
+/// #[cfg_not_ssr]
+/// fn browser_only() {}
+/// ```
+///
+/// See also [`macro@cfg_ssr`].
+#[proc_macro_attribute]
+pub fn cfg_not_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let input: proc_macro2::TokenStream = input.into();
+    quote! {
+        #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
+        #input
+    }
+    .into()
+}

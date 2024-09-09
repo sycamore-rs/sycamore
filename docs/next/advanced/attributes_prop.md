@@ -1,5 +1,7 @@
 # Passing Attributes to a wrapped element
 
+> TODO: This feature currently does not work in the latest pre-release.
+
 When you're working on code for your own website, props are a great way to pass customizable values
 to a component. If you need to customize an additional attribute on your HTML element, just add a
 prop! On the other hand, when you're working on components used by other people (i.e. component libraries),
@@ -11,7 +13,7 @@ of that type to your props,
 ```rust
 #[derive(Props)]
 struct Props {
-    attributes: Attributes<G>
+    attributes: Attributes,
 }
 ```
 

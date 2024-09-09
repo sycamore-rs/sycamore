@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-pub fn Component<G: Html>() -> View<G> {
+pub fn Component() -> View {
     view! {
         div {}
     }
@@ -13,7 +13,7 @@ pub struct Props {
 }
 
 #[component]
-pub fn PropsComponent<G: Html>(Props { prop: _ }: Props) -> View<G> {
+pub fn PropsComponent(Props { prop: _ }: Props) -> View {
     view! {
         div {}
     }
@@ -26,7 +26,7 @@ pub struct AllDefaultProps {
 }
 
 #[component]
-pub fn AllDefaultPropsComponent<G: Html>(_props: AllDefaultProps) -> View<G> {
+pub fn AllDefaultPropsComponent(_props: AllDefaultProps) -> View {
     view! {
         div {}
     }
@@ -40,19 +40,19 @@ pub struct OptionalProps {
 }
 
 #[component]
-pub fn OptionalPropsComponent<G: Html>(_props: OptionalProps) -> View<G> {
+pub fn OptionalPropsComponent(_props: OptionalProps) -> View {
     view! {
         div {}
     }
 }
 
 #[derive(Props)]
-pub struct PropsWithChildren<G: GenericNode> {
-    children: Children<G>,
+pub struct PropsWithChildren {
+    children: Children,
 }
 
 #[component]
-pub fn ComponentWithChildren<G: Html>(props: PropsWithChildren<G>) -> View<G> {
+pub fn ComponentWithChildren(props: PropsWithChildren) -> View {
     let children = props.children.call();
 
     view! {
@@ -63,7 +63,7 @@ pub fn ComponentWithChildren<G: Html>(props: PropsWithChildren<G>) -> View<G> {
 }
 
 #[component]
-pub fn NestedComponentWithChildren<G: Html>(props: PropsWithChildren<G>) -> View<G> {
+pub fn NestedComponentWithChildren(props: PropsWithChildren) -> View {
     let children = props.children.call();
 
     view! {
@@ -75,66 +75,67 @@ pub fn NestedComponentWithChildren<G: Html>(props: PropsWithChildren<G>) -> View
 }
 
 #[component]
-pub async fn AsyncComponentWithPropsDestructuring<G: Html>(
-    PropsWithChildren { children }: PropsWithChildren<G>,
-) -> View<G> {
+pub async fn AsyncComponentWithPropsDestructuring(
+    PropsWithChildren { children }: PropsWithChildren,
+) -> View {
     children.call()
 }
 
-#[derive(Props)]
-pub struct AttributesProps<G: Html> {
-    attributes: Attributes<G>,
-}
+//#[derive(Props)]
+//pub struct AttributesProps {
+//    attributes: Attributes,
+//}
+//
+//#[component]
+//pub fn AttributesComponent(AttributesProps { attributes }: AttributesProps) -> View {
+//    view! {
+//        input(..attributes) {}
+//    }
+//}
 
-#[component]
-pub fn AttributesComponent<G: Html>(AttributesProps { attributes }: AttributesProps<G>) -> View<G> {
-    view! {
-        input(..attributes) {}
-    }
-}
-
-fn compile_pass<G: Html>() {
+fn compile_pass() {
     let _ = create_root(|| {
-        let _: View<G> = view! { Component() };
-        let _: View<G> = view! { Component {} };
+        let _: View = view! { Component() };
+        let _: View = view! { Component {} };
 
         let prop = "prop";
-        let _: View<G> = view! { PropsComponent(prop=prop) };
+        let _: View = view! { PropsComponent(prop=prop) };
 
-        let _: View<G> = view! { AllDefaultPropsComponent(prop=123) };
-        let _: View<G> = view! { AllDefaultPropsComponent() };
-        let _: View<G> = view! { AllDefaultPropsComponent {} };
+        let _: View = view! { AllDefaultPropsComponent(prop=123) };
+        let _: View = view! { AllDefaultPropsComponent() };
+        let _: View = view! { AllDefaultPropsComponent {} };
 
-        let _: View<G> = view! { OptionalPropsComponent(optional=123) };
-        let _: View<G> = view! { OptionalPropsComponent(implicit=123) };
-        let _: View<G> = view! { OptionalPropsComponent(optional=123, implicit=123) };
-        let _: View<G> = view! { OptionalPropsComponent() };
-        let _: View<G> = view! { OptionalPropsComponent {} };
+        let _: View = view! { OptionalPropsComponent(optional=123) };
+        let _: View = view! { OptionalPropsComponent(implicit=123) };
+        let _: View = view! { OptionalPropsComponent(optional=123, implicit=123) };
+        let _: View = view! { OptionalPropsComponent() };
+        let _: View = view! { OptionalPropsComponent {} };
 
-        let _: View<G> = view! { ComponentWithChildren { Component() } };
-        let _: View<G> = view! { ComponentWithChildren { div {} } };
-        let _: View<G> = view! { ComponentWithChildren { div {} div {} } };
-        let _: View<G> = view! { ComponentWithChildren { Component {} } };
-        let _: View<G> = view! { ComponentWithChildren() { Component {} } };
-        let _: View<G> = view! { ComponentWithChildren {} };
-        let _: View<G> = view! { ComponentWithChildren() };
-        let _: View<G> = view! { ComponentWithChildren() {} };
-        let _: View<G> = view! { AttributesComponent(attr:class = "test") {} };
-        let str_signal = create_signal(String::new());
-        let _: View<G> = view! { AttributesComponent(bind:value = str_signal) {} };
-        let on_click = |_| {};
-        let _: View<G> = view! { AttributesComponent(on:click = on_click) {} };
-        let bool_signal = create_signal(false);
-        let _: View<G> =
-            view! { AttributesComponent(attr:disabled = false, attr:checked = bool_signal.get()) };
+        let _: View = view! { ComponentWithChildren { Component() } };
+        let _: View = view! { ComponentWithChildren { div {} } };
+        let _: View = view! { ComponentWithChildren { div {} div {} } };
+        let _: View = view! { ComponentWithChildren { Component {} } };
+        let _: View = view! { ComponentWithChildren() { Component {} } };
+        let _: View = view! { ComponentWithChildren {} };
+        let _: View = view! { ComponentWithChildren() };
+        let _: View = view! { ComponentWithChildren() {} };
+        //let _: View = view! { AttributesComponent(attr:class = "test") {} };
+        //let str_signal = create_signal(String::new());
+        //let _: View = view! { AttributesComponent(bind:value = str_signal) {} };
+        //let on_click = |_| {};
+        //let _: View = view! { AttributesComponent(on:click = on_click) {} };
+        //let bool_signal = create_signal(false);
+        //let _: View =
+        //    view! { AttributesComponent(attr:disabled = false, attr:checked = bool_signal.get())
+        // };
 
-        let _: View<G> = view! {
+        let _: View = view! {
             AsyncComponentWithPropsDestructuring {
                 Component {}
             }
         };
 
-        let _: View<G> = view! {
+        let _: View = view! {
             NestedComponentWithChildren {
                 Component {}
             }

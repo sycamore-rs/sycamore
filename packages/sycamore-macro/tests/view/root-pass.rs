@@ -1,17 +1,17 @@
 use sycamore::prelude::*;
 
-fn compile_pass<G: Html>() {
+fn compile_pass() {
     let _ = create_root(|| {
-        let _: View<G> = view! { "Raw text nodes!" };
+        let _: View = view! { "Raw text nodes!" };
 
-        let _: View<G> = view! {
+        let _: View = view! {
             p { "First" }
             p { "Second" }
             "Third"
         };
 
         let spliced = 123;
-        let _: View<G> = view! { (spliced) };
+        let _: View = view! { (spliced) };
     });
 }
 

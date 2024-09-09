@@ -1,49 +1,49 @@
 error: unexpected end of input, expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:41:26
+  --> tests/view/component-fail.rs:39:23
    |
-41 |         let _: View<G> = view! { Component };
-   |                          ^^^^^^^^^^^^^^^^^^^
+39 |         let _: View = view! { Component };
+   |                       ^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:47:55
+  --> tests/view/component-fail.rs:45:52
    |
-47 |         let _: View<G> = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
-   |                                                       ^
+45 |         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
+   |                                                    ^
 
 error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:38:34
+  --> tests/view/component-fail.rs:36:31
    |
-38 |         let _: View<G> = view! { UnknownComponent() };
-   |                                  ^^^^^^^^^^^^^^^^ not found in this scope
+36 |         let _: View = view! { UnknownComponent() };
+   |                               ^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:39:34
+  --> tests/view/component-fail.rs:37:31
    |
-39 |         let _: View<G> = view! { UnknownComponent {} };
-   |                                  ^^^^^^^^^^^^^^^^ not found in this scope
+37 |         let _: View = view! { UnknownComponent {} };
+   |                               ^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0599]: no method named `prop` found for struct `UnitBuilder` in the current scope
-  --> tests/view/component-fail.rs:42:44
+  --> tests/view/component-fail.rs:40:41
    |
-42 |         let _: View<G> = view! { Component(prop=1) };
-   |                                            ^^^^ method not found in `UnitBuilder`
+40 |         let _: View = view! { Component(prop=1) };
+   |                                         ^^^^ method not found in `UnitBuilder`
 
 warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:44:26
+  --> tests/view/component-fail.rs:42:23
    |
-44 |         let _: View<G> = view! { PropsComponent() };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+42 |         let _: View = view! { PropsComponent() };
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(deprecated)]` on by default
    = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:44:26
+  --> tests/view/component-fail.rs:42:23
    |
-44 |         let _: View<G> = view! { PropsComponent() };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^ an argument of type `PropsBuilder_Error_Missing_required_field_prop` is missing
+42 |         let _: View = view! { PropsComponent() };
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: method defined here
   --> tests/view/component-fail.rs:3:10
@@ -53,22 +53,22 @@ note: method defined here
    = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: provide the argument
    |
-44 |         let _: View<G> = view! { PropsComponent() }(/* PropsBuilder_Error_Missing_required_field_prop */);
-   |                                                    ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+42 |         let _: View = view! { PropsComponent() }(/* PropsBuilder_Error_Missing_required_field_prop */);
+   |                                                 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:45:26
+  --> tests/view/component-fail.rs:43:23
    |
-45 |         let _: View<G> = view! { PropsComponent {} };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+43 |         let _: View = view! { PropsComponent {} };
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:45:26
+  --> tests/view/component-fail.rs:43:23
    |
-45 |         let _: View<G> = view! { PropsComponent {} };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ an argument of type `PropsBuilder_Error_Missing_required_field_prop` is missing
+43 |         let _: View = view! { PropsComponent {} };
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: method defined here
   --> tests/view/component-fail.rs:3:10
@@ -78,34 +78,19 @@ note: method defined here
    = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: provide the argument
    |
-45 |         let _: View<G> = view! { PropsComponent {} }(/* PropsBuilder_Error_Missing_required_field_prop */);
-   |                                                     ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+43 |         let _: View = view! { PropsComponent {} }(/* PropsBuilder_Error_Missing_required_field_prop */);
+   |                                                  ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:46:54
+  --> tests/view/component-fail.rs:44:51
    |
-46 |         let _: View<G> = view! { PropsComponent(prop=123) };
-   |                                                 ---- ^^^ expected `&str`, found integer
-   |                                                 |
-   |                                                 arguments to this method are incorrect
+44 |         let _: View = view! { PropsComponent(prop=123) };
+   |                                              ---- ^^^ expected `&str`, found integer
+   |                                              |
+   |                                              arguments to this method are incorrect
    |
 note: method defined here
   --> tests/view/component-fail.rs:5:5
    |
 5  |     prop: &'static str,
    |     ^^^^--------------
-
-error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:48:65
-   |
-48 |         let _: View<G> = view! { AttributesComponent(attr:class=123) }; // Wrong type
-   |                          ---------------------------------------^^^---
-   |                          |                                      |
-   |                          |                                      expected `&str`, found integer
-   |                          arguments to this enum variant are incorrect
-   |
-note: tuple variant defined here
-  --> $WORKSPACE/packages/sycamore-core/src/component.rs
-   |
-   |     Str(&'static str),
-   |     ^^^

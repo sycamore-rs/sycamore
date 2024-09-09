@@ -12,7 +12,7 @@ convention to name components using `PascalCase`.
 
 ```rust
 #[component]
-fn MyComponent<G: Html>() -> View<G> {
+fn MyComponent() -> View {
     view! {
         // ...
     }
@@ -68,7 +68,7 @@ struct MyProps {
 }
 
 #[component]
-fn MyComponent<G: Html>(props: MyProps) -> View<G> {
+fn MyComponent(props: MyProps) -> View {
     view! {
         div(class="my-component") {
             "Value: " (props.value.get())
@@ -90,13 +90,13 @@ properties struct.
 
 ```rust
 #[derive(Props)]
-pub struct MyComponentProps<G: Html> {
+pub struct MyComponentProps {
     children: Children<G>,
     class: String
 }
 
 #[component]
-pub fn MyComponent<G: Html>(props: MyComponentProps<G>) -> View<G> {
+pub fn MyComponent(props: MyComponentProps<G>) -> View {
     let children = props.children.call();
     view! {
         div(class=props.class) {
@@ -147,7 +147,7 @@ struct MyProps {
     value: ReadSignal<i32>,
 }
 #[component]
-fn MyComponent<G: Html>(props: MyProps) -> View<G> {
+fn MyComponent(props: MyProps) -> View {
     view! {
         div(class="my-component") {
             "Value: " (props.value.get())
@@ -157,7 +157,7 @@ fn MyComponent<G: Html>(props: MyProps) -> View<G> {
 
 // inline_props for the win!
 #[component(inline_props)]
-fn MyComponent<G: Html>(value: ReadSignal<i32>) -> View<G> {
+fn MyComponent(value: ReadSignal<i32>) -> View {
     view! {
         div(class="my-component") {
             "Value: " (value.get())
@@ -185,7 +185,7 @@ can also be used to schedule a callback when the component is destroyed.
 
 ```rust
 #[component]
-fn MyComponent() -> View<G> {
+fn MyComponent() -> View {
     on_cleanup(|| {
         // Perform cleanup.
     });

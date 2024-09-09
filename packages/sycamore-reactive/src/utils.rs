@@ -102,7 +102,7 @@ impl_trackable_deps_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
 ///
 /// # Params
 /// * `deps` - A list of signals/memos that are tracked. This can be a single signal or it can be a
-/// tuple of signals.
+///   tuple of signals.
 /// * `f` - The callback function.
 ///
 /// # Example

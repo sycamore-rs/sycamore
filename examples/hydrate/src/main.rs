@@ -1,7 +1,7 @@
 use sycamore::prelude::*;
 
 #[component]
-fn Counter<G: Html>() -> View<G> {
+fn Counter() -> View {
     let mut state = create_signal(0i32);
     let increment = move |_| state += 1;
     let decrement = move |_| state -= 1;
@@ -17,7 +17,7 @@ fn Counter<G: Html>() -> View<G> {
 }
 
 #[component]
-fn Hello<G: Html>() -> View<G> {
+fn Hello() -> View {
     let name = create_signal(String::new());
     let is_empty = create_selector(move || !name.with(String::is_empty));
 
@@ -40,7 +40,7 @@ fn Hello<G: Html>() -> View<G> {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     view! {
         p { "Hydration" }
         br {}
@@ -58,7 +58,7 @@ fn App<G: Html>() -> View<G> {
 }
 
 fn main() {
-    if cfg!(target_arch = "wasm32") {
+    if is_not_ssr!() {
         console_error_panic_hook::set_once();
         console_log::init_with_level(log::Level::Debug).unwrap();
         sycamore::hydrate(App);

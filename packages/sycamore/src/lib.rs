@@ -1,22 +1,23 @@
 //! # Sycamore API Documentation
 //!
-//! Sycamore is a VDOM-less web library with fine-grained reactivity.
+//! Sycamore is a **reactive** library for creating web apps in **Rust** and **WebAssembly**.
 //!
 //! This is the API docs for sycamore. If you are looking for the usage docs, checkout the
 //! [Sycamore Book](https://sycamore-rs.netlify.app/docs/getting_started/installation).
 //!
 //! ## Feature Flags
 //!
-//! - `hydrate` - Enables client-side hydration support.
+//! - `hydrate` - Enables hydration support in DOM nodes. By default, hydration is disabled to
+//!   reduce binary size.
+//!
+//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
+//!   `serde`.
 //!
 //! - `suspense` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
 //!   reactive scope into an `async` function.
 //!
-//! - `ssr` - Enables rendering templates to static strings (useful for Server Side Rendering /
-//!   Pre-rendering).
-//!
-//! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
-//!   `serde`.
+//! - `nightly` - Enables nightly-only features. This makes it slightly more ergonomic to use
+//!   signals.
 //!
 //! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
 //!   improves performance at a slight cost in binary size. If you want to minimize the size of the
@@ -38,40 +39,39 @@
 #[allow(unused_extern_crates)] // False positive
 extern crate self as sycamore;
 
-pub mod builder;
 pub mod easing;
-pub mod flow;
-#[cfg(feature = "suspense")]
-pub mod futures;
 pub mod motion;
-#[cfg(feature = "suspense")]
-pub mod suspense;
-pub mod utils;
-#[cfg(feature = "web")]
-pub mod web;
 
-/* Re-export modules from sycamore-core */
-pub use sycamore_core::{component, generic_node, noderef, stable_id, view};
 /* Re-export of the sycamore-macro crate */
 pub use sycamore_macro::*;
 
-/// Re-export of the `sycamore-reactive` crate.
-///
 /// Reactive primitives for Sycamore.
+///
+/// Re-export of the [`sycamore_reactive`] crate.
 pub mod reactive {
     pub use sycamore_reactive::*;
 }
 
-#[cfg(feature = "ssr")]
-pub use web::render_to_string;
-#[cfg(all(feature = "ssr", feature = "suspense"))]
-pub use web::render_to_string_await_suspense;
-#[cfg(all(feature = "web", feature = "hydrate"))]
-pub use web::{hydrate, hydrate_in_scope, hydrate_to};
-#[cfg(feature = "web")]
-pub use web::{render, render_in_scope, render_to};
+/// Web support for Sycamore.
+///
+/// Re-export of the [`sycamore_web`] crate.
+pub mod web {
+    pub use sycamore_web::*;
+}
 
-/// The sycamore prelude.
+/// Utilities for working with async.
+///
+/// Re-export of the [`sycamore_futures`] crate.
+#[cfg(feature = "suspense")]
+pub mod futures {
+    pub use sycamore_futures::*;
+}
+
+#[cfg(feature = "hydrate")]
+pub use sycamore_web::{hydrate, hydrate_in_scope, hydrate_to};
+pub use sycamore_web::{render, render_in_scope, render_to, render_to_string};
+
+/// The Sycamore prelude.
 ///
 /// In most cases, it is idiomatic to use a glob import (aka wildcard import) at the beginning of
 /// your Rust source file.
@@ -80,32 +80,29 @@ pub use web::{render, render_in_scope, render_to};
 /// use sycamore::prelude::*;
 /// ```
 pub mod prelude {
+    pub use sycamore_core::{Component, Props};
+    #[cfg(feature = "web")]
     pub use sycamore_macro::*;
+    #[cfg(feature = "web")]
+    pub use sycamore_web::{
+        console_dbg, console_log, create_node_ref, document, is_not_ssr, is_ssr, on_mount, window,
+        Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed, NodeRef,
+        SvgGlobalAttributes, View,
+    };
 
-    pub use crate::component::{AttributeValue, Attributes, Children};
-    pub use crate::flow::*;
-    pub use crate::generic_node::GenericNode;
-    pub use crate::noderef::{create_node_ref, NodeRef};
     pub use crate::reactive::*;
-    pub use crate::stable_id::create_unique_id;
-    pub use crate::view::View;
-    #[cfg(feature = "web")]
-    pub use crate::web::on_mount;
-    #[cfg(all(feature = "web", feature = "hydrate"))]
-    pub use crate::web::HydrateNode;
-    #[cfg(feature = "ssr")]
-    pub use crate::web::SsrNode;
-    #[cfg(feature = "web")]
-    pub use crate::web::{DomNode, Html};
 }
 
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.
 #[doc(hidden)]
 pub mod rt {
+    pub use sycamore_core::{component_scope, element_like_component_builder, Component, Props};
+    #[cfg(feature = "suspense")]
+    pub use sycamore_futures::*;
+    pub use sycamore_macro::*;
+    pub use sycamore_reactive::*;
     #[cfg(feature = "web")]
-    pub use js_sys::Reflect;
-    #[cfg(feature = "web")]
-    pub use wasm_bindgen::{intern, JsCast, JsValue};
+    pub use sycamore_web::*;
     #[cfg(feature = "web")]
     pub use web_sys::Event;
 }

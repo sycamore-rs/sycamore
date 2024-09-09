@@ -1,20 +1,15 @@
-#[cfg(all(feature = "hydrate"))]
-pub mod builder_hydrate;
 pub mod cleanup;
-#[cfg(feature = "hydrate")]
 pub mod hydrate;
 pub mod indexed;
 pub mod keyed;
 pub mod portal;
-pub mod reconcile;
+//pub mod reconcile;
 pub mod render;
 pub mod svg;
 
 mod utils;
 
-use sycamore::generic_node::GenericNodeElements;
 use sycamore::prelude::*;
-use sycamore::web::html;
 use utils::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
@@ -48,8 +43,8 @@ fn test_container() -> Element {
 
 #[wasm_bindgen_test]
 fn empty_template() {
-    sycamore::render_to(|| View::empty(), &test_container());
-    assert_eq!(query("#test-container").inner_html(), "<!---->");
+    sycamore::render_to(View::new, &test_container());
+    assert_eq!(query("#test-container").inner_html(), "");
 }
 
 #[wasm_bindgen_test]
@@ -80,10 +75,7 @@ fn hello_world_noderef() {
         );
 
         assert_eq!(
-            &p_ref
-                .get::<DomNode>()
-                .unchecked_into::<HtmlElement>()
-                .outer_html(),
+            &p_ref.get().unchecked_into::<HtmlElement>().outer_html(),
             "<p>Hello World!</p>"
         );
     });
@@ -231,16 +223,16 @@ fn reactive_attribute() {
         let count = create_signal(0);
 
         let node = view! {
-            span(attribute=count.get())
+            span(data-attribute=count.get().to_string())
         };
 
         sycamore::render_in_scope(|| node, &test_container());
         let span = query("span");
 
-        assert_eq!(span.get_attribute("attribute").unwrap(), "0");
+        assert_eq!(span.get_attribute("data-attribute").unwrap(), "0");
 
         count.set(1);
-        assert_eq!(span.get_attribute("attribute").unwrap(), "1");
+        assert_eq!(span.get_attribute("data-attribute").unwrap(), "1");
     });
 }
 
@@ -250,7 +242,7 @@ fn reactive_property() {
         let indeterminate = create_signal(true);
 
         let node = view! {
-            input(type="checkbox", prop:indeterminate=indeterminate.get())
+            input(r#type="checkbox", prop:indeterminate=indeterminate.get())
         };
 
         sycamore::render_in_scope(|| node, &test_container());
@@ -278,7 +270,6 @@ fn static_property() {
 }
 
 #[wasm_bindgen_test]
-#[ignore]
 fn two_way_bind_to_props() {
     let _ = create_root(|| {
         let value = create_signal(String::new());
@@ -306,7 +297,7 @@ fn two_way_bind_to_value_as_number() {
         let value = create_signal(1.0);
 
         let node = view! {
-            input(type="range", bind:valueAsNumber=value) // Note that type must be "range" or "number"
+            input(r#type="range", bind:valueAsNumber=value) // Note that type must be "range" or "number"
         };
 
         sycamore::render_in_scope(|| node, &test_container());
@@ -335,7 +326,7 @@ fn noderefs() {
         sycamore::render_in_scope(|| node, &test_container());
         let input_ref = query("input");
 
-        assert_eq!(input_ref, noderef.get::<DomNode>().unchecked_into());
+        assert_eq!(input_ref, noderef.get().unchecked_into());
     });
 }
 
@@ -343,14 +334,14 @@ fn noderefs() {
 fn noderef_reactivity_test() {
     let _ = create_root(|| {
         let counter = create_signal(0);
-        let node_ref: NodeRef<DomNode> = create_node_ref();
+        let node_ref: NodeRef = create_node_ref();
 
         let _ = view! {
             div(ref=node_ref)
         };
 
         create_effect(move || {
-            node_ref.get::<DomNode>();
+            node_ref.get();
             counter.set(counter.get() + 1);
         });
         assert_eq!(counter.get(), 1);
@@ -390,51 +381,4 @@ fn fragments_text_nodes() {
 
         assert_text_content!(query("#test-container"), "123");
     });
-}
-
-#[wasm_bindgen_test]
-fn dyn_fragment_reuse_nodes() {
-    let _ = create_root(|| {
-        let nodes = vec![view! { "1" }, view! { "2" }, view! { "3" }];
-
-        sycamore::render_in_scope(
-            {
-                let nodes = nodes.clone();
-                || View::new_dyn(move || View::new_fragment(nodes.clone()))
-            },
-            &test_container(),
-        );
-
-        let p = query("#test-container");
-
-        assert_text_content!(p, "123");
-        assert!(p.first_child() == nodes[0].as_node().map(|node| node.to_web_sys()));
-    });
-}
-
-#[wasm_bindgen_test]
-fn dom_node_add_class_splits_at_whitespace() {
-    let node = DomNode::element::<html::div>();
-    node.add_class("my_class");
-    assert_eq!(
-        node.to_web_sys().unchecked_into::<Element>().class_name(),
-        "my_class"
-    );
-    node.add_class("my_class");
-    assert_eq!(
-        node.to_web_sys().unchecked_into::<Element>().class_name(),
-        "my_class"
-    );
-    node.remove_class("my_class");
-    node.add_class("hyphenated-class");
-    assert_eq!(
-        node.to_web_sys().unchecked_into::<Element>().class_name(),
-        "hyphenated-class"
-    );
-    node.remove_class("hyphenated-class");
-    node.add_class("multiple classes");
-    assert_eq!(
-        node.to_web_sys().unchecked_into::<Element>().class_name(),
-        "multiple classes"
-    );
 }

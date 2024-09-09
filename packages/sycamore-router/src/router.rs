@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
-use sycamore::web::html::ev;
 use wasm_bindgen::prelude::*;
 use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
 
@@ -46,17 +45,12 @@ impl HistoryIntegration {
 
 impl Integration for HistoryIntegration {
     fn current_pathname(&self) -> String {
-        web_sys::window()
-            .unwrap_throw()
-            .location()
-            .pathname()
-            .unwrap_throw()
+        window().location().pathname().unwrap_throw()
     }
 
     fn on_popstate(&self, f: Box<dyn FnMut()>) {
         let closure = Closure::wrap(f);
-        web_sys::window()
-            .unwrap_throw()
+        window()
             .add_event_listener_with_callback("popstate", closure.as_ref().unchecked_ref())
             .unwrap_throw();
         closure.forget();
@@ -71,7 +65,7 @@ impl Integration for HistoryIntegration {
                 .closest("a[href]")
                 .unwrap_throw()
             {
-                let location = web_sys::window().unwrap_throw().location();
+                let location = window().location();
 
                 let a = a.unchecked_into::<HtmlAnchorElement>();
 
@@ -100,12 +94,11 @@ impl Integration for HistoryIntegration {
                             pathname.set(path.to_string());
 
                             // Update History API.
-                            let window = web_sys::window().unwrap_throw();
-                            let history = window.history().unwrap_throw();
+                            let history = window().history().unwrap_throw();
                             history
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a_pathname))
                                 .unwrap_throw();
-                            window.scroll_to_with_x_and_y(0.0, 0.0);
+                            window().scroll_to_with_x_and_y(0.0, 0.0);
                         });
                     } else {
                         // Same page. Do nothing.
@@ -119,12 +112,7 @@ impl Integration for HistoryIntegration {
 
 /// Gets the base pathname from `document.baseURI`.
 fn base_pathname() -> String {
-    match web_sys::window()
-        .unwrap_throw()
-        .document()
-        .unwrap_throw()
-        .query_selector("base[href]")
-    {
+    match document().query_selector("base[href]") {
         Ok(Some(base)) => {
             let base = base.unchecked_into::<HtmlBaseElement>().href();
 
@@ -141,25 +129,23 @@ fn base_pathname() -> String {
 
 /// Props for [`Router`].
 #[derive(Props, Debug)]
-pub struct RouterProps<R, F, I, G>
+pub struct RouterProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     view: F,
     integration: I,
     #[prop(default, setter(skip))]
-    _phantom: PhantomData<(R, G)>,
+    _phantom: PhantomData<R>,
 }
 
-impl<R, F, I, G> RouterProps<R, F, I, G>
+impl<R, F, I> RouterProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     /// Create a new [`RouterProps`].
     pub fn new(integration: I, view: F) -> Self {
@@ -173,24 +159,22 @@ where
 
 /// Props for [`RouterBase`].
 #[derive(Props, Debug)]
-pub struct RouterBaseProps<R, F, I, G>
+pub struct RouterBaseProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     view: F,
     integration: I,
     route: R,
 }
 
-impl<R, F, I, G> RouterBaseProps<R, F, I, G>
+impl<R, F, I> RouterBaseProps<R, F, I>
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration,
-    G: GenericNode,
 {
     /// Create a new [`RouterBaseProps`].
     pub fn new(integration: I, view: F, route: R) -> Self {
@@ -205,10 +189,10 @@ where
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<G: Html, R, F, I>(props: RouterProps<R, F, I, G>) -> View<G>
+pub fn Router<R, F, I>(props: RouterProps<R, F, I>) -> View
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration + 'static,
 {
     view! {
@@ -226,10 +210,10 @@ where
 ///
 /// This is a very specific use-case, and you probably actually want [`Router`]!
 #[component]
-pub fn RouterBase<G: Html, R, F, I>(props: RouterBaseProps<R, F, I, G>) -> View<G>
+pub fn RouterBase<R, F, I>(props: RouterBaseProps<R, F, I>) -> View
 where
     R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View<G> + 'static,
+    F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration + 'static,
 {
     let RouterBaseProps {
@@ -268,37 +252,34 @@ where
     }));
     let route_signal = create_memo(move || pathname.with(|pathname| route.match_path(pathname)));
     let view = view(route_signal);
-    // Delegate click events from child <a> tags.
-    if let Some(node) = view.as_node() {
-        node.event(ev::click, integration.click_handler());
-    } else {
-        let view = view.clone();
-        create_effect(move || {
-            for node in view.clone().flatten() {
-                node.event(ev::click, integration.click_handler());
-            }
-        });
-    }
+    let nodes = view.as_web_sys();
+    on_mount(move || {
+        for node in nodes {
+            let handler: Closure<dyn FnMut(web_sys::MouseEvent)> =
+                Closure::new(integration.click_handler());
+            node.add_event_listener_with_callback("click", handler.into_js_value().unchecked_ref())
+                .unwrap(); // TODO: manage in scope
+        }
+        // TODO: this does not work for dynamic views
+    });
     view
 }
 
 /// Props for [`StaticRouter`].
 #[derive(Props, Debug)]
-pub struct StaticRouterProps<R, F, G>
+pub struct StaticRouterProps<R, F>
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
-    G: GenericNode,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     view: F,
     route: R,
 }
 
-impl<R, F, G> StaticRouterProps<R, F, G>
+impl<R, F> StaticRouterProps<R, F>
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
-    G: GenericNode,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     /// Create a new [`StaticRouterProps`].
     pub fn new(route: R, view: F) -> Self {
@@ -311,10 +292,10 @@ where
 /// This is useful for SSR where we want the HTML to be rendered instantly instead of waiting for
 /// the route preload to finish loading.
 #[component]
-pub fn StaticRouter<G: Html, R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
+pub fn StaticRouter<R, F>(props: StaticRouterProps<R, F>) -> View
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     view! {
         StaticRouterBase(view=props.view, route=props.route)
@@ -324,10 +305,10 @@ where
 /// Implementation detail for [`StaticRouter`]. The extra component is needed to make sure hydration
 /// keys are consistent.
 #[component]
-fn StaticRouterBase<G: Html, R, F>(props: StaticRouterProps<R, F, G>) -> View<G>
+fn StaticRouterBase<R, F>(props: StaticRouterProps<R, F>) -> View
 where
     R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View<G> + 'static,
+    F: Fn(ReadSignal<R>) -> View + 'static,
 {
     let StaticRouterProps { view, route } = props;
 
@@ -353,12 +334,11 @@ pub fn navigate(url: &str) {
         pathname.set(path.to_string());
 
         // Update History API.
-        let window = web_sys::window().unwrap_throw();
-        let history = window.history().unwrap_throw();
+        let history = window().history().unwrap_throw();
         history
             .push_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
-        window.scroll_to_with_x_and_y(0.0, 0.0);
+        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
@@ -382,12 +362,11 @@ pub fn navigate_replace(url: &str) {
         pathname.set(path.to_string());
 
         // Update History API.
-        let window = web_sys::window().unwrap_throw();
-        let history = window.history().unwrap_throw();
+        let history = window().history().unwrap_throw();
         history
             .replace_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
-        window.scroll_to_with_x_and_y(0.0, 0.0);
+        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
@@ -414,7 +393,7 @@ mod tests {
         }
 
         #[component(inline_props)]
-        fn Comp<G: Html>(path: String) -> View<G> {
+        fn Comp(path: String) -> View {
             let route = Routes::match_route(
                 // The user would never use this directly, so they'd never have to do this trick
                 // It doesn't matter which variant we provide here, it just needs to conform to

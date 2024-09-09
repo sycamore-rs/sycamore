@@ -43,6 +43,7 @@ pub fn create_selector_with<T>(
 }
 
 /// Creates a memoized computation from some signals.
+///
 /// The output is derived from all the signals that are used within the memo closure.
 /// If any of the tracked signals are updated, the memo is also updated.
 ///
@@ -90,6 +91,7 @@ pub fn create_memo<T>(f: impl FnMut() -> T + 'static) -> ReadSignal<T> {
 }
 
 /// Creates a memoized value from some signals.
+///
 /// Unlike [`create_memo`], this function will not notify dependents of a hange if the output is the
 /// same. That is why the output of the function must implement [`PartialEq`].
 ///
@@ -126,7 +128,7 @@ where
 /// It uses a reducer function that takes the previous value and a message and returns the next
 /// value.
 ///
-/// Returns a [`Memo`] and a dispatch function to send messages to the reducer.
+/// Returns a [`ReadSignal`] and a dispatch function to send messages to the reducer.
 ///
 /// # Params
 /// * `initial` - The initial value of the state.

@@ -9,7 +9,7 @@
 
 <body>
 	<!-- Generate SSR-ed HTML with `cargo run`. This will generate an `index.html` file with the rendered HTML -->
-	<p data-hk="0.0">Hydration</p><br data-hk="0.1"/><div data-hk="1.1"><p>Hello <!--#--><span data-hk="1.0">World</span><!--/-->!</p><input/></div><br data-hk="0.2"/><div data-hk="2.0"><p>Value: <!--#-->0<!--/--></p><button>+</button><button>-</button><button>Reset</button></div><div data-hk="3.0"><p>This paragraph is not hydrated!</p></div><div data-hk="4.0"><!----></div>
+	<p data-hk=0>Hydration</p><br data-hk=1><div data-hk=2><p data-hk=3>Hello <!--/--><span data-hk=4>World</span><!--/-->!</p><input data-hk=5></div><br data-hk=6><div data-hk=7><p data-hk=8>Value: <!--/-->0<!--/--></p><button data-hk=9>+</button><button data-hk=10>-</button><button data-hk=11>Reset</button></div><p>This paragraph is not hydrated!</p><no-ssr data-hk=12></no-ssr>
 	<!-- End SSR-ed HTML. -->
 </body>
 

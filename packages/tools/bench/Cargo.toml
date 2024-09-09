@@ -7,7 +7,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sycamore = { path = "../../sycamore", features = ["ssr"] }
+sycamore = { path = "../../sycamore" }
 
 [dev-dependencies]
 criterion = "0.4.0"

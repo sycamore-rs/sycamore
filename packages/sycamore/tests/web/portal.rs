@@ -1,4 +1,4 @@
-use sycamore::web::portal::Portal;
+use sycamore::web::Portal;
 
 use super::*;
 
@@ -15,7 +15,7 @@ fn test_portal() {
 
     let _ = create_root(|| {
         let switch = create_signal(true);
-        sycamore::render_to(
+        sycamore::render_in_scope(
             move || {
                 view! {
                     (if switch.get() {
@@ -31,11 +31,10 @@ fn test_portal() {
             },
             &root,
         );
-        assert_eq!(portal_target.inner_html(), "Hello from the other side!");
+        assert_text_content!(portal_target, "Hello from the other side!");
 
         // Destroying the portal should remove the portal from the DOM.
         switch.set(false);
-        // TODO: if/else does not actually create a new scope.
-        // assert_eq!(portal_target.inner_html(), "");
+        assert_text_content!(portal_target, "");
     });
 }

@@ -5,7 +5,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_small", |b| {
         b.iter(|| {
             #[component]
-            fn App<G: Html>() -> View<G> {
+            fn App() -> View {
                 view! {
                     div(class="my-container") {
                         p { "Hello World!" }
@@ -20,7 +20,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
             #[component(inline_props)]
-            fn ListItem<G: Html>(value: i32) -> View<G> {
+            fn ListItem(value: i32) -> View {
                 view! {
                     p {
                         span(class="placeholder")
@@ -33,13 +33,11 @@ pub fn bench(c: &mut Criterion) {
             }
 
             #[component]
-            fn App<G: Html>() -> View<G> {
-                let values = create_signal((0i32..=10).collect::<Vec<_>>());
-
+            fn App() -> View {
                 view! {
                     div(class="my-container") {
                         Indexed(
-                            iterable=*values,
+                            list=(0i32..=10).collect::<Vec<_>>(),
                             view=|x| view! {
                                 ListItem(value=x)
                             }

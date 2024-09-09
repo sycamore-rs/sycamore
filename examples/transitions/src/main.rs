@@ -1,7 +1,8 @@
 use gloo_timers::future::TimeoutFuture;
 use rand::Rng;
+use sycamore::futures::use_transition;
 use sycamore::prelude::*;
-use sycamore::suspense::{use_transition, Suspense};
+use sycamore::web::Suspense;
 
 #[derive(Debug, Clone, Copy)]
 enum Tab {
@@ -21,7 +22,7 @@ impl Tab {
 }
 
 #[component(inline_props)]
-async fn Child<G: Html>(tab: Tab) -> View<G> {
+async fn Child(tab: Tab) -> View {
     let delay_ms = rand::thread_rng().gen_range(200..500);
     TimeoutFuture::new(delay_ms).await;
 
@@ -34,7 +35,7 @@ async fn Child<G: Html>(tab: Tab) -> View<G> {
 }
 
 #[component]
-fn App<G: Html>() -> View<G> {
+fn App() -> View {
     let tab = create_signal(Tab::One);
     let transition = use_transition();
     let update = move |x| transition.start(move || tab.set(x), || ());
