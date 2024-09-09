@@ -72,6 +72,5 @@ to see the latest changes.
 
 ## Quick Start Templates
 
-- [`sycamore-trunk-gitpod-template`](https://github.com/sycamore-rs/sycamore-trunk-gitpod-template):
-  A quick start view for building a Sycamore single-page app. Comes with support for using
-  [gitpod.io](https://www.gitpod.io).
+- [`sycamore-start`](https://github.com/sycamore-rs/start):
+  A quick start template for building a Sycamore single-page app.
