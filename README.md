@@ -83,13 +83,13 @@ Don't think Sycamore is for you? Thankfully, there are plenty of alternatives!
   library for building user interfaces** <br /> Solid is a JavaScript library which greatly inspired
   Sycamore. Many concepts such as fine-grained reactivity and components as factory functions were
   borrowed from Solid. If you don't mind working with JavaScript (or TypeScript), go check it out!
-- **[Yew](https://github.com/yewstack/yew): Rust / Wasm framework for building client web apps**
-  <br /> Yew was also a big inspiration for Sycamore. Yew employs a VDOM and has a MVU (Elm)
-  architecture. If you think that's for you, take a look!
-- **[MoonZoon](https://github.com/MoonZoon/MoonZoon): Rust Fullstack Framework** <br /> MoonZoon
-  also champions the no VDOM paradigm and uses [dominator](https://github.com/Pauan/rust-dominator)
-  as its underlying DOM layer. MoonZoon is a fullstack framework making it easier to combine
-  frontend and backend code with minimal boilerplate.
+- **[Leptos](https://github.com/leptos-rs/leptos): Build fast web applications with Rust.** <br />
+  Leptos is another Rust library based on the fine-grained reactivity paradigm. Leptos shares many
+  similarities with Sycamore and, as of now, has a larger community.
+- **[Dioxus](https://github.com/dioxuslabs/dioxus): Fullstack app framework for web, desktop, mobile,
+  and more.** <br /> Dioxus uses a VDOM instead of fine-grained reactivity for updating the DOM, although
+  it uses fine-grained reactivity for state management. This allows Dioxus to target a wide variety of
+  platforms including native and mobile.
 
 ## Contributing
 
