@@ -175,7 +175,7 @@ impl ViewHtmlNode for HydrateNode {
         Self(NodeState::Marker(DomNode::create_marker_node()))
     }
 
-    fn set_attribute(&mut self, name: &'static str, value: MaybeDynString) {
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynString) {
         // FIXME: use setAttributeNS if SVG
         if IS_HYDRATING.get() {
             match value {
@@ -190,7 +190,7 @@ impl ViewHtmlNode for HydrateNode {
                     create_effect_initial(move || {
                         let _ = f(); // Track dependencies of f.
                         (
-                            Box::new(move || node.set_attribute(name, &f()).unwrap()),
+                            Box::new(move || node.set_attribute(&name, &f()).unwrap()),
                             (),
                         )
                     });
@@ -201,7 +201,7 @@ impl ViewHtmlNode for HydrateNode {
         }
     }
 
-    fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool) {
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynBool) {
         // FIXME: use setAttributeNS if SVG
         if IS_HYDRATING.get() {
             match value {
@@ -218,9 +218,9 @@ impl ViewHtmlNode for HydrateNode {
                         (
                             Box::new(move || {
                                 if f() {
-                                    node.set_attribute(name, "").unwrap();
+                                    node.set_attribute(&name, "").unwrap();
                                 } else {
-                                    node.remove_attribute(name).unwrap();
+                                    node.remove_attribute(&name).unwrap();
                                 }
                             }),
                             (),
@@ -233,13 +233,13 @@ impl ViewHtmlNode for HydrateNode {
         }
     }
 
-    fn set_property(&mut self, name: &'static str, value: MaybeDynJsValue) {
+    fn set_property(&mut self, name: Cow<'static, str>, value: MaybeDynJsValue) {
         self.0.unwrap_mut().set_property(name, value);
     }
 
     fn set_event_handler(
         &mut self,
-        name: &'static str,
+        name: Cow<'static, str>,
         handler: impl FnMut(web_sys::Event) + 'static,
     ) {
         self.0.unwrap_mut().set_event_handler(name, handler);

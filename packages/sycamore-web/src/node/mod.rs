@@ -43,15 +43,15 @@ pub trait ViewHtmlNode: ViewNode {
     fn create_marker_node() -> Self;
 
     /// Set an HTML attribute.
-    fn set_attribute(&mut self, name: &'static str, value: MaybeDynString);
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynString);
     /// Set a boolean HTML attribute.
-    fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool);
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynBool);
     /// Set a JS property on an element.
-    fn set_property(&mut self, name: &'static str, value: MaybeDynJsValue);
+    fn set_property(&mut self, name: Cow<'static, str>, value: MaybeDynJsValue);
     /// Set an event handler on an element.
     fn set_event_handler(
         &mut self,
-        name: &'static str,
+        name: Cow<'static, str>,
         handler: impl FnMut(web_sys::Event) + 'static,
     );
     /// Set the inner HTML value of an element.
@@ -79,19 +79,19 @@ pub trait AttributeValue {
 
 impl AttributeValue for MaybeDynString {
     fn set_self(self, el: &mut HtmlNode, name: &'static str) {
-        el.set_attribute(name, self);
+        el.set_attribute(name.into(), self);
     }
 }
 
 impl AttributeValue for MaybeDynBool {
     fn set_self(self, el: &mut HtmlNode, name: &'static str) {
-        el.set_bool_attribute(name, self);
+        el.set_bool_attribute(name.into(), self);
     }
 }
 
 impl AttributeValue for MaybeDynJsValue {
     fn set_self(self, el: &mut HtmlNode, name: &'static str) {
-        el.set_property(name, self);
+        el.set_property(name.into(), self);
     }
 }
 

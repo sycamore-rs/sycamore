@@ -114,32 +114,32 @@ impl ViewHtmlNode for DomNode {
         }
     }
 
-    fn set_attribute(&mut self, name: &'static str, value: MaybeDynString) {
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynString) {
         // FIXME: use setAttributeNS if SVG
         match value {
             MaybeDyn::Static(value) => {
                 self.raw
                     .unchecked_ref::<web_sys::Element>()
-                    .set_attribute(name, &value)
+                    .set_attribute(&name, &value)
                     .unwrap();
             }
             MaybeDyn::Dynamic(mut f) => {
                 let node = self.raw.clone().unchecked_into::<web_sys::Element>();
                 create_effect(move || {
-                    node.set_attribute(name, &f()).unwrap();
+                    node.set_attribute(&name, &f()).unwrap();
                 });
             }
         }
     }
 
-    fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool) {
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynBool) {
         // FIXME: use setAttributeNS if SVG
         match value {
             MaybeDyn::Static(value) => {
                 if value {
                     self.raw
                         .unchecked_ref::<web_sys::Element>()
-                        .set_attribute(name, "")
+                        .set_attribute(&name, "")
                         .unwrap();
                 }
             }
@@ -147,24 +147,26 @@ impl ViewHtmlNode for DomNode {
                 let node = self.raw.clone().unchecked_into::<web_sys::Element>();
                 create_effect(move || {
                     if f() {
-                        node.set_attribute(name, "").unwrap();
+                        node.set_attribute(&name, "").unwrap();
                     } else {
-                        node.remove_attribute(name).unwrap();
+                        node.remove_attribute(&name).unwrap();
                     }
                 });
             }
         }
     }
 
-    fn set_property(&mut self, name: &'static str, value: MaybeDynJsValue) {
+    fn set_property(&mut self, name: Cow<'static, str>, value: MaybeDynJsValue) {
         match value {
             MaybeDyn::Static(value) => {
-                assert!(js_sys::Reflect::set(&self.raw, &name.into(), &value).unwrap_throw())
+                assert!(
+                    js_sys::Reflect::set(&self.raw, &name.as_ref().into(), &value).unwrap_throw()
+                )
             }
             MaybeDyn::Dynamic(mut f) => {
                 let node = self.raw.clone().unchecked_into::<web_sys::Element>();
                 create_effect(move || {
-                    assert!(js_sys::Reflect::set(&node, &name.into(), &f()).unwrap_throw())
+                    assert!(js_sys::Reflect::set(&node, &name.as_ref().into(), &f()).unwrap_throw())
                 });
             }
         }
@@ -172,12 +174,12 @@ impl ViewHtmlNode for DomNode {
 
     fn set_event_handler(
         &mut self,
-        name: &'static str,
+        name: Cow<'static, str>,
         handler: impl FnMut(web_sys::Event) + 'static,
     ) {
         let cb = Closure::wrap(Box::new(handler) as Box<dyn FnMut(_)>);
         self.raw
-            .add_event_listener_with_callback(name, cb.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(&name, cb.as_ref().unchecked_ref())
             .unwrap();
         on_cleanup(|| drop(cb));
     }
