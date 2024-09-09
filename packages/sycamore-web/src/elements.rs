@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use events::EventHandler;
+
 use crate::*;
 
 /// Create an HTML element with `tag`.
@@ -1134,13 +1136,13 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
     }
 
     /// Set an event handler with `name`.
-    fn on<T: events::EventDescriptor>(
+    fn on<T: events::EventDescriptor, R>(
         mut self,
         _: T,
-        mut handler: impl FnMut(T::EventTy) + 'static,
+        mut handler: impl EventHandler<T, R>,
     ) -> Self {
         let scope = use_current_scope(); // Run handler inside the current scope.
-        let handler = move |ev: web_sys::Event| scope.run_in(|| handler(ev.unchecked_into()));
+        let handler = move |ev: web_sys::Event| scope.run_in(|| handler.call(ev.unchecked_into()));
         let node = self.as_html_node_mut();
         node.set_event_handler(T::NAME, handler);
         self

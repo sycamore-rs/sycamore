@@ -1,5 +1,6 @@
 //! Definition for all the events that can be listened to.
 
+use sycamore_futures::spawn_local_scoped;
 use wasm_bindgen::JsCast;
 use web_sys::{
     AnimationEvent, BeforeUnloadEvent, CompositionEvent, DeviceMotionEvent, DeviceOrientationEvent,
@@ -177,4 +178,34 @@ impl_events! {
     pointerlockerror: Event,
     readystatechange: Event,
     visibilitychange: Event,
+}
+
+pub trait EventHandler<E: EventDescriptor, R = ()>: 'static {
+    fn call(&mut self, event: E::EventTy);
+}
+
+impl<E, F> EventHandler<E, ()> for F
+where
+    E: EventDescriptor,
+    F: FnMut(E::EventTy) + 'static,
+{
+    fn call(&mut self, event: E::EventTy) {
+        self(event);
+    }
+}
+
+/// Marker trait to workaround specialisation.
+#[doc(hidden)]
+pub struct AsyncHandler;
+
+/// Support calling async functions as well.
+impl<E, F, R> EventHandler<E, AsyncHandler> for F
+where
+    E: EventDescriptor,
+    F: FnMut(E::EventTy) -> R + 'static,
+    R: std::future::Future<Output = ()> + 'static,
+{
+    fn call(&mut self, event: E::EventTy) {
+        spawn_local_scoped(self(event));
+    }
 }

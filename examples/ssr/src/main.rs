@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 fn App() -> View {
     let name = create_signal(String::new());
 
-    let handle_change = move |_| unreachable!();
+    let handle_change = move |_| {};
 
     view! {
         div {
