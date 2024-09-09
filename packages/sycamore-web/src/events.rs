@@ -1,5 +1,6 @@
 //! Definition for all the events that can be listened to.
 
+#[cfg(feature = "suspense")]
 use sycamore_futures::spawn_local_scoped;
 use wasm_bindgen::JsCast;
 use web_sys::{
@@ -196,9 +197,11 @@ where
 
 /// Marker trait to workaround specialisation.
 #[doc(hidden)]
+#[cfg(feature = "suspense")]
 pub struct AsyncHandler;
 
 /// Support calling async functions as well.
+#[cfg(feature = "suspense")]
 impl<E, F, R> EventHandler<E, AsyncHandler> for F
 where
     E: EventDescriptor,
