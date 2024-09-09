@@ -8,8 +8,8 @@ use crate::*;
 pub enum SsrNode {
     Element {
         tag: Cow<'static, str>,
-        attributes: Vec<(&'static str, Cow<'static, str>)>,
-        bool_attributes: Vec<(&'static str, bool)>,
+        attributes: Vec<(Cow<'static, str>, Cow<'static, str>)>,
+        bool_attributes: Vec<(Cow<'static, str>, bool)>,
         children: Vec<Self>,
         inner_html: Option<Cow<'static, str>>,
         hk_key: Option<u32>,
@@ -96,14 +96,14 @@ impl ViewHtmlNode for SsrNode {
         Self::Marker
     }
 
-    fn set_attribute(&mut self, name: &'static str, value: MaybeDynString) {
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynString) {
         match self {
             Self::Element { attributes, .. } => attributes.push((name, value.evaluate())),
             _ => panic!("can only set attribute on an element"),
         }
     }
 
-    fn set_bool_attribute(&mut self, name: &'static str, value: MaybeDynBool) {
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynBool) {
         match self {
             Self::Element {
                 bool_attributes, ..
@@ -112,13 +112,13 @@ impl ViewHtmlNode for SsrNode {
         }
     }
 
-    fn set_property(&mut self, _name: &'static str, _value: MaybeDynJsValue) {
+    fn set_property(&mut self, _name: Cow<'static, str>, _value: MaybeDynJsValue) {
         // Noop in SSR mode.
     }
 
     fn set_event_handler(
         &mut self,
-        _name: &'static str,
+        _name: Cow<'static, str>,
         _handler: impl FnMut(web_sys::Event) + 'static,
     ) {
         // Noop in SSR mode.
