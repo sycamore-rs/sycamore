@@ -63,6 +63,7 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```
+/// # use sycamore_macro::*;
 /// #[cfg_ssr]
 /// fn server_only() {}
 /// ```
@@ -86,6 +87,7 @@ pub fn cfg_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```
+/// # use sycamore_macro::*;
 /// #[cfg_not_ssr]
 /// fn browser_only() {}
 /// ```
