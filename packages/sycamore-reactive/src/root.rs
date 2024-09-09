@@ -358,7 +358,7 @@ pub fn create_root(f: impl FnOnce()) -> RootHandle {
     }
 
     Root::set_global(Some(_ref));
-    f();
+    NodeHandle(_ref.root_node.get(), _ref).run_in(f);
     Root::set_global(None);
     RootHandle { _ref }
 }
