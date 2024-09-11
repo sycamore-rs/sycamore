@@ -3,29 +3,29 @@
 use crate::*;
 
 cfg_not_ssr_item!(
-    mod dom;
+    mod dom_node;
 );
 cfg_not_ssr_item!(
     #[cfg(feature = "hydrate")]
-    mod hydrate;
+    mod hydrate_node;
 );
 cfg_ssr_item!(
-    mod ssr;
+    mod ssr_node;
 );
 
 // We add this so that we get IDE support in Rust Analyzer.
 #[cfg(rust_analyzer)]
-mod dom;
+mod dom_node;
 #[cfg(rust_analyzer)]
-mod hydrate;
+mod hydrate_node;
 
 #[cfg_not_ssr]
-pub use dom::*;
+pub use dom_node::*;
 #[cfg_not_ssr]
 #[cfg(feature = "hydrate")]
-pub use hydrate::*;
+pub use hydrate_node::*;
 #[cfg_ssr]
-pub use ssr::*;
+pub use ssr_node::*;
 
 /// A trait that should be implemented for anything that represents an HTML node.
 pub trait ViewHtmlNode: ViewNode {
