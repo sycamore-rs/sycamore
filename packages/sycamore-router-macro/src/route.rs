@@ -4,7 +4,7 @@ use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{DeriveInput, Fields, Ident, LitStr, Token, Variant};
 
-use crate::parser::{route, RoutePathAst, SegmentAst};
+use crate::parser::{parse_route, RoutePathAst, SegmentAst};
 
 pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
     let mut quoted = TokenStream::new();
@@ -36,14 +36,10 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                             // region: parse route
                             let route_litstr: LitStr = attr.parse_args()?;
                             let route_str = route_litstr.value();
-                            let route = match route(&route_str) {
-                                Ok(("", route_ast)) => route_ast,
-                                Ok((_, _)) => unreachable!("parser error"),
-                                Err(_err) => {
-                                    return Err(syn::Error::new(
-                                        route_litstr.span(),
-                                        "route is malformed",
-                                    ));
+                            let route = match parse_route(&route_str) {
+                                Ok(route_ast) => route_ast,
+                                Err(err) => {
+                                    return Err(syn::Error::new(route_litstr.span(), err.message));
                                 }
                             };
                             // endregion

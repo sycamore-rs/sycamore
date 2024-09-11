@@ -41,9 +41,3 @@ error: capture field name mismatch (expected `a`, found `b`)
    |
 43 |     Path { b: u32, a: u32 }, // Wrong order
    |            ^
-
-error: mismatch between number of capture fields and variant fields (found 0 capture field(s) and 1 variant field(s))
-  --> tests/router/router-fail.rs:51:10
-   |
-51 |     Path { a: u32 },
-   |          ^^^^^^^^^^
