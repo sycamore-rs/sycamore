@@ -35,9 +35,13 @@ pub fn parse_route(i: &str) -> Result<RoutePathAst> {
     for segment in segments {
         if segment.starts_with('<') {
             if segment.ends_with("..>") {
-                segments_ast.push(SegmentAst::DynSegments(segment[1..segment.len() - 3].to_string()));
+                segments_ast.push(SegmentAst::DynSegments(
+                    segment[1..segment.len() - 3].to_string(),
+                ));
             } else if segment.ends_with('>') {
-                segments_ast.push(SegmentAst::DynParam(segment[1..segment.len() - 1].to_string()));
+                segments_ast.push(SegmentAst::DynParam(
+                    segment[1..segment.len() - 1].to_string(),
+                ));
             } else {
                 return Err(ParseError {
                     message: "missing `>` in dynamic segment".to_string(),
@@ -49,7 +53,7 @@ pub fn parse_route(i: &str) -> Result<RoutePathAst> {
             // Do not return this error if we are matching the index page ("/").
             return Err(ParseError {
                 message: "segment cannot be empty".to_string(),
-            })
+            });
         }
     }
 

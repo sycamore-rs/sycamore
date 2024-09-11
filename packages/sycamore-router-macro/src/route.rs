@@ -39,10 +39,7 @@ pub fn route_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                             let route = match parse_route(&route_str) {
                                 Ok(route_ast) => route_ast,
                                 Err(err) => {
-                                    return Err(syn::Error::new(
-                                        route_litstr.span(),
-                                        err.message
-                                    ));
+                                    return Err(syn::Error::new(route_litstr.span(), err.message));
                                 }
                             };
                             // endregion
