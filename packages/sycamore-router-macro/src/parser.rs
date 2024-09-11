@@ -1,10 +1,3 @@
-use nom::branch::alt;
-use nom::bytes::complete::{tag, take, take_till};
-use nom::combinator::{map, recognize, verify};
-use nom::multi::{many0, separated_list0};
-use nom::sequence::{delimited, pair};
-use nom::IResult;
-
 #[derive(Debug, Clone)]
 pub enum SegmentAst {
     Param(String),
@@ -27,52 +20,42 @@ impl RoutePathAst {
     }
 }
 
-fn param(i: &str) -> IResult<&str, &str> {
-    take_till(|c| c == '/')(i)
+#[derive(Debug)]
+pub struct ParseError {
+    pub(crate) message: String,
 }
 
-pub fn ident_start(s: &str) -> IResult<&str, &str> {
-    verify(take(1usize), |c: &str| {
-        let c = c.chars().next().unwrap();
-        c == '_' || unicode_xid::UnicodeXID::is_xid_start(c)
-    })(s)
-}
+type Result<T, E = ParseError> = std::result::Result<T, E>;
 
-pub fn ident_continue(s: &str) -> IResult<&str, &str> {
-    verify(take(1usize), |c: &str| {
-        unicode_xid::UnicodeXID::is_xid_continue(c.chars().next().unwrap())
-    })(s)
-}
+pub fn parse_route(i: &str) -> Result<RoutePathAst> {
+    let i = i.trim_matches('/');
+    let segments = i.split('/');
+    let mut segments_ast = Vec::with_capacity(segments.size_hint().0);
 
-/// Parse a Rust identifier. Reference: https://doc.rust-lang.org/reference/identifiers.html
-fn ident(i: &str) -> IResult<&str, &str> {
-    recognize(pair(ident_start, many0(ident_continue)))(i)
-}
+    for segment in segments {
+        if segment.starts_with('<') {
+            if segment.ends_with("..>") {
+                segments_ast.push(SegmentAst::DynSegments(segment[1..segment.len() - 3].to_string()));
+            } else if segment.ends_with('>') {
+                segments_ast.push(SegmentAst::DynParam(segment[1..segment.len() - 1].to_string()));
+            } else {
+                return Err(ParseError {
+                    message: "missing `>` in dynamic segment".to_string(),
+                });
+            }
+        } else if !segment.is_empty() {
+            segments_ast.push(SegmentAst::Param(segment.to_string()));
+        } else if !i.is_empty() {
+            // Do not return this error if we are matching the index page ("/").
+            return Err(ParseError {
+                message: "segment cannot be empty".to_string(),
+            })
+        }
+    }
 
-fn dyn_param(i: &str) -> IResult<&str, &str> {
-    delimited(tag("<"), ident, tag(">"))(i)
-}
-
-fn dyn_segments(i: &str) -> IResult<&str, &str> {
-    delimited(tag("<"), ident, tag("..>"))(i)
-}
-
-fn segment(i: &str) -> IResult<&str, SegmentAst> {
-    alt((
-        map(dyn_segments, |s| SegmentAst::DynSegments(s.to_string())),
-        map(dyn_param, |s| SegmentAst::DynParam(s.to_string())),
-        map(param, |s| SegmentAst::Param(s.to_string())),
-    ))(i)
-}
-
-pub fn route(i: &str) -> IResult<&str, RoutePathAst> {
-    map(separated_list0(tag("/"), segment), |segments| {
-        let segments = segments
-            .into_iter()
-            .filter(|x| !matches!(x, SegmentAst::Param(param) if param.is_empty()))
-            .collect();
-        RoutePathAst { segments }
-    })(i)
+    Ok(RoutePathAst {
+        segments: segments_ast,
+    })
 }
 
 #[cfg(test)]
@@ -81,8 +64,9 @@ mod tests {
 
     use super::*;
 
+    #[track_caller]
     fn check(input: &str, expect: Expect) {
-        let actual = format!("{:#?}", route(input).unwrap());
+        let actual = format!("{:#?}", parse_route(input).expect("could not parse route"));
         expect.assert_eq(&actual);
     }
 
@@ -91,12 +75,9 @@ mod tests {
         check(
             "/",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [],
+                }"#]],
         );
     }
 
@@ -105,22 +86,19 @@ mod tests {
         check(
             "/my/static/path",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "my",
-                            ),
-                            Param(
-                                "static",
-                            ),
-                            Param(
-                                "path",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        Param(
+                            "my",
+                        ),
+                        Param(
+                            "static",
+                        ),
+                        Param(
+                            "path",
+                        ),
+                    ],
+                }"#]],
         );
     }
 
@@ -129,37 +107,13 @@ mod tests {
         check(
             "/path/",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "path",
-                            ),
-                        ],
-                    },
-                )"#]],
-        );
-    }
-
-    #[test]
-    fn route_with_double_slashes() {
-        check(
-            "//path///segments////",
-            expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "path",
-                            ),
-                            Param(
-                                "segments",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        Param(
+                            "path",
+                        ),
+                    ],
+                }"#]],
         );
     }
 
@@ -168,22 +122,19 @@ mod tests {
         check(
             "my/static/path",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "my",
-                            ),
-                            Param(
-                                "static",
-                            ),
-                            Param(
-                                "path",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        Param(
+                            "my",
+                        ),
+                        Param(
+                            "static",
+                        ),
+                        Param(
+                            "path",
+                        ),
+                    ],
+                }"#]],
         );
     }
 
@@ -192,16 +143,13 @@ mod tests {
         check(
             "path",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "path",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        Param(
+                            "path",
+                        ),
+                    ],
+                }"#]],
         );
     }
 
@@ -210,19 +158,16 @@ mod tests {
         check(
             "/id/<id>",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "id",
-                            ),
-                            DynParam(
-                                "id",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        Param(
+                            "id",
+                        ),
+                        DynParam(
+                            "id",
+                        ),
+                    ],
+                }"#]],
         );
     }
 
@@ -231,19 +176,16 @@ mod tests {
         check(
             "/id/<_>",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "id",
-                            ),
-                            DynParam(
-                                "_",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        Param(
+                            "id",
+                        ),
+                        DynParam(
+                            "_",
+                        ),
+                    ],
+                }"#]],
         );
     }
 
@@ -252,40 +194,16 @@ mod tests {
         check(
             "/page/<path..>",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "page",
-                            ),
-                            DynSegments(
-                                "path",
-                            ),
-                        ],
-                    },
-                )"#]],
-        );
-    }
-
-    #[test]
-    fn dyn_should_eat_slash_character() {
-        check(
-            "/<a/b>/",
-            expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            Param(
-                                "<a",
-                            ),
-                            Param(
-                                "b>",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        Param(
+                            "page",
+                        ),
+                        DynSegments(
+                            "path",
+                        ),
+                    ],
+                }"#]],
         );
     }
 
@@ -294,19 +212,16 @@ mod tests {
         check(
             "/<param>/<segments..>",
             expect![[r#"
-                (
-                    "",
-                    RoutePathAst {
-                        segments: [
-                            DynParam(
-                                "param",
-                            ),
-                            DynSegments(
-                                "segments",
-                            ),
-                        ],
-                    },
-                )"#]],
+                RoutePathAst {
+                    segments: [
+                        DynParam(
+                            "param",
+                        ),
+                        DynSegments(
+                            "segments",
+                        ),
+                    ],
+                }"#]],
         );
     }
 }
