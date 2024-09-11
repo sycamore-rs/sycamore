@@ -33,6 +33,9 @@ pub fn NoSsr(children: Children) -> View {
 ///
 /// This is useful when large parts of your app do not require client-side interactivity such as
 /// static content.
+///
+/// However, this component will still be rendered on the client side if it is created after the
+/// initial hydration phase is over, e.g. navigating to a new page with a `NoHydrate` component.
 #[component(inline_props)]
 pub fn NoHydrate(children: Children) -> View {
     if is_ssr!() {
@@ -40,7 +43,9 @@ pub fn NoHydrate(children: Children) -> View {
         let children = children.call();
         IS_HYDRATING.set(is_hydrating);
         children
-    } else {
+    } else if IS_HYDRATING.get() {
         view! {}
+    } else {
+        children.call()
     }
 }
