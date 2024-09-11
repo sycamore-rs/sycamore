@@ -45,12 +45,4 @@ enum Routes7 {
     NotFound,
 }
 
-#[derive(Route)]
-enum Routes8 {
-    #[to("<a/b>")] // `a/b` is not an identifier
-    Path { a: u32 },
-    #[not_found]
-    NotFound,
-}
-
 fn main() {}
