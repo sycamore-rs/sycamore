@@ -107,4 +107,16 @@ mod tests {
             expect!["<div class=\"test-class\" id=\"test-id\" data-hk=0></div>"],
         );
     }
+
+    #[test]
+    fn attributes_apply_self_macro() {
+        let mut attributes = Attributes::new();
+        attributes.set_attribute("class", MaybeDynString::from("test-class"));
+        attributes.set_attribute("id", MaybeDynString::from(move || "test-id"));
+
+        check(
+            move || view! { div(..attributes) },
+            expect!["<div class=\"test-class\" id=\"test-id\" data-hk=0></div>"],
+        );
+    }
 }

@@ -116,7 +116,7 @@ impl Codegen {
                     .to_compile_error(),
             },
             PropType::Ref => quote! { .r#ref(#value) },
-            PropType::Spread => todo!("spread not yet supported"),
+            PropType::Spread => quote! { .spread(#value) },
         }
     }
 
