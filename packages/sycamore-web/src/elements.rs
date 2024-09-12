@@ -51,7 +51,7 @@ macro_rules! impl_attribute {
     ($(#[$attr:meta])* $v:vis $ident:ident ($name:expr): $ty:ty) => {
         $(#[$attr])*
         $v fn $ident(mut self, value: impl Into<$ty>) -> Self {
-            set_attribute(self.as_html_node_mut(), $name, value.into());
+            self.set_attribute($name, value.into());
             self
         }
     }
@@ -127,7 +127,7 @@ macro_rules! impl_element {
             impl HtmlGlobalAttributes for [<Html $name:camel>] {}
 
             #[doc = "Trait that provides attributes for the `<" $name ">` HTML element."]
-            pub trait [<Html $name:camel Attributes>]: IntoHtmlNode + Sized {
+            pub trait [<Html $name:camel Attributes>]: SetAttribute + Sized {
                 impl_attributes! {
                     $(
                         $(#[$prop_attr])*
@@ -227,7 +227,7 @@ macro_rules! impl_svg_element {
             impl SvgGlobalAttributes for [<Svg $name:camel>] {}
 
             #[doc = "Trait that provides attributes for the `<" $name ">` SVG element."]
-            pub trait [<Svg $name:camel Attributes>]: IntoHtmlNode + Sized {
+            pub trait [<Svg $name:camel Attributes>]: SetAttribute + Sized {
                 impl_attributes! {
                     $(
                         $(#[$prop_attr])*
@@ -788,8 +788,7 @@ pub mod tags {
 /// A trait that is implemented for all elements and which provides all the global HTML attributes.
 ///
 /// Reference: <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes>
-#[allow(private_bounds)]
-pub trait HtmlGlobalAttributes: IntoHtmlNode + Sized {
+pub trait HtmlGlobalAttributes: SetAttribute + Sized {
     impl_attributes! {
         /// Provides a hint for generating a keyboard shortcut for the current element. This attribute consists of a space-separated list of characters. The browser should use the first one that exists on the computer keyboard layout.
         accesskey: MaybeDynString,
@@ -879,8 +878,7 @@ pub trait HtmlGlobalAttributes: IntoHtmlNode + Sized {
 /// attributes.
 ///
 /// Reference: <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute>
-#[allow(private_bounds)]
-pub trait SvgGlobalAttributes: IntoHtmlNode + Sized {
+pub trait SvgGlobalAttributes: SetAttribute + Sized {
     impl_attributes! {
         accentHeight("accent-height"): MaybeDynString,
         accumulate: MaybeDynString,
@@ -1134,22 +1132,19 @@ pub trait SvgGlobalAttributes: IntoHtmlNode + Sized {
 pub trait GlobalAttributes: IntoHtmlNode + Sized {
     /// Set attribute `name` with `value`.
     fn attr(mut self, name: &'static str, value: impl Into<MaybeDynString>) -> Self {
-        let node = self.as_html_node_mut();
-        set_attribute(node, name, value.into());
+        self.set_attribute(name, value.into());
         self
     }
 
     /// Set attribute `name` with `value`.
     fn bool_attr(mut self, name: &'static str, value: impl Into<MaybeDynBool>) -> Self {
-        let node = self.as_html_node_mut();
-        set_attribute(node, name, value.into());
+        self.set_attribute(name, value.into());
         self
     }
 
     /// Set JS property `name` with `value`.
     fn prop(mut self, name: &'static str, value: impl Into<MaybeDynJsValue>) -> Self {
-        let node = self.as_html_node_mut();
-        set_attribute(node, name, value.into());
+        self.set_attribute(name, value.into());
         self
     }
 
@@ -1201,9 +1196,9 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
         }
         self
     }
-}
 
-/// Helper function for setting a dynamic attribute.
-fn set_attribute(el: &mut HtmlNode, name: &'static str, value: impl AttributeValue) {
-    value.set_self(el, name);
+    fn spread(mut self, attributes: Attributes) -> Self {
+        attributes.apply_self(self.as_html_node_mut());
+        self
+    }
 }

@@ -74,31 +74,6 @@ pub trait IntoHtmlNode {
     fn as_html_node_mut(&mut self) -> &mut HtmlNode;
 }
 
-/// A trait that represents an attribute that can be set. This is not "attribute" in the HTML spec
-/// sense. It can also represent JS properties (and possibly more ...) that can be set on an HTML
-/// element.
-pub trait AttributeValue {
-    fn set_self(self, el: &mut HtmlNode, name: &'static str);
-}
-
-impl AttributeValue for MaybeDynString {
-    fn set_self(self, el: &mut HtmlNode, name: &'static str) {
-        el.set_attribute(name.into(), self);
-    }
-}
-
-impl AttributeValue for MaybeDynBool {
-    fn set_self(self, el: &mut HtmlNode, name: &'static str) {
-        el.set_bool_attribute(name.into(), self);
-    }
-}
-
-impl AttributeValue for MaybeDynJsValue {
-    fn set_self(self, el: &mut HtmlNode, name: &'static str) {
-        el.set_property(name.into(), self);
-    }
-}
-
 thread_local! {
     /// Whether we are in hydration mode or not.
     pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };

@@ -36,6 +36,7 @@ use wasm_bindgen::prelude::*;
 pub mod bind;
 pub mod events;
 
+mod attributes;
 mod components;
 mod elements;
 mod iter;
@@ -48,6 +49,7 @@ mod stable_counter;
 mod suspense;
 mod view;
 
+pub use self::attributes::*;
 pub use self::components::*;
 pub use self::elements::*;
 pub use self::iter::*;

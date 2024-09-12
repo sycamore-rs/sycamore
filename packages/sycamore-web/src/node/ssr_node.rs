@@ -233,7 +233,7 @@ mod tests {
     use super::*;
     use crate::tags::*;
 
-    fn check<T: Into<View>>(view: impl Fn() -> T, expect: Expect) {
+    fn check<T: Into<View>>(view: impl FnOnce() -> T, expect: Expect) {
         let actual = render_to_string(move || view().into());
         expect.assert_eq(&actual);
     }

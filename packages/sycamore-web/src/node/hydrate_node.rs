@@ -4,7 +4,6 @@ use super::dom_node::DomNode;
 use super::*;
 
 /// View backend for rendering to the browser DOM.
-#[repr(transparent)]
 pub struct HydrateNode(NodeState);
 
 /// The state of a hydrated node.
