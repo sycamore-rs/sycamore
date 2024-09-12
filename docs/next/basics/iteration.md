@@ -14,7 +14,7 @@ let count = create_signal(vec![1, 2]);
 view! {
     ul {
         Keyed(
-            iterable=count,
+            list=count,
             view=|x| view! {
                 li { (x) }
             },
@@ -34,7 +34,7 @@ let count = create_signal(vec![1, 2]);
 view! {
     ul {
         Indexed(
-            iterable=count,
+            list=count,
             view=|x| view! {
                 li { (x) }
             },
@@ -52,8 +52,8 @@ single node will be re-rendered every time the list changes.
 ```rust
 let count = vec![1, 2];
 
-let views = View::new_fragment(
-    count.iter().map(|&x| view! { li { (x) } }).collect()
+let views = View::from(
+    count.iter().map(|&x| view! { li { (x) } }).collect::<Vec<_>>()
 );
 
 view! {
