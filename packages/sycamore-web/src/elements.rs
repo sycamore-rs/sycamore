@@ -126,6 +126,7 @@ macro_rules! impl_element {
             impl GlobalAttributes for [<Html $name:camel>] {}
             impl HtmlGlobalAttributes for [<Html $name:camel>] {}
 
+            #[doc = "Trait that provides attributes for the `<" $name ">` HTML element."]
             pub trait [<Html $name:camel Attributes>]: IntoHtmlNode + Sized {
                 impl_attributes! {
                     $(
@@ -225,6 +226,7 @@ macro_rules! impl_svg_element {
             impl GlobalAttributes for [<Svg $name:camel>] {}
             impl SvgGlobalAttributes for [<Svg $name:camel>] {}
 
+            #[doc = "Trait that provides attributes for the `<" $name ">` SVG element."]
             pub trait [<Svg $name:camel Attributes>]: IntoHtmlNode + Sized {
                 impl_attributes! {
                     $(
