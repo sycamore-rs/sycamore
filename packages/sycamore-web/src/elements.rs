@@ -126,14 +126,16 @@ macro_rules! impl_element {
             impl GlobalAttributes for [<Html $name:camel>] {}
             impl HtmlGlobalAttributes for [<Html $name:camel>] {}
 
-            impl [<Html $name:camel>] {
+            pub trait [<Html $name:camel Attributes>]: IntoHtmlNode + Sized {
                 impl_attributes! {
                     $(
                         $(#[$prop_attr])*
-                        pub $prop $(($prop_name))*: $ty,
+                        $prop $(($prop_name))*: $ty,
                     )*
                 }
             }
+
+            impl [<Html $name:camel Attributes>] for [<Html $name:camel>] {}
         }
     };
 }
@@ -156,6 +158,12 @@ macro_rules! impl_elements {
                 )*
             });
         )*
+        /// Module that includes all the HTML attribute traits and is intended to be glob exported.
+        pub mod html_attributes {
+            paste::paste! {
+                pub use super::{$([<Html $name:camel Attributes>]),*};
+            }
+        }
     };
 }
 
@@ -217,14 +225,16 @@ macro_rules! impl_svg_element {
             impl GlobalAttributes for [<Svg $name:camel>] {}
             impl SvgGlobalAttributes for [<Svg $name:camel>] {}
 
-            impl [<Svg $name:camel>] {
+            pub trait [<Svg $name:camel Attributes>]: IntoHtmlNode + Sized {
                 impl_attributes! {
                     $(
                         $(#[$prop_attr])*
-                        pub $prop $(($prop_name))*: $ty,
+                        $prop $(($prop_name))*: $ty,
                     )*
                 }
             }
+
+            impl [<Svg $name:camel Attributes>] for [<Svg $name:camel>] {}
         }
     };
 }
@@ -247,6 +257,12 @@ macro_rules! impl_svg_elements {
                 )*
             });
         )*
+        /// Module that includes all the Svg attribute traits and is intended to be glob exported.
+        pub mod svg_attributes {
+            paste::paste! {
+                pub use super::{$([<Svg $name:camel Attributes>]),*};
+            }
+        }
     };
 }
 
