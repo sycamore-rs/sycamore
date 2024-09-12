@@ -1,8 +1,7 @@
 use std::cell::RefCell;
 
-use node::dom::DomNode;
-
-use crate::*;
+use super::dom_node::DomNode;
+use super::*;
 
 /// View backend for rendering to the browser DOM.
 #[repr(transparent)]
