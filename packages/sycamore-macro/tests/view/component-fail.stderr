@@ -1,48 +1,48 @@
 error: unexpected end of input, expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:39:23
+  --> tests/view/component-fail.rs:40:23
    |
-39 |         let _: View = view! { Component };
+40 |         let _: View = view! { Component };
    |                       ^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:45:52
+  --> tests/view/component-fail.rs:46:52
    |
-45 |         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
+46 |         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
    |                                                    ^
-
-error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:36:31
-   |
-36 |         let _: View = view! { UnknownComponent() };
-   |                               ^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `UnknownComponent` in this scope
   --> tests/view/component-fail.rs:37:31
    |
-37 |         let _: View = view! { UnknownComponent {} };
+37 |         let _: View = view! { UnknownComponent() };
    |                               ^^^^^^^^^^^^^^^^ not found in this scope
 
-error[E0599]: no method named `prop` found for struct `UnitBuilder` in the current scope
-  --> tests/view/component-fail.rs:40:41
+error[E0425]: cannot find value `UnknownComponent` in this scope
+  --> tests/view/component-fail.rs:38:31
    |
-40 |         let _: View = view! { Component(prop=1) };
-   |                                         ^^^^ method not found in `UnitBuilder`
+38 |         let _: View = view! { UnknownComponent {} };
+   |                               ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0599]: no method named `not_a_prop` found for struct `UnitBuilder` in the current scope
+  --> tests/view/component-fail.rs:41:41
+   |
+41 |         let _: View = view! { Component(not_a_prop=1) };
+   |                                         ^^^^^^^^^^ method not found in `UnitBuilder`
 
 warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:42:23
+  --> tests/view/component-fail.rs:43:23
    |
-42 |         let _: View = view! { PropsComponent() };
+43 |         let _: View = view! { PropsComponent() };
    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(deprecated)]` on by default
    = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:42:23
+  --> tests/view/component-fail.rs:43:23
    |
-42 |         let _: View = view! { PropsComponent() };
+43 |         let _: View = view! { PropsComponent() };
    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: method defined here
@@ -53,21 +53,21 @@ note: method defined here
    = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: provide the argument
    |
-42 |         let _: View = view! { PropsComponent() }(/* PropsBuilder_Error_Missing_required_field_prop */);
+43 |         let _: View = view! { PropsComponent() }(/* PropsBuilder_Error_Missing_required_field_prop */);
    |                                                 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:43:23
+  --> tests/view/component-fail.rs:44:23
    |
-43 |         let _: View = view! { PropsComponent {} };
+44 |         let _: View = view! { PropsComponent {} };
    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:43:23
+  --> tests/view/component-fail.rs:44:23
    |
-43 |         let _: View = view! { PropsComponent {} };
+44 |         let _: View = view! { PropsComponent {} };
    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: method defined here
@@ -78,13 +78,13 @@ note: method defined here
    = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: provide the argument
    |
-43 |         let _: View = view! { PropsComponent {} }(/* PropsBuilder_Error_Missing_required_field_prop */);
+44 |         let _: View = view! { PropsComponent {} }(/* PropsBuilder_Error_Missing_required_field_prop */);
    |                                                  ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:44:51
+  --> tests/view/component-fail.rs:45:51
    |
-44 |         let _: View = view! { PropsComponent(prop=123) };
+45 |         let _: View = view! { PropsComponent(prop=123) };
    |                                              ---- ^^^ expected `&str`, found integer
    |                                              |
    |                                              arguments to this method are incorrect
@@ -94,3 +94,29 @@ note: method defined here
    |
 5  |     prop: &'static str,
    |     ^^^^--------------
+
+error[E0277]: the trait bound `{integer}: Into<MaybeDyn<Cow<'static, str>>>` is not satisfied
+  --> tests/view/component-fail.rs:48:57
+   |
+48 |         let _: View = view! { AttributesComponent(class=123) }; // Wrong type
+   |                                                   ----- ^^^ the trait `FnMut()` is not implemented for `{integer}`, which is required by `{integer}: Into<MaybeDyn<Cow<'static, str>>>`
+   |                                                   |
+   |                                                   required by a bound introduced by this call
+   |
+   = note: required for `MaybeDyn<Cow<'static, str>>` to implement `From<{integer}>`
+   = note: required for `{integer}` to implement `Into<MaybeDyn<Cow<'static, str>>>`
+note: required by a bound in `sycamore::web::HtmlGlobalAttributes::class`
+  --> $WORKSPACE/packages/sycamore-web/src/elements.rs
+   |
+   | /     impl_attributes! {
+   | |         /// Provides a hint for generating a keyboard shortcut for the current element. This attribute consists of a space-separated list...
+   | |         accesskey: MaybeDynString,
+   | |         /// Controls whether inputted text is automatically capitalized and, if so, in what manner.
+...  |
+   | |         class: MaybeDynString,
+   | |         ----- required by a bound in this associated function
+...  |
+   | |         virtualkeyboardpolicy: MaybeDynString,
+   | |     }
+   | |_____^ required by this bound in `HtmlGlobalAttributes::class`
+   = note: this error originates in the macro `impl_attribute` which comes from the expansion of the macro `impl_attributes` (in Nightly builds, run with -Z macro-backtrace for more info)

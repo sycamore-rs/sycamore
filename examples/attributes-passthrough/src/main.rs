@@ -1,27 +1,26 @@
 use sycamore::prelude::*;
+use sycamore::web::MaybeDynString;
 
 #[derive(Props)]
-pub struct AccessibleInputProps {
-    label_id: &'static str,
-    // attributes: Attributes<G>,
+pub struct CustomButtonProps {
+    #[prop(setter(into))]
+    id: MaybeDynString,
+    #[prop(attributes(html, button))]
+    attributes: Attributes,
     children: Children,
 }
 
 #[component]
-fn AccessibleSearchBox(props: AccessibleInputProps) -> View {
-    let _ = props.label_id;
-    let _ = props.children;
-    // props
-    //     .attributes
-    //     .exclude_keys(&["aria-role", "aria-labelledby"]);
-    // let children = props.children.call();
-    //
-    // view! {
-    //     input(aria-role="searchbox", aria-labelledby=props.label_id, ..props.attributes) {
-    //         (children)
-    //     }
-    // }
-    todo!("attributes passthrough")
+fn CustomButton(mut props: CustomButtonProps) -> View {
+    console_log!("Intercepted `id` attribute: {}", props.id.get_clone());
+
+    let children = props.children.call();
+    view! {
+        // TODO: Remove the .get_clone() here.
+        button(id=props.id.get_clone(), ..props.attributes) {
+            (children)
+        }
+    }
 }
 
 #[component]
@@ -31,14 +30,19 @@ fn App() -> View {
             p { "Passthrough attributes demo" }
 
             div {
-                label(id="searchbox1_label") { "Search Box 1" }
-                // AccessibleSearchBox(label_id="searchbox1_label", attr:style="background-color:red;") {}
-                AccessibleSearchBox(label_id="searchbox1_label") {}
-            }
-
-            div {
-                label(id="searchbox2_label") { "Search Box 2" }
-                // AccessibleSearchBox(label_id="searchbox2_label", attr:style="background-color:yellow;") { }
+                CustomButton(
+                    id="button1",
+                    r#type="button",
+                    on:click=|_| console_log!("Button 1 clicked!"),
+                ) { "Button 1" }
+                CustomButton(
+                    id="button2",
+                    r#type="button",
+                    class="red-button",
+                    style="background-color:red;",
+                    prop:disabled=true,
+                    on:click=|_| console_log!("Button 2 clicked!"),
+                ) { "Button 2" }
             }
         }
     }

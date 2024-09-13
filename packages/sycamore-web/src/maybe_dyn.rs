@@ -11,7 +11,7 @@ use wasm_bindgen::JsValue;
 /// using the [`From`] trait.
 pub enum MaybeDyn<T: Into<Self>> {
     Static(T),
-    Dynamic(Box<dyn FnMut() -> T>),
+    Dynamic(Box<dyn FnMut() -> Self>),
 }
 
 impl<T: Into<Self>> MaybeDyn<T> {
@@ -19,12 +19,39 @@ impl<T: Into<Self>> MaybeDyn<T> {
     pub fn evaluate(self) -> T {
         match self {
             Self::Static(value) => value,
-            Self::Dynamic(mut f) => f(),
+            Self::Dynamic(mut f) => f().evaluate(),
+        }
+    }
+
+    /// Get the value by copying it.
+    ///
+    /// If the type does not implement [`Copy`], consider using [`get_clone`](Self::get_clone)
+    /// instead.
+    pub fn get(&mut self) -> T
+    where
+        T: Copy,
+    {
+        match self {
+            Self::Static(value) => *value,
+            Self::Dynamic(f) => f().evaluate(),
+        }
+    }
+
+    /// Get the value by cloning it.
+    ///
+    /// If the type implements [`Copy`], consider using [`get`](Self::get) instead.
+    pub fn get_clone(&mut self) -> T
+    where
+        T: Clone,
+    {
+        match self {
+            Self::Static(value) => value.clone(),
+            Self::Dynamic(f) => f().evaluate(),
         }
     }
 }
 
-impl<T: Into<Self>, F: FnMut() -> U + 'static, U: Into<T>> From<F> for MaybeDyn<T> {
+impl<T: Into<Self>, F: FnMut() -> U + 'static, U: Into<Self>> From<F> for MaybeDyn<T> {
     fn from(mut f: F) -> Self {
         Self::Dynamic(Box::new(move || f().into()))
     }

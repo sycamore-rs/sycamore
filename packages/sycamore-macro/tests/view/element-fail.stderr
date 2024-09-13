@@ -38,14 +38,6 @@ error: unknown directive `unknown`
 9 |         let _: View = view! { button(unknown:directive="123") };
   |                                      ^^^^^^^
 
-error: proc macro panicked
-  --> tests/view/element-fail.rs:11:23
-   |
-11 |         let _: View = view! { div(..unknown_attributes) {} };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: message: not yet implemented: spread not yet supported
-
 error: expected `=`
   --> tests/view/element-fail.rs:12:39
    |
@@ -63,6 +55,12 @@ error[E0425]: cannot find function `unknownelement` in module `sycamore::rt::tag
    |
 10 |         let _: View = view! { unknownelement {} };
    |                               ^^^^^^^^^^^^^^ not found in `sycamore::rt::tags`
+
+error[E0425]: cannot find value `unknown_attributes` in this scope
+  --> tests/view/element-fail.rs:11:37
+   |
+11 |         let _: View = view! { div(..unknown_attributes) {} };
+   |                                     ^^^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `notbind` in module `sycamore::rt::bind`
   --> tests/view/element-fail.rs:13:43

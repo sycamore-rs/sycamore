@@ -29,19 +29,13 @@ impl From<CustomElement> for View {
     }
 }
 
-impl IntoHtmlNode for CustomElement {
-    fn into_html_node(self) -> HtmlNode {
-        self.0
-    }
-    fn as_html_node(&self) -> &HtmlNode {
-        &self.0
-    }
-    fn as_html_node_mut(&mut self) -> &mut HtmlNode {
+impl AsHtmlNode for CustomElement {
+    fn as_html_node(&mut self) -> &mut HtmlNode {
         &mut self.0
     }
 }
 
-impl GlobalAttributes for CustomElement {}
+impl GlobalProps for CustomElement {}
 impl HtmlGlobalAttributes for CustomElement {}
 
 macro_rules! impl_attribute {
@@ -51,7 +45,7 @@ macro_rules! impl_attribute {
     ($(#[$attr:meta])* $v:vis $ident:ident ($name:expr): $ty:ty) => {
         $(#[$attr])*
         $v fn $ident(mut self, value: impl Into<$ty>) -> Self {
-            set_attribute(self.as_html_node_mut(), $name, value.into());
+            self.set_attribute($name, value.into());
             self
         }
     }
@@ -111,29 +105,26 @@ macro_rules! impl_element {
                 }
             }
 
-            impl IntoHtmlNode for [<Html $name:camel>] {
-                fn into_html_node(self) -> HtmlNode {
-                    self.0
-                }
-                fn as_html_node(&self) -> &HtmlNode {
-                    &self.0
-                }
-                fn as_html_node_mut(&mut self) -> &mut HtmlNode {
+            impl AsHtmlNode for [<Html $name:camel>] {
+                fn as_html_node(&mut self) -> &mut HtmlNode {
                     &mut self.0
                 }
             }
 
-            impl GlobalAttributes for [<Html $name:camel>] {}
+            impl GlobalProps for [<Html $name:camel>] {}
             impl HtmlGlobalAttributes for [<Html $name:camel>] {}
 
-            impl [<Html $name:camel>] {
+            #[doc = "Trait that provides attributes for the `<" $name ">` HTML element."]
+            pub trait [<Html $name:camel Attributes>]: SetAttribute + Sized {
                 impl_attributes! {
                     $(
                         $(#[$prop_attr])*
-                        pub $prop $(($prop_name))*: $ty,
+                        $prop $(($prop_name))*: $ty,
                     )*
                 }
             }
+
+            impl [<Html $name:camel Attributes>] for [<Html $name:camel>] {}
         }
     };
 }
@@ -156,6 +147,12 @@ macro_rules! impl_elements {
                 )*
             });
         )*
+        /// Module that includes all the HTML attribute traits and is intended to be glob exported.
+        pub mod html_attributes {
+            paste::paste! {
+                pub use super::{$([<Html $name:camel Attributes>]),*};
+            }
+        }
     };
 }
 
@@ -202,29 +199,26 @@ macro_rules! impl_svg_element {
                 }
             }
 
-            impl IntoHtmlNode for [<Svg $name:camel>] {
-                fn into_html_node(self) -> HtmlNode {
-                    self.0
-                }
-                fn as_html_node(&self) -> &HtmlNode {
-                    &self.0
-                }
-                fn as_html_node_mut(&mut self) -> &mut HtmlNode {
+            impl AsHtmlNode for [<Svg $name:camel>] {
+                fn as_html_node(&mut self) -> &mut HtmlNode {
                     &mut self.0
                 }
             }
 
-            impl GlobalAttributes for [<Svg $name:camel>] {}
+            impl GlobalProps for [<Svg $name:camel>] {}
             impl SvgGlobalAttributes for [<Svg $name:camel>] {}
 
-            impl [<Svg $name:camel>] {
+            #[doc = "Trait that provides attributes for the `<" $name ">` SVG element."]
+            pub trait [<Svg $name:camel Attributes>]: SetAttribute + Sized {
                 impl_attributes! {
                     $(
                         $(#[$prop_attr])*
-                        pub $prop $(($prop_name))*: $ty,
+                        $prop $(($prop_name))*: $ty,
                     )*
                 }
             }
+
+            impl [<Svg $name:camel Attributes>] for [<Svg $name:camel>] {}
         }
     };
 }
@@ -247,6 +241,12 @@ macro_rules! impl_svg_elements {
                 )*
             });
         )*
+        /// Module that includes all the Svg attribute traits and is intended to be glob exported.
+        pub mod svg_attributes {
+            paste::paste! {
+                pub use super::{$([<Svg $name:camel Attributes>]),*};
+            }
+        }
     };
 }
 
@@ -770,8 +770,7 @@ pub mod tags {
 /// A trait that is implemented for all elements and which provides all the global HTML attributes.
 ///
 /// Reference: <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes>
-#[allow(private_bounds)]
-pub trait HtmlGlobalAttributes: IntoHtmlNode + Sized {
+pub trait HtmlGlobalAttributes: SetAttribute + Sized {
     impl_attributes! {
         /// Provides a hint for generating a keyboard shortcut for the current element. This attribute consists of a space-separated list of characters. The browser should use the first one that exists on the computer keyboard layout.
         accesskey: MaybeDynString,
@@ -861,8 +860,7 @@ pub trait HtmlGlobalAttributes: IntoHtmlNode + Sized {
 /// attributes.
 ///
 /// Reference: <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute>
-#[allow(private_bounds)]
-pub trait SvgGlobalAttributes: IntoHtmlNode + Sized {
+pub trait SvgGlobalAttributes: SetAttribute + Sized {
     impl_attributes! {
         accentHeight("accent-height"): MaybeDynString,
         accumulate: MaybeDynString,
@@ -1112,80 +1110,80 @@ pub trait SvgGlobalAttributes: IntoHtmlNode + Sized {
 }
 
 /// Attributes that are available on all elements.
-#[allow(private_bounds)]
-pub trait GlobalAttributes: IntoHtmlNode + Sized {
+pub trait GlobalAttributes: SetAttribute + Sized {
     /// Set attribute `name` with `value`.
     fn attr(mut self, name: &'static str, value: impl Into<MaybeDynString>) -> Self {
-        let node = self.as_html_node_mut();
-        set_attribute(node, name, value.into());
+        self.set_attribute(name, value.into());
         self
     }
 
     /// Set attribute `name` with `value`.
     fn bool_attr(mut self, name: &'static str, value: impl Into<MaybeDynBool>) -> Self {
-        let node = self.as_html_node_mut();
-        set_attribute(node, name, value.into());
+        self.set_attribute(name, value.into());
         self
     }
 
     /// Set JS property `name` with `value`.
     fn prop(mut self, name: &'static str, value: impl Into<MaybeDynJsValue>) -> Self {
-        let node = self.as_html_node_mut();
-        set_attribute(node, name, value.into());
+        self.set_attribute(name, value.into());
         self
     }
 
     /// Set an event handler with `name`.
-    fn on<T: events::EventDescriptor, R>(
+    fn on<E: events::EventDescriptor, R>(
         mut self,
-        _: T,
-        mut handler: impl EventHandler<T, R>,
+        _: E,
+        mut handler: impl EventHandler<E, R>,
     ) -> Self {
         let scope = use_current_scope(); // Run handler inside the current scope.
         let handler = move |ev: web_sys::Event| scope.run_in(|| handler.call(ev.unchecked_into()));
-        let node = self.as_html_node_mut();
-        node.set_event_handler(T::NAME.into(), handler);
+        self.set_event_handler(E::NAME, handler);
         self
     }
 
-    fn bind<T: bind::BindDescriptor>(mut self, _: T, signal: Signal<T::ValueTy>) -> Self {
-        let node = self.as_html_node_mut();
+    /// Set a two way binding with `name`.
+    fn bind<E: bind::BindDescriptor>(mut self, _: E, signal: Signal<E::ValueTy>) -> Self {
         let scope = use_current_scope(); // Run handler inside the current scope.
         let handler = move |ev: web_sys::Event| {
             scope.run_in(|| {
                 let value =
-                    js_sys::Reflect::get(&ev.current_target().unwrap(), &T::TARGET_PROPERTY.into())
+                    js_sys::Reflect::get(&ev.current_target().unwrap(), &E::TARGET_PROPERTY.into())
                         .unwrap();
-                signal.set(T::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
+                signal.set(E::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
             })
         };
-        node.set_event_handler(<T::Event as events::EventDescriptor>::NAME.into(), handler);
+        self.set_event_handler(<E::Event as events::EventDescriptor>::NAME, handler);
 
-        self.prop(T::TARGET_PROPERTY, move || signal.get_clone().into())
+        self.prop(E::TARGET_PROPERTY, move || signal.get_clone().into())
     }
+}
 
+impl<T: GlobalProps> GlobalAttributes for T {}
+
+/// Props that are available on all elements.
+pub trait GlobalProps: GlobalAttributes + AsHtmlNode + Sized {
     /// Set the inner html of an element.
     fn dangerously_set_inner_html(mut self, inner_html: impl Into<Cow<'static, str>>) -> Self {
-        self.as_html_node_mut().set_inner_html(inner_html.into());
+        self.as_html_node().set_inner_html(inner_html.into());
         self
     }
 
     /// Set the children of an element.
     fn children(mut self, children: impl Into<View>) -> Self {
-        self.as_html_node_mut().append_view(children.into());
+        self.as_html_node().append_view(children.into());
         self
     }
 
     /// Set a [`NodeRef`] on this element.
-    fn r#ref(self, noderef: NodeRef) -> Self {
+    fn r#ref(mut self, noderef: NodeRef) -> Self {
         if is_not_ssr!() {
             noderef.set(Some(self.as_html_node().as_web_sys().clone()));
         }
         self
     }
-}
 
-/// Helper function for setting a dynamic attribute.
-fn set_attribute(el: &mut HtmlNode, name: &'static str, value: impl AttributeValue) {
-    value.set_self(el, name);
+    fn spread(mut self, attributes: Attributes) -> Self {
+        attributes.apply_self(self.as_html_node());
+        self
+    }
 }
