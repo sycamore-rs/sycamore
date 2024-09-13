@@ -19,17 +19,17 @@ fn Component() -> View {
     }
 }
 
-//#[derive(Props)]
-//pub struct AttributesProps {
-//    attributes: Attributes,
-//}
-//
-//#[component]
-//pub fn AttributesComponent(AttributesProps { attributes: _ }: AttributesProps<G>) -> View {
-//    view! {
-//        div {}
-//    }
-//}
+#[derive(Props)]
+pub struct AttributesProps {
+    attributes: Attributes,
+}
+
+#[component]
+pub fn AttributesComponent(AttributesProps { attributes: _ }: AttributesProps<G>) -> View {
+    view! {
+        div {}
+    }
+}
 
 fn compile_fail() {
     let _ = create_root(|| {

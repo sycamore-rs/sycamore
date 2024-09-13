@@ -143,6 +143,12 @@ impl Codegen {
         let plain_names = plain.iter().map(|(ident, _)| ident);
         let plain_values = plain.iter().map(|(_, value)| value);
 
+        let other_props = props
+            .iter()
+            .filter(|prop| !matches!(&prop.ty, PropType::Plain { .. }))
+            .collect::<Vec<_>>();
+        let other_attributes = other_props.iter().map(|prop| self.attribute(prop));
+
         let children_quoted = if children.0.is_empty() {
             quote! {}
         } else {
@@ -162,8 +168,8 @@ impl Codegen {
                 __component,
                 ::sycamore::rt::element_like_component_builder(__component)
                     #(.#plain_names(#plain_values))*
+                    #(#other_attributes)*
                     #children_quoted
-                    // #attributes_quoted
                     .build()
             ))
         }}

@@ -90,7 +90,7 @@ pub mod prelude {
     #[cfg(feature = "web")]
     pub use sycamore_web::{
         console_dbg, console_log, create_node_ref, document, is_not_ssr, is_ssr, on_mount, window,
-        Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed, NodeRef,
+        Attributes, Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed, NodeRef,
         SvgGlobalAttributes, View,
     };
 

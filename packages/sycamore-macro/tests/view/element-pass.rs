@@ -16,8 +16,8 @@ fn compile_pass() {
 
         let _: View = view! { p(dangerously_set_inner_html="<span>Test</span>") };
 
-        //let attributes = Attributes::default();
-        //let _: View = view! { p(..attributes) };
+        let attributes = Attributes::default();
+        let _: View = view! { p(..attributes) };
 
         // view! should correctly parenthesize the (1 + 2) when borrowing.
         let _: View = view! { p { (1 + 2) } };

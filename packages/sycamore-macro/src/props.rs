@@ -58,13 +58,15 @@ pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
 }
 
 mod struct_info {
+    use std::fmt::Write;
+
     use proc_macro2::TokenStream;
     use quote::quote;
     use syn::parse::Error;
     use syn::punctuated::Punctuated;
     use syn::Token;
 
-    use super::field_info::{FieldBuilderAttr, FieldInfo};
+    use super::field_info::{AttributeBase, FieldBuilderAttr, FieldInfo};
     use super::util::{
         empty_type, empty_type_tuple, expr_to_single_string, make_punctuated_single,
         modify_types_generics_hack, path_to_single_string, strip_raw_ident_prefix, type_tuple,
@@ -82,6 +84,8 @@ mod struct_info {
         pub conversion_helper_trait_name: syn::Ident,
         #[allow(dead_code)] // TODO: remove this field?
         pub core: syn::Ident,
+
+        pub attributes: Option<(AttributeBase, String)>,
     }
 
     impl<'a> StructInfo<'a> {
@@ -97,14 +101,39 @@ mod struct_info {
         ) -> Result<StructInfo<'a>, Error> {
             let builder_attr = TypeBuilderAttr::new(&ast.attrs)?;
             let builder_name = strip_raw_ident_prefix(format!("{}Builder", ast.ident));
+            let mut fields = fields
+                .enumerate()
+                .map(|(i, f)| FieldInfo::new(i, f, builder_attr.field_defaults.clone()))
+                .collect::<Result<Vec<FieldInfo>, _>>()?;
+
+            // Search `fields` for `attributes`. If one is found, make sure that it is the only
+            // one.
+            let mut attributes = None;
+            for field in &fields {
+                if let Some((base, tag)) = &field.builder_attr.attributes {
+                    if attributes.is_some() {
+                        return Err(Error::new(
+                            field.name.span(),
+                            "Only one field can have `#[prop(attributes(...))]`",
+                        ));
+                    };
+                    if field.name != "attributes" {
+                        return Err(Error::new(
+                            field.name.span(),
+                            "The field with `#[prop(attributes(...))]` must be named `attributes`",
+                        ));
+                    }
+                    attributes = Some((base.clone(), tag.clone()));
+                }
+            }
+            // Now filter out `attributes` from `fields`.
+            fields.retain(|f| f.builder_attr.attributes.is_none());
+
             Ok(StructInfo {
                 vis: &ast.vis,
                 name: &ast.ident,
                 generics: &ast.generics,
-                fields: fields
-                    .enumerate()
-                    .map(|(i, f)| FieldInfo::new(i, f, builder_attr.field_defaults.clone()))
-                    .collect::<Result<_, _>>()?,
+                fields,
                 builder_attr,
                 builder_name: syn::Ident::new(&builder_name, proc_macro2::Span::call_site()),
                 conversion_helper_trait_name: syn::Ident::new(
@@ -115,6 +144,7 @@ mod struct_info {
                     &format!("{}_core", builder_name),
                     proc_macro2::Span::call_site(),
                 ),
+                attributes,
             })
         }
 
@@ -201,16 +231,41 @@ mod struct_info {
                 quote!(#[doc(hidden)])
             };
 
-            let (b_generics_impl, b_generics_ty, b_generics_where_extras_predicates) =
-                b_generics.split_for_impl();
-            let mut b_generics_where: syn::WhereClause = syn::parse2(quote! {
-                where PropsFields: Clone
-            })?;
-            if let Some(predicates) = b_generics_where_extras_predicates {
-                b_generics_where
-                    .predicates
-                    .extend(predicates.predicates.clone());
-            }
+            let (b_generics_impl, b_generics_ty, b_generics_where) = b_generics.split_for_impl();
+
+            let attributes_field = if self.attributes.is_some() {
+                quote! { attributes: ::sycamore::web::Attributes, }
+            } else {
+                quote! { attributes: (), }
+            };
+            // Check if we need to generate impls for attributes.
+            let attributes_impl = if let Some((base, tag)) = &self.attributes {
+                let base_trait_ident = match base {
+                    AttributeBase::Html => quote!(HtmlGlobalAttributes),
+                    AttributeBase::Svg => quote!(SvgGlobalAttributes),
+                };
+                let tag_camel = tag.split('_').fold(String::new(), |mut acc, segment| {
+                    let (first, rest) = segment.split_at(1);
+                    write!(&mut acc, "{first}{rest}", first = first.to_uppercase()).unwrap();
+                    acc
+                });
+                let tag_trait_ident = match base {
+                    AttributeBase::Html => quote::format_ident!("Html{tag_camel}Attributes"),
+                    AttributeBase::Svg => quote::format_ident!("Svg{tag_camel}Attributes"),
+                };
+                quote! {
+                    impl #b_generics_impl ::sycamore::web::#base_trait_ident for #builder_name #b_generics_ty #b_generics_where {}
+                    impl #b_generics_impl ::sycamore::web::tags::#tag_trait_ident for #builder_name #b_generics_ty #b_generics_where {}
+
+                    impl #b_generics_impl ::sycamore::web::SetAttribute for #builder_name #b_generics_ty #b_generics_where {
+                        fn set_attribute(&mut self, name: &'static str, value: impl ::sycamore::web::AttributeValue) {
+                            self.attributes.set_attribute(name, value);
+                        }
+                    }
+                }
+            } else {
+                quote! {}
+            };
 
             Ok(quote! {
                 impl #impl_generics ::sycamore::rt::Props for #name #ty_generics #where_clause {
@@ -221,6 +276,7 @@ mod struct_info {
                         #builder_name {
                             fields: #empties_tuple,
                             phantom: ::core::default::Default::default(),
+                            attributes: ::core::default::Default::default(),
                         }
                     }
                 }
@@ -231,17 +287,10 @@ mod struct_info {
                 #vis struct #builder_name #b_generics {
                     fields: #all_fields_param,
                     phantom: (#( #phantom_generics ),*),
+                    #attributes_field
                 }
 
-                impl #b_generics_impl Clone for #builder_name #b_generics_ty #b_generics_where {
-                    #[allow(clippy::default_trait_access)]
-                    fn clone(&self) -> Self {
-                        Self {
-                            fields: self.fields.clone(),
-                            phantom: ::core::default::Default::default(),
-                        }
-                    }
-                }
+                #attributes_impl
             })
         }
 
@@ -275,7 +324,7 @@ mod struct_info {
                 ref builder_name, ..
             } = self;
 
-            let descructuring = self.included_fields().map(|f| {
+            let destructuring = self.included_fields().map(|f| {
                 if f.ordinal == field.ordinal {
                     quote!(_)
                 } else {
@@ -402,10 +451,11 @@ mod struct_info {
                     #doc
                     pub fn #field_name (self, #param_list) -> #builder_name < #( #target_generics ),* > {
                         let #field_name = (#arg_expr,);
-                        let ( #(#descructuring,)* ) = self.fields;
+                        let ( #(#destructuring,)* ) = self.fields;
                         #builder_name {
                             fields: ( #(#reconstructing,)* ),
                             phantom: self.phantom,
+                            attributes: self.attributes,
                         }
                     }
                 }
@@ -539,6 +589,7 @@ mod struct_info {
             let StructInfo {
                 ref name,
                 ref builder_name,
+                ref attributes,
                 ..
             } = self;
 
@@ -632,6 +683,12 @@ mod struct_info {
             } else {
                 quote!()
             };
+
+            let attributes_field = if attributes.is_some() {
+                quote! { attributes: self.attributes, }
+            } else {
+                quote! {}
+            };
             quote!(
                 #[allow(dead_code, non_camel_case_types, missing_docs)]
                 impl #impl_generics #builder_name #modified_ty_generics #where_clause {
@@ -641,7 +698,8 @@ mod struct_info {
                         let ( #(#descructuring,)* ) = self.fields;
                         #( #assignments )*
                         #name {
-                            #( #field_names ),*
+                            #( #field_names, )*
+                            #attributes_field
                         }
                     }
                 }
@@ -846,6 +904,8 @@ mod field_info {
         pub default: Option<syn::Expr>,
         pub ignore_option: bool,
         pub setter: SetterSettings,
+        /// Example: `#[prop(attributes(html, div))]`
+        pub attributes: Option<(AttributeBase, String)>,
     }
 
     #[derive(Debug, Default, Clone)]
@@ -855,6 +915,12 @@ mod field_info {
         pub auto_into: Option<Span>,
         pub strip_option: Option<Span>,
         pub transform: Option<Transform>,
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum AttributeBase {
+        Html,
+        Svg,
     }
 
     impl FieldBuilderAttr {
@@ -945,6 +1011,36 @@ mod field_info {
                                 self.setter.apply_meta(arg)?;
                             }
                             Ok(())
+                        }
+                        "attributes" => {
+                            let args = call.args.iter().collect::<Vec<_>>();
+                            if args.len() != 2 {
+                                Err(Error::new_spanned(
+                                    &call.args,
+                                    "Expected 2 arguments for `attributes`",
+                                ))
+                            } else {
+                                let arg0 = expr_to_single_string(args[0]);
+                                let arg1 = expr_to_single_string(args[1]);
+                                if let (Some(arg0), Some(arg1)) = (arg0, arg1) {
+                                    self.attributes = match arg0.as_str() {
+                                        "html" => Some((AttributeBase::Html, arg1)),
+                                        "svg" => Some((AttributeBase::Svg, arg1)),
+                                        _ => {
+                                            return Err(Error::new_spanned(
+                                                args[0],
+                                                "The first argument to `attributes` should be either `html` or `svg",
+                                            ));
+                                        }
+                                    };
+                                    Ok(())
+                                } else {
+                                    Err(Error::new_spanned(
+                                        &call.args,
+                                        "Arguments to `attributes` should be identifiers",
+                                    ))
+                                }
+                            }
                         }
                         _ => Err(Error::new_spanned(
                             &call.func,

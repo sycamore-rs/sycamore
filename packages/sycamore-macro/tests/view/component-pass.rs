@@ -81,17 +81,17 @@ pub async fn AsyncComponentWithPropsDestructuring(
     children.call()
 }
 
-//#[derive(Props)]
-//pub struct AttributesProps {
-//    attributes: Attributes,
-//}
-//
-//#[component]
-//pub fn AttributesComponent(AttributesProps { attributes }: AttributesProps) -> View {
-//    view! {
-//        input(..attributes) {}
-//    }
-//}
+#[derive(Props)]
+pub struct AttributesProps {
+    attributes: Attributes,
+}
+
+#[component]
+pub fn AttributesComponent(AttributesProps { attributes }: AttributesProps) -> View {
+    view! {
+        input(..attributes) {}
+    }
+}
 
 fn compile_pass() {
     let _ = create_root(|| {

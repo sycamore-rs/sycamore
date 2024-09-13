@@ -186,9 +186,9 @@ impl ViewHtmlNode for HydrateNode {
                         .clone()
                         .unchecked_into::<web_sys::Element>();
                     create_effect_initial(move || {
-                        let _ = f(); // Track dependencies of f.
+                        let _ = f().evaluate(); // Track dependencies of f.
                         (
-                            Box::new(move || node.set_attribute(&name, &f()).unwrap()),
+                            Box::new(move || node.set_attribute(&name, &f().evaluate()).unwrap()),
                             (),
                         )
                     });
@@ -212,10 +212,10 @@ impl ViewHtmlNode for HydrateNode {
                         .clone()
                         .unchecked_into::<web_sys::Element>();
                     create_effect_initial(move || {
-                        let _ = f(); // Track dependencies of f.
+                        let _ = f().evaluate(); // Track dependencies of f.
                         (
                             Box::new(move || {
-                                if f() {
+                                if f().evaluate() {
                                     node.set_attribute(&name, "").unwrap();
                                 } else {
                                     node.remove_attribute(&name).unwrap();

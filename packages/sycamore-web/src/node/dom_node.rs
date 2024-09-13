@@ -126,7 +126,7 @@ impl ViewHtmlNode for DomNode {
             MaybeDyn::Dynamic(mut f) => {
                 let node = self.raw.clone().unchecked_into::<web_sys::Element>();
                 create_effect(move || {
-                    node.set_attribute(&name, &f()).unwrap();
+                    node.set_attribute(&name, &f().evaluate()).unwrap();
                 });
             }
         }
@@ -146,7 +146,7 @@ impl ViewHtmlNode for DomNode {
             MaybeDyn::Dynamic(mut f) => {
                 let node = self.raw.clone().unchecked_into::<web_sys::Element>();
                 create_effect(move || {
-                    if f() {
+                    if f().evaluate() {
                         node.set_attribute(&name, "").unwrap();
                     } else {
                         node.remove_attribute(&name).unwrap();
@@ -166,7 +166,10 @@ impl ViewHtmlNode for DomNode {
             MaybeDyn::Dynamic(mut f) => {
                 let node = self.raw.clone().unchecked_into::<web_sys::Element>();
                 create_effect(move || {
-                    assert!(js_sys::Reflect::set(&node, &name.as_ref().into(), &f()).unwrap_throw())
+                    assert!(
+                        js_sys::Reflect::set(&node, &name.as_ref().into(), &f().evaluate())
+                            .unwrap_throw()
+                    )
                 });
             }
         }
