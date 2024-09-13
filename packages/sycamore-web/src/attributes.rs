@@ -53,10 +53,10 @@ pub trait SetAttribute {
 
 impl<T> SetAttribute for T
 where
-    T: IntoHtmlNode,
+    T: AsHtmlNode,
 {
     fn set_attribute(&mut self, name: &'static str, value: impl AttributeValue) {
-        value.set_self(self.as_html_node_mut(), name.into());
+        value.set_self(self.as_html_node(), name.into());
     }
 }
 

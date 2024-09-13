@@ -68,10 +68,8 @@ pub trait ViewHtmlNode: ViewNode {
 }
 
 /// A trait for unwrapping a type into an `HtmlNode`.
-pub trait IntoHtmlNode {
-    fn into_html_node(self) -> HtmlNode;
-    fn as_html_node(&self) -> &HtmlNode;
-    fn as_html_node_mut(&mut self) -> &mut HtmlNode;
+pub trait AsHtmlNode {
+    fn as_html_node(&mut self) -> &mut HtmlNode;
 }
 
 thread_local! {

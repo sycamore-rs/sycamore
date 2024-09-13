@@ -29,14 +29,8 @@ impl From<CustomElement> for View {
     }
 }
 
-impl IntoHtmlNode for CustomElement {
-    fn into_html_node(self) -> HtmlNode {
-        self.0
-    }
-    fn as_html_node(&self) -> &HtmlNode {
-        &self.0
-    }
-    fn as_html_node_mut(&mut self) -> &mut HtmlNode {
+impl AsHtmlNode for CustomElement {
+    fn as_html_node(&mut self) -> &mut HtmlNode {
         &mut self.0
     }
 }
@@ -111,14 +105,8 @@ macro_rules! impl_element {
                 }
             }
 
-            impl IntoHtmlNode for [<Html $name:camel>] {
-                fn into_html_node(self) -> HtmlNode {
-                    self.0
-                }
-                fn as_html_node(&self) -> &HtmlNode {
-                    &self.0
-                }
-                fn as_html_node_mut(&mut self) -> &mut HtmlNode {
+            impl AsHtmlNode for [<Html $name:camel>] {
+                fn as_html_node(&mut self) -> &mut HtmlNode {
                     &mut self.0
                 }
             }
@@ -211,14 +199,8 @@ macro_rules! impl_svg_element {
                 }
             }
 
-            impl IntoHtmlNode for [<Svg $name:camel>] {
-                fn into_html_node(self) -> HtmlNode {
-                    self.0
-                }
-                fn as_html_node(&self) -> &HtmlNode {
-                    &self.0
-                }
-                fn as_html_node_mut(&mut self) -> &mut HtmlNode {
+            impl AsHtmlNode for [<Svg $name:camel>] {
+                fn as_html_node(&mut self) -> &mut HtmlNode {
                     &mut self.0
                 }
             }
@@ -1129,7 +1111,7 @@ pub trait SvgGlobalAttributes: SetAttribute + Sized {
 
 /// Attributes that are available on all elements.
 #[allow(private_bounds)]
-pub trait GlobalAttributes: IntoHtmlNode + Sized {
+pub trait GlobalAttributes: AsHtmlNode + Sized {
     /// Set attribute `name` with `value`.
     fn attr(mut self, name: &'static str, value: impl Into<MaybeDynString>) -> Self {
         self.set_attribute(name, value.into());
@@ -1156,13 +1138,13 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
     ) -> Self {
         let scope = use_current_scope(); // Run handler inside the current scope.
         let handler = move |ev: web_sys::Event| scope.run_in(|| handler.call(ev.unchecked_into()));
-        let node = self.as_html_node_mut();
+        let node = self.as_html_node();
         node.set_event_handler(T::NAME.into(), handler);
         self
     }
 
     fn bind<T: bind::BindDescriptor>(mut self, _: T, signal: Signal<T::ValueTy>) -> Self {
-        let node = self.as_html_node_mut();
+        let node = self.as_html_node();
         let scope = use_current_scope(); // Run handler inside the current scope.
         let handler = move |ev: web_sys::Event| {
             scope.run_in(|| {
@@ -1179,18 +1161,18 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
 
     /// Set the inner html of an element.
     fn dangerously_set_inner_html(mut self, inner_html: impl Into<Cow<'static, str>>) -> Self {
-        self.as_html_node_mut().set_inner_html(inner_html.into());
+        self.as_html_node().set_inner_html(inner_html.into());
         self
     }
 
     /// Set the children of an element.
     fn children(mut self, children: impl Into<View>) -> Self {
-        self.as_html_node_mut().append_view(children.into());
+        self.as_html_node().append_view(children.into());
         self
     }
 
     /// Set a [`NodeRef`] on this element.
-    fn r#ref(self, noderef: NodeRef) -> Self {
+    fn r#ref(mut self, noderef: NodeRef) -> Self {
         if is_not_ssr!() {
             noderef.set(Some(self.as_html_node().as_web_sys().clone()));
         }
@@ -1198,7 +1180,7 @@ pub trait GlobalAttributes: IntoHtmlNode + Sized {
     }
 
     fn spread(mut self, attributes: Attributes) -> Self {
-        attributes.apply_self(self.as_html_node_mut());
+        attributes.apply_self(self.as_html_node());
         self
     }
 }
