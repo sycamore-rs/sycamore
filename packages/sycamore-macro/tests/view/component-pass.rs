@@ -83,6 +83,7 @@ pub async fn AsyncComponentWithPropsDestructuring(
 
 #[derive(Props)]
 pub struct AttributesProps {
+    #[prop(attributes(html, input))]
     attributes: Attributes,
 }
 
@@ -119,15 +120,16 @@ fn compile_pass() {
         let _: View = view! { ComponentWithChildren {} };
         let _: View = view! { ComponentWithChildren() };
         let _: View = view! { ComponentWithChildren() {} };
-        //let _: View = view! { AttributesComponent(attr:class = "test") {} };
-        //let str_signal = create_signal(String::new());
-        //let _: View = view! { AttributesComponent(bind:value = str_signal) {} };
-        //let on_click = |_| {};
-        //let _: View = view! { AttributesComponent(on:click = on_click) {} };
-        //let bool_signal = create_signal(false);
-        //let _: View =
-        //    view! { AttributesComponent(attr:disabled = false, attr:checked = bool_signal.get())
-        // };
+
+        let _: View = view! { AttributesComponent(class="test") {} };
+        let str_signal = create_signal(String::new());
+        let _: View = view! { AttributesComponent(bind:value=str_signal) {} };
+        let on_click = |_| {};
+        let _: View = view! { AttributesComponent(on:click=on_click) {} };
+        let bool_signal = create_signal(false);
+        let _: View = view! { AttributesComponent(disabled=false, checked=bool_signal.get()) };
+        // input specific attribute.
+        let _: View = view! { AttributesComponent(value="text") };
 
         let _: View = view! {
             AsyncComponentWithPropsDestructuring {

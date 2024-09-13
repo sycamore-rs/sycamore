@@ -21,13 +21,14 @@ fn Component() -> View {
 
 #[derive(Props)]
 pub struct AttributesProps {
+    #[prop(attributes(html, div))]
     attributes: Attributes,
 }
 
 #[component]
-pub fn AttributesComponent(AttributesProps { attributes: _ }: AttributesProps<G>) -> View {
+pub fn AttributesComponent(AttributesProps { attributes }: AttributesProps) -> View {
     view! {
-        div {}
+        div(..attributes)
     }
 }
 
@@ -37,14 +38,14 @@ fn compile_fail() {
         let _: View = view! { UnknownComponent {} };
 
         let _: View = view! { Component };
-        let _: View = view! { Component(prop=1) };
+        let _: View = view! { Component(not_a_prop=1) };
 
         let _: View = view! { PropsComponent() };
         let _: View = view! { PropsComponent {} };
         let _: View = view! { PropsComponent(prop=123) };
         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
 
-        //let _: View = view! { AttributesComponent(attr:class=123) }; // Wrong type
+        let _: View = view! { AttributesComponent(class=123) }; // Wrong type
     });
 }
 
