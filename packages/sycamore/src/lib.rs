@@ -90,8 +90,8 @@ pub mod prelude {
     #[cfg(feature = "web")]
     pub use sycamore_web::{
         console_dbg, console_log, create_node_ref, document, is_not_ssr, is_ssr, on_mount, window,
-        Attributes, Children, GlobalAttributes, HtmlGlobalAttributes, Indexed, Keyed, NodeRef,
-        SvgGlobalAttributes, View,
+        Attributes, Children, GlobalAttributes, GlobalProps, HtmlGlobalAttributes, Indexed, Keyed,
+        NodeRef, SvgGlobalAttributes, View,
     };
 
     pub use crate::reactive::*;

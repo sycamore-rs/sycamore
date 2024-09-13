@@ -254,12 +254,20 @@ mod struct_info {
                     AttributeBase::Svg => quote::format_ident!("Svg{tag_camel}Attributes"),
                 };
                 quote! {
+                    impl #b_generics_impl ::sycamore::web::GlobalAttributes for #builder_name #b_generics_ty #b_generics_where {}
                     impl #b_generics_impl ::sycamore::web::#base_trait_ident for #builder_name #b_generics_ty #b_generics_where {}
                     impl #b_generics_impl ::sycamore::web::tags::#tag_trait_ident for #builder_name #b_generics_ty #b_generics_where {}
 
                     impl #b_generics_impl ::sycamore::web::SetAttribute for #builder_name #b_generics_ty #b_generics_where {
-                        fn set_attribute(&mut self, name: &'static str, value: impl ::sycamore::web::AttributeValue) {
+                        fn set_attribute(&mut self, name: &'static ::std::primitive::str, value: impl ::sycamore::web::AttributeValue) {
                             self.attributes.set_attribute(name, value);
+                        }
+                        fn set_event_handler(
+                            &mut self,
+                            name: &'static ::std::primitive::str,
+                            handler: impl ::std::ops::FnMut(::sycamore::rt::Event) + 'static,
+                        ) {
+                            self.attributes.set_event_handler(name, handler);
                         }
                     }
                 }

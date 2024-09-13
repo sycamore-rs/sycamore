@@ -49,6 +49,11 @@ impl AttributeValue for Box<dyn AttributeValue> {
 /// Implemented for all types that can accept attributes ([`AttributeValue`]).
 pub trait SetAttribute {
     fn set_attribute(&mut self, name: &'static str, value: impl AttributeValue);
+    fn set_event_handler(
+        &mut self,
+        name: &'static str,
+        value: impl FnMut(web_sys::Event) + 'static,
+    );
 }
 
 impl<T> SetAttribute for T
@@ -58,17 +63,35 @@ where
     fn set_attribute(&mut self, name: &'static str, value: impl AttributeValue) {
         value.set_self(self.as_html_node(), name.into());
     }
+
+    fn set_event_handler(
+        &mut self,
+        name: &'static str,
+        value: impl FnMut(web_sys::Event) + 'static,
+    ) {
+        self.as_html_node().set_event_handler(name.into(), value);
+    }
 }
 
 /// A special prop type that can be used to spread attributes onto an element.
 #[derive(Default)]
 pub struct Attributes {
     values: Vec<(Cow<'static, str>, Box<dyn AttributeValue>)>,
+    #[allow(clippy::type_complexity)]
+    event_handlers: Vec<(Cow<'static, str>, Box<dyn FnMut(web_sys::Event)>)>,
 }
 
 impl SetAttribute for Attributes {
     fn set_attribute(&mut self, name: &'static str, value: impl AttributeValue) {
         self.values.push((name.into(), Box::new(value)));
+    }
+
+    fn set_event_handler(
+        &mut self,
+        name: &'static str,
+        value: impl FnMut(web_sys::Event) + 'static,
+    ) {
+        self.event_handlers.push((name.into(), Box::new(value)));
     }
 }
 
@@ -81,6 +104,9 @@ impl Attributes {
     pub fn apply_self(self, el: &mut HtmlNode) {
         for (name, value) in self.values {
             value.set_self(el, name);
+        }
+        for (name, handler) in self.event_handlers {
+            el.set_event_handler(name, handler);
         }
     }
 }

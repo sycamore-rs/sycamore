@@ -32,13 +32,13 @@ fn App() -> View {
             div {
                 CustomButton(
                     id="button1",
-                    //on:click=|_| console_log!("Button 1 clicked!"),
+                    on:click=|_| console_log!("Button 1 clicked!"),
                 ) { "Button 1" }
                 CustomButton(
                     id="button2",
                     class="red-button",
                     style="background-color:red;",
-                    //on:click=|_| console_log!("Button 2 clicked!"),
+                    on:click=|_| console_log!("Button 2 clicked!"),
                 ) { "Button 2" }
             }
         }

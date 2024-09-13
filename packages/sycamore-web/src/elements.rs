@@ -35,7 +35,7 @@ impl AsHtmlNode for CustomElement {
     }
 }
 
-impl GlobalAttributes for CustomElement {}
+impl GlobalProps for CustomElement {}
 impl HtmlGlobalAttributes for CustomElement {}
 
 macro_rules! impl_attribute {
@@ -111,7 +111,7 @@ macro_rules! impl_element {
                 }
             }
 
-            impl GlobalAttributes for [<Html $name:camel>] {}
+            impl GlobalProps for [<Html $name:camel>] {}
             impl HtmlGlobalAttributes for [<Html $name:camel>] {}
 
             #[doc = "Trait that provides attributes for the `<" $name ">` HTML element."]
@@ -205,7 +205,7 @@ macro_rules! impl_svg_element {
                 }
             }
 
-            impl GlobalAttributes for [<Svg $name:camel>] {}
+            impl GlobalProps for [<Svg $name:camel>] {}
             impl SvgGlobalAttributes for [<Svg $name:camel>] {}
 
             #[doc = "Trait that provides attributes for the `<" $name ">` SVG element."]
@@ -1110,8 +1110,7 @@ pub trait SvgGlobalAttributes: SetAttribute + Sized {
 }
 
 /// Attributes that are available on all elements.
-#[allow(private_bounds)]
-pub trait GlobalAttributes: AsHtmlNode + Sized {
+pub trait GlobalAttributes: SetAttribute + Sized {
     /// Set attribute `name` with `value`.
     fn attr(mut self, name: &'static str, value: impl Into<MaybeDynString>) -> Self {
         self.set_attribute(name, value.into());
@@ -1131,34 +1130,38 @@ pub trait GlobalAttributes: AsHtmlNode + Sized {
     }
 
     /// Set an event handler with `name`.
-    fn on<T: events::EventDescriptor, R>(
+    fn on<E: events::EventDescriptor, R>(
         mut self,
-        _: T,
-        mut handler: impl EventHandler<T, R>,
+        _: E,
+        mut handler: impl EventHandler<E, R>,
     ) -> Self {
         let scope = use_current_scope(); // Run handler inside the current scope.
         let handler = move |ev: web_sys::Event| scope.run_in(|| handler.call(ev.unchecked_into()));
-        let node = self.as_html_node();
-        node.set_event_handler(T::NAME.into(), handler);
+        self.set_event_handler(E::NAME, handler);
         self
     }
 
-    fn bind<T: bind::BindDescriptor>(mut self, _: T, signal: Signal<T::ValueTy>) -> Self {
-        let node = self.as_html_node();
+    /// Set a two way binding with `name`.
+    fn bind<E: bind::BindDescriptor>(mut self, _: E, signal: Signal<E::ValueTy>) -> Self {
         let scope = use_current_scope(); // Run handler inside the current scope.
         let handler = move |ev: web_sys::Event| {
             scope.run_in(|| {
                 let value =
-                    js_sys::Reflect::get(&ev.current_target().unwrap(), &T::TARGET_PROPERTY.into())
+                    js_sys::Reflect::get(&ev.current_target().unwrap(), &E::TARGET_PROPERTY.into())
                         .unwrap();
-                signal.set(T::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
+                signal.set(E::CONVERT_FROM_JS(&value).expect("failed to convert value from js"));
             })
         };
-        node.set_event_handler(<T::Event as events::EventDescriptor>::NAME.into(), handler);
+        self.set_event_handler(<E::Event as events::EventDescriptor>::NAME, handler);
 
-        self.prop(T::TARGET_PROPERTY, move || signal.get_clone().into())
+        self.prop(E::TARGET_PROPERTY, move || signal.get_clone().into())
     }
+}
 
+impl<T: GlobalProps> GlobalAttributes for T {}
+
+/// Props that are available on all elements.
+pub trait GlobalProps: GlobalAttributes + AsHtmlNode + Sized {
     /// Set the inner html of an element.
     fn dangerously_set_inner_html(mut self, inner_html: impl Into<Cow<'static, str>>) -> Self {
         self.as_html_node().set_inner_html(inner_html.into());
