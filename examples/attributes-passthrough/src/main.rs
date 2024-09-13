@@ -5,14 +5,14 @@ use sycamore::web::MaybeDynString;
 pub struct CustomButtonProps {
     #[prop(setter(into))]
     id: MaybeDynString,
-    #[prop(attributes(html, input))]
+    #[prop(attributes(html, button))]
     attributes: Attributes,
     children: Children,
 }
 
 #[component]
 fn CustomButton(mut props: CustomButtonProps) -> View {
-    console_log!("Intercepted id attribute: {}", props.id.get_clone());
+    console_log!("Intercepted `id` attribute: {}", props.id.get_clone());
 
     let children = props.children.call();
     view! {
@@ -32,12 +32,15 @@ fn App() -> View {
             div {
                 CustomButton(
                     id="button1",
+                    r#type="button",
                     on:click=|_| console_log!("Button 1 clicked!"),
                 ) { "Button 1" }
                 CustomButton(
                     id="button2",
+                    r#type="button",
                     class="red-button",
                     style="background-color:red;",
+                    prop:disabled=true,
                     on:click=|_| console_log!("Button 2 clicked!"),
                 ) { "Button 2" }
             }
