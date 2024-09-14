@@ -23,7 +23,7 @@ pub fn Portal<'a, T: Into<View> + Default>(selector: &'a str, children: T) -> Vi
         }
 
         on_cleanup(move || {
-            let nodes = get_nodes_between(&start_node, &end_node);
+            let nodes = utils::get_nodes_between(&start_node, &end_node);
             for node in nodes {
                 parent.remove_child(&node).unwrap();
             }

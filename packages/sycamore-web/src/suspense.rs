@@ -49,18 +49,23 @@ pub fn Suspense(props: SuspenseProps) -> View {
     let SuspenseProps { fallback, children } = props;
     let mut fallback = Some(fallback);
 
-    let show = create_signal(false);
-    let (view, suspend) = await_suspense(move || children.call());
-    // If the Suspense is nested under another Suspense, we want the other Suspense to await this
-    // one as well.
-    suspense_scope(async move {
-        suspend.await;
-        show.set(true);
-    });
+    if is_ssr!() {
+        // TODO: for now, SSR only supports sync rendering so just return the fallback.
+        fallback.take().unwrap()
+    } else {
+        let show = create_signal(false);
+        let (view, suspend) = await_suspense(move || children.call());
+        // If the Suspense is nested under another Suspense, we want the other Suspense to await
+        // this one as well.
+        suspense_scope(async move {
+            suspend.await;
+            show.set(true);
+        });
 
-    view! {
-        (view)
-        (if !show.get() { fallback.take().unwrap() } else { View::default() })
+        let mut view = Some(utils::wrap_in_document_fragment(view));
+        view! {
+            (if !show.get() { fallback.take().unwrap() } else { view.take().unwrap() })
+        }
     }
 }
 

@@ -28,6 +28,7 @@ web-sys = { version = "0.3.69", features = [
 	"NodeList",
 	"Window",
 	"Document",
+	"DocumentFragment",
 	"Element",
 	"EventListener",
 	"HtmlElement",
