@@ -50,8 +50,12 @@ pub fn Suspense(props: SuspenseProps) -> View {
     let mut fallback = Some(fallback);
 
     if is_ssr!() {
-        // TODO: for now, SSR only supports sync rendering so just return the fallback.
-        fallback.take().unwrap()
+        let mode = use_context::<SsrMode>();
+        match mode {
+            // In sync mode, we don't even bother about the children and just return the fallback.
+            SsrMode::Sync => fallback.take().unwrap(),
+            SsrMode::Streaming => todo!("ssr streaming"),
+        }
     } else {
         let show = create_signal(false);
         let (view, suspend) = await_suspense(move || children.call());

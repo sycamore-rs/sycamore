@@ -1,6 +1,7 @@
 use super::*;
 
 /// The mode in which SSR is being run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SsrMode {
     /// Synchronous mode.
     ///
@@ -35,6 +36,7 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
                 let handle = create_child_scope(|| {
                     // We run this in a new scope so that we can dispose everything after we render it.
                     provide_context(HydrationRegistry::new());
+                    provide_context(SsrMode::Sync);
 
                     IS_HYDRATING.set(true);
                     let view = view();
