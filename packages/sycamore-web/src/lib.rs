@@ -47,7 +47,9 @@ mod portal;
 mod stable_counter;
 #[cfg(feature = "suspense")]
 mod suspense;
-mod view;
+mod utils;
+
+pub(crate) mod view;
 
 pub use self::attributes::*;
 pub use self::components::*;

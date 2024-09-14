@@ -66,7 +66,7 @@ pub(crate) fn _create_dynamic_view<T: ViewHtmlNode, U: Into<View<T>> + 'static>(
                     let new = f().into();
                     if let Some(parent) = start_node.parent_node() {
                         // Clear all the old nodes away.
-                        let old = iter::get_nodes_between(&start_node, &end_node);
+                        let old = utils::get_nodes_between(&start_node, &end_node);
                         for node in old {
                             parent.remove_child(&node).unwrap();
                         }
@@ -76,6 +76,8 @@ pub(crate) fn _create_dynamic_view<T: ViewHtmlNode, U: Into<View<T>> + 'static>(
                                 .insert_before(node.as_web_sys(), Some(&end_node))
                                 .unwrap();
                         }
+                    } else if cfg!(debug_assertions) {
+                        console_warn!("cannot update a dynamic view if it is not mounted");
                     }
                 }),
                 view,
