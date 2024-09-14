@@ -58,9 +58,9 @@ pub fn Suspense(props: SuspenseProps) -> View {
         show.set(true);
     });
 
+    let mut view = Some(utils::wrap_in_document_fragment(view));
     view! {
-        (view)
-        (if !show.get() { fallback.take().unwrap() } else { View::default() })
+        (if !show.get() { fallback.take().unwrap() } else { view.take().unwrap() })
     }
 }
 

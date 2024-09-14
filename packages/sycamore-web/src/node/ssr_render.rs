@@ -1,5 +1,18 @@
 use super::*;
 
+/// The mode in which SSR is being run.
+pub enum SsrMode {
+    /// Synchronous mode.
+    ///
+    /// When a suspense boundary is hit, only the fallback is rendered.
+    Sync,
+    /// Streaming mode.
+    ///
+    /// When a suspense boundary is hit, the fallback is never rendered. Instead, a special SSR
+    /// Suspense node is created that contains a future resolving to the async content.
+    Streaming,
+}
+
 /// Render a [`View`] into a static [`String`]. Useful for rendering to a string on the server side.
 #[must_use]
 pub fn render_to_string(view: impl FnOnce() -> View) -> String {
