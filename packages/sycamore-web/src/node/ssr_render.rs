@@ -81,6 +81,8 @@ pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> Str
         use std::fmt::Write;
         use futures::StreamExt;
 
+        const BUFFER_SIZE: usize = 5;
+
         thread_local! {
             /// Use a static variable here so that we can reuse the same root for multiple calls to
             /// this function.
@@ -90,7 +92,7 @@ pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> Str
         provide_executor_scope(async {
             let mut buf = String::new();
 
-            let (sender, mut receiver) = channel(1);
+            let (sender, mut receiver) = channel(BUFFER_SIZE);
             SSR_ROOT.with(|root| {
                 root.dispose();
                 root.run_in(|| {
