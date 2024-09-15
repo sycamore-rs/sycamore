@@ -2,6 +2,7 @@
 
 use std::future::Future;
 
+use futures::channel::mpsc::Sender;
 use futures::SinkExt;
 use sycamore_futures::{await_suspense, spawn_local_scoped, suspense_scope};
 use sycamore_macro::{component, Props};
@@ -68,10 +69,10 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let fragment = SuspenseFragment {
                     key,
                     view,
-                    suspend: Box::new(suspend),
                 };
                 let mut state = use_context::<SuspenseState>();
                 spawn_local_scoped(async move {
+                    suspend.await;
                     state
                         .sender
                         .send(fragment)
@@ -85,9 +86,6 @@ pub fn Suspense(props: SuspenseProps) -> View {
             SsrMode::Streaming => {
                 // We need to create a hydration key so that we know which suspense boundary it is
                 // when we stream the content.
-                //
-                // FIXME: does this introduce non-determinism depending on suspense completion
-                // order?
                 let reg = use_context::<HydrationRegistry>();
                 let key = reg.next_key();
 
@@ -96,16 +94,26 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let fragment = SuspenseFragment {
                     key,
                     view,
-                    suspend: Box::new(suspend),
                 };
                 let mut state = use_context::<SuspenseState>();
                 spawn_local_scoped(async move {
+                    suspend.await;
                     state
                         .sender
                         .send(fragment)
                         .await
                         .expect("could not send suspense fragment");
                 });
+
+                // If no fallback is set, we return a dummy node;
+                if fallback.as_mut().unwrap().nodes.is_empty() {
+                    fallback = Some(view! { sycamore-suspense-marker() });
+                }
+                // Mark all fallback nodes with suspense key so that they can be replaced with the
+                // suspended content.
+                for node in &mut fallback.as_mut().unwrap().nodes {
+                    node.set_attribute("data-sycamore-suspense".into(), key.to_string().into());
+                }
 
                 View::from(move || fallback.take().unwrap())
             }
@@ -156,4 +164,15 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
             view: Rc::clone(&node),
         })
     }
+}
+
+pub(crate) struct SuspenseFragment {
+    pub key: u32,
+    pub view: View,
+}
+
+/// Context for passing suspense fragments in SSR mode.
+#[derive(Clone)]
+pub(crate) struct SuspenseState {
+    pub sender: Sender<SuspenseFragment>,
 }
