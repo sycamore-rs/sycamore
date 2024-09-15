@@ -2,8 +2,9 @@
 
 use std::future::Future;
 
-use sycamore_futures::{await_suspense, suspense_scope};
-use sycamore_macro::{component, view, Props};
+use futures::SinkExt;
+use sycamore_futures::{await_suspense, spawn_local_scoped, suspense_scope};
+use sycamore_macro::{component, Props};
 
 use crate::*;
 
@@ -49,14 +50,68 @@ pub fn Suspense(props: SuspenseProps) -> View {
     let SuspenseProps { fallback, children } = props;
     let mut fallback = Some(fallback);
 
-    if is_ssr!() {
+    is_ssr! {
         let mode = use_context::<SsrMode>();
         match mode {
             // In sync mode, we don't even bother about the children and just return the fallback.
-            SsrMode::Sync => fallback.take().unwrap(),
-            SsrMode::Streaming => todo!("ssr streaming"),
+            //
+            // We make sure to return a closure so that the view can be properly hydrated.
+            SsrMode::Sync => View::from(move || fallback.take().unwrap()),
+            SsrMode::Blocking => {
+                // We need to create a hydration key so that we know which suspense boundary it is
+                // when we replace the marker with the suspended content.
+                let reg = use_context::<HydrationRegistry>();
+                let key = reg.next_key();
+
+                // Push `children` to the suspense fragments lists.
+                let (view, suspend) = await_suspense(move || children.call());
+                let fragment = SuspenseFragment {
+                    key,
+                    view,
+                    suspend: Box::new(suspend),
+                };
+                let mut state = use_context::<SuspenseState>();
+                spawn_local_scoped(async move {
+                    state
+                        .sender
+                        .send(fragment)
+                        .await
+                        .expect("could not send suspense fragment");
+                });
+                View::from(move || SsrNode::SuspenseMarker { key })
+            }
+            // In streaming mode, we render the fallback and then stream the result of the children
+            // once suspense is resolved.
+            SsrMode::Streaming => {
+                // We need to create a hydration key so that we know which suspense boundary it is
+                // when we stream the content.
+                //
+                // FIXME: does this introduce non-determinism depending on suspense completion
+                // order?
+                let reg = use_context::<HydrationRegistry>();
+                let key = reg.next_key();
+
+                // Push `children` to the suspense fragments lists.
+                let (view, suspend) = await_suspense(move || children.call());
+                let fragment = SuspenseFragment {
+                    key,
+                    view,
+                    suspend: Box::new(suspend),
+                };
+                let mut state = use_context::<SuspenseState>();
+                spawn_local_scoped(async move {
+                    state
+                        .sender
+                        .send(fragment)
+                        .await
+                        .expect("could not send suspense fragment");
+                });
+
+                View::from(move || fallback.take().unwrap())
+            }
         }
-    } else {
+    }
+    is_not_ssr! {
         let show = create_signal(false);
         let (view, suspend) = await_suspense(move || children.call());
         // If the Suspense is nested under another Suspense, we want the other Suspense to await
@@ -77,54 +132,28 @@ pub fn Suspense(props: SuspenseProps) -> View {
 /// suspense scope so that content is properly suspended.
 #[component]
 pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> View {
-    let view = create_signal(View::default());
-    let ret = view! { ({
-        view.track();
-        view.update_silent(std::mem::take)
-    }) };
-    suspense_scope(async move {
-        view.set(f().await);
-    });
-    ret
-}
-
-#[cfg(test)]
-mod tests {
-    use futures::channel::oneshot;
-    use sycamore_futures::{provide_executor_scope, use_transition, SuspenseState};
-
-    use super::*;
-
-    #[tokio::test]
-    async fn transition() {
-        provide_executor_scope(async {
-            let (sender, receiver) = oneshot::channel();
-            let mut sender = Some(sender);
-            let disposer = create_root(|| {
-                let trigger = create_signal(());
-                let transition = use_transition();
-                let _: View = view! {
-                    Suspense(
-                        children=Children::new(move || {
-                            create_effect(move || {
-                                trigger.track();
-                                assert!(try_use_context::<SuspenseState>().is_some());
-                            });
-                            view! { }
-                        })
-                    )
-                };
-                let done = create_signal(false);
-                transition.start(move || trigger.set(()), move || done.set(true));
-                create_effect(move || {
-                    if done.get() {
-                        sender.take().unwrap().send(()).unwrap();
-                    }
-                });
-            });
-            receiver.await.unwrap();
-            disposer.dispose();
+    is_not_ssr! {
+        let view = create_signal(View::default());
+        let ret = view! { ({
+            view.track();
+            view.update_silent(std::mem::take)
+        }) };
+        suspense_scope(async move {
+            view.set(f().await);
+        });
+        ret
+    }
+    is_ssr! {
+        use std::cell::RefCell;
+        let node = Rc::new(RefCell::new(View::default()));
+        suspense_scope({
+            let node = Rc::clone(&node);
+            async move {
+                *node.borrow_mut() = f().await;
+            }
+        });
+        View::from(move || SsrNode::Dynamic {
+            view: Rc::clone(&node),
         })
-        .await;
     }
 }

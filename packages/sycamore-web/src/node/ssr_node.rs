@@ -1,4 +1,5 @@
 use std::any::{Any, TypeId};
+use std::cell::RefCell;
 use std::collections::HashSet;
 
 use once_cell::sync::Lazy;
@@ -21,6 +22,16 @@ pub enum SsrNode {
         text: Cow<'static, str>,
     },
     Marker,
+    /// SSR by default does not update to any dynamic changes in the view. This special node allows
+    /// dynamically changing the view tree before it is rendered.
+    ///
+    /// This is used for updating the view with suspense content once it is resolved.
+    Dynamic {
+        view: Rc<RefCell<View<Self>>>,
+    },
+    SuspenseMarker {
+        key: u32,
+    },
 }
 
 impl From<SsrNode> for View<SsrNode> {
@@ -153,7 +164,7 @@ static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
 });
 
 /// Recursively render `node` by appending to `buf`.
-pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
+pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
     match node {
         SsrNode::Element {
             tag,
@@ -165,14 +176,14 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
         } => {
             buf.push('<');
             buf.push_str(&tag);
-            for (name, value) in &attributes {
+            for (name, value) in attributes {
                 buf.push(' ');
                 buf.push_str(name);
                 buf.push_str("=\"");
                 html_escape::encode_double_quoted_attribute_to_string(value, buf);
                 buf.push('"');
             }
-            for (name, value) in &bool_attributes {
+            for (name, value) in bool_attributes {
                 if *value {
                     buf.push(' ');
                     buf.push_str(name);
@@ -223,6 +234,21 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
         SsrNode::Marker => {
             buf.push_str("<!--/-->");
         }
+        SsrNode::Dynamic { view } => {
+            render_recursive_view(&view.borrow(), buf);
+        }
+        SsrNode::SuspenseMarker { key } => {
+            buf.push_str("<!--sycamore-suspense-");
+            buf.push_str(&key.to_string());
+            buf.push_str("-->");
+        }
+    }
+}
+
+/// Recursively render a [`View`] to a string by calling `render_recursive` on each node.
+pub(crate) fn render_recursive_view(view: &View, buf: &mut String) {
+    for node in &view.nodes {
+        render_recursive(node, buf);
     }
 }
 

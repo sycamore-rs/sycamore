@@ -63,12 +63,12 @@ pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>)
     create_effect(move || {
         if count.get() == 0 {
             if let Some(sender) = sender.take() {
-                let _ = sender.send(());
+                sender.send(()).unwrap();
             }
         }
     });
     (ret, async move {
-        let _ = receiver.await;
+        receiver.await.unwrap();
         if let Some(mut outer_count) = outer_count {
             outer_count -= 1;
         }
