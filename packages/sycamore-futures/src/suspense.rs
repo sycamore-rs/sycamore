@@ -12,7 +12,13 @@ use crate::*;
 /// Internal context state used by suspense.
 #[derive(Clone, Copy, Debug)]
 pub struct SuspenseState {
-    async_counts: Signal<Vec<Signal<u32>>>,
+    scopes: Signal<Vec<SuspenseScope>>,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct SuspenseScope {
+    count: Signal<u32>,
+    is_done: Signal<bool>,
 }
 
 /// Creates a new "suspense scope".
@@ -23,11 +29,11 @@ pub struct SuspenseState {
 /// The scope ends when the future is resolved.
 pub fn suspense_scope(f: impl Future<Output = ()> + 'static) {
     if let Some(state) = try_use_context::<SuspenseState>() {
-        if let Some(mut count) = state.async_counts.get_clone().last().cloned() {
-            count += 1;
+        if let Some(mut scope) = state.scopes.get_clone().last().cloned() {
+            scope.count += 1;
             spawn_local_scoped(async move {
                 f.await;
-                count -= 1;
+                scope.count -= 1;
             });
             return;
         }
@@ -38,41 +44,73 @@ pub fn suspense_scope(f: impl Future<Output = ()> + 'static) {
 /// Calls the given function and returns a tuple with the result and a future that resolves when
 /// all suspense tasks created within the function are completed.
 ///
-/// If called inside an outer suspense scope, this will also make the outer suspense scope suspend
-/// until this resolves.
+/// If this is called inside another call to [`await_suspense`], this suspense will wait until the
+/// parent suspense is resolved.
 pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>) {
     let state = use_context_or_else(|| SuspenseState {
-        async_counts: create_signal(Vec::new()),
+        scopes: create_signal(Vec::new()),
     });
-    // Get the outer suspense state.
-    let outer_count = state.async_counts.with(|counts| counts.last().copied());
-    // Push a new suspense state.
-    let count = create_signal(0);
-    state.async_counts.update(|counts| counts.push(count));
-
-    if let Some(mut outer_count) = outer_count {
-        outer_count += 1;
-    }
+    // Push a new suspense scope.
+    let scope = SuspenseScope {
+        count: create_signal(0),
+        is_done: create_signal(false),
+    };
+    state.scopes.update(|scopes| scopes.push(scope));
     let ret = f();
-    // Pop the suspense state.
-    state.async_counts.update(|counts| counts.pop().unwrap());
+    // We have collected all suspense tasks now. Pop the scope.
+    state.scopes.update(|scopes| scopes.pop().unwrap());
 
-    let (sender, receiver) = oneshot::channel();
-    let mut sender = Some(sender);
+    let (tx, rx) = oneshot::channel();
+    let mut tx = Some(tx);
+
+    // Check if we have a parent scope. If we do, we need to wait until it is resolved.
+    let parent = state.scopes.with(|scopes| scopes.last().copied());
 
     create_effect(move || {
-        if count.get() == 0 {
-            if let Some(sender) = sender.take() {
-                let _ = sender.send(());
+        if scope.count.get() == 0 && (parent.is_none() || parent.unwrap().is_done.get()) {
+            if let Some(tx) = tx.take() {
+                tx.send(()).unwrap();
+                scope.is_done.set(true);
             }
         }
     });
     (ret, async move {
-        let _ = receiver.await;
-        if let Some(mut outer_count) = outer_count {
-            outer_count -= 1;
-        }
+        rx.await.unwrap();
     })
+}
+
+/// Waits until all suspense task in current scope are completed.
+///
+/// Does not create a new suspense scope.
+pub async fn await_suspense_current() {
+    let state = use_context_or_else(|| SuspenseState {
+        scopes: create_signal(Vec::new()),
+    });
+
+    let (tx, rx) = oneshot::channel();
+    let mut tx = Some(tx);
+
+    // Check if we have a parent scope. If we do, we need to wait until it is resolved.
+    let parent = state.scopes.with(|scopes| scopes.last().copied());
+
+    create_effect(move || {
+        if parent.is_none() || parent.unwrap().is_done.get() {
+            if let Some(tx) = tx.take() {
+                tx.send(()).unwrap();
+            }
+        }
+    });
+
+    rx.await.unwrap();
+}
+
+/// Returns whether we have any pending suspense tasks.
+pub fn is_pending_suspense() -> bool {
+    let Some(state) = try_use_context::<SuspenseState>() else {
+        return false;
+    };
+    let scope = state.scopes.with(|scopes| scopes.last().copied());
+    scope.is_none() || scope.unwrap().count.get() > 0
 }
 
 /// A struct to handle transitions. Created using [`use_transition`].

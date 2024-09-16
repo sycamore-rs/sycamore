@@ -130,7 +130,7 @@ mod tests {
 
         check(
             move || crate::tags::div().spread(attributes),
-            expect!["<div class=\"test-class\" id=\"test-id\" data-hk=0></div>"],
+            expect![[r#"<div class="test-class" id="test-id" data-hk="0.0"></div>"#]],
         );
     }
 
@@ -142,7 +142,7 @@ mod tests {
 
         check(
             move || view! { div(..attributes) },
-            expect!["<div class=\"test-class\" id=\"test-id\" data-hk=0></div>"],
+            expect![[r#"<div class="test-class" id="test-id" data-hk="0.0"></div>"#]],
         );
     }
 }

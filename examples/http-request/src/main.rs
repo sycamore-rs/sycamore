@@ -38,7 +38,7 @@ fn App() -> View {
     view! {
         div {
             p { "Page Visit Counter" }
-            Suspense(fallback=view! { "Loading..." }) {
+            Suspense(fallback=|| view! { "Loading..." }) {
                 VisitsCount {}
             }
         }

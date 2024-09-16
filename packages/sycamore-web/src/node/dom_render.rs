@@ -29,6 +29,7 @@ pub fn render_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
     if is_ssr!() {
         panic!("`render_in_scope` is not available in SSR mode");
     } else {
+        IS_HYDRATING.set(false);
         let nodes = view().nodes;
         for node in nodes {
             parent.append_child(node.as_web_sys()).unwrap();
@@ -73,27 +74,39 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
         panic!("`hydrate_in_scope` is not available in SSR mode");
     }
     is_not_ssr! {
-        provide_context(HydrationRegistry::new());
+        // Get mode from HydrationScript.
+        let mode = js_sys::Reflect::get(&window(), &"__sycamore_ssr_mode".into()).unwrap();
+        let mode = if mode.is_undefined() {
+            SsrMode::Sync
+        } else if mode == "blocking" {
+            SsrMode::Blocking
+        } else if mode == "streaming" {
+            SsrMode::Streaming
+        } else {
+            panic!("invalid SSR mode {mode:?}")
+        };
+
         // Get all nodes with `data-hk` attribute.
         let existing_nodes = parent
             .unchecked_ref::<web_sys::Element>()
             .query_selector_all("[data-hk]")
             .unwrap();
-        let len = existing_nodes.length();
-        let mut temp = vec![None; len as usize];
-        for i in 0..len {
-            let node = existing_nodes.get(i).unwrap();
-            let hk = node.unchecked_ref::<web_sys::Element>().get_attribute("data-hk").unwrap();
-            let hk = hk.parse::<usize>().unwrap();
-            temp[hk] = Some(node);
-        }
 
-        // Now assign every element in temp to HYDRATION_NODES
         HYDRATE_NODES.with(|nodes| {
-            *nodes.borrow_mut() = temp.into_iter().map(|x| HtmlNode::from_web_sys(x.unwrap())).rev().collect();
+            let mut nodes = nodes.borrow_mut();
+            let len = existing_nodes.length();
+            for i in 0..len {
+                let node = existing_nodes.get(i).unwrap();
+                let hk = node.unchecked_ref::<web_sys::Element>().get_attribute("data-hk").unwrap();
+                let key = HydrationKey::parse(&hk).expect("could not parse hydration key");
+                let node = HydrateNode::from_web_sys(node);
+                nodes.insert(key, node);
+            }
         });
 
         IS_HYDRATING.set(true);
+        provide_context(mode);
+        provide_context(HydrationRegistry::new());
         let nodes = view().nodes;
         // We need to append `nodes` to the `parent` so that the top level nodes also get properly
         // hydrated.
@@ -101,6 +114,20 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
         for node in nodes {
             parent.append_child(node);
         }
+
+        // Wait until suspense is resolved before setting `IS_HYDRATING` to `false`.
+        #[cfg(not(feature = "suspense"))]
         IS_HYDRATING.set(false);
+        #[cfg(feature = "suspense")]
+        {
+            if sycamore_futures::is_pending_suspense() {
+                sycamore_futures::spawn_local_scoped(async {
+                    sycamore_futures::await_suspense_current().await;
+                    IS_HYDRATING.set(false);
+                });
+            } else {
+                IS_HYDRATING.set(false);
+            }
+        }
     }
 }

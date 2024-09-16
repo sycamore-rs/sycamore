@@ -12,7 +12,7 @@ mod hello_world {
     fn v() -> View {
         p().children("Hello World!").into()
     }
-    static EXPECT: Expect = expect!["<p data-hk=0>Hello World!</p>"];
+    static EXPECT: Expect = expect![[r#"<p data-hk="0.0">Hello World!</p>"#]];
     #[test]
     fn ssr() {
         check(v, &EXPECT);
@@ -33,7 +33,7 @@ mod hydrate_recursive {
     fn v() -> View {
         div().children(p().children("Nested")).into()
     }
-    static EXPECT: Expect = expect!["<div data-hk=0><p data-hk=1>Nested</p></div>"];
+    static EXPECT: Expect = expect![[r#"<div data-hk="0.0"><p data-hk="0.1">Nested</p></div>"#]];
     #[test]
     fn ssr() {
         check(v, &EXPECT);
@@ -60,7 +60,7 @@ mod multiple_nodes_at_same_depth {
             .into()
     }
     static EXPECT: Expect = expect![[
-        r#"<div data-hk=0><p id="first" data-hk=1>First</p><p id="second" data-hk=2>Second</p></div>"#
+        r#"<div data-hk="0.0"><p id="first" data-hk="0.1">First</p><p id="second" data-hk="0.2">Second</p></div>"#
     ]];
     #[test]
     fn ssr() {
@@ -87,8 +87,9 @@ mod top_level_fragment {
         )
             .into()
     }
-    static EXPECT: Expect =
-        expect![[r#"<p id="first" data-hk=0>First</p><p id="second" data-hk=1>Second</p>"#]];
+    static EXPECT: Expect = expect![[
+        r#"<p id="first" data-hk="0.0">First</p><p id="second" data-hk="0.1">Second</p>"#
+    ]];
     #[test]
     fn ssr() {
         check(v, &EXPECT);
@@ -111,7 +112,7 @@ mod dynamic {
     fn v(state: ReadSignal<i32>) -> View {
         p().children(move || state.get()).into()
     }
-    static EXPECT: Expect = expect!["<p data-hk=0><!--/-->0<!--/--></p>"];
+    static EXPECT: Expect = expect![[r#"<p data-hk="0.0"><!--/-->0<!--/--></p>"#]];
     #[test]
     fn ssr() {
         check(|| v(*create_signal(0)), &EXPECT);
@@ -133,7 +134,7 @@ mod dynamic {
             assert_text_content!(query("p"), "1");
 
             // P tag should still be the SSR-ed node, not a new node.
-            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0"));
+            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0.0"));
         });
     }
 }
@@ -143,7 +144,7 @@ mod dynamic_with_siblings {
     fn v(state: ReadSignal<i32>) -> View {
         p().children(("Value: ", move || state.get(), "!")).into()
     }
-    static EXPECT: Expect = expect!["<p data-hk=0>Value: <!--/-->0<!--/-->!</p>"];
+    static EXPECT: Expect = expect![[r#"<p data-hk="0.0">Value: <!--/-->0<!--/-->!</p>"#]];
     #[test]
     fn ssr() {
         check(|| v(*create_signal(0)), &EXPECT);
@@ -163,7 +164,7 @@ mod dynamic_with_siblings {
             assert_text_content!(query("p"), "Value: 1!");
 
             // P tag should still be the SSR-ed node, not a new node.
-            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0"));
+            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0.0"));
         });
     }
 }

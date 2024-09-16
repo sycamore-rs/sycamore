@@ -20,19 +20,27 @@ pub use self::suspense::*;
 
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`
 /// scope.
-///
-/// Normally, you do not need to call this as it is handled internally by Sycamore when creating
-/// your app.
-pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
+pub async fn provide_executor_scope<U>(fut: impl Future<Output = U>) -> U {
     #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
     {
-        f.await
+        fut.await
     }
     #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
     {
         let local = tokio::task::LocalSet::new();
-        local.run_until(f).await
+        local.run_until(fut).await
     }
+}
+
+/// Spawns a `!Send` future.
+///
+/// This will not auto cancel the task if the scope in which it is created is destroyed.
+/// For this purpose, use [`spawn_local_scoped`] instead.
+pub fn spawn_local(fut: impl Future<Output = ()> + 'static) {
+    #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
+    tokio::task::spawn_local(fut);
+    #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
+    wasm_bindgen_futures::spawn_local(fut);
 }
 
 /// Spawns a `!Send` future on the current scope.
@@ -40,14 +48,9 @@ pub async fn provide_executor_scope<U>(f: impl Future<Output = U>) -> U {
 /// If the scope is destroyed before the future is completed, it is aborted immediately. This
 /// ensures that it is impossible to access any values referencing the scope after they are
 /// destroyed.
-pub fn spawn_local_scoped(f: impl Future<Output = ()> + 'static) {
-    let fut = ScopedFuture::new_in_current_scope(f);
-    #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
-    tokio::task::spawn_local(fut);
-    #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
-    wasm_bindgen_futures::spawn_local(async move {
-        let _ = fut.await;
-    });
+pub fn spawn_local_scoped(fut: impl Future<Output = ()> + 'static) {
+    let scoped = ScopedFuture::new_in_current_scope(fut);
+    spawn_local(scoped);
 }
 
 /// A wrapper that runs the future on the current scope.

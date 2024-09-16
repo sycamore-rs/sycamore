@@ -30,7 +30,9 @@ fn Hello() -> View {
                         span { (name.get_clone()) }
                     }
                 } else {
-                    view! { span { "World" } }
+                    view! {
+                        span { "World" }
+                    }
                 })
                 "!"
             }
@@ -42,6 +44,7 @@ fn Hello() -> View {
 #[component]
 fn App() -> View {
     view! {
+        sycamore::web::HydrationScript {}
         p { "Hydration" }
         br {}
         Hello {}

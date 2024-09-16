@@ -5,19 +5,21 @@ fn append() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
 
@@ -36,19 +38,21 @@ fn swap_rows() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -66,19 +70,21 @@ fn update_row() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -93,19 +99,21 @@ fn trigger_with_same_data() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -120,19 +128,21 @@ fn delete_row() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -147,19 +157,21 @@ fn delete_row_from_start() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -174,19 +186,21 @@ fn delete_row_from_end() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "12");
@@ -201,19 +215,21 @@ fn clear() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -228,19 +244,21 @@ fn insert_front() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2, 3]);
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -255,19 +273,21 @@ fn nested_reactivity() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2, 3].into_iter().map(create_signal).collect());
 
-        let node = view! {
-            ul {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        li { (item.get()) }
-                    },
-                    key=|item| item.get(),
-                )
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item.get()) }
+                        },
+                        key=|item| item.get(),
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("ul");
         assert_text_content!(p, "123");
@@ -286,20 +306,22 @@ fn fragment_template() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            div {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        span { "The value is: " }
-                        strong { (item) }
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                div {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            span { "The value is: " }
+                            strong { (item) }
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("div");
 
@@ -334,17 +356,19 @@ fn template_top_level() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            Keyed(
-                list=count,
-                view=|item| view! {
-                    li { (item) }
-                },
-                key=|item| *item,
-            )
+        let view = move || {
+            view! {
+                Keyed(
+                    list=count,
+                    view=|item| view! {
+                        li { (item) }
+                    },
+                    key=|item| *item,
+                )
+            }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("#test-container");
 
@@ -363,19 +387,21 @@ fn template_dyn_top_level() {
     let _ = create_root(|| {
         let count = create_signal(vec![1, 2]);
 
-        let node = view! {
-            div {
-                Keyed(
-                    list=count,
-                    view=|item| view! {
-                        (item)
-                    },
-                    key=|item| *item,
-                )
+        let view = move || {
+            view! {
+                div {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            (item)
+                        },
+                        key=|item| *item,
+                    )
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let p = query("#test-container");
 
@@ -395,28 +421,30 @@ fn template_with_other_nodes_at_same_level() {
         let vec1 = create_signal(vec![1, 2]);
         let vec2 = create_signal(vec![4, 5]);
 
-        let node = view! {
-            ul {
-                li { "before" }
-                Keyed(
-                    list=vec1,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|x| *x
-                )
-                Keyed(
-                    list=vec2,
-                    view=|item| view! {
-                        li { (item) }
-                    },
-                    key=|x| *x
-                )
-                li { "after" }
+        let view = move || {
+            view! {
+                ul {
+                    li { "before" }
+                    Keyed(
+                        list=vec1,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|x| *x
+                    )
+                    Keyed(
+                        list=vec2,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                        key=|x| *x
+                    )
+                    li { "after" }
+                }
             }
         };
 
-        sycamore::render_in_scope(|| node, &test_container());
+        sycamore::render_in_scope(view, &test_container());
 
         let elem = query("ul");
 

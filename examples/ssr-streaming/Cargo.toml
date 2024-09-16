@@ -1,0 +1,20 @@
+[package]
+name = "ssr-streaming"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+sycamore = { path = "../../packages/sycamore", features = [
+	"suspense",
+	"hydrate",
+] }
+
+[target.'cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))'.dependencies]
+console_error_panic_hook = "0.1.7"
+
+[target.'cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))'.dependencies]
+axum = { version = "0.7.5", features = ["macros"] }
+futures = "0.3.30"
+tokio = { version = "1.40.0", features = ["full"] }
+tokio-stream = "0.1.16"
+tower-http = { version = "0.5.2", features = ["fs"] }

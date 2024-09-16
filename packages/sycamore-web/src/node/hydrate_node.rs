@@ -1,4 +1,5 @@
-use std::cell::RefCell;
+use std::cell::{LazyCell, RefCell};
+use std::collections::HashMap;
 
 use super::dom_node::DomNode;
 use super::*;
@@ -62,6 +63,7 @@ impl ViewNode for HydrateNode {
                     // Noop for hydration since node is already in right place.
                 }
                 NodeState::TextDynamic(node) => {
+                    console_warn!("text dynamic");
                     // Search self for an empty comment node. Once found, the next node should be
                     // the text node. Hydrate the text node and remove the comment node.
                     let mut next = self.as_web_sys().first_child();
@@ -102,7 +104,7 @@ impl ViewNode for HydrateNode {
                         }
                         next = current.next_sibling();
                     }
-                    panic!("hydration marker node found");
+                    panic!("hydration marker node not found");
                 }
             }
         } else {
@@ -117,17 +119,31 @@ impl ViewNode for HydrateNode {
     }
 }
 
+fn check_node(node: &web_sys::Node, tag: &str, key: HydrationKey) {
+    if cfg!(debug_assertions) {
+        let node = node.unchecked_ref::<web_sys::Element>();
+        node.set_attribute("data-hydrated", "").unwrap();
+
+        assert_eq!(node.node_type(), web_sys::Node::ELEMENT_NODE);
+        assert_eq!(node.get_attribute("data-hk"), Some(key.to_string()));
+        let actual_tag = node.tag_name().to_lowercase();
+        if actual_tag != tag {
+            console_warn!(
+                "hydration tag name mismatch at `{key}`: expected '{tag}', got '{actual_tag}'"
+            );
+        }
+    }
+}
+
 impl ViewHtmlNode for HydrateNode {
     fn create_element(tag: Cow<'static, str>) -> Self {
         if IS_HYDRATING.get() {
-            let node =
-                HYDRATE_NODES.with(|x| x.borrow_mut().pop().expect("no node found to hydrate"));
-            if cfg!(debug_assertions) {
-                node.as_web_sys()
-                    .unchecked_ref::<web_sys::Element>()
-                    .set_attribute("data-hydrated", "")
-                    .unwrap();
-            }
+            let reg: HydrationRegistry = use_context();
+            let key = reg.next_key();
+            let node = HYDRATE_NODES
+                .with(|nodes| nodes.borrow_mut().remove(&key))
+                .unwrap_or_else(|| panic!("node with hk `{key}` not found"));
+            check_node(node.as_web_sys(), &tag, key);
             node
         } else {
             Self(NodeState::Hydrated(DomNode::create_element(tag)))
@@ -136,8 +152,11 @@ impl ViewHtmlNode for HydrateNode {
 
     fn create_element_ns(namespace: &'static str, tag: Cow<'static, str>) -> Self {
         if IS_HYDRATING.get() {
-            let node =
-                HYDRATE_NODES.with(|x| x.borrow_mut().pop().expect("no node found to hydrate"));
+            let reg: HydrationRegistry = use_context();
+            let key = reg.next_key();
+            let node = HYDRATE_NODES
+                .with(|nodes| nodes.borrow_mut().remove(&key))
+                .unwrap_or_else(|| panic!("node with hk `{key}` not found"));
             if cfg!(debug_assertions) {
                 node.as_web_sys()
                     .unchecked_ref::<web_sys::Element>()
@@ -263,5 +282,5 @@ impl ViewHtmlNode for HydrateNode {
 thread_local! {
     /// A list of nodes to be hydrated. The `Vec` should be sorted in reverse order of hydration
     /// key. Every time a node is hydrated, it should be popped from this list.
-    pub(crate) static HYDRATE_NODES: RefCell<Vec<HydrateNode>> = const { RefCell::new(Vec::new()) };
+    pub(crate) static HYDRATE_NODES: LazyCell<RefCell<HashMap<HydrationKey, HydrateNode>>> = LazyCell::new(Default::default);
 }

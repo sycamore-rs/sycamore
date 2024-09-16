@@ -35,7 +35,7 @@ fn App() -> View {
             p().children("Page Visit Counter"),
             Suspense(
                 SuspenseProps::builder()
-                    .fallback("Loading".into())
+                    .fallback(|| "Loading".into())
                     .children(Children::new(VisitsCount))
                     .build(),
             ),

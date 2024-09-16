@@ -66,9 +66,11 @@ web-sys = { version = "0.3.69", features = [
 
 [target.'cfg(any(not(target_arch = "wasm32"), syacmore_force_ssr))'.dependencies]
 html-escape = "0.2.13"
+async-stream = { version = "0.3.0", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { version = "1.22.0", features = ["rt", "macros"] }
+tokio-test = "0.4.4"
 
 [dev-dependencies]
 sycamore = { path = "../sycamore" }
@@ -77,7 +79,7 @@ expect-test = "1.4.1"
 [features]
 default = ["wasm-bindgen-interning"]
 hydrate = []
-suspense = ["dep:sycamore-futures", "dep:futures"]
+suspense = ["dep:sycamore-futures", "dep:futures", "dep:async-stream"]
 wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 
 [lints.rust]

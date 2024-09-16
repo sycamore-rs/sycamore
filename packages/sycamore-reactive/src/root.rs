@@ -86,6 +86,7 @@ impl Root {
         let root_node = create_child_scope(|| {});
         Root::set_global(None);
         self.root_node.set(root_node.0);
+        self.current_node.set(root_node.0);
     }
 
     /// Create a new child scope. Implementation detail for [`create_child_scope`].

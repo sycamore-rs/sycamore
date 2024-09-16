@@ -1,5 +1,6 @@
 use std::any::{Any, TypeId};
 use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 
@@ -11,8 +12,9 @@ pub enum SsrNode {
         attributes: Vec<(Cow<'static, str>, Cow<'static, str>)>,
         bool_attributes: Vec<(Cow<'static, str>, bool)>,
         children: Vec<Self>,
-        inner_html: Option<Cow<'static, str>>,
-        hk_key: Option<u32>,
+        // NOTE: This field is boxed to avoid allocating memory for a field that is rarely used.
+        inner_html: Option<Box<Cow<'static, str>>>,
+        hk_key: Option<HydrationKey>,
     },
     TextDynamic {
         text: Cow<'static, str>,
@@ -21,6 +23,16 @@ pub enum SsrNode {
         text: Cow<'static, str>,
     },
     Marker,
+    /// SSR by default does not update to any dynamic changes in the view. This special node allows
+    /// dynamically changing the view tree before it is rendered.
+    ///
+    /// This is used for updating the view with suspense content once it is resolved.
+    Dynamic {
+        view: Arc<Mutex<View<Self>>>,
+    },
+    SuspenseMarker {
+        key: u32,
+    },
 }
 
 impl From<SsrNode> for View<SsrNode> {
@@ -128,7 +140,7 @@ impl ViewHtmlNode for SsrNode {
         match self {
             Self::Element {
                 inner_html: slot, ..
-            } => *slot = Some(inner_html),
+            } => *slot = Some(Box::new(inner_html)),
             _ => panic!("can only set inner_html on an element"),
         }
     }
@@ -153,7 +165,7 @@ static VOID_ELEMENTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
 });
 
 /// Recursively render `node` by appending to `buf`.
-pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
+pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
     match node {
         SsrNode::Element {
             tag,
@@ -164,15 +176,15 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
             hk_key,
         } => {
             buf.push('<');
-            buf.push_str(&tag);
-            for (name, value) in &attributes {
+            buf.push_str(tag);
+            for (name, value) in attributes {
                 buf.push(' ');
                 buf.push_str(name);
                 buf.push_str("=\"");
                 html_escape::encode_double_quoted_attribute_to_string(value, buf);
                 buf.push('"');
             }
-            for (name, value) in &bool_attributes {
+            for (name, value) in bool_attributes {
                 if *value {
                     buf.push(' ');
                     buf.push_str(name);
@@ -180,8 +192,9 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
             }
 
             if let Some(hk_key) = hk_key {
-                buf.push_str(" data-hk=");
+                buf.push_str(" data-hk=\"");
                 buf.push_str(&hk_key.to_string());
+                buf.push('"');
             }
             buf.push('>');
 
@@ -199,7 +212,7 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
                     children.is_empty(),
                     "inner_html and children are mutually exclusive"
                 );
-                buf.push_str(&inner_html);
+                buf.push_str(inner_html);
             } else {
                 for child in children {
                     render_recursive(child, buf);
@@ -208,21 +221,36 @@ pub(crate) fn render_recursive(node: SsrNode, buf: &mut String) {
 
             if !is_void {
                 buf.push_str("</");
-                buf.push_str(&tag);
+                buf.push_str(tag);
                 buf.push('>');
             }
         }
         SsrNode::TextDynamic { text } => {
             buf.push_str("<!--t-->"); // For dynamic text, add a marker for hydrating it.
-            html_escape::encode_text_to_string(&text, buf);
+            html_escape::encode_text_to_string(text, buf);
             buf.push_str("<!-->"); // End of dynamic text.
         }
         SsrNode::TextStatic { text } => {
-            html_escape::encode_text_to_string(&text, buf);
+            html_escape::encode_text_to_string(text, buf);
         }
         SsrNode::Marker => {
             buf.push_str("<!--/-->");
         }
+        SsrNode::Dynamic { view } => {
+            render_recursive_view(&view.lock().unwrap(), buf);
+        }
+        SsrNode::SuspenseMarker { key } => {
+            buf.push_str("<!--sycamore-suspense-");
+            buf.push_str(&key.to_string());
+            buf.push_str("-->");
+        }
+    }
+}
+
+/// Recursively render a [`View`] to a string by calling `render_recursive` on each node.
+pub(crate) fn render_recursive_view(view: &View, buf: &mut String) {
+    for node in &view.nodes {
+        render_recursive(node, buf);
     }
 }
 
@@ -255,16 +283,16 @@ mod tests {
     fn render_inner_html() {
         check(
             move || div().dangerously_set_inner_html("<p>hello</p>"),
-            expect!["<div data-hk=0><p>hello</p></div>"],
+            expect![[r#"<div data-hk="0.0"><p>hello</p></div>"#]],
         );
     }
 
     #[test]
     fn render_void_element() {
-        check(br, expect!["<br data-hk=0>"]);
+        check(br, expect![[r#"<br data-hk="0.0">"#]]);
         check(
             move || input().value("value"),
-            expect![[r#"<input value="value" data-hk=0>"#]],
+            expect![[r#"<input value="value" data-hk="0.0">"#]],
         );
     }
 
@@ -272,7 +300,7 @@ mod tests {
     fn fragments() {
         check(
             move || (p().children("1"), p().children("2"), p().children("3")),
-            expect!["<p data-hk=0>1</p><p data-hk=1>2</p><p data-hk=2>3</p>"],
+            expect![[r#"<p data-hk="0.0">1</p><p data-hk="0.1">2</p><p data-hk="0.2">3</p>"#]],
         );
     }
 
@@ -289,7 +317,7 @@ mod tests {
                     }
                 }
             },
-            expect!["<ul data-hk=0><li data-hk=1>1</li><li data-hk=2>2</li></ul>"],
+            expect![[r#"<ul data-hk="0.0"><li data-hk="0.1">1</li><li data-hk="0.2">2</li></ul>"#]],
         );
     }
 
@@ -303,7 +331,7 @@ mod tests {
                     input(bind:value=value)
                 }
             },
-            expect!["<input data-hk=0>"],
+            expect![[r#"<input data-hk="0.0">"#]],
         );
     }
 
@@ -317,9 +345,7 @@ mod tests {
                     }
                 }
             },
-            expect![[
-                r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk=0><rect data-hk=1></rect></svg>"#
-            ]],
+            expect![[r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk="0.0"><rect data-hk="0.1"></rect></svg>"#]],
         );
         check(
             move || {
@@ -327,7 +353,7 @@ mod tests {
                     svg_a()
                 }
             },
-            expect!["<a data-hk=0></a>"],
+            expect![[r#"<a data-hk="0.0"></a>"#]],
         );
     }
 }

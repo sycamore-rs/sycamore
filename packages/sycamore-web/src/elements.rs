@@ -498,6 +498,7 @@ pub mod tags {
             value: MaybeDynString, // TODO: int value
         },
         link {
+            r#as("as"): MaybeDynString,
             crossorigin: MaybeDynString,
             href: MaybeDynString,
             hreflang: MaybeDynString,

@@ -1,3 +1,5 @@
+//! Utility functions. Intended for internal use only.
+
 use crate::*;
 
 /// Get all nodes between `start` and `end`.
