@@ -144,6 +144,8 @@ pub fn render_to_string_stream(
     is_not_ssr! {
         let _ = view;
         panic!("`render_to_string` only available in SSR mode");
+        #[allow(unreachable_code)] // TODO: never type cannot be coerced into `impl Stream` somehow.
+        futures::stream::empty()
     }
     is_ssr! {
         use std::cell::LazyCell;

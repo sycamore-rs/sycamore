@@ -2,9 +2,7 @@
 
 use std::future::Future;
 
-use futures::channel::mpsc::Sender;
-use futures::SinkExt;
-use sycamore_futures::{await_suspense, spawn_local, suspense_scope};
+use sycamore_futures::{await_suspense, suspense_scope};
 use sycamore_macro::{component, Props};
 
 use crate::*;
@@ -52,6 +50,9 @@ pub fn Suspense(props: SuspenseProps) -> View {
     let mut fallback = Some(fallback);
 
     is_ssr! {
+        use futures::SinkExt;
+        use sycamore_futures::spawn_local;
+
         let mode = use_context::<SsrMode>();
         match mode {
             // In sync mode, we don't even bother about the children and just return the fallback.
@@ -162,13 +163,15 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
     }
 }
 
+#[cfg_ssr]
 pub(crate) struct SuspenseFragment {
     pub key: u32,
     pub view: View,
 }
 
 /// Context for passing suspense fragments in SSR mode.
+#[cfg_ssr]
 #[derive(Clone)]
 pub(crate) struct SuspenseState {
-    pub sender: Sender<SuspenseFragment>,
+    pub sender: futures::channel::mpsc::Sender<SuspenseFragment>,
 }
