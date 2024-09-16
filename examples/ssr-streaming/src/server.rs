@@ -17,12 +17,12 @@ async fn root() -> impl IntoResponse {
             local.spawn_local(async move {
                 tx.send(sycamore::render_to_string_stream(crate::app::Main))
                     .ok()
-                    .unwrap();
+                    .expect("reciever is alive");
             });
             local.await;
         })
     });
-    let stream = rx.await.unwrap();
+    let stream = rx.await.expect("sender is alive");
 
     let body = Body::from_stream(stream.map(Ok::<_, std::convert::Infallible>));
 

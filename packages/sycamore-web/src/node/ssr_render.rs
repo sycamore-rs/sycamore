@@ -54,6 +54,9 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
 /// Renders a [`View`] into a static [`String`] while awaiting for all suspense boundaries to
 /// resolve. Useful for rendering to a string on the server side.
 ///
+/// This sets the SSR mode to "blocking" mode. This means that rendering will wait until suspense
+/// is resolved before returning.
+///
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
@@ -153,7 +156,60 @@ pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> Str
 
 /// Renders a [`View`] to a stream.
 ///
-/// TODO: write docs
+/// This sets the SSR mode to "streaming" mode. This means that the initial HTML with fallbacks is
+/// sent first and then the suspense fragments are streamed as they are resolved.
+///
+/// The streamed suspense fragments are in the form of HTML template elements and a small script
+/// that moves the template elements into the right area of the DOM.
+///
+/// # Executor
+///
+/// This function (unlike [`render_to_string_await_suspense`]) does not automatically create an
+/// executor. You must provide the executor yourself by using `tokio::task::LocalSet`.
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// # use sycamore::web::{render_to_string_stream, Suspense};
+/// # use futures::StreamExt;
+/// #[component]
+/// async fn AsyncComponent() -> View {
+///     // Do some async operations.   
+///     # view! {}
+/// }
+///
+/// #[component]
+/// fn App() -> View {
+///     view! {
+///         Suspense(fallback=|| "Loading...".into()) {
+///             AsyncComponent {}
+///         }
+///     }
+/// }
+///
+/// # tokio_test::block_on(async move {
+/// // Create a channel for sending the created stream from the local set.
+/// let (tx, rx) = tokio::sync::oneshot::channel();
+/// tokio::task::spawn_blocking(|| {
+///     let handle = tokio::runtime::Handle::current();
+///     handle.block_on(async move {
+///         let local = tokio::task::LocalSet::new();
+///         local.run_until(async move {
+///             let stream = render_to_string_stream(App);
+///             tx.send(stream).ok().unwrap();
+///         }).await;
+///         // Run the remaining tasks in the local set.
+///         local.await;
+///     });
+/// });
+/// let stream = rx.await.unwrap();
+/// tokio::pin!(stream);
+/// while let Some(string) = stream.next().await {
+///     // Send the string to the client.
+///     // Usually, the web framework already supports converting a stream into a response.
+/// }
+/// # })
+/// ```
 #[cfg(feature = "suspense")]
 pub fn render_to_string_stream(
     view: impl FnOnce() -> View,
