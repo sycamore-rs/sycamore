@@ -1,0 +1,11 @@
+[package]
+name = "ssr-streaming"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+axum = { version = "0.7.5", features = ["macros"] }
+futures = "0.3.30"
+sycamore = { path = "../../packages/sycamore", features = ["suspense"] }
+tokio = { version = "1.40.0", features = ["full"] }
+tokio-stream = "0.1.16"

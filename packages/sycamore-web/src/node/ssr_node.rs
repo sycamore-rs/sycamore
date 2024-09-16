@@ -1,6 +1,6 @@
 use std::any::{Any, TypeId};
-use std::cell::RefCell;
 use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 
@@ -27,7 +27,7 @@ pub enum SsrNode {
     ///
     /// This is used for updating the view with suspense content once it is resolved.
     Dynamic {
-        view: Rc<RefCell<View<Self>>>,
+        view: Arc<Mutex<View<Self>>>,
     },
     SuspenseMarker {
         key: u32,
@@ -235,7 +235,7 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
             buf.push_str("<!--/-->");
         }
         SsrNode::Dynamic { view } => {
-            render_recursive_view(&view.borrow(), buf);
+            render_recursive_view(&view.lock().unwrap(), buf);
         }
         SsrNode::SuspenseMarker { key } => {
             buf.push_str("<!--sycamore-suspense-");

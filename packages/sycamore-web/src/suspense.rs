@@ -4,7 +4,7 @@ use std::future::Future;
 
 use futures::channel::mpsc::Sender;
 use futures::SinkExt;
-use sycamore_futures::{await_suspense, spawn_local_scoped, suspense_scope};
+use sycamore_futures::{await_suspense, spawn_local, suspense_scope};
 use sycamore_macro::{component, Props};
 
 use crate::*;
@@ -71,7 +71,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                     view,
                 };
                 let mut state = use_context::<SuspenseState>();
-                spawn_local_scoped(async move {
+                spawn_local(async move {
                     suspend.await;
                     state
                         .sender
@@ -96,7 +96,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                     view,
                 };
                 let mut state = use_context::<SuspenseState>();
-                spawn_local_scoped(async move {
+                spawn_local(async move {
                     suspend.await;
                     state
                         .sender
@@ -105,15 +105,11 @@ pub fn Suspense(props: SuspenseProps) -> View {
                         .expect("could not send suspense fragment");
                 });
 
-                // If no fallback is set, we return a dummy node;
-                if fallback.as_mut().unwrap().nodes.is_empty() {
-                    fallback = Some(view! { sycamore-suspense-marker() });
-                }
-                // Mark all fallback nodes with suspense key so that they can be replaced with the
-                // suspended content.
-                for node in &mut fallback.as_mut().unwrap().nodes {
-                    node.set_attribute("data-sycamore-suspense".into(), key.to_string().into());
-                }
+                // Add some marker nodes so that we know start and finish of fallback.
+                let start = view! { sycamore-suspense-start(data-key=key.to_string()) };
+                let marker = View::from(move || SsrNode::SuspenseMarker { key });
+                let end = view! { sycamore-suspense-end(data-key=key.to_string()) };
+                fallback = Some((start, marker, fallback.take().unwrap(), end).into());
 
                 View::from(move || fallback.take().unwrap())
             }
@@ -152,16 +148,17 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
         ret
     }
     is_ssr! {
-        use std::cell::RefCell;
-        let node = Rc::new(RefCell::new(View::default()));
+        use std::sync::{Arc, Mutex};
+
+        let node = Arc::new(Mutex::new(View::default()));
         suspense_scope({
-            let node = Rc::clone(&node);
+            let node = Arc::clone(&node);
             async move {
-                *node.borrow_mut() = f().await;
+                *node.lock().unwrap() = f().await;
             }
         });
         View::from(move || SsrNode::Dynamic {
-            view: Rc::clone(&node),
+            view: Arc::clone(&node),
         })
     }
 }

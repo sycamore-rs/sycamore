@@ -101,6 +101,9 @@ pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> Str
 
             // Now we wait until all suspense fragments are resolved.
             let mut fragment_map = HashMap::new();
+            if n == 0 {
+                receiver.close();
+            }
             let mut i = 0;
             while let Some(fragment) = receiver.next().await {
                 fragment_map.insert(fragment.key, fragment.view);
@@ -131,12 +134,13 @@ pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> Str
     }
 }
 
-/// Renders a [`View`] into a static [`String`] while awaiting for all suspense boundaries to
-/// resolve. Useful for rendering to a string on the server side.
+/// Renders a [`View`] to a stream.
+///
+/// TODO: write docs
 #[cfg(feature = "suspense")]
-pub async fn render_to_string_stream(
+pub fn render_to_string_stream(
     view: impl FnOnce() -> View,
-) -> impl futures::Stream<Item = String> {
+) -> impl futures::Stream<Item = String> + Send {
     is_not_ssr! {
         let _ = view;
         panic!("`render_to_string` only available in SSR mode");
@@ -144,7 +148,7 @@ pub async fn render_to_string_stream(
     is_ssr! {
         use std::cell::LazyCell;
 
-        use futures::{SinkExt, StreamExt};
+        use futures::StreamExt;
 
         const BUFFER_SIZE: usize = 5;
 
@@ -154,41 +158,56 @@ pub async fn render_to_string_stream(
             static SSR_ROOT: LazyCell<RootHandle> = LazyCell::new(|| create_root(|| {}));
         }
         IS_HYDRATING.set(true);
-        sycamore_futures::provide_executor_scope(async {
-            let mut buf = String::new();
+        let mut buf = String::new();
+        let (sender, mut receiver) = futures::channel::mpsc::channel(BUFFER_SIZE);
+        SSR_ROOT.with(|root| {
+            root.dispose();
+            root.run_in(|| {
+                // We run this in a new scope so that we can dispose everything after we render it.
+                provide_context(HydrationRegistry::new());
+                provide_context(SsrMode::Streaming);
+                let suspense_state = SuspenseState { sender };
 
-            let (sender, mut receiver) = futures::channel::mpsc::channel(BUFFER_SIZE);
-            SSR_ROOT.with(|root| {
-                root.dispose();
-                root.run_in(|| {
-                    // We run this in a new scope so that we can dispose everything after we render it.
-                    provide_context(HydrationRegistry::new());
-                    provide_context(SsrMode::Streaming);
-                    let suspense_state = SuspenseState { sender };
+                provide_context(suspense_state);
 
-                    provide_context(suspense_state);
-
-                    let view = view();
-                    ssr_node::render_recursive_view(&view, &mut buf);
-                });
+                let view = view();
+                ssr_node::render_recursive_view(&view, &mut buf);
             });
+        });
 
-            // Channel for streaming the rendered HTML.
-            let (mut rx, tx) = futures::channel::mpsc::unbounded();
-            // Split at suspense fragment locations.
-            let split = buf.split("<!--sycamore-suspense-").collect::<Vec<_>>();
-            // Calculate the number of suspense fragments.
-            let n = split.len() - 1;
+        // Split at suspense fragment locations.
+        let split = buf.split("<!--sycamore-suspense-").collect::<Vec<_>>();
+        // Calculate the number of suspense fragments.
+        let n = split.len() - 1;
 
-            // Send the initial shell.
-            // TODO: what to do if receiver is closed?
-            let _ = rx.send(buf).await;
+        // ```js
+        // function __sycamore_suspense(key) {
+        //   let start = document.querySelector(`sycamore-suspense-start[data-key="${key}"]`)
+        //   let end = document.querySelector(`sycamore-suspense-end[data-key="${key}"]`)
+        //   let template = document.getElementById(`sycamore-suspense-${key}`)
+        //   start.parentNode.insertBefore(template.content, start)
+        //   while (start.nextSibling != end) {
+        //     start.parentNode.removeChild(start.nextSibling)
+        //   }
+        //   start.remove()
+        //   end.remove()
+        // }
+        // ```
+        static SUSPENSE_REPLACE_SCRIPT: &str = r#"<script>function __sycamore_suspense(e){let s=document.querySelector(`sycamore-suspense-start[data-key="${e}"]`),n=document.querySelector(`sycamore-suspense-end[data-key="${e}"]`),r=document.getElementById(`sycamore-suspense-${e}`);for(s.parentNode.insertBefore(r.content,s);s.nextSibling!=n;)s.parentNode.removeChild(s.nextSibling);s.remove(),n.remove()}</script>"#;
+        async_stream::stream! {
+            let mut initial = String::new();
+            initial.push_str("<!doctype html>");
+            initial.push_str(&buf);
+            initial.push_str(SUSPENSE_REPLACE_SCRIPT);
+            yield initial;
 
-            // Now we wait until all suspense fragments are rseolved.
+            if n == 0 {
+                receiver.close();
+            }
             let mut i = 0;
             while let Some(fragment) = receiver.next().await {
                 let buf_fragment = render_suspense_fragment(fragment);
-                let _ = rx.send(buf_fragment).await;
+                yield buf_fragment;
 
                 i += 1;
                 if i == n {
@@ -196,9 +215,7 @@ pub async fn render_to_string_stream(
                     receiver.close();
                 }
             }
-
-            tx
-        }).await
+        }
     }
 }
 
@@ -210,7 +227,12 @@ fn render_suspense_fragment(SuspenseFragment { key, view }: SuspenseFragment) ->
     let mut buf = String::new();
     write!(&mut buf, "<template id=\"sycamore-suspense-{key}\">",).unwrap();
     ssr_node::render_recursive_view(&view, &mut buf);
-    write!(&mut buf, "</template>").unwrap();
+    write!(
+        &mut buf,
+        "</template><script>__sycamore_suspense({key})</script>"
+    )
+    .unwrap();
+
     buf
 }
 
