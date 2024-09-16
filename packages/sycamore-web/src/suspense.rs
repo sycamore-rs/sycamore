@@ -98,17 +98,16 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let mut state = use_context::<SuspenseState>();
                 spawn_local(async move {
                     suspend.await;
-                    state
+                    let _ = state
                         .sender
                         .send(fragment)
-                        .await
-                        .expect("could not send suspense fragment");
+                        .await;
                 });
 
                 // Add some marker nodes so that we know start and finish of fallback.
-                let start = view! { sycamore-suspense-start(data-key=key.to_string()) };
+                let start = view! { NoHydrate { suspense-start(data-key=key.to_string()) } };
                 let marker = View::from(move || SsrNode::SuspenseMarker { key });
-                let end = view! { sycamore-suspense-end(data-key=key.to_string()) };
+                let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
                 fallback = Some((start, marker, fallback.take().unwrap(), end).into());
 
                 View::from(move || fallback.take().unwrap())

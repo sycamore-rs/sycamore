@@ -15,6 +15,18 @@ async fn AsyncComponent(delay_ms: u32) -> View {
     }
 }
 
+#[component(inline_props)]
+async fn LoadingSegment(delay_ms: u32) -> View {
+    if is_ssr!() {
+        tokio::time::sleep(std::time::Duration::from_millis(delay_ms as u64)).await;
+    } else {
+        unimplemented!("csr not supported")
+    }
+    view! {
+        span {}
+    }
+}
+
 #[component]
 pub fn App() -> View {
     let delays = [300, 400, 500, 1000, 2000, 3000, 2000, 1000, 500, 400, 300];
@@ -33,6 +45,22 @@ pub fn App() -> View {
                         }
                     }
                 )
+                p {
+                    strong { "A lot of suspense" }
+                }
+                div {
+                    style {
+                        "span { width: 0.19vw; height: 10px; background-color: red; display: inline-block; }"
+                    }
+                    Indexed(
+                        list=(0..500).collect::<Vec<_>>(),
+                        view=|x| view! {
+                            Suspense(fallback=view! {}) {
+                                LoadingSegment(delay_ms=x*2)
+                            }
+                        }
+                    )
+                }
                 p {
                     strong { "Nested Suspense" }
                 }

@@ -180,8 +180,8 @@ pub fn render_to_string_stream(
 
         // ```js
         // function __sycamore_suspense(key) {
-        //   let start = document.querySelector(`sycamore-suspense-start[data-key="${key}"]`)
-        //   let end = document.querySelector(`sycamore-suspense-end[data-key="${key}"]`)
+        //   let start = document.querySelector(`suspense-start[data-key="${key}"]`)
+        //   let end = document.querySelector(`suspense-end[data-key="${key}"]`)
         //   let template = document.getElementById(`sycamore-suspense-${key}`)
         //   start.parentNode.insertBefore(template.content, start)
         //   while (start.nextSibling != end) {
@@ -191,7 +191,7 @@ pub fn render_to_string_stream(
         //   end.remove()
         // }
         // ```
-        static SUSPENSE_REPLACE_SCRIPT: &str = r#"<script>function __sycamore_suspense(e){let s=document.querySelector(`sycamore-suspense-start[data-key="${e}"]`),n=document.querySelector(`sycamore-suspense-end[data-key="${e}"]`),r=document.getElementById(`sycamore-suspense-${e}`);for(s.parentNode.insertBefore(r.content,s);s.nextSibling!=n;)s.parentNode.removeChild(s.nextSibling);s.remove(),n.remove()}</script>"#;
+        static SUSPENSE_REPLACE_SCRIPT: &str = r#"<script>function __sycamore_suspense(e){let s=document.querySelector(`suspense-start[data-key="${e}"]`),n=document.querySelector(`suspense-end[data-key="${e}"]`),r=document.getElementById(`sycamore-suspense-${e}`);for(s.parentNode.insertBefore(r.content,s);s.nextSibling!=n;)s.parentNode.removeChild(s.nextSibling);s.remove(),n.remove()}</script>"#;
         async_stream::stream! {
             let mut initial = String::new();
             initial.push_str("<!doctype html>");
