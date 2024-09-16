@@ -53,6 +53,21 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
 
 /// Renders a [`View`] into a static [`String`] while awaiting for all suspense boundaries to
 /// resolve. Useful for rendering to a string on the server side.
+///
+/// # Example
+/// ```
+/// # use sycamore::prelude::*;
+/// # use sycamore::web::render_to_string_await_suspense;
+/// #[component]
+/// async fn AsyncComponent() -> View {
+///     // Do some async operations.   
+///     # view! {}
+/// }
+///
+/// # tokio_test::block_on(async move {
+/// let ssr = render_to_string_await_suspense(AsyncComponent).await;
+/// # })
+/// ```
 #[must_use]
 #[cfg(feature = "suspense")]
 pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> String {
@@ -243,6 +258,7 @@ fn render_suspense_fragment(SuspenseFragment { key, view }: SuspenseFragment) ->
 #[cfg(test)]
 #[cfg(feature = "suspense")]
 mod tests {
+    use expect_test::expect;
     use futures::channel::oneshot;
 
     use super::*;
@@ -281,6 +297,10 @@ mod tests {
 
         sender.send(()).unwrap();
         let res = ssr.await;
-        assert_eq!(res, "<!--/--><!--/-->Hello, async!<!--/--><!--/-->");
+
+        let expect = expect![[
+            r#"<!--/--><suspense-start data-key="1" data-hk="0.0"></suspense-start><!--/--><!--/-->Hello, async!<!--/--><!--/--><suspense-end data-key="1"></suspense-end><!--/-->"#
+        ]];
+        expect.assert_eq(&res);
     }
 }

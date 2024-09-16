@@ -192,8 +192,9 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
             }
 
             if let Some(hk_key) = hk_key {
-                buf.push_str(" data-hk=");
+                buf.push_str(" data-hk=\"");
                 buf.push_str(&hk_key.to_string());
+                buf.push('"');
             }
             buf.push('>');
 
@@ -282,16 +283,16 @@ mod tests {
     fn render_inner_html() {
         check(
             move || div().dangerously_set_inner_html("<p>hello</p>"),
-            expect!["<div data-hk=0><p>hello</p></div>"],
+            expect![[r#"<div data-hk="0.0"><p>hello</p></div>"#]],
         );
     }
 
     #[test]
     fn render_void_element() {
-        check(br, expect!["<br data-hk=0>"]);
+        check(br, expect![[r#"<br data-hk="0.0">"#]]);
         check(
             move || input().value("value"),
-            expect![[r#"<input value="value" data-hk=0>"#]],
+            expect![[r#"<input value="value" data-hk="0.0">"#]],
         );
     }
 
@@ -299,7 +300,7 @@ mod tests {
     fn fragments() {
         check(
             move || (p().children("1"), p().children("2"), p().children("3")),
-            expect!["<p data-hk=0>1</p><p data-hk=1>2</p><p data-hk=2>3</p>"],
+            expect![[r#"<p data-hk="0.0">1</p><p data-hk="0.1">2</p><p data-hk="0.2">3</p>"#]],
         );
     }
 
@@ -316,7 +317,7 @@ mod tests {
                     }
                 }
             },
-            expect!["<ul data-hk=0><li data-hk=1>1</li><li data-hk=2>2</li></ul>"],
+            expect![[r#"<ul data-hk="0.0"><li data-hk="0.1">1</li><li data-hk="0.2">2</li></ul>"#]],
         );
     }
 
@@ -330,7 +331,7 @@ mod tests {
                     input(bind:value=value)
                 }
             },
-            expect!["<input data-hk=0>"],
+            expect![[r#"<input data-hk="0.0">"#]],
         );
     }
 
@@ -344,9 +345,7 @@ mod tests {
                     }
                 }
             },
-            expect![[
-                r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk=0><rect data-hk=1></rect></svg>"#
-            ]],
+            expect![[r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk="0.0"><rect data-hk="0.1"></rect></svg>"#]],
         );
         check(
             move || {
@@ -354,7 +353,7 @@ mod tests {
                     svg_a()
                 }
             },
-            expect!["<a data-hk=0></a>"],
+            expect![[r#"<a data-hk="0.0"></a>"#]],
         );
     }
 }
