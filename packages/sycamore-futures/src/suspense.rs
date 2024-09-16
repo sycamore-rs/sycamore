@@ -68,8 +68,8 @@ pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>)
 
     create_effect(move || {
         if scope.count.get() == 0 && (parent.is_none() || parent.unwrap().is_done.get()) {
-            if let Some(sender) = tx.take() {
-                sender.send(()).unwrap();
+            if let Some(tx) = tx.take() {
+                tx.send(()).unwrap();
                 scope.is_done.set(true);
             }
         }
@@ -77,6 +77,31 @@ pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>)
     (ret, async move {
         rx.await.unwrap();
     })
+}
+
+/// Waits until all suspense task in current scope are completed.
+///
+/// Does not create a new suspense scope.
+pub async fn await_suspense_current() {
+    let state = use_context_or_else(|| SuspenseState {
+        scopes: create_signal(Vec::new()),
+    });
+
+    let (tx, rx) = oneshot::channel();
+    let mut tx = Some(tx);
+
+    // Check if we have a parent scope. If we do, we need to wait until it is resolved.
+    let parent = state.scopes.with(|scopes| scopes.last().copied());
+
+    create_effect(move || {
+        if parent.is_none() || parent.unwrap().is_done.get() {
+            if let Some(tx) = tx.take() {
+                tx.send(()).unwrap();
+            }
+        }
+    });
+
+    rx.await.unwrap();
 }
 
 /// A struct to handle transitions. Created using [`use_transition`].

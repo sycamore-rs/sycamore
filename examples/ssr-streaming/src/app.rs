@@ -47,6 +47,9 @@ fn App() -> View {
         p {
             strong { "A lot of suspense" }
         }
+        p {
+            "This loading bar is made up of 100 `<div>` elements, each streamed over from the server in real time"
+        }
         div {
             style {
                 "span { width: 1%; height: 10px; background-color: red; display: inline-block; }"

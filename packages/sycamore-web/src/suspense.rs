@@ -67,13 +67,12 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // In streaming mode, we render the fallback and then stream the result of the children
             // once suspense is resolved.
             SsrMode::Blocking | SsrMode::Streaming => {
-                let reg: HydrationRegistry = use_context();
                 // We need to create a suspense key so that we know which suspense boundary it is
                 // when we replace the marker with the suspended content.
                 let key = use_suspense_key();
 
                 // Push `children` to the suspense fragments lists.
-                let (view, suspend) = await_suspense(move || reg.in_suspense_scope(key, move || children.call()));
+                let (view, suspend) = await_suspense(move || HydrationRegistry::in_suspense_scope(key, move || children.call()));
                 let fragment = SuspenseFragment::new(key, view);
                 let mut state = use_context::<SuspenseState>();
                 spawn_local(async move {
@@ -133,14 +132,14 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 // and not the fallback.
 
                 // First hydrate the `<sycamore-start>` element to get the suspense scope.
-                let reg: HydrationRegistry = use_context();
                 let start = view! { suspense-start() };
                 let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
-                console_dbg!(key);
-                let mut view = reg.in_suspense_scope(key, move || children.call());
-                View::from(move || std::mem::take(&mut view))
+                let view = HydrationRegistry::in_suspense_scope(key, move || children.call());
+                //TODO: remove?
+                //View::from(move || std::mem::take(&mut view))
+                view
             }
         }
     }
@@ -151,15 +150,29 @@ pub fn Suspense(props: SuspenseProps) -> View {
 #[component]
 pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> View {
     is_not_ssr! {
-        let view = create_signal(View::default());
-        let ret = view! { ({
-            view.track();
-            view.update_silent(std::mem::take)
-        }) };
-        suspense_scope(async move {
-            view.set(f().await);
-        });
-        ret
+        let mode = if IS_HYDRATING.get() {
+            use_context::<SsrMode>()
+        } else {
+            SsrMode::Sync
+        };
+        match mode {
+            SsrMode::Sync => {
+                let view = create_signal(View::default());
+                let ret = view! { ({
+                    view.track();
+                    view.update_silent(std::mem::take)
+                }) };
+                suspense_scope(async move {
+                    view.set(f().await);
+                });
+                ret
+            }
+            SsrMode::Blocking | SsrMode::Streaming => {
+                // TODO: This does not properly hydrate dynamic text nodes.
+                suspense_scope(async move { f().await; });
+                view! {}
+            }
+        }
     }
     is_ssr! {
         use std::sync::{Arc, Mutex};

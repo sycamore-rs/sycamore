@@ -113,6 +113,16 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
         for node in nodes {
             parent.append_child(node);
         }
+
+        // Wait until suspense is resolved before setting `IS_HYDRATING` to `false`.
+        #[cfg(not(feature = "suspense"))]
         IS_HYDRATING.set(false);
+        #[cfg(feature = "suspense")]
+        {
+            sycamore_futures::spawn_local_scoped(async {
+                sycamore_futures::await_suspense_current().await;
+                IS_HYDRATING.set(false);
+            });
+        }
     }
 }

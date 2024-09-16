@@ -109,9 +109,8 @@ impl HydrationRegistry {
     /// Run the given function within a suspense scope.
     ///
     /// This sets the suspense key to the passed value and resets the element key to 0.
-    pub fn in_suspense_scope<T>(self, suspense: NonZeroU32, f: impl FnOnce() -> T) -> T {
+    pub fn in_suspense_scope<T>(suspense: NonZeroU32, f: impl FnOnce() -> T) -> T {
         let mut ret = None;
-        let old = self.next_key.get_untracked();
         create_child_scope(|| {
             provide_context(HydrationRegistry {
                 next_key: create_signal(HydrationKey {
@@ -121,7 +120,6 @@ impl HydrationRegistry {
             });
             ret = Some(f());
         });
-        assert_eq!(old, self.next_key.get_untracked());
         ret.unwrap()
     }
 }
