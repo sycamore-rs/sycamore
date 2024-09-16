@@ -175,10 +175,8 @@ pub fn render_to_string_stream(
             });
         });
 
-        // Split at suspense fragment locations.
-        let split = buf.split("<!--sycamore-suspense-").collect::<Vec<_>>();
         // Calculate the number of suspense fragments.
-        let n = split.len() - 1;
+        let mut n = buf.matches("<!--sycamore-suspense-").count();
 
         // ```js
         // function __sycamore_suspense(key) {
@@ -207,6 +205,10 @@ pub fn render_to_string_stream(
             let mut i = 0;
             while let Some(fragment) = receiver.next().await {
                 let buf_fragment = render_suspense_fragment(fragment);
+                // Check if we have any nested suspense.
+                let n_add = buf_fragment.matches("<!--sycamore-suspense-").count();
+                n += n_add;
+
                 yield buf_fragment;
 
                 i += 1;

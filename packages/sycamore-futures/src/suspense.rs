@@ -37,22 +37,13 @@ pub fn suspense_scope(f: impl Future<Output = ()> + 'static) {
 
 /// Calls the given function and returns a tuple with the result and a future that resolves when
 /// all suspense tasks created within the function are completed.
-///
-/// If called inside an outer suspense scope, this will also make the outer suspense scope suspend
-/// until this resolves.
 pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>) {
     let state = use_context_or_else(|| SuspenseState {
         async_counts: create_signal(Vec::new()),
     });
-    // Get the outer suspense state.
-    let outer_count = state.async_counts.with(|counts| counts.last().copied());
     // Push a new suspense state.
     let count = create_signal(0);
     state.async_counts.update(|counts| counts.push(count));
-
-    if let Some(mut outer_count) = outer_count {
-        outer_count += 1;
-    }
     let ret = f();
     // Pop the suspense state.
     state.async_counts.update(|counts| counts.pop().unwrap());
@@ -69,9 +60,6 @@ pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>)
     });
     (ret, async move {
         receiver.await.unwrap();
-        if let Some(mut outer_count) = outer_count {
-            outer_count -= 1;
-        }
     })
 }
 

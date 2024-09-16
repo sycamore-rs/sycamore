@@ -17,15 +17,13 @@ async fn AsyncComponent(delay_ms: u32) -> View {
 
 #[component]
 pub fn App() -> View {
-    let delays = [
-        100, 200, 300, 400, 500, 1000, 2000, 3000, 2000, 1000, 500, 400, 300, 200, 100,
-    ];
+    let delays = [300, 400, 500, 1000, 2000, 3000, 2000, 1000, 500, 400, 300];
     view! {
         html {
             head {}
             body {
-                div {
-                    "SSR Streaming Demo"
+                p {
+                    strong { "SSR Streaming Demo" }
                 }
                 Indexed(
                     list=delays.to_vec(),
@@ -35,6 +33,15 @@ pub fn App() -> View {
                         }
                     }
                 )
+                p {
+                    strong { "Nested Suspense" }
+                }
+                Suspense(fallback=view! { p { "Loading outer..." } }) {
+                    AsyncComponent(delay_ms=1000)
+                    Suspense(fallback=view! { p { "Loading inner..." } }) {
+                        AsyncComponent(delay_ms=2000)
+                    }
+                }
             }
         }
     }
