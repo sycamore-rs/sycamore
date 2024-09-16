@@ -42,6 +42,15 @@ pub fn App() -> View {
                         AsyncComponent(delay_ms=2000)
                     }
                 }
+                p {
+                    strong { "Nested Suspense with inner finishing first" }
+                }
+                Suspense(fallback=view! { p { "Loading outer..." } }) {
+                    AsyncComponent(delay_ms=2000)
+                    Suspense(fallback=view! { p { "Loading inner..." } }) {
+                        AsyncComponent(delay_ms=1000)
+                    }
+                }
             }
         }
     }
