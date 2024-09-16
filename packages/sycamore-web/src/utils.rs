@@ -1,3 +1,5 @@
+//! Utility functions. Intended for internal use only.
+
 use crate::*;
 
 /// Get all nodes between `start` and `end`.
@@ -37,7 +39,6 @@ pub fn get_nodes_between(start: &web_sys::Node, end: &web_sys::Node) -> Vec<web_
 /// the view while it is detatched, and then insert it into the DOM later.
 ///
 /// This only works on the client side.
-#[cfg_not_ssr]
 pub fn wrap_in_document_fragment(view: View) -> View {
     let fragment = web_sys::window()
         .unwrap()

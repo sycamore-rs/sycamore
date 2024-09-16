@@ -35,6 +35,8 @@ use wasm_bindgen::prelude::*;
 
 pub mod bind;
 pub mod events;
+#[doc(hidden)]
+pub mod utils;
 
 mod attributes;
 mod components;
@@ -47,7 +49,6 @@ mod portal;
 mod stable_counter;
 #[cfg(feature = "suspense")]
 mod suspense;
-mod utils;
 
 pub(crate) mod view;
 
