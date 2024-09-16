@@ -30,6 +30,17 @@ fn DelayedText(delay_ms: u64) -> View {
 }
 
 #[component]
+fn CounterButton() -> View {
+    let mut state = create_signal(0);
+
+    view! {
+        button(r#type="button", on:click=move |_| state += 1) {
+            (state.get())
+        }
+    }
+}
+
+#[component]
 fn App() -> View {
     let delays = [1000, 2000, 1000];
     view! {
@@ -81,6 +92,15 @@ fn App() -> View {
             DelayedText(delay_ms=2000)
             Suspense(fallback=|| view! { p { "Loading inner..." } }) {
                 DelayedText(delay_ms=1000)
+            }
+        }
+
+        p {
+            strong { "Suspense content is hydrated" }
+        }
+        Suspense(fallback=|| view! { "Loading interactive content..."}) {
+            Delayed(delay_ms=1000) {
+                CounterButton {}
             }
         }
     }
