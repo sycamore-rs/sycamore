@@ -110,14 +110,19 @@ impl HydrationRegistry {
     ///
     /// This sets the suspense key to the passed value and resets the element key to 0.
     pub fn in_suspense_scope<T>(self, suspense: NonZeroU32, f: impl FnOnce() -> T) -> T {
-        let prev_key = self.next_key.get_untracked();
-        self.next_key.set_silent(HydrationKey {
-            suspense: suspense.get(),
-            element: 0,
+        let mut ret = None;
+        let old = self.next_key.get_untracked();
+        create_child_scope(|| {
+            provide_context(HydrationRegistry {
+                next_key: create_signal(HydrationKey {
+                    suspense: suspense.get(),
+                    element: 0,
+                }),
+            });
+            ret = Some(f());
         });
-        let ret = f();
-        self.next_key.set_silent(prev_key);
-        ret
+        assert_eq!(old, self.next_key.get_untracked());
+        ret.unwrap()
     }
 }
 
@@ -141,6 +146,15 @@ impl fmt::Display for HydrationKey {
     }
 }
 
+impl HydrationKey {
+    pub fn parse(s: &str) -> Option<Self> {
+        let mut parts = s.split('.');
+        let suspense = parts.next()?.parse().ok()?;
+        let element = parts.next()?.parse().ok()?;
+        Some(HydrationKey { suspense, element })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,8 +163,20 @@ mod tests {
     fn display_hydration_key() {
         let key = HydrationKey {
             suspense: 1,
-            element: NonZeroU32::new(2).unwrap(),
+            element: 2,
         };
         assert_eq!(key.to_string(), "1.2");
+    }
+
+    #[test]
+    fn parse_hydration_key() {
+        assert_eq!(
+            HydrationKey::parse("1.2"),
+            Some(HydrationKey {
+                suspense: 1,
+                element: 2
+            })
+        );
+        assert_eq!(HydrationKey::parse("1"), None);
     }
 }

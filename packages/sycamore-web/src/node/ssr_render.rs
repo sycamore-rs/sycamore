@@ -191,11 +191,9 @@ pub fn render_to_string_stream(
         //   while (start.nextSibling != end) {
         //     start.parentNode.removeChild(start.nextSibling)
         //   }
-        //   start.remove()
-        //   end.remove()
         // }
         // ```
-        static SUSPENSE_REPLACE_SCRIPT: &str = r#"<script>function __sycamore_suspense(e){let s=document.querySelector(`suspense-start[data-key="${e}"]`),n=document.querySelector(`suspense-end[data-key="${e}"]`),r=document.getElementById(`sycamore-suspense-${e}`);for(s.parentNode.insertBefore(r.content,s);s.nextSibling!=n;)s.parentNode.removeChild(s.nextSibling);s.remove(),n.remove()}</script>"#;
+        static SUSPENSE_REPLACE_SCRIPT: &str = r#"<script>function __sycamore_suspense(e){let s=document.querySelector(`suspense-start[data-key="${e}"]`),n=document.querySelector(`suspense-end[data-key="${e}"]`),r=document.getElementById(`sycamore-suspense-${e}`);for(s.parentNode.insertBefore(r.content,s);s.nextSibling!=n;)s.parentNode.removeChild(s.nextSibling);}</script>"#;
         async_stream::stream! {
             let mut initial = String::new();
             initial.push_str("<!doctype html>");

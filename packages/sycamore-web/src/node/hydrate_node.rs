@@ -141,7 +141,7 @@ impl ViewHtmlNode for HydrateNode {
             let key = reg.next_key();
             let node = HYDRATE_NODES
                 .with(|nodes| nodes.borrow_mut().remove(&key))
-                .expect("node with hk not found");
+                .unwrap_or_else(|| panic!("node with hk `{key}` not found"));
             check_node(node.as_web_sys(), &tag, key);
             node
         } else {
@@ -155,7 +155,7 @@ impl ViewHtmlNode for HydrateNode {
             let key = reg.next_key();
             let node = HYDRATE_NODES
                 .with(|nodes| nodes.borrow_mut().remove(&key))
-                .expect("node with hk not found");
+                .unwrap_or_else(|| panic!("node with hk `{key}` not found"));
             if cfg!(debug_assertions) {
                 node.as_web_sys()
                     .unchecked_ref::<web_sys::Element>()

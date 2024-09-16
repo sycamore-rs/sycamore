@@ -67,12 +67,13 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // In streaming mode, we render the fallback and then stream the result of the children
             // once suspense is resolved.
             SsrMode::Blocking | SsrMode::Streaming => {
+                let reg: HydrationRegistry = use_context();
                 // We need to create a suspense key so that we know which suspense boundary it is
                 // when we replace the marker with the suspended content.
                 let key = use_suspense_key();
 
                 // Push `children` to the suspense fragments lists.
-                let (view, suspend) = await_suspense(move || children.call());
+                let (view, suspend) = await_suspense(move || reg.in_suspense_scope(key, move || children.call()));
                 let fragment = SuspenseFragment::new(key, view);
                 let mut state = use_context::<SuspenseState>();
                 spawn_local(async move {
@@ -81,7 +82,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 });
 
                 // Add some marker nodes so that we know start and finish of fallback.
-                let start = view! { NoHydrate { suspense-start(data-key=key.to_string()) } };
+                let start = view! { suspense-start(data-key=key.to_string()) };
                 let marker = View::from(move || SsrNode::SuspenseMarker { key: key.into() });
                 let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
 
@@ -130,7 +131,15 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 // Streaming: By the time the WASM is running, page loading should already be completed since
                 // WASM runs inside a deferred script. Therefore we only need to hydrate the view
                 // and not the fallback.
-                let mut view = children.call();
+
+                // First hydrate the `<sycamore-start>` element to get the suspense scope.
+                let reg: HydrationRegistry = use_context();
+                let start = view! { suspense-start() };
+                let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
+                let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
+
+                console_dbg!(key);
+                let mut view = reg.in_suspense_scope(key, move || children.call());
                 View::from(move || std::mem::take(&mut view))
             }
         }

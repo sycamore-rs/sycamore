@@ -97,14 +97,7 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
             for i in 0..len {
                 let node = existing_nodes.get(i).unwrap();
                 let hk = node.unchecked_ref::<web_sys::Element>().get_attribute("data-hk").unwrap();
-                let mut split = hk.split('.');
-                let first = split.next().expect("invalid data-hk attribute");
-                let second = split.next().expect("invalid data-hk attribute");
-
-                let key = HydrationKey {
-                    suspense: first.parse().unwrap(),
-                    element: second.parse().unwrap(),
-                };
+                let key = HydrationKey::parse(&hk).expect("could not parse hydration key");
                 let node = HydrateNode::from_web_sys(node);
                 nodes.insert(key, node);
             }

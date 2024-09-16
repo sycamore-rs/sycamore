@@ -61,18 +61,20 @@ macro_rules! console_dbg {
     };
     ($arg:expr $(,)?) => {
         if is_not_ssr!() {
+            let arg = $arg;
             $crate::rt::web_sys::console::log_1(
                 &::std::format!(
                     "[{}:{}] {} = {:#?}",
                     ::std::file!(),
                     ::std::line!(),
                     ::std::stringify!($arg),
-                    $arg
+                    arg
                 )
                 .into(),
             );
+            arg
         } else {
-            ::std::dbg!($arg);
+            ::std::dbg!($arg)
         }
     };
     ($($arg:expr),+ $(,)?) => {
