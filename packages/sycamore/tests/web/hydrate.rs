@@ -134,7 +134,7 @@ mod dynamic {
             assert_text_content!(query("p"), "1");
 
             // P tag should still be the SSR-ed node, not a new node.
-            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0"));
+            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0.0"));
         });
     }
 }
@@ -164,7 +164,7 @@ mod dynamic_with_siblings {
             assert_text_content!(query("p"), "Value: 1!");
 
             // P tag should still be the SSR-ed node, not a new node.
-            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0"));
+            assert_eq!(query("p").get_attribute("data-hk").as_deref(), Some("0.0"));
         });
     }
 }

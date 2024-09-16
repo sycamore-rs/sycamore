@@ -104,6 +104,15 @@ pub async fn await_suspense_current() {
     rx.await.unwrap();
 }
 
+/// Returns whether we have any pending suspense tasks.
+pub fn is_pending_suspense() -> bool {
+    let Some(state) = try_use_context::<SuspenseState>() else {
+        return false;
+    };
+    let scope = state.scopes.with(|scopes| scopes.last().copied());
+    scope.is_none() || scope.unwrap().count.get() > 0
+}
+
 /// A struct to handle transitions. Created using [`use_transition`].
 #[derive(Clone, Copy, Debug)]
 pub struct TransitionHandle {
