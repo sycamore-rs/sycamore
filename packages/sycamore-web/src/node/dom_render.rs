@@ -29,6 +29,7 @@ pub fn render_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
     if is_ssr!() {
         panic!("`render_in_scope` is not available in SSR mode");
     } else {
+        IS_HYDRATING.set(false);
         let nodes = view().nodes;
         for node in nodes {
             parent.append_child(node.as_web_sys()).unwrap();
