@@ -175,7 +175,7 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
             hk_key,
         } => {
             buf.push('<');
-            buf.push_str(&tag);
+            buf.push_str(tag);
             for (name, value) in attributes {
                 buf.push(' ');
                 buf.push_str(name);
@@ -210,7 +210,7 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
                     children.is_empty(),
                     "inner_html and children are mutually exclusive"
                 );
-                buf.push_str(&inner_html);
+                buf.push_str(inner_html);
             } else {
                 for child in children {
                     render_recursive(child, buf);
@@ -219,17 +219,17 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
 
             if !is_void {
                 buf.push_str("</");
-                buf.push_str(&tag);
+                buf.push_str(tag);
                 buf.push('>');
             }
         }
         SsrNode::TextDynamic { text } => {
             buf.push_str("<!--t-->"); // For dynamic text, add a marker for hydrating it.
-            html_escape::encode_text_to_string(&text, buf);
+            html_escape::encode_text_to_string(text, buf);
             buf.push_str("<!-->"); // End of dynamic text.
         }
         SsrNode::TextStatic { text } => {
-            html_escape::encode_text_to_string(&text, buf);
+            html_escape::encode_text_to_string(text, buf);
         }
         SsrNode::Marker => {
             buf.push_str("<!--/-->");
