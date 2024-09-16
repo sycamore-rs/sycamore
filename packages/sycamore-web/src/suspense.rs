@@ -1,6 +1,7 @@
 //! Components for suspense.
 
 use std::future::Future;
+use std::num::NonZeroU32;
 
 use sycamore_futures::{await_suspense, suspense_scope};
 use sycamore_macro::{component, Props};
@@ -81,7 +82,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
 
                 // Add some marker nodes so that we know start and finish of fallback.
                 let start = view! { NoHydrate { suspense-start(data-key=key.to_string()) } };
-                let marker = View::from(move || SsrNode::SuspenseMarker { key });
+                let marker = View::from(move || SsrNode::SuspenseMarker { key: key.into() });
                 let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
 
                 let mut fallback = if mode == SsrMode::Blocking {
@@ -169,13 +170,13 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
 
 #[cfg_ssr]
 pub(crate) struct SuspenseFragment {
-    pub key: u32,
+    pub key: NonZeroU32,
     pub view: View,
 }
 
 #[cfg_ssr]
 impl SuspenseFragment {
-    pub fn new(key: u32, view: View) -> Self {
+    pub fn new(key: NonZeroU32, view: View) -> Self {
         Self { key, view }
     }
 }
@@ -188,17 +189,25 @@ pub(crate) struct SuspenseState {
 }
 
 /// Global counter for providing suspense key.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct SuspenseCounter {
-    next: Signal<u32>,
+    next: Signal<NonZeroU32>,
+}
+
+impl SuspenseCounter {
+    fn new() -> Self {
+        Self {
+            next: create_signal(NonZeroU32::new(1).unwrap()),
+        }
+    }
 }
 
 /// Get the next suspense key.
-pub fn use_suspense_key() -> u32 {
+pub fn use_suspense_key() -> NonZeroU32 {
     let global_scope = use_global_scope();
-    let counter = global_scope.run_in(|| use_context_or_else(SuspenseCounter::default));
+    let counter = global_scope.run_in(|| use_context_or_else(SuspenseCounter::new));
 
     let next = counter.next.get();
-    counter.next.set(next + 1);
+    counter.next.set(next.checked_add(1).unwrap());
     next
 }

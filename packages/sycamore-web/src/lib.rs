@@ -42,6 +42,7 @@ mod attributes;
 mod components;
 mod elements;
 mod iter;
+mod macros;
 mod maybe_dyn;
 mod node;
 mod noderef;
@@ -174,34 +175,6 @@ pub type HtmlNode = HydrateNode;
 /// type.
 pub type Children = sycamore_core::Children<View>;
 
-/// A struct for keeping track of state used for hydration.
-#[derive(Debug, Clone, Copy)]
-struct HydrationRegistry {
-    next_key: Signal<u32>,
-}
-
-impl HydrationRegistry {
-    pub fn new() -> Self {
-        HydrationRegistry {
-            next_key: create_signal(0),
-        }
-    }
-
-    /// Get the next hydration key and increment the internal state. This new key will be unique.
-    #[allow(unused, reason = "Unused in DOM mode.")]
-    pub fn next_key(self) -> u32 {
-        let key = self.next_key.get();
-        self.next_key.set(key + 1);
-        key
-    }
-}
-
-impl Default for HydrationRegistry {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 /// Create a new effect, but only if we are not in SSR mode.
 pub fn create_client_effect(f: impl FnMut() + 'static) {
     if is_not_ssr!() {
@@ -257,86 +230,4 @@ pub fn document() -> web_sys::Document {
         static DOCUMENT: web_sys::Document = window().document().expect("no `document` exists");
     }
     DOCUMENT.with(Clone::clone)
-}
-
-/// Log a message to the JavaScript console if on wasm32. Otherwise logs it to stdout.
-///
-/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
-/// the JS console.
-#[macro_export]
-macro_rules! console_log {
-    ($($arg:tt)*) => {
-        if is_not_ssr!() {
-            $crate::rt::web_sys::console::log_1(&::std::format!($($arg)*).into());
-        } else {
-            ::std::println!($($arg)*);
-        }
-    };
-}
-
-/// Log a warning to the JavaScript console if on wasm32. Otherwise logs it to stderr.
-///
-/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
-/// the JS console.
-#[macro_export]
-macro_rules! console_warn {
-    ($($arg:tt)*) => {
-        if is_not_ssr!() {
-            $crate::rt::web_sys::console::warn_1(&::std::format!($($arg)*).into());
-        } else {
-            ::std::eprintln!($($arg)*);
-        }
-    };
-}
-
-/// Prints an error message to the JavaScript console if on wasm32. Otherwise logs it to stderr.
-///
-/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
-/// the JS console.
-#[macro_export]
-macro_rules! console_error {
-    ($($arg:tt)*) => {
-        if is_not_ssr!() {
-            $crate::rt::web_sys::console::error_1(&::std::format!($($arg)*).into());
-        } else {
-            ::std::eprintln!($($arg)*);
-        }
-    };
-}
-
-/// Debug the value of a variable to the JavaScript console if on wasm32. Otherwise logs it to
-/// stdout.
-///
-/// Note: this does not work properly for server-side WASM since it will mistakenly try to log to
-/// the JS console.
-#[macro_export]
-macro_rules! console_dbg {
-    () => {
-        if is_not_ssr!() {
-            $crate::rt::web_sys::console::log_1(
-                &::std::format!("[{}:{}]", ::std::file!(), ::std::line!(),).into(),
-            );
-        } else {
-            ::std::dbg!($arg);
-        }
-    };
-    ($arg:expr $(,)?) => {
-        if is_not_ssr!() {
-            $crate::rt::web_sys::console::log_1(
-                &::std::format!(
-                    "[{}:{}] {} = {:#?}",
-                    ::std::file!(),
-                    ::std::line!(),
-                    ::std::stringify!($arg),
-                    $arg
-                )
-                .into(),
-            );
-        } else {
-            ::std::dbg!($arg);
-        }
-    };
-    ($($arg:expr),+ $(,)?) => {
-        $($crate::console_dbg!($arg);)+
-    }
 }

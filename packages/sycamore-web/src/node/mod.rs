@@ -1,5 +1,8 @@
 //! Implementation of rendering backend.
 
+use std::fmt;
+use std::num::NonZeroU32;
+
 use crate::*;
 
 cfg_not_ssr_item!(
@@ -75,4 +78,79 @@ pub trait AsHtmlNode {
 thread_local! {
     /// Whether we are in hydration mode or not.
     pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };
+}
+
+/// A struct for keeping track of state used for hydration.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct HydrationRegistry {
+    next_key: Signal<HydrationKey>,
+}
+
+impl HydrationRegistry {
+    pub fn new() -> Self {
+        HydrationRegistry {
+            next_key: create_signal(HydrationKey {
+                suspense: 0,
+                element: 0,
+            }),
+        }
+    }
+
+    /// Get the next hydration key and increment the internal state. This new key will be unique.
+    pub fn next_key(self) -> HydrationKey {
+        let key = self.next_key.get_untracked();
+        self.next_key.set_silent(HydrationKey {
+            suspense: key.suspense,
+            element: key.element + 1,
+        });
+        key
+    }
+
+    /// Run the given function within a suspense scope.
+    ///
+    /// This sets the suspense key to the passed value and resets the element key to 0.
+    pub fn in_suspense_scope<T>(self, suspense: NonZeroU32, f: impl FnOnce() -> T) -> T {
+        let prev_key = self.next_key.get_untracked();
+        self.next_key.set_silent(HydrationKey {
+            suspense: suspense.get(),
+            element: 0,
+        });
+        let ret = f();
+        self.next_key.set_silent(prev_key);
+        ret
+    }
+}
+
+impl Default for HydrationRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct HydrationKey {
+    /// Suspense key, or 0 if not in a suspense boundary.
+    pub suspense: u32,
+    /// Element key.
+    pub element: u32,
+}
+
+impl fmt::Display for HydrationKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}", self.suspense, self.element)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_hydration_key() {
+        let key = HydrationKey {
+            suspense: 1,
+            element: NonZeroU32::new(2).unwrap(),
+        };
+        assert_eq!(key.to_string(), "1.2");
+    }
 }

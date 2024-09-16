@@ -12,8 +12,9 @@ pub enum SsrNode {
         attributes: Vec<(Cow<'static, str>, Cow<'static, str>)>,
         bool_attributes: Vec<(Cow<'static, str>, bool)>,
         children: Vec<Self>,
-        inner_html: Option<Cow<'static, str>>,
-        hk_key: Option<u32>,
+        // NOTE: This field is boxed to avoid allocating memory for a field that is rarely used.
+        inner_html: Option<Box<Cow<'static, str>>>,
+        hk_key: Option<HydrationKey>,
     },
     TextDynamic {
         text: Cow<'static, str>,
@@ -139,7 +140,7 @@ impl ViewHtmlNode for SsrNode {
         match self {
             Self::Element {
                 inner_html: slot, ..
-            } => *slot = Some(inner_html),
+            } => *slot = Some(Box::new(inner_html)),
             _ => panic!("can only set inner_html on an element"),
         }
     }

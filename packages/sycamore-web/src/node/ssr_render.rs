@@ -61,6 +61,7 @@ pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> Str
         panic!("`render_to_string` only available in SSR mode");
     }
     is_ssr! {
+        use std::num::NonZeroU32;
         use std::cell::LazyCell;
         use std::fmt::Write;
         use std::collections::HashMap;
@@ -121,6 +122,7 @@ pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> Str
                     // Try to parse the key.
                     let (num, rest) = s.split_once("-->").expect("end of suspense marker not found");
                     let key: u32 = num.parse().expect("could not parse suspense key");
+                    let key = NonZeroU32::try_from(key).expect("suspense key cannot be 0");
                     let fragment = fragment_map.get(&key).expect("fragment not found");
                     ssr_node::render_recursive_view(fragment, &mut acc);
 

@@ -30,7 +30,9 @@ fn Hello() -> View {
                         span { (name.get_clone()) }
                     }
                 } else {
-                    view! { span { "World" } }
+                    view! {
+                        span { "World" }
+                    }
                 })
                 "!"
             }

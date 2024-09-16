@@ -85,32 +85,34 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
             panic!("invalid SSR mode {mode:?}")
         };
 
-        provide_context(mode);
-        provide_context(HydrationRegistry::new());
         // Get all nodes with `data-hk` attribute.
         let existing_nodes = parent
             .unchecked_ref::<web_sys::Element>()
             .query_selector_all("[data-hk]")
             .unwrap();
 
-        let len = existing_nodes.length();
-        let mut temp = vec![None; len as usize];
-        for i in 0..len {
-            let node = existing_nodes.get(i).unwrap();
-            let hk = node.unchecked_ref::<web_sys::Element>().get_attribute("data-hk").unwrap();
-            let hk = hk.parse::<usize>().unwrap();
-            if hk >= temp.len() {
-                temp.resize(hk + 1, None);
-            }
-            temp[hk] = Some(node);
-        }
-
-        // Now assign every element in temp to HYDRATION_NODES
         HYDRATE_NODES.with(|nodes| {
-            *nodes.borrow_mut() = temp.into_iter().flatten().map(|x| HtmlNode::from_web_sys(x)).rev().collect();
+            let mut nodes = nodes.borrow_mut();
+            let len = existing_nodes.length();
+            for i in 0..len {
+                let node = existing_nodes.get(i).unwrap();
+                let hk = node.unchecked_ref::<web_sys::Element>().get_attribute("data-hk").unwrap();
+                let mut split = hk.split('.');
+                let first = split.next().expect("invalid data-hk attribute");
+                let second = split.next().expect("invalid data-hk attribute");
+
+                let key = HydrationKey {
+                    suspense: first.parse().unwrap(),
+                    element: second.parse().unwrap(),
+                };
+                let node = HydrateNode::from_web_sys(node);
+                nodes.insert(key, node);
+            }
         });
 
         IS_HYDRATING.set(true);
+        provide_context(mode);
+        provide_context(HydrationRegistry::new());
         let nodes = view().nodes;
         // We need to append `nodes` to the `parent` so that the top level nodes also get properly
         // hydrated.
