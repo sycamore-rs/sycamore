@@ -59,7 +59,9 @@ mod multiple_nodes_at_same_depth {
             ))
             .into()
     }
-    static EXPECT: Expect = expect![[r#"<div data-hk="0.0"><p id="first" data-hk="0.1">First</p><p id="second" data-hk="0.2">Second</p></div>"#]];
+    static EXPECT: Expect = expect![[
+        r#"<div data-hk="0.0"><p id="first" data-hk="0.1">First</p><p id="second" data-hk="0.2">Second</p></div>"#
+    ]];
     #[test]
     fn ssr() {
         check(v, &EXPECT);
@@ -85,8 +87,9 @@ mod top_level_fragment {
         )
             .into()
     }
-    static EXPECT: Expect =
-        expect![[r#"<p id="first" data-hk="0.0">First</p><p id="second" data-hk="0.1">Second</p>"#]];
+    static EXPECT: Expect = expect![[
+        r#"<p id="first" data-hk="0.0">First</p><p id="second" data-hk="0.1">Second</p>"#
+    ]];
     #[test]
     fn ssr() {
         check(v, &EXPECT);
