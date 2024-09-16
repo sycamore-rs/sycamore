@@ -49,3 +49,37 @@ pub fn NoHydrate(children: Children) -> View {
         children.call()
     }
 }
+
+/// Generate a script element for bootstrapping hydration.
+///
+/// In general, prefer using [`HydrationScript`] instead.
+pub fn generate_hydration_script(mode: SsrMode) -> &'static str {
+    match mode {
+        SsrMode::Sync => "",
+        SsrMode::Blocking => "window.__sycamore_ssr_mode='blocking'",
+        SsrMode::Streaming => "window.__sycamore_ssr_mode='streaming'",
+    }
+}
+
+/// Component that creates a script element for bootstrapping hydration. Should be rendered into
+/// the `<head>` of the document.
+///
+/// This component is required if using SSR in blocking or streaming mode.
+///
+/// TODO: use this component to also capture and replay events. This requires synthetic event
+/// delegation: <https://github.com/sycamore-rs/sycamore/issues/176>
+#[component]
+pub fn HydrationScript() -> View {
+    is_ssr! {
+        let mode = use_context::<SsrMode>();
+        let script = generate_hydration_script(mode);
+        view! {
+            NoHydrate {
+                script(dangerously_set_inner_html=script)
+            }
+        }
+    }
+    is_not_ssr! {
+        view! {}
+    }
+}

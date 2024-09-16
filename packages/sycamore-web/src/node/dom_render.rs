@@ -73,6 +73,19 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
         panic!("`hydrate_in_scope` is not available in SSR mode");
     }
     is_not_ssr! {
+        // Get mode from HydrationScript.
+        let mode = js_sys::Reflect::get(&window(), &"__sycamore_ssr_mode".into()).unwrap();
+        let mode = if mode.is_undefined() {
+            SsrMode::Sync
+        } else if mode == "blocking" {
+            SsrMode::Blocking
+        } else if mode == "streaming" {
+            SsrMode::Streaming
+        } else {
+            panic!("invalid SSR mode {mode:?}")
+        };
+
+        provide_context(mode);
         provide_context(HydrationRegistry::new());
         // Get all nodes with `data-hk` attribute.
         let existing_nodes = parent

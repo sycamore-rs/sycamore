@@ -42,6 +42,7 @@ fn Hello() -> View {
 #[component]
 fn App() -> View {
     view! {
+        sycamore::web::HydrationScript {}
         p { "Hydration" }
         br {}
         Hello {}

@@ -1,13 +1,18 @@
 use sycamore::prelude::*;
 use sycamore::web::Suspense;
 
+async fn sleep_ms(ms: u32) {
+    is_ssr! {
+        tokio::time::sleep(std::time::Duration::from_millis(ms as u64)).await;
+    }
+    is_not_ssr! {
+        let _ = ms;
+    }
+}
+
 #[component(inline_props)]
 async fn AsyncComponent(delay_ms: u32) -> View {
-    if is_ssr!() {
-        tokio::time::sleep(std::time::Duration::from_millis(delay_ms as u64)).await;
-    } else {
-        unimplemented!("csr not supported")
-    }
+    sleep_ms(delay_ms).await;
     view! {
         p {
             "Loaded after " (delay_ms) "ms"
@@ -17,11 +22,7 @@ async fn AsyncComponent(delay_ms: u32) -> View {
 
 #[component(inline_props)]
 async fn LoadingSegment(delay_ms: u32) -> View {
-    if is_ssr!() {
-        tokio::time::sleep(std::time::Duration::from_millis(delay_ms as u64)).await;
-    } else {
-        unimplemented!("csr not supported")
-    }
+    sleep_ms(delay_ms).await;
     view! {
         span {}
     }
@@ -32,7 +33,15 @@ pub fn App() -> View {
     let delays = [300, 400, 500, 1000, 2000, 3000, 2000, 1000, 500, 400, 300];
     view! {
         html {
-            head {}
+            head {
+                sycamore::web::HydrationScript {}
+                sycamore::web::NoHydrate {
+                    link(rel="preload", href="/dist/ssr-streaming_bg.wasm", r#as="fetch", crossorigin="")
+                    script(r#type="module") {
+                        "import init from '/dist/ssr-streaming.js'; const wasm = await init({});"
+                    }
+                }
+            }
             body {
                 p {
                     strong { "SSR Streaming Demo" }
@@ -50,13 +59,13 @@ pub fn App() -> View {
                 }
                 div {
                     style {
-                        "span { width: 0.19vw; height: 10px; background-color: red; display: inline-block; }"
+                        "span { width: 0.9vw; height: 10px; background-color: red; display: inline-block; }"
                     }
                     Indexed(
-                        list=(0..500).collect::<Vec<_>>(),
+                        list=(0..100).collect::<Vec<_>>(),
                         view=|x| view! {
                             Suspense(fallback=view! {}) {
-                                LoadingSegment(delay_ms=x*2)
+                                LoadingSegment(delay_ms=x*5)
                             }
                         }
                     )

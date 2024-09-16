@@ -60,10 +60,9 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // We make sure to return a closure so that the view can be properly hydrated.
             SsrMode::Sync => View::from(move || fallback.take().unwrap()),
             SsrMode::Blocking => {
-                // We need to create a hydration key so that we know which suspense boundary it is
+                // We need to create a suspense key so that we know which suspense boundary it is
                 // when we replace the marker with the suspended content.
-                let reg = use_context::<HydrationRegistry>();
-                let key = reg.next_key();
+                let key = use_suspense_key();
 
                 // Push `children` to the suspense fragments lists.
                 let (view, suspend) = await_suspense(move || children.call());
@@ -85,10 +84,9 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // In streaming mode, we render the fallback and then stream the result of the children
             // once suspense is resolved.
             SsrMode::Streaming => {
-                // We need to create a hydration key so that we know which suspense boundary it is
+                // We need to create a suspense key so that we know which suspense boundary it is
                 // when we stream the content.
-                let reg = use_context::<HydrationRegistry>();
-                let key = reg.next_key();
+                let key = use_suspense_key();
 
                 // Push `children` to the suspense fragments lists.
                 let (view, suspend) = await_suspense(move || children.call());
@@ -116,18 +114,23 @@ pub fn Suspense(props: SuspenseProps) -> View {
         }
     }
     is_not_ssr! {
-        let show = create_signal(false);
-        let (view, suspend) = await_suspense(move || children.call());
-        // If the Suspense is nested under another Suspense, we want the other Suspense to await
-        // this one as well.
-        suspense_scope(async move {
-            suspend.await;
-            show.set(true);
-        });
+        if IS_HYDRATING.get() {
+            // todo
+            view! {}
+        } else {
+            let show = create_signal(false);
+            let (view, suspend) = await_suspense(move || children.call());
+            // If the Suspense is nested under another Suspense, we want the other Suspense to await
+            // this one as well.
+            suspense_scope(async move {
+                suspend.await;
+                show.set(true);
+            });
 
-        let mut view = Some(utils::wrap_in_document_fragment(view));
-        view! {
-            (if !show.get() { fallback.take().unwrap() } else { view.take().unwrap() })
+            let mut view = Some(utils::wrap_in_document_fragment(view));
+            view! {
+                (if !show.get() { fallback.take().unwrap() } else { view.take().unwrap() })
+            }
         }
     }
 }
@@ -174,4 +177,20 @@ pub(crate) struct SuspenseFragment {
 #[derive(Clone)]
 pub(crate) struct SuspenseState {
     pub sender: futures::channel::mpsc::Sender<SuspenseFragment>,
+}
+
+/// Global counter for providing suspense key.
+#[derive(Debug, Default, Clone, Copy)]
+struct SuspenseCounter {
+    next: Signal<u32>,
+}
+
+/// Get the next suspense key.
+pub fn use_suspense_key() -> u32 {
+    let global_scope = use_global_scope();
+    let counter = global_scope.run_in(|| use_context_or_else(SuspenseCounter::default));
+
+    let next = counter.next.get();
+    counter.next.set(next + 1);
+    next
 }
