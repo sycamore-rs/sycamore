@@ -92,18 +92,22 @@ pub fn hydrate_in_scope(view: impl FnOnce() -> View, parent: &web_sys::Node) {
             .unchecked_ref::<web_sys::Element>()
             .query_selector_all("[data-hk]")
             .unwrap();
+
         let len = existing_nodes.length();
         let mut temp = vec![None; len as usize];
         for i in 0..len {
             let node = existing_nodes.get(i).unwrap();
             let hk = node.unchecked_ref::<web_sys::Element>().get_attribute("data-hk").unwrap();
             let hk = hk.parse::<usize>().unwrap();
+            if hk >= temp.len() {
+                temp.resize(hk + 1, None);
+            }
             temp[hk] = Some(node);
         }
 
         // Now assign every element in temp to HYDRATION_NODES
         HYDRATE_NODES.with(|nodes| {
-            *nodes.borrow_mut() = temp.into_iter().map(|x| HtmlNode::from_web_sys(x.unwrap())).rev().collect();
+            *nodes.borrow_mut() = temp.into_iter().flatten().map(|x| HtmlNode::from_web_sys(x)).rev().collect();
         });
 
         IS_HYDRATING.set(true);

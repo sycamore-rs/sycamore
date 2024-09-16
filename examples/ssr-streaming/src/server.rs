@@ -8,7 +8,6 @@ use tokio::task::LocalSet;
 use tokio_stream::StreamExt;
 use tower_http::services::ServeDir;
 
-#[axum::debug_handler]
 async fn root() -> impl IntoResponse {
     let (tx, rx) = tokio::sync::oneshot::channel();
     tokio::task::spawn_blocking(|| {
@@ -16,7 +15,7 @@ async fn root() -> impl IntoResponse {
         handle.block_on(async move {
             let local = LocalSet::new();
             local.spawn_local(async move {
-                tx.send(sycamore::render_to_string_stream(crate::app::App))
+                tx.send(sycamore::render_to_string_stream(crate::app::Main))
                     .ok()
                     .unwrap();
             });
@@ -30,11 +29,27 @@ async fn root() -> impl IntoResponse {
     ([(header::CONTENT_TYPE, "text/html")], body)
 }
 
+async fn root_blocking() -> impl IntoResponse {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    tokio::task::spawn_blocking(|| {
+        let handle = Handle::current();
+        handle.block_on(async move {
+            tx.send(sycamore::render_to_string_await_suspense(crate::app::Main).await)
+                .ok()
+                .unwrap();
+        });
+    });
+    let body = rx.await.unwrap();
+
+    ([(header::CONTENT_TYPE, "text/html")], body)
+}
+
 /// Start the server.
 pub async fn start() {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(root))
+        .route("/blocking", get(root_blocking))
         .nest_service("/dist", ServeDir::new("dist"));
 
     // run our app with hyper, listening globally on port 8080

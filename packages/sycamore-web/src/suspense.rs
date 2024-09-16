@@ -8,11 +8,11 @@ use sycamore_macro::{component, Props};
 use crate::*;
 
 /// Props for [`Suspense`].
-#[derive(Props, Debug)]
+#[derive(Props)]
 pub struct SuspenseProps {
     /// The fallback [`View`] to display while the child nodes are being awaited.
-    #[prop(default)]
-    fallback: View,
+    #[prop(default, setter(transform = |f: impl FnOnce() -> View + 'static| Some(Box::new(f) as Box<dyn FnOnce() -> View>)))]
+    fallback: Option<Box<dyn FnOnce() -> View>>,
     children: Children,
 }
 
@@ -38,7 +38,7 @@ pub struct SuspenseProps {
 /// #[component]
 /// fn App() -> View {
 ///     view! {
-///         Suspense(fallback=view! { "Loading..." }) {
+///         Suspense(fallback=|| view! { "Loading..." }) {
 ///             AsyncComp {}
 ///         }
 ///     }
@@ -47,6 +47,7 @@ pub struct SuspenseProps {
 #[component]
 pub fn Suspense(props: SuspenseProps) -> View {
     let SuspenseProps { fallback, children } = props;
+    let fallback = fallback.unwrap_or_else(|| Box::new(View::default));
     let mut fallback = Some(fallback);
 
     is_ssr! {
@@ -58,78 +59,78 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // In sync mode, we don't even bother about the children and just return the fallback.
             //
             // We make sure to return a closure so that the view can be properly hydrated.
-            SsrMode::Sync => View::from(move || fallback.take().unwrap()),
-            SsrMode::Blocking => {
+            SsrMode::Sync => View::from(move || fallback.take().unwrap()()),
+            // In blocking mode, we render a marker node and then replace the marker node with the
+            // children once the suspense is resolved.
+            //
+            // In streaming mode, we render the fallback and then stream the result of the children
+            // once suspense is resolved.
+            SsrMode::Blocking | SsrMode::Streaming => {
                 // We need to create a suspense key so that we know which suspense boundary it is
                 // when we replace the marker with the suspended content.
                 let key = use_suspense_key();
 
                 // Push `children` to the suspense fragments lists.
                 let (view, suspend) = await_suspense(move || children.call());
-                let fragment = SuspenseFragment {
-                    key,
-                    view,
-                };
+                let fragment = SuspenseFragment::new(key, view);
                 let mut state = use_context::<SuspenseState>();
                 spawn_local(async move {
                     suspend.await;
-                    state
-                        .sender
-                        .send(fragment)
-                        .await
-                        .expect("could not send suspense fragment");
-                });
-                View::from(move || SsrNode::SuspenseMarker { key })
-            }
-            // In streaming mode, we render the fallback and then stream the result of the children
-            // once suspense is resolved.
-            SsrMode::Streaming => {
-                // We need to create a suspense key so that we know which suspense boundary it is
-                // when we stream the content.
-                let key = use_suspense_key();
-
-                // Push `children` to the suspense fragments lists.
-                let (view, suspend) = await_suspense(move || children.call());
-                let fragment = SuspenseFragment {
-                    key,
-                    view,
-                };
-                let mut state = use_context::<SuspenseState>();
-                spawn_local(async move {
-                    suspend.await;
-                    let _ = state
-                        .sender
-                        .send(fragment)
-                        .await;
+                    let _ = state.sender.send(fragment).await;
                 });
 
                 // Add some marker nodes so that we know start and finish of fallback.
                 let start = view! { NoHydrate { suspense-start(data-key=key.to_string()) } };
                 let marker = View::from(move || SsrNode::SuspenseMarker { key });
                 let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
-                fallback = Some((start, marker, fallback.take().unwrap(), end).into());
 
-                View::from(move || fallback.take().unwrap())
+                let mut fallback = if mode == SsrMode::Blocking {
+                    View::from((start, marker, end))
+                } else if mode == SsrMode::Streaming {
+                    View::from((
+                        start,
+                        marker,
+                        view! { NoHydrate(children=fallback.take().unwrap().into()) },
+                        end,
+                    ))
+                } else {
+                    unreachable!()
+                };
+                View::from(move || std::mem::take(&mut fallback))
             }
         }
     }
     is_not_ssr! {
-        if IS_HYDRATING.get() {
-            // todo
-            view! {}
+        let mode = if IS_HYDRATING.get() {
+            use_context::<SsrMode>()
         } else {
-            let show = create_signal(false);
-            let (view, suspend) = await_suspense(move || children.call());
-            // If the Suspense is nested under another Suspense, we want the other Suspense to await
-            // this one as well.
-            suspense_scope(async move {
-                suspend.await;
-                show.set(true);
-            });
+            SsrMode::Sync
+        };
+        match mode {
+            SsrMode::Sync => {
+                let show = create_signal(false);
+                let (view, suspend) = await_suspense(move || children.call());
+                // If the Suspense is nested under another Suspense, we want the other Suspense to await
+                // this one as well.
+                suspense_scope(async move {
+                    suspend.await;
+                    show.set(true);
+                });
 
-            let mut view = Some(utils::wrap_in_document_fragment(view));
-            view! {
-                (if !show.get() { fallback.take().unwrap() } else { view.take().unwrap() })
+                let mut view = utils::wrap_in_document_fragment(view);
+                view! {
+                    (if !show.get() { fallback.take().unwrap()() } else { std::mem::take(&mut view) })
+                }
+            }
+            SsrMode::Blocking | SsrMode::Streaming => {
+                // Blocking: Since the fallback is never rendered on the server side, we don't need
+                // to hydrate it either.
+                //
+                // Streaming: By the time the WASM is running, page loading should already be completed since
+                // WASM runs inside a deferred script. Therefore we only need to hydrate the view
+                // and not the fallback.
+                let mut view = children.call();
+                View::from(move || std::mem::take(&mut view))
             }
         }
     }
@@ -170,6 +171,13 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
 pub(crate) struct SuspenseFragment {
     pub key: u32,
     pub view: View,
+}
+
+#[cfg_ssr]
+impl SuspenseFragment {
+    pub fn new(key: u32, view: View) -> Self {
+        Self { key, view }
+    }
 }
 
 /// Context for passing suspense fragments in SSR mode.

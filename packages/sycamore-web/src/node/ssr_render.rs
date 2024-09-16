@@ -258,7 +258,7 @@ mod tests {
     #[component(inline_props)]
     fn App(receiver: oneshot::Receiver<()>) -> View {
         view! {
-            Suspense(fallback="fallback".into()) {
+            Suspense(fallback=|| "fallback".into()) {
                 AsyncComponent(receiver=receiver)
             }
         }

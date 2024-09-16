@@ -1,9 +1,9 @@
 use sycamore::prelude::*;
 use sycamore::web::Suspense;
 
-async fn sleep_ms(ms: u32) {
+async fn sleep_ms(ms: u64) {
     is_ssr! {
-        tokio::time::sleep(std::time::Duration::from_millis(ms as u64)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
     }
     is_not_ssr! {
         let _ = ms;
@@ -11,26 +11,80 @@ async fn sleep_ms(ms: u32) {
 }
 
 #[component(inline_props)]
-async fn AsyncComponent(delay_ms: u32) -> View {
+async fn Delayed(delay_ms: u64, children: Children) -> View {
     sleep_ms(delay_ms).await;
     view! {
-        p {
-            "Loaded after " (delay_ms) "ms"
-        }
+        (children)
     }
 }
 
 #[component(inline_props)]
-async fn LoadingSegment(delay_ms: u32) -> View {
-    sleep_ms(delay_ms).await;
+fn DelayedText(delay_ms: u64) -> View {
     view! {
-        span {}
+        Delayed(delay_ms=delay_ms) {
+            p {
+                "Loaded after " (delay_ms) "ms"
+            }
+        }
     }
 }
 
 #[component]
-pub fn App() -> View {
-    let delays = [300, 400, 500, 1000, 2000, 3000, 2000, 1000, 500, 400, 300];
+fn App() -> View {
+    let delays = [1000, 2000, 1000];
+    view! {
+        p {
+            strong { "SSR Streaming Demo" }
+        }
+        Indexed(
+            list=delays.to_vec(),
+            view=|delay_ms| view! {
+                Suspense(fallback=|| view! { p { "Loading..." } }) {
+                    DelayedText(delay_ms=delay_ms)
+                }
+            }
+        )
+        p {
+            strong { "A lot of suspense" }
+        }
+        div {
+            style {
+                "span { width: 1%; height: 10px; background-color: red; display: inline-block; }"
+            }
+            Indexed(
+                list=(0..100).collect::<Vec<_>>(),
+                view=|x| view! {
+                    Suspense {
+                        Delayed(delay_ms=x*5) {
+                            span {}
+                        }
+                    }
+                }
+            )
+        }
+        p {
+            strong { "Nested Suspense" }
+        }
+        Suspense(fallback=|| view! { p { "Loading outer..." } p { "..." } }) {
+            DelayedText(delay_ms=1000)
+            Suspense(fallback=|| view! { p { "Loading inner..." } }) {
+                DelayedText(delay_ms=2000)
+            }
+        }
+        p {
+            strong { "Nested Suspense with inner finishing first" }
+        }
+        Suspense(fallback=|| view! { p { "Loading outer..." } p { "..." } }) {
+            DelayedText(delay_ms=2000)
+            Suspense(fallback=|| view! { p { "Loading inner..." } }) {
+                DelayedText(delay_ms=1000)
+            }
+        }
+    }
+}
+
+#[component]
+pub fn Main() -> View {
     view! {
         html {
             head {
@@ -43,51 +97,7 @@ pub fn App() -> View {
                 }
             }
             body {
-                p {
-                    strong { "SSR Streaming Demo" }
-                }
-                Indexed(
-                    list=delays.to_vec(),
-                    view=|delay_ms| view! {
-                        Suspense(fallback=view! { p { "Loading..." } }) {
-                            AsyncComponent(delay_ms=delay_ms)
-                        }
-                    }
-                )
-                p {
-                    strong { "A lot of suspense" }
-                }
-                div {
-                    style {
-                        "span { width: 0.9vw; height: 10px; background-color: red; display: inline-block; }"
-                    }
-                    Indexed(
-                        list=(0..100).collect::<Vec<_>>(),
-                        view=|x| view! {
-                            Suspense(fallback=view! {}) {
-                                LoadingSegment(delay_ms=x*5)
-                            }
-                        }
-                    )
-                }
-                p {
-                    strong { "Nested Suspense" }
-                }
-                Suspense(fallback=view! { p { "Loading outer..." } }) {
-                    AsyncComponent(delay_ms=1000)
-                    Suspense(fallback=view! { p { "Loading inner..." } }) {
-                        AsyncComponent(delay_ms=2000)
-                    }
-                }
-                p {
-                    strong { "Nested Suspense with inner finishing first" }
-                }
-                Suspense(fallback=view! { p { "Loading outer..." } }) {
-                    AsyncComponent(delay_ms=2000)
-                    Suspense(fallback=view! { p { "Loading inner..." } }) {
-                        AsyncComponent(delay_ms=1000)
-                    }
-                }
+                App {}
             }
         }
     }

@@ -17,5 +17,5 @@ fn main() {
     console_error_panic_hook::set_once();
 
     let document = document();
-    sycamore::hydrate_to(app::App, &document);
+    sycamore::hydrate_to(app::Main, &document);
 }

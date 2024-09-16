@@ -47,7 +47,7 @@ fn App() -> View {
             button(on:click=move |_| update(Tab::One)) { "One" }
             button(on:click=move |_| update(Tab::Two)) { "Two" }
             button(on:click=move |_| update(Tab::Three)) { "Three" }
-            Suspense(fallback=view! { p { "Loading..." } }) {
+            Suspense(fallback=|| view! { p { "Loading..." } }) {
                 ({
                     let tab = tab.get();
                     view! { Child(tab=tab) }
