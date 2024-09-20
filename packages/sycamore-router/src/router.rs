@@ -81,9 +81,7 @@ impl Integration for HistoryIntegration {
 
                 let meta_keys_pressed = meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
                 if !meta_keys_pressed && location.origin() == Ok(origin) {
-                    if location.hash().as_ref() != Ok(&hash) {
-                        // Same origin, same path, different anchor. Use default browser behavior.
-                    } else if location.pathname().as_ref() != Ok(&a_pathname) {
+                    if location.pathname().as_ref() != Ok(&a_pathname) {
                         // Same origin, different path. Navigate to new page.
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
@@ -100,6 +98,8 @@ impl Integration for HistoryIntegration {
                                 .unwrap_throw();
                             window().scroll_to_with_x_and_y(0.0, 0.0);
                         });
+                    } else if location.hash().as_ref() != Ok(&hash) {
+                        // Same origin, same pathname, different hash. Use default browser behavior.
                     } else {
                         // Same page. Do nothing.
                         ev.prevent_default();
