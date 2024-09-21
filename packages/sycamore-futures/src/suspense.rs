@@ -10,7 +10,7 @@ use sycamore_reactive::*;
 use crate::*;
 
 /// Internal context state used by suspense.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct SuspenseState {
     scopes: Signal<Vec<SuspenseScope>>,
 }
@@ -47,9 +47,7 @@ pub fn suspense_scope(f: impl Future<Output = ()> + 'static) {
 /// If this is called inside another call to [`await_suspense`], this suspense will wait until the
 /// parent suspense is resolved.
 pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>) {
-    let state = use_context_or_else(|| SuspenseState {
-        scopes: create_signal(Vec::new()),
-    });
+    let state = use_global_scope().run_in(|| use_context_or_else(SuspenseState::default));
     // Push a new suspense scope.
     let scope = SuspenseScope {
         count: create_signal(0),
@@ -83,9 +81,7 @@ pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>)
 ///
 /// Does not create a new suspense scope.
 pub async fn await_suspense_current() {
-    let state = use_context_or_else(|| SuspenseState {
-        scopes: create_signal(Vec::new()),
-    });
+    let state = use_global_scope().run_in(|| use_context_or_else(SuspenseState::default));
 
     let (tx, rx) = oneshot::channel();
     let mut tx = Some(tx);
@@ -144,4 +140,21 @@ pub fn use_transition() -> TransitionHandle {
     let is_pending = create_signal(false);
 
     TransitionHandle { is_pending }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn suspense_context_is_in_global_scope() {
+        let _ = create_root(move || {
+            assert!(try_use_context::<SuspenseState>().is_none());
+            let _ = create_child_scope(move || {
+                let _ = await_suspense(|| {});
+                assert!(try_use_context::<SuspenseState>().is_some());
+            });
+            assert!(try_use_context::<SuspenseState>().is_some());
+        });
+    }
 }
