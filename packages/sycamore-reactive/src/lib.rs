@@ -42,6 +42,7 @@
 mod context;
 mod effects;
 mod iter;
+mod maybe_dyn;
 mod memos;
 mod node;
 mod root;
@@ -51,6 +52,7 @@ mod utils;
 pub use context::*;
 pub use effects::*;
 pub use iter::*;
+pub use maybe_dyn::*;
 pub use memos::*;
 pub use node::*;
 pub use root::*;
