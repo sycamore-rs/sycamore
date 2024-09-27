@@ -47,7 +47,7 @@ Sycamore is extensively documented:
 ## Examples
 
 Sycamore has many examples for your reference in the
-[`examples/`](https://github.com/sycamore-rs/sycamore/tree/master/examples) directory. Be sure to
+[`examples/`](https://github.com/sycamore-rs/sycamore/tree/main/examples) directory. Be sure to
 check them out!
 
 ### Viewing on `sycamore-rs.netlify.app`

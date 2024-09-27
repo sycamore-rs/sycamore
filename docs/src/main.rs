@@ -212,7 +212,7 @@ fn generate_sitemap_xml() -> Result<(), Box<dyn Error>> {
     // News
     generate_sitemap_for_dir(&mut buf, "/news", Path::new("posts"), "yearly", "0.8")?;
 
-    // Docs for master
+    // Docs for main
     generate_sitemap_for_dir(&mut buf, "/docs", Path::new("./next"), "weekly", "0.5")?;
 
     // Versioned docs

@@ -71,7 +71,7 @@ sycamore = "0.9.0-beta.4"
 >
 > However, breaking changes are introduced all the time. It is therefore recommended to also specify
 > a specific commit hash to prevent your code from randomly breaking. You can find the latest commit
-> hash [here](https://github.com/sycamore-rs/sycamore/commits/master) (to the right of each commit).
+> hash [here](https://github.com/sycamore-rs/sycamore/commits/main) (to the right of each commit).
 >
 > ```toml
 > # Make sure you update the rev to the latest commit hash.

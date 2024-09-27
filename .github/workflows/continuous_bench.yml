@@ -2,8 +2,7 @@ name: Continuous benchmark
 
 on:
   push:
-    branches:
-      - master
+    branches: [main]
 
 jobs:
   bench:
