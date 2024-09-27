@@ -108,14 +108,14 @@ impl ViewHtmlNode for SsrNode {
         Self::Marker
     }
 
-    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynString) {
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<Cow<'static, str>>) {
         match self {
             Self::Element { attributes, .. } => attributes.push((name, value.evaluate())),
             _ => panic!("can only set attribute on an element"),
         }
     }
 
-    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynBool) {
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>) {
         match self {
             Self::Element {
                 bool_attributes, ..
@@ -124,7 +124,7 @@ impl ViewHtmlNode for SsrNode {
         }
     }
 
-    fn set_property(&mut self, _name: Cow<'static, str>, _value: MaybeDynJsValue) {
+    fn set_property(&mut self, _name: Cow<'static, str>, _value: MaybeDyn<JsValue>) {
         // Noop in SSR mode.
     }
 

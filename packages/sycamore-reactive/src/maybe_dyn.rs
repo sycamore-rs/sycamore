@@ -47,7 +47,7 @@ impl<T: 'static> MaybeDyn<T> {
     ///
     /// If the type does not implement [`Copy`], consider using [`get_clone`](Self::get_clone)
     /// instead.
-    pub fn get(&mut self) -> T
+    pub fn get(&self) -> T
     where
         T: Copy,
     {
@@ -61,7 +61,7 @@ impl<T: 'static> MaybeDyn<T> {
     /// Get the value by cloning it.
     ///
     /// If the type implements [`Copy`], consider using [`get`](Self::get) instead.
-    pub fn get_clone(&mut self) -> T
+    pub fn get_clone(&self) -> T
     where
         T: Clone,
     {
@@ -69,6 +69,23 @@ impl<T: 'static> MaybeDyn<T> {
             Self::Static(value) => value.clone(),
             Self::Signal(value) => value.get_clone(),
             Self::Derived(f) => f().evaluate(),
+        }
+    }
+
+    /// Track the reactive dependencies, if it is dynamic.
+    pub fn track(&self) {
+        match self {
+            Self::Static(_) => {}
+            Self::Signal(signal) => signal.track(),
+            Self::Derived(f) => f().track(),
+        }
+    }
+
+    /// Tries to get the value statically or returns `None` if value is dynamic.
+    pub fn as_static(&self) -> Option<&T> {
+        match self {
+            Self::Static(value) => Some(value),
+            _ => None,
         }
     }
 }
@@ -94,6 +111,12 @@ macro_rules! trait_into_maybe_dyn {
         $vis trait $trait {
             #[doc = "Convert the value into a [`MaybeDyn`]."]
             fn into_maybe_dyn(self) -> $crate::MaybeDyn<$ty>;
+        }
+
+        impl $trait for $crate::MaybeDyn<$ty> {
+            fn into_maybe_dyn(self) -> $crate::MaybeDyn<$ty> {
+                self
+            }
         }
 
         impl $trait for $ty {
@@ -124,6 +147,18 @@ macro_rules! trait_into_maybe_dyn {
             impl $trait for $from {
                 fn into_maybe_dyn(self) -> $crate::MaybeDyn<$ty> {
                     $crate::MaybeDyn::Static(self.into())
+                }
+            }
+
+            impl $trait for $crate::ReadSignal<$from> {
+                fn into_maybe_dyn(self) -> $crate::MaybeDyn<$ty> {
+                    $crate::MaybeDyn::Derived(Rc::new(move || <$ty>::from(self.get_clone()).into_maybe_dyn()))
+                }
+            }
+
+            impl $trait for $crate::Signal<$from> {
+                fn into_maybe_dyn(self) -> $crate::MaybeDyn<$ty> {
+                    $crate::MaybeDyn::Derived(Rc::new(move || <$ty>::from(self.get_clone()).into_maybe_dyn()))
                 }
             }
         )*)?

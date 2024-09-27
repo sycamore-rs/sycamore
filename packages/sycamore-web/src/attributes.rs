@@ -7,19 +7,19 @@ pub trait AttributeValue: AttributeValueBoxed + 'static {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>);
 }
 
-impl AttributeValue for MaybeDynString {
+impl AttributeValue for MaybeDyn<Cow<'static, str>> {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
         el.set_attribute(name, self);
     }
 }
 
-impl AttributeValue for MaybeDynBool {
+impl AttributeValue for MaybeDyn<bool> {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
         el.set_bool_attribute(name, self);
     }
 }
 
-impl AttributeValue for MaybeDynJsValue {
+impl AttributeValue for MaybeDyn<JsValue> {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
         el.set_property(name, self);
     }
