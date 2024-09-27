@@ -1,4 +1,5 @@
-use std::{borrow::Cow, rc::Rc};
+use std::borrow::Cow;
+use std::rc::Rc;
 
 use crate::*;
 
@@ -35,7 +36,10 @@ pub enum MaybeDyn<T: 'static> {
 impl<T: 'static> MaybeDyn<T> {
     /// Get the value by consuming itself. Unlike [`get_clone`], this method avoids a clone if we
     /// are just storing a static value.
-    pub fn evaluate(self) -> T where T: Clone {
+    pub fn evaluate(self) -> T
+    where
+        T: Clone,
+    {
         match self {
             Self::Static(value) => value,
             Self::Signal(signal) => signal.get_clone(),
@@ -95,7 +99,7 @@ impl<T: 'static> MaybeDyn<T> {
 /// This will generate the trait and implement it for `T`, [`ReadSignal<T>`], [`Signal<T>`], and
 /// `Fn() -> U` where `U` implements the trait. Furthermore, you can specify additional types that
 /// can be converted using their [`From`] implementations.
-/// 
+///
 /// For more information, check out the docs for [`MaybeDyn`].
 ///
 /// # Example
