@@ -3,7 +3,7 @@
 ## I'm new to Sycamore. Where should I start?
 
 If you like getting your hands dirty, try playing around with some
-[examples](https://github.com/sycamore-rs/sycamore/tree/master/examples).
+[examples](https://github.com/sycamore-rs/sycamore/tree/main/examples).
 
 If you prefer reading documentation, consider working your way through the
 [Sycamore Book](../getting_started/installation).

@@ -3,8 +3,7 @@ name: Post comment for JS framework benchmark
 on:
   workflow_run:
     workflows: [JS framework benchmark]
-    types:
-      - completed
+    types: [completed]
 
 jobs:
   post-js-framework-benchmark-comment-results:

@@ -2,7 +2,7 @@
 
 First, thank you for wanting to contribute! Sycamore is completely free and open-source and could not be so without the help of contributors like you!
 
-Check out our community's [Code of Conduct](https://github.com/sycamore-rs/sycamore/blob/master/CODE_OF_CONDUCT.md) and feel free to say hello on our [Discord server](https://discord.gg/vDwFUmm6mU) if you like. We have a special channel dedicated to Sycamore development where you can ask questions and guidance as well as geting to know other users and contributors of Sycamore in an informal setting.
+Check out our community's [Code of Conduct](https://github.com/sycamore-rs/sycamore/blob/main/CODE_OF_CONDUCT.md) and feel free to say hello on our [Discord server](https://discord.gg/vDwFUmm6mU) if you like. We have a special channel dedicated to Sycamore development where you can ask questions and guidance as well as geting to know other users and contributors of Sycamore in an informal setting.
 
 The rest of this document will contain:
 
