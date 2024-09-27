@@ -5,7 +5,7 @@ on:
     paths:
       - "**/*.rs"
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "**/*.rs"
 jobs:

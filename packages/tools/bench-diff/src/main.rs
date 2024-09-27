@@ -70,7 +70,7 @@ fn main() {
 
     println!("### Benchmark Report");
     println!("- `wasm-bindgen`: the performance goal");
-    println!("- `baseline`: performance of `sycamore-baseline` (typically latest master)");
+    println!("- `baseline`: performance of `sycamore-baseline` (typically latest main)");
     println!("- `update`: performance of `sycamore` (typically recent changes)");
     println!("- `diff`: measures the improvement of `update` over the `baseline`");
     println!("```diff");

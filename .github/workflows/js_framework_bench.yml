@@ -2,7 +2,7 @@ name: JS framework benchmark
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
     types: [labeled, synchronize]
 
 jobs:
