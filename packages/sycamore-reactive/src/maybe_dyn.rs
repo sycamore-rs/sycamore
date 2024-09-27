@@ -32,6 +32,47 @@ pub enum MaybeDyn<T: 'static> {
     Derived(Rc<dyn Fn() -> Self>),
 }
 
+impl<T: 'static> MaybeDyn<T> {
+    /// Get the value by consuming itself. Unlike [`get_clone`], this method avoids a clone if we
+    /// are just storing a static value.
+    pub fn evaluate(self) -> T where T: Clone {
+        match self {
+            Self::Static(value) => value,
+            Self::Signal(signal) => signal.get_clone(),
+            Self::Derived(f) => f().evaluate(),
+        }
+    }
+
+    /// Get the value by copying it.
+    ///
+    /// If the type does not implement [`Copy`], consider using [`get_clone`](Self::get_clone)
+    /// instead.
+    pub fn get(&mut self) -> T
+    where
+        T: Copy,
+    {
+        match self {
+            Self::Static(value) => *value,
+            Self::Signal(value) => value.get(),
+            Self::Derived(f) => f().evaluate(),
+        }
+    }
+
+    /// Get the value by cloning it.
+    ///
+    /// If the type implements [`Copy`], consider using [`get`](Self::get) instead.
+    pub fn get_clone(&mut self) -> T
+    where
+        T: Clone,
+    {
+        match self {
+            Self::Static(value) => value.clone(),
+            Self::Signal(value) => value.get_clone(),
+            Self::Derived(f) => f().evaluate(),
+        }
+    }
+}
+
 /// A macro that makes it easy to write implementations for `IntoMaybeDyn*` traits.
 ///
 /// This will generate the trait and implement it for `T`, [`ReadSignal<T>`], [`Signal<T>`], and

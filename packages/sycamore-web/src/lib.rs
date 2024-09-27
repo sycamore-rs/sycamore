@@ -43,7 +43,6 @@ mod components;
 mod elements;
 mod iter;
 mod macros;
-mod maybe_dyn;
 mod node;
 mod noderef;
 mod portal;
@@ -57,7 +56,6 @@ pub use self::attributes::*;
 pub use self::components::*;
 pub use self::elements::*;
 pub use self::iter::*;
-pub use self::maybe_dyn::*;
 pub use self::node::*;
 pub use self::noderef::*;
 pub use self::portal::*;
@@ -231,3 +229,8 @@ pub fn document() -> web_sys::Document {
     }
     DOCUMENT.with(Clone::clone)
 }
+
+trait_into_maybe_dyn!(
+    pub trait IntoMaybeDynJsValue, JsValue;
+    String, bool, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64
+);
