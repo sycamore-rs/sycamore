@@ -153,6 +153,9 @@ impl Parse for PropType {
                     Ok(Self::Plain { ident: name })
                 }
             }
+        } else if lookahead.peek(LitStr) {
+            let name: String = <LitStr as Parse>::parse(input).map(|s| s.value())?;
+            Ok(Self::PlainQuoted { ident: name })
         } else {
             Err(lookahead.error())
         }
