@@ -93,7 +93,7 @@ Attributes (including classes and ids) can also be specified.
 
 ```rust
 view! {
-    p(class="my-class", id="my-paragraph", aria-label="My paragraph")
+    p(class="my-class", id="my-paragraph", aria-label="My paragraph", "attr-42"="foo")
     button(disabled=true) {
        "My button"
     }

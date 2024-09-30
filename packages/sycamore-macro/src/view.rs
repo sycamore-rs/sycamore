@@ -105,6 +105,9 @@ impl Codegen {
             PropType::PlainHyphenated { ident } => {
                 quote! { .attr(#ident, #dyn_value) }
             }
+            PropType::PlainQuoted { ident } => {
+                quote! { .attr(#ident, #dyn_value) }
+            }
             PropType::Directive { dir, ident } => match dir.to_string().as_str() {
                 "on" => quote! { .on(::sycamore::rt::events::#ident, #value) },
                 "prop" => {

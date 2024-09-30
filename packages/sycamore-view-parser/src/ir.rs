@@ -53,6 +53,8 @@ pub enum PropType {
     Plain { ident: Ident },
     /// Syntax: `<hyphenated-name>=<expr>`.
     PlainHyphenated { ident: String },
+    /// Syntax: `"<quoted-name>"=<expr>`.
+    PlainQuoted { ident: String },
     /// Syntax: `<dir>:<prop>=<expr>`.
     Directive { dir: Ident, ident: Ident },
     /// Syntax: `ref=<expr>`.
