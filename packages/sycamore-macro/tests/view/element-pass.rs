@@ -10,6 +10,7 @@ fn compile_pass() {
 
         let _: View = view! { p(class="my-class") };
         let _: View = view! { p(class="my-class", id="my-id") };
+        let _: View = view! { p("attr-42"="my-value") };
 
         let _: View = view! { button(class="my-btn", on:click=|_| {}) };
         let _: View = view! { button(class="my-btn", aria-hidden="true") };
