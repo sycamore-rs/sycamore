@@ -6,7 +6,7 @@ mod sidebar;
 mod versions;
 
 use content::MarkdownPage;
-use reqwasm::http::Request;
+use gloo_net::http::Request;
 use serde_lite::Deserialize;
 use sidebar::SidebarData;
 use sycamore::futures::{create_resource, spawn_local_scoped};
