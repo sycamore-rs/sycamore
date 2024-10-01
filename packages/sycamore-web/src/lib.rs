@@ -82,6 +82,10 @@ pub mod rt {
     pub use crate::{bind, custom_element, tags, View};
 }
 
+/// Re-export of `js-sys` and `wasm-bindgen` for convenience.
+//#[doc(no_inline)]
+pub use {js_sys, wasm_bindgen};
+
 /// A macro that expands to whether we are in SSR mode or not.
 ///
 /// Can also be used with a block to only include the code inside the block if in SSR mode.

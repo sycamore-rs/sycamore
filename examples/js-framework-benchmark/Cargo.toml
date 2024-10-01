@@ -10,4 +10,3 @@ console_error_panic_hook = "0.1.7"
 getrandom = { version = "0.2.8", features = ["js"] }
 rand = "0.8.5"
 sycamore = { path = "../../packages/sycamore" }
-web-sys = "0.3.60"

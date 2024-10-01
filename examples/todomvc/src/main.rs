@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
+use sycamore::web::wasm_bindgen::prelude::*;
 use uuid::Uuid;
-use wasm_bindgen::prelude::*;
 use web_sys::{HtmlInputElement, KeyboardEvent};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
