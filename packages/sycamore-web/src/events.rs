@@ -3,7 +3,7 @@
 #[cfg(feature = "suspense")]
 use sycamore_futures::spawn_local_scoped;
 use wasm_bindgen::JsCast;
-use web_sys::{
+pub use web_sys::{
     AnimationEvent, BeforeUnloadEvent, CompositionEvent, DeviceMotionEvent, DeviceOrientationEvent,
     DragEvent, ErrorEvent, Event, FocusEvent, GamepadEvent, HashChangeEvent, InputEvent,
     KeyboardEvent, MessageEvent, MouseEvent, PageTransitionEvent, PointerEvent, PopStateEvent,

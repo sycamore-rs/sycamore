@@ -13,9 +13,9 @@ use crate::*;
 ///
 /// # Creating a `MaybeDyn`
 ///
-/// You can create a `MaybeDyn` from a static value by using the [`Static`] variant. However, most
-/// of the times, you probably want to use the implementation of the `From<U>` trait for
-/// `MaybeDyn<T>`.
+/// You can create a `MaybeDyn` from a static value by using the [`MaybeDyn::Static`] variant.
+/// However, most of the times, you probably want to use the implementation of the `From<U>` trait
+/// for `MaybeDyn<T>`.
 ///
 /// This trait is already implemented globally for signals and closures that return `T`. However,
 /// we cannot provide a blanket implementation for all types `T` to convert into `MaybeDyn<T>`
@@ -34,8 +34,8 @@ where
 }
 
 impl<T: Into<Self> + 'static> MaybeDyn<T> {
-    /// Get the value by consuming itself. Unlike [`get_clone`], this method avoids a clone if we
-    /// are just storing a static value.
+    /// Get the value by consuming itself. Unlike [`get_clone`](Self::get_clone), this method avoids
+    /// a clone if we are just storing a static value.
     pub fn evaluate(self) -> T
     where
         T: Clone,
