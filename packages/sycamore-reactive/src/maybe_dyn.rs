@@ -128,14 +128,16 @@ where
 ///
 /// struct MyType;
 ///
-/// impl From<i32> for MyType {
-///     fn from(_: i32) -> Self {
+/// struct OtherType;
+///
+/// impl From<OtherType> for MyType {
+///     fn from(_: OtherType) -> Self {
 ///         todo!();
 ///     }
 /// }
 ///
 /// // You can also list additional types that can be converted to `MaybeDyn<MyType>`.
-/// impl_into_maybe_dyn!(MyType; i32);
+/// impl_into_maybe_dyn!(MyType; OtherType);
 /// ```
 #[macro_export]
 macro_rules! impl_into_maybe_dyn {

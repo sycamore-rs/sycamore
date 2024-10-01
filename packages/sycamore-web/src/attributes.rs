@@ -125,8 +125,8 @@ mod tests {
     #[test]
     fn attributes_apply_self() {
         let mut attributes = Attributes::new();
-        attributes.set_attribute("class", MaybeDynString::from("test-class"));
-        attributes.set_attribute("id", MaybeDynString::from(move || "test-id"));
+        attributes.set_attribute("class", MaybeDyn::<Cow<'static, str>>::from("test-class"));
+        attributes.set_attribute("id", MaybeDyn::<Cow<'static, str>>::from(move || "test-id"));
 
         check(
             move || crate::tags::div().spread(attributes),
@@ -137,8 +137,8 @@ mod tests {
     #[test]
     fn attributes_apply_self_macro() {
         let mut attributes = Attributes::new();
-        attributes.set_attribute("class", MaybeDynString::from("test-class"));
-        attributes.set_attribute("id", MaybeDynString::from(move || "test-id"));
+        attributes.set_attribute("class", MaybeDyn::<Cow<'static, str>>::from("test-class"));
+        attributes.set_attribute("id", MaybeDyn::<Cow<'static, str>>::from(move || "test-id"));
 
         check(
             move || view! { div(..attributes) },
