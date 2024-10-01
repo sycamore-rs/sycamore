@@ -1,4 +1,4 @@
-use reqwasm::http::Request;
+use gloo_net::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
 use sycamore::web::Suspense;
@@ -11,7 +11,7 @@ struct Visits {
     value: u64,
 }
 
-async fn fetch_visits(id: &str) -> Result<Visits, reqwasm::Error> {
+async fn fetch_visits(id: &str) -> Result<Visits, gloo_net::Error> {
     let url = format!("{API_BASE_URL}/{id}/http-request");
     let resp = Request::get(&url).send().await?;
 
@@ -47,7 +47,5 @@ fn App() -> View {
 
 fn main() {
     console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
     sycamore::render(App);
 }

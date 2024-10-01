@@ -63,7 +63,6 @@ fn App() -> View {
 fn main() {
     if is_not_ssr!() {
         console_error_panic_hook::set_once();
-        console_log::init_with_level(log::Level::Debug).unwrap();
         sycamore::hydrate(App);
     } else {
         // Create inedx.html from template.html and insert the rendered HTML.

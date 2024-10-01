@@ -6,7 +6,7 @@ mod sidebar;
 mod versions;
 
 use content::MarkdownPage;
-use reqwasm::http::Request;
+use gloo_net::http::Request;
 use serde_lite::Deserialize;
 use sidebar::SidebarData;
 use sycamore::futures::{create_resource, spawn_local_scoped};
@@ -207,10 +207,6 @@ fn App() -> View {
 
 fn main() {
     #[cfg(debug_assertions)]
-    {
-        console_error_panic_hook::set_once();
-        console_log::init_with_level(log::Level::Debug).unwrap();
-    }
-
+    console_error_panic_hook::set_once();
     sycamore::render(App);
 }
