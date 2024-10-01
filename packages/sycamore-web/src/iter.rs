@@ -18,9 +18,10 @@ use crate::*;
 #[derive(Props)]
 pub struct KeyedProps<T, K, U, List, F, Key>
 where
-    List: Accessor<Vec<T>> + 'static,
+    List: Into<MaybeDyn<Vec<T>>> + 'static,
     F: Fn(T) -> U + 'static,
     Key: Fn(&T) -> K + 'static,
+    T: 'static,
 {
     list: List,
     view: F,
@@ -74,7 +75,7 @@ where
     T: PartialEq + Clone + 'static,
     K: Hash + Eq + 'static,
     U: Into<View>,
-    List: Accessor<Vec<T>> + 'static,
+    List: Into<MaybeDyn<Vec<T>>> + 'static,
     F: Fn(T) -> U + 'static,
     Key: Fn(&T) -> K + 'static,
 {
@@ -85,7 +86,8 @@ where
     if is_ssr!() {
         // In SSR mode, just create a static view.
         View::from(
-            list.value()
+            list.into()
+                .evaluate()
                 .into_iter()
                 .map(|x| view(x).into())
                 .collect::<Vec<_>>(),
@@ -138,8 +140,9 @@ where
 #[derive(Props)]
 pub struct IndexedProps<T, U, List, F>
 where
-    List: Accessor<Vec<T>> + 'static,
+    List: Into<MaybeDyn<Vec<T>>> + 'static,
     F: Fn(T) -> U + 'static,
+    T: 'static,
 {
     list: List,
     view: F,
@@ -177,7 +180,7 @@ pub fn Indexed<T, U, List, F>(props: IndexedProps<T, U, List, F>) -> View
 where
     T: PartialEq + Clone + 'static,
     U: Into<View>,
-    List: Accessor<Vec<T>> + 'static,
+    List: Into<MaybeDyn<Vec<T>>> + 'static,
     F: Fn(T) -> U + 'static,
 {
     let IndexedProps { list, view, .. } = props;
@@ -185,7 +188,8 @@ where
     if is_ssr!() {
         // In SSR mode, just create a static view.
         View::from(
-            list.value()
+            list.into()
+                .evaluate()
                 .into_iter()
                 .map(|x| view(x).into())
                 .collect::<Vec<_>>(),

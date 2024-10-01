@@ -99,7 +99,7 @@ error[E0277]: the trait bound `{integer}: Into<MaybeDyn<Cow<'static, str>>>` is 
   --> tests/view/component-fail.rs:48:57
    |
 48 |         let _: View = view! { AttributesComponent(class=123) }; // Wrong type
-   |                                                   ----- ^^^ the trait `FnMut()` is not implemented for `{integer}`, which is required by `{integer}: Into<MaybeDyn<Cow<'static, str>>>`
+   |                                                   ----- ^^^ the trait `Fn()` is not implemented for `{integer}`, which is required by `{integer}: Into<MaybeDyn<Cow<'static, str>>>`
    |                                                   |
    |                                                   required by a bound introduced by this call
    |
@@ -108,15 +108,5 @@ error[E0277]: the trait bound `{integer}: Into<MaybeDyn<Cow<'static, str>>>` is 
 note: required by a bound in `sycamore::web::HtmlGlobalAttributes::class`
   --> $WORKSPACE/packages/sycamore-web/src/elements.rs
    |
-   | /     impl_attributes! {
-   | |         /// Provides a hint for generating a keyboard shortcut for the current element. This attribute consists of a space-separated list...
-   | |         accesskey: MaybeDynString,
-   | |         /// Controls whether inputted text is automatically capitalized and, if so, in what manner.
-...  |
-   | |         class: MaybeDynString,
-   | |         ----- required by a bound in this associated function
-...  |
-   | |         virtualkeyboardpolicy: MaybeDynString,
-   | |     }
-   | |_____^ required by this bound in `HtmlGlobalAttributes::class`
-   = note: this error originates in the macro `impl_attribute` which comes from the expansion of the macro `impl_attributes` (in Nightly builds, run with -Z macro-backtrace for more info)
+   |         class: impl Into<MaybeDyn<Cow<'static, str>>>,
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HtmlGlobalAttributes::class`

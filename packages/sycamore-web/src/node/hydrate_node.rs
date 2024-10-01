@@ -192,65 +192,56 @@ impl ViewHtmlNode for HydrateNode {
         Self(NodeState::Marker(DomNode::create_marker_node()))
     }
 
-    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynString) {
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<Cow<'static, str>>) {
         // FIXME: use setAttributeNS if SVG
         if IS_HYDRATING.get() {
-            match value {
-                MaybeDyn::Static(_) => {
-                    // Noop for hydration since attributes are already set.
-                }
-                MaybeDyn::Dynamic(mut f) => {
-                    let node = self
-                        .as_web_sys()
-                        .clone()
-                        .unchecked_into::<web_sys::Element>();
-                    create_effect_initial(move || {
-                        let _ = f().evaluate(); // Track dependencies of f.
-                        (
-                            Box::new(move || node.set_attribute(&name, &f().evaluate()).unwrap()),
-                            (),
-                        )
-                    });
-                }
+            // Noop if value is static since attributes are already set.
+            if value.as_static().is_none() {
+                let node = self
+                    .as_web_sys()
+                    .clone()
+                    .unchecked_into::<web_sys::Element>();
+                create_effect_initial(move || {
+                    let _ = value.track(); // Track dependencies of value.
+                    (
+                        Box::new(move || node.set_attribute(&name, &value.get_clone()).unwrap()),
+                        (),
+                    )
+                });
             }
         } else {
             self.0.unwrap_mut().set_attribute(name, value);
         }
     }
 
-    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDynBool) {
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>) {
         // FIXME: use setAttributeNS if SVG
         if IS_HYDRATING.get() {
-            match value {
-                MaybeDyn::Static(_) => {
-                    // Noop for hydration since attributes are already set.
-                }
-                MaybeDyn::Dynamic(mut f) => {
-                    let node = self
-                        .as_web_sys()
-                        .clone()
-                        .unchecked_into::<web_sys::Element>();
-                    create_effect_initial(move || {
-                        let _ = f().evaluate(); // Track dependencies of f.
-                        (
-                            Box::new(move || {
-                                if f().evaluate() {
-                                    node.set_attribute(&name, "").unwrap();
-                                } else {
-                                    node.remove_attribute(&name).unwrap();
-                                }
-                            }),
-                            (),
-                        )
-                    });
-                }
+            if value.as_static().is_none() {
+                let node = self
+                    .as_web_sys()
+                    .clone()
+                    .unchecked_into::<web_sys::Element>();
+                create_effect_initial(move || {
+                    let _ = value.track(); // Track dependencies of f.
+                    (
+                        Box::new(move || {
+                            if value.get() {
+                                node.set_attribute(&name, "").unwrap();
+                            } else {
+                                node.remove_attribute(&name).unwrap();
+                            }
+                        }),
+                        (),
+                    )
+                });
             }
         } else {
             self.0.unwrap_mut().set_bool_attribute(name, value);
         }
     }
 
-    fn set_property(&mut self, name: Cow<'static, str>, value: MaybeDynJsValue) {
+    fn set_property(&mut self, name: Cow<'static, str>, value: MaybeDyn<JsValue>) {
         self.0.unwrap_mut().set_property(name, value);
     }
 

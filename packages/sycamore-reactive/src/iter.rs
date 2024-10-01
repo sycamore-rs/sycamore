@@ -22,7 +22,7 @@ use crate::*;
 ///
 ///  _Credits: Based on TypeScript implementation in <https://github.com/solidjs/solid>_
 pub fn map_keyed<T, K, U>(
-    list: impl Accessor<Vec<T>> + 'static,
+    list: impl Into<MaybeDyn<Vec<T>>> + 'static,
     mut map_fn: impl FnMut(T) -> U + 'static,
     key_fn: impl Fn(&T) -> K + 'static,
 ) -> ReadSignal<Vec<U>>
@@ -31,6 +31,7 @@ where
     K: Eq + Hash,
     U: Clone,
 {
+    let list = list.into();
     // Previous state used for diffing.
     let mut items = Vec::new();
 
@@ -42,7 +43,7 @@ where
 
     // Diff and update signal each time list is updated.
     let mut update = move || {
-        let new_items = list.value();
+        let new_items = list.get_clone();
         if new_items.is_empty() {
             // Fast path for removing all items.
             for dis in mem::take(&mut disposers) {
@@ -191,13 +192,14 @@ where
 ///   and therefore reactive.
 /// * `map_fn` - A closure that maps from the input type to the output type.
 pub fn map_indexed<T, U>(
-    list: impl Accessor<Vec<T>> + 'static,
+    list: impl Into<MaybeDyn<Vec<T>>> + 'static,
     mut map_fn: impl FnMut(T) -> U + 'static,
 ) -> ReadSignal<Vec<U>>
 where
     T: PartialEq + Clone + 'static,
     U: Clone,
 {
+    let list = list.into();
     // Previous state used for diffing.
     let mut items = Vec::new();
     let mut mapped = Vec::new();
@@ -205,7 +207,7 @@ where
 
     // Diff and update signal each time list is updated.
     let mut update = move || {
-        let new_items = list.value();
+        let new_items = list.get_clone();
 
         if new_items.is_empty() {
             // Fast path for removing all items.

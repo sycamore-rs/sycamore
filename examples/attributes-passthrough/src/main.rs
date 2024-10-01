@@ -1,23 +1,25 @@
+use std::borrow::Cow;
+
 use sycamore::prelude::*;
-use sycamore::web::MaybeDynString;
 
 #[derive(Props)]
 pub struct CustomButtonProps {
+    // TODO: remove this monstrosity.
     #[prop(setter(into))]
-    id: MaybeDynString,
+    id: MaybeDyn<Cow<'static, str>>,
     #[prop(attributes(html, button))]
     attributes: Attributes,
     children: Children,
 }
 
 #[component]
-fn CustomButton(mut props: CustomButtonProps) -> View {
+fn CustomButton(props: CustomButtonProps) -> View {
     console_log!("Intercepted `id` attribute: {}", props.id.get_clone());
 
     let children = props.children.call();
     view! {
-        // TODO: Remove the .get_clone() here.
-        button(id=props.id.get_clone(), ..props.attributes) {
+        // TODO: Remove the .clone() here.
+        button(id=props.id.clone(), ..props.attributes) {
             (children)
         }
     }

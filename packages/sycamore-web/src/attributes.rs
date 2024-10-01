@@ -7,19 +7,19 @@ pub trait AttributeValue: AttributeValueBoxed + 'static {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>);
 }
 
-impl AttributeValue for MaybeDynString {
+impl AttributeValue for MaybeDyn<Cow<'static, str>> {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
         el.set_attribute(name, self);
     }
 }
 
-impl AttributeValue for MaybeDynBool {
+impl AttributeValue for MaybeDyn<bool> {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
         el.set_bool_attribute(name, self);
     }
 }
 
-impl AttributeValue for MaybeDynJsValue {
+impl AttributeValue for MaybeDyn<JsValue> {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
         el.set_property(name, self);
     }
@@ -125,8 +125,8 @@ mod tests {
     #[test]
     fn attributes_apply_self() {
         let mut attributes = Attributes::new();
-        attributes.set_attribute("class", MaybeDynString::from("test-class"));
-        attributes.set_attribute("id", MaybeDynString::from(move || "test-id"));
+        attributes.set_attribute("class", MaybeDyn::<Cow<'static, str>>::from("test-class"));
+        attributes.set_attribute("id", MaybeDyn::<Cow<'static, str>>::from(move || "test-id"));
 
         check(
             move || crate::tags::div().spread(attributes),
@@ -137,8 +137,8 @@ mod tests {
     #[test]
     fn attributes_apply_self_macro() {
         let mut attributes = Attributes::new();
-        attributes.set_attribute("class", MaybeDynString::from("test-class"));
-        attributes.set_attribute("id", MaybeDynString::from(move || "test-id"));
+        attributes.set_attribute("class", MaybeDyn::<Cow<'static, str>>::from("test-class"));
+        attributes.set_attribute("id", MaybeDyn::<Cow<'static, str>>::from(move || "test-id"));
 
         check(
             move || view! { div(..attributes) },
