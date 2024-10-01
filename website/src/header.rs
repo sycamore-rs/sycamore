@@ -1,5 +1,5 @@
 use sycamore::prelude::*;
-use wasm_bindgen::JsCast;
+use sycamore::web::wasm_bindgen::JsCast;
 use web_sys::HtmlElement;
 
 use crate::sidebar::{SidebarCurrent, SidebarData};
