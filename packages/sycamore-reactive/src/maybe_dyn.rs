@@ -13,16 +13,13 @@ use crate::*;
 ///
 /// # Creating a `MaybeDyn`
 ///
-/// You can create a `MaybeDyn` directly by using one of the enum variants. However, most of the
-/// time, you probably want to use one of the `IntoMaybeDyn*` traits, e.g. [`IntoMaybeDynBool`].
+/// You can create a `MaybeDyn` from a static value by using the [`Static`] variant. However, most
+/// of the times, you probably want to use the implementation of the `From<U>` trait for
+/// `MaybeDyn<T>`.
 ///
-/// The reason why we need different traits for every type is because we don't have specialization
-/// in Rust (_yet_). However, we want to implement this trait for both `T` and functions that
-/// return `T`. To work around this, we cannot implement this generically but must do so for every
-/// type.
-///
-/// To make it slightly easier to use these traits for arbitrary types, you can use the
-/// [`trait_into_maybe_dyn!`] macro to automatically generate the right implementations.
+/// This trait is already implemented globally for signals and closures that return `T`. However,
+/// we cannot provide a blanket implementation for all types `T` to convert into `MaybeDyn<T>`
+/// because of specialization. Instead, we can only implement it for specific types.
 #[derive(Clone)]
 pub enum MaybeDyn<T>
 where
