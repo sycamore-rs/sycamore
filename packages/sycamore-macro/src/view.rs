@@ -6,7 +6,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use sycamore_view_parser::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
-use syn::Expr;
+use syn::{Expr, Pat};
 
 pub struct Codegen {
     // TODO: configure mode: Client, Hydrate, SSR
@@ -42,7 +42,7 @@ impl Codegen {
                 ::std::convert::Into::<::sycamore::rt::View>::into(#value)
             },
             Node::Dyn(DynNode { value }) => {
-                let is_dynamic = !matches!(value, Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_));
+                let is_dynamic = is_dyn(value);
                 if is_dynamic {
                     quote! {
                         ::sycamore::rt::View::from_dynamic(
@@ -194,5 +194,83 @@ fn is_component(ident: &TagIdent) -> bool {
         }
         // A hyphenated tag is always a custom-element and therefore never a component.
         TagIdent::Hyphenated(_) => false,
+    }
+}
+
+fn is_dyn(ex: &Expr) -> bool {
+    match ex {
+        Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_) | Expr::Field(_) => false,
+
+        Expr::Tuple(t) => t.elems.iter().any(|e| is_dyn(e)),
+        Expr::Array(a) => a.elems.iter().any(|e| is_dyn(e)),
+        Expr::Struct(s) => s.fields.iter().any(|fv: &syn::FieldValue| is_dyn(&fv.expr)),
+
+        Expr::Match(m) => {
+            is_dyn(&m.expr)
+                || m.arms.iter().any(|a: &syn::Arm| {
+                    is_dyn_pattern(&a.pat)
+                        || a.guard.as_ref().is_some_and(|(_, g_expr)| is_dyn(g_expr))
+                        || is_dyn(&a.body)
+                })
+        }
+
+        Expr::Index(i) => is_dyn(&i.expr) || is_dyn(&i.index),
+        Expr::Call(c) => c.args.iter().any(|ex| is_dyn(ex)),
+        Expr::MethodCall(mc) => is_dyn(&mc.receiver) || mc.args.iter().any(|arg| is_dyn(arg)),
+
+        Expr::Unary(u) => is_dyn(&u.expr),
+        Expr::Cast(c) => is_dyn(&c.expr),
+        Expr::Paren(p) => is_dyn(&p.expr),
+
+        // TODO
+        Expr::Block(_b) => true,
+
+        // Don't descend into nested inner view! macros, because their bodies
+        // will be checked for dynamic parts when their own codegen is run.
+        //
+        // As for other macros: we have no idea what they could generate from
+        // their TokenStreams, so lets assume those all are dynamic
+        Expr::Macro(m) => !m
+            .mac
+            .path
+            .get_ident()
+            .is_some_and(|ident| "view" == &ident.to_string()),
+
+        // TODO
+        _ => true,
+    }
+}
+
+fn is_dyn_pattern(pat: &Pat) -> bool {
+    match pat {
+        Pat::Wild(_) | Pat::Lit(_) | Pat::Path(_) | Pat::Rest(_) | Pat::Type(_) => false,
+
+        Pat::Paren(p) => is_dyn_pattern(&p.pat),
+        Pat::Tuple(t) => t.elems.iter().any(|p| is_dyn_pattern(p)),
+        Pat::TupleStruct(s) => s.elems.iter().any(|e| is_dyn_pattern(e)),
+        Pat::Struct(s) => s
+            .fields
+            .iter()
+            .any(|fp: &syn::FieldPat| is_dyn_pattern(&fp.pat)),
+
+        Pat::Reference(r) => r.mutability.is_some(),
+        // TODO
+        Pat::Ident(id) => id.by_ref.is_some() && id.mutability.is_some(),
+
+        // TODO
+        Pat::Const(_) => true,
+        // TODO
+        Pat::Or(_) => true,
+        // TODO
+        Pat::Range(_) => true,
+        // TODO
+        Pat::Slice(_) => true,
+
+        // Don't mess with these, assume they are always dynamic
+        Pat::Macro(_) => true,
+        Pat::Verbatim(_) => true,
+
+        // Need this, because Pat is marked as non-exhaustive
+        _ => panic!("Unhandled syn::Pat variant"),
     }
 }
