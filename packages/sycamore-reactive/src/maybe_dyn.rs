@@ -191,3 +191,38 @@ impl_into_maybe_dyn!(
     wasm_bindgen::JsValue;
     &'static str, String, bool, f32, f64, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn maybe_dyn_static() {
+        let value = MaybeDyn::<i32>::from(123);
+        assert!(value.as_static().is_some());
+        assert_eq!(value.get(), 123);
+        assert_eq!(value.get_clone(), 123);
+        assert_eq!(value.evaluate(), 123);
+    }
+
+    #[test]
+    fn maybe_dyn_signal() {
+        let _ = create_root(move || {
+            let signal = create_signal(123);
+            let value = MaybeDyn::from(signal);
+            assert!(value.as_static().is_none());
+            assert_eq!(value.get(), 123);
+            assert_eq!(value.get_clone(), 123);
+            assert_eq!(value.evaluate(), 123);
+        });
+    }
+
+    #[test]
+    fn maybe_dyn_derived() {
+        let value = MaybeDyn::<i32>::from(|| 123);
+        assert!(value.as_static().is_none());
+        assert_eq!(value.get(), 123);
+        assert_eq!(value.get_clone(), 123);
+        assert_eq!(value.evaluate(), 123);
+    }
+}
