@@ -106,6 +106,7 @@ impl<T: Into<Self>> From<Signal<T>> for MaybeDyn<T> {
     }
 }
 
+// TODO: add #[diagnostic::do_not_recommend] when it is stablised.
 impl<F, U, T: Into<Self>> From<F> for MaybeDyn<T>
 where
     F: Fn() -> U + 'static,
