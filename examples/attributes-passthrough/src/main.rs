@@ -5,7 +5,7 @@ use sycamore::prelude::*;
 #[derive(Props)]
 pub struct CustomButtonProps {
     // TODO: remove this monstrosity.
-    #[prop(setter(transform = |x: impl IntoMaybeDynCowStr| x.into_maybe_dyn()))]
+    #[prop(setter(into))]
     id: MaybeDyn<Cow<'static, str>>,
     #[prop(attributes(html, button))]
     attributes: Attributes,

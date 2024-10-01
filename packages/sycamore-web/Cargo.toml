@@ -19,7 +19,7 @@ smallvec = { version = "1.13.2", features = ["union", "const_generics"] }
 sycamore-core = { workspace = true }
 sycamore-futures = { workspace = true, optional = true }
 sycamore-macro = { workspace = true }
-sycamore-reactive = { workspace = true }
+sycamore-reactive = { workspace = true, features = ["wasm-bindgen"] }
 wasm-bindgen = "0.2.92"
 web-sys = { version = "0.3.69", features = [
 	"Comment",
