@@ -201,8 +201,8 @@ fn is_dyn(ex: &Expr) -> bool {
     match ex {
         Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_) | Expr::Field(_) => false,
 
-        Expr::Tuple(t) => t.elems.iter().any(|e| is_dyn(e)),
-        Expr::Array(a) => a.elems.iter().any(|e| is_dyn(e)),
+        Expr::Tuple(t) => t.elems.iter().any(is_dyn),
+        Expr::Array(a) => a.elems.iter().any(is_dyn),
         Expr::Struct(s) => s.fields.iter().any(|fv: &syn::FieldValue| is_dyn(&fv.expr)),
 
         Expr::Match(m) => {
@@ -215,62 +215,77 @@ fn is_dyn(ex: &Expr) -> bool {
         }
 
         Expr::Index(i) => is_dyn(&i.expr) || is_dyn(&i.index),
-        Expr::Call(c) => c.args.iter().any(|ex| is_dyn(ex)),
-        Expr::MethodCall(mc) => is_dyn(&mc.receiver) || mc.args.iter().any(|arg| is_dyn(arg)),
 
         Expr::Unary(u) => is_dyn(&u.expr),
         Expr::Cast(c) => is_dyn(&c.expr),
         Expr::Paren(p) => is_dyn(&p.expr),
 
-        // TODO
-        Expr::Block(_b) => true,
+        Expr::Block(b) => b.block.stmts.iter().any(|s: &syn::Stmt| match s {
+            syn::Stmt::Expr(ex, _) => is_dyn(ex),
+            syn::Stmt::Macro(m) => is_dyn_macro(&m.mac),
+            syn::Stmt::Local(loc) => {
+                is_dyn_pattern(&loc.pat)
+                    || loc.init.as_ref().is_some_and(|i| {
+                        is_dyn(&i.expr) || i.diverge.as_ref().is_some_and(|(_, ex)| is_dyn(ex))
+                    })
+            }
+            syn::Stmt::Item(_) => false,
+        }),
 
-        // Don't descend into nested inner view! macros, because their bodies
-        // will be checked for dynamic parts when their own codegen is run.
-        //
-        // As for other macros: we have no idea what they could generate from
-        // their TokenStreams, so lets assume those all are dynamic
-        Expr::Macro(m) => !m
-            .mac
-            .path
-            .get_ident()
-            .is_some_and(|ident| "view" == &ident.to_string()),
+        Expr::Macro(m) => is_dyn_macro(&m.mac),
+
+        // Would be nice to make these non-dynamic when they don't access signals.
+        Expr::Call(_) | Expr::MethodCall(_) => true,
 
         // TODO
         _ => true,
     }
 }
 
+fn is_dyn_macro(m: &syn::Macro) -> bool {
+    // Don't descend into nested inner view! macros, because their bodies
+    // will be checked for dynamic parts when their own codegen is run.
+    //
+    // As for other macros: we have no idea what they could generate from
+    // their TokenStreams, so lets assume those all are dynamic.
+    !m.path
+        .get_ident()
+        .is_some_and(|ident| "view" == &ident.to_string())
+}
+
 fn is_dyn_pattern(pat: &Pat) -> bool {
     match pat {
-        Pat::Wild(_) | Pat::Lit(_) | Pat::Path(_) | Pat::Rest(_) | Pat::Type(_) => false,
+        Pat::Wild(_) | Pat::Lit(_) | Pat::Path(_) | Pat::Rest(_) | Pat::Type(_) | Pat::Const(_) => {
+            false
+        }
 
         Pat::Paren(p) => is_dyn_pattern(&p.pat),
-        Pat::Tuple(t) => t.elems.iter().any(|p| is_dyn_pattern(p)),
-        Pat::TupleStruct(s) => s.elems.iter().any(|e| is_dyn_pattern(e)),
+        Pat::Or(o) => o.cases.iter().any(is_dyn_pattern),
+        Pat::Tuple(t) => t.elems.iter().any(is_dyn_pattern),
+        Pat::TupleStruct(s) => s.elems.iter().any(is_dyn_pattern),
+
         Pat::Struct(s) => s
             .fields
             .iter()
             .any(|fp: &syn::FieldPat| is_dyn_pattern(&fp.pat)),
 
         Pat::Reference(r) => r.mutability.is_some(),
-        // TODO
-        Pat::Ident(id) => id.by_ref.is_some() && id.mutability.is_some(),
 
-        // TODO
-        Pat::Const(_) => true,
-        // TODO
-        Pat::Or(_) => true,
-        // TODO
-        Pat::Range(_) => true,
-        // TODO
-        Pat::Slice(_) => true,
+        Pat::Ident(id) => {
+            (id.by_ref.is_some() && id.mutability.is_some())
+                || id
+                    .subpat
+                    .as_ref()
+                    .is_some_and(|(_, pat)| is_dyn_pattern(pat))
+        }
 
-        // Don't mess with these, assume they are always dynamic
-        Pat::Macro(_) => true,
-        Pat::Verbatim(_) => true,
+        Pat::Range(r) => {
+            r.start.as_deref().is_some_and(is_dyn) || r.end.as_deref().is_some_and(is_dyn)
+        }
 
-        // Need this, because Pat is marked as non-exhaustive
-        _ => panic!("Unhandled syn::Pat variant"),
+        Pat::Slice(s) => s.elems.iter().any(is_dyn_pattern),
+
+        // Pat is non-exhaustive
+        _ => true,
     }
 }
