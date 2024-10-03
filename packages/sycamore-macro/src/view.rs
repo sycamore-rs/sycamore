@@ -92,7 +92,7 @@ impl Codegen {
 
     pub fn attribute(&self, attr: &Prop) -> TokenStream {
         let value = &attr.value;
-        let is_dynamic = !matches!(value, Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_));
+        let is_dynamic = is_dyn(value);
         let dyn_value = if is_dynamic {
             quote! { move || #value }
         } else {
@@ -198,12 +198,62 @@ fn is_component(ident: &TagIdent) -> bool {
 }
 
 fn is_dyn(ex: &Expr) -> bool {
+    fn is_dyn_macro(m: &syn::Macro) -> bool {
+        // Bodies of nested inner view! macros will be checked for dynamic
+        // parts when their own codegen is run.
+        !m.path
+            .get_ident()
+            .is_some_and(|ident| "view" == &ident.to_string())
+    }
+
+    fn is_dyn_block(block: &syn::Block) -> bool {
+        block.stmts.iter().any(|s: &syn::Stmt| match s {
+            syn::Stmt::Expr(ex, _) => is_dyn(ex),
+            syn::Stmt::Macro(m) => is_dyn_macro(&m.mac),
+            syn::Stmt::Local(loc) => {
+                is_dyn_pattern(&loc.pat)
+                    || loc.init.as_ref().is_some_and(|i| {
+                        is_dyn(&i.expr) || i.diverge.as_ref().is_some_and(|(_, ex)| is_dyn(ex))
+                    })
+            }
+            syn::Stmt::Item(_) => false,
+        })
+    }
+
+    // This allows to recognise as 'non-dynamic' those method calls which only
+    // use literals (or things composed from literals).
+    fn is_literal(ex: &Expr) -> bool {
+        match ex {
+            Expr::Lit(_) => true,
+            Expr::Tuple(t) => t.elems.iter().all(is_literal),
+            Expr::Array(a) => a.elems.iter().all(is_literal),
+            Expr::Struct(s) => s
+                .fields
+                .iter()
+                .all(|fv: &syn::FieldValue| is_literal(&fv.expr)),
+            Expr::Index(i) => is_literal(&i.expr) && is_literal(&i.index),
+            Expr::Unary(u) => is_literal(&u.expr),
+            Expr::Cast(c) => is_literal(&c.expr),
+            Expr::Paren(p) => is_literal(&p.expr),
+            Expr::Closure(c) => c.capture.is_none(),
+            Expr::MethodCall(mc) => is_literal(&mc.receiver) && mc.args.iter().all(is_literal),
+            _ => false,
+        }
+    }
+
     match ex {
         Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_) | Expr::Field(_) => false,
 
         Expr::Tuple(t) => t.elems.iter().any(is_dyn),
         Expr::Array(a) => a.elems.iter().any(is_dyn),
         Expr::Struct(s) => s.fields.iter().any(|fv: &syn::FieldValue| is_dyn(&fv.expr)),
+        Expr::Index(i) => is_dyn(&i.expr) || is_dyn(&i.index),
+        Expr::Unary(u) => is_dyn(&u.expr),
+        Expr::Cast(c) => is_dyn(&c.expr),
+        Expr::Paren(p) => is_dyn(&p.expr),
+        Expr::Macro(m) => is_dyn_macro(&m.mac),
+        Expr::Block(b) => is_dyn_block(&b.block),
+        Expr::Let(e) => is_dyn_pattern(&e.pat) || is_dyn(&e.expr),
 
         Expr::Match(m) => {
             is_dyn(&m.expr)
@@ -214,43 +264,19 @@ fn is_dyn(ex: &Expr) -> bool {
                 })
         }
 
-        Expr::Index(i) => is_dyn(&i.expr) || is_dyn(&i.index),
+        Expr::If(i) => {
+            is_dyn(&i.cond)
+                || is_dyn_block(&i.then_branch)
+                || i.else_branch.as_ref().is_some_and(|(_, e)| is_dyn(e))
+        }
 
-        Expr::Unary(u) => is_dyn(&u.expr),
-        Expr::Cast(c) => is_dyn(&c.expr),
-        Expr::Paren(p) => is_dyn(&p.expr),
+        // Would be nice to make more of these non-dynamic when they don't access signals.
+        Expr::Call(_) => true,
+        Expr::MethodCall(mc) => !(is_literal(&mc.receiver) && mc.args.iter().all(is_literal)),
 
-        Expr::Block(b) => b.block.stmts.iter().any(|s: &syn::Stmt| match s {
-            syn::Stmt::Expr(ex, _) => is_dyn(ex),
-            syn::Stmt::Macro(m) => is_dyn_macro(&m.mac),
-            syn::Stmt::Local(loc) => {
-                is_dyn_pattern(&loc.pat)
-                    || loc.init.as_ref().is_some_and(|i| {
-                        is_dyn(&i.expr) || i.diverge.as_ref().is_some_and(|(_, ex)| is_dyn(ex))
-                    })
-            }
-            syn::Stmt::Item(_) => false,
-        }),
-
-        Expr::Macro(m) => is_dyn_macro(&m.mac),
-
-        // Would be nice to make these non-dynamic when they don't access signals.
-        Expr::Call(_) | Expr::MethodCall(_) => true,
-
-        // TODO
+        // TODO more
         _ => true,
     }
-}
-
-fn is_dyn_macro(m: &syn::Macro) -> bool {
-    // Don't descend into nested inner view! macros, because their bodies
-    // will be checked for dynamic parts when their own codegen is run.
-    //
-    // As for other macros: we have no idea what they could generate from
-    // their TokenStreams, so lets assume those all are dynamic.
-    !m.path
-        .get_ident()
-        .is_some_and(|ident| "view" == &ident.to_string())
 }
 
 fn is_dyn_pattern(pat: &Pat) -> bool {
@@ -263,14 +289,12 @@ fn is_dyn_pattern(pat: &Pat) -> bool {
         Pat::Or(o) => o.cases.iter().any(is_dyn_pattern),
         Pat::Tuple(t) => t.elems.iter().any(is_dyn_pattern),
         Pat::TupleStruct(s) => s.elems.iter().any(is_dyn_pattern),
-
-        Pat::Struct(s) => s
-            .fields
-            .iter()
-            .any(|fp: &syn::FieldPat| is_dyn_pattern(&fp.pat)),
+        Pat::Slice(s) => s.elems.iter().any(is_dyn_pattern),
+        Pat::Range(r) => {
+            r.start.as_deref().is_some_and(is_dyn) || r.end.as_deref().is_some_and(is_dyn)
+        }
 
         Pat::Reference(r) => r.mutability.is_some(),
-
         Pat::Ident(id) => {
             (id.by_ref.is_some() && id.mutability.is_some())
                 || id
@@ -279,13 +303,12 @@ fn is_dyn_pattern(pat: &Pat) -> bool {
                     .is_some_and(|(_, pat)| is_dyn_pattern(pat))
         }
 
-        Pat::Range(r) => {
-            r.start.as_deref().is_some_and(is_dyn) || r.end.as_deref().is_some_and(is_dyn)
-        }
+        Pat::Struct(s) => s
+            .fields
+            .iter()
+            .any(|fp: &syn::FieldPat| is_dyn_pattern(&fp.pat)),
 
-        Pat::Slice(s) => s.elems.iter().any(is_dyn_pattern),
-
-        // Pat is non-exhaustive
+        // syn::Pat is non-exhaustive
         _ => true,
     }
 }
