@@ -198,61 +198,26 @@ fn is_component(ident: &TagIdent) -> bool {
 }
 
 fn is_dyn(ex: &Expr) -> bool {
-    fn is_dyn_macro(m: &syn::Macro) -> bool {
-        // Bodies of nested inner view! macros will be checked for dynamic
-        // parts when their own codegen is run.
-        !m.path
-            .get_ident()
-            .is_some_and(|ident| "view" == &ident.to_string())
-    }
-
-    fn is_dyn_block(block: &syn::Block) -> bool {
-        block.stmts.iter().any(|s: &syn::Stmt| match s {
-            syn::Stmt::Expr(ex, _) => is_dyn(ex),
-            syn::Stmt::Macro(m) => is_dyn_macro(&m.mac),
-            syn::Stmt::Local(loc) => {
-                is_dyn_pattern(&loc.pat)
-                    || loc.init.as_ref().is_some_and(|i| {
-                        is_dyn(&i.expr) || i.diverge.as_ref().is_some_and(|(_, ex)| is_dyn(ex))
-                    })
-            }
-            syn::Stmt::Item(_) => false,
-        })
-    }
-
-    // This allows to recognise as 'non-dynamic' those method calls which only
-    // use literals (or things composed from literals).
-    fn is_literal(ex: &Expr) -> bool {
-        match ex {
-            Expr::Lit(_) => true,
-            Expr::Tuple(t) => t.elems.iter().all(is_literal),
-            Expr::Array(a) => a.elems.iter().all(is_literal),
-            Expr::Struct(s) => s
-                .fields
-                .iter()
-                .all(|fv: &syn::FieldValue| is_literal(&fv.expr)),
-            Expr::Index(i) => is_literal(&i.expr) && is_literal(&i.index),
-            Expr::Unary(u) => is_literal(&u.expr),
-            Expr::Cast(c) => is_literal(&c.expr),
-            Expr::Paren(p) => is_literal(&p.expr),
-            Expr::Closure(c) => c.capture.is_none(),
-            Expr::MethodCall(mc) => is_literal(&mc.receiver) && mc.args.iter().all(is_literal),
-            _ => false,
-        }
-    }
-
     match ex {
         Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_) | Expr::Field(_) => false,
 
+        Expr::Paren(p) => is_dyn(&p.expr),
+        Expr::Group(g) => is_dyn(&g.expr),
         Expr::Tuple(t) => t.elems.iter().any(is_dyn),
         Expr::Array(a) => a.elems.iter().any(is_dyn),
+        Expr::Repeat(r) => is_dyn(&r.expr) || is_dyn(&r.len),
         Expr::Struct(s) => s.fields.iter().any(|fv: &syn::FieldValue| is_dyn(&fv.expr)),
-        Expr::Index(i) => is_dyn(&i.expr) || is_dyn(&i.index),
-        Expr::Unary(u) => is_dyn(&u.expr),
+
         Expr::Cast(c) => is_dyn(&c.expr),
-        Expr::Paren(p) => is_dyn(&p.expr),
         Expr::Macro(m) => is_dyn_macro(&m.mac),
         Expr::Block(b) => is_dyn_block(&b.block),
+        Expr::Const(_const_block) => false,
+
+        Expr::Loop(l) => is_dyn_block(&l.body),
+        Expr::While(w) => is_dyn(&w.cond) || is_dyn_block(&w.body),
+        Expr::ForLoop(f) => is_dyn_pattern(&f.pat) || is_dyn(&f.expr) || is_dyn_block(&f.body),
+        Expr::Break(_) | Expr::Continue(_) => false,
+
         Expr::Let(e) => is_dyn_pattern(&e.pat) || is_dyn(&e.expr),
 
         Expr::Match(m) => {
@@ -270,11 +235,13 @@ fn is_dyn(ex: &Expr) -> bool {
                 || i.else_branch.as_ref().is_some_and(|(_, e)| is_dyn(e))
         }
 
-        // Would be nice to make more of these non-dynamic when they don't access signals.
-        Expr::Call(_) => true,
-        Expr::MethodCall(mc) => !(is_literal(&mc.receiver) && mc.args.iter().all(is_literal)),
+        Expr::Unary(u) => is_dyn(&u.expr),
+        Expr::Binary(b) => is_dyn(&b.left) || is_dyn(&b.right),
+        Expr::Index(i) => is_dyn(&i.expr) || is_dyn(&i.index),
+        Expr::Range(r) => {
+            r.start.as_deref().is_some_and(is_dyn) || r.end.as_deref().is_some_and(is_dyn)
+        }
 
-        // TODO more
         _ => true,
     }
 }
@@ -311,4 +278,26 @@ fn is_dyn_pattern(pat: &Pat) -> bool {
         // syn::Pat is non-exhaustive
         _ => true,
     }
+}
+
+fn is_dyn_macro(m: &syn::Macro) -> bool {
+    // Bodies of nested inner view! macros will be checked for dynamic
+    // parts when their own codegen is run.
+    !m.path
+        .get_ident()
+        .is_some_and(|ident| "view" == &ident.to_string())
+}
+
+fn is_dyn_block(block: &syn::Block) -> bool {
+    block.stmts.iter().any(|s: &syn::Stmt| match s {
+        syn::Stmt::Expr(ex, _) => is_dyn(ex),
+        syn::Stmt::Macro(m) => is_dyn_macro(&m.mac),
+        syn::Stmt::Local(loc) => {
+            is_dyn_pattern(&loc.pat)
+                || loc.init.as_ref().is_some_and(|i| {
+                    is_dyn(&i.expr) || i.diverge.as_ref().is_some_and(|(_, ex)| is_dyn(ex))
+                })
+        }
+        syn::Stmt::Item(_) => false,
+    })
 }

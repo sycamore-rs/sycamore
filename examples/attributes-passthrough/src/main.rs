@@ -18,7 +18,6 @@ fn CustomButton(props: CustomButtonProps) -> View {
 
     let children = props.children.call();
     view! {
-        // TODO: Remove the .clone() here.
         button(id=props.id, ..props.attributes) {
             (children)
         }
