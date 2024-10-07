@@ -313,6 +313,7 @@ fn render_suspense_fragment(SuspenseFragment { key, view }: SuspenseFragment) ->
 
 #[cfg(test)]
 #[cfg(feature = "suspense")]
+#[cfg_ssr]
 mod tests {
     use expect_test::expect;
     use futures::channel::oneshot;
