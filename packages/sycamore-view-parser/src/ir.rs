@@ -49,12 +49,12 @@ pub struct Prop {
 }
 
 pub enum PropType {
-    /// Syntax: `<name>=<expr>`.
-    Plain { ident: Ident },
-    /// Syntax: `<hyphenated-name>=<expr>`.
-    PlainHyphenated { ident: String },
-    /// Syntax: `"<quoted-name>"=<expr>`.
-    PlainQuoted { ident: String },
+    /// Syntax: `<name>=<expr>` or `<name>?=<optional_expr>`.
+    Plain { ident: Ident, optional: bool },
+    /// Syntax: `<hyphenated-name>=<expr> or `<hyphenated-name>?=<optional_expr>`.
+    PlainHyphenated { ident: String, optional: bool },
+    /// Syntax: `"<quoted-name>"=<expr>` or `"<quoted-name>"?=<optional_expr>`.
+    PlainQuoted { ident: String, optional: bool },
     /// Syntax: `<dir>:<prop>=<expr>`.
     Directive { dir: Ident, ident: Ident },
     /// Syntax: `ref=<expr>`.

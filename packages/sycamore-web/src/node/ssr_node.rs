@@ -115,6 +115,21 @@ impl ViewHtmlNode for SsrNode {
         }
     }
 
+    fn set_attribute_option(
+        &mut self,
+        name: Cow<'static, str>,
+        value: MaybeDyn<Option<Cow<'static, str>>>,
+    ) {
+        match self {
+            Self::Element { attributes, .. } => {
+                if let Some(value) = value.evaluate() {
+                    attributes.push((name, value))
+                }
+            }
+            _ => panic!("can only set attribute on an element"),
+        }
+    }
+
     fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>) {
         match self {
             Self::Element {
@@ -345,7 +360,9 @@ mod tests {
                     }
                 }
             },
-            expect![[r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk="0.0"><rect data-hk="0.1"></rect></svg>"#]],
+            expect![[
+                r#"<svg xmlns="http://www.w2.org/2000/svg" data-hk="0.0"><rect data-hk="0.1"></rect></svg>"#
+            ]],
         );
         check(
             move || {

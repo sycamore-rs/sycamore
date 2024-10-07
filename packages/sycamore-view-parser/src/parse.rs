@@ -122,6 +122,15 @@ impl Parse for Prop {
 
 impl Parse for PropType {
     fn parse(input: ParseStream) -> Result<Self> {
+        let is_optional = || {
+            if input.peek(Token![?]) {
+                let _opt: Token![?] = input.parse().unwrap();
+                true
+            } else {
+                false
+            }
+        };
+
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![..]) {
             let _2dot = input.parse::<Token![..]>()?;
@@ -139,7 +148,11 @@ impl Parse for PropType {
                     .map(|i| i.to_string())
                     .collect::<Vec<_>>()
                     .join("-");
-                Ok(Self::PlainHyphenated { ident })
+
+                Ok(Self::PlainHyphenated {
+                    ident,
+                    optional: is_optional(),
+                })
             } else {
                 let name: Ident = input.call(Ident::parse_any)?;
 
@@ -150,12 +163,18 @@ impl Parse for PropType {
                     let ident = input.call(Ident::parse_any)?;
                     Ok(Self::Directive { dir: name, ident })
                 } else {
-                    Ok(Self::Plain { ident: name })
+                    Ok(Self::Plain {
+                        ident: name,
+                        optional: is_optional(),
+                    })
                 }
             }
         } else if lookahead.peek(LitStr) {
             let name: String = <LitStr as Parse>::parse(input).map(|s| s.value())?;
-            Ok(Self::PlainQuoted { ident: name })
+            Ok(Self::PlainQuoted {
+                ident: name,
+                optional: is_optional(),
+            })
         } else {
             Err(lookahead.error())
         }

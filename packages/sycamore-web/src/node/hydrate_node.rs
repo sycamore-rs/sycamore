@@ -214,6 +214,38 @@ impl ViewHtmlNode for HydrateNode {
         }
     }
 
+    fn set_attribute_option(
+        &mut self,
+        name: Cow<'static, str>,
+        value: MaybeDyn<Option<Cow<'static, str>>>,
+    ) {
+        // FIXME: use setAttributeNS if SVG
+        if IS_HYDRATING.get() {
+            // Noop if value is static since attributes are already set.
+            if value.as_static().is_none() {
+                let node = self
+                    .as_web_sys()
+                    .clone()
+                    .unchecked_into::<web_sys::Element>();
+                create_effect_initial(move || {
+                    let _ = value.track(); // Track dependencies of value.
+                    (
+                        Box::new(move || {
+                            if let Some(value) = value.get_clone() {
+                                node.set_attribute(&name, value).unwrap()
+                            } else {
+                                node.remove_attribute(&name)
+                            }
+                        }),
+                        (),
+                    )
+                });
+            }
+        } else {
+            self.0.unwrap_mut().set_attribute(name, value);
+        }
+    }
+
     fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>) {
         // FIXME: use setAttributeNS if SVG
         if IS_HYDRATING.get() {

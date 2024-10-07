@@ -51,6 +51,12 @@ pub trait ViewHtmlNode: ViewNode {
 
     /// Set an HTML attribute.
     fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<Cow<'static, str>>);
+    /// Set an HTML attribute, if the value is Some(x), otherwise remove the attribute.
+    fn set_attribute_option(
+        &mut self,
+        name: Cow<'static, str>,
+        value: MaybeDyn<Option<Cow<'static, str>>>,
+    );
     /// Set a boolean HTML attribute.
     fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>);
     /// Set a JS property on an element.

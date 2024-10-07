@@ -99,14 +99,21 @@ impl Codegen {
             quote! { #value }
         };
         match &attr.ty {
-            PropType::Plain { ident } => {
-                quote! { .#ident(#dyn_value) }
+            PropType::Plain { ident, optional } => {
+                if *optional {
+                    let ident = ident.to_string();
+                    quote! { .attr_opt(#ident, #dyn_value) }
+                } else {
+                    quote! { .#ident(#dyn_value) }
+                }
             }
-            PropType::PlainHyphenated { ident } => {
-                quote! { .attr(#ident, #dyn_value) }
-            }
-            PropType::PlainQuoted { ident } => {
-                quote! { .attr(#ident, #dyn_value) }
+            PropType::PlainHyphenated { ident, optional }
+            | PropType::PlainQuoted { ident, optional } => {
+                if *optional {
+                    quote! { .attr_opt(#ident, #dyn_value) }
+                } else {
+                    quote! { .attr(#ident, #dyn_value) }
+                }
             }
             PropType::Directive { dir, ident } => match dir.to_string().as_str() {
                 "on" => quote! { .on(::sycamore::rt::events::#ident, #value) },
@@ -139,7 +146,7 @@ impl Codegen {
         let plain = props
             .iter()
             .filter_map(|prop| match &prop.ty {
-                PropType::Plain { ident } => Some((ident, prop.value.clone())),
+                PropType::Plain { ident, optional: _ } => Some((ident, prop.value.clone())),
                 _ => None,
             })
             .collect::<Vec<_>>();

@@ -131,6 +131,31 @@ impl ViewHtmlNode for DomNode {
         }
     }
 
+    fn set_attribute_option(
+        &mut self,
+        name: Cow<'static, str>,
+        value: MaybeDyn<Option<Cow<'static, str>>>,
+    ) {
+        // FIXME: use setAttributeNS if SVG
+        if let Some(value) = value.as_static() {
+            if let Some(value) = value {
+                self.raw
+                    .unchecked_ref::<web_sys::Element>()
+                    .set_attribute(&name, value)
+                    .unwrap();
+            }
+        } else {
+            let node = self.raw.clone().unchecked_into::<web_sys::Element>();
+            create_effect(move || {
+                if let Some(value) = value.get_clone() {
+                    node.set_attribute(&name, &value).unwrap();
+                } else {
+                    node.remove_attribute(&name);
+                }
+            });
+        }
+    }
+
     fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>) {
         // FIXME: use setAttributeNS if SVG
         if let Some(value) = value.as_static() {

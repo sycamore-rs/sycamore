@@ -13,6 +13,12 @@ impl AttributeValue for MaybeDyn<Cow<'static, str>> {
     }
 }
 
+impl AttributeValue for MaybeDyn<Option<Cow<'static, str>>> {
+    fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
+        el.set_attribute_option(name, self);
+    }
+}
+
 impl AttributeValue for MaybeDyn<bool> {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {
         el.set_bool_attribute(name, self);

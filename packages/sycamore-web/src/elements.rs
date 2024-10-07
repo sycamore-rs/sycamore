@@ -1118,6 +1118,16 @@ pub trait GlobalAttributes: SetAttribute + Sized {
         self
     }
 
+    /// Set attribute `name` with `value` from Option.
+    fn attr_opt(
+        mut self,
+        name: &'static str,
+        value: impl Into<MaybeDyn<Option<Cow<'static, str>>>>,
+    ) -> Self {
+        self.set_attribute(name, value.into());
+        self
+    }
+
     /// Set attribute `name` with `value`.
     fn bool_attr(mut self, name: &'static str, value: impl Into<MaybeDyn<bool>>) -> Self {
         self.set_attribute(name, value.into());

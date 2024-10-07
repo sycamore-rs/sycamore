@@ -186,6 +186,12 @@ impl<T> From<Vec<T>> for MaybeDyn<Vec<T>> {
     }
 }
 
+impl<T: Into<U>, U> From<Option<T>> for MaybeDyn<Option<U>> {
+    fn from(opt: Option<T>) -> Self {
+        MaybeDyn::Static(opt.map(|x| x.into()))
+    }
+}
+
 #[cfg(feature = "wasm-bindgen")]
 impl_into_maybe_dyn!(
     wasm_bindgen::JsValue;
