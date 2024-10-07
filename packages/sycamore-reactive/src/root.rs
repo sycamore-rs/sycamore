@@ -114,14 +114,6 @@ impl Root {
     /// # Params
     /// * `root` - The reactive root.
     /// * `id` - The id associated with the reactive node. `SignalId` inside the state itself.
-    #[cfg_attr(
-        all(feature = "trace", not(debug_assertions)),
-        tracing::instrument(skip(self))
-    )]
-    #[cfg_attr(
-        all(feature = "trace", debug_assertions),
-        tracing::instrument(skip(self), fields(created_at = self.nodes.borrow()[current].created_at.to_string()))
-    )]
     fn run_node_update(&'static self, current: NodeId) {
         debug_assert_eq!(
             self.nodes.borrow()[current].state,
@@ -196,8 +188,6 @@ impl Root {
             Self::dfs(node, &mut self.nodes.borrow_mut(), rev_sorted);
             self.mark_dependents_dirty(node);
         }
-        #[cfg(feature = "trace")]
-        tracing::trace!("update len: {}", rev_sorted.len());
 
         for &node in rev_sorted.iter().rev() {
             let mut nodes_mut = self.nodes.borrow_mut();
@@ -220,15 +210,6 @@ impl Root {
     /// signals that depend on `start_node`.
     ///
     /// If we are currently batching, defers updating the signal until the end of the batch.
-    #[cfg_attr(debug_assertions, track_caller)]
-    #[cfg_attr(
-        all(feature = "trace", not(debug_assertions)),
-        tracing::instrument(skip(self))
-    )]
-    #[cfg_attr(
-        all(feature = "trace", debug_assertions),
-        tracing::instrument(skip(self), fields(created_at = self.nodes.borrow()[start_node].created_at.to_string()))
-    )]
     pub fn propagate_updates(&'static self, start_node: NodeId) {
         if self.batching.get() {
             self.node_update_queue.borrow_mut().push(start_node);

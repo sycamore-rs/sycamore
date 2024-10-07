@@ -42,7 +42,6 @@ suspense = [
 	"sycamore-web/suspense",
 ]
 serde = ["sycamore-reactive/serde"]
-trace = ["sycamore-reactive/trace"]
 wasm-bindgen-interning = [
 	"web",
 	"dep:wasm-bindgen",
