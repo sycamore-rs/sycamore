@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::borrow::Cow;
 use std::rc::Rc;
 
@@ -94,15 +95,22 @@ impl<T: Into<Self> + 'static> MaybeDyn<T> {
     }
 }
 
-impl<T: Into<Self>> From<ReadSignal<T>> for MaybeDyn<T> {
-    fn from(val: ReadSignal<T>) -> Self {
-        MaybeDyn::Signal(val)
+impl<T: Into<Self>, U: Into<MaybeDyn<T>> + Clone> From<ReadSignal<U>> for MaybeDyn<T> {
+    fn from(val: ReadSignal<U>) -> Self {
+        // Check if U == T, i.e. ReadSignal<U> is actually a ReadSignal<T>.
+        if let Some(val) =
+            (&mut Some(val) as &mut dyn std::any::Any).downcast_mut::<Option<ReadSignal<T>>>()
+        {
+            MaybeDyn::Signal(val.unwrap())
+        } else {
+            MaybeDyn::Derived(Rc::new(move || val.get_clone().into()))
+        }
     }
 }
 
-impl<T: Into<Self>> From<Signal<T>> for MaybeDyn<T> {
-    fn from(val: Signal<T>) -> Self {
-        MaybeDyn::Signal(*val)
+impl<T: Into<Self>, U: Into<MaybeDyn<T>> + Clone> From<Signal<U>> for MaybeDyn<T> {
+    fn from(val: Signal<U>) -> Self {
+        Self::from(*val)
     }
 }
 
@@ -164,19 +172,6 @@ macro_rules! impl_into_maybe_dyn_with_convert {
                 impl From<$from> for $crate::MaybeDyn<$ty> {
                     fn from(val: $from) -> Self {
                         MaybeDyn::Static($convert(val))
-                    }
-                }
-
-                impl From<$crate::ReadSignal<$from>> for $crate::MaybeDyn<$ty> {
-                    fn from(val: $crate::ReadSignal<$from>) -> Self {
-                        MaybeDyn::Derived(Rc::new(move || MaybeDyn::Static($convert(val.get_clone()))))
-                    }
-                }
-
-                impl From<$crate::Signal<$from>> for $crate::MaybeDyn<$ty> {
-                    fn from(val: $crate::Signal<$from>) -> Self {
-                        // Call the implementation for `ReadSignal<$from>`.
-                        (*val).into()
                     }
                 }
             )*
