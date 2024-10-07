@@ -43,7 +43,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity_map_indexed", |b| {
         let root = create_root(|| {
             b.iter(|| {
-                let v = create_signal((0..100).collect());
+                let v = create_signal((0..100).collect::<Vec<_>>());
                 let mapped = map_indexed(v, |x| x * 2);
                 mapped.track();
 
@@ -57,7 +57,7 @@ pub fn bench(c: &mut Criterion) {
     c.bench_function("reactivity_map_keyed", |b| {
         let root = create_root(|| {
             b.iter(|| {
-                let v = create_signal((0..100).collect());
+                let v = create_signal((0..100).collect::<Vec<_>>());
                 let mapped = map_keyed(v, |x| x * 2, |x| *x);
                 mapped.track();
 

@@ -231,7 +231,12 @@ fn insert_front() {
 #[wasm_bindgen_test]
 fn nested_reactivity() {
     let _ = create_root(|| {
-        let count = create_signal(vec![1, 2, 3].into_iter().map(create_signal).collect());
+        let count = create_signal(
+            vec![1, 2, 3]
+                .into_iter()
+                .map(create_signal)
+                .collect::<Vec<_>>(),
+        );
 
         let view = move || {
             view! {
