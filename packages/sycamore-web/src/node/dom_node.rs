@@ -116,22 +116,25 @@ impl ViewHtmlNode for DomNode {
         }
     }
 
-    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<Cow<'static, str>>) {
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: StringAttribute) {
         // FIXME: use setAttributeNS if SVG
         if let Some(value) = value.as_static() {
-            self.raw
-                .unchecked_ref::<web_sys::Element>()
-                .set_attribute(&name, value)
-                .unwrap();
+            if let Some(value) = value {
+                self.raw
+                    .unchecked_ref::<web_sys::Element>()
+                    .set_attribute(&name, value)
+                    .unwrap();
+            }
         } else {
             let node = self.raw.clone().unchecked_into::<web_sys::Element>();
-            create_effect(move || {
-                node.set_attribute(&name, &value.get_clone()).unwrap();
+            create_effect(move || match value.get_clone() {
+                Some(value) => node.set_attribute(&name, &value).unwrap(),
+                None => node.remove_attribute(&name).unwrap(),
             });
         }
     }
 
-    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>) {
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: BoolAttribute) {
         // FIXME: use setAttributeNS if SVG
         if let Some(value) = value.as_static() {
             if *value {

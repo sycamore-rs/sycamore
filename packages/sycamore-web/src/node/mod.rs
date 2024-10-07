@@ -50,9 +50,9 @@ pub trait ViewHtmlNode: ViewNode {
     fn create_marker_node() -> Self;
 
     /// Set an HTML attribute.
-    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<Cow<'static, str>>);
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: StringAttribute);
     /// Set a boolean HTML attribute.
-    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>);
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: BoolAttribute);
     /// Set a JS property on an element.
     fn set_property(&mut self, name: Cow<'static, str>, value: MaybeDyn<JsValue>);
     /// Set an event handler on an element.

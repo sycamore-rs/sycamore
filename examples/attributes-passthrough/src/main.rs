@@ -1,12 +1,10 @@
-use std::borrow::Cow;
-
 use sycamore::prelude::*;
+use sycamore::web::StringAttribute;
 
 #[derive(Props)]
 pub struct CustomButtonProps {
-    // TODO: remove this monstrosity.
     #[prop(setter(into))]
-    id: MaybeDyn<Cow<'static, str>>,
+    id: StringAttribute,
     #[prop(attributes(html, button))]
     attributes: Attributes,
     children: Children,
@@ -14,7 +12,7 @@ pub struct CustomButtonProps {
 
 #[component]
 fn CustomButton(props: CustomButtonProps) -> View {
-    console_log!("Intercepted `id` attribute: {}", props.id.get_clone());
+    console_log!("Intercepted `id` attribute: {:?}", props.id.get_clone());
 
     let children = props.children.call();
     view! {

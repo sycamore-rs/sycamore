@@ -236,6 +236,21 @@ fn reactive_attribute() {
 }
 
 #[wasm_bindgen_test]
+fn optional_attribute() {
+    let _ = create_root(|| {
+        let attr = create_signal(None);
+
+        sycamore::render_in_scope(|| view! { span(data-attribute=attr) }, &test_container());
+
+        let span = query("span");
+        assert_eq!(span.outer_html(), "<span></span>");
+
+        attr.set(Some("value"));
+        assert_eq!(span.outer_html(), "<span data-attribute=\"value\"></span>");
+    });
+}
+
+#[wasm_bindgen_test]
 fn reactive_property() {
     let _ = create_root(|| {
         let indeterminate = create_signal(true);
