@@ -192,7 +192,7 @@ impl ViewHtmlNode for HydrateNode {
         Self(NodeState::Marker(DomNode::create_marker_node()))
     }
 
-    fn set_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<Cow<'static, str>>) {
+    fn set_attribute(&mut self, name: Cow<'static, str>, value: StringAttribute) {
         // FIXME: use setAttributeNS if SVG
         if IS_HYDRATING.get() {
             // Noop if value is static since attributes are already set.
@@ -204,7 +204,10 @@ impl ViewHtmlNode for HydrateNode {
                 create_effect_initial(move || {
                     let _ = value.track(); // Track dependencies of value.
                     (
-                        Box::new(move || node.set_attribute(&name, &value.get_clone()).unwrap()),
+                        Box::new(move || match value.get_clone() {
+                            Some(value) => node.set_attribute(&name, &value).unwrap(),
+                            None => node.remove_attribute(&name).unwrap(),
+                        }),
                         (),
                     )
                 });
@@ -214,7 +217,7 @@ impl ViewHtmlNode for HydrateNode {
         }
     }
 
-    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: MaybeDyn<bool>) {
+    fn set_bool_attribute(&mut self, name: Cow<'static, str>, value: BoolAttribute) {
         // FIXME: use setAttributeNS if SVG
         if IS_HYDRATING.get() {
             if value.as_static().is_none() {
