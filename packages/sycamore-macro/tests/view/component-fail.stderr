@@ -95,18 +95,18 @@ note: method defined here
 5  |     prop: &'static str,
    |     ^^^^--------------
 
-error[E0277]: the trait bound `{integer}: Into<MaybeDyn<Cow<'static, str>>>` is not satisfied
+error[E0277]: the trait bound `{integer}: Into<MaybeDyn<Option<Cow<'static, str>>>>` is not satisfied
   --> tests/view/component-fail.rs:48:57
    |
 48 |         let _: View = view! { AttributesComponent(class=123) }; // Wrong type
-   |                                                   ----- ^^^ the trait `Fn()` is not implemented for `{integer}`, which is required by `{integer}: Into<MaybeDyn<Cow<'static, str>>>`
+   |                                                   ----- ^^^ the trait `Fn()` is not implemented for `{integer}`, which is required by `{integer}: Into<MaybeDyn<Option<Cow<'static, str>>>>`
    |                                                   |
    |                                                   required by a bound introduced by this call
    |
-   = note: required for `MaybeDyn<Cow<'static, str>>` to implement `From<{integer}>`
-   = note: required for `{integer}` to implement `Into<MaybeDyn<Cow<'static, str>>>`
+   = note: required for `MaybeDyn<Option<Cow<'static, str>>>` to implement `From<{integer}>`
+   = note: required for `{integer}` to implement `Into<MaybeDyn<Option<Cow<'static, str>>>>`
 note: required by a bound in `sycamore::web::HtmlGlobalAttributes::class`
   --> $WORKSPACE/packages/sycamore-web/src/elements.rs
    |
-   |         class: impl Into<MaybeDyn<Cow<'static, str>>>,
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HtmlGlobalAttributes::class`
+   |         class: impl Into<StringAttribute>,
+   |                     ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `HtmlGlobalAttributes::class`
