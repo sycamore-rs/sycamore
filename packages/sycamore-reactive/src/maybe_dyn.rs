@@ -156,6 +156,18 @@ macro_rules! impl_into_maybe_dyn {
                         MaybeDyn::Static(val.into())
                     }
                 }
+
+                impl From<$crate::ReadSignal<$from>> for $crate::MaybeDyn<$ty> {
+                    fn from(val: $crate::ReadSignal<$from>) -> Self {
+                        MaybeDyn::Derived(Rc::new(move || val.get_clone().into()))
+                    }
+                }
+
+                impl From<$crate::Signal<$from>> for $crate::MaybeDyn<$ty> {
+                    fn from(val: $crate::Signal<$from>) -> Self {
+                        (*val).into()
+                    }
+                }
             )*
         )?
     };
@@ -179,6 +191,12 @@ impl_into_maybe_dyn!(u32);
 impl_into_maybe_dyn!(u64);
 impl_into_maybe_dyn!(u128);
 impl_into_maybe_dyn!(usize);
+
+impl<T> From<Option<T>> for MaybeDyn<Option<T>> {
+    fn from(val: Option<T>) -> Self {
+        MaybeDyn::Static(val)
+    }
+}
 
 impl<T> From<Vec<T>> for MaybeDyn<Vec<T>> {
     fn from(val: Vec<T>) -> Self {
@@ -209,7 +227,7 @@ mod tests {
     fn maybe_dyn_signal() {
         let _ = create_root(move || {
             let signal = create_signal(123);
-            let value = MaybeDyn::from(signal);
+            let value = MaybeDyn::<i32>::from(signal);
             assert!(value.as_static().is_none());
             assert_eq!(value.get(), 123);
             assert_eq!(value.get_clone(), 123);
