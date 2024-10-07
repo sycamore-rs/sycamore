@@ -94,15 +94,25 @@ impl<T: Into<Self> + 'static> MaybeDyn<T> {
     }
 }
 
-impl<T: Into<Self>> From<ReadSignal<T>> for MaybeDyn<T> {
-    fn from(val: ReadSignal<T>) -> Self {
-        MaybeDyn::Signal(val)
+impl<T: Into<Self>, U: Into<MaybeDyn<T>> + Clone> From<ReadSignal<U>> for MaybeDyn<T> {
+    fn from(val: ReadSignal<U>) -> Self {
+        // Check if U == T, i.e. ReadSignal<U> is actually a ReadSignal<T>.
+        //
+        // If so, we use a trick to convert the generic type to the concrete type. This should be
+        // optimized out by the compiler to be zero-cost.
+        if let Some(val) =
+            (&mut Some(val) as &mut dyn std::any::Any).downcast_mut::<Option<ReadSignal<T>>>()
+        {
+            MaybeDyn::Signal(val.unwrap())
+        } else {
+            MaybeDyn::Derived(Rc::new(move || val.get_clone().into()))
+        }
     }
 }
 
-impl<T: Into<Self>> From<Signal<T>> for MaybeDyn<T> {
-    fn from(val: Signal<T>) -> Self {
-        MaybeDyn::Signal(*val)
+impl<T: Into<Self>, U: Into<MaybeDyn<T>> + Clone> From<Signal<U>> for MaybeDyn<T> {
+    fn from(val: Signal<U>) -> Self {
+        Self::from(*val)
     }
 }
 
@@ -149,11 +159,21 @@ macro_rules! impl_into_maybe_dyn {
             }
         }
 
+        $crate::impl_into_maybe_dyn_with_convert!($ty; Into::into $(; $($from),*)?);
+    };
+}
+
+/// Create `From<U>` implementations for `MaybeDyn<T>` for a list of types.
+///
+/// Usually, you would use the [`impl_into_maybe_dyn!`] macro instead of this macro.
+#[macro_export]
+macro_rules! impl_into_maybe_dyn_with_convert {
+    ($ty:ty; $convert:expr $(; $($from:ty),*)?) => {
         $(
             $(
                 impl From<$from> for $crate::MaybeDyn<$ty> {
                     fn from(val: $from) -> Self {
-                        MaybeDyn::Static(val.into())
+                        MaybeDyn::Static($convert(val))
                     }
                 }
             )*
@@ -161,8 +181,17 @@ macro_rules! impl_into_maybe_dyn {
     };
 }
 
-impl_into_maybe_dyn!(bool);
 impl_into_maybe_dyn!(Cow<'static, str>; &'static str, String);
+impl_into_maybe_dyn_with_convert!(
+    Option<Cow<'static, str>>; |x| Some(Into::into(x));
+    Cow<'static, str>, &'static str, String
+);
+impl_into_maybe_dyn_with_convert!(
+    Option<Cow<'static, str>>; |x| Option::map(x, Into::into);
+    Option<&'static str>, Option<String>
+);
+
+impl_into_maybe_dyn!(bool);
 
 impl_into_maybe_dyn!(f32);
 impl_into_maybe_dyn!(f64);
@@ -179,6 +208,12 @@ impl_into_maybe_dyn!(u32);
 impl_into_maybe_dyn!(u64);
 impl_into_maybe_dyn!(u128);
 impl_into_maybe_dyn!(usize);
+
+impl<T> From<Option<T>> for MaybeDyn<Option<T>> {
+    fn from(val: Option<T>) -> Self {
+        MaybeDyn::Static(val)
+    }
+}
 
 impl<T> From<Vec<T>> for MaybeDyn<Vec<T>> {
     fn from(val: Vec<T>) -> Self {
@@ -209,11 +244,24 @@ mod tests {
     fn maybe_dyn_signal() {
         let _ = create_root(move || {
             let signal = create_signal(123);
-            let value = MaybeDyn::from(signal);
-            assert!(value.as_static().is_none());
+            let value = MaybeDyn::<i32>::from(signal);
+            assert!(matches!(value, MaybeDyn::Signal(_)));
+
             assert_eq!(value.get(), 123);
             assert_eq!(value.get_clone(), 123);
             assert_eq!(value.evaluate(), 123);
+        });
+    }
+
+    #[test]
+    fn maybe_dyn_signal_from() {
+        let _ = create_root(move || {
+            let signal = create_signal("abc");
+            let value = MaybeDyn::<Cow<'static, str>>::from(signal);
+            assert!(matches!(value, MaybeDyn::Derived(_)));
+
+            assert_eq!(value.get_clone(), "abc");
+            assert_eq!(value.evaluate(), "abc");
         });
     }
 

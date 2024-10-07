@@ -2,7 +2,7 @@ use std::cell::Cell;
 
 use super::*;
 
-thread_local!(static CLEANUP_CALLED: Cell<bool> = Cell::new(false));
+thread_local!(static CLEANUP_CALLED: Cell<bool> = const { Cell::new(false) });
 fn assert_cleanup_called(f: impl FnOnce()) {
     CLEANUP_CALLED.with(|cleanup_called| {
         cleanup_called.set(false);
