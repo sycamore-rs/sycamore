@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::borrow::Cow;
 use std::rc::Rc;
 
@@ -98,6 +97,9 @@ impl<T: Into<Self> + 'static> MaybeDyn<T> {
 impl<T: Into<Self>, U: Into<MaybeDyn<T>> + Clone> From<ReadSignal<U>> for MaybeDyn<T> {
     fn from(val: ReadSignal<U>) -> Self {
         // Check if U == T, i.e. ReadSignal<U> is actually a ReadSignal<T>.
+        //
+        // If so, we use a trick to convert the generic type to the concrete type. This should be
+        // optimized out by the compiler to be zero-cost.
         if let Some(val) =
             (&mut Some(val) as &mut dyn std::any::Any).downcast_mut::<Option<ReadSignal<T>>>()
         {
@@ -243,10 +245,23 @@ mod tests {
         let _ = create_root(move || {
             let signal = create_signal(123);
             let value = MaybeDyn::<i32>::from(signal);
-            assert!(value.as_static().is_none());
+            assert!(matches!(value, MaybeDyn::Signal(_)));
+
             assert_eq!(value.get(), 123);
             assert_eq!(value.get_clone(), 123);
             assert_eq!(value.evaluate(), 123);
+        });
+    }
+
+    #[test]
+    fn maybe_dyn_signal_from() {
+        let _ = create_root(move || {
+            let signal = create_signal("abc");
+            let value = MaybeDyn::<Cow<'static, str>>::from(signal);
+            assert!(matches!(value, MaybeDyn::Derived(_)));
+
+            assert_eq!(value.get_clone(), "abc");
+            assert_eq!(value.evaluate(), "abc");
         });
     }
 
