@@ -149,22 +149,33 @@ macro_rules! impl_into_maybe_dyn {
             }
         }
 
+        $crate::impl_into_maybe_dyn_with_convert!($ty; Into::into $(; $($from),*)?);
+    };
+}
+
+/// Create `From<U>` implementations for `MaybeDyn<T>` for a list of types.
+///
+/// Usually, you would use the [`impl_into_maybe_dyn!`] macro instead of this macro.
+#[macro_export]
+macro_rules! impl_into_maybe_dyn_with_convert {
+    ($ty:ty; $convert:expr $(; $($from:ty),*)?) => {
         $(
             $(
                 impl From<$from> for $crate::MaybeDyn<$ty> {
                     fn from(val: $from) -> Self {
-                        MaybeDyn::Static(val.into())
+                        MaybeDyn::Static($convert(val))
                     }
                 }
 
                 impl From<$crate::ReadSignal<$from>> for $crate::MaybeDyn<$ty> {
                     fn from(val: $crate::ReadSignal<$from>) -> Self {
-                        MaybeDyn::Derived(Rc::new(move || val.get_clone().into()))
+                        MaybeDyn::Derived(Rc::new(move || MaybeDyn::Static($convert(val.get_clone()))))
                     }
                 }
 
                 impl From<$crate::Signal<$from>> for $crate::MaybeDyn<$ty> {
                     fn from(val: $crate::Signal<$from>) -> Self {
+                        // Call the implementation for `ReadSignal<$from>`.
                         (*val).into()
                     }
                 }
@@ -173,8 +184,17 @@ macro_rules! impl_into_maybe_dyn {
     };
 }
 
-impl_into_maybe_dyn!(bool);
 impl_into_maybe_dyn!(Cow<'static, str>; &'static str, String);
+impl_into_maybe_dyn_with_convert!(
+    Option<Cow<'static, str>>; |x| Some(Into::into(x));
+    Cow<'static, str>, &'static str, String
+);
+impl_into_maybe_dyn_with_convert!(
+    Option<Cow<'static, str>>; |x| Option::map(x, Into::into);
+    Option<&'static str>, Option<String>
+);
+
+impl_into_maybe_dyn!(bool);
 
 impl_into_maybe_dyn!(f32);
 impl_into_maybe_dyn!(f64);
