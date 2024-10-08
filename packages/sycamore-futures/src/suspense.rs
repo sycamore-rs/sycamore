@@ -18,11 +18,15 @@ struct AllTasksRemaining {
     all_tasks_remaining: Signal<Vec<Signal<u32>>>,
 }
 
-/// Represents a new suspense scope. This is created by a call to [`await_suspense`].
+/// Represents a new suspense scope. This is created by a call to [`create_suspense_scope`].
 #[derive(Clone, Debug)]
-struct SuspenseScope {
+pub struct SuspenseScope {
     tasks_remaining: Signal<u32>,
-    parent: Option<Box<SuspenseScope>>,
+    /// The parent suspense scope of the current scope, if it exists.
+    pub parent: Option<Box<SuspenseScope>>,
+    /// Signal that is set to `true` when the view is rendered and streamed into the buffer.
+    /// This is unused on the client side.
+    pub sent: Signal<bool>,
 }
 
 impl SuspenseScope {
@@ -39,6 +43,7 @@ impl SuspenseScope {
         Self {
             tasks_remaining,
             parent,
+            sent: create_signal(false),
         }
     }
 
@@ -54,7 +59,7 @@ impl SuspenseScope {
     }
 
     /// Returns a future that resolves once the scope is no longer loading.
-    pub async fn await_scope(self) {
+    pub async fn until_finished(self) {
         let (tx, rx) = oneshot::channel();
         let mut tx = Some(tx);
         create_effect(move || {
@@ -69,13 +74,13 @@ impl SuspenseScope {
     }
 }
 
-/// Submits a new task that is to be tracked by the suspense system.
+/// Creates a new task that is to be tracked by the suspense system.
 ///
 /// This is used to signal to a `Suspense` component higher up in the component hierarchy that
 /// there is some async task that should be awaited before showing the UI.
 ///
 /// If this is called from outside a suspense scope, the task will be executed normally.
-pub fn submit_suspense_task(f: impl Future<Output = ()> + 'static) {
+pub fn create_suspense_task(f: impl Future<Output = ()> + 'static) {
     if let Some(mut scope) = try_use_context::<SuspenseScope>() {
         scope.tasks_remaining += 1;
         spawn_local_scoped(async move {
@@ -87,18 +92,18 @@ pub fn submit_suspense_task(f: impl Future<Output = ()> + 'static) {
     }
 }
 
-/// Calls the given function and returns a tuple with the result and a future that resolves when
-/// all suspense tasks created within the function are completed.
+/// Calls the given function and registers all suspense tasks.
+///
+/// Returns a tuple containing the return value of the function and the created suspense scope.
 ///
 /// If this is called inside another call to [`await_suspense`], this suspense will wait until the
 /// parent suspense is resolved.
-pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>) {
+pub fn create_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
     let parent = try_use_context::<SuspenseScope>();
     let scope = SuspenseScope::new(parent.map(Box::new));
     provide_context_in_new_scope(scope.clone(), move || {
         let ret = f();
-        let fut = scope.await_scope();
-        (ret, fut)
+        (ret, scope)
     })
 }
 
@@ -109,7 +114,7 @@ pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>)
 /// If not called inside a suspense scope, the future will resolve immediately.
 pub async fn await_suspense_current() {
     if let Some(scope) = try_use_context::<SuspenseScope>() {
-        scope.await_scope().await;
+        scope.until_finished().await;
     }
 }
 
@@ -148,12 +153,12 @@ mod tests {
     #[test]
     fn suspense_scope() {
         let _ = create_root(|| {
-            let _ = await_suspense(|| {
+            let _ = create_suspense_scope(|| {
                 let outer_scope = try_use_context::<SuspenseScope>();
                 assert!(outer_scope.is_some());
                 assert!(outer_scope.unwrap().parent.is_none());
 
-                let _ = await_suspense(|| {
+                let _ = create_suspense_scope(|| {
                     let inner_scope = try_use_context::<SuspenseScope>();
                     assert!(inner_scope.is_some());
                     assert!(inner_scope.unwrap().parent.is_some());
@@ -174,13 +179,13 @@ mod tests {
                     let is_completed = is_completed.clone();
                     || {
                         spawn_local_scoped(async move {
-                            let (_, fut) = await_suspense(|| {
-                                submit_suspense_task(async move {
+                            let (_, scope) = create_suspense_scope(|| {
+                                create_suspense_task(async move {
                                     rx.await.unwrap();
                                 });
                             });
 
-                            fut.await;
+                            scope.until_finished().await;
                             is_completed.set(true);
                         });
                     }
@@ -204,8 +209,8 @@ mod tests {
         local
             .run_until(async {
                 root = create_root(|| {
-                    let _ = await_suspense(|| {
-                        submit_suspense_task(async move {
+                    let _ = create_suspense_scope(|| {
+                        create_suspense_task(async move {
                             rx.await.unwrap();
                         });
                     });

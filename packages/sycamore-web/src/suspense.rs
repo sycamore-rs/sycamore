@@ -3,7 +3,7 @@
 use std::future::Future;
 use std::num::NonZeroU32;
 
-use sycamore_futures::{await_suspense, submit_suspense_task};
+use sycamore_futures::{create_suspense_scope, create_suspense_task};
 use sycamore_macro::{component, Props};
 
 use crate::*;
@@ -71,14 +71,24 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let key = use_suspense_key();
 
                 // Push `children` to the suspense fragments lists.
-                let (view, suspend) = await_suspense(move || HydrationRegistry::in_suspense_scope(key, move || children.call()));
-                let fragment = SuspenseFragment::new(key, view);
-                let mut state = use_context::<SuspenseState>();
+                let (mut view, suspense_scope) = create_suspense_scope(move || HydrationRegistry::in_suspense_scope(key, move || children.call()));
+                let state = use_context::<SuspenseState>();
                 // TODO: error if scope is destroyed before suspense resolves.
                 // Probably can fix this by using `FuturesOrdered` instead.
                 sycamore_futures::spawn_local_scoped(async move {
-                    suspend.await;
-                    let _ = state.sender.send(fragment).await;
+                    suspense_scope.clone().until_finished().await;
+                    debug_assert!(!suspense_scope.sent.get());
+                    // Make sure parent is sent first.
+                    create_effect(move || {
+                        if !suspense_scope.sent.get() && suspense_scope.parent.as_ref().map_or(true, |parent| parent.sent.get()) {
+                            let fragment = SuspenseFragment::new(key, std::mem::take(&mut view));
+                            let mut state = state.clone();
+                            sycamore_futures::spawn_local_scoped(async move {
+                                let _ = state.sender.send(fragment).await;
+                            });
+                            suspense_scope.sent.set(true);
+                        }
+                    });
                 });
 
                 // Add some marker nodes so that we know start and finish of fallback.
@@ -111,11 +121,9 @@ pub fn Suspense(props: SuspenseProps) -> View {
         match mode {
             SsrMode::Sync => {
                 let show = create_signal(false);
-                let (view, suspend) = await_suspense(move || children.call());
-                // If the Suspense is nested under another Suspense, we want the other Suspense to await
-                // this one as well.
-                submit_suspense_task(async move {
-                    suspend.await;
+                let (view, suspense_scope) = create_suspense_scope(move || children.call());
+                sycamore_futures::spawn_local_scoped(async move {
+                    suspense_scope.until_finished().await;
                     show.set(true);
                 });
 
@@ -160,14 +168,14 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
                     view.track();
                     view.update_silent(std::mem::take)
                 }) };
-                submit_suspense_task(async move {
+                create_suspense_task(async move {
                     view.set(f().await);
                 });
                 ret
             }
             SsrMode::Blocking | SsrMode::Streaming => {
                 // TODO: This does not properly hydrate dynamic text nodes.
-                submit_suspense_task(async move { f().await; });
+                create_suspense_task(async move { f().await; });
                 view! {}
             }
         }
@@ -176,7 +184,7 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
         use std::sync::{Arc, Mutex};
 
         let node = Arc::new(Mutex::new(View::default()));
-        submit_suspense_task({
+        create_suspense_task({
             let node = Arc::clone(&node);
             async move {
                 *node.lock().unwrap() = f().await;
