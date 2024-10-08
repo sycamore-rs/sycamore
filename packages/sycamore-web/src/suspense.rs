@@ -75,11 +75,11 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 // TODO: error if scope is destroyed before suspense resolves.
                 // Probably can fix this by using `FuturesOrdered` instead.
                 sycamore_futures::spawn_local_scoped(async move {
-                    suspense_scope.clone().until_finished().await;
+                    suspense_scope.until_finished().await;
                     debug_assert!(!suspense_scope.sent.get());
                     // Make sure parent is sent first.
                     create_effect(move || {
-                        if !suspense_scope.sent.get() && suspense_scope.parent.as_ref().map_or(true, |parent| parent.sent.get()) {
+                        if !suspense_scope.sent.get() && suspense_scope.parent.as_ref().map_or(true, |parent| parent.get().sent.get()) {
                             let fragment = SuspenseFragment::new(key, std::mem::take(&mut view));
                             let mut state = state.clone();
                             sycamore_futures::spawn_local_scoped(async move {
