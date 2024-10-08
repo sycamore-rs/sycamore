@@ -1,8 +1,48 @@
 //! Definition for the [`NoSsr`] and [`NoHydrate`] components.
 
-use sycamore_macro::{component, view};
+use sycamore_macro::{component, view, Props};
 
 use crate::*;
+
+/// Props for [`Show`].
+#[derive(Props)]
+pub struct ShowProps {
+    #[prop(setter(into))]
+    pub when: MaybeDyn<bool>,
+    pub children: Children,
+}
+
+/// An utility component that only renders its children when a condition is satisfied.
+#[component]
+pub fn Show(props: ShowProps) -> View {
+    let mut children = props.children.call();
+    if is_ssr!() {
+        View::from_dynamic(move || {
+            if props.when.get() {
+                std::mem::take(&mut children)
+            } else {
+                view! {}
+            }
+        })
+    } else {
+        View::from_dynamic(move || {
+            let cloned = utils::clone_nodes_via_web_sys(&children);
+
+            if props.when.get() {
+                // Do not set `children` to the document fragment since the document fragment will
+                // be emptied when it is appended.
+                children = utils::unwrap_from_document_fragment(cloned);
+
+                utils::clone_nodes_via_web_sys(&children)
+            } else {
+                // Wrap children inside a document fragment so that it can still be dynamically
+                // updated even though it is not mounted.
+                children = utils::wrap_in_document_fragment(cloned);
+                view! {}
+            }
+        })
+    }
+}
 
 /// Component that is only renders its children on the client side.
 ///
