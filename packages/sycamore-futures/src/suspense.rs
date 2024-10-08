@@ -9,6 +9,15 @@ use sycamore_reactive::*;
 
 use crate::*;
 
+/// A context value that keeps track of all the signals representing the number of tasks remaining
+/// in a suspense scope.
+///
+/// This is useful for figuring out when all suspense tasks are completed on the page.
+#[derive(Clone, Debug, Default)]
+struct AllTasksRemaining {
+    all_tasks_remaining: Signal<Vec<Signal<u32>>>,
+}
+
 /// Represents a new suspense scope. This is created by a call to [`await_suspense`].
 #[derive(Clone, Debug)]
 struct SuspenseScope {
@@ -22,8 +31,13 @@ impl SuspenseScope {
     /// The parent scope should always be located in a reactive scope that is an ancestor of
     /// this scope.
     pub fn new(parent: Option<Box<SuspenseScope>>) -> Self {
+        let tasks_remaining = create_signal(0);
+        let global = use_global_scope().run_in(|| use_context_or_else(AllTasksRemaining::default));
+        global
+            .all_tasks_remaining
+            .update(|vec| vec.push(tasks_remaining));
         Self {
-            tasks_remaining: create_signal(0),
+            tasks_remaining,
             parent,
         }
     }
@@ -110,6 +124,20 @@ pub fn use_is_loading() -> bool {
     try_use_context::<SuspenseScope>().map_or(false, |scope| scope.is_loading())
 }
 
+/// Returns whether any suspense scope is current loading.
+///
+/// This is unlike [`use_is_loading`] in that it can be called outside of a suspense scope and does
+/// not apply to any suspense scope in particular.
+pub fn use_is_loading_global() -> bool {
+    if let Some(global) = try_use_context::<AllTasksRemaining>() {
+        global
+            .all_tasks_remaining
+            .with(|vec| vec.iter().any(|signal| signal.get() > 0))
+    } else {
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
@@ -165,5 +193,35 @@ mod tests {
         tx.send(()).unwrap();
         local.await;
         assert!(is_completed.get());
+    }
+
+    #[tokio::test]
+    async fn use_is_loading_global_works() {
+        let (tx, rx) = oneshot::channel();
+
+        let local = tokio::task::LocalSet::new();
+        let mut root = create_root(|| {});
+        local
+            .run_until(async {
+                root = create_root(|| {
+                    let _ = await_suspense(|| {
+                        submit_suspense_task(async move {
+                            rx.await.unwrap();
+                        });
+                    });
+                });
+            })
+            .await;
+
+        root.run_in(|| {
+            assert!(use_is_loading_global());
+        });
+
+        tx.send(()).unwrap();
+        local.await;
+
+        root.run_in(|| {
+            assert!(!use_is_loading_global());
+        });
     }
 }

@@ -53,7 +53,6 @@ pub fn Suspense(props: SuspenseProps) -> View {
 
     is_ssr! {
         use futures::SinkExt;
-        use sycamore_futures::spawn_local;
 
         let mode = use_context::<SsrMode>();
         match mode {
