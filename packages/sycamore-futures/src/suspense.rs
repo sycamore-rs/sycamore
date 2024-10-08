@@ -13,17 +13,17 @@ use crate::*;
 /// in a suspense scope.
 ///
 /// This is useful for figuring out when all suspense tasks are completed on the page.
-#[derive(Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 struct AllTasksRemaining {
     all_tasks_remaining: Signal<Vec<Signal<u32>>>,
 }
 
 /// Represents a new suspense scope. This is created by a call to [`create_suspense_scope`].
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct SuspenseScope {
     tasks_remaining: Signal<u32>,
     /// The parent suspense scope of the current scope, if it exists.
-    pub parent: Option<Box<SuspenseScope>>,
+    pub parent: Option<Signal<SuspenseScope>>,
     /// Signal that is set to `true` when the view is rendered and streamed into the buffer.
     /// This is unused on the client side.
     pub sent: Signal<bool>,
@@ -34,7 +34,7 @@ impl SuspenseScope {
     ///
     /// The parent scope should always be located in a reactive scope that is an ancestor of
     /// this scope.
-    pub fn new(parent: Option<Box<SuspenseScope>>) -> Self {
+    pub fn new(parent: Option<SuspenseScope>) -> Self {
         let tasks_remaining = create_signal(0);
         let global = use_global_scope().run_in(|| use_context_or_else(AllTasksRemaining::default));
         global
@@ -42,7 +42,7 @@ impl SuspenseScope {
             .update(|vec| vec.push(tasks_remaining));
         Self {
             tasks_remaining,
-            parent,
+            parent: parent.map(create_signal),
             sent: create_signal(false),
         }
     }
@@ -55,7 +55,7 @@ impl SuspenseScope {
             || self
                 .parent
                 .as_ref()
-                .map_or(false, |parent| parent.is_loading())
+                .map_or(false, |parent| parent.with(Self::is_loading))
     }
 
     /// Returns a future that resolves once the scope is no longer loading.
@@ -100,7 +100,7 @@ pub fn create_suspense_task(f: impl Future<Output = ()> + 'static) {
 /// parent suspense is resolved.
 pub fn create_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
     let parent = try_use_context::<SuspenseScope>();
-    let scope = SuspenseScope::new(parent.map(Box::new));
+    let scope = SuspenseScope::new(parent);
     provide_context_in_new_scope(scope.clone(), move || {
         let ret = f();
         (ret, scope)

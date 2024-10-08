@@ -12,8 +12,8 @@ use crate::*;
 #[derive(Props)]
 pub struct SuspenseProps {
     /// The fallback [`View`] to display while the child nodes are being awaited.
-    #[prop(default, setter(transform = |f: impl FnOnce() -> View + 'static| Some(Box::new(f) as Box<dyn FnOnce() -> View>)))]
-    fallback: Option<Box<dyn FnOnce() -> View>>,
+    #[prop(default, setter(transform = |f: impl Fn() -> View + 'static| Some(Box::new(f) as Box<dyn Fn() -> View>)))]
+    fallback: Option<Box<dyn Fn() -> View>>,
     children: Children,
 }
 
@@ -49,7 +49,6 @@ pub struct SuspenseProps {
 pub fn Suspense(props: SuspenseProps) -> View {
     let SuspenseProps { fallback, children } = props;
     let fallback = fallback.unwrap_or_else(|| Box::new(View::default));
-    let mut fallback = Some(fallback);
 
     is_ssr! {
         use futures::SinkExt;
@@ -59,7 +58,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // In sync mode, we don't even bother about the children and just return the fallback.
             //
             // We make sure to return a closure so that the view can be properly hydrated.
-            SsrMode::Sync => View::from(move || fallback.take().unwrap()()),
+            SsrMode::Sync => View::from_dynamic(fallback),
             // In blocking mode, we render a marker node and then replace the marker node with the
             // children once the suspense is resolved.
             //
@@ -102,7 +101,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                     View::from((
                         start,
                         marker,
-                        view! { NoHydrate(children=fallback.take().unwrap().into()) },
+                        view! { NoHydrate(children=Children::new(fallback)) },
                         end,
                     ))
                 } else {
@@ -120,16 +119,15 @@ pub fn Suspense(props: SuspenseProps) -> View {
         };
         match mode {
             SsrMode::Sync => {
-                let show = create_signal(false);
                 let (view, suspense_scope) = create_suspense_scope(move || children.call());
-                sycamore_futures::spawn_local_scoped(async move {
-                    suspense_scope.until_finished().await;
-                    show.set(true);
-                });
 
-                let mut view = utils::wrap_in_document_fragment(view);
                 view! {
-                    (if !show.get() { fallback.take().unwrap()() } else { std::mem::take(&mut view) })
+                    Show(when=move || suspense_scope.is_loading()) {
+                        (fallback())
+                    }
+                    Show(when=move || !suspense_scope.is_loading()) {
+                        (view)
+                    }
                 }
             }
             SsrMode::Blocking | SsrMode::Streaming => {
@@ -145,7 +143,9 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
-                HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()).0)
+                let mut view = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()).0);
+
+                View::from_dynamic(move || std::mem::take(&mut view))
             }
         }
     }
@@ -193,6 +193,28 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
         View::from(move || SsrNode::Dynamic {
             view: Arc::clone(&node),
         })
+    }
+}
+
+/// Props for [`Transition`].
+#[derive(Props)]
+pub struct TransitionProps {
+    /// The fallback [`View`] to display while the child nodes are being awaited.
+    #[prop(default, setter(transform = |f: impl FnOnce() -> View + 'static| Some(Box::new(f) as Box<dyn FnOnce() -> View>)))]
+    fallback: Option<Box<dyn FnOnce() -> View>>,
+    children: Children,
+    /// The component will automatically update this signal with the `is_loading` state.
+    #[prop(default)]
+    set_is_loading: Signal<bool>,
+}
+
+/// `Transition` is like [`Suspense`] except that it keeps the previous content visible until the
+/// new content is ready.
+#[component]
+pub fn Transition(props: TransitionProps) -> View {
+    let fallback = || view! {};
+    view! {
+        Suspense(fallback=fallback, children=props.children)
     }
 }
 

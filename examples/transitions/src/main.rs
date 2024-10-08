@@ -1,6 +1,5 @@
 use gloo_timers::future::TimeoutFuture;
 use rand::Rng;
-use sycamore::futures::use_transition;
 use sycamore::prelude::*;
 use sycamore::web::Suspense;
 
@@ -37,13 +36,12 @@ async fn Child(tab: Tab) -> View {
 #[component]
 fn App() -> View {
     let tab = create_signal(Tab::One);
-    let transition = use_transition();
-    let update = move |x| transition.start(move || tab.set(x), || ());
+    let update = move |x| tab.set(x);
 
     view! {
         div {
             p { "Suspense + Transitions" }
-            p { "Transition state: " (if transition.is_pending() { "pending" } else { "done" }) }
+            //p { "Transition state: " (if transition.is_pending() { "pending" } else { "done" }) }
             button(on:click=move |_| update(Tab::One)) { "One" }
             button(on:click=move |_| update(Tab::Two)) { "Two" }
             button(on:click=move |_| update(Tab::Three)) { "Three" }
