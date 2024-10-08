@@ -145,7 +145,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
-                HydrationRegistry::in_suspense_scope(key, move || children.call())
+                HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()).0)
             }
         }
     }
