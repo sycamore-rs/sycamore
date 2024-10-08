@@ -58,7 +58,12 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // In sync mode, we don't even bother about the children and just return the fallback.
             //
             // We make sure to return a closure so that the view can be properly hydrated.
-            SsrMode::Sync => View::from_dynamic(fallback),
+            SsrMode::Sync => view! {
+                Show(when=true) {
+                    (fallback())
+                }
+                Show(when=false) {}
+            },
             // In blocking mode, we render a marker node and then replace the marker node with the
             // children once the suspense is resolved.
             //
@@ -143,7 +148,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
-                let mut view = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()).0);
+                let (view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
 
                 View::from_dynamic(move || std::mem::take(&mut view))
             }
