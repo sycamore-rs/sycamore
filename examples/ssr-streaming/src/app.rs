@@ -35,7 +35,7 @@ fn CounterButton() -> View {
 
     view! {
         button(r#type="button", on:click=move |_| state += 1) {
-            (state.get())
+            "Click me: " (state.get())
         }
     }
 }
