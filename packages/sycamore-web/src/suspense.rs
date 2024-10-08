@@ -75,7 +75,9 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let (view, suspend) = await_suspense(move || HydrationRegistry::in_suspense_scope(key, move || children.call()));
                 let fragment = SuspenseFragment::new(key, view);
                 let mut state = use_context::<SuspenseState>();
-                spawn_local(async move {
+                // TODO: error if scope is destroyed before suspense resolves.
+                // Probably can fix this by using `FuturesOrdered` instead.
+                sycamore_futures::spawn_local_scoped(async move {
                     suspend.await;
                     let _ = state.sender.send(fragment).await;
                 });

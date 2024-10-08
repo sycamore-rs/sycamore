@@ -9,34 +9,68 @@ use sycamore_reactive::*;
 
 use crate::*;
 
-/// Internal context state used by suspense.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct SuspenseState {
-    scopes: Signal<Vec<SuspenseScope>>,
+/// Represents a new suspense scope. This is created by a call to [`await_suspense`].
+#[derive(Clone, Debug)]
+struct SuspenseScope {
+    tasks_remaining: Signal<u32>,
+    parent: Option<Box<SuspenseScope>>,
 }
 
-#[derive(Clone, Copy, Debug)]
-struct SuspenseScope {
-    count: Signal<u32>,
-    is_done: Signal<bool>,
+impl SuspenseScope {
+    /// Create a new suspense scope, optionally with a parent scope.
+    ///
+    /// The parent scope should always be located in a reactive scope that is an ancestor of
+    /// this scope.
+    pub fn new(parent: Option<Box<SuspenseScope>>) -> Self {
+        Self {
+            tasks_remaining: create_signal(0),
+            parent,
+        }
+    }
+
+    /// Returns whether we are currently loading this suspense or not.
+    ///
+    /// Implementation for the [`use_is_loading`] hook.
+    pub fn is_loading(&self) -> bool {
+        self.tasks_remaining.get() > 0
+            || self
+                .parent
+                .as_ref()
+                .map_or(false, |parent| parent.is_loading())
+    }
+
+    /// Returns a future that resolves once the scope is no longer loading.
+    pub async fn await_scope(self) {
+        let (tx, rx) = oneshot::channel();
+        let mut tx = Some(tx);
+        create_effect(move || {
+            if !self.is_loading() {
+                if let Some(tx) = tx.take() {
+                    tx.send(()).unwrap();
+                }
+            }
+        });
+
+        rx.await.unwrap()
+    }
 }
 
 /// Submits a new task that is to be tracked by the suspense system.
 ///
 /// This is used to signal to a `Suspense` component higher up in the component hierarchy that
 /// there is some async task that should be awaited before showing the UI.
+///
+/// If this is called from outside a suspense scope, the task will be executed normally.
 pub fn submit_suspense_task(f: impl Future<Output = ()> + 'static) {
-    if let Some(state) = try_use_context::<SuspenseState>() {
-        if let Some(mut scope) = state.scopes.get_clone().last().cloned() {
-            scope.count += 1;
-            spawn_local_scoped(async move {
-                f.await;
-                scope.count -= 1;
-            });
-            return;
-        }
+    if let Some(mut scope) = try_use_context::<SuspenseScope>() {
+        scope.tasks_remaining += 1;
+        spawn_local_scoped(async move {
+            f.await;
+            scope.tasks_remaining -= 1;
+        });
+    } else {
+        spawn_local_scoped(f)
     }
-    spawn_local_scoped(f);
 }
 
 /// Calls the given function and returns a tuple with the result and a future that resolves when
@@ -45,66 +79,35 @@ pub fn submit_suspense_task(f: impl Future<Output = ()> + 'static) {
 /// If this is called inside another call to [`await_suspense`], this suspense will wait until the
 /// parent suspense is resolved.
 pub fn await_suspense<T>(f: impl FnOnce() -> T) -> (T, impl Future<Output = ()>) {
-    let state = use_global_scope().run_in(|| use_context_or_else(SuspenseState::default));
-    // Push a new suspense scope.
-    let scope = SuspenseScope {
-        count: create_signal(0),
-        is_done: create_signal(false),
-    };
-    state.scopes.update(|scopes| scopes.push(scope));
-    let ret = f();
-    // We have collected all suspense tasks now. Pop the scope.
-    state.scopes.update(|scopes| scopes.pop().unwrap());
-
-    let (tx, rx) = oneshot::channel();
-    let mut tx = Some(tx);
-
-    // Check if we have a parent scope. If we do, we need to wait until it is resolved.
-    let parent = state.scopes.with(|scopes| scopes.last().copied());
-
-    create_effect(move || {
-        if scope.count.get() == 0 && (parent.is_none() || parent.unwrap().is_done.get()) {
-            if let Some(tx) = tx.take() {
-                tx.send(()).unwrap();
-                scope.is_done.set(true);
-            }
-        }
-    });
-    (ret, async move {
-        rx.await.unwrap();
+    let parent = try_use_context::<SuspenseScope>();
+    let scope = SuspenseScope::new(parent.map(Box::new));
+    provide_context_in_new_scope(scope.clone(), move || {
+        let ret = f();
+        let fut = scope.await_scope();
+        (ret, fut)
     })
 }
 
 /// Waits until all suspense task in current scope are completed.
 ///
 /// Does not create a new suspense scope.
+///
+/// If not called inside a suspense scope, the future will resolve immediately.
 pub async fn await_suspense_current() {
-    let state = use_global_scope().run_in(|| use_context_or_else(SuspenseState::default));
-
-    let (tx, rx) = oneshot::channel();
-    let mut tx = Some(tx);
-
-    // Check if we have a parent scope. If we do, we need to wait until it is resolved.
-    let parent = state.scopes.with(|scopes| scopes.last().copied());
-
-    create_effect(move || {
-        if parent.is_none() || parent.unwrap().is_done.get() {
-            if let Some(tx) = tx.take() {
-                tx.send(()).unwrap();
-            }
-        }
-    });
-
-    rx.await.unwrap();
+    if let Some(scope) = try_use_context::<SuspenseScope>() {
+        scope.await_scope().await;
+    }
 }
 
-/// Returns whether we have any pending suspense tasks.
-pub fn is_pending_suspense() -> bool {
-    let Some(state) = try_use_context::<SuspenseState>() else {
-        return false;
-    };
-    let scope = state.scopes.with(|scopes| scopes.last().copied());
-    scope.is_none() || scope.unwrap().count.get() > 0
+/// Returns whether we are currently loading this suspense or not.
+///
+/// This will return true if there are any tasks remaining in this scope or in any parent
+/// scope.
+///
+/// This function is also reactive and so the loading state can be tracked. If it is called outside
+/// of a suspense scope, it will always return `false`.
+pub fn use_is_loading() -> bool {
+    try_use_context::<SuspenseScope>().map_or(false, |scope| scope.is_loading())
 }
 
 /// A struct to handle transitions. Created using [`use_transition`].
@@ -142,17 +145,58 @@ pub fn use_transition() -> TransitionHandle {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
     use super::*;
 
     #[test]
-    fn suspense_context_is_in_global_scope() {
-        let _ = create_root(move || {
-            assert!(try_use_context::<SuspenseState>().is_none());
-            let _ = create_child_scope(move || {
-                let _ = await_suspense(|| {});
-                assert!(try_use_context::<SuspenseState>().is_some());
+    fn suspense_scope() {
+        let _ = create_root(|| {
+            let _ = await_suspense(|| {
+                let outer_scope = try_use_context::<SuspenseScope>();
+                assert!(outer_scope.is_some());
+                assert!(outer_scope.unwrap().parent.is_none());
+
+                let _ = await_suspense(|| {
+                    let inner_scope = try_use_context::<SuspenseScope>();
+                    assert!(inner_scope.is_some());
+                    assert!(inner_scope.unwrap().parent.is_some());
+                });
             });
-            assert!(try_use_context::<SuspenseState>().is_some());
         });
+    }
+
+    #[tokio::test]
+    async fn suspense_await_suspense() {
+        let (tx, rx) = oneshot::channel();
+        let is_completed = Rc::new(Cell::new(false));
+
+        let local = tokio::task::LocalSet::new();
+        local
+            .run_until(async {
+                let _ = create_root({
+                    let is_completed = is_completed.clone();
+                    || {
+                        spawn_local_scoped(async move {
+                            let (_, fut) = await_suspense(|| {
+                                submit_suspense_task(async move {
+                                    rx.await.unwrap();
+                                });
+                            });
+
+                            fut.await;
+                            is_completed.set(true);
+                        });
+                    }
+                });
+            })
+            .await;
+
+        assert!(!is_completed.get());
+
+        tx.send(()).unwrap();
+        local.await;
+        assert!(is_completed.get());
     }
 }
