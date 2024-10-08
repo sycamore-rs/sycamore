@@ -3,7 +3,7 @@
 use std::future::Future;
 use std::num::NonZeroU32;
 
-use sycamore_futures::{await_suspense, suspense_scope};
+use sycamore_futures::{await_suspense, submit_suspense_task};
 use sycamore_macro::{component, Props};
 
 use crate::*;
@@ -113,7 +113,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let (view, suspend) = await_suspense(move || children.call());
                 // If the Suspense is nested under another Suspense, we want the other Suspense to await
                 // this one as well.
-                suspense_scope(async move {
+                submit_suspense_task(async move {
                     suspend.await;
                     show.set(true);
                 });
@@ -136,10 +136,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
-                let view = HydrationRegistry::in_suspense_scope(key, move || children.call());
-                //TODO: remove?
-                //View::from(move || std::mem::take(&mut view))
-                view
+                HydrationRegistry::in_suspense_scope(key, move || children.call())
             }
         }
     }
@@ -162,14 +159,14 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
                     view.track();
                     view.update_silent(std::mem::take)
                 }) };
-                suspense_scope(async move {
+                submit_suspense_task(async move {
                     view.set(f().await);
                 });
                 ret
             }
             SsrMode::Blocking | SsrMode::Streaming => {
                 // TODO: This does not properly hydrate dynamic text nodes.
-                suspense_scope(async move { f().await; });
+                submit_suspense_task(async move { f().await; });
                 view! {}
             }
         }
@@ -178,7 +175,7 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
         use std::sync::{Arc, Mutex};
 
         let node = Arc::new(Mutex::new(View::default()));
-        suspense_scope({
+        submit_suspense_task({
             let node = Arc::clone(&node);
             async move {
                 *node.lock().unwrap() = f().await;

@@ -21,13 +21,11 @@ struct SuspenseScope {
     is_done: Signal<bool>,
 }
 
-/// Creates a new "suspense scope".
+/// Submits a new task that is to be tracked by the suspense system.
 ///
-/// This scope is used to signal to a `Suspense` component higher up in the component hierarchy
-/// that there is some async task that should be awaited before rendering the UI.
-///
-/// The scope ends when the future is resolved.
-pub fn suspense_scope(f: impl Future<Output = ()> + 'static) {
+/// This is used to signal to a `Suspense` component higher up in the component hierarchy that
+/// there is some async task that should be awaited before showing the UI.
+pub fn submit_suspense_task(f: impl Future<Output = ()> + 'static) {
     if let Some(state) = try_use_context::<SuspenseState>() {
         if let Some(mut scope) = state.scopes.get_clone().last().cloned() {
             scope.count += 1;
