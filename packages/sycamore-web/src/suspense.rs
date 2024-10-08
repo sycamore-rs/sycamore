@@ -85,7 +85,8 @@ pub fn Suspense(props: SuspenseProps) -> View {
                     // Make sure parent is sent first.
                     create_effect(move || {
                         if !suspense_scope.sent.get() && suspense_scope.parent.as_ref().map_or(true, |parent| parent.get().sent.get()) {
-                            let fragment = SuspenseFragment::new(key, std::mem::take(&mut view));
+                            let view = std::mem::take(&mut view);
+                            let fragment = SuspenseFragment::new(key, view! { Show(when=true) { (view) } });
                             let mut state = state.clone();
                             sycamore_futures::spawn_local_scoped(async move {
                                 let _ = state.sender.send(fragment).await;
@@ -100,10 +101,11 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let marker = View::from(move || SsrNode::SuspenseMarker { key: key.into() });
                 let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
 
-                let mut fallback = if mode == SsrMode::Blocking {
+                if mode == SsrMode::Blocking {
                     view! { (start) (marker) (end) }
                 } else if mode == SsrMode::Streaming {
                     view! {
+                        NoSsr {}
                         (start)
                         (marker)
                         NoHydrate(children=Children::new(fallback))
@@ -111,8 +113,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                     }
                 } else {
                     unreachable!()
-                };
-                View::from(move || std::mem::take(&mut fallback))
+                }
             }
         }
     }
@@ -150,7 +151,16 @@ pub fn Suspense(props: SuspenseProps) -> View {
 
                 let (mut view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
 
-                View::from_dynamic(move || std::mem::take(&mut view))
+                view! {
+                    NoSsr {
+                        Show(when=move || !IS_HYDRATING.get() && suspense_scope.is_loading()) {
+                            (fallback())
+                        }
+                    }
+                    Show(when=move || !IS_HYDRATING.get() && !suspense_scope.is_loading()) {
+                        (view)
+                    }
+                }
             }
         }
     }
