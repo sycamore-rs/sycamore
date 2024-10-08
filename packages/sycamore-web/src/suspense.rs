@@ -101,14 +101,14 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
 
                 let mut fallback = if mode == SsrMode::Blocking {
-                    View::from((start, marker, end))
+                    view! { (start) (marker) (end) }
                 } else if mode == SsrMode::Streaming {
-                    View::from((
-                        start,
-                        marker,
-                        view! { NoHydrate(children=Children::new(fallback)) },
-                        end,
-                    ))
+                    view! {
+                        (start)
+                        (marker)
+                        NoHydrate(children=Children::new(fallback))
+                        (end)
+                    }
                 } else {
                     unreachable!()
                 };
@@ -148,7 +148,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
-                let (view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
+                let (mut view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
 
                 View::from_dynamic(move || std::mem::take(&mut view))
             }
