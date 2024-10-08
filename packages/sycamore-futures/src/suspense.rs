@@ -110,39 +110,6 @@ pub fn use_is_loading() -> bool {
     try_use_context::<SuspenseScope>().map_or(false, |scope| scope.is_loading())
 }
 
-/// A struct to handle transitions. Created using [`use_transition`].
-#[derive(Clone, Copy, Debug)]
-pub struct TransitionHandle {
-    is_pending: Signal<bool>,
-}
-
-impl TransitionHandle {
-    /// Returns whether the transition is currently in progress or not. This value can be tracked
-    /// from a listener scope.
-    pub fn is_pending(&self) -> bool {
-        self.is_pending.get()
-    }
-
-    /// Start a transition.
-    pub fn start(self, f: impl FnOnce() + 'static, done: impl FnOnce() + 'static) {
-        spawn_local_scoped(async move {
-            self.is_pending.set(true);
-            let (_, suspend) = await_suspense(f);
-            suspend.await;
-            self.is_pending.set(false);
-            done();
-        });
-    }
-}
-
-/// Create a new [TransitionHandle]. This allows executing updates and awaiting until all async
-/// tasks are completed.
-pub fn use_transition() -> TransitionHandle {
-    let is_pending = create_signal(false);
-
-    TransitionHandle { is_pending }
-}
-
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
