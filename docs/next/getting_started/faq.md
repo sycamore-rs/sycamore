@@ -22,15 +22,15 @@ familiar with these topics.
 Rust is a modern, safe, and fast language. Rust's strong type-system and ownership model prevent all
 categories of bugs from memory bugs to logic bugs. The compiler will catch most of your bugs before
 your app even runs! It is therefore not surprising that Rust has been voted the most loved
-programming language in Stack Overflow's Developer Survey for seven years in a row:
+programming language in Stack Overflow's Developer Survey for eight years in a row:
 [2016](https://insights.stackoverflow.com/survey/2016#technology-most-loved-dreaded-and-wanted),
 [2017](https://insights.stackoverflow.com/survey/2017#most-loved-dreaded-and-wanted),
 [2018](https://insights.stackoverflow.com/survey/2018#technology-_-most-loved-dreaded-and-wanted-languages),
 [2019](https://insights.stackoverflow.com/survey/2019#technology-_-most-loved-dreaded-and-wanted-languages),
 [2020](https://insights.stackoverflow.com/survey/2020#most-loved-dreaded-and-wanted),
 [2021](https://insights.stackoverflow.com/survey/2021/#technology-most-loved-dreaded-and-wanted),
-and
-[2022](https://survey.stackoverflow.co/2022/#section-most-loved-dreaded-and-wanted-programming-scripting-and-markup-languages).
+[2022](https://survey.stackoverflow.co/2022/#section-most-loved-dreaded-and-wanted-programming-scripting-and-markup-languages),
+and [2023](https://survey.stackoverflow.co/2023/#section-admired-and-desired-programming-scripting-and-markup-languages).
 
 ## Is there a router?
 
