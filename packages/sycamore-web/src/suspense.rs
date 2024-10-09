@@ -5,16 +5,22 @@ use std::num::NonZeroU32;
 
 use sycamore_futures::{create_suspense_scope, create_suspense_task};
 use sycamore_macro::{component, Props};
+use utils::get_nodes_between;
 
 use crate::*;
 
-/// Props for [`Suspense`].
+/// Props for [`Suspense`] and [`Transition`].
 #[derive(Props)]
 pub struct SuspenseProps {
     /// The fallback [`View`] to display while the child nodes are being awaited.
     #[prop(default, setter(transform = |f: impl Fn() -> View + 'static| Some(Box::new(f) as Box<dyn Fn() -> View>)))]
     fallback: Option<Box<dyn Fn() -> View>>,
     children: Children,
+    /// The component will automatically update this signal with the `is_loading` state.
+    ///
+    /// This is only updated in non-SSR mode.
+    #[prop(default)]
+    set_is_loading: Signal<bool>,
 }
 
 /// `Suspense` lets you wait for `async` tasks to complete before rendering the UI. This is useful
@@ -47,11 +53,17 @@ pub struct SuspenseProps {
 /// ```
 #[component]
 pub fn Suspense(props: SuspenseProps) -> View {
-    let SuspenseProps { fallback, children } = props;
+    let SuspenseProps {
+        fallback,
+        children,
+        set_is_loading,
+    } = props;
     let fallback = fallback.unwrap_or_else(|| Box::new(View::default));
 
     is_ssr! {
         use futures::SinkExt;
+
+        let _ = set_is_loading;
 
         let mode = use_context::<SsrMode>();
         match mode {
@@ -127,6 +139,10 @@ pub fn Suspense(props: SuspenseProps) -> View {
             SsrMode::Sync => {
                 let (view, suspense_scope) = create_suspense_scope(move || children.call());
 
+                create_effect(move || {
+                    set_is_loading.set(suspense_scope.is_loading());
+                });
+
                 view! {
                     Show(when=move || suspense_scope.is_loading()) {
                         (fallback())
@@ -149,7 +165,11 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let node = start.nodes[0].as_web_sys().unchecked_ref::<web_sys::Element>();
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
-                let (mut view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
+                let (view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
+
+                create_effect(move || {
+                    set_is_loading.set(suspense_scope.is_loading());
+                });
 
                 view! {
                     NoSsr {
@@ -211,25 +231,58 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
     }
 }
 
-/// Props for [`Transition`].
-#[derive(Props)]
-pub struct TransitionProps {
-    /// The fallback [`View`] to display while the child nodes are being awaited.
-    #[prop(default, setter(transform = |f: impl FnOnce() -> View + 'static| Some(Box::new(f) as Box<dyn FnOnce() -> View>)))]
-    fallback: Option<Box<dyn FnOnce() -> View>>,
-    children: Children,
-    /// The component will automatically update this signal with the `is_loading` state.
-    #[prop(default)]
-    set_is_loading: Signal<bool>,
-}
-
 /// `Transition` is like [`Suspense`] except that it keeps the previous content visible until the
 /// new content is ready.
 #[component]
-pub fn Transition(props: TransitionProps) -> View {
-    let fallback = || view! {};
+pub fn Transition(props: SuspenseProps) -> View {
+    if is_ssr!() {
+        return Suspense(props);
+    }
+
+    let first_time = create_signal(true);
+    let is_loading = create_selector(move || props.set_is_loading.get());
+
+    let start = HtmlNode::create_marker_node();
+    let start_node = start.as_web_sys().clone();
+    let end = HtmlNode::create_marker_node();
+    let end_node = end.as_web_sys().clone();
+
+    let fallback = props.fallback.unwrap_or_else(|| Box::new(View::default));
+    let fallback = move || {
+        let fallback = fallback();
+        let start_node = start_node.clone();
+        let end_node = end_node.clone();
+        let trigger = create_signal(());
+        create_effect(move || {
+            if is_loading.get() {
+                trigger.set(());
+            }
+        });
+
+        view! {
+            ({
+                trigger.track();
+                if !first_time.get_untracked() {
+                    let nodes = get_nodes_between(&start_node, &end_node);
+                    View::from_nodes(nodes.into_iter().map(HtmlNode::from_web_sys).collect())
+                } else {
+                    utils::clone_nodes_via_web_sys(&fallback)
+                }
+            })
+        }
+    };
+
+    create_effect(move || {
+        if first_time.get_untracked() && !is_loading.get() {
+            first_time.set(false);
+        }
+    });
+
     view! {
-        Suspense(fallback=fallback, children=props.children)
+        Suspense(fallback=fallback, set_is_loading=props.set_is_loading, children=Children::new(move || {
+            let children = props.children.call();
+            view! { (start) (children) (end) }
+        }))
     }
 }
 

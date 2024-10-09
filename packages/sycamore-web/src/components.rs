@@ -16,9 +16,11 @@ pub struct ShowProps {
 #[component]
 pub fn Show(props: ShowProps) -> View {
     let mut children = props.children.call();
+    let when = create_selector(move || props.when.get());
+
     if is_ssr!() {
         View::from_dynamic(move || {
-            if props.when.get() {
+            if when.get() {
                 std::mem::take(&mut children)
             } else {
                 view! {}
@@ -28,7 +30,7 @@ pub fn Show(props: ShowProps) -> View {
         View::from_dynamic(move || {
             let cloned = utils::clone_nodes_via_web_sys(&children);
 
-            if props.when.get() {
+            if when.get() {
                 // Do not set `children` to the document fragment since the document fragment will
                 // be emptied when it is appended.
                 children = utils::unwrap_from_document_fragment(cloned);
