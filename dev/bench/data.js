@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728321519582,
+  "lastUpdate": 1728656685710,
   "repoUrl": "https://github.com/sycamore-rs/sycamore",
   "entries": {
     "Benchmark": [
@@ -31853,6 +31853,78 @@ window.BENCHMARK_DATA = {
             "name": "ssr_medium",
             "value": 23363,
             "range": "± 81",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "liigo@qq.com",
+            "name": "Liigo Zhuang",
+            "username": "liigo"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5b87d768bf260c9c719b5d4768d8e13c2499167b",
+          "message": "Update faq.md, rust is the 2023-most-desired-language (#716)",
+          "timestamp": "2024-10-11T15:22:00+01:00",
+          "tree_id": "45f8641df7bd13682c542c89d1bb5a572d1290a4",
+          "url": "https://github.com/sycamore-rs/sycamore/commit/5b87d768bf260c9c719b5d4768d8e13c2499167b"
+        },
+        "date": 1728656684948,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "reactivity_signals",
+            "value": 37721,
+            "range": "± 696",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_effects",
+            "value": 107387,
+            "range": "± 1462",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_map_indexed",
+            "value": 12932,
+            "range": "± 762",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_map_keyed",
+            "value": 18761,
+            "range": "± 822",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_context_deeply_nested",
+            "value": 1021,
+            "range": "± 212",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "deep_creation",
+            "value": 213691,
+            "range": "± 66523",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ssr_small",
+            "value": 1118,
+            "range": "± 38",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ssr_medium",
+            "value": 22362,
+            "range": "± 231",
             "unit": "ns/iter"
           }
         ]
