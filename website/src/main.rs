@@ -5,12 +5,15 @@ mod news_index;
 mod sidebar;
 mod versions;
 
+use std::future::Future;
+
 use content::MarkdownPage;
 use gloo_net::http::Request;
 use serde_lite::Deserialize;
 use sidebar::SidebarData;
-use sycamore::futures::{create_resource, spawn_local_scoped};
+use sycamore::futures::spawn_local_scoped;
 use sycamore::prelude::*;
+use sycamore::web::create_client_resource;
 use sycamore_router::{HistoryIntegration, Route, Router};
 
 use crate::sidebar::SidebarCurrent;
@@ -39,13 +42,16 @@ enum Routes {
 #[derive(Clone)]
 struct DarkMode(Signal<bool>);
 
-async fn docs_preload(path: String) -> MarkdownPage {
-    let text = Request::get(&path).send().await.unwrap().text().await;
-    if let Ok(text) = text {
-        let intermediate = serde_json::from_str(&text).unwrap();
-        MarkdownPage::deserialize(&intermediate).unwrap()
-    } else {
-        todo!("error handling");
+fn docs_preload(path: &str) -> impl Future<Output = MarkdownPage> + 'static {
+    let req = Request::get(path).send();
+    async move {
+        let text = req.await.unwrap().text().await;
+        if let Ok(text) = text {
+            let intermediate = serde_json::from_str(&text).unwrap();
+            MarkdownPage::deserialize(&intermediate).unwrap()
+        } else {
+            todo!("error handling");
+        }
     }
 }
 
@@ -73,7 +79,6 @@ fn switch(route: ReadSignal<Routes>) -> View {
         });
     }
 
-    let fetch_docs_data = move |url| create_resource(docs_preload(url));
     let view = move || match route.get_clone() {
         Routes::Index => view! {
             div(class="container mx-auto") {
@@ -81,8 +86,9 @@ fn switch(route: ReadSignal<Routes>) -> View {
             }
         },
         Routes::Docs(a, b) => {
-            let data = fetch_docs_data(format!("/static/docs/{a}/{b}.json"));
             let path = create_signal(format!("{a}/{b}"));
+            let url = format!("/static/docs/{a}/{b}.json");
+            let data = create_client_resource(move || docs_preload(&url));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
@@ -106,8 +112,9 @@ fn switch(route: ReadSignal<Routes>) -> View {
         }
         Routes::VersionedDocs(version, a, b) => {
             let version = version.clone();
-            let data = fetch_docs_data(format!("/static/docs/{version}/{a}/{b}.json"));
             let path = create_signal(format!("{a}/{b}"));
+            let url = format!("/static/docs/{version}/{a}/{b}.json");
+            let data = create_client_resource(move || docs_preload(&url));
             view! {
                 (if let Some(data) = data.get_clone() {
                     if let Some(cached_sidebar_data) = cached_sidebar_data.get_clone() {
@@ -134,7 +141,8 @@ fn switch(route: ReadSignal<Routes>) -> View {
             news_index::NewsIndex {}
         },
         Routes::Post(name) => {
-            let data = create_resource(docs_preload(format!("/static/posts/{}.json", name)));
+            let url = format!("/static/posts/{name}.json");
+            let data = create_client_resource(move || docs_preload(&url));
             view! {
                 (if let Some(data) = data.get_clone() {
                     view! {
