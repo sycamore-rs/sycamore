@@ -61,6 +61,7 @@ pub use self::iter::*;
 pub use self::node::*;
 pub use self::noderef::*;
 pub use self::portal::*;
+#[cfg(feature = "suspense")]
 pub use self::resource::*;
 pub use self::stable_counter::*;
 #[cfg(feature = "suspense")]
