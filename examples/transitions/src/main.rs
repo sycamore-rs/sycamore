@@ -3,7 +3,7 @@ use rand::Rng;
 use sycamore::prelude::*;
 use sycamore::web::{create_client_resource, Suspense, Transition};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
     One,
     Two,
@@ -39,24 +39,32 @@ fn App() -> View {
     let tab = create_signal(Tab::One);
     let content = create_client_resource(on(tab, move || get_content(tab.get())));
 
-    let suspense_is_loading = create_signal(true);
-    let transition_is_loading = create_signal(true);
-
     let update = move |x| tab.set(x);
 
     view! {
         div {
             div {
-                button(on:click=move |_| update(Tab::One)) { "One" }
-                button(on:click=move |_| update(Tab::Two)) { "Two" }
-                button(on:click=move |_| update(Tab::Three)) { "Three" }
+                button(on:click=move |_| update(Tab::One), disabled=tab.get() == Tab::One) { "One" }
+                button(on:click=move |_| update(Tab::Two), disabled=tab.get() == Tab::Two) { "Two" }
+                button(on:click=move |_| update(Tab::Three), disabled=tab.get() == Tab::Three) { "Three" }
+            }
+            p {
+                "Current State: "
+                (match tab.get() {
+                    Tab::One => "One",
+                    Tab::Two => "Two",
+                    Tab::Three => "Three",
+                })
+            }
+            p {
+                "Loading state: "
+                (if content.is_loading() { "loading" } else { "done" })
             }
 
             div(style="display: flex; flex-direction: row; gap: 1rem;") {
                 div(style="flex: 1 1 0%") {
                     p { strong { "Suspense" } }
-                    p { "Suspense state: " (if suspense_is_loading.get() { "loading" } else { "done" }) }
-                    Suspense(fallback=|| view! { p { "Loading..." } }, set_is_loading=move |is_loading| suspense_is_loading.set(is_loading)) {
+                    Suspense(fallback=|| view! { p { "Loading..." } }) {
                         (if let Some(content) = content.get() {
                             view! { TabContent(content=content) }
                         } else {
@@ -67,8 +75,7 @@ fn App() -> View {
 
                 div(style="flex: 1 1 0%") {
                     p { strong { "Transition" } }
-                    p { "Transition state: " (if transition_is_loading.get() { "loading" } else { "done" }) }
-                    Transition(fallback=|| view! { p { "Loading..." } }, set_is_loading=move |is_loading| transition_is_loading.set(is_loading)) {
+                    Transition(fallback=|| view! { p { "Loading..." } }) {
                         (if let Some(content) = content.get() {
                             view! { TabContent(content=content) }
                         } else {

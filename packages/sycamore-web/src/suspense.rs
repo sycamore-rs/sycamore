@@ -3,7 +3,9 @@
 use std::future::Future;
 use std::num::NonZeroU32;
 
-use sycamore_futures::{create_suspense_scope, create_suspense_task};
+use sycamore_futures::{
+    create_detatched_suspense_scope, create_suspense_scope, create_suspense_task,
+};
 use sycamore_macro::{component, Props};
 use utils::get_nodes_between;
 
@@ -13,8 +15,8 @@ use crate::*;
 #[derive(Props)]
 pub struct SuspenseProps {
     /// The fallback [`View`] to display while the child nodes are being awaited.
-    #[prop(default, setter(transform = |f: impl Fn() -> View + 'static| Some(Box::new(f) as Box<dyn Fn() -> View>)))]
-    fallback: Option<Box<dyn Fn() -> View>>,
+    #[prop(default = Box::new(|| view! {}), setter(transform = |f: impl Fn() -> View + 'static| Box::new(f) as Box<dyn Fn() -> View>))]
+    fallback: Box<dyn Fn() -> View>,
     children: Children,
     /// The component will automatically update this signal with the `is_loading` state.
     ///
@@ -58,7 +60,6 @@ pub fn Suspense(props: SuspenseProps) -> View {
         children,
         mut set_is_loading,
     } = props;
-    let fallback = fallback.unwrap_or_else(|| Box::new(View::default));
 
     is_ssr! {
         use futures::SinkExt;
@@ -138,17 +139,17 @@ pub fn Suspense(props: SuspenseProps) -> View {
         match mode {
             SsrMode::Sync => {
                 let (view, suspense_scope) = create_suspense_scope(move || children.call());
+                let is_loading = suspense_scope.is_loading();
 
                 create_effect(move || {
-                    let is_loading = suspense_scope.is_loading();
-                    set_is_loading(is_loading);
+                    set_is_loading(is_loading.get());
                 });
 
                 view! {
-                    Show(when=move || suspense_scope.is_loading()) {
+                    Show(when=is_loading) {
                         (fallback())
                     }
-                    Show(when=move || !suspense_scope.is_loading()) {
+                    Show(when=move || !is_loading.get()) {
                         (view)
                     }
                 }
@@ -167,19 +168,19 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let key: NonZeroU32 = node.get_attribute("data-key").unwrap().parse().unwrap();
 
                 let (view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
+                let is_loading = suspense_scope.is_loading();
 
                 create_effect(move || {
-                    let is_loading = suspense_scope.is_loading();
-                    set_is_loading(is_loading);
+                    set_is_loading(is_loading.get());
                 });
 
                 view! {
                     NoSsr {
-                        Show(when=move || !IS_HYDRATING.get() && suspense_scope.is_loading()) {
+                        Show(when=move || !IS_HYDRATING.get() && is_loading.get()) {
                             (fallback())
                         }
                     }
-                    Show(when=move || !IS_HYDRATING.get() && !suspense_scope.is_loading()) {
+                    Show(when=move || !IS_HYDRATING.get() && !is_loading.get()) {
                         (view)
                     }
                 }
@@ -236,54 +237,34 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
 /// `Transition` is like [`Suspense`] except that it keeps the previous content visible until the
 /// new content is ready.
 #[component]
-pub fn Transition(mut props: SuspenseProps) -> View {
-    if is_ssr!() {
-        return Suspense(props);
-    }
+pub fn Transition(props: SuspenseProps) -> View {
+    /// Only trigger outer suspense on initial render. In subsequent renders, capture the suspense
+    /// scope.
+    #[component(inline_props)]
+    fn TransitionInner(children: Children, set_is_loading: Box<dyn FnMut(bool)>) -> View {
+        // TODO: Workaround for https://github.com/sycamore-rs/sycamore/issues/718.
+        let mut set_is_loading = set_is_loading;
 
-    let first_time = create_signal(true);
-    let is_loading = create_signal(true);
-    let set_is_loading = move |loading: bool| {
-        is_loading.set(loading);
-        (props.set_is_loading)(loading);
-    };
+        // We create a detatched suspense scope here to not create a deadlock with the outer
+        // suspense.
+        let (children, scope) = create_detatched_suspense_scope(move || children.call());
+        // Trigger the outer suspense scope. Note that this is only triggered on the initial render
+        // and future renders will be captured by the inner suspense scope.
+        create_suspense_task(scope.until_finished());
 
-    let start = HtmlNode::create_marker_node();
-    let start_node = start.as_web_sys().clone();
-    let end = HtmlNode::create_marker_node();
-    let end_node = end.as_web_sys().clone();
-
-    let fallback = props.fallback.unwrap_or_else(|| Box::new(View::default));
-    let fallback = move || {
-        let fallback = fallback();
-        let start_node = start_node.clone();
-        let end_node = end_node.clone();
+        let is_loading = scope.is_loading();
+        create_effect(move || {
+            set_is_loading(is_loading.get());
+        });
 
         view! {
-            ({
-                is_loading.track();
-                if !first_time.get_untracked() {
-                    let nodes = get_nodes_between(&start_node, &end_node);
-                    View::from_nodes(nodes.into_iter().map(HtmlNode::from_web_sys).collect())
-                } else {
-                    utils::clone_nodes_via_web_sys(&fallback)
-                }
-            })
+            (children)
         }
-    };
-
-    on_mount(move || {
-        create_effect(move || {
-            if first_time.get_untracked() && !is_loading.get() {
-                first_time.set(false);
-            }
-        });
-    });
+    }
 
     view! {
-        Suspense(fallback=fallback, set_is_loading=set_is_loading, children=Children::new(move || {
-            let children = props.children.call();
-            view! { (start) (children) (end) }
+        Suspense(fallback=props.fallback, children=Children::new(move || {
+            view! { TransitionInner(children=props.children, set_is_loading=props.set_is_loading) }
         }))
     }
 }

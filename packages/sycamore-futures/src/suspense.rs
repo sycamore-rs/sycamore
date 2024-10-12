@@ -47,15 +47,21 @@ impl SuspenseScope {
         }
     }
 
-    /// Returns whether we are currently loading this suspense or not.
-    ///
-    /// Implementation for the [`use_is_loading`] hook.
-    pub fn is_loading(&self) -> bool {
+    /// Implementation for [`Self::is_loading`]. This is used to recursively check whether we are
+    /// loading or not.
+    fn _is_loading(self) -> bool {
         self.tasks_remaining.get() > 0
             || self
                 .parent
                 .as_ref()
-                .map_or(false, |parent| parent.with(Self::is_loading))
+                .map_or(false, |parent| parent.get()._is_loading())
+    }
+
+    /// Returns a signal representing whether we are currently loading this suspense or not.
+    ///
+    /// Implementation for the [`use_is_loading`] hook.
+    pub fn is_loading(self) -> ReadSignal<bool> {
+        create_selector(move || self._is_loading())
     }
 
     /// Returns a future that resolves once the scope is no longer loading.
@@ -63,7 +69,7 @@ impl SuspenseScope {
         let (tx, rx) = oneshot::channel();
         let mut tx = Some(tx);
         create_effect(move || {
-            if !self.is_loading() {
+            if !self._is_loading() {
                 if let Some(tx) = tx.take() {
                     tx.send(()).unwrap();
                 }
@@ -126,6 +132,25 @@ pub fn create_suspense_task(f: impl Future<Output = ()> + 'static) {
     });
 }
 
+/// Create a new suspense scope that is detatched from the rest of the suspense hierarchy.
+///
+/// This is useful if you want the result of this suspense to be independent of the praent suspense
+/// scope.
+///
+/// It is rarely recommended to use this fucntion as it can lead to unexpected behavior when using
+/// server side rendering, and in particular, streaming. Instead, use [`create_suspense_scope`].
+///
+/// The reason for this is because we generally expect outer suspenses to be resolved first before
+/// an inner suspense is resolved, since otherwise we would have no place to show the inner suspense
+/// as the outer fallback is still being displayed.
+pub fn create_detatched_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
+    let scope = SuspenseScope::new(None);
+    provide_context_in_new_scope(scope, move || {
+        let ret = f();
+        (ret, scope)
+    })
+}
+
 /// Calls the given function and registers all suspense tasks.
 ///
 /// Returns a tuple containing the return value of the function and the created suspense scope.
@@ -152,15 +177,15 @@ pub async fn await_suspense_current() {
     }
 }
 
-/// Returns whether we are currently loading this suspense or not.
+/// Returns a signal representing whether we are currently loading this suspense or not.
 ///
-/// This will return true if there are any tasks remaining in this scope or in any parent
+/// This will be true if there are any tasks remaining in this scope or in any parent
 /// scope.
 ///
 /// This function is also reactive and so the loading state can be tracked. If it is called outside
-/// of a suspense scope, it will always return `false`.
-pub fn use_is_loading() -> bool {
-    try_use_context::<SuspenseScope>().map_or(false, |scope| scope.is_loading())
+/// of a suspense scope, the signal will always be `false`.
+pub fn use_is_loading() -> ReadSignal<bool> {
+    try_use_context::<SuspenseScope>().map_or(*create_signal(false), |scope| scope.is_loading())
 }
 
 /// Returns whether any suspense scope is current loading.
