@@ -110,11 +110,3 @@ where
 {
     Resource::new(f).fetch_on_client()
 }
-
-pub fn create_isomorphic_resource<F, Fut>(f: F)
-where
-    F: FnOnce() -> Fut + 'static,
-    Fut: Future<Output = ()> + 'static,
-{
-    todo!("isomorphic resources are not implemented yet.")
-}

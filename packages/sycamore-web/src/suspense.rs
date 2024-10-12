@@ -7,7 +7,6 @@ use sycamore_futures::{
     create_detatched_suspense_scope, create_suspense_scope, create_suspense_task,
 };
 use sycamore_macro::{component, Props};
-use utils::get_nodes_between;
 
 use crate::*;
 
