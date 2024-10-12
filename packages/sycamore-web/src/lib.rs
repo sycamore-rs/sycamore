@@ -46,6 +46,8 @@ mod macros;
 mod node;
 mod noderef;
 mod portal;
+#[cfg(feature = "suspense")]
+mod resource;
 mod stable_counter;
 #[cfg(feature = "suspense")]
 mod suspense;
@@ -59,6 +61,8 @@ pub use self::iter::*;
 pub use self::node::*;
 pub use self::noderef::*;
 pub use self::portal::*;
+#[cfg(feature = "suspense")]
+pub use self::resource::*;
 pub use self::stable_counter::*;
 #[cfg(feature = "suspense")]
 pub use self::suspense::*;

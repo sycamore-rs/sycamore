@@ -4,7 +4,7 @@ use std::any::{type_name, Any};
 
 use slotmap::Key;
 
-use crate::{NodeId, Root};
+use crate::{create_child_scope, NodeId, Root};
 
 /// Provide a context value in this scope.
 ///
@@ -17,7 +17,36 @@ pub fn provide_context<T: 'static>(value: T) {
     provide_context_in_node(root.current_node.get(), value);
 }
 
-/// Internal implementation for [`provide_context`] and [`provide_global_context`].
+/// Provide a context value in a new scope.
+///
+/// Since this creates a new scope, this function should never panic. If the context value already
+/// exists in the outer scope, it will be shadowed by the new value in the inner scope _only_.
+/// Outside of the new scope, the old context value will still be accessible.
+///
+/// # Example
+/// ```
+/// # use sycamore_reactive::*;
+/// # let _ = create_root(|| {
+/// provide_context(123);
+/// assert_eq!(use_context::<i32>(), 123);
+///
+/// provide_context_in_new_scope(456, || {
+///     assert_eq!(use_context::<i32>(), 456);
+/// });
+///
+/// assert_eq!(use_context::<i32>(), 123);
+/// # });
+/// ```
+pub fn provide_context_in_new_scope<T: 'static, U>(value: T, f: impl FnOnce() -> U) -> U {
+    let mut ret = None;
+    create_child_scope(|| {
+        provide_context(value);
+        ret = Some(f());
+    });
+    ret.unwrap()
+}
+
+/// Internal implementation for [`provide_context`].
 #[cfg_attr(debug_assertions, track_caller)]
 fn provide_context_in_node<T: 'static>(id: NodeId, value: T) {
     let root = Root::global();

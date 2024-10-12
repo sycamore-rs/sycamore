@@ -86,6 +86,8 @@ pub(crate) struct HydrationRegistry {
     next_key: Signal<HydrationKey>,
 }
 
+// This is only used when hydrating.
+#[cfg_attr(not(feature = "hydrate"), allow(dead_code))]
 impl HydrationRegistry {
     pub fn new() -> Self {
         HydrationRegistry {

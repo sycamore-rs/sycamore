@@ -341,7 +341,10 @@ mod tests {
     fn render_to_string_renders_fallback() {
         let (sender, receiver) = oneshot::channel();
         let res = render_to_string(move || view! { App(receiver=receiver) });
-        assert_eq!(res, "<!--/-->fallback<!--/-->");
+        assert_eq!(
+            res,
+            "<!--/--><!--/-->fallback<!--/--><!--/--><!--/--><!--/-->"
+        );
         assert!(sender.send(()).is_err(), "receiver should be dropped");
     }
 
@@ -356,7 +359,7 @@ mod tests {
         let res = ssr.await;
 
         let expect = expect![[
-            r#"<!--/--><suspense-start data-key="1" data-hk="0.0"></suspense-start><!--/--><!--/-->Hello, async!<!--/--><!--/--><suspense-end data-key="1"></suspense-end><!--/-->"#
+            r#"<suspense-start data-key="1" data-hk="0.0"></suspense-start><!--/--><!--/--><!--/-->Hello, async!<!--/--><!--/--><!--/--><suspense-end data-key="1"></suspense-end>"#
         ]];
         expect.assert_eq(&res);
     }
