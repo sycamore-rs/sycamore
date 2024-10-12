@@ -3,8 +3,8 @@
 use std::future::Future;
 use std::ops::Deref;
 
-use futures::channel::oneshot;
 use futures::future::{FutureExt, LocalBoxFuture};
+use sycamore_futures::{SuspenseScope, SuspenseTaskGuard};
 
 use crate::*;
 
@@ -21,8 +21,10 @@ pub struct Resource<T: 'static> {
     /// The function that fetches the resource.
     #[allow(clippy::complexity)]
     refetch: Signal<Box<dyn FnMut() -> LocalBoxFuture<'static, T>>>,
-    /// A list of oneshot channels that will be resolved when the resource is done fetching.
-    tx_finished: Signal<Vec<oneshot::Sender<()>>>,
+    /// A list of all the suspense scopes in which the resource is accessed.
+    scopes: Signal<Vec<SuspenseScope>>,
+    /// A list of suspense guards that are currently active.
+    guards: Signal<Vec<SuspenseTaskGuard>>,
 }
 
 impl<T: 'static> Resource<T> {
@@ -36,7 +38,8 @@ impl<T: 'static> Resource<T> {
             value: create_signal(None),
             is_loading: create_signal(true),
             refetch: create_signal(Box::new(move || refetch().boxed_local())),
-            tx_finished: create_signal(Vec::new()),
+            scopes: create_signal(Vec::new()),
+            guards: create_signal(Vec::new()),
         }
     }
 
@@ -45,6 +48,12 @@ impl<T: 'static> Resource<T> {
         if is_not_ssr!() {
             create_effect(move || {
                 self.is_loading.set(true);
+                // Take all the scopes and create a new guard.
+                for scope in self.scopes.take() {
+                    let guard = SuspenseTaskGuard::from_scope(scope);
+                    self.guards.update(|guards| guards.push(guard));
+                }
+
                 let fut = self.refetch.update_silent(|f| f());
 
                 sycamore_futures::create_suspense_task(async move {
@@ -52,12 +61,9 @@ impl<T: 'static> Resource<T> {
                     batch(move || {
                         self.value.set(Some(value));
                         self.is_loading.set(false);
+                        // Now, drop all the guards to resolve suspense.
+                        self.guards.update(|guards| guards.clear());
                     });
-                    // Resolve suspense boundaries.
-                    for tx in self.tx_finished.take_silent() {
-                console_dbg!("done");
-                        tx.send(()).unwrap();
-                    }
                 });
             })
         }
@@ -76,15 +82,13 @@ impl<T: 'static> Deref for Resource<T> {
     type Target = ReadSignal<Option<T>>;
 
     fn deref(&self) -> &Self::Target {
-        // If we are currently loading the resource, create a new suspense task that resolves when
-        // the resource is done loaading.
-        if self.is_loading.get_untracked() {
-            let (tx, rx) = oneshot::channel();
-            sycamore_futures::create_suspense_task(async move {
-                rx.await.unwrap();
-                console_dbg!("done2");
-            });
-            self.tx_finished.update_silent(|vec| vec.push(tx));
+        // If we are already loading, add a new suspense guard. Otherwise, register the scope so
+        // that we can create a new guard when loading.
+        if self.is_loading.get() {
+            let guard = SuspenseTaskGuard::new();
+            self.guards.update(|guards| guards.push(guard));
+        } else if let Some(scope) = try_use_context::<SuspenseScope>() {
+            self.scopes.update(|scopes| scopes.push(scope));
         }
 
         &self.value

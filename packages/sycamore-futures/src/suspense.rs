@@ -74,6 +74,44 @@ impl SuspenseScope {
     }
 }
 
+/// A guard that keeps a suspense scope suspended until it is dropped.
+#[derive(Debug)]
+pub struct SuspenseTaskGuard {
+    scope: Option<SuspenseScope>,
+}
+
+impl SuspenseTaskGuard {
+    /// Creates a new suspense task guard. This will suspend the current suspense scope until this
+    /// guard is dropped.
+    pub fn new() -> Self {
+        let scope = try_use_context::<SuspenseScope>();
+        if let Some(mut scope) = scope {
+            scope.tasks_remaining += 1;
+        }
+        Self { scope }
+    }
+
+    /// Create a new suspense task guard from a suspense scope.
+    pub fn from_scope(mut scope: SuspenseScope) -> Self {
+        scope.tasks_remaining += 1;
+        Self { scope: Some(scope) }
+    }
+}
+
+impl Default for SuspenseTaskGuard {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Drop for SuspenseTaskGuard {
+    fn drop(&mut self) {
+        if let Some(mut scope) = self.scope {
+            scope.tasks_remaining -= 1;
+        }
+    }
+}
+
 /// Creates a new task that is to be tracked by the suspense system.
 ///
 /// This is used to signal to a `Suspense` component higher up in the component hierarchy that
@@ -81,15 +119,11 @@ impl SuspenseScope {
 ///
 /// If this is called from outside a suspense scope, the task will be executed normally.
 pub fn create_suspense_task(f: impl Future<Output = ()> + 'static) {
-    if let Some(mut scope) = try_use_context::<SuspenseScope>() {
-        scope.tasks_remaining += 1;
-        spawn_local_scoped(async move {
-            f.await;
-            scope.tasks_remaining -= 1;
-        });
-    } else {
-        spawn_local_scoped(f)
-    }
+    let guard = SuspenseTaskGuard::new();
+    spawn_local_scoped(async move {
+        f.await;
+        drop(guard);
+    });
 }
 
 /// Calls the given function and registers all suspense tasks.
