@@ -57,7 +57,7 @@ fn App() -> View {
                     p { strong { "Suspense" } }
                     p { "Suspense state: " (if suspense_is_loading.get() { "loading" } else { "done" }) }
                     Suspense(fallback=|| view! { p { "Loading..." } }, set_is_loading=move |is_loading| suspense_is_loading.set(is_loading)) {
-                        (if let Some(content) = content.value.get() {
+                        (if let Some(content) = content.get() {
                             view! { TabContent(content=content) }
                         } else {
                             view! {}
@@ -69,7 +69,7 @@ fn App() -> View {
                     p { strong { "Transition" } }
                     p { "Transition state: " (if transition_is_loading.get() { "loading" } else { "done" }) }
                     Transition(fallback=|| view! { p { "Loading..." } }, set_is_loading=move |is_loading| transition_is_loading.set(is_loading)) {
-                        (if let Some(content) = content.value.get() {
+                        (if let Some(content) = content.get() {
                             view! { TabContent(content=content) }
                         } else {
                             view! {}

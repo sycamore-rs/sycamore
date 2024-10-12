@@ -46,6 +46,7 @@ mod macros;
 mod node;
 mod noderef;
 mod portal;
+#[cfg(feature = "suspense")]
 mod resource;
 mod stable_counter;
 #[cfg(feature = "suspense")]

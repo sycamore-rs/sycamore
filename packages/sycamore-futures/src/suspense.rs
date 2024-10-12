@@ -101,7 +101,7 @@ pub fn create_suspense_task(f: impl Future<Output = ()> + 'static) {
 pub fn create_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
     let parent = try_use_context::<SuspenseScope>();
     let scope = SuspenseScope::new(parent);
-    provide_context_in_new_scope(scope.clone(), move || {
+    provide_context_in_new_scope(scope, move || {
         let ret = f();
         (ret, scope)
     })

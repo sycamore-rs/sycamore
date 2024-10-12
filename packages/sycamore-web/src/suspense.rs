@@ -63,7 +63,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
     is_ssr! {
         use futures::SinkExt;
 
-        let _ = set_is_loading;
+        let _ = &mut set_is_loading;
 
         let mode = use_context::<SsrMode>();
         match mode {
@@ -140,7 +140,8 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let (view, suspense_scope) = create_suspense_scope(move || children.call());
 
                 create_effect(move || {
-                    set_is_loading(suspense_scope.is_loading());
+                    let is_loading = suspense_scope.is_loading();
+                    set_is_loading(is_loading);
                 });
 
                 view! {
@@ -168,7 +169,8 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let (view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
 
                 create_effect(move || {
-                    set_is_loading(suspense_scope.is_loading());
+                    let is_loading = suspense_scope.is_loading();
+                    set_is_loading(is_loading);
                 });
 
                 view! {
@@ -270,11 +272,12 @@ pub fn Transition(mut props: SuspenseProps) -> View {
         }
     };
 
-    create_effect(move || {
-        console_dbg!(first_time);
-        if first_time.get_untracked() && !is_loading.get() {
-            first_time.set(false);
-        }
+    on_mount(move || {
+        create_effect(move || {
+            if first_time.get_untracked() && !is_loading.get() {
+                first_time.set(false);
+            }
+        });
     });
 
     view! {
