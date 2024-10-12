@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728656685710,
+  "lastUpdate": 1728758135825,
   "repoUrl": "https://github.com/sycamore-rs/sycamore",
   "entries": {
     "Benchmark": [
@@ -31925,6 +31925,78 @@ window.BENCHMARK_DATA = {
             "name": "ssr_medium",
             "value": 22362,
             "range": "± 231",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "37006668+lukechu10@users.noreply.github.com",
+            "name": "Luke",
+            "username": "lukechu10"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ad04ae9eda2d7e9a6f755f64b6a16f65f51b5558",
+          "message": "Transitions v2 + Resources API (#719)\n\n* Add provide_context_in_new_scope\r\n\r\n* Rename suspense_scope to submit_suspense_task\r\n\r\n* Complete refactor of suspense\r\n\r\n* Remove transition code from sycamore-web\r\n\r\n* Introduce use_is_loading_global\r\n\r\n* Make sure parent suspense is sent first before child\r\n\r\n* Add missing create_suspense_scope for hydration\r\n\r\n* Update ssr-streaming example\r\n\r\n* Show component\r\n\r\n* Make suspense show fallback when new task is submitted\r\n\r\n* fix\r\n\r\n* Update SSR sync mode\r\n\r\n* Use view macro\r\n\r\n* Fix streaming\r\n\r\n* wip\r\n\r\n* wip\r\n\r\n* wip\r\n\r\n* Resource API\r\n\r\n* Update transitions example\r\n\r\n* Add missing cfg gate\r\n\r\n* Remove isomorphic resource API (for now)\r\n\r\n* Fix website\r\n\r\n* Silence warning\r\n\r\n* Update UI tests",
+          "timestamp": "2024-10-12T19:32:51+01:00",
+          "tree_id": "1c0f6a654413dbb46910abdb263b7159dfc55ca0",
+          "url": "https://github.com/sycamore-rs/sycamore/commit/ad04ae9eda2d7e9a6f755f64b6a16f65f51b5558"
+        },
+        "date": 1728758134912,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "reactivity_signals",
+            "value": 36358,
+            "range": "± 767",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_effects",
+            "value": 108422,
+            "range": "± 3043",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_map_indexed",
+            "value": 11682,
+            "range": "± 3222",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_map_keyed",
+            "value": 17154,
+            "range": "± 811",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_context_deeply_nested",
+            "value": 1257,
+            "range": "± 337",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "deep_creation",
+            "value": 205405,
+            "range": "± 64165",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ssr_small",
+            "value": 1177,
+            "range": "± 32",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ssr_medium",
+            "value": 22273,
+            "range": "± 642",
             "unit": "ns/iter"
           }
         ]
