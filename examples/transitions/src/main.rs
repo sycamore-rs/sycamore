@@ -1,7 +1,7 @@
 use gloo_timers::future::TimeoutFuture;
 use rand::Rng;
 use sycamore::prelude::*;
-use sycamore::web::{Suspense, Transition};
+use sycamore::web::{create_client_resource, Suspense, Transition};
 
 #[derive(Debug, Clone, Copy)]
 enum Tab {
@@ -20,22 +20,24 @@ impl Tab {
     }
 }
 
-#[component(inline_props)]
-async fn Child(tab: Tab) -> View {
+async fn get_content(tab: Tab) -> &'static str {
     let delay_ms = rand::thread_rng().gen_range(500..1000);
     TimeoutFuture::new(delay_ms).await;
 
+    tab.content()
+}
+
+#[component(inline_props)]
+fn TabContent(content: &'static str) -> View {
     view! {
-        div {
-            p { "Content loaded after " (delay_ms) "ms" }
-            p { (tab.content()) }
-        }
+        p { (content) }
     }
 }
 
 #[component]
 fn App() -> View {
     let tab = create_signal(Tab::One);
+    let content = create_client_resource(on(tab, move || get_content(tab.get())));
 
     let suspense_is_loading = create_signal(true);
     let transition_is_loading = create_signal(true);
@@ -54,10 +56,11 @@ fn App() -> View {
                 div(style="flex: 1 1 0%") {
                     p { strong { "Suspense" } }
                     p { "Suspense state: " (if suspense_is_loading.get() { "loading" } else { "done" }) }
-                    Suspense(fallback=|| view! { p { "Loading..." } }, set_is_loading=suspense_is_loading) {
-                        ({
-                            let tab = tab.get();
-                            view! { Child(tab=tab) }
+                    Suspense(fallback=|| view! { p { "Loading..." } }, set_is_loading=move |is_loading| suspense_is_loading.set(is_loading)) {
+                        (if let Some(content) = content.value.get() {
+                            view! { TabContent(content=content) }
+                        } else {
+                            view! {}
                         })
                     }
                 }
@@ -65,10 +68,11 @@ fn App() -> View {
                 div(style="flex: 1 1 0%") {
                     p { strong { "Transition" } }
                     p { "Transition state: " (if transition_is_loading.get() { "loading" } else { "done" }) }
-                    Transition(fallback=|| view! { p { "Loading..." } }, set_is_loading=transition_is_loading) {
-                        ({
-                            let tab = tab.get();
-                            view! { Child(tab=tab) }
+                    Transition(fallback=|| view! { p { "Loading..." } }, set_is_loading=move |is_loading| transition_is_loading.set(is_loading)) {
+                        (if let Some(content) = content.value.get() {
+                            view! { TabContent(content=content) }
+                        } else {
+                            view! {}
                         })
                     }
                 }

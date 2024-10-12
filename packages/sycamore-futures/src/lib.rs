@@ -3,7 +3,6 @@
 #![deny(missing_debug_implementations)]
 #![warn(missing_docs)]
 
-mod resource;
 mod suspense;
 
 use std::pin::Pin;
@@ -15,7 +14,6 @@ use futures::Future;
 use pin_project::pin_project;
 use sycamore_reactive::{on_cleanup, use_current_scope, NodeHandle};
 
-pub use self::resource::*;
 pub use self::suspense::*;
 
 /// If running on `wasm32` target, does nothing. Otherwise creates a new `tokio::task::LocalSet`

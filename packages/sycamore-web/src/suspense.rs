@@ -19,8 +19,8 @@ pub struct SuspenseProps {
     /// The component will automatically update this signal with the `is_loading` state.
     ///
     /// This is only updated in non-SSR mode.
-    #[prop(default)]
-    set_is_loading: Signal<bool>,
+    #[prop(default = Box::new(|_| {}), setter(transform = |f: impl FnMut(bool) + 'static| Box::new(f) as Box<dyn FnMut(bool)>))]
+    set_is_loading: Box<dyn FnMut(bool) + 'static>,
 }
 
 /// `Suspense` lets you wait for `async` tasks to complete before rendering the UI. This is useful
@@ -56,7 +56,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
     let SuspenseProps {
         fallback,
         children,
-        set_is_loading,
+        mut set_is_loading,
     } = props;
     let fallback = fallback.unwrap_or_else(|| Box::new(View::default));
 
@@ -140,7 +140,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let (view, suspense_scope) = create_suspense_scope(move || children.call());
 
                 create_effect(move || {
-                    set_is_loading.set(suspense_scope.is_loading());
+                    set_is_loading(suspense_scope.is_loading());
                 });
 
                 view! {
@@ -168,7 +168,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let (view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
 
                 create_effect(move || {
-                    set_is_loading.set(suspense_scope.is_loading());
+                    set_is_loading(suspense_scope.is_loading());
                 });
 
                 view! {
@@ -234,13 +234,17 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
 /// `Transition` is like [`Suspense`] except that it keeps the previous content visible until the
 /// new content is ready.
 #[component]
-pub fn Transition(props: SuspenseProps) -> View {
+pub fn Transition(mut props: SuspenseProps) -> View {
     if is_ssr!() {
         return Suspense(props);
     }
 
     let first_time = create_signal(true);
-    let is_loading = create_selector(move || props.set_is_loading.get());
+    let is_loading = create_signal(true);
+    let set_is_loading = move |loading: bool| {
+        is_loading.set(loading);
+        (props.set_is_loading)(loading);
+    };
 
     let start = HtmlNode::create_marker_node();
     let start_node = start.as_web_sys().clone();
@@ -252,16 +256,10 @@ pub fn Transition(props: SuspenseProps) -> View {
         let fallback = fallback();
         let start_node = start_node.clone();
         let end_node = end_node.clone();
-        let trigger = create_signal(());
-        create_effect(move || {
-            if is_loading.get() {
-                trigger.set(());
-            }
-        });
 
         view! {
             ({
-                trigger.track();
+                is_loading.track();
                 if !first_time.get_untracked() {
                     let nodes = get_nodes_between(&start_node, &end_node);
                     View::from_nodes(nodes.into_iter().map(HtmlNode::from_web_sys).collect())
@@ -273,13 +271,14 @@ pub fn Transition(props: SuspenseProps) -> View {
     };
 
     create_effect(move || {
+        console_dbg!(first_time);
         if first_time.get_untracked() && !is_loading.get() {
             first_time.set(false);
         }
     });
 
     view! {
-        Suspense(fallback=fallback, set_is_loading=props.set_is_loading, children=Children::new(move || {
+        Suspense(fallback=fallback, set_is_loading=set_is_loading, children=Children::new(move || {
             let children = props.children.call();
             view! { (start) (children) (end) }
         }))
