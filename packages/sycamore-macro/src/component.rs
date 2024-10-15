@@ -261,11 +261,31 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let props_struct_ident = format_ident!("{}_Props", item.sig.ident);
 
     let inputs = item.sig.inputs.clone();
-    let props = inputs.into_iter().collect::<Vec<_>>();
+    let props = inputs
+        .into_iter()
+        .map(|arg| match arg {
+            FnArg::Typed(pat_type) => {
+                // Remove any mut or other pattern modifiers
+                let pat = match *pat_type.pat {
+                    Pat::Ident(mut ident_pat) => {
+                        ident_pat.mutability = None;
+                        Pat::Ident(ident_pat)
+                    }
+                    // Handle other patterns if necessary
+                    _ => panic!("Unsupported pattern type in inline_props"),
+                };
+                syn::PatType {
+                    pat: Box::new(pat),
+                    ..pat_type
+                }
+            }
+            FnArg::Receiver(_) => panic!("Components cannot have receivers"),
+        })
+        .collect::<Vec<_>>();
 
     let generics = &item.sig.generics;
     let generics_phantoms = generics.params.iter().enumerate().filter_map(|(i, param)| {
-        let phantom_ident = format_ident!("__phantom{i}");
+        let phantom_ident = format_ident!("__phantom{}", i);
         match param {
             syn::GenericParam::Type(ty) => {
                 let ty = &ty.ident;
@@ -300,9 +320,9 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     // Rewrite component body.
 
     // Get the ident (technically, patterns) of each prop.
-    let props_pats = props.iter().map(|arg| match arg {
-        FnArg::Receiver(_) => unreachable!("receiver cannot be a prop"),
-        FnArg::Typed(arg) => arg.pat.clone(),
+    let props_pats = props.iter().map(|arg| match &*arg.pat {
+        Pat::Ident(pat_ident) => pat_ident.ident.clone(),
+        _ => panic!("Unsupported pattern type in inline_props"),
     });
     // Rewrite function signature.
     let props_struct_generics = generics.split_for_impl().1;
