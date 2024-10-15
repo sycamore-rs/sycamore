@@ -1,8 +1,6 @@
 name: Build website
 
-on:
-  push:
-    branches: [main]
+on: []
 
 jobs:
   deploy:
