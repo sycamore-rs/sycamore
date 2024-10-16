@@ -1,4 +1,8 @@
-_2022-02-01_
+---
+title: A first look at Sycamore's new reactive primitives
+description: How the next version of Sycamore will be the most ergonomic yet.
+date: 2022-02-01
+---
 
 # A first look at Sycamore's new reactive primitives
 
