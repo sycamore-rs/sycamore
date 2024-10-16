@@ -80,6 +80,11 @@ thread_local! {
     pub(crate) static IS_HYDRATING: Cell<bool> = const { Cell::new(false) };
 }
 
+/// Returns whether we are currently hydrating or not.
+pub fn is_hydrating() -> bool {
+    IS_HYDRATING.with(Cell::get)
+}
+
 /// A struct for keeping track of state used for hydration.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct HydrationRegistry {
