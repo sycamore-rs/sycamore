@@ -58,9 +58,9 @@ pub fn render_to_string_in_scope(view: impl FnOnce() -> View) -> String {
             provide_context(HydrationRegistry::new());
             provide_context(SsrMode::Sync);
 
-            IS_HYDRATING.set(true);
+            let prev = IS_HYDRATING.replace(true);
             let view = view();
-            IS_HYDRATING.set(false);
+            IS_HYDRATING.set(prev);
             ssr_node::render_recursive_view(&view, &mut buf);
         });
         handle.dispose();
