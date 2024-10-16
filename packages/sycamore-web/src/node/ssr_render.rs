@@ -33,20 +33,37 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
             /// this function.
             static SSR_ROOT: LazyCell<RootHandle> = LazyCell::new(|| create_root(|| {}));
         }
-        let mut buf = String::new();
         SSR_ROOT.with(|root| {
             root.dispose();
             root.run_in(|| {
-                // We run this in a new scope so that we can dispose everything after we render it.
-                provide_context(HydrationRegistry::new());
-                provide_context(SsrMode::Sync);
+                render_to_string_in_scope(view)
+            })
+        })
+    }
+}
 
-                IS_HYDRATING.set(true);
-                let view = view();
-                IS_HYDRATING.set(false);
-                ssr_node::render_recursive_view(&view, &mut buf);
-            });
+/// Render a [`View`] into a static [`String`] in the current reactive scope.
+///
+/// Implementation detail of [`render_to_string`].
+#[must_use]
+pub fn render_to_string_in_scope(view: impl FnOnce() -> View) -> String {
+    is_not_ssr! {
+        let _ = view;
+        panic!("`render_to_string` only available in SSR mode");
+    }
+    is_ssr! {
+        let mut buf = String::new();
+
+        let handle = create_child_scope(|| {
+            provide_context(HydrationRegistry::new());
+            provide_context(SsrMode::Sync);
+
+            IS_HYDRATING.set(true);
+            let view = view();
+            IS_HYDRATING.set(false);
+            ssr_node::render_recursive_view(&view, &mut buf);
         });
+        handle.dispose();
         buf
     }
 }
