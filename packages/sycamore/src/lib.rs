@@ -69,7 +69,9 @@ pub mod futures {
 
 #[cfg(feature = "hydrate")]
 pub use sycamore_web::{hydrate, hydrate_in_scope, hydrate_to};
-pub use sycamore_web::{render, render_in_scope, render_to, render_to_string, render_to_string_in_scope};
+pub use sycamore_web::{
+    render, render_in_scope, render_to, render_to_string, render_to_string_in_scope,
+};
 #[cfg(feature = "suspense")]
 pub use sycamore_web::{render_to_string_await_suspense, render_to_string_stream};
 
