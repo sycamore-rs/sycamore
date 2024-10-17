@@ -5,7 +5,7 @@
 #[macro_export]
 macro_rules! console_log {
     ($($arg:tt)*) => {
-        if is_not_ssr!() {
+        if $crate::is_not_ssr!() {
             $crate::rt::web_sys::console::log_1(&::std::format!($($arg)*).into());
         } else {
             ::std::println!($($arg)*);
@@ -20,7 +20,7 @@ macro_rules! console_log {
 #[macro_export]
 macro_rules! console_warn {
     ($($arg:tt)*) => {
-        if is_not_ssr!() {
+        if $crate::is_not_ssr!() {
             $crate::rt::web_sys::console::warn_1(&::std::format!($($arg)*).into());
         } else {
             ::std::eprintln!($($arg)*);
@@ -35,7 +35,7 @@ macro_rules! console_warn {
 #[macro_export]
 macro_rules! console_error {
     ($($arg:tt)*) => {
-        if is_not_ssr!() {
+        if $crate::is_not_ssr!() {
             $crate::rt::web_sys::console::error_1(&::std::format!($($arg)*).into());
         } else {
             ::std::eprintln!($($arg)*);
@@ -51,7 +51,7 @@ macro_rules! console_error {
 #[macro_export]
 macro_rules! console_dbg {
     () => {
-        if is_not_ssr!() {
+        if $crate::is_not_ssr!() {
             $crate::rt::web_sys::console::log_1(
                 &::std::format!("[{}:{}]", ::std::file!(), ::std::line!(),).into(),
             );
@@ -60,7 +60,7 @@ macro_rules! console_dbg {
         }
     };
     ($arg:expr $(,)?) => {
-        if is_not_ssr!() {
+        if $crate::is_not_ssr!() {
             let arg = $arg;
             $crate::rt::web_sys::console::log_1(
                 &::std::format!(
