@@ -1,3 +1,9 @@
+---
+title: Introduction
+sections:
+  - your-first-app
+---
+
 # Introduction
 
 This book will help you get started with
