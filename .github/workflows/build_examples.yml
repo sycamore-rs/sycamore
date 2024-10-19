@@ -67,7 +67,8 @@ jobs:
 
       - name: Upload static files as artifact
         uses: actions/upload-pages-artifact@v3
-        with: dist/
+        with:
+          path: dist/
 
   deploy:
     name: Deploy
