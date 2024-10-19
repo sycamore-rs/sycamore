@@ -25,6 +25,7 @@ to = "https://sycamore.dev/post/announcing-v0-8-0"
 [[redirects]]
 from = "/"
 to = "https://sycamore.dev"
+force = true
 
 [[redirects]]
 from = "/*"
