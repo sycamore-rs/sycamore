@@ -4,16 +4,9 @@ use sycamore::prelude::*;
 enum VersionedDocsLink {
     Some(&'static str),
     None,
-    Next,
 }
 
 const VERSIONS: &[(&str, VersionedDocsLink)] = &[
-    ("Next", VersionedDocsLink::Next),
-    // v0.9.x
-    ("v0.9.0-beta.4", VersionedDocsLink::None),
-    ("v0.9.0-beta.3", VersionedDocsLink::None),
-    ("v0.9.0-beta.2", VersionedDocsLink::None),
-    ("v0.9.0-beta.1", VersionedDocsLink::None),
     // v0.8.x
     ("v0.8.2", VersionedDocsLink::Some("v0.8")),
     ("v0.8.1", VersionedDocsLink::None),
@@ -67,17 +60,6 @@ fn VersionedDocsLink(name: &'static str, versioned_docs_link: VersionedDocsLink)
                 class="hover:text-yellow-500 transition-colors",
                 href=format!("https://github.com/sycamore-rs/sycamore/releases/tag/{}", &name[1..]),
             ) { "Release Notes" }
-        },
-        VersionedDocsLink::Next => view! {
-            a(
-                class="hover:text-yellow-500 transition-colors",
-                href="/docs/getting_started/installation",
-            ) { "Book" }
-            a(
-                class="hover:text-yellow-500 transition-colors",
-                href="/api/sycamore/index.html",
-                rel="external"
-            ) { "API" }
         },
     }
 }

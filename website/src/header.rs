@@ -77,7 +77,7 @@ fn Nav() -> View {
                     // Brand section
                     div(class="ml-0 sm:ml-3 inline-block flex-initial") {
                         div(class="flex space-x-4") {
-                            a(href="/#") {
+                            a(href="https://sycamore.dev", data-umami-event="new-website") {
                                 img(src="/logo.svg", class="h-10 w-10")
                             }
                         }
@@ -174,6 +174,9 @@ pub fn HamburgerMenu() -> View {
 pub fn Header() -> View {
     view! {
         header(class="fixed top-0 z-50 w-full") {
+            a(class="h-6 block bg-orange-500 hover:bg-orange-600 dark:bg-orange-950 hover:dark:bg-orange-900 text-center font-semibold transition-colors", href="https://sycamore.dev", data-umami-event="new-website") {
+                "Looking for Sycamore v0.9? Check out our new website!"
+            }
             Nav {}
         }
     }
