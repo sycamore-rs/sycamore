@@ -84,7 +84,7 @@ pub fn Content(
     view! {
         div(class="flex w-full") {
             (show_sidebar.then(|| view! {
-                div(class="flex-none hidden sm:block fixed left-0 top-0 pt-12 max-h-full overflow-y-auto") {
+                div(class="flex-none hidden sm:block fixed left-0 top-0 pt-[4.5rem] max-h-full overflow-y-auto") {
                     div(class="p-3"){
                         crate::sidebar::Sidebar(sidebar=sidebar.get_clone().unwrap())
                     }
@@ -128,7 +128,7 @@ pub fn Content(
                     div(dangerously_set_inner_html=html)
                 }
             }
-            div(class="flex-none hidden lg:block lg:w-44 fixed right-0 top-0 pt-12 max-h-full overflow-y-auto") {
+            div(class="flex-none hidden lg:block lg:w-44 fixed right-0 top-0 pt-[4.5rem] max-h-full overflow-y-auto") {
                 OutlineView(outline=outline)
             }
         }

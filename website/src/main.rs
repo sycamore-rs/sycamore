@@ -162,7 +162,7 @@ fn switch(route: ReadSignal<Routes>) -> View {
     };
 
     view! {
-        div(class="font-body pt-12 text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
+        div(class="font-body pt-[4.5rem] text-black dark:text-gray-200 bg-white dark:bg-gray-800 \
             min-h-screen transition-colors"
         ) {
             header::Header {}
