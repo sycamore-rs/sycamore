@@ -1,4 +1,8 @@
-_2021-07-06_
+---
+title: Announcing Sycamore v0.5.0
+description: SSR + Routing
+date: 2021-07-06
+---
 
 # Announcing Sycamore v0.5.0!
 

@@ -1,4 +1,8 @@
-_2022-08-28_
+---
+title: Announcing Sycamore v0.8.0
+description: Reactivity v2, better component props and children, async/await support, and more...
+date: 2022-08-28
+---
 
 # Announcing Sycamore v0.8.0!
 
