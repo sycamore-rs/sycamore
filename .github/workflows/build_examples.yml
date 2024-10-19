@@ -47,7 +47,7 @@ jobs:
       - name: Build examples
         run: |
           output="$(pwd)/dist"
-          mkdir "$output/examples"
+          mkdir "$output"
           for path in examples/*; do
             if [[ ! -d $path ]]; then
               continue
