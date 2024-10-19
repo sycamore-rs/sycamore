@@ -37,7 +37,6 @@ members = [
 
 	# Website
 	"docs",
-	"website",
 
 	# Tools
 	"packages/tools/bench",

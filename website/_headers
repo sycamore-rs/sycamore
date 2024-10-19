@@ -1,6 +1,0 @@
-/*.css
-  Cache-Control: public, s-max-age=604800
-/*.js
-  Cache-Control: public, s-max-age=604800
-/*.wasm
-  Cache-Control: public, s-max-age=604800
