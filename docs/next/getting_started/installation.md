@@ -75,7 +75,7 @@ sycamore = "0.9.0-beta.4"
 >
 > ```toml
 > # Make sure you update the rev to the latest commit hash.
-> sycamore = { git = "https://github.com/sycamore-rs/sycamore", rev = "fc640d313e66f9a6af422fae44f4f72fa86280cc" }
+> sycamore = { git = "https://github.com/sycamore-rs/sycamore", rev = "c5b4097" }
 > ```
 
 You should now be all set for your Sycamore adventure!
