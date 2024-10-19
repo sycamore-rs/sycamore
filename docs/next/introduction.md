@@ -2,6 +2,7 @@
 title: Introduction
 sections:
   - your-first-app
+  - adding-state
 ---
 
 # Introduction

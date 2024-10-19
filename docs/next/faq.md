@@ -1,3 +1,7 @@
+---
+title: FAQ
+---
+
 # Frequently Asked Questions
 
 ## I'm new to Sycamore. Where should I start?
