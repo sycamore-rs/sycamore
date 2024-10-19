@@ -1,0 +1,19 @@
+name: Build Docs
+
+on:
+  push:
+    branches: [main]
+    paths: [docs/**]
+
+jobs:
+  notify:
+    name: Trigger Update
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: dispatch event
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: sycamore-rs/website
+          event-type: update-submodule
