@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729196542109,
+  "lastUpdate": 1729354176305,
   "repoUrl": "https://github.com/sycamore-rs/sycamore",
   "entries": {
     "Benchmark": [
@@ -32429,6 +32429,78 @@ window.BENCHMARK_DATA = {
             "name": "ssr_medium",
             "value": 21320,
             "range": "± 119",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "37006668+lukechu10@users.noreply.github.com",
+            "name": "Luke",
+            "username": "lukechu10"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "aa5773c01ca214c31f837feb00c9e6f7f6e2eca0",
+          "message": "Update old website to migrate to sycamore.dev (#724)\n\n* Add banner redirecting to new website\r\n\r\n* Redirect all the news pages\r\n\r\n* Do not show v0.9 docs on old website\r\n\r\n* Update header to go to new site\r\n\r\n* Add tracking id",
+          "timestamp": "2024-10-19T17:06:50+01:00",
+          "tree_id": "020510ba258bed6fb21409f65f9b4ffd9f899d64",
+          "url": "https://github.com/sycamore-rs/sycamore/commit/aa5773c01ca214c31f837feb00c9e6f7f6e2eca0"
+        },
+        "date": 1729354175600,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "reactivity_signals",
+            "value": 32635,
+            "range": "± 609",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_effects",
+            "value": 106648,
+            "range": "± 1468",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_map_indexed",
+            "value": 12499,
+            "range": "± 623",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_map_keyed",
+            "value": 19265,
+            "range": "± 768",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "reactivity_context_deeply_nested",
+            "value": 1273,
+            "range": "± 232",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "deep_creation",
+            "value": 218652,
+            "range": "± 100898",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ssr_small",
+            "value": 1160,
+            "range": "± 11",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "ssr_medium",
+            "value": 20623,
+            "range": "± 146",
             "unit": "ns/iter"
           }
         ]
