@@ -75,7 +75,7 @@ fn switch(route: ReadSignal<Routes>) -> View {
     provide_context(cached_sidebar_data);
     if cached_sidebar_data.with(|x| x.is_none() || x.as_ref().unwrap().0.is_some()) {
         spawn_local_scoped(async move {
-            cached_sidebar_data.set(Some((None, get_sidebar(None).await)));
+            cached_sidebar_data.set(Some((None, get_sidebar(Some(LATEST_MAJOR_VERSION)).await)));
         });
     }
 
@@ -87,7 +87,7 @@ fn switch(route: ReadSignal<Routes>) -> View {
         },
         Routes::Docs(a, b) => {
             let path = create_signal(format!("{a}/{b}"));
-            let url = format!("/static/docs/{a}/{b}.json");
+            let url = format!("/static/docs/{LATEST_MAJOR_VERSION}/{a}/{b}.json");
             let data = create_client_resource(move || docs_preload(&url));
             view! {
                 (if let Some(data) = data.get_clone() {
@@ -96,7 +96,7 @@ fn switch(route: ReadSignal<Routes>) -> View {
                             content::Content(
                                 data=data.clone(),
                                 sidebar=SidebarCurrent {
-                                    version: "next".to_string(),
+                                    version: LATEST_MAJOR_VERSION.to_string(),
                                     path: path.get_clone(),
                                     data: cached_sidebar_data.1.clone(),
                                 },
