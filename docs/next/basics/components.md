@@ -1,14 +1,15 @@
 # Components
 
-Any serious UI framework needs a way to compose and abstract UI elements. In Sycamore, this can be
-accomplished using components.
+Any serious UI framework needs a way to compose and abstract UI elements. In
+Sycamore, this can be accomplished using components.
 
-Components in `sycamore` are simply functions slapped with the `#[component]` attribute. Component functions only run once (unlike React where
-functional-components are called on every render). Think of it as a builder-pattern for constructing
-UI.
+Components in `sycamore` are simply functions slapped with the `#[component]`
+attribute. Component functions only run once (unlike React where
+functional-components are called on every render). Think of it as a
+builder-pattern for constructing UI.
 
-In order for the `view!` macro to distinguish between regular elements and components, it is
-convention to name components using `PascalCase`.
+In order for the `view!` macro to distinguish between regular elements and
+components, it is convention to name components using `PascalCase`.
 
 ```rust
 #[component]
@@ -29,10 +30,11 @@ view! {
 
 ## Properties
 
-Components would be much more useful if they can accept data from the parent and render the given
-data. Luckily, we can do this with properties. To allow your component to accept properties, take a
-second argument with a type that implements the `Props` trait. For convenience, you can automatically
-derive the `Props` trait with a derive-macro.
+Components would be much more useful if they can accept data from the parent and
+render the given data. Luckily, we can do this with properties. To allow your
+component to accept properties, take a second argument with a type that
+implements the `Props` trait. For convenience, you can automatically derive the
+`Props` trait with a derive-macro.
 
 ```rust
 #[derive(Props)]
@@ -42,7 +44,8 @@ struct MyProps {
 }
 ```
 
-The component can then be constructed by passing the properties to it from the `view!` macro.
+The component can then be constructed by passing the properties to it from the
+`view!` macro.
 
 ```rust
 view! {
@@ -52,14 +55,16 @@ view! {
 
 ## Reactive props
 
-Accepting data from the parent sure is nice but it would be even better if updating the data in the
-parent also updates the view in the child component! For components to automatically react to prop
-changes, they should accept a signal. Most of the times, you'll want a `ReadSignal` unless you want
-mutable access to the data in which case you should use a `Signal`. This way, updating the signal
-will automatically update whatever is listening to it, even if it is inside the child component.
+Accepting data from the parent sure is nice but it would be even better if
+updating the data in the parent also updates the view in the child component!
+For components to automatically react to prop changes, they should accept a
+signal. Most of the times, you'll want a `ReadSignal` unless you want mutable
+access to the data in which case you should use a `Signal`. This way, updating
+the signal will automatically update whatever is listening to it, even if it is
+inside the child component.
 
-Here is an example of a simple component that displays the value of its prop and that automatically
-updates the displayed value when the prop changes.
+Here is an example of a simple component that displays the value of its prop and
+that automatically updates the displayed value when the prop changes.
 
 ```rust
 #[derive(Props)]
@@ -85,8 +90,8 @@ state.set(1); // automatically updates value in MyComponent
 
 ## Component children
 
-Components can also be wrappers around other child views by adding the `children` field to our
-properties struct.
+Components can also be wrappers around other child views by adding the
+`children` field to our properties struct.
 
 ```rust
 #[derive(Props)]
@@ -115,8 +120,8 @@ view! {
 
 ## Default props
 
-Some property fields might have a default value. Use the `#[prop(default)]` attribute to allow
-omitting the property when constructing the component.
+Some property fields might have a default value. Use the `#[prop(default)]`
+attribute to allow omitting the property when constructing the component.
 
 ```rust
 #[derive(Props)]
@@ -134,10 +139,11 @@ view! {
 
 ## `inline_props`
 
-Creating a struct just for accepting a few props might be a bit boilerplate-y depending on your
-tastes. Feeling lazy? Just slap `inline_props` onto your component and the function arguments will
-automatically be converted into props! For example, the two code snippets below are essentially
-identical except that in one case, the struct is manually specified whereas in the other case, it is
+Creating a struct just for accepting a few props might be a bit boilerplate-y
+depending on your tastes. Feeling lazy? Just slap `inline_props` onto your
+component and the function arguments will automatically be converted into props!
+For example, the two code snippets below are essentially identical except that
+in one case, the struct is manually specified whereas in the other case, it is
 automatically generated.
 
 ```rust
@@ -166,22 +172,24 @@ fn MyComponent(value: ReadSignal<i32>) -> View {
 }
 ```
 
-One thing to keep in mind is that adding `inline_props` makes your function's argument names part of
-the public API. Changing the name of the argument also changes the name of the prop and therefore
-the users of your component will also need to update their code.
+One thing to keep in mind is that adding `inline_props` makes your function's
+argument names part of the public API. Changing the name of the argument also
+changes the name of the prop and therefore the users of your component will also
+need to update their code.
 
 ## Lifecycle
 
-Component lifecycle is strongly tied to the reactive system, since, under the hood, components are
-simply functions that are run inside an untracked scope.
+Component lifecycle is strongly tied to the reactive system, since, under the
+hood, components are simply functions that are run inside an untracked scope.
 
-This means that we can use the same helpers in the reactive system to attach callbacks to the
-component lifecycle.
+This means that we can use the same helpers in the reactive system to attach
+callbacks to the component lifecycle.
 
 ### `on_cleanup`
 
-The `on_cleanup` method schedules a callback to be called when the reactive scope is destroyed. This
-can also be used to schedule a callback when the component is destroyed.
+The `on_cleanup` method schedules a callback to be called when the reactive
+scope is destroyed. This can also be used to schedule a callback when the
+component is destroyed.
 
 ```rust
 #[component]

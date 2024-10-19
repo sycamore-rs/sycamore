@@ -1,14 +1,15 @@
 # Routing
 
-Routers are the backbone of SPAs (Single Page Apps). They handle displaying different pages
-depending on the URL. When an anchor tag (`<a>`) is clicked, the router will intercept it and
-navigate to the correct page without performing a full refresh. This makes navigation feel faster
-and smoother.
+Routers are the backbone of SPAs (Single Page Apps). They handle displaying
+different pages depending on the URL. When an anchor tag (`<a>`) is clicked, the
+router will intercept it and navigate to the correct page without performing a
+full refresh. This makes navigation feel faster and smoother.
 
 ## Adding `sycamore-router`
 
 To add routing to your Sycamore app, install the
-[`sycamore-router`](https://crates.io/crates/sycamore-router) crate from crates.io.
+[`sycamore-router`](https://crates.io/crates/sycamore-router) crate from
+crates.io.
 
 ```toml
 sycamore-router = "0.9.0-beta.4"
@@ -16,17 +17,18 @@ sycamore-router = "0.9.0-beta.4"
 
 ### Compatibility with `sycamore`
 
-Note that the major version number for `sycamore-router` corresponds to the same major version
-number for `sycamore` (e.g. `sycamore-router v0.5.x` is compatible with `sycamore v0.5.x`).
+Note that the major version number for `sycamore-router` corresponds to the same
+major version number for `sycamore` (e.g. `sycamore-router v0.5.x` is compatible
+with `sycamore v0.5.x`).
 
 ## Creating routes
 
-Start off by adding `use sycamore_router::{Route, Router, RouterProps}` to the top of your source
-code. This imports the symbols needed to define our router.
+Start off by adding `use sycamore_router::{Route, Router, RouterProps}` to the
+top of your source code. This imports the symbols needed to define our router.
 
-The heart of the router is an `enum`. Each variant of the `enum` represents a different route. To
-make our `enum` usable with `Router`, we will use the `Route` derive macro to implement the required
-traits for us.
+The heart of the router is an `enum`. Each variant of the `enum` represents a
+different route. To make our `enum` usable with `Router`, we will use the
+`Route` derive macro to implement the required traits for us.
 
 Here is an example:
 
@@ -42,28 +44,30 @@ enum AppRoutes {
 }
 ```
 
-Note that each variant is marked with either the `#[to(_)]` or `#[not_found]` attribute.
+Note that each variant is marked with either the `#[to(_)]` or `#[not_found]`
+attribute.
 
-The `#[to(_)]` attribute designates a route. For example, `#[to("/about")]` designates the route for
-the about page.
+The `#[to(_)]` attribute designates a route. For example, `#[to("/about")]`
+designates the route for the about page.
 
-The `#[not_found]` is a fallback route. It is the route that matches when all the other routes
-don't. There must be one, and only one route marked with `#[not_found]`. Forgetting the not found
-route will cause a compile error.
+The `#[not_found]` is a fallback route. It is the route that matches when all
+the other routes don't. There must be one, and only one route marked with
+`#[not_found]`. Forgetting the not found route will cause a compile error.
 
 ## Routes syntax
 
 ### Static routes
 
-The simplest routes are static routes. We already have the `"/"` and `"/about"` routes in our above
-example which are both static.
+The simplest routes are static routes. We already have the `"/"` and `"/about"`
+routes in our above example which are both static.
 
 Static routes can also be nested, e.g. `"/my/nested/path"`.
 
 ### Dynamic parameters
 
-Path parameters can be dynamic by using angle brackets around a variable name in the route's path.
-This will allow any segment to match the route in that position.
+Path parameters can be dynamic by using angle brackets around a variable name in
+the route's path. This will allow any segment to match the route in that
+position.
 
 For example, to match any route with `"hello"` followed by a name, we could use:
 
@@ -74,8 +78,8 @@ Hello {
 }
 ```
 
-The `<name>` parameter is _captured_ by the `name` field in the `Hello` variant. For example, if we
-were to visit `/hello/sycamore`, we would find
+The `<name>` parameter is _captured_ by the `name` field in the `Hello` variant.
+For example, if we were to visit `/hello/sycamore`, we would find
 
 ```rust
 AppRoutes::Hello { name: "sycamore".to_string() }
@@ -104,8 +108,8 @@ AppRoutes::Repo {
 
 Dynamic segments can also be captured using the `<param..>` syntax.
 
-For example, the following route will match `"page"` followed by an arbitrary number of segments
-(including 0 segments).
+For example, the following route will match `"page"` followed by an arbitrary
+number of segments (including 0 segments).
 
 ```rust
 #[to("/page/<path..>")]
@@ -114,8 +118,9 @@ Page {
 }
 ```
 
-Dynamic segments match lazily, meaning that once the next segment can be matched, the capture will
-be completed. For example, the following route will **not** capture the final `end` segment.
+Dynamic segments match lazily, meaning that once the next segment can be
+matched, the capture will be completed. For example, the following route will
+**not** capture the final `end` segment.
 
 ```rust
 #[to("/start/<path..>/<end>")]
@@ -127,8 +132,8 @@ Path {
 
 ### Unit variants
 
-Enum unit variants are also supported. The following route has the same behavior as the hello
-example from before.
+Enum unit variants are also supported. The following route has the same behavior
+as the hello example from before.
 
 ```rust
 #[to("/hello/<name>")]
@@ -137,17 +142,19 @@ Hello(String)
 
 ### Capture types
 
-Capture variables are not limited to `String`. In fact, any type that implements the
+Capture variables are not limited to `String`. In fact, any type that implements
+the
 [`TryFromParam`](https://docs.rs/sycamore-router/latest/sycamore_router/trait.TryFromParam.html)
 trait can be used as a capture.
 
-This trait is automatically implemented for types that already implement `FromStr`, which includes
-many standard library types.
+This trait is automatically implemented for types that already implement
+`FromStr`, which includes many standard library types.
 
-Because `TryFromParam` is fallible, the route will only match if the parameter can be parsed into
-the corresponding type.
+Because `TryFromParam` is fallible, the route will only match if the parameter
+can be parsed into the corresponding type.
 
-For example, `/account/123` will match the following route but `/account/abc` will not.
+For example, `/account/123` will match the following route but `/account/abc`
+will not.
 
 ```rust
 #[to("/account/<id>")]
@@ -160,7 +167,8 @@ trait is the equivalent for dynamic segments.
 
 ### Nested routes
 
-Routes can also be nested! The following code will route any url to `/route/..` to `Nested`.
+Routes can also be nested! The following code will route any url to `/route/..`
+to `Nested`.
 
 ```rust
 #[derive(Route)]
@@ -221,26 +229,28 @@ view! {
 }
 ```
 
-`Router` is just a component like any other. The props accept a closure taking a `ReadSignal` of the
-matched route as a parameter and an "integration". The integration is for adapting the router to
-different environments (e.g. server-side rendering). The `HistoryIntegration` is a built-in
-integration that uses the
+`Router` is just a component like any other. The props accept a closure taking a
+`ReadSignal` of the matched route as a parameter and an "integration". The
+integration is for adapting the router to different environments (e.g.
+server-side rendering). The `HistoryIntegration` is a built-in integration that
+uses the
 [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API).
 
-Any clicks on anchor tags (`<a>`) created inside the `Router` will be intercepted and handled by the
-router.
+Any clicks on anchor tags (`<a>`) created inside the `Router` will be
+intercepted and handled by the router.
 
 ## Server-side rendering and `StaticRouter`
 
-Whereas `Router` is used inside the context of a browser, `StaticRouter` can be used for SSR.
+Whereas `Router` is used inside the context of a browser, `StaticRouter` can be
+used for SSR.
 
-The difference between a `Router` and a `StaticRouter` is that the route is provided to
-`StaticRouter` during the initialization phase. The initial route is provided as an argument to
-`StaticRouterProps::new`.
+The difference between a `Router` and a `StaticRouter` is that the route is
+provided to `StaticRouter` during the initialization phase. The initial route is
+provided as an argument to `StaticRouterProps::new`.
 
-This is so that `StaticRouter` can return a `View` immediately without blocking to wait for the
-route preload. The route is expected to be resolved separately using the `Route::match_path`
-function.
+This is so that `StaticRouter` can return a `View` immediately without blocking
+to wait for the route preload. The route is expected to be resolved separately
+using the `Route::match_path` function.
 
 ```rust
 let route = AppRoutes::match_path(path);
@@ -275,24 +285,27 @@ TODO: docs for creating custom router integrations.
 
 ## Using `navigate`
 
-Calling `navigate` navigates to the specified `url`. The url should have the same origin as the app.
+Calling `navigate` navigates to the specified `url`. The url should have the
+same origin as the app.
 
-This is useful for imperatively navigating to an url when using an anchor tag (`<a>`) is not
-possible/suitable (e.g. when submitting a form).
+This is useful for imperatively navigating to an url when using an anchor tag
+(`<a>`) is not possible/suitable (e.g. when submitting a form).
 
 ## Data fetching and preloading
 
-When data fetching (e.g. from a REST API) is required to load a page, it is recommended to preload
-the data. This will cause the router to wait until the data is loaded before rendering the page,
-removing the need for some "Loading..." indicator.
+When data fetching (e.g. from a REST API) is required to load a page, it is
+recommended to preload the data. This will cause the router to wait until the
+data is loaded before rendering the page, removing the need for some
+"Loading..." indicator.
 
 TODO: this section is not yet complete
 
 ## `rel="external"`
 
-By default, the router will intercept all `<a>` elements that have the same origin as the current
-page. Sometimes, we just want the browser to handle navigation without being intercepted by the
-router. To bypass the router, we can add the `rel="external"` attribute to the anchor tag.
+By default, the router will intercept all `<a>` elements that have the same
+origin as the current page. Sometimes, we just want the browser to handle
+navigation without being intercepted by the router. To bypass the router, we can
+add the `rel="external"` attribute to the anchor tag.
 
 ```rust
 view! {

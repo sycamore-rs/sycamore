@@ -5,8 +5,9 @@
 
 ## Building in release mode
 
-A common mistake when building a Wasm binary is to forget to build in release mode. If you are using
-`trunk`, simply add the `--release` flag to the build command:
+A common mistake when building a Wasm binary is to forget to build in release
+mode. If you are using `trunk`, simply add the `--release` flag to the build
+command:
 
 ```bash
 trunk build --release
@@ -14,8 +15,8 @@ trunk build --release
 
 ## `Cargo.toml`
 
-It is possible to configure release builds to be smaller by using various flags and configurations
-in your `Cargo.toml` file.
+It is possible to configure release builds to be smaller by using various flags
+and configurations in your `Cargo.toml` file.
 
 ```toml
 [profile.release]
@@ -31,7 +32,8 @@ lto = true
 
 ## `wasm-opt`
 
-If you are using `trunk`, add this line to your `index.html` to enable `wasm-opt`:
+If you are using `trunk`, add this line to your `index.html` to enable
+`wasm-opt`:
 
 ```html
 <link data-trunk rel="rust" data-wasm-opt="s" />

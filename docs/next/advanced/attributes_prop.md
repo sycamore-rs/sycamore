@@ -2,13 +2,15 @@
 
 > TODO: This feature currently does not work in the latest pre-release.
 
-When you're working on code for your own website, props are a great way to pass customizable values
-to a component. If you need to customize an additional attribute on your HTML element, just add a
-prop! On the other hand, when you're working on components used by other people (i.e. component libraries),
-specifying every possible customization can quickly become unfeasible or even impossible.
+When you're working on code for your own website, props are a great way to pass
+customizable values to a component. If you need to customize an additional
+attribute on your HTML element, just add a prop! On the other hand, when you're
+working on components used by other people (i.e. component libraries),
+specifying every possible customization can quickly become unfeasible or even
+impossible.
 
-This is where the `Attributes` type is a useful escape hatch. Simply add a field named `attributes`
-of that type to your props,
+This is where the `Attributes` type is a useful escape hatch. Simply add a field
+named `attributes` of that type to your props,
 
 ```rust
 #[derive(Props)]
@@ -29,8 +31,8 @@ Any attributes set by the user are now passed through onto your `p` element.
 
 ## Setting attributes
 
-The user can set attributes by prefixing them with `attr:`. Event handlers or bindings are also
-automatically passed through.
+The user can set attributes by prefixing them with `attr:`. Event handlers or
+bindings are also automatically passed through.
 
 ```rust
 view! {
@@ -38,21 +40,21 @@ view! {
 }
 ```
 
-Attributes are still fully type checked when the user sets them and will throw compiler errors
-if the value doesn't fit the attribute.
+Attributes are still fully type checked when the user sets them and will throw
+compiler errors if the value doesn't fit the attribute.
 
 ## Accessing and modifying attributes
 
-`Attributes` exposes a number of ways of accessing attributes. In addition to `get` and `remove`,
-which return a general attribute value, typed versions of each method are available for strings,
-booleans and refs.
+`Attributes` exposes a number of ways of accessing attributes. In addition to
+`get` and `remove`, which return a general attribute value, typed versions of
+each method are available for strings, booleans and refs.
 
 ```rust
 let id = props.attributes.remove_str("id").unwrap_or_else(|| generate_id());
 ```
 
-It's common that the user should be able to set any attribute except a few set by the component.
-For this, there's a convenience method called `exclude_keys`.
+It's common that the user should be able to set any attribute except a few set
+by the component. For this, there's a convenience method called `exclude_keys`.
 
 ```rust
 props.attributes.exclude_keys(&["id", "aria-labelled-by", "aria-role"]);
