@@ -31,8 +31,7 @@ This section will give a brief tour of Sycamore's project structure and where to
 - Integration tests are in `packages/sycamore/tests`.
 - Benchmarks are in `packages/tools/bench`.
 - Examples are in `examples/`.
-- The Sycamore website is in `website/`. This will eventually be moved out into a new repository.
-- The documentation is in `docs/`. This also contains a tool for pre-rendering the markdown files into HTML. This will likely be moved into the new website repository when its ready.
+- The Sycamore website is developed at [sycamore-rs/website](https://github.com/sycamore-rs/website). Every time `docs/` is modified, a workflow is triggered that will automatically update the website with the latest docs.
 
 ### Crates
 
@@ -42,16 +41,10 @@ This is the main crate which is intended to be added to the `Cargo.toml` of a Sy
 
 For now, this crate also includes:
 
-- The Builder API. We cannot move this out yet because of inter-dependence with other features.
-- Some web-related utilities such as `NoSsr` and `NoHydrate` as well as all the HTML element declarations.
-- Easing functions. This should be moved into another crate.
-- Flow-control components: `Keyed` and `Indexed`. This is because the proc-macros rely on the `sycamore` crate being at the root.
-- `create_resource`. This should probably be moved into the `sycamore-futures` crate.
-- Utilities for tweened signals. This should be moved into another crate along with the easing functions.
-- Suspense. This is for the same reason as the flow-control components.
-- Some utilities used by the codegen of various proc-macros.
+- Easing functions for animations.
+- Utilities for using the `renderAnimationFrame` API.
 
-The goal is to eventually move most of these into their own crates.
+These will eventually be moved into a different crate.
 
 #### `sycamore-macro`
 
@@ -67,23 +60,19 @@ The API is mostly inspired by [SolidJS](https://www.solidjs.com/). Behind-the-sc
 
 Everything created inside the reactivity system is owned by the top-level `Root` struct. This includes the node arena as well as global state used for tracking dependencies in memos/effects. Finally, the `Root` is also responsible for propagating updates through the reactive graph.
 
-[This article](https://dev.to/ryansolid/a-hands-on-introduction-to-fine-grained-reactivity-3ndf) provides a good introduction to how reactivity is implemented (albeit in JS). The reactive propagation algorithm takes inspiration from [this article](https://dev.to/modderme123/super-charging-fine-grained-reactive-performance-47ph), modified because our reactive system is eager rather than lazy for better predictibility.
+[This article](https://dev.to/ryansolid/a-hands-on-introduction-to-fine-grained-reactivity-3ndf) provides a good introduction to how reactivity is implemented (albeit in JS). The reactive propagation algorithm takes inspiration from [this article](https://dev.to/modderme123/super-charging-fine-grained-reactive-performance-47ph), modified because our reactive system is eager rather than lazy for better predictability.
 
 #### `sycamore-core`
 
 This crate contains all the core utilities for Sycamore's rendering logic. This includes:
 
 - Runtime support for components.
-- Swappable rendering backends.
-- Hydration code. (TODO: this should proabably be moved to `sycamore-web`).
-- `NodeRef`s.
-- Runtime support for rendering dynamic views and difing fragments.
 
-This crate is backend-agnostic, meaning that there should be no dependence on `web-sys` or `wasm-bindgen`.
+This crate is backend-agnostic, meaning that there should be no dependence on `web-sys` or `wasm-bindgen`. Right now, a lot of the core rendering logic is in `sycamore-web`. We probably want to move as much as possible over into `sycamore-core` to make it backend-agnostic.
 
 #### `sycamore-web`
 
-This crate contains all the web specific rendering logic for Sycamore. This includes, notably, `DomNode`, `HydrateNode`, and `SsrNode`.
+This crate contains all the web specific rendering logic for Sycamore. This includes, notably, `DomNode`, `HydrateNode`, and `SsrNode`. This also includes other rendering utilities such as `Keyed`, `Indexed`, `Suspense`, `Transition`, and more... These are all web-specific for now but some should be moved over into `sycamore-core`.
 
 #### `sycamore-futures`
 
@@ -166,20 +155,12 @@ When adding an example, the following steps should be taken:
 1. Add your example to the `examples/` folder. An easy way to create a new example is the clone an existing example and change the name in the appropriate places (folder name and `Cargo.toml`).
 2. Add your example to the list of examples in `examples/README.md` along with a small description of what your example demonstrates.
 
-## Working on the website
-
-The website is in the `website/` folder.
-
-We use [TailwindCSS](https://tailwindcss.com/) to style the website. First run `npm install` in the `website/` folder to install TailwindCSS. Then simply run `trunk serve` to start the dev server.
-
 ## Writing docs
 
-All the documentation is in the `docs/` folder. As a general rule, you should only ever modify the docs in `docs/next/` and not touch `docs/versioned_docs/`. The documentation in `docs/next/` will be copied over to `docs/versioned_docs/` when there is a new release.
-
-When writing the docs, you can use the `docs` utility crate to generate the markdown files into HTML to be displayed on the website. It is recommended to run in release mode since rendering can take some time. To run the utility, simply use `cargo run --release` in the `docs/` folder.
+All the documentation is in the `docs/` folder. This includes the [Sycamore Book](https://sycamore.dev/book/introduction) as well as blog posts.
 
 ## Running benchmarks
 
 We have a very basic benchmark setup in `packages/tools/bench`. Simply run `cargo bench` in that folder to run the micro-benchmarks.
 
-We also have an implementaiton for [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark). Runnig this locally, however, is quite a bit more involved. Instead, the simplest way to run this is to add the "performance" label to your PR which will trigger the CI to run the benchmark automatically on every commit and post the result as a comment. Note, however, that the CI can be very noisy and that measurements should be taken with a grain of salt.
+We also have an implementation for [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark). Running this locally, however, is quite a bit more involved. Instead, the simplest way to run this is to add the "performance" label to your PR which will trigger the CI to run the benchmark automatically on every commit and post the result as a comment. Note, however, that the CI can be very noisy and that measurements should be taken with a grain of salt.
