@@ -69,6 +69,10 @@ LSP (Language Server Protocol) should work fine along with
 
 ## Create a new Sycamore project
 
+If you want to start with a template project, check out
+[`sycamore-start`](https://github.com/sycamore-rs/start), a simple bare-bones
+Sycamore template. Or just follow along the instructions.
+
 Now with all the prerequisites installed, we can create our new Sycmore app.
 
 ```bash
@@ -157,7 +161,8 @@ With this example, we are creating the following HTML structure:
 <p>This is my first Sycamore app</p>
 ```
 
-Of course, we can also nest elements:
+Of course, we can also nest elements, for example, surrounding our elements in a
+`<div>...</div>` container.
 
 ```rust
 view! {
@@ -168,7 +173,21 @@ view! {
 }
 ```
 
-which surrounds the previous example in a `<div>...</div>` element.
+### Adding attributes
+
+We can also add HTML attributes to our elements using the following syntax:
+
+```rust
+view! {
+    h1(id="hello-world") { "Hello, world!" }
+}
+```
+
+This generates the following HTML:
+
+```html
+<h1 id="hello-world">Hello, world!</h1>
+```
 
 ## Using components
 
@@ -176,9 +195,159 @@ Obviously, we don't want to write our entire app inside a single function. To
 solve this problem, we can use components. It is conventional to define a
 top-level `App` component which acts as the entry-point for your app.
 
-To define a component, simply use the `#[component]` macro.
+In Sycamore, components are just functions that return `View`. To define a
+component, use the `#[component]` attribute.
 
 ```rust
 #[component]
-fn App
+fn App() -> View {
+    view! {
+        div {
+            h1 { "Hello, world!" }
+            p { "This is my first Sycamore app" }
+        }
+    }
+}
+
+fn main() {
+    sycamore::render(App);
+}
 ```
+
+We can create a component with the `view!` macro using essentially the same
+syntax we have used for elements.
+
+```rust
+#[component]
+fn HelloWorld() -> View {
+    view! {
+        p { "Hello, world!" }
+    }
+}
+
+#[component]
+fn App() -> View {
+    view! {
+        // Components can be at the top-level of a view.
+        HelloWorld()
+
+        // Or they can be nested.
+        div {
+            HelloWorld()
+        }
+    }
+}
+```
+
+Components not only help you split up your code, but also let's you reuse code
+that is used multiple times in your app.
+
+### Component props
+
+Components really shine with component props. These are arguments to the
+component that can affect what is rendered.
+
+To have a component take props, we need to first create a struct reprenseting
+the props type.
+
+```rust
+#[derive(Props)]
+struct HelloProps {
+    name: String,
+}
+
+#[component]
+fn Hello(props: HelloProps) -> View {
+    view! {
+        p { "Hello, " (props.name) "!" }
+    }
+}
+```
+
+Here, we have defined a `Hello` component that takes in a single prop `name` of
+type `String`. We also used a new piece of syntax from `view!`: when surrounding
+an expression inside parentheses, the value is interpolated into the view.
+
+We can now call our component like this, which would then display "Hello,
+Sycamore!".
+
+```rust
+view! {
+    Hello(name="Sycamore")
+}
+```
+
+Note that components are fully type-checked, meaning that this will not compile:
+
+```rust
+view! {
+    // Error: missing prop `name`.
+    Hello()
+}
+```
+
+### Component children
+
+There is a special component prop called `children`. This prop allows you to
+nest views inside of a component. For example, suppose we wanted to create a
+component that wraps its content inside a `<div>` element. We can easily do that
+with:
+
+```rust
+#[derive(Props)]
+struct WrapperProps {
+    children: Children,
+}
+
+#[component]
+fn Wrapper(props: WrapperProps) -> View {
+    // Children are lazy by default, which is why we need this.
+    // A future version of Sycamore should make this redundant.
+    let children = children.call();
+    view! {
+        div {
+            (children)
+        }
+    }
+}
+
+#[component]
+fn App() -> View {
+    view! {
+        Wrapper {
+            p { "Nested children" }
+        }
+    }
+}
+```
+
+### Inline props
+
+Creating a new struct every time we want to have a component accept props can
+quickly get tedious. To solve this, we can use inline props. If we replace
+`#[component]` with `#[component(inline_props)]`, we can write our props
+directly as parameters of our component function.
+
+This following example is equivalent to our previous example. What inline props
+does behind the hood, in fact, is simply generate the struct for us so that we
+don't have to write it out explicitly.
+
+```rust
+#[component(inline_props)]
+fn Wrapper(children: Children) -> View {
+    let children = children.call();
+    view! {
+        div {
+            (children)
+        }
+    }
+}
+```
+
+It will likely turn out that you will almost never use struct props, simply
+because it involves more typing than inline props. For this reason, we are
+considering making inline props the default in a future version of Sycamore.
+However, as of v0.9, you must still explicitly annotate your component with
+`inline_props`.
+
+Next, we will see how to add state to our app and make it interactive.
