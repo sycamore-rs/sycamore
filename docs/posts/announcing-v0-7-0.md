@@ -1,4 +1,8 @@
-_2021-12-08_
+---
+title: Announcing Sycamore v0.7.0
+description: Client-side hydration + Builder API
+date: 2021-12-08
+---
 
 # Announcing Sycamore v0.7.0!
 

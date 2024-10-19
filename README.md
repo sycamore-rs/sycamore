@@ -52,10 +52,10 @@ check them out!
 
 ### Viewing on `sycamore-rs.netlify.app`
 
-All the examples are hosted under `sycamore-rs.netlify.app/examples/<example_name>` with
+All the examples are hosted under `examples.sycamore.dev/<example_name>` with
 `<example_name>` being the name of the example you want to view. For instance, the `todomvc` example
 is hosted on
-[`sycamore-rs.netlify.app/examples/todomvc`](https://sycamore-rs.netlify.app/examples/todomvc).
+[`examples.sycamore.dev/todomvc`](https://examples.sycamore.dev/todomvc).
 
 ### Building Locally
 

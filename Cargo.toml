@@ -35,10 +35,6 @@ members = [
 	"examples/attributes-passthrough",
 	"examples/js-snippets",
 
-	# Website
-	"docs",
-	"website",
-
 	# Tools
 	"packages/tools/bench",
 	"packages/tools/bench-diff",

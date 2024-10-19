@@ -1,12 +1,12 @@
-name: Build website
+name: Examples
 
 on:
   push:
     branches: [main]
 
 jobs:
-  deploy:
-    name: Deploy
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -44,13 +44,9 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build website
-        run: >
-          cd website/ && npm ci && npm run prod
-
       - name: Build examples
         run: |
-          output="$(pwd)/website/dist"
+          output="$(pwd)/dist"
           mkdir "$output/examples"
           for path in examples/*; do
             if [[ ! -d $path ]]; then
@@ -60,32 +56,32 @@ jobs:
             echo "building: $example"
             (
               cd "$path"
-              dist_dir="$output/examples/$example"
+              dist_dir="$output/$example"
               mkdir "$dist_dir"
-              trunk build --release --dist "$dist_dir" --public-url "/examples/$example"
+              trunk build --release --dist "$dist_dir" --public-url "/$example"
             )
           done
 
-      - name: Build rustdocs
-        run: |
-          cd packages/sycamore && cargo doc --no-deps --all-features
-          cd ../sycamore-core && cargo doc --no-deps --all-features
-          cd ../sycamore-futures && cargo doc --no-deps --all-features
-          cd ../sycamore-macro && cargo doc --no-deps --all-features
-          cd ../sycamore-reactive && cargo doc --no-deps --all-features
-          cd ../sycamore-router && cargo doc --no-deps --all-features
-          cd ../sycamore-router-macro && cargo doc --no-deps --all-features
-          cd ../sycamore-web && cargo doc --no-deps --all-features
-          cd ../../
-          cp -r target/doc website/dist/api
-
       - name: Create .nojekyll file
-        run: touch website/dist/.nojekyll
+        run: touch dist/.nojekyll
 
-      - name: Deploy to netlify
-        uses: netlify/actions/cli@master
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.DEV_NETLIFY_SITE_ID }}
-        with:
-          args: deploy --prod
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3
+        with: dist/
+
+  deploy:
+    name: Deploy
+
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

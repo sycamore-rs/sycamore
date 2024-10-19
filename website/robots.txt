@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://sycamore-rs.netlify.app/sitemap_index.xml

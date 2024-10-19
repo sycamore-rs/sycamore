@@ -9,7 +9,7 @@ TODO: Provide more details on current state of CSS in Sycamore.
 
 The simplest is just to use raw CSS files. This is very simple when using Trunk. For more
 information, refer to [the Trunk docs](https://trunkrs.dev/assets/#css). Be sure to include the
-`data-trunk` attribute in your <link> tag, otherwise Trunk will not serve it.
+`data-trunk` attribute in your `<link>` tag, otherwise Trunk will not serve it.
 
 ## CSS framework
 

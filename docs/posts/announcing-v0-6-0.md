@@ -1,4 +1,8 @@
-_2021-09-12_
+---
+title: Announcing Sycamore v0.6.0
+description: Faster and faster with plenty of fixes and features...
+date: 2021-09-12
+---
 
 # Announcing Sycamore v0.6.0!
 
