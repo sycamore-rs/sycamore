@@ -2,10 +2,10 @@
 
 ## Viewing on `sycamore-rs.netlify.app`
 
-All the examples are hosted under `sycamore-rs.netlify.app/examples/<example_name>` with
+All the examples are hosted under `examples.sycamore.dev/<example_name>` with
 `<example_name>` being the name of the example you want to view. For instance, the `todomvc` example
 is hosted on
-[`sycamore-rs.netlify.app/examples/todomvc`](https://sycamore-rs.netlify.app/examples/todomvc).
+[`examples.sycamore.dev/todomvc`](https://examples.sycamore.dev/todomvc).
 
 ## Building Locally
 
@@ -39,6 +39,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 | [motion](motion)                                   | Demonstration for using animation frames and tweened signals                                   |
 | [number-binding](number-binding)                   | Demonstration of binding the value of a range or number input                                  |
 | [ssr](ssr)                                         | Demonstration of server-side-rendering                                                         |
+| [ssr-streaming](ssr-streaming)                     | Demonstration of server-side-rendering with streaming                                          |
 | [svg](svg)                                         | Creating SVGs with the `view!` macro                                                           |
 | [timer](timer)                                     | Demonstration of using futures to auto-increment a counter                                     |
 | [todomvc](todomvc)                                 | Fully compliant implementation of [TodoMVC](https://todomvc.com/) spec                         |
