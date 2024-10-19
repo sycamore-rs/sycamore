@@ -1,3 +1,7 @@
+---
+title: Adding state
+---
+
 # Hello, World!
 
 Sycamore tries to have as simple of an API as possible.

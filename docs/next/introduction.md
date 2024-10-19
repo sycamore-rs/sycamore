@@ -1,6 +1,6 @@
 ---
 title: Introduction
-sections:
+subsections:
   - your-first-app
   - adding-state
 ---
