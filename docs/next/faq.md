@@ -42,12 +42,11 @@ and
 ## Is there a router?
 
 Yes. Sycamore has an official router that can be used to create SPAs with
-optional support for SSR. Learn more about the router
-[here](../advanced/routing).
+optional support for SSR. See [Router](/book/router) to learn more.
 
 ## How do I get started with Server-Side Rendering (SSR)?
 
-Check out the page on [SSR](../advanced/ssr) in the Sycamore Book.
+Check out [SSR](/book/server-side-rendering) in the Book to learn more.
 
 ## Is there a full-stack framework (like Next.js) for Sycamore?
 
