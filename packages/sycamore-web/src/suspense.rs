@@ -174,17 +174,15 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let (view, suspense_scope) = HydrationRegistry::in_suspense_scope(key, move || create_suspense_scope(move || children.call()));
                 let is_loading = suspense_scope.is_loading();
 
-                create_effect(move || {
-                    set_is_loading(is_loading.get());
-                });
+                create_effect(move || set_is_loading(is_loading.get()));
 
                 view! {
                     NoSsr {
-                        Show(when=move || is_loading.get() && !IS_HYDRATING.get()) {
+                        Show(when=move || is_loading.get()) {
                             (fallback())
                         }
                     }
-                    Show(when=move || !is_loading.get() && !IS_HYDRATING.get()) {
+                    Show(when=move || !is_loading.get()) {
                         (view)
                     }
                 }
