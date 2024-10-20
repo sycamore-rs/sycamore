@@ -1,0 +1,16 @@
+[package]
+name = "ssr-suspense"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sycamore = { path = "../../packages/sycamore", features = [
+	"suspense",
+	"hydrate",
+] }
+
+[target.'cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))'.dependencies]
+console_error_panic_hook = "0.1.7"
+
+[target.'cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))'.dependencies]
+tokio = { version = "1.40.0", features = ["full"] }

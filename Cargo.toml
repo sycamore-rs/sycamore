@@ -27,6 +27,7 @@ members = [
 	"examples/motion",
 	"examples/number-binding",
 	"examples/ssr",
+	"examples/ssr-suspense",
 	"examples/ssr-streaming",
 	"examples/svg",
 	"examples/timer",
