@@ -22,4 +22,4 @@ title: Deploy
 
 ## Google Cloud
 
-Missing a service? Contribute by adding it!
+Missing a service? Contribute to the docs by adding it!

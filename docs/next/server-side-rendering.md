@@ -1,5 +1,7 @@
 ---
 title: Server Side Rendering
+subsections:
+  - streaming
 ---
 
 # Server Side Rendering

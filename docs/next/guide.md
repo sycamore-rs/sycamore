@@ -8,6 +8,7 @@ subsections:
   - node-ref
   - attribute-passthrough
   - tweened
+  - resources-and-suspense
   - js-interop
 ---
 
