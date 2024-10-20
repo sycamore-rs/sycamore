@@ -301,12 +301,9 @@ struct WrapperProps {
 
 #[component]
 fn Wrapper(props: WrapperProps) -> View {
-    // Children are lazy by default, which is why we need this.
-    // A future version of Sycamore should make this redundant.
-    let children = children.call();
     view! {
         div {
-            (children)
+            (props.children)
         }
     }
 }
@@ -335,7 +332,6 @@ don't have to write it out explicitly.
 ```rust
 #[component(inline_props)]
 fn Wrapper(children: Children) -> View {
-    let children = children.call();
     view! {
         div {
             (children)
