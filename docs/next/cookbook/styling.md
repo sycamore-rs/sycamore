@@ -1,10 +1,12 @@
-# Styling
+---
+title: Styling with CSS
+---
+
+# Styling with CSS
 
 Styling is definitely important for a modern web app. Sycamore is not
 opinionated when it comes to styling and lets you use whichever method works
 best for you. Below are some common options.
-
-TODO: Provide more details on current state of CSS in Sycamore.
 
 ## Raw CSS files
 
@@ -19,13 +21,16 @@ Using a CSS framework is also definitely possible with Sycamore. Simply serve
 the framework's CSS code using Trunk and you should be able to use the CSS
 classes like normal from your Sycamore code.
 
-### Tailwind CSS
+## Tailwind CSS
 
 One particular kind of CSS frameworks worthy of note are utility-first CSS
 frameworks (such as [Tailwind CSS](https://tailwindcss.com/) or
 [Windi CSS](https://windicss.org/)).
 
-## Examples
+Trunk has [built-in support](https://trunkrs.dev/assets/#tailwind) for Tailwind
+CSS.
+
+## Relevant Examples
 
 - **Sycamore + Trunk + Tailwind CSS**:
-  https://github.com/yerlaser/sycamore_tailwindcss_template
+  <https://github.com/yerlaser/sycamore_tailwindcss_template>

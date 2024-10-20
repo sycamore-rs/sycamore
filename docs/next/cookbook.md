@@ -1,7 +1,10 @@
 ---
 title: Cookbook
 subsections:
+  - styling
+  - testing
   - optimize-wasm-size
+  - deploy
 ---
 
 # Cookbook

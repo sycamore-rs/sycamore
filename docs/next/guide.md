@@ -7,6 +7,7 @@ subsections:
   - data-binding
   - node-ref
   - attribute-passthrough
+  - tweened
   - js-interop
 ---
 
