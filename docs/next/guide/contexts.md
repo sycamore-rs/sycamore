@@ -9,10 +9,8 @@ props through multiple levels of the component hierarchy.
 
 It is common to use the
 [new type idiom](https://doc.rust-lang.org/rust-by-example/generics/new_types.html)
-as the type of the context value.
-
-Suppose we want to create a global dark mode state. We could then define the
-following `DarkMode` struct.
+as the type of the context value. Suppose we want to create a global dark mode
+state. We could then define the following `DarkMode` struct.
 
 ```rust
 #[derive(Clone, Copy, PartialEq, Eq)]

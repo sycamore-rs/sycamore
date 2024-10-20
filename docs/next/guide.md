@@ -6,6 +6,8 @@ subsections:
   - contexts
   - data-binding
   - node-ref
+  - attribute-passthrough
+  - js-interop
 ---
 
 # Guide

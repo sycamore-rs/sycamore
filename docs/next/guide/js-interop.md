@@ -1,3 +1,7 @@
+---
+title: JS Interop
+---
+
 # JS Interop
 
 Sycamore is build upon
@@ -8,3 +12,5 @@ to call JS from Rust. However, for calling browser APIs, the `web-sys` and
 
 For more information, checkout the
 [`wasm-bindgen` book](https://rustwasm.github.io/docs/wasm-bindgen/).
+
+> TODO: This page is currently very incomplete. Help us write it!

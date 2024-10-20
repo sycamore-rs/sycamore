@@ -1,5 +1,5 @@
 ---
-title: Migration Guides
+title: Migration
 subsections:
   - 0-8-to-0-9
   - 0-7-to-0-8

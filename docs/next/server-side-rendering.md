@@ -1,9 +1,13 @@
+---
+title: Server Side Rendering
+---
+
 # Server Side Rendering
 
 Sycamore supports creating isomorphic web applications (apps that use the same
 code to run on both the server and the client).
 
-## `render_to_string`
+## Using `render_to_string`
 
 So far, we've been using the `render` or `render_to` functions to mount our app
 into the browser's DOM. When rendering on the server, however, we don't have a
@@ -32,11 +36,3 @@ tin: render your app by reusing existing DOM nodes.
 
 In your client-side app, enable the `"hydrate"` feature on `sycamore` in your
 `Cargo.toml` file.
-
-## Quick Start Templates
-
-- [`sycamore-rocket-template`](https://github.com/sycamore-rs/sycamore-rocket-template):
-  A quick start template for using Sycamore with Rocket. Batteries included with
-  `sycamore-router`.
-- [`sycamore-rocket-minimal-template`](https://github.com/sycamore-rs/sycamore-rocket-minimal-template):
-  A minimal template for using Sycamore with Rocket.

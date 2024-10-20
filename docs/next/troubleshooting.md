@@ -4,7 +4,7 @@ title: Troubleshooting
 
 # Troubleshooting
 
-## Viewing panic messages
+## Viewing panic messages in the browser
 
 By default, Rust does not print panic messages to the console on
 `wasm32-unknown-unknown`. To see panic messages, add the

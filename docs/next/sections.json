@@ -4,7 +4,9 @@
 		"troubleshooting",
 		"faq",
 		"guide",
+		"server-side-rendering",
 		"router",
+		"cookbook",
 		"migration"
 	]
 }
