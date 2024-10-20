@@ -1,7 +1,13 @@
-# `Tweened`
+---
+title: Tweened Signals
+---
 
-Tweened states update their values over a period of time. For example, the following code snippet
-interpolates a value from `0` to `100` over a period of `250ms`:
+# Tweened Signals
+
+Tweened signals update their values over a period of time instead of
+instantaneously. This can be useful for creating animations. For example, the
+following code snippet interpolates a value from `0` to `100` over a period of
+250 milliseconds:
 
 ```rust
 use std::time::Duration;
