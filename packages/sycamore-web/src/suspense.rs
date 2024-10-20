@@ -180,11 +180,11 @@ pub fn Suspense(props: SuspenseProps) -> View {
 
                 view! {
                     NoSsr {
-                        Show(when=move || !IS_HYDRATING.get() && is_loading.get()) {
+                        Show(when=move || is_loading.get() && !IS_HYDRATING.get()) {
                             (fallback())
                         }
                     }
-                    Show(when=move || !IS_HYDRATING.get() && !is_loading.get()) {
+                    Show(when=move || !is_loading.get() && !IS_HYDRATING.get()) {
                         (view)
                     }
                 }
