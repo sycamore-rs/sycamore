@@ -1,3 +1,7 @@
 {
-  "sections": ["introduction", "faq"]
+	"sections": [
+		"introduction",
+		"faq",
+		"migration"
+	]
 }
