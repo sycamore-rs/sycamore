@@ -114,7 +114,12 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
 
                 if mode == SsrMode::Blocking {
-                    view! { (start) (marker) (end) }
+                    view! {
+                        NoSsr {}
+                        (start)
+                        (marker)
+                        (end)
+                    }
                 } else if mode == SsrMode::Streaming {
                     view! {
                         NoSsr {}
