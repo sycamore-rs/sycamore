@@ -304,8 +304,8 @@ but we cannot pass, for instance, a simple derived closure. To fix this
 limitation, you can use the `MaybeDyn<T>` prop instead.
 
 ```rust
-// `#[prop(into)]` let's us use anything that implements `Into<MaybeDyn<T>>`.
+// `#[prop(setter(into))]` let's us use anything that implements `Into<MaybeDyn<T>>`.
 // This includes both `Signal` and `ReadSignal` as well as functions.
 #[component(inline_props)]
-fn CounterDisplay(#[prop(into)] value: MaybeDyn<i32>) -> View { ... }
+fn CounterDisplay(#[prop(setter(into))] value: MaybeDyn<i32>) -> View { ... }
 ```

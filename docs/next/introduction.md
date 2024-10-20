@@ -4,7 +4,7 @@ subsections:
   - your-first-app
   - adding-state
   - rendering-lists
-  - final-code
+  - todo-app
 ---
 
 # Introduction

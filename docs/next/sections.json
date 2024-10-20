@@ -1,7 +1,9 @@
 {
 	"sections": [
 		"introduction",
+		"troubleshooting",
 		"faq",
+		"guide",
 		"migration"
 	]
 }
