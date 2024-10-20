@@ -21,7 +21,7 @@ fn App() -> View {
         span { "*" }
         input(r#type="number", bind:valueAsNumber=b)
         span { "=" }
-        span { (product.get()) }
+        span { (product) }
     }
 }
 

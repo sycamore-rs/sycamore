@@ -113,11 +113,9 @@ fn App() -> View {
 
     let update = move || {
         let d = data.get_clone();
-        // data.with(|d| {
         for row in d.into_iter().step_by(10) {
             row.label.update(|l| *l = format!("{} !!!", l));
         }
-        // })
     };
 
     let clear = move || {
@@ -164,7 +162,7 @@ fn App() -> View {
                                 tr(class=if is_selected.get() { "danger" } else { "" }) {
                                     td(class="col-md-1") { (row.id) }
                                     td(class="col-md-4") {
-                                        a(on:click=handle_click) { (row.label.get_clone()) }
+                                        a(on:click=handle_click) { (row.label) }
                                     }
                                     td(class="col-md-1") {
                                         a(on:click=move |_| remove(row.id)) {

@@ -12,7 +12,7 @@ fn CreateRAF() -> View {
     });
     view! {
         div {
-            p { (state.get()) " frames" }
+            p { (state) " frames" }
             button(on:click=move |_| start()) { "Start" }
             button(on:click=move |_| stop()) { "Stop" }
         }

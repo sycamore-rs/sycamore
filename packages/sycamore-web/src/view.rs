@@ -1,6 +1,5 @@
 //! This module contains the [`View`] struct which represents a view tree.
 
-use std::any::Any;
 use std::fmt;
 
 use smallvec::{smallvec, SmallVec};
@@ -92,6 +91,22 @@ impl<T> From<Option<View<T>>> for View<T> {
     }
 }
 
+impl<T: ViewNode, U: Clone + Into<Self>> From<ReadSignal<U>> for View<T> {
+    fn from(signal: ReadSignal<U>) -> Self {
+        (move || signal.get_clone()).into()
+    }
+}
+impl<T: ViewNode, U: Clone + Into<Self>> From<Signal<U>> for View<T> {
+    fn from(signal: Signal<U>) -> Self {
+        (*signal).into()
+    }
+}
+impl<T: ViewNode, U: Clone + Into<Self> + Into<MaybeDyn<U>>> From<MaybeDyn<U>> for View<T> {
+    fn from(value: MaybeDyn<U>) -> Self {
+        (move || value.get_clone()).into()
+    }
+}
+
 macro_rules! impl_view_from {
     ($($ty:ty),*) => {
         $(
@@ -119,7 +134,7 @@ macro_rules! impl_view_from_to_string {
 impl_view_from!(&'static str, String, Cow<'static, str>);
 impl_view_from_to_string!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64);
 
-impl<T: ViewNode, F: FnMut() -> U + 'static, U: Into<View<T>> + Any + 'static> From<F> for View<T> {
+impl<T: ViewNode, F: FnMut() -> U + 'static, U: Into<View<T>> + 'static> From<F> for View<T> {
     fn from(f: F) -> Self {
         T::create_dynamic_view(f)
     }

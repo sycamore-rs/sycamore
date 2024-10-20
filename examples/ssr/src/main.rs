@@ -11,7 +11,7 @@ fn App() -> View {
             h1 {
                 "Hello "
                 ({if !name.with(String::is_empty) {
-                    view! { span { (name.get_clone()) } }
+                    view! { span { (name) } }
                 } else {
                     view! { span { "World" } }
                 }})
