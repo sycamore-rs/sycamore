@@ -142,9 +142,9 @@ view! {
 }
 ```
 
-There are some properties that do not have an attribute, such as `indeterminate`
-in HTML, which must be set using the `prop:*` directive. Other properties such
-as `value` have
+There are some properties that do not have a matching attribute, such as
+`indeterminate` in HTML, and which must be set using the `prop:*` directive.
+Other properties such as `value` have
 [unintuitive behavior](https://stackoverflow.com/a/7986111/9443288) when using
 the attribute version.
 
@@ -172,3 +172,21 @@ view! {
     // Will render <div></div> instead of <div data-attr></div> if attr is None.
 }
 ```
+
+## Components
+
+Calling components from the `view!` macro follows essentially the same syntax as
+for elements.
+
+```rust
+#[component(inline_props)]
+fn Button(class: String) -> View { ... }
+
+view! {
+    div {
+        Button(class="my-button".to_string())
+    }
+}
+```
+
+Components can also accept `children` just like elements.
