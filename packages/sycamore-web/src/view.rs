@@ -1,6 +1,5 @@
 //! This module contains the [`View`] struct which represents a view tree.
 
-use std::any::Any;
 use std::fmt;
 
 use smallvec::{smallvec, SmallVec};

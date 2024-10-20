@@ -280,7 +280,7 @@ pub fn Item(todo: Signal<Todo>) -> View {
                     bind:checked=checked
                 )
                 label(on:dblclick=handle_dblclick) {
-                    (title())
+                    (title)
                 }
                 button(class="destroy", on:click=handle_destroy)
             }
@@ -386,7 +386,7 @@ pub fn Footer() -> View {
         footer(class="footer") {
             span(class="todo-count") {
                 strong { (app_state.todos_left()) }
-                span { " " (items_text()) " left" }
+                span { " " (items_text) " left" }
             }
             ul(class="filters") {
                 TodoFilter(filter=Filter::All)

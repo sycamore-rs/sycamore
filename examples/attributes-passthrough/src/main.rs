@@ -14,10 +14,9 @@ pub struct CustomButtonProps {
 fn CustomButton(props: CustomButtonProps) -> View {
     console_log!("Intercepted `id` attribute: {:?}", props.id.get_clone());
 
-    let children = props.children.call();
     view! {
         button(id=props.id, ..props.attributes) {
-            (children)
+            (props.children)
         }
     }
 }

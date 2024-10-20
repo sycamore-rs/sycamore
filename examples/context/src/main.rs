@@ -6,7 +6,7 @@ fn Counter() -> View {
 
     view! {
         p(class="value") {
-            "Value: " (counter.get())
+            "Value: " (counter)
         }
     }
 }

@@ -16,7 +16,7 @@ fn App() -> View {
                 "Hello ",
                 move || {
                     if !name.with(String::is_empty) {
-                        span().children(move || name.get_clone())
+                        span().children(name)
                     } else {
                         span().children("World")
                     }
