@@ -8,7 +8,7 @@ fn App() -> View {
     let reset = move |_| state.set(0);
     view! {
         div {
-            p { "Value: " (state.get()) }
+            p { "Value: " (state) }
             button(on:click=increment) { "+" }
             button(on:click=decrement) { "-" }
             button(on:click=reset) { "Reset" }

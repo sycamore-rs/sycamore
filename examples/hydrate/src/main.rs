@@ -8,7 +8,7 @@ fn Counter() -> View {
     let reset = move |_| state.set(0);
     view! {
         div {
-            p { "Value: " (state.get()) }
+            p { "Value: " (state) }
             button(on:click=increment) { "+" }
             button(on:click=decrement) { "-" }
             button(on:click=reset) { "Reset" }
@@ -27,7 +27,7 @@ fn Hello() -> View {
                 "Hello "
                 (if is_empty.get() {
                     view! {
-                        span { (name.get_clone()) }
+                        span { (name) }
                     }
                 } else {
                     view! {
@@ -65,7 +65,7 @@ fn main() {
         console_error_panic_hook::set_once();
         sycamore::hydrate(App);
     } else {
-        // Create inedx.html from template.html and insert the rendered HTML.
+        // Create index.html from template.html and insert the rendered HTML.
         let html = sycamore::render_to_string(App);
         let template =
             std::fs::read_to_string("template.html").expect("failed to read template.html");
