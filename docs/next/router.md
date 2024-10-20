@@ -1,4 +1,8 @@
-# Routing
+---
+title: Router
+---
+
+# Sycamore Router
 
 Routers are the backbone of SPAs (Single Page Apps). They handle displaying
 different pages depending on the URL. When an anchor tag (`<a>`) is clicked, the
@@ -279,10 +283,6 @@ view! {
 }
 ```
 
-## Integrations
-
-TODO: docs for creating custom router integrations.
-
 ## Using `navigate`
 
 Calling `navigate` navigates to the specified `url`. The url should have the
@@ -290,15 +290,6 @@ same origin as the app.
 
 This is useful for imperatively navigating to an url when using an anchor tag
 (`<a>`) is not possible/suitable (e.g. when submitting a form).
-
-## Data fetching and preloading
-
-When data fetching (e.g. from a REST API) is required to load a page, it is
-recommended to preload the data. This will cause the router to wait until the
-data is loaded before rendering the page, removing the need for some
-"Loading..." indicator.
-
-TODO: this section is not yet complete
 
 ## `rel="external"`
 

@@ -10,11 +10,11 @@ If you like getting your hands dirty, try playing around with some
 [examples](https://github.com/sycamore-rs/sycamore/tree/main/examples).
 
 If you prefer reading documentation, consider working your way through the
-[Sycamore Book](../getting_started/installation).
+[Sycamore Book](/book/introduction).
 
 Don't hesitate to stop by our friendly
-[Discord server](https://discord.gg/vDwFUmm6mU) for quick questions and to chat
-with the community.
+[Discord server](https://discord.gg/vDwFUmm6mU) to ask quick questions or to
+chat with the community.
 
 ## I'm new to Rust. Where should I start?
 
@@ -56,3 +56,6 @@ framework for Sycamore developed by community member
 [arctic-hen7](https://github.com/arctic-hen7). Perseus is full-featured,
 supporting Server-Side Rendering (SSR), Static Site Generation (SSG), i18n and
 more.
+
+> Note however that Perseus currently uses Sycamore v0.8 which does not include
+> many of the improvements and breaking changes introduced in v0.9.

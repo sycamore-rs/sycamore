@@ -248,7 +248,8 @@ general problem, how do we pass data deep into the component hierarchy without
 threading it through every single component in between (a pattern known as
 "prop-drilling")?
 
-One solution is to use the Context API which we will not elaborate more on here.
+One solution is to use the [Context API](/book/guide/contexts) which we will not
+elaborate more on here.
 
 ### Editing todos
 

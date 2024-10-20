@@ -4,8 +4,10 @@ title: Your First App
 
 # Creating your first Sycamore app
 
-This section will now guide you through creating your first Sycamore app. The
-final product we will be building is a simple todo app.
+This section will guide you through creating your first Sycamore app. We'll
+start by introducing the basics such as how to create views, how to manage state
+using reactivity, and how rendering lists work. This will be up towards
+eventually creating a simple todo app.
 
 ## Prerequisites
 
