@@ -35,8 +35,8 @@ pub(crate) fn _create_dynamic_view<T: ViewHtmlNode, U: Into<View<T>> + 'static>(
     // effect to update its text value without ever creating more nodes.
     if TypeId::of::<U>() == TypeId::of::<String>() {
         create_effect_initial(move || {
-            let text: &mut Option<String> =
-                (&mut Some(f()) as &mut dyn Any).downcast_mut().unwrap();
+            let mut value = Some(f());
+            let text: &mut Option<String> = (&mut value as &mut dyn Any).downcast_mut().unwrap();
             let view = View::from_node(T::create_dynamic_text_node(text.take().unwrap().into()));
             debug_assert_eq!(
                 view.nodes.len(),
