@@ -221,17 +221,13 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
         }
     }
     is_ssr! {
-        use std::sync::{Arc, Mutex};
-
-        let node = Arc::new(Mutex::new(View::default()));
-        create_suspense_task({
-            let node = Arc::clone(&node);
-            async move {
-                *node.lock().unwrap() = f().await;
-            }
+        let node = create_signal(View::default());
+        create_suspense_task(async move {
+            node.set(f().await);
         });
-        View::from(move || SsrNode::Dynamic {
-            view: Arc::clone(&node),
+        View::from_dynamic(move || {
+            node.track();
+            node.update_silent(std::mem::take)
         })
     }
 }

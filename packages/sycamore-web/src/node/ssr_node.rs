@@ -17,7 +17,7 @@ pub enum SsrNode {
         hk_key: Option<HydrationKey>,
     },
     TextDynamic {
-        text: Cow<'static, str>,
+        text: Arc<Mutex<String>>,
     },
     TextStatic {
         text: Cow<'static, str>,
@@ -58,17 +58,31 @@ impl ViewNode for SsrNode {
         // specialized. Otherwise, we must create two marker nodes to represent start and end
         // respectively.
         if TypeId::of::<U>() == TypeId::of::<String>() {
-            let text = (Box::new(f()) as Box<dyn Any>)
-                .downcast::<String>()
-                .unwrap();
-            View::from(SsrNode::TextDynamic {
-                text: (*text).into(),
-            })
+            // TODO: Once the reactive graph is sync, we can replace this with a signal.
+            let text = Arc::new(Mutex::new(String::new()));
+            create_effect({
+                let text = text.clone();
+                move || {
+                    let mut value = f();
+                    let value: &mut Option<String> =
+                        (&mut value as &mut dyn Any).downcast_mut().unwrap();
+                    *text.lock().unwrap() = value.take().unwrap();
+                }
+            });
+            View::from(SsrNode::TextDynamic { text })
         } else {
             let start = Self::create_marker_node();
             let end = Self::create_marker_node();
-            let view = f().into();
-            View::from((start, view, end))
+            // TODO: Once the reactive graph is sync, we can replace this with a signal.
+            let view = Arc::new(Mutex::new(View::new()));
+            create_effect({
+                let view = view.clone();
+                move || {
+                    let value = f();
+                    *view.lock().unwrap() = value.into();
+                }
+            });
+            View::from((start, Self::Dynamic { view }, end))
         }
     }
 }
@@ -101,7 +115,9 @@ impl ViewHtmlNode for SsrNode {
     }
 
     fn create_dynamic_text_node(text: Cow<'static, str>) -> Self {
-        Self::TextDynamic { text }
+        Self::TextDynamic {
+            text: Arc::new(Mutex::new(text.to_string())),
+        }
     }
 
     fn create_marker_node() -> Self {
@@ -231,7 +247,7 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
         }
         SsrNode::TextDynamic { text } => {
             buf.push_str("<!--t-->"); // For dynamic text, add a marker for hydrating it.
-            html_escape::encode_text_to_string(text, buf);
+            html_escape::encode_text_to_string(text.lock().unwrap().as_str(), buf);
             buf.push_str("<!-->"); // End of dynamic text.
         }
         SsrNode::TextStatic { text } => {
@@ -360,6 +376,21 @@ mod tests {
                 }
             },
             expect![[r#"<a data-hk="0.0"></a>"#]],
+        );
+    }
+
+    #[test]
+    fn dynamic_text() {
+        check(
+            move || {
+                let value = create_signal(0);
+                let view = sycamore_macro::view! {
+                    p { (value) }
+                };
+                value.set(1);
+                view
+            },
+            expect![[r#"<p data-hk="0.0"><!--/-->1<!--/--></p>"#]],
         );
     }
 }
