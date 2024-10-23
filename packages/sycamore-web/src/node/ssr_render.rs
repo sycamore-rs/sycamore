@@ -345,7 +345,7 @@ mod tests {
         let res = ssr.await;
 
         let expect = expect![[
-            r#"<no-ssr data-hk="0.1"></no-ssr><suspense-start data-key="1" data-hk="0.0"></suspense-start><!--/--><!--/--><!--/-->Hello, async!<!--/--><!--/--><!--/--><suspense-end data-key="1"></suspense-end>"#
+            r#"<suspense-start data-key="1" data-hk="0.0"></suspense-start><no-ssr data-hk="0.1"></no-ssr><!--/--><!--/-->Hello, async!<!--/--><!--/-->"#
         ]];
         expect.assert_eq(&res);
     }
