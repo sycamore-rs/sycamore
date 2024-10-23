@@ -30,9 +30,6 @@ pub enum SsrNode {
     Dynamic {
         view: Arc<Mutex<View<Self>>>,
     },
-    SuspenseMarker {
-        key: u32,
-    },
 }
 
 impl From<SsrNode> for View<SsrNode> {
@@ -258,11 +255,6 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
         }
         SsrNode::Dynamic { view } => {
             render_recursive_view(&view.lock().unwrap(), buf);
-        }
-        SsrNode::SuspenseMarker { key } => {
-            buf.push_str("<!--sycamore-suspense-");
-            buf.push_str(&key.to_string());
-            buf.push_str("-->");
         }
     }
 }

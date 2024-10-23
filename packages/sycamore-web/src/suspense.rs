@@ -61,7 +61,7 @@ pub fn Suspense(props: SuspenseProps) -> View {
     } = props;
 
     is_ssr! {
-        use futures::SinkExt;
+        use futures::FutureExt;
 
         let _ = &mut set_is_loading;
 
@@ -93,54 +93,37 @@ pub fn Suspense(props: SuspenseProps) -> View {
             // In streaming mode, we render the fallback and then stream the result of the children
             // once suspense is resolved.
             SsrMode::Streaming => {
-                // We need to create a suspense key so that we know which suspense boundary it is
-                // when we replace the marker with the suspended content.
                 let key = use_suspense_key();
+                let start = view! { suspense-start(data-key=key.to_string()) };
+                let (view, suspense_scope) = create_suspense_scope(move || HydrationRegistry::in_suspense_scope(key, move || children.call()));
 
-                // Push `children` to the suspense fragments lists.
-                let (mut view, suspense_scope) = create_suspense_scope(move || HydrationRegistry::in_suspense_scope(key, move || children.call()));
-                let state = use_context::<SuspenseState>();
-                // TODO: error if scope is destroyed before suspense resolves.
-                // Probably can fix this by using `FuturesOrdered` instead.
-                sycamore_futures::spawn_local_scoped(async move {
+                let suspense_stream = use_context::<SuspenseStream>();
+                suspense_stream.futures.borrow_mut().push(async move {
                     suspense_scope.until_finished().await;
-                    debug_assert!(!suspense_scope.sent.get());
+                    debug_assert!(!suspense_scope.sent.get(), "suspense scope should not yet be sent");
+
                     // Make sure parent is sent first.
+                    let (tx, rx) = futures::channel::oneshot::channel();
+                    let mut tx = Some(tx);
                     create_effect(move || {
                         if !suspense_scope.sent.get() && suspense_scope.parent.as_ref().map_or(true, |parent| parent.get().sent.get()) {
-                            let view = std::mem::take(&mut view);
-                            let fragment = SuspenseFragment::new(key, view! { Show(when=true) { (view) } });
-                            let mut state = state.clone();
-                            sycamore_futures::spawn_local_scoped(async move {
-                                let _ = state.sender.send(fragment).await;
-                            });
                             suspense_scope.sent.set(true);
+                            tx.take().unwrap().send(()).unwrap();
                         }
                     });
-                });
+                    rx.await.unwrap();
 
-                // Add some marker nodes so that we know start and finish of fallback.
-                let start = view! { suspense-start(data-key=key.to_string()) };
-                let marker = View::from(move || SsrNode::SuspenseMarker { key: key.into() });
+                    SuspenseFragment::new(key, view! { Show(when=true) { (view) } })
+                }.boxed_local());
+
+                // We need an end marker to know where to replace the fallback value.
                 let end = view! { NoHydrate { suspense-end(data-key=key.to_string()) } };
 
-                if mode == SsrMode::Blocking {
-                    view! {
-                        NoSsr {}
-                        (start)
-                        (marker)
-                        (end)
-                    }
-                } else if mode == SsrMode::Streaming {
-                    view! {
-                        NoSsr {}
-                        (start)
-                        (marker)
-                        NoHydrate(children=Children::new(fallback))
-                        (end)
-                    }
-                } else {
-                    unreachable!()
+                view! {
+                    NoSsr {}
+                    (start)
+                    NoHydrate(children=Children::new(fallback))
+                    (end)
                 }
             }
         }
@@ -202,6 +185,41 @@ pub fn Suspense(props: SuspenseProps) -> View {
     }
 }
 
+/// `Transition` is like [`Suspense`] except that it keeps the previous content visible until the
+/// new content is ready.
+#[component]
+pub fn Transition(props: SuspenseProps) -> View {
+    /// Only trigger outer suspense on initial render. In subsequent renders, capture the suspense
+    /// scope.
+    #[component(inline_props)]
+    fn TransitionInner(children: Children, set_is_loading: Box<dyn FnMut(bool)>) -> View {
+        // TODO: Workaround for https://github.com/sycamore-rs/sycamore/issues/718.
+        let mut set_is_loading = set_is_loading;
+
+        // We create a detatched suspense scope here to not create a deadlock with the outer
+        // suspense.
+        let (children, scope) = create_detatched_suspense_scope(move || children.call());
+        // Trigger the outer suspense scope. Note that this is only triggered on the initial render
+        // and future renders will be captured by the inner suspense scope.
+        create_suspense_task(scope.until_finished());
+
+        let is_loading = scope.is_loading();
+        create_effect(move || {
+            set_is_loading(is_loading.get());
+        });
+
+        view! {
+            (children)
+        }
+    }
+
+    view! {
+        Suspense(fallback=props.fallback, children=Children::new(move || {
+            view! { TransitionInner(children=props.children, set_is_loading=props.set_is_loading) }
+        }))
+    }
+}
+
 /// Convert an async component to a regular sync component. Also wraps the async component inside a
 /// suspense scope so that content is properly suspended.
 #[component]
@@ -243,41 +261,7 @@ pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> V
     }
 }
 
-/// `Transition` is like [`Suspense`] except that it keeps the previous content visible until the
-/// new content is ready.
-#[component]
-pub fn Transition(props: SuspenseProps) -> View {
-    /// Only trigger outer suspense on initial render. In subsequent renders, capture the suspense
-    /// scope.
-    #[component(inline_props)]
-    fn TransitionInner(children: Children, set_is_loading: Box<dyn FnMut(bool)>) -> View {
-        // TODO: Workaround for https://github.com/sycamore-rs/sycamore/issues/718.
-        let mut set_is_loading = set_is_loading;
-
-        // We create a detatched suspense scope here to not create a deadlock with the outer
-        // suspense.
-        let (children, scope) = create_detatched_suspense_scope(move || children.call());
-        // Trigger the outer suspense scope. Note that this is only triggered on the initial render
-        // and future renders will be captured by the inner suspense scope.
-        create_suspense_task(scope.until_finished());
-
-        let is_loading = scope.is_loading();
-        create_effect(move || {
-            set_is_loading(is_loading.get());
-        });
-
-        view! {
-            (children)
-        }
-    }
-
-    view! {
-        Suspense(fallback=props.fallback, children=Children::new(move || {
-            view! { TransitionInner(children=props.children, set_is_loading=props.set_is_loading) }
-        }))
-    }
-}
-
+/// Represents a streamed suspense view fragment.
 #[cfg_ssr]
 pub(crate) struct SuspenseFragment {
     pub key: NonZeroU32,
@@ -291,11 +275,17 @@ impl SuspenseFragment {
     }
 }
 
-/// Context for passing suspense fragments in SSR mode.
+/// Context for passing streaming suspense fragments in SSR mode.
 #[cfg_ssr]
 #[derive(Clone)]
-pub(crate) struct SuspenseState {
-    pub sender: futures::channel::mpsc::Sender<SuspenseFragment>,
+pub(crate) struct SuspenseStream {
+    pub futures: std::rc::Rc<
+        std::cell::RefCell<
+            futures::stream::FuturesUnordered<
+                futures::future::LocalBoxFuture<'static, SuspenseFragment>,
+            >,
+        >,
+    >,
 }
 
 /// Global counter for providing suspense key.

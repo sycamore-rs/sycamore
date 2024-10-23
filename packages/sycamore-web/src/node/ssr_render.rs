@@ -210,11 +210,11 @@ pub fn render_to_string_stream(
         futures::stream::empty()
     }
     is_ssr! {
-        use std::cell::LazyCell;
+        use std::cell::{LazyCell, RefCell};
+        use std::rc::Rc;
 
-        use futures::StreamExt;
-
-        const BUFFER_SIZE: usize = 5;
+        use futures::{SinkExt, StreamExt};
+        use futures::stream::FuturesUnordered;
 
         thread_local! {
             /// Use a static variable here so that we can reuse the same root for multiple calls to
@@ -223,24 +223,36 @@ pub fn render_to_string_stream(
         }
         IS_HYDRATING.set(true);
         let mut buf = String::new();
-        let (sender, mut receiver) = futures::channel::mpsc::channel(BUFFER_SIZE);
+        let futures = Rc::new(RefCell::new(FuturesUnordered::new()));
+        let (mut tx, mut rx) = futures::channel::mpsc::unbounded();
+
         SSR_ROOT.with(|root| {
             root.dispose();
             root.run_in(|| {
                 // We run this in a new scope so that we can dispose everything after we render it.
                 provide_context(HydrationRegistry::new());
                 provide_context(SsrMode::Streaming);
-                let suspense_state = SuspenseState { sender };
+                let suspense_state = SuspenseStream { futures: futures.clone() };
 
                 provide_context(suspense_state);
 
                 let view = view();
                 ssr_node::render_recursive_view(&view, &mut buf);
+
+                // Keep a buffer of all futures being polled. This is to avoid holding onto a lock
+                // over a wait point causing potential deadlocks.
+                let mut pending_futures = futures.take();
+                sycamore_futures::spawn_local_scoped(async move {
+                    while let Some(fragment) = pending_futures.next().await {
+                        tx.send(fragment).await.unwrap();
+
+                        // There can be more futures now. Add them to pending_futures.
+                        pending_futures.extend(futures.take());
+                    }
+                });
+
             });
         });
-
-        // Calculate the number of suspense fragments.
-        let mut n = buf.matches("<!--sycamore-suspense-").count();
 
         // ```js
         // function __sycamore_suspense(key) {
@@ -261,23 +273,8 @@ pub fn render_to_string_stream(
             initial.push_str(SUSPENSE_REPLACE_SCRIPT);
             yield initial;
 
-            if n == 0 {
-                receiver.close();
-            }
-            let mut i = 0;
-            while let Some(fragment) = receiver.next().await {
-                let buf_fragment = render_suspense_fragment(fragment);
-                // Check if we have any nested suspense.
-                let n_add = buf_fragment.matches("<!--sycamore-suspense-").count();
-                n += n_add;
-
-                yield buf_fragment;
-
-                i += 1;
-                if i == n {
-                    // We have received all suspense fragments so we shouldn't need the receiver anymore.
-                    receiver.close();
-                }
+            while let Some(fragment) = rx.next().await {
+                yield render_suspense_fragment(fragment);
             }
         }
     }

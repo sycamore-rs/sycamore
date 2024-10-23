@@ -46,6 +46,7 @@ pub fn spawn_local(fut: impl Future<Output = ()> + 'static) {
 /// If the scope is destroyed before the future is completed, it is aborted immediately. This
 /// ensures that it is impossible to access any values referencing the scope after they are
 /// destroyed.
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn spawn_local_scoped(fut: impl Future<Output = ()> + 'static) {
     let scoped = ScopedFuture::new_in_current_scope(fut);
     spawn_local(scoped);
@@ -69,6 +70,7 @@ impl<T: Future> Future for ScopedFuture<T> {
 }
 
 impl<T: Future> ScopedFuture<T> {
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn new_in_current_scope(f: T) -> Self {
         let (abortable, handle) = abortable(f);
         on_cleanup(move || handle.abort());
