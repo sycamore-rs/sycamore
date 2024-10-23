@@ -63,7 +63,7 @@ impl ViewNode for SsrNode {
             create_effect({
                 let text = text.clone();
                 move || {
-                    let mut value = f();
+                    let mut value = Some(f());
                     let value: &mut Option<String> =
                         (&mut value as &mut dyn Any).downcast_mut().unwrap();
                     *text.lock().unwrap() = value.take().unwrap();

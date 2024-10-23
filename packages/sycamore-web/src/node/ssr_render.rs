@@ -49,7 +49,7 @@ pub fn render_to_string(view: impl FnOnce() -> View) -> String {
 pub fn render_to_string_in_scope(view: impl FnOnce() -> View) -> String {
     is_not_ssr! {
         let _ = view;
-        panic!("`render_to_string` only available in SSR mode");
+        panic!("`render_to_string_in_scope` only available in SSR mode");
     }
     is_ssr! {
         let mut buf = String::new();
@@ -90,84 +90,56 @@ pub fn render_to_string_in_scope(view: impl FnOnce() -> View) -> String {
 /// ```
 #[must_use]
 #[cfg(feature = "suspense")]
-pub async fn render_to_string_await_suspense(view: impl FnOnce() -> View) -> String {
+pub async fn render_to_string_await_suspense(f: impl FnOnce() -> View) -> String {
     is_not_ssr! {
-        let _ = view;
+        let _ = f;
         panic!("`render_to_string` only available in SSR mode");
     }
     is_ssr! {
-        use std::num::NonZeroU32;
         use std::cell::LazyCell;
-        use std::fmt::Write;
-        use std::collections::HashMap;
-
-        use futures::StreamExt;
-
-        const BUFFER_SIZE: usize = 5;
+        use futures::channel::oneshot;
+        use sycamore_futures::{provide_executor_scope, use_is_loading_global};
 
         thread_local! {
             /// Use a static variable here so that we can reuse the same root for multiple calls to
             /// this function.
             static SSR_ROOT: LazyCell<RootHandle> = LazyCell::new(|| create_root(|| {}));
         }
-        IS_HYDRATING.set(true);
-        sycamore_futures::provide_executor_scope(async {
-            let mut buf = String::new();
 
-            let (sender, mut receiver) = futures::channel::mpsc::channel(BUFFER_SIZE);
+        let mut handle: Option<NodeHandle> = None;
+        let (tx, rx) = oneshot::channel();
+        let mut tx = Some(tx);
+        let mut view = View::default();
+
+        let is_hydrating = IS_HYDRATING.replace(true);
+        provide_executor_scope(async {
             SSR_ROOT.with(|root| {
                 root.dispose();
                 root.run_in(|| {
-                    // We run this in a new scope so that we can dispose everything after we render it.
-                    provide_context(HydrationRegistry::new());
-                    provide_context(SsrMode::Blocking);
-                    let suspense_state = SuspenseState { sender };
+                    handle = Some(create_child_scope(|| {
+                        provide_context(HydrationRegistry::new());
+                        provide_context(SsrMode::Blocking);
 
-                    provide_context(suspense_state);
+                        view = f();
+                    }));
 
-                    let view = view();
-                    ssr_node::render_recursive_view(&view, &mut buf);
+                    // Now we wait until all suspense has resolved.
+                    create_effect(move || {
+                        if !use_is_loading_global() {
+                            if let Some(tx) = tx.take() {
+                                tx.send(()).ok().unwrap();
+                            }
+                        }
+                    });
                 });
             });
-
-            // Split at suspense fragment locations.
-            let split = buf.split("<!--sycamore-suspense-").collect::<Vec<_>>();
-            // Calculate the number of suspense fragments.
-            let n = split.len() - 1;
-
-            // Now we wait until all suspense fragments are resolved.
-            let mut fragment_map = HashMap::new();
-            if n == 0 {
-                receiver.close();
-            }
-            let mut i = 0;
-            while let Some(fragment) = receiver.next().await {
-                fragment_map.insert(fragment.key, fragment.view);
-                i += 1;
-                if i == n {
-                    // We have received all suspense fragments so we shouldn't need the receiver anymore.
-                    receiver.close();
-                }
-            }
-            IS_HYDRATING.set(false);
-
-            // Finally, replace all suspense marker nodes with rendered values.
-            if let [first, rest @ ..] = split.as_slice() {
-                rest.iter().fold(first.to_string(), |mut acc, s| {
-                    // Try to parse the key.
-                    let (num, rest) = s.split_once("-->").expect("end of suspense marker not found");
-                    let key: u32 = num.parse().expect("could not parse suspense key");
-                    let key = NonZeroU32::try_from(key).expect("suspense key cannot be 0");
-                    let fragment = fragment_map.get(&key).expect("fragment not found");
-                    ssr_node::render_recursive_view(fragment, &mut acc);
-
-                    write!(&mut acc, "{rest}").unwrap();
-                    acc
-                })
-            } else {
-                unreachable!("split should always have at least one element")
-            }
-        }).await
+            rx.await.unwrap();
+            handle.unwrap().dispose();
+            IS_HYDRATING.set(is_hydrating);
+        }).await;
+        let mut buf = String::new();
+        ssr_node::render_recursive_view(&view, &mut buf);
+        buf
     }
 }
 

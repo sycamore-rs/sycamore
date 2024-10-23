@@ -40,6 +40,7 @@ impl SuspenseScope {
         global
             .all_tasks_remaining
             .update(|vec| vec.push(tasks_remaining));
+        // TODO: remove self from global if scope is disposed.
         Self {
             tasks_remaining,
             parent: parent.map(create_signal),
@@ -155,8 +156,8 @@ pub fn create_detatched_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, Suspense
 ///
 /// Returns a tuple containing the return value of the function and the created suspense scope.
 ///
-/// If this is called inside another call to [`await_suspense`], this suspense will wait until the
-/// parent suspense is resolved.
+/// If this is called inside another call to [`create_suspense_scope`], this suspense will wait
+/// until the parent suspense is resolved.
 pub fn create_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
     let parent = try_use_context::<SuspenseScope>();
     let scope = SuspenseScope::new(parent);

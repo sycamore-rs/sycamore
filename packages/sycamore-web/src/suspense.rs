@@ -76,12 +76,23 @@ pub fn Suspense(props: SuspenseProps) -> View {
                 }
                 Show(when=false) {}
             },
-            // In blocking mode, we render a marker node and then replace the marker node with the
-            // children once the suspense is resolved.
-            //
+            // In blocking mode, we don't need to render the fallback. We just need to render the
+            // view when it resolves.
+            SsrMode::Blocking => {
+                let key = use_suspense_key();
+                let start = view! { suspense-start(data-key=key.to_string()) };
+                let (view, _suspense_scope) = create_suspense_scope(move || HydrationRegistry::in_suspense_scope(key, move || children.call()));
+                view! {
+                    (start)
+                    NoSsr {}
+                    Show(when=move || true) {
+                        (view)
+                    }
+                }
+            },
             // In streaming mode, we render the fallback and then stream the result of the children
             // once suspense is resolved.
-            SsrMode::Blocking | SsrMode::Streaming => {
+            SsrMode::Streaming => {
                 // We need to create a suspense key so that we know which suspense boundary it is
                 // when we replace the marker with the suspended content.
                 let key = use_suspense_key();
