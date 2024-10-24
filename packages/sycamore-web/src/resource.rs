@@ -127,3 +127,58 @@ where
         resource
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use futures::channel::oneshot;
+    use sycamore_futures::provide_executor_scope;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn create_isomorphic_resource_works() {
+        provide_executor_scope(async {
+            let (tx, rx) = oneshot::channel();
+            let mut tx = Some(tx);
+            let mut resource = None;
+            let mut value = None;
+
+            let root = create_root(|| {
+                value = Some(create_signal(123));
+                resource = Some(create_isomorphic_resource(on(
+                    value.unwrap(),
+                    move || async move { value.unwrap().get() },
+                )));
+                // Resource should be `None` initially.
+                assert_eq!(resource.unwrap().get(), None);
+                assert!(resource.unwrap().is_loading());
+
+                // Signal when the resource is loaded.
+                create_effect(move || {
+                    if !resource.unwrap().is_loading() {
+                        if let Some(tx) = tx.take() {
+                            tx.send(()).unwrap();
+                        }
+                    }
+                })
+            });
+
+            rx.await.unwrap();
+            root.run_in(move || {
+                // Now resource should have the value.
+                assert_eq!(resource.unwrap().get(), Some(123));
+                assert!(!resource.unwrap().is_loading());
+
+                // Now trigger a refetch.
+                value.unwrap().set(456);
+                assert_eq!(
+                    resource.unwrap().get(),
+                    Some(123),
+                    "resource should keep old value until new value is loaded"
+                );
+                assert!(resource.unwrap().is_loading());
+            });
+        })
+        .await;
+    }
+}
