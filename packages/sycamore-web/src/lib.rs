@@ -8,7 +8,7 @@
 //! - `hydrate` - Enables hydration support in DOM node. By default, hydration is disabled to reduce
 //!   binary size.
 //!
-//! - `suspense` - Enables suspense support.
+//! - `suspense` - Enables suspense and resources support.
 //!
 //! - `wasm-bindgen-interning` (_default_) - Enables interning for `wasm-bindgen` strings. This
 //!   improves performance at a slight cost in binary size. If you want to minimize the size of the

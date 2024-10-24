@@ -43,30 +43,28 @@ impl<T: 'static> Resource<T> {
         }
     }
 
-    /// Attach handlers to call the refetch function on the client side.
-    fn fetch_on_client(self) -> Self {
-        if is_not_ssr!() {
-            create_effect(move || {
-                self.is_loading.set(true);
-                // Take all the scopes and create a new guard.
-                for scope in self.scopes.take() {
-                    let guard = SuspenseTaskGuard::from_scope(scope);
-                    self.guards.update(|guards| guards.push(guard));
-                }
+    /// Attach handlers to always call the refetch function to get the latest value.
+    fn always_refetch(self) -> Self {
+        create_effect(move || {
+            self.is_loading.set(true);
+            // Take all the scopes and create a new guard.
+            for scope in self.scopes.take() {
+                let guard = SuspenseTaskGuard::from_scope(scope);
+                self.guards.update(|guards| guards.push(guard));
+            }
 
-                let fut = self.refetch.update_silent(|f| f());
+            let fut = self.refetch.update_silent(|f| f());
 
-                sycamore_futures::create_suspense_task(async move {
-                    let value = fut.await;
-                    batch(move || {
-                        self.value.set(Some(value));
-                        self.is_loading.set(false);
-                        // Now, drop all the guards to resolve suspense.
-                        self.guards.update(|guards| guards.clear());
-                    });
+            sycamore_futures::create_suspense_task(async move {
+                let value = fut.await;
+                batch(move || {
+                    self.value.set(Some(value));
+                    self.is_loading.set(false);
+                    // Now, drop all the guards to resolve suspense.
+                    self.guards.update(|guards| guards.clear());
                 });
-            })
-        }
+            });
+        });
 
         self
     }
@@ -95,18 +93,92 @@ impl<T: 'static> Deref for Resource<T> {
     }
 }
 
-/// Create a resrouce that will only be resolved on the client side.
+/// Create a resource value that is fetched on both client and server.
 ///
 /// If the resource has any dependencies, it is recommended to use [`on`] to make them explicit.
 /// This will ensure that the dependencies are tracked since reactive variables inside async
 /// contexts are not tracked automatically.
+pub fn create_isomorphic_resource<F, Fut, T>(f: F) -> Resource<T>
+where
+    F: FnMut() -> Fut + 'static,
+    Fut: Future<Output = T> + 'static,
+    T: 'static,
+{
+    Resource::new(f).always_refetch()
+}
+
+/// Create a resource value that is fetched only on the client.
 ///
-/// On the server, the resource will always be marked as loading.
+/// On the server, the resource will forever be in the loading state.
+///
+/// If the resource has any dependencies, it is recommended to use [`on`] to make them explicit.
+/// This will ensure that the dependencies are tracked since reactive variables inside async
+/// contexts are not tracked automatically.
 pub fn create_client_resource<F, Fut, T>(f: F) -> Resource<T>
 where
     F: FnMut() -> Fut + 'static,
     Fut: Future<Output = T> + 'static,
     T: 'static,
 {
-    Resource::new(f).fetch_on_client()
+    let resource = Resource::new(f);
+    if is_not_ssr!() {
+        resource.always_refetch()
+    } else {
+        resource
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use futures::channel::oneshot;
+    use sycamore_futures::provide_executor_scope;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn create_isomorphic_resource_works() {
+        provide_executor_scope(async {
+            let (tx, rx) = oneshot::channel();
+            let mut tx = Some(tx);
+            let mut resource = None;
+            let mut value = None;
+
+            let root = create_root(|| {
+                value = Some(create_signal(123));
+                resource = Some(create_isomorphic_resource(on(
+                    value.unwrap(),
+                    move || async move { value.unwrap().get() },
+                )));
+                // Resource should be `None` initially.
+                assert_eq!(resource.unwrap().get(), None);
+                assert!(resource.unwrap().is_loading());
+
+                // Signal when the resource is loaded.
+                create_effect(move || {
+                    if !resource.unwrap().is_loading() {
+                        if let Some(tx) = tx.take() {
+                            tx.send(()).unwrap();
+                        }
+                    }
+                })
+            });
+
+            rx.await.unwrap();
+            root.run_in(move || {
+                // Now resource should have the value.
+                assert_eq!(resource.unwrap().get(), Some(123));
+                assert!(!resource.unwrap().is_loading());
+
+                // Now trigger a refetch.
+                value.unwrap().set(456);
+                assert_eq!(
+                    resource.unwrap().get(),
+                    Some(123),
+                    "resource should keep old value until new value is loaded"
+                );
+                assert!(resource.unwrap().is_loading());
+            });
+        })
+        .await;
+    }
 }

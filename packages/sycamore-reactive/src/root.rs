@@ -367,6 +367,7 @@ pub fn create_child_scope(f: impl FnOnce()) -> NodeHandle {
 /// child_scope.dispose(); // Executes the on_cleanup callback.
 /// # });
 /// ```
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn on_cleanup(f: impl FnOnce() + 'static) {
     let root = Root::global();
     if !root.current_node.get().is_null() {

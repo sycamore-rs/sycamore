@@ -30,9 +30,6 @@ pub enum SsrNode {
     Dynamic {
         view: Arc<Mutex<View<Self>>>,
     },
-    SuspenseMarker {
-        key: u32,
-    },
 }
 
 impl From<SsrNode> for View<SsrNode> {
@@ -63,7 +60,7 @@ impl ViewNode for SsrNode {
             create_effect({
                 let text = text.clone();
                 move || {
-                    let mut value = f();
+                    let mut value = Some(f());
                     let value: &mut Option<String> =
                         (&mut value as &mut dyn Any).downcast_mut().unwrap();
                     *text.lock().unwrap() = value.take().unwrap();
@@ -258,11 +255,6 @@ pub(crate) fn render_recursive(node: &SsrNode, buf: &mut String) {
         }
         SsrNode::Dynamic { view } => {
             render_recursive_view(&view.lock().unwrap(), buf);
-        }
-        SsrNode::SuspenseMarker { key } => {
-            buf.push_str("<!--sycamore-suspense-");
-            buf.push_str(&key.to_string());
-            buf.push_str("-->");
         }
     }
 }

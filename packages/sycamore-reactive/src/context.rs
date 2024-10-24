@@ -68,6 +68,7 @@ fn provide_context_in_node<T: 'static>(id: NodeId, value: T) {
 }
 
 /// Tries to get a context value of the given type. If no context is found, returns `None`.
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn try_use_context<T: Clone + 'static>() -> Option<T> {
     let root = Root::global();
     let nodes = root.nodes.borrow();

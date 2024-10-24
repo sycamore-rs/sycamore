@@ -13,8 +13,8 @@
 //! - `serde` - Enables serializing and deserializing `Signal`s and other wrapper types using
 //!   `serde`.
 //!
-//! - `suspense` - Enables wrappers around `wasm-bindgen-futures` to make it easier to extend a
-//!   reactive scope into an `async` function.
+//! - `suspense` - Enalbes suspense and resources. Also enables wrappers around
+//!   `wasm-bindgen-futures` to make it easier to extend a reactive scope into an `async` function.
 //!
 //! - `nightly` - Enables nightly-only features. This makes it slightly more ergonomic to use
 //!   signals.
