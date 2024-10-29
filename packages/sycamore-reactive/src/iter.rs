@@ -517,4 +517,24 @@ mod tests {
             assert_eq!(counter.get(), 3);
         });
     }
+
+    /// Regression test for <https://github.com/sycamore-rs/sycamore/issues/739>
+    #[test]
+    fn issue_739_keyed_should_not_track_nested_signals() {
+        let _ = create_root(|| {
+            let items = create_signal(vec![create_signal(()), create_signal(())]);
+            map_indexed(items, |x| on_cleanup(move || x.dispose()));
+            items.set(items.get_clone()[1..].to_vec());
+        });
+    }
+
+    /// Regression test for <https://github.com/sycamore-rs/sycamore/issues/739>
+    #[test]
+    fn issue_739_indexed_should_not_track_nested_signals() {
+        let _ = create_root(|| {
+            let items = create_signal(vec![create_signal(()), create_signal(())]);
+            map_indexed(items, |x| on_cleanup(move || x.dispose()));
+            items.set(items.get_clone()[1..].to_vec());
+        });
+    }
 }
