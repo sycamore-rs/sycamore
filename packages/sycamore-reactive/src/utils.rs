@@ -22,6 +22,16 @@ impl<T> Trackable for ReadSignal<T> {
     }
 }
 
+impl<T: Into<Self>> Trackable for MaybeDyn<T> {
+    fn _track(&self) {
+        match self {
+            MaybeDyn::Static(_) => {}
+            MaybeDyn::Signal(signal) => signal.track(),
+            MaybeDyn::Derived(f) => f()._track(),
+        }
+    }
+}
+
 macro_rules! impl_trackable_deps_for_tuple {
     ($($T:tt),*) => {
         paste::paste! {
