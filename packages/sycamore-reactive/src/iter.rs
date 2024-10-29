@@ -42,8 +42,9 @@ where
     let mut disposers_tmp: Vec<Option<NodeHandle>> = Vec::new();
 
     // Diff and update signal each time list is updated.
+    let _list = list.clone();
     let mut update = move || {
-        let new_items = list.get_clone();
+        let new_items = _list.get_clone();
         if new_items.is_empty() {
             // Fast path for removing all items.
             for dis in mem::take(&mut disposers) {
@@ -173,7 +174,7 @@ where
         mapped.clone()
     };
     let scope = use_current_scope();
-    create_memo(move || scope.run_in(&mut update))
+    create_memo(on(list, move || scope.run_in(&mut update)))
 }
 
 /// Function that maps a `Vec` to another `Vec` via a map function.
@@ -206,8 +207,9 @@ where
     let mut disposers: Vec<NodeHandle> = Vec::new();
 
     // Diff and update signal each time list is updated.
+    let _list = list.clone();
     let mut update = move || {
-        let new_items = list.get_clone();
+        let new_items = _list.get_clone();
 
         if new_items.is_empty() {
             // Fast path for removing all items.
@@ -263,7 +265,7 @@ where
         mapped.clone()
     };
     let scope = use_current_scope();
-    create_memo(move || scope.run_in(&mut update))
+    create_memo(on(list, move || scope.run_in(&mut update)))
 }
 
 #[cfg(test)]
@@ -522,8 +524,8 @@ mod tests {
     #[test]
     fn issue_739_keyed_should_not_track_nested_signals() {
         let _ = create_root(|| {
-            let items = create_signal(vec![create_signal(()), create_signal(())]);
-            map_indexed(items, |x| on_cleanup(move || x.dispose()));
+            let items = create_signal(vec![create_signal(1), create_signal(2)]);
+            map_keyed(items, |x| on_cleanup(move || x.dispose()), |x| x.get());
             items.set(items.get_clone()[1..].to_vec());
         });
     }
