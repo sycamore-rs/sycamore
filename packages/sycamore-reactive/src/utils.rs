@@ -53,12 +53,13 @@ impl_trackable_deps_for_tuple!(A, B, C, D, E, F, G, H, I, J);
 impl_trackable_deps_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
 impl_trackable_deps_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
 
-/// A helper function for making dependencies explicit.
+/// A helper function for making dependencies explicit. This will create a closure that tracks
+/// those and only those dependencies that are passed to it.
 ///
 /// # Params
 /// * `deps` - A list of signals/memos that are tracked. This can be a single signal or it can be a
 ///   tuple of signals.
-/// * `f` - The callback function.
+/// * `f` - The callback function. Any dependencies that are accessed in here will not be tracked.
 ///
 /// # Example
 /// ```
