@@ -81,6 +81,32 @@ pub fn on<T>(
 ) -> impl FnMut() -> T + 'static {
     move || {
         deps._track();
-        f()
+        untrack(&mut f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn on_untracks_callback() {
+        let _ = create_root(move || {
+            let trigger1 = create_signal(());
+            let trigger2 = create_signal(());
+
+            let mut counter = create_signal(0);
+            create_effect(on(trigger1, move || {
+                // This should not be tracked by the effect since it is inside the `on` callback.
+                trigger2.track();
+                counter += 1;
+            }));
+
+            assert_eq!(counter.get(), 1);
+            trigger1.set(());
+            assert_eq!(counter.get(), 2);
+            trigger2.set(());
+            assert_eq!(counter.get(), 2);
+        });
     }
 }
