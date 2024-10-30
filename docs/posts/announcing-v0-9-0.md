@@ -203,14 +203,64 @@ we also get type-checked and auto-completed HTML attributes!
 
 <figure>
     <img src="https://github.com/user-attachments/assets/b661d357-c3b0-488d-b159-37ada227c6e2" alt="lsp hover for attributes" />
-    <figcaption>Documentation on hover, powered by Rust-Analyzer</figcaption>
+    <figcaption>Documentation on hover, powered by Rust-Analyzer in VSCode</figcaption>
 </figure>
+
+This also means no more silly typos causing hard to spot bugs, and finally,
+proper support for boolean and optional attributes.
+
+## Attribute passthrough
+
+Suppose you're writing a component library and are creating a `Button`
+component. Which props should you component accept? Ideally, you want your
+component to be as flexible as possible so you should try to provide as many
+HTML attributes as you can. This quickly becomes tedious: you'll need to provide
+`class`, `id`, `disabled`, `r#type`, `value`, etc. Furthermore, HTML allows
+arbitrary custom attributes of the form `data-*` as well as a bunch of
+accessibility attributes like `aria-*`, making this task essentially impossible.
+
+Enter _Attribute passthrough_. This allows your component to behave as if it
+were an HTML element, accepting HTML attributes, and letting you forward all of
+these attributes onto the element itself. Here's an example:
+
+```rust
+#[component(inline_props)]
+fn Button(
+    #[prop(attributes(html, button))]
+    attributes: Attributes,
+    children: Children,
+    accent: StringAttribute,
+) -> View {
+    view! {
+        // Spread the attributes onto the wrapped element.
+        button(..attributes) {
+            (children)
+        }
+    }
+}
+
+// Now use your component just as if it were a normal HTML element.
+view! {
+    Button(
+        class="btn btn-red",
+        id="login-button",
+        on:click=move |_| login(),
+        // `accent` is passed as a prop, not as an attribute.
+        accent="primary",
+    ) {
+        "Login"
+    }
+}
+```
+
+To learn more, read the section on
+[Attribute passthrough](/book/guide/attribute-passthrough) in the docs.
 
 ## Resources and Suspense
 
-## SSR streaming
+Sycamore v0.9 introduces Resources support integrated with Suspense.
 
-## Attribute passthrough
+## SSR streaming
 
 ## Smaller changes
 
