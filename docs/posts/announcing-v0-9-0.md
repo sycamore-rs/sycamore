@@ -57,10 +57,13 @@ to get started with the main concepts.
 Here are a few comparaisons between the old and new website.
 
 <style>
-figure img {
+figure img,video {
     border: 1px black;
     border-style: solid;
     border-radius: 5px;
+}
+figure video {
+    margin-bottom: 0 !important;
 }
 figure figcaption {
     text-align: center;
@@ -202,8 +205,8 @@ Since we are now using the builder API as the codegen target for the view macro,
 we also get type-checked and auto-completed HTML attributes!
 
 <figure>
-    <img src="https://github.com/user-attachments/assets/b661d357-c3b0-488d-b159-37ada227c6e2" alt="lsp hover for attributes" />
-    <figcaption>Documentation on hover, powered by Rust-Analyzer in VSCode</figcaption>
+    <img src="https://github.com/user-attachments/assets/a1fc6f21-c046-46a2-9d45-7e74d06fe19d" alt="lsp hover for attributes" />
+    <figcaption>Documentation for attributes, provided by Rust-Analyzer in VSCode</figcaption>
 </figure>
 
 This also means no more silly typos causing hard to spot bugs, and finally,
@@ -219,7 +222,7 @@ HTML attributes as you can. This quickly becomes tedious: you'll need to provide
 arbitrary custom attributes of the form `data-*` as well as a bunch of
 accessibility attributes like `aria-*`, making this task essentially impossible.
 
-Enter _Attribute passthrough_. This allows your component to behave as if it
+Enter **attribute passthrough**. This allows your component to behave as if it
 were an HTML element, accepting HTML attributes, and letting you forward all of
 these attributes onto the element itself. Here's an example:
 
@@ -254,18 +257,89 @@ view! {
 ```
 
 To learn more, read the section on
-[Attribute passthrough](/book/guide/attribute-passthrough) in the docs.
+[Attribute passthrough](/book/guide/attribute-passthrough) in the book.
 
-## Resources and Suspense
+## Resources
 
-Sycamore v0.9 introduces Resources support integrated with Suspense.
+Sycamore v0.9 introduces the Resources API. Resources let you load asynchronous
+data into your app, in a way that is tightly coupled with the reactivity system
+and suspense.
+
+Resources are essentially asynchronous nodes in the reactive graph. This means
+that resources can depend on reactive values. For instance, this will refetch
+the resource whenever the `id` signal is updated.
+
+```rust
+let id = create_signal(...);
+let resource = create_resource(on(id, move || async move {
+    fetch_user(id.get()).await
+}));
+```
+
+You can then use the resource value like so:
+
+```rust
+view! {
+    (if let Some(data) = resource.get_clone() {
+        view! {
+            ...
+        }
+    } else {
+        view! {}
+    })
+}
+```
+
+Accessing the value will automatically trigger suspense, letting you easily
+define loading screens etc. To learn more, read the section on
+[Resources](/book/guide/resources-and-suspense) in the book.
 
 ## SSR streaming
 
-## Smaller changes
+We've had support for server side rendering (SSR) for quite a while now. This
+release, however, introduces SSR streaming. What is SSR streaming?
 
-### Reactive `NodeRef`
+Let's first look at how normal server side rendering works. If we don't fetch
+any asynchronous data, everything is simple: just render the app in one shot on
+the server and send it over to the client. If, however, we do have asynchronous
+data, we have a few choices. We might choose not to do any data-fetching on the
+server and instead just send the loading fallback. We can then do all the
+data-fetching client side. This approach has a major disadvantage. When we make
+the request to the server, we already, _in principle_, know all the asynchronous
+data that needs to be fetched. The client, however, can not know this until the
+WASM binary has been sent over, loaded, and the app hydrated. So we are wasting
+a lot of time where we could have been fetching these asynchronous resources in
+parallel.
 
-### Optional attributes
+Another approach would be to load all the data on the server-side and wait for
+all loading to complete before sending the HTMl over to the client. Such an
+approach, however, causes an annoying delay on the client where nothing is
+displayed while the data is loading.
+
+SSR streaming strikes a balance between these two approaches. First, an initial
+HTML shell is sent over to the client displaying the fallback view, such as
+loading text or spinners. Then as the data is fetched on the server, the new
+view is rendered and subsequently _streamed_ over to the client over the same
+HTTP request. This new view is then dynamically inserted into the right position
+in the DOM.
+
+<figure>
+    <video controls>
+        <source src="https://github.com/user-attachments/assets/27081b18-637a-49f7-9ee7-0c9644a523c8" type="video/mp4" />
+    </video>
+    <figcaption>SSR Streaming Demo</figcaption>
+</figure>
+
+SSR streaming offers the best of both worlds. The client displays something
+right away, and data is fetched as soon as possible on the server and the result
+streamed over to the client.
+
+This feature is seamlessly integrated with Suspense. The natural streaming
+boundaries are the suspense boundaries, so that the suspense fallback is sent
+first, and then when the suspense resolves, the suspense content is streamed
+over.
+
+Learn more by reading the [SSR Streaming](/book/server-side-rendering/streaming)
+section of the book.
 
 ## The future of Sycamore
