@@ -8,14 +8,34 @@ date: 2024-10-24
 
 # Announcing Sycamore v0.9.0
 
-I'm happy to announce the release of Sycamore v0.9.0. Sycamore is a reactive
-Rust UI framework for building web apps using WebAssembly. This release is by
-far the biggest Sycamore release we've ever had, with tons of new features and
-improvements.
+I'm happy to announce the release of Sycamore v0.9.0!
+
+Sycamore is a reactive Rust UI framework for building web apps using
+WebAssembly. This release is by far the biggest release we've ever had, with
+tons of new features and improvements. If you have not used Sycamore before,
+here's a quick sample:
+
+```rust
+#[component]
+fn Counter(initial: i32) -> View {
+    let mut value = create_signal(initial);
+
+    view! {
+        button(on:click=move |_| value += 1) {
+            "Count: " (value)
+        }
+    }
+
+}
+```
 
 Sycamore's community has also grown a lot since the v0.8.0 release. We've gone
-from just over _1.0k_ stars to _2.8k_ stars on GitHub. What used to be just over
-_350_ discord members has now grown to _626_!
+from just over **1.0k** stars to **2.8k** stars on GitHub. What used to be just
+over **350** discord members has now grown to **626**! We've also reached
+**151k** downloads on [crates.io](https://crates.io/crates/sycamore).
+
+For migrating over from v0.8, check out the
+[migration guide](/book/migration/0-8-to-0-9)
 
 ## A shinny new website
 
@@ -34,6 +54,40 @@ various topics such as the view macro, the basics of reactivity, and how
 rendering lists work. This will hopefully help new users interested in Sycamore
 to get started with the main concepts.
 
+Here are a few comparaisons between the old and new website.
+
+<style>
+figure img {
+    border: 1px black;
+    border-style: solid;
+    border-radius: 5px;
+}
+figure figcaption {
+    text-align: center;
+    margin-top: 0.4em !important;
+}
+</style>
+
+<figure>
+    <img src="https://github.com/user-attachments/assets/b4c2d894-2ea0-41d7-b170-ce6eb7865ef9" alt="old homepage" />
+    <figcaption>The old homepage</figcaption>
+</figure>
+
+<figure>
+    <img src="https://github.com/user-attachments/assets/453d9510-d9ab-4796-91d7-09f8ae9cf9ef" alt="new homepage" />
+    <figcaption>The new homepage</figcaption>
+</figure>
+
+<figure>
+    <img src="https://github.com/user-attachments/assets/daa6f658-f250-4228-8bc3-8b8eefd6b3aa" alt="old docs" />
+    <figcaption>The old docs</figcaption>
+</figure>
+
+<figure>
+    <img src="https://github.com/user-attachments/assets/6a50cfd2-3e2f-4a8e-9507-ec99725c964b" alt="new docs" />
+    <figcaption>The new docs</figcaption>
+</figure>
+
 There are still currently a few sections of the docs that needs writting or
 simply needs a few more details. You can help us out by contributing to the
 docs! Simply go to the relevant page and click on "Edit this page on GitHub" at
@@ -42,13 +96,115 @@ the bottom and send us a Pull Request.
 ## Reactivity v3
 
 What is probably the biggest new feature of this release is our new reactivity
-system, dubbed _Reactivity v3_! In Reactivity v2, introduced in the
-[v0.8](/post/announcing-v0-8-0), we eliminated the need for cloning signals and
-other reactive primitives into closures. This, however, came at the expense of
-introducing lifetimes for tracking whether a signal was alive and could be
-accessed.
+system, dubbed **Reactivity v3**! In Reactivity v2 (introduced in the
+[v0.8](/post/announcing-v0-8-0) release), we eliminated the need for cloning
+signals and other reactive primitives into closures. This, however, came at the
+expense of introducing lifetimes for tracking whether a signal was alive and
+could be accessed.
+
+Lifetimes are well known to add complexity to a Rust codebase. So although we no
+longer needed to deal with cloning, we now needed to deal with lifetimes.
+Reactivity v3 fixes all this. We made all signals and other reactive datatypes
+both `'static` and `Copy`-able. This way, you get both the benefit of passing
+signals wherever you want without littering your codebase with `.clone()`
+everywhere, all without having to worry about lifetimes. Along the way, we also
+eliminated the need for the `cx` parameter as well!
+
+Whereas previously, you might have written:
+
+```rust
+let signal = create_signal(cx, 123);
+create_effect_scoped(cx, |cx| {
+    let nested = create_signal(cx, 456);
+    println!("{signal}, {nested}");
+});
+```
+
+Now, you can simply write:
+
+```rust
+let signal = create_signal(123);
+create_effect(move || {
+    let nested = create_signal(456);
+    println!("{signal}, {nested}");
+});
+```
+
+Although a very contrived example, hopefully this demonstrates that the new
+reactivity system is much more simple and intuitive. We no longer need to thread
+the `cx` parameter everywhere, we no longer have to worry about scoped versus
+non-scoped effects, and we can pass signals wherever we want without infecting
+everything with lifetimes.
+
+Under the hood, this involved a
+[huge rewrite](https://github.com/sycamore-rs/sycamore/pull/612) of essentially
+the entire `sycamore-reactive` crate from scratch. The new implementation uses a
+singleton `Root` datatype for managing the reactive graph instead of a bunch of
+smart pointers everywhere in a tangled mess. This should hopefully make the
+implementation more robust and reliable.
 
 ## View v2
+
+Another major change coming to Sycamore v0.9 is **View v2**. Reactivity v3
+removed a lot of friction and boilerplate when interacting with reactive state.
+View v2 continues this theme and removes _a bunch_ of boilerplate from
+components and views.
+
+The biggest change is the complete removal of the `GenericNode` and `Html`
+traits which have been infesting Sycamore codebases ever since we introduced SSR
+(server side rendering) support all the way back in v0.5.
+
+Witness the difference yourself. Here is Sycamore v0.8 code:
+
+```rust
+#[component(inline_props)]
+fn Component<'a, G: Html>(cx: Scope<'a>, value: &'a ReadSignal<i32>) -> View<G> {
+    ...
+}
+```
+
+There is a bunch of noise here that is distracting from what this component
+does, such as the `'a` lifetime and the `G: Html` generic parameter. Reactivity
+v3 and View v2 together turns this into:
+
+```rust
+#[component(inline_props)]
+fn Component(value: ReadSignal<i32>) -> View {
+    ...
+}
+```
+
+Doesn't this just look so much better?
+
+### New builder API
+
+This refactor also introduces a new builder API. Apologies to all the churn the
+builder API has received over the past few releases, but I really think this new
+API is much better than before. For a long time, the builder API was always a
+second-class citizen compared to the macro. This is no more. In fact, the
+`view!` macro has been refactored to simply codegen the builder API behind the
+hood, making the builder API a true first-class citizen in Sycamore. Here is
+what it looks like:
+
+```rust
+div().class("hello-world").children((
+    span().style("color: red").children("Hello "),
+    em().children("World!"),
+))
+```
+
+For more information, check out the [builder API](/book/guide/view-builder) docs
+in the book.
+
+### Type-checked HTML attributes
+
+Since we are now using the builder API as the codegen target for the view macro,
+we also get type-checked and auto-completed HTML attributes!
+
+<figure>
+    <img src="https://github.com/user-attachments/assets/b661d357-c3b0-488d-b159-37ada227c6e2" alt="lsp hover for attributes" />
+    <figcaption>Documentation on hover, powered by Rust-Analyzer</figcaption>
+</figure>
 
 ## Resources and Suspense
 
