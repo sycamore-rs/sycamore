@@ -342,4 +342,8 @@ over.
 Learn more by reading the [SSR Streaming](/book/server-side-rendering/streaming)
 section of the book.
 
+## Other changes
+
 ## The future of Sycamore
+
+## Thanks!
