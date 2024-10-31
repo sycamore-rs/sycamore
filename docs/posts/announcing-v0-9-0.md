@@ -54,7 +54,7 @@ various topics such as the view macro, the basics of reactivity, and how
 rendering lists work. This will hopefully help new users interested in Sycamore
 to get started with the main concepts.
 
-Here are a few comparaisons between the old and new website.
+Here are a few comparisons between the old and new website.
 
 <style>
 figure img,video {
@@ -91,7 +91,7 @@ figure figcaption {
     <figcaption>The new docs</figcaption>
 </figure>
 
-There are still currently a few sections of the docs that needs writting or
+There are still currently a few sections of the docs that needs writing or
 simply needs a few more details. You can help us out by contributing to the
 docs! Simply go to the relevant page and click on "Edit this page on GitHub" at
 the bottom and send us a Pull Request.
@@ -107,7 +107,7 @@ could be accessed.
 
 Lifetimes are well known to add complexity to a Rust codebase. So although we no
 longer needed to deal with cloning, we now needed to deal with lifetimes.
-Reactivity v3 fixes all this. We made all signals and other reactive datatypes
+Reactivity v3 fixes all this. We made all signals and other reactive data-types
 both `'static` and `Copy`-able. This way, you get both the benefit of passing
 signals wherever you want without littering your codebase with `.clone()`
 everywhere, all without having to worry about lifetimes. Along the way, we also
