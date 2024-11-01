@@ -1,7 +1,6 @@
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::Span;
 use quote::format_ident;
 use syn::punctuated::Punctuated;
-use syn::token::Comma;
 use syn::{
     Field, GenericParam, Generics, Ident, Path, PathArguments, PathSegment, Token, Type,
     TypeImplTrait, TypeParam, TypePath, Visibility,
