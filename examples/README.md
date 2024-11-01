@@ -22,7 +22,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 ## Example List
 
 | Example                                            | Description                                                                                    |
-|----------------------------------------------------|------------------------------------------------------------------------------------------------|
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | [attributes-passthrough](attributes-passthrough)   | Passing through dynamic attributes to an inner element                                         |
 | [components](components)                           | UI abstraction using components                                                                |
 | [context](context)                                 | Demonstration for the Context API                                                              |
