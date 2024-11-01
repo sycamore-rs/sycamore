@@ -38,9 +38,9 @@ over **350** discord members has now grown to **626**! We've also reached
 For migrating over from v0.8, check out the
 [migration guide](/book/migration/0-8-to-0-9)
 
-## A shinny new website
+## A shiny new website
 
-We now have a shinny new website along with a shinny new domain:
+We now have a shiny new website along with a shiny new domain:
 [sycamore.dev](https://sycamore.dev)! This was long overdue. We were previously
 using a Netlify subdomain so this change hopefully makes Sycamore look more
 legitimate. The old website had a bunch of issues such as buggy navigation, no
