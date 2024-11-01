@@ -8,9 +8,9 @@ use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 mod component;
+mod inline_props;
 mod props;
 mod view;
-mod inline_props;
 
 /// A macro for ergonomically creating complex UI complex layouts.
 ///

@@ -1,9 +1,11 @@
-use proc_macro2::Span;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::format_ident;
-use syn::{Field, GenericParam, Generics, Ident, Path, PathArguments, PathSegment, Token, Type, TypeImplTrait, TypeParam, TypePath, Visibility};
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
+use syn::{
+    Field, GenericParam, Generics, Ident, Path, PathArguments, PathSegment, Token, Type,
+    TypeImplTrait, TypeParam, TypePath, Visibility,
+};
 
 pub fn create_generic_ident(generics: &Generics) -> Ident {
     format_ident!("__T{}", generics.params.len())
@@ -11,14 +13,14 @@ pub fn create_generic_ident(generics: &Generics) -> Ident {
 
 pub fn resolve_type(generics: &mut Generics, ty: Type) -> Type {
     match ty {
-        Type::ImplTrait(inner) => {add_generic(generics, inner)}
+        Type::ImplTrait(inner) => add_generic(generics, inner),
         Type::Array(inner) => {
             let elem = resolve_type(generics, *inner.elem);
             Type::Array(syn::TypeArray {
                 bracket_token: inner.bracket_token,
                 elem: Box::new(elem),
                 semi_token: inner.semi_token,
-                len: inner.len
+                len: inner.len,
             })
         }
         Type::Paren(inner) => {
@@ -54,13 +56,17 @@ pub fn resolve_type(generics: &mut Generics, ty: Type) -> Type {
             })
         }
         Type::Tuple(inner) => {
-            let elems = inner.elems.iter().map(|elem| resolve_type(generics, elem.clone())).collect();
+            let elems = inner
+                .elems
+                .iter()
+                .map(|elem| resolve_type(generics, elem.clone()))
+                .collect();
             Type::Tuple(syn::TypeTuple {
                 paren_token: inner.paren_token,
-                elems
+                elems,
             })
         }
-        _ => ty
+        _ => ty,
     }
 }
 
@@ -83,9 +89,9 @@ pub fn add_generic(generics: &mut Generics, impl_type: TypeImplTrait) -> Type {
             leading_colon: None,
             segments: Punctuated::from_iter(vec![PathSegment {
                 ident: type_ident,
-                arguments: PathArguments::None
+                arguments: PathArguments::None,
             }]),
-        }
+        },
     })
 }
 

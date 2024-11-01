@@ -5,7 +5,10 @@ use quote::{format_ident, quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{parse_quote, Error, Expr, FnArg, Generics, Ident, Item, ItemFn, Pat, PatIdent, Result, ReturnType, Signature, Token, Type, TypeTuple};
+use syn::{
+    parse_quote, Error, Expr, FnArg, Generics, Ident, Item, ItemFn, Pat, PatIdent, Result,
+    ReturnType, Signature, Token, Type, TypeTuple,
+};
 pub struct ComponentFn {
     pub f: ItemFn,
 }
@@ -260,17 +263,22 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
     let props = inputs.clone().into_iter().collect::<Vec<_>>();
     let generics: &mut Generics = &mut item.sig.generics;
     let mut fields = Vec::new();
-    inputs.iter().for_each(|arg| {
-        match arg {
-            FnArg::Receiver(_) => { unreachable!("receiver cannot be a prop") }
-            FnArg::Typed(pat_type) => {
-                let pat = &*pat_type.pat;
-                let ty = &*pat_type.ty;
-                match pat {
-                    Pat::Ident(ident_pat) => super::inline_props::push_field(&mut fields, generics, ident_pat.clone().ident, ty.clone()),
-                    _ => {
-                        unreachable!("unexpected pattern!")
-                    }
+    inputs.iter().for_each(|arg| match arg {
+        FnArg::Receiver(_) => {
+            unreachable!("receiver cannot be a prop")
+        }
+        FnArg::Typed(pat_type) => {
+            let pat = &*pat_type.pat;
+            let ty = &*pat_type.ty;
+            match pat {
+                Pat::Ident(ident_pat) => super::inline_props::push_field(
+                    &mut fields,
+                    generics,
+                    ident_pat.clone().ident,
+                    ty.clone(),
+                ),
+                _ => {
+                    unreachable!("unexpected pattern!")
                 }
             }
         }
