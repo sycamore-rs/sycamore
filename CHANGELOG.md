@@ -1,5 +1,149 @@
 # Changelog
 
+## 0.9.2 _(2024-11-01)_
+
+Release Post: https://sycamore.dev/post/announcing-0-9-0
+Migration Guide: https://sycamore.dev/book/migration/0-8-to-0-9
+
+#### What's Changed
+
+- Change NAME_SPACE to NAMESPACE by @sokratisvas in https://github.com/sycamore-rs/sycamore/pull/482
+- Improve binding ergonomics for `RcSignal` by @danielalvsaaker in https://github.com/sycamore-rs/sycamore/pull/489
+- Use fully qualified method calls in macro for bound signals by @danielalvsaaker in https://github.com/sycamore-rs/sycamore/pull/499
+- fix(bug): #500 fix and #501 fix by @danielnehrig in https://github.com/sycamore-rs/sycamore/pull/502
+- Rename derive proc-macro `Prop` to `Props` by @alexisfontaine in https://github.com/sycamore-rs/sycamore/pull/503
+- Fix MDN documentation link of SVG elements by @alexisfontaine in https://github.com/sycamore-rs/sycamore/pull/505
+- Rename the derive macro helper attribute `builder` to `prop` by @alexisfontaine in https://github.com/sycamore-rs/sycamore/pull/504
+- Make `NodeRef` Reactive by @wainwrightmark in https://github.com/sycamore-rs/sycamore/pull/508
+- Add data binding for valueAsNumber property by @wainwrightmark in https://github.com/sycamore-rs/sycamore/pull/511
+- Fix js-framework-benchmark CI by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/520
+- Fix mismatched link in examples by @nthnd in https://github.com/sycamore-rs/sycamore/pull/524
+- Simplify the TodoMVC example code by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/526
+- adding `set_fn` and `set_fn_silent` by @blainehansen in https://github.com/sycamore-rs/sycamore/pull/529
+- Remove redundant set_value in todomvc example in https://github.com/sycamore-rs/sycamore/pull/530
+- Make `create_ref` only allow `T: 'static` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/519
+- Update dependencies to latest by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/510
+- `GenericNode` v2 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/521
+- Remove legacy component syntax and introduce `Component` trait by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/533
+- Change CSS `color-scheme` with dark mode is toggled on website by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/534
+- Prevent re-running effects inside themselves by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/539
+- (Runtime) Templates by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/536
+- Make `Option<T>` prop fields optional by default by @danielalvsaaker in https://github.com/sycamore-rs/sycamore/pull/531
+- Implement ToView manually for types by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/541
+- Fix missing `View::new_dyn_scoped` check at the root by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/549
+- Rename css.md to styling.md and add info on integrations with CSS frameworks by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/550
+- Adopt a logo! by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/551
+- Typed event data + async event handlers by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/553
+- Replace context `HashMap` with `Vec` and add benchmark by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/555
+- Allow passing through attributes on components by @wingertge in https://github.com/sycamore-rs/sycamore/pull/548
+- Wasm bindgen example by @wa1aric in https://github.com/sycamore-rs/sycamore/pull/558
+- Add unique ID generation hook by @wingertge in https://github.com/sycamore-rs/sycamore/pull/565
+- fixes bind macro problem by @blainehansen in https://github.com/sycamore-rs/sycamore/pull/569
+- API docs correction for Functions hydrate_to: "use hydrate_to" can now read and link as "use hydrate". by @StarSapien in https://github.com/sycamore-rs/sycamore/pull/579
+- chore: fix formatting and clippy lints by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/582
+- Update render util tests and add nested dyn test by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/583
+- Fix Issue #572 by @wingertge in https://github.com/sycamore-rs/sycamore/pull/573
+- Centered badges by @simonhyll in https://github.com/sycamore-rs/sycamore/pull/589
+- Add signal equivalent of `create_ref_unsafe` by @wingertge in https://github.com/sycamore-rs/sycamore/pull/586
+- Do not add values to the arena drop list if not necessary by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/552
+- Avoid exponential blowup in size of Builder type by @sapphire-arches in https://github.com/sycamore-rs/sycamore/pull/591
+- Update syn to v2 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/593
+- Prepare v0.9.0-beta.1 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/594
+- Fix builder `bind_value` and `bind_checked` calling wasm functions in SSR by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/608
+- Fix #562 / ignore the query parameters when matching a path to a route by @Miroito in https://github.com/sycamore-rs/sycamore/pull/575
+- Fix navigating to an anchor and route matching with hash parameters by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/610
+- Update Trunk, NodeJS, and MSRV to 1.65 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/611
+- Update routing.md by @jhutchins in https://github.com/sycamore-rs/sycamore/pull/613
+- fix view! parser to handle dashed attributes with Rust keywords (#620) by @mekanoe in https://github.com/sycamore-rs/sycamore/pull/624
+- Update MSRV to 1.72 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/625
+- Reactivity v3! (Part 1) 🎉 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/612
+- fix typos & small grammatical errors by @iiiii7d in https://github.com/sycamore-rs/sycamore/pull/627
+- Reactivity v3 (Part 2) by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/626
+- Update README.md example with new reactivity system] by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/629
+- Bump postcss from 8.4.23 to 8.4.31 in /website by @dependabot in https://github.com/sycamore-rs/sycamore/pull/628
+- Dont suggest wee-alloc in docs by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/630
+- Make batch affect both memos and effects by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/631
+- Repace the `Memo` struct with `ReadSignal` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/632
+- Update all dependencies by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/633
+- v0.9.0-beta.2 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/634
+- Run everything through prettier by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/635
+- Update components documentation for v0.9 by @brynnjmccormick in https://github.com/sycamore-rs/sycamore/pull/637
+- Add a CONTRIBUTING.md and remove old contributing docs by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/636
+- Fix panic about current not being a child of parent in clean_children by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/639
+- Re-export `wasm-bindgen`, `js-sys`, and event types from `web-sys` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/642
+- Add missing docs and more doctests by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/643
+- Move web-sys features from sycamore to sycamore-web by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/644
+- Update Router example to use non-referenced ReadSignal by @noxxxxxious in https://github.com/sycamore-rs/sycamore/pull/647
+- Refactor view! by extracting parsing logic from codegen into a new crate by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/649
+- Improve generation of HTML for the hydrate example. by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/657
+- Add underline and bold for navigation improvements by @Hmikihiro in https://github.com/sycamore-rs/sycamore/pull/660
+- Temporary fix for book broken navigation by @Hmikihiro in https://github.com/sycamore-rs/sycamore/pull/661
+- Update MSRV to 1.73.0 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/663
+- Remove deploy draft workflow by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/664
+- Update trunk to v0.19.1 and disable minification for hydrate example by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/665
+- Maintenance: fix all the new clippy warnings by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/666
+- Add `track_caller` attribute to `provide_context*` and `use_context` functions by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/667
+- Add 'SubmitEvent' to re-exported events from web_sys crate by @dyanechi in https://github.com/sycamore-rs/sycamore/pull/668
+- Replace CountAPI as it got taken down. by @JasonLovesDoggo in https://github.com/sycamore-rs/sycamore/pull/674
+- Bump braces from 3.0.2 to 3.0.3 in /website by @dependabot in https://github.com/sycamore-rs/sycamore/pull/675
+- Rename the tag type alias by @mtshr in https://github.com/sycamore-rs/sycamore/pull/677
+- View Backend v2! (Attempt 2) by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/679
+- Remove `target_wasm32` folder by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/680
+- Update some old docs by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/681
+- Fix `set_fn` to not be silent by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/682
+- v0.9.0-beta.3 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/683
+- Fix missing version in dependency by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/684
+- fixup: missing keys in Cargo.toml by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/685
+- Update codecov action by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/686
+- fixup: wrong version in docs by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/687
+- Make `ViewHtmlNode` methods use `Cow<'static, str>` instead of `&'static str` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/688
+- Make `HtmlNode` into `pub` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/689
+- Fix `NoHydrate` should render if not hydrating by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/690
+- Remove `nom` dependency and replace with hand written parser by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/691
+- Reorganize `sycamore-web` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/692
+- Move `MaybeDyn` to new file and add some impls by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/693
+- Reimplement attribute passthrough, without `attr:xyz`! by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/694
+- Fix suspense rendering async shell during fallback by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/695
+- SSR Streaming by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/696
+- Remove Gitpod by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/697
+- v0.9.0-beta.4 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/698
+- Fix router on different pathname and hash triggers hard refresh by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/700
+- Fix suspense should create context in global scope by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/701
+- Add umami analytics to website by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/702
+- Update branch name from `master` to `main` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/706
+- Allow attribute names by using string literal by @Kromgart in https://github.com/sycamore-rs/sycamore/pull/707
+- Move `MaybeDyn` to `sycamore-reactive` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/705
+- Add re-exports back to `sycamore-web` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/708
+- Cleanup some example dependencies by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/709
+- Add missing feature to serde in `http-request(-builder)` examples by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/710
+- Fix #704 - Updating the check whether a view must be dynamic. by @Kromgart in https://github.com/sycamore-rs/sycamore/pull/711
+- Support `MaybeDyn<Option<Cow<'static, str>>>` and make some impls more flexible by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/713
+- Remove `tracing` from `sycamore-web` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/715
+- Support optional attributes by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/714
+- Update faq.md, rust is the 2023-most-desired-language by @liigo in https://github.com/sycamore-rs/sycamore/pull/716
+- Transitions v2 + Resources API by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/719
+- cargo fmt by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/722
+- Fix macro hygiene for `console_{log, warn, error, dbg}!` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/723
+- Update old website to migrate to sycamore.dev by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/724
+- Force redirect home page to new website by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/725
+- Remove old website code by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/726
+- Create SECURITY.md by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/727
+- Update docs to test workflow by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/728
+- Fix build examples workflow by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/730
+- Fix build example workflow again by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/731
+- Implement `Into<View>` for signal like types by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/732
+- New docs for Sycamore v0.9 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/729
+- Fix hydration mismatch when using `render_to_string_await_suspense` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/733
+- Fix broken expect test by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/734
+- Fix condition in `Suspense` is not reactive breaking hydration by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/735
+- Fix SSR blocking mode removing suspended content after load by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/736
+- Make `SsrNode` automatically create reactive nodes by default by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/737
+- Reimplement SSR streaming with `FuturesUnordered` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/738
+- Do not track callback in `on` function callback by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/740
+- Fix do not track nested reactivity in `map_keyed`/`map_indexed` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/742
+- Slightly better error messages for read/updating a signal while updating/reading by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/745
+- Support `impl Trait` syntax with `inline_props` by @davidon-top in https://github.com/sycamore-rs/sycamore/pull/746
+
 ## ✨ **0.8.2** _(2022-09-24)_
 
 - #### ⚡️ Features

@@ -6,7 +6,7 @@ title: Your First App
 
 This section will guide you through creating your first Sycamore app. We'll
 start by introducing the basics such as how to create views, how to manage state
-using reactivity, and how rendering lists work. This will be up towards
+using reactivity, and how rendering lists work. This will build up towards
 eventually creating a simple todo app.
 
 ## Prerequisites
@@ -86,14 +86,14 @@ This creates a blank Rust project called `hello-sycamore`. Let's add Sycamore as
 a dependency by running:
 
 ```bash
-cargo add sycamore@0.9.0-beta.4
+cargo add sycamore@0.9.0
 ```
 
 You can also do this manually by adding the following line to your `Cargo.toml`
 file.
 
 ```toml
-sycamore = "0.9.0-beta.4"
+sycamore = "0.9.0"
 ```
 
 ## Hello, world!
