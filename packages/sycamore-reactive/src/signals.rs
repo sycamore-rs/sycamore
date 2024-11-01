@@ -155,21 +155,31 @@ impl<T> ReadSignal<T> {
     /// Get a immutable reference to the underlying node.
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_ref(self) -> Ref<'static, ReactiveNode> {
-        Ref::map(self.root.nodes.borrow(), |nodes| match nodes.get(self.id) {
-            Some(node) => node,
-            None => panic!("{}", self.get_disposed_panic_message()),
-        })
+        Ref::map(
+            self.root
+                .nodes
+                .try_borrow()
+                .expect("cannot read signal while updating"),
+            |nodes| match nodes.get(self.id) {
+                Some(node) => node,
+                None => panic!("{}", self.get_disposed_panic_message()),
+            },
+        )
     }
 
     /// Get a mutable reference to the underlying node.
     #[cfg_attr(debug_assertions, track_caller)]
     pub(crate) fn get_mut(self) -> RefMut<'static, ReactiveNode> {
-        RefMut::map(self.root.nodes.borrow_mut(), |nodes| {
-            match nodes.get_mut(self.id) {
+        RefMut::map(
+            self.root
+                .nodes
+                .try_borrow_mut()
+                .expect("cannot update signal while reading"),
+            |nodes| match nodes.get_mut(self.id) {
                 Some(node) => node,
                 None => panic!("{}", self.get_disposed_panic_message()),
-            }
-        })
+            },
+        )
     }
 
     /// Returns `true` if the signal is still alive, i.e. has not yet been disposed.
@@ -289,7 +299,10 @@ impl<T> ReadSignal<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn with_untracked<U>(self, f: impl FnOnce(&T) -> U) -> U {
         let node = self.get_ref();
-        let value = node.value.as_ref().expect("value updating");
+        let value = node
+            .value
+            .as_ref()
+            .expect("cannot read signal while updating");
         let ret = f(value.downcast_ref().expect("wrong signal type"));
         ret
     }
@@ -446,7 +459,11 @@ impl<T> Signal<T> {
     /// This is the silent version of [`Signal::update`].
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn update_silent<U>(self, f: impl FnOnce(&mut T) -> U) -> U {
-        let mut value = self.get_mut().value.take().expect("value updating");
+        let mut value = self
+            .get_mut()
+            .value
+            .take()
+            .expect("cannot update signal while reading");
         let ret = f(value.downcast_mut().expect("wrong signal type"));
         self.get_mut().value = Some(value);
         ret
