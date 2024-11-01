@@ -5,10 +5,12 @@ use quote::{format_ident, quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
+use syn::token::Paren;
 use syn::{
-    parse_quote, Error, Expr, FnArg, Generics, Ident, Item, ItemFn, Pat, PatIdent, Result,
-    ReturnType, Signature, Token, Type, TypeTuple,
+    parenthesized, parse_quote, Error, Expr, FnArg, Generics, Ident, Item, ItemFn, Pat, PatIdent,
+    Result, ReturnType, Signature, Token, Type, TypeTuple,
 };
+
 pub struct ComponentFn {
     pub f: ItemFn,
 }
@@ -219,9 +221,55 @@ impl ToTokens for ComponentFn {
     }
 }
 
+pub struct ParenthesizedTokens {
+    paren: Paren,
+    tokens: TokenStream,
+}
+
+impl ToTokens for ParenthesizedTokens {
+    fn to_tokens(&self, out: &mut TokenStream) {
+        let ParenthesizedTokens { paren, tokens } = self;
+        paren.surround(out, |tout| tout.extend(tokens.clone().into_iter()));
+    }
+}
+
+impl Parse for ParenthesizedTokens {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let content;
+        let paren = parenthesized!(content in input);
+        let tokens = content.parse()?;
+        Ok(Self { paren, tokens })
+    }
+}
+
+pub struct ComponentAttrArgs {
+    ident: Ident,
+    call: ParenthesizedTokens,
+}
+
+impl ToTokens for ComponentAttrArgs {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let ComponentAttrArgs { ident, call } = self;
+        tokens.extend(quote! {
+            #[#ident #call]
+        })
+    }
+}
+
+impl Parse for ComponentAttrArgs {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Ok(Self {
+            ident: input.parse()?,
+            call: input.parse()?,
+        })
+    }
+}
+
 /// Arguments to the `component` attribute proc-macro.
 pub struct ComponentArgs {
     inline_props: Option<Ident>,
+    _comma: Option<Token![,]>,
+    attrs: Punctuated<ComponentAttrArgs, Token![,]>,
 }
 
 impl Parse for ComponentArgs {
@@ -233,14 +281,24 @@ impl Parse for ComponentArgs {
                 return Err(Error::new(inline_props.span(), "expected `inline_props`"));
             }
         }
-        Ok(Self { inline_props })
+        let comma: Option<Token![,]> = input.parse()?;
+        let attrs: Punctuated<ComponentAttrArgs, Token![,]> = if comma.is_some() {
+            input.parse_terminated(ComponentAttrArgs::parse, Token![,])?
+        } else {
+            Punctuated::new()
+        };
+        Ok(Self {
+            inline_props,
+            _comma: comma,
+            attrs,
+        })
     }
 }
 
 pub fn component_impl(args: ComponentArgs, item: TokenStream) -> Result<TokenStream> {
     if args.inline_props.is_some() {
         let mut item_fn = syn::parse::<ItemFn>(item.into())?;
-        let inline_props = inline_props_impl(&mut item_fn)?;
+        let inline_props = inline_props_impl(&mut item_fn, args.attrs)?;
         // TODO: don't parse the function twice.
         let comp = syn::parse::<ComponentFn>(item_fn.to_token_stream().into())?;
         Ok(quote! {
@@ -255,7 +313,10 @@ pub fn component_impl(args: ComponentArgs, item: TokenStream) -> Result<TokenStr
 
 /// Codegens the new props struct and modifies the component body to accept this new struct as
 /// props.
-fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
+fn inline_props_impl(
+    item: &mut ItemFn,
+    attrs: Punctuated<ComponentAttrArgs, Token![,]>,
+) -> Result<TokenStream> {
     let props_vis = &item.vis;
     let props_struct_ident = format_ident!("{}_Props", item.sig.ident);
 
@@ -307,10 +368,12 @@ fn inline_props_impl(item: &mut ItemFn) -> Result<TokenStream> {
 
     let doc_comment = format!("Props for [`{}`].", item.sig.ident);
 
+    let attrs = attrs.into_iter().collect::<Vec<_>>();
     let ret = Ok(quote! {
         #[allow(non_camel_case_types)]
         #[doc = #doc_comment]
         #[derive(::sycamore::rt::Props)]
+        #(#attrs)*
         #props_vis struct #props_struct_ident #generics {
             #(#fields,)*
             #(#generics_phantoms,)*

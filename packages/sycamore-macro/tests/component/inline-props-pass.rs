@@ -75,4 +75,9 @@ fn PropsWithVariousImplGenerics(
     }
 }
 
+#[component(inline_props, derive(Clone))]
+fn AdditionalStructAttributes() -> View {
+    view! {}
+}
+
 fn main() {}
