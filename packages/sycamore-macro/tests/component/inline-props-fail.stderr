@@ -1,21 +1,5 @@
 error: expected `inline_props`
-  --> tests/component/inline-props-fail.rs:10:13
-   |
-10 | #[component(not_inline_props)]
-   |             ^^^^^^^^^^^^^^^^
-
-error[E0562]: `impl Trait` is not allowed in field types
- --> tests/component/inline-props-fail.rs:4:25
+ --> tests/component/inline-props-fail.rs:3:13
   |
-4 | fn ImplTraitInArgs(foo: impl std::fmt::Display) -> View {
-  |                         ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `impl Trait` is only allowed in arguments and return types of functions and methods
-
-error[E0562]: `impl Trait` is not allowed in impl headers
- --> tests/component/inline-props-fail.rs:4:25
-  |
-4 | fn ImplTraitInArgs(foo: impl std::fmt::Display) -> View {
-  |                         ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `impl Trait` is only allowed in arguments and return types of functions and methods
+3 | #[component(not_inline_props)]
+  |             ^^^^^^^^^^^^^^^^
