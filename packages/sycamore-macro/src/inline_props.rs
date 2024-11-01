@@ -16,42 +16,36 @@ pub fn resolve_type(generics: &mut Generics, ty: Type) -> Type {
         Type::Array(inner) => {
             let elem = resolve_type(generics, *inner.elem);
             Type::Array(syn::TypeArray {
-                bracket_token: inner.bracket_token,
                 elem: Box::new(elem),
-                semi_token: inner.semi_token,
-                len: inner.len,
+                ..inner
             })
         }
         Type::Paren(inner) => {
             let elem = resolve_type(generics, *inner.elem);
             Type::Paren(syn::TypeParen {
-                paren_token: inner.paren_token,
                 elem: Box::new(elem),
+                ..inner
             })
         }
         Type::Ptr(inner) => {
             let elem = resolve_type(generics, *inner.elem);
             Type::Ptr(syn::TypePtr {
-                star_token: inner.star_token,
-                const_token: inner.const_token,
-                mutability: inner.mutability,
                 elem: Box::new(elem),
+                ..inner
             })
         }
         Type::Reference(inner) => {
             let elem = resolve_type(generics, *inner.elem);
             Type::Reference(syn::TypeReference {
-                and_token: inner.and_token,
-                lifetime: inner.lifetime,
-                mutability: inner.mutability,
                 elem: Box::new(elem),
+                ..inner
             })
         }
         Type::Slice(inner) => {
             let elem = resolve_type(generics, *inner.elem);
             Type::Slice(syn::TypeSlice {
-                bracket_token: inner.bracket_token,
                 elem: Box::new(elem),
+                ..inner
             })
         }
         Type::Tuple(inner) => {
@@ -60,10 +54,7 @@ pub fn resolve_type(generics: &mut Generics, ty: Type) -> Type {
                 .iter()
                 .map(|elem| resolve_type(generics, elem.clone()))
                 .collect();
-            Type::Tuple(syn::TypeTuple {
-                paren_token: inner.paren_token,
-                elems,
-            })
+            Type::Tuple(syn::TypeTuple { elems, ..inner })
         }
         _ => ty,
     }
