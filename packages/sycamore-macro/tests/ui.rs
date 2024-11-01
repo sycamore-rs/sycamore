@@ -1,3 +1,6 @@
+use sycamore::prelude::*;
+use sycamore_macro::component;
+
 #[test]
 #[cfg_attr(miri, ignore)]
 fn view_ui() {

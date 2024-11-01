@@ -39,4 +39,19 @@ fn PropsWithGenericTypes<T: std::fmt::Display + 'static>(foo: T) -> View {
     }
 }
 
+#[component(inline_props)]
+fn PropsWithImplGenerics(foo: impl std::fmt::Display + 'static) -> View {
+    view! {
+        (foo.to_string())
+    }
+}
+
+#[component(inline_props)]
+fn PropsWithMixedImplGenerics<T: std::fmt::Display + 'static>(foo: T, bar: impl std::fmt::Display + 'static) -> View {
+    view! {
+        (foo.to_string())
+        (bar.to_string())
+    }
+}
+
 fn main() {}
