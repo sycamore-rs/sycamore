@@ -3,12 +3,13 @@ title: Announcing Sycamore v0.9.0
 description:
   Reactivity v3, View v2, resources API and suspense, SSR streaming, attributes
   passthrough, new website, and more!
-date: 2024-10-24
+date: 2024-11-01
 ---
 
 # Announcing Sycamore v0.9.0
 
-I'm happy to announce the release of Sycamore v0.9.0!
+I'm excited to announce the release of Sycamore v0.9.0! This is once again by
+far the biggest update we've had.
 
 Sycamore is a reactive Rust UI framework for building web apps using
 WebAssembly. This release is by far the biggest release we've ever had, with
@@ -212,6 +213,9 @@ we also get type-checked and auto-completed HTML attributes!
 This also means no more silly typos causing hard to spot bugs, and finally,
 proper support for boolean and optional attributes.
 
+Event handlers are also fully type-checked now so that you can use the specific
+event type such as `KeyboardEvent` instead of the base `Event` type.
+
 ## Attribute passthrough
 
 Suppose you're writing a component library and are creating a `Button`
@@ -280,13 +284,16 @@ You can then use the resource value like so:
 
 ```rust
 view! {
-    (if let Some(data) = resource.get_clone() {
-        view! {
-            ...
-        }
-    } else {
-        view! {}
-    })
+    Suspense(fallback=move || view! { "Loading..." }) {
+        (if let Some(data) = resource.get_clone() {
+            view! {
+                ...
+            }
+        } else {
+            // This will never get shown.
+            view! {}
+        })
+    }
 }
 ```
 
@@ -344,6 +351,65 @@ section of the book.
 
 ## Other changes
 
+There have been so many other smaller changes since v0.8. Many were done so long
+ago that it's hard to think they were done during the v0.9 development cycle.
+One of them is adopting a logo in
+[#551](https://github.com/sycamore-rs/sycamore/pull/551)!
+
+Some of these changes, in fact, are already obsolete as they got replaced with
+new features and refactors later on. You can see the
+[full changelog](https://github.com/sycamore-rs/sycamore/compare/0.8.2...0.9.0)
+here for yourself.
+
 ## The future of Sycamore
 
+This release was long overdue. In fact, the last stable update (v0.8.2) was over
+2 years ago! Such a long time between releases definitely is not healthy for an
+Open-Source project, and this is mainly my fault, partly due to a lack of time
+for working on Sycamore.
+
+After this release, we'll hopefully settle into a more regular release cycle of
+a couple months rather than years. This will also mean that subsequent updates
+will likely be smaller and contain less breaking changes. This is a good thing.
+It means that we're getting to a point where we're pretty happy with the look
+and feel of the current API and we can really start building things on top
+rather than constantly changing the foundations.
+
+On a related note, Sycamore is looking for more contributors! If you're
+interested in contributing code, check out some
+[good first issues](https://github.com/sycamore-rs/sycamore/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+on our issue tracker. Contributing doesn't just mean writing code. It can also
+be contributing to the docs, writing blog posts, or building community libraries
+for Sycamore.
+
 ## Thanks!
+
+A big thanks to everyone who contributed to this release! Listed here in no
+particular order:
+
+- [@liigo](https://github.com/liigo)
+- [@wingertge](https://github.com/wingertge)
+- [@wa1aric](https://github.com/wa1aric)
+- [@jhutchins](https://github.com/jhutchins)
+- [@sapphire-arches](https://github.com/sapphir)
+- [@Kromgart](https://github.com/Kromgart)
+- [@mekanoe](https://github.com/mekanoe)
+- [@brynnjmccormick](https://github.com/brynnjmccormick)
+- [@danielnehrig](https://github.com/danielnehrig)
+- [@wainwrightmark](https://github.com/wainwrightmark)
+- [@blainehansen](https://github.com/blainehansen)
+- [@alexisfontaine](https://github.com/alexisfontaine)
+- [@mtshr](https://github.com/mtshr)
+- [@noxxxxxious](https://github.com/noxxxxxious)
+- [@dependabot](https://github.com/dependabot)
+- [@Hmikihiro](https://github.com/Hmikihiro)
+- [@danielalvsaaker](https://github.com/danielalvsaaker)
+- [@lukechu10](https://github.com/lukechu10)
+- [@iiiii7d](https://github.com/iiiii7d)
+- [@JasonLovesDoggo](https://github.com/JasonLovesDoggo)
+- [@sokratisvas](https://github.com/sokratisvas)
+- [@simonhyll](https://github.com/simonhyll)
+- [@Miroito](https://github.com/Miroito)
+- [@nthnd](https://github.com/nthnd)
+- [@StarSapien](https://github.com/StarSapien)
+- [@dyanechi](https://github.com/dyanec)
