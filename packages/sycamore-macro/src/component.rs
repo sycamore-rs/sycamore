@@ -229,7 +229,7 @@ pub struct ParenthesizedTokens {
 impl ToTokens for ParenthesizedTokens {
     fn to_tokens(&self, out: &mut TokenStream) {
         let ParenthesizedTokens { paren, tokens } = self;
-        paren.surround(out, |tout| tout.extend(tokens.clone().into_iter()));
+        paren.surround(out, |tout| tout.extend(tokens.clone()));
     }
 }
 
