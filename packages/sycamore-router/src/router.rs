@@ -370,6 +370,30 @@ pub fn navigate_replace(url: &str) {
     });
 }
 
+pub fn navigate_no_history(url: &str) {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "navigate_no_hist can only be used with a Router"
+        );
+
+        let pathname = pathname.get().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
+    });
+}
+
+pub fn refresh() {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "refresh can only be used with a Router"
+        );
+
+        pathname.get().unwrap_throw().update(|_| {});
+    });
+}
+
 fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {
     kb_event.meta_key() || kb_event.ctrl_key() || kb_event.shift_key() || kb_event.alt_key()
 }
