@@ -26,6 +26,7 @@ members = [
 	"examples/higher-order-components",
 	"examples/motion",
 	"examples/number-binding",
+	"examples/router",
 	"examples/ssr",
 	"examples/ssr-suspense",
 	"examples/ssr-streaming",
