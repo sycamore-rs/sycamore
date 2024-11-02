@@ -38,6 +38,7 @@ Now open up `localhost:8080` in your browser to see "Hello World!".
 | [js-snippets](js-snippets)                         | Demonstration of importing a function from JS                                                  |
 | [motion](motion)                                   | Demonstration for using animation frames and tweened signals                                   |
 | [number-binding](number-binding)                   | Demonstration of binding the value of a range or number input                                  |
+| [router](router)                                   | Demonstration of sycamore-router                                                               |
 | [ssr](ssr)                                         | Demonstration of server-side-rendering                                                         |
 | [ssr-suspense](ssr-suspense)                       | Demonstration of server-side rendering with suspense support                                   |
 | [ssr-streaming](ssr-streaming)                     | Demonstration of server-side-rendering with streaming                                          |
