@@ -370,6 +370,10 @@ pub fn navigate_replace(url: &str) {
     });
 }
 
+/// Navigates to the specified `url`. Without doing anything with the history.
+///
+/// # Panics
+/// This function will `panic!()` if a [`Router`] has not yet been created.
 pub fn navigate_no_history(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
@@ -383,6 +387,7 @@ pub fn navigate_no_history(url: &str) {
     });
 }
 
+/// Refreshes the current page.
 pub fn refresh() {
     PATHNAME.with(|pathname| {
         assert!(
