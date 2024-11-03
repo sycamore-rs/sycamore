@@ -410,9 +410,7 @@ pub fn create_query(query: &'static str) -> ReadSignal<Option<String>> {
         let pathname = pathname.get().unwrap_throw();
 
         create_memo(move || {
-            QUERY
-                .with(|query| query.get().unwrap_throw())
-                .track();
+            QUERY.with(|query| query.get().unwrap_throw()).track();
             pathname.track();
             UrlSearchParams::new_with_str(&window().location().search().unwrap_throw())
                 .unwrap_throw()
@@ -432,9 +430,7 @@ pub fn create_queries() -> ReadSignal<UrlSearchParams> {
         let pathname = pathname.get().unwrap_throw();
 
         create_memo(move || {
-            QUERY
-                .with(|query| query.get().unwrap_throw())
-                .track();
+            QUERY.with(|query| query.get().unwrap_throw()).track();
             pathname.track();
             UrlSearchParams::new_with_str(&window().location().search().unwrap_throw())
                 .unwrap_throw()
