@@ -85,11 +85,11 @@ pub fn add_generic(generics: &mut Generics, impl_type: TypeImplTrait) -> Type {
     })
 }
 
-pub fn push_field(fields: &mut Vec<Field>, generics: &mut Generics, ident: Ident, ty: Type) {
+pub fn push_field(fields: &mut Vec<Field>, generics: &mut Generics, attrs: Vec<Attributes>, ident: Ident, ty: Type) {
     let ty = resolve_type(generics, ty);
 
     fields.push(Field {
-        attrs: Vec::new(),
+        attrs,
         vis: Visibility::Public(Token![pub](Span::call_site())),
         mutability: syn::FieldMutability::None,
         ident: Some(ident),

@@ -280,19 +280,18 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
     let props = inputs.clone().into_iter().collect::<Vec<_>>();
     let generics: &mut Generics = &mut item.sig.generics;
     let mut fields = Vec::new();
-    inputs.iter().for_each(|arg| match arg {
+    inputs.into_iter().for_each(|arg| match arg {
         FnArg::Receiver(_) => {
             unreachable!("receiver cannot be a prop")
         }
         FnArg::Typed(pat_type) => {
-            let pat = &*pat_type.pat;
-            let ty = &*pat_type.ty;
-            match pat {
+            match *pat_type.pat {
                 Pat::Ident(ident_pat) => super::inline_props::push_field(
                     &mut fields,
                     generics,
+                    pat_type.attrs,
                     ident_pat.clone().ident,
-                    ty.clone(),
+                    *pat_type.ty,
                 ),
                 _ => {
                     unreachable!("unexpected pattern!")
