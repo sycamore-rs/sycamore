@@ -284,20 +284,18 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         FnArg::Receiver(_) => {
             unreachable!("receiver cannot be a prop")
         }
-        FnArg::Typed(pat_type) => {
-            match *pat_type.pat {
-                Pat::Ident(ident_pat) => super::inline_props::push_field(
-                    &mut fields,
-                    generics,
-                    pat_type.attrs,
-                    ident_pat.clone().ident,
-                    *pat_type.ty,
-                ),
-                _ => {
-                    unreachable!("unexpected pattern!")
-                }
+        FnArg::Typed(pat_type) => match *pat_type.pat {
+            Pat::Ident(ident_pat) => super::inline_props::push_field(
+                &mut fields,
+                generics,
+                pat_type.attrs,
+                ident_pat.clone().ident,
+                *pat_type.ty,
+            ),
+            _ => {
+                unreachable!("unexpected pattern!")
             }
-        }
+        },
     });
 
     let generics_phantoms = generics.params.iter().enumerate().filter_map(|(i, param)| {
