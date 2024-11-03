@@ -411,10 +411,10 @@ pub fn create_query(query: &'static str) -> ReadSignal<Option<String>> {
 
         create_memo(move || {
             QUERY
-                .with(|query| query.get().unwrap_throw().clone())
+                .with(|query| query.get().unwrap_throw())
                 .track();
             pathname.track();
-            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw())
+            UrlSearchParams::new_with_str(&window().location().search().unwrap_throw())
                 .unwrap_throw()
                 .get(query)
         })
@@ -433,10 +433,10 @@ pub fn create_queries() -> ReadSignal<UrlSearchParams> {
 
         create_memo(move || {
             QUERY
-                .with(|query| query.get().unwrap_throw().clone())
+                .with(|query| query.get().unwrap_throw())
                 .track();
             pathname.track();
-            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw())
+            UrlSearchParams::new_with_str(&window().location().search().unwrap_throw())
                 .unwrap_throw()
         })
     })
@@ -457,7 +457,7 @@ pub fn create_fragment() -> ReadSignal<String> {
             .add_event_listener_with_callback(
                 "hashchange",
                 Closure::wrap(Box::new(move || {
-                    on_frag_change.clone().update(|_| {});
+                    on_frag_change.update(|_| {});
                 }) as Box<dyn FnMut()>)
                 .into_js_value()
                 .unchecked_ref(),
