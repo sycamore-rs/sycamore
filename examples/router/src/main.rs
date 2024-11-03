@@ -1,5 +1,5 @@
 use sycamore::prelude::*;
-use sycamore_router::{HistoryIntegration, Route, Router};
+use sycamore_router::{create_query, HistoryIntegration, Route, Router};
 
 #[derive(Route, Clone)]
 enum AppRoutes {
@@ -11,6 +11,8 @@ enum AppRoutes {
     Wildcard { path: Vec<String> },
     #[to("/uint-capture/<unit>")]
     Unit(u32),
+    #[to("/query-params")]
+    QueryParams,
     #[not_found]
     NotFound,
 }
@@ -32,6 +34,8 @@ fn App() -> View {
                             br {}
                             a(href="/uint-capture/42") {"Unit: 42"}
                             br {}
+                            a(href="/query-params") {"Query Params"}
+                            br {}
                             a(href="/not-found") {"Not Found"}
                             br {}
 
@@ -51,6 +55,14 @@ fn App() -> View {
                                 AppRoutes::Unit(unit) => view! {
                                     h1 { "Unit: " (unit) }
                                 },
+                                AppRoutes::QueryParams => {
+                                    let q = create_query("q");
+                                    view! {
+                                        h1 { "Query Params" }
+                                        a(href="?q=a") { "A" } a(href="?q=b") { "B" }
+                                        p { "Query: " (q.get_clone().unwrap_or_default()) }
+                                    }
+                                }
                                 AppRoutes::NotFound => view! {
                                     h1 { "Not Found" }
                                 },
