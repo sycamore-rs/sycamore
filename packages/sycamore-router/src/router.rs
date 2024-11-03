@@ -370,6 +370,46 @@ pub fn navigate_replace(url: &str) {
     });
 }
 
+/// Navigates to the specified `url` without touching the history API.
+///
+/// This means that the url will not be updated and will continue to show the previous value.
+///
+/// # Panics
+/// This function will `panic!()` if a [`Router`] has not yet been created.
+pub fn navigate_no_history(url: &str) {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "navigate_no_history can only be used with a Router"
+        );
+
+        let pathname = pathname.get().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
+
+        window().scroll_to_with_x_and_y(0.0, 0.0);
+    });
+}
+
+/// Preform a "soft" refresh of the current page.
+///
+/// Unlike a "hard" refresh which corresponds to clicking on the refresh button, this simply forces a re-render of the view for the current page.
+///
+/// # Panic
+/// This function will `panic!()` if a [`Router`] has not yet been created.
+pub fn refresh() {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "refresh can only be used with a Router"
+        );
+
+        pathname.get().unwrap_throw().update(|_| {});
+
+        window().scroll_to_with_x_and_y(0.0, 0.0);
+    });
+}
+
 fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {
     kb_event.meta_key() || kb_event.ctrl_key() || kb_event.shift_key() || kb_event.alt_key()
 }
