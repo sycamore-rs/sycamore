@@ -4,7 +4,8 @@ use std::rc::Rc;
 
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
-use web_sys::{CustomEvent, Element, Event, EventListener, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent, UrlSearchParams};
+use web_sys::{Element, Event, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent, UrlSearchParams};
+
 use crate::Route;
 
 /// A router integration provides the methods for adapting a router to a certain environment (e.g.
@@ -115,14 +116,17 @@ impl Integration for HistoryIntegration {
                         }
                         QUERY.with(|query| query.get().unwrap_throw().update(|_| {}));
                     } else if location.hash().as_ref() != Ok(&hash) {
-                        // Same origin, same pathname, same query, different hash. Use default browser behavior.
+                        // Same origin, same pathname, same query, different hash. Use default
+                        // browser behavior.
                         if hash.is_empty() {
                             ev.prevent_default();
                             let history = window().history().unwrap_throw();
                             history
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a.href()))
                                 .unwrap_throw();
-                            window().dispatch_event(&Event::new("hashchanged").unwrap()).unwrap_throw();
+                            window()
+                                .dispatch_event(&Event::new("hashchanged").unwrap())
+                                .unwrap_throw();
                         }
                     } else {
                         // Same page. Do nothing.
@@ -395,6 +399,7 @@ pub fn navigate_replace(url: &str) {
     });
 }
 
+/// Creates a ReadSignal that tracks the url query provided.
 pub fn create_query(query: &'static str) -> ReadSignal<Option<String>> {
     PATHNAME.with(|pathname| {
         assert!(
@@ -405,13 +410,18 @@ pub fn create_query(query: &'static str) -> ReadSignal<Option<String>> {
         let pathname = pathname.get().unwrap_throw();
 
         create_memo(move || {
-            QUERY.with(|query| query.get().unwrap_throw().clone()).track();
+            QUERY
+                .with(|query| query.get().unwrap_throw().clone())
+                .track();
             pathname.track();
-            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw()).unwrap_throw().get(query.clone())
+            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw())
+                .unwrap_throw()
+                .get(query)
         })
     })
 }
 
+/// Creates a ReadSignal that tracks the url query string.
 pub fn create_queries() -> ReadSignal<UrlSearchParams> {
     PATHNAME.with(|pathname| {
         assert!(
@@ -422,13 +432,17 @@ pub fn create_queries() -> ReadSignal<UrlSearchParams> {
         let pathname = pathname.get().unwrap_throw();
 
         create_memo(move || {
-            QUERY.with(|query| query.get().unwrap_throw().clone()).track();
+            QUERY
+                .with(|query| query.get().unwrap_throw().clone())
+                .track();
             pathname.track();
-            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw()).unwrap_throw()
+            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw())
+                .unwrap_throw()
         })
     })
 }
 
+/// Creates a ReadSignal that tracks the url fragment.
 pub fn create_fragment() -> ReadSignal<String> {
     PATHNAME.with(|pathname| {
         assert!(
@@ -439,9 +453,16 @@ pub fn create_fragment() -> ReadSignal<String> {
         let pathname = pathname.get().unwrap_throw();
 
         let on_frag_change = create_signal(());
-        window().add_event_listener_with_callback("hashchange", Closure::wrap(Box::new(move || {
-            on_frag_change.clone().update(|_| {});
-        }) as Box<dyn FnMut()>).into_js_value().unchecked_ref()).unwrap_throw();
+        window()
+            .add_event_listener_with_callback(
+                "hashchange",
+                Closure::wrap(Box::new(move || {
+                    on_frag_change.clone().update(|_| {});
+                }) as Box<dyn FnMut()>)
+                .into_js_value()
+                .unchecked_ref(),
+            )
+            .unwrap_throw();
 
         create_memo(move || {
             on_frag_change.track();
