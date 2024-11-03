@@ -275,17 +275,21 @@ pub struct ComponentArgs {
 impl Parse for ComponentArgs {
     fn parse(input: ParseStream) -> Result<Self> {
         let inline_props: Option<Ident> = input.parse()?;
-        if let Some(inline_props) = &inline_props {
+        let (comma, attrs) = if let Some(inline_props) = &inline_props {
             // Check if the ident is correct.
             if *inline_props != "inline_props" {
                 return Err(Error::new(inline_props.span(), "expected `inline_props`"));
             }
-        }
-        let comma: Option<Token![,]> = input.parse()?;
-        let attrs: Punctuated<ComponentAttrArgs, Token![,]> = if comma.is_some() {
-            input.parse_terminated(ComponentAttrArgs::parse, Token![,])?
+
+            let comma: Option<Token![,]> = input.parse()?;
+            let attrs: Punctuated<ComponentAttrArgs, Token![,]> = if comma.is_some() {
+                input.parse_terminated(ComponentAttrArgs::parse, Token![,])?
+            } else {
+                Punctuated::new()
+            };
+            (comma, attrs)
         } else {
-            Punctuated::new()
+            (None, Punctuated::new())
         };
         Ok(Self {
             inline_props,

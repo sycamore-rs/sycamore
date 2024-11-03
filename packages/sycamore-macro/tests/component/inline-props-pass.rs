@@ -1,4 +1,4 @@
-use sycamore::prelude::{component, view, Signal, View};
+use sycamore::prelude::{component, view, Signal, View, Props};
 
 #[component(inline_props)]
 fn NoProps() -> View {
@@ -75,9 +75,13 @@ fn PropsWithVariousImplGenerics(
     }
 }
 
-#[component(inline_props, derive(Clone))]
-fn AdditionalStructAttributes() -> View {
-    view! {}
+#[component(inline_props, derive(Clone), derive(Debug))]
+fn AdditionalStructAttributes(dummy: String) -> View {
+    let props = AdditionalStructAttributes_Props::builder().dummy(dummy).build();
+
+    view! {
+        (format!("{:?}", props.clone()))
+    }
 }
 
 fn main() {}
