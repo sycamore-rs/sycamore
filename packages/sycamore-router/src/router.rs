@@ -386,6 +386,8 @@ pub fn navigate_no_history(url: &str) {
         let pathname = pathname.get().unwrap_throw();
         let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
+
+        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
@@ -403,6 +405,8 @@ pub fn refresh() {
         );
 
         pathname.get().unwrap_throw().update(|_| {});
+
+        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
