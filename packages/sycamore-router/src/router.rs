@@ -370,7 +370,9 @@ pub fn navigate_replace(url: &str) {
     });
 }
 
-/// Navigates to the specified `url`. Without doing anything with the history.
+/// Navigates to the specified `url` without touching the history API.
+///
+/// This means that the url will not be updated and will continue to show the previous value.
 ///
 /// # Panics
 /// This function will `panic!()` if a [`Router`] has not yet been created.
@@ -378,7 +380,7 @@ pub fn navigate_no_history(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "navigate_no_hist can only be used with a Router"
+            "navigate_no_history can only be used with a Router"
         );
 
         let pathname = pathname.get().unwrap_throw();
@@ -387,7 +389,12 @@ pub fn navigate_no_history(url: &str) {
     });
 }
 
-/// Refreshes the current page.
+/// Preform a "soft" refresh of the current page.
+///
+/// Unlike a "hard" refresh which corresponds to clicking on the refresh button, this simply forces a re-render of the view for the current page.
+///
+/// # Panic
+/// This function will `panic!()` if a [`Router`] has not yet been created.
 pub fn refresh() {
     PATHNAME.with(|pathname| {
         assert!(
