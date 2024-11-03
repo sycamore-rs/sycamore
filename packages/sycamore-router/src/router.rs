@@ -4,8 +4,7 @@ use std::rc::Rc;
 
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
-use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
-
+use web_sys::{CustomEvent, Element, Event, EventListener, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent, UrlSearchParams};
 use crate::Route;
 
 /// A router integration provides the methods for adapting a router to a certain environment (e.g.
@@ -24,6 +23,7 @@ pub trait Integration {
 
 thread_local! {
     static PATHNAME: Cell<Option<Signal<String>>> = const { Cell::new(None) };
+    static QUERY: Cell<Option<Signal<()>>> = const { Cell::new(None) };
 }
 
 /// A router integration that uses the
@@ -78,6 +78,7 @@ impl Integration for HistoryIntegration {
                 let origin = a.origin();
                 let a_pathname = a.pathname();
                 let hash = a.hash();
+                let query = a.search();
 
                 let meta_keys_pressed = meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
                 if !meta_keys_pressed && location.origin() == Ok(origin) {
@@ -98,8 +99,31 @@ impl Integration for HistoryIntegration {
                                 .unwrap_throw();
                             window().scroll_to_with_x_and_y(0.0, 0.0);
                         });
+                    } else if location.search().as_ref() != Ok(&query) {
+                        // Same origin, same pathname, different query.
+                        ev.prevent_default();
+                        let history = window().history().unwrap_throw();
+                        if query.is_empty() {
+                            history
+                                .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a.href()))
+                                .unwrap_throw();
+                        } else {
+                            let history = window().history().unwrap_throw();
+                            history
+                                .push_state_with_url(&JsValue::UNDEFINED, "", Some(&query))
+                                .unwrap_throw();
+                        }
+                        QUERY.with(|query| query.get().unwrap_throw().update(|_| {}));
                     } else if location.hash().as_ref() != Ok(&hash) {
-                        // Same origin, same pathname, different hash. Use default browser behavior.
+                        // Same origin, same pathname, same query, different hash. Use default browser behavior.
+                        if hash.is_empty() {
+                            ev.prevent_default();
+                            let history = window().history().unwrap_throw();
+                            history
+                                .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a.href()))
+                                .unwrap_throw();
+                            window().dispatch_event(&Event::new("hashchanged").unwrap()).unwrap_throw();
+                        }
                     } else {
                         // Same page. Do nothing.
                         ev.prevent_default();
@@ -233,6 +257,7 @@ where
         let path = integration.current_pathname();
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
         pathname.set(Some(create_signal(path.to_string())));
+        QUERY.set(Some(create_signal(())));
     });
     let pathname = PATHNAME.with(|p| p.get().unwrap_throw());
 
@@ -370,44 +395,60 @@ pub fn navigate_replace(url: &str) {
     });
 }
 
-/// Navigates to the specified `url` without touching the history API.
-///
-/// This means that the url will not be updated and will continue to show the previous value.
-///
-/// # Panics
-/// This function will `panic!()` if a [`Router`] has not yet been created.
-pub fn navigate_no_history(url: &str) {
+pub fn create_query(query: &'static str) -> ReadSignal<Option<String>> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "navigate_no_history can only be used with a Router"
+            "create_query can only be used with a Router"
         );
 
         let pathname = pathname.get().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
-        pathname.set(path.to_string());
 
-        window().scroll_to_with_x_and_y(0.0, 0.0);
-    });
+        create_memo(move || {
+            QUERY.with(|query| query.get().unwrap_throw().clone()).track();
+            pathname.track();
+            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw()).unwrap_throw().get(query.clone())
+        })
+    })
 }
 
-/// Preform a "soft" refresh of the current page.
-///
-/// Unlike a "hard" refresh which corresponds to clicking on the refresh button, this simply forces a re-render of the view for the current page.
-///
-/// # Panic
-/// This function will `panic!()` if a [`Router`] has not yet been created.
-pub fn refresh() {
+pub fn create_queries() -> ReadSignal<UrlSearchParams> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "refresh can only be used with a Router"
+            "create_queries can only be used with a Router"
         );
 
-        pathname.get().unwrap_throw().update(|_| {});
+        let pathname = pathname.get().unwrap_throw();
 
-        window().scroll_to_with_x_and_y(0.0, 0.0);
-    });
+        create_memo(move || {
+            QUERY.with(|query| query.get().unwrap_throw().clone()).track();
+            pathname.track();
+            UrlSearchParams::new_with_str(&*window().location().search().unwrap_throw()).unwrap_throw()
+        })
+    })
+}
+
+pub fn create_fragment() -> ReadSignal<String> {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "create_fragment can only be used with a Router"
+        );
+
+        let pathname = pathname.get().unwrap_throw();
+
+        let on_frag_change = create_signal(());
+        window().add_event_listener_with_callback("hashchange", Closure::wrap(Box::new(move || {
+            on_frag_change.clone().update(|_| {});
+        }) as Box<dyn FnMut()>).into_js_value().unchecked_ref()).unwrap_throw();
+
+        create_memo(move || {
+            on_frag_change.track();
+            pathname.track();
+            window().location().hash().unwrap_throw()
+        })
+    })
 }
 
 fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {

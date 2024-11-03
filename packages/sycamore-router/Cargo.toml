@@ -29,5 +29,7 @@ features = [
 	"PopStateEvent",
 	"Url",
 	"Window",
+	"UrlSearchParams",
+	"CustomEvent",
 ]
 version = "0.3.60"
