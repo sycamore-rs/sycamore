@@ -84,4 +84,19 @@ fn AdditionalStructAttributes(dummy: String) -> View {
     }
 }
 
+#[component(inline_props)]
+fn PropsWithAttributes(
+    #[prop(default)]
+    dummy: String,
+) -> View {
+    fn call_component() -> View {
+        view! {
+            PropsWithAttributes {}
+        }
+    }
+    view! {
+        (dummy)
+    }
+}
+
 fn main() {}

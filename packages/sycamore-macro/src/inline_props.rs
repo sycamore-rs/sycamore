@@ -2,8 +2,7 @@ use proc_macro2::Span;
 use quote::format_ident;
 use syn::punctuated::Punctuated;
 use syn::{
-    Field, GenericParam, Generics, Ident, Path, PathArguments, PathSegment, Token, Type,
-    TypeImplTrait, TypeParam, TypePath, Visibility,
+    Attribute, Field, GenericParam, Generics, Ident, Path, PathArguments, PathSegment, Token, Type, TypeImplTrait, TypeParam, TypePath, Visibility
 };
 
 pub fn create_generic_ident(generics: &Generics) -> Ident {
@@ -85,7 +84,7 @@ pub fn add_generic(generics: &mut Generics, impl_type: TypeImplTrait) -> Type {
     })
 }
 
-pub fn push_field(fields: &mut Vec<Field>, generics: &mut Generics, attrs: Vec<Attributes>, ident: Ident, ty: Type) {
+pub fn push_field(fields: &mut Vec<Field>, generics: &mut Generics, attrs: Vec<Attribute>, ident: Ident, ty: Type) {
     let ty = resolve_type(generics, ty);
 
     fields.push(Field {
