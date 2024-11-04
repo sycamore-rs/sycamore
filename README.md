@@ -26,7 +26,7 @@ fn Hello() -> View {
 - **Lightning Speed**: Sycamore harnesses the full power of [Rust](https://www.rust-lang.org/) via
   [WebAssembly](https://webassembly.org/), giving you full control over performance.
 - **Ergonomic and Intuitive**: Write code that feels natural. Everything is built on
-  [reactive primitives](https://sycamore-rs.netlify.app/docs/basics/reactivity) without a cumbersome
+  [reactive primitives](https://sycamore.dev/book/introduction/adding-state) without a cumbersome
   virtual DOM.
 - **No JavaScript**: Had enough of JavaScript? So have we. Create apps using Sycamore without
   touching a single line of JS.
@@ -35,11 +35,10 @@ fn Hello() -> View {
 
 Sycamore is extensively documented:
 
-- [Getting Started](https://sycamore-rs.netlify.app/docs/getting_started/installation): How to write
-  your first Sycamore app.
-- [Reactivity](https://sycamore-rs.netlify.app/docs/basics/reactivity): Find out how to use
-  Sycamore's powerful reactive primitives.
-- [API Documentation](https://docs.rs/sycamore): rustdocs for the `sycamore` crate.
+- [The Book](https://sycamore.dev/book/introduction): The Sycamore "Book" will first help guide you
+  through basic concepts and create a simple app. It then dwelves into some more advanced topics
+  for building more complex apps.
+- [API Documentation](https://docs.rs/sycamore): the rustdocs for the `sycamore` crate.
 
 **Still have questions?** Don't hesitate to stop by our friendly
 [Discord server](https://discord.gg/vDwFUmm6mU).
@@ -50,7 +49,7 @@ Sycamore has many examples for your reference in the
 [`examples/`](https://github.com/sycamore-rs/sycamore/tree/main/examples) directory. Be sure to
 check them out!
 
-### Viewing on `sycamore-rs.netlify.app`
+### Viewing on `examples.sycamore.dev`
 
 All the examples are hosted under `examples.sycamore.dev/<example_name>` with
 `<example_name>` being the name of the example you want to view. For instance, the `todomvc` example
@@ -67,13 +66,7 @@ cd examples/todomvc
 trunk serve
 ```
 
-Now open up `localhost:8080` in your browser to see "Hello World!".
-
-## Perseus
-
-[Perseus](https://github.com/arctic-hen7/perseus) is a fullstack framework built with Sycamore.
-Think [NextJS](https://nextjs.org) or [SvelteKit](https://kit.svelte.dev) but with no JavaScript.
-Everything from backend to frontend is built with pure Rust!
+Now open up <http://localhost:8080> in your browser to see the example running in action.
 
 ## Alternatives?
 
@@ -95,8 +88,7 @@ Don't think Sycamore is for you? Thankfully, there are plenty of alternatives!
 
 - Report issues on our [issue tracker](https://github.com/sycamore-rs/sycamore/issues).
 - We love Pull Requests! For more information, check out the
-  [section on contributing](https://sycamore-rs.netlify.app/docs/contribute/architecture) in the
-  docs.
+  [section on contributing](https://sycamore.dev/book/contributing) in the docs.
 
 Sycamore would not have been possible without the wonderful contributions from the community. Thank
 you!
