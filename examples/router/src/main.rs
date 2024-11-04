@@ -1,5 +1,5 @@
 use sycamore::prelude::*;
-use sycamore_router::{create_query, HistoryIntegration, Route, Router};
+use sycamore_router::{use_search_query, HistoryIntegration, Route, Router};
 
 #[derive(Route, Clone)]
 enum AppRoutes {
@@ -56,7 +56,7 @@ fn App() -> View {
                                     h1 { "Unit: " (unit) }
                                 },
                                 AppRoutes::QueryParams => {
-                                    let q = create_query("q");
+                                    let q = use_search_query("q");
                                     view! {
                                         h1 { "Query Params" }
                                         a(href="?q=a") { "A" } a(href="?q=b") { "B" }

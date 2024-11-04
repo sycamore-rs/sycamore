@@ -1,9 +1,11 @@
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
+use web_sys::js_sys::Array;
 use web_sys::{Element, Event, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent, UrlSearchParams};
 
 use crate::Route;
@@ -125,7 +127,7 @@ impl Integration for HistoryIntegration {
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a.href()))
                                 .unwrap_throw();
                             window()
-                                .dispatch_event(&Event::new("hashchanged").unwrap())
+                                .dispatch_event(&Event::new("hashchange").unwrap())
                                 .unwrap_throw();
                         }
                     } else {
@@ -399,8 +401,49 @@ pub fn navigate_replace(url: &str) {
     });
 }
 
+/// Navigates to the specified `url` without touching the history API.
+///
+/// This means that the url will not be updated and will continue to show the previous value.
+///
+/// # Panics
+/// This function will `panic!()` if a [`Router`] has not yet been created.
+pub fn navigate_no_history(url: &str) {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "navigate_no_history can only be used with a Router"
+        );
+
+        let pathname = pathname.get().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
+
+        window().scroll_to_with_x_and_y(0.0, 0.0);
+    });
+}
+
+/// Preform a "soft" refresh of the current page.
+///
+/// Unlike a "hard" refresh which corresponds to clicking on the refresh button, this simply forces
+/// a re-render of the view for the current page.
+///
+/// # Panic
+/// This function will `panic!()` if a [`Router`] has not yet been created.
+pub fn refresh() {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "refresh can only be used with a Router"
+        );
+
+        pathname.get().unwrap_throw().update(|_| {});
+
+        window().scroll_to_with_x_and_y(0.0, 0.0);
+    });
+}
+
 /// Creates a ReadSignal that tracks the url query provided.
-pub fn create_query(query: &'static str) -> ReadSignal<Option<String>> {
+pub fn use_search_query(query: &'static str) -> ReadSignal<Option<String>> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
@@ -420,7 +463,7 @@ pub fn create_query(query: &'static str) -> ReadSignal<Option<String>> {
 }
 
 /// Creates a ReadSignal that tracks the url query string.
-pub fn create_queries() -> ReadSignal<UrlSearchParams> {
+pub fn use_search_queries() -> ReadSignal<HashMap<String, String>> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
@@ -434,12 +477,23 @@ pub fn create_queries() -> ReadSignal<UrlSearchParams> {
             pathname.track();
             UrlSearchParams::new_with_str(&window().location().search().unwrap_throw())
                 .unwrap_throw()
+                .entries()
+                .into_iter()
+                .map(|e| {
+                    let e: Array = e.unwrap_throw().into();
+                    let e = e
+                        .into_iter()
+                        .map(|s| s.as_string().unwrap_throw())
+                        .collect::<Vec<String>>();
+                    (e[0].clone(), e[1].clone())
+                })
+                .collect()
         })
     })
 }
 
 /// Creates a ReadSignal that tracks the url fragment.
-pub fn create_fragment() -> ReadSignal<String> {
+pub fn use_location_hash() -> ReadSignal<String> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
@@ -448,12 +502,12 @@ pub fn create_fragment() -> ReadSignal<String> {
 
         let pathname = pathname.get().unwrap_throw();
 
-        let on_frag_change = create_signal(());
+        let on_hashchange = create_signal(());
         window()
             .add_event_listener_with_callback(
                 "hashchange",
                 Closure::wrap(Box::new(move || {
-                    on_frag_change.update(|_| {});
+                    on_hashchange.update(|_| {});
                 }) as Box<dyn FnMut()>)
                 .into_js_value()
                 .unchecked_ref(),
@@ -461,7 +515,7 @@ pub fn create_fragment() -> ReadSignal<String> {
             .unwrap_throw();
 
         create_memo(move || {
-            on_frag_change.track();
+            on_hashchange.track();
             pathname.track();
             window().location().hash().unwrap_throw()
         })
