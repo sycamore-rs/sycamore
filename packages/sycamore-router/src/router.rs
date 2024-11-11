@@ -95,7 +95,7 @@ impl Integration for HistoryIntegration {
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a_pathname))
                                 .unwrap_throw();
                             window().scroll_to_with_x_and_y(0.0, 0.0);
-                            
+
                             let pathname = pathname.get().unwrap_throw();
                             let path = a_pathname
                                 .strip_prefix(&base_pathname())
