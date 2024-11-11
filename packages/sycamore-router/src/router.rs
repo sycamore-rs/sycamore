@@ -89,18 +89,18 @@ impl Integration for HistoryIntegration {
                         // Same origin, different path. Navigate to new page.
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
-                            let pathname = pathname.get().unwrap_throw();
-                            let path = a_pathname
-                                .strip_prefix(&base_pathname())
-                                .unwrap_or(&a_pathname);
-                            pathname.set(path.to_string());
-
                             // Update History API.
                             let history = window().history().unwrap_throw();
                             history
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a_pathname))
                                 .unwrap_throw();
                             window().scroll_to_with_x_and_y(0.0, 0.0);
+                            
+                            let pathname = pathname.get().unwrap_throw();
+                            let path = a_pathname
+                                .strip_prefix(&base_pathname())
+                                .unwrap_or(&a_pathname);
+                            pathname.set(path.to_string());
                         });
                     } else if location.search().as_ref() != Ok(&query) {
                         // Same origin, same pathname, different query.
