@@ -360,16 +360,16 @@ pub fn navigate(url: &str) {
             "navigate can only be used with a Router"
         );
 
-        let pathname = pathname.get().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
-        pathname.set(path.to_string());
-
         // Update History API.
         let history = window().history().unwrap_throw();
         history
             .push_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
         window().scroll_to_with_x_and_y(0.0, 0.0);
+
+        let pathname = pathname.get().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
     });
 }
 
@@ -388,16 +388,16 @@ pub fn navigate_replace(url: &str) {
             "navigate_replace can only be used with a Router"
         );
 
-        let pathname = pathname.get().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
-        pathname.set(path.to_string());
-
         // Update History API.
         let history = window().history().unwrap_throw();
         history
             .replace_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
         window().scroll_to_with_x_and_y(0.0, 0.0);
+
+        let pathname = pathname.get().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
     });
 }
 
@@ -414,11 +414,11 @@ pub fn navigate_no_history(url: &str) {
             "navigate_no_history can only be used with a Router"
         );
 
+        window().scroll_to_with_x_and_y(0.0, 0.0);
+
         let pathname = pathname.get().unwrap_throw();
         let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
-
-        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
@@ -436,9 +436,9 @@ pub fn refresh() {
             "refresh can only be used with a Router"
         );
 
-        pathname.get().unwrap_throw().update(|_| {});
-
         window().scroll_to_with_x_and_y(0.0, 0.0);
+
+        pathname.get().unwrap_throw().update(|_| {});
     });
 }
 
