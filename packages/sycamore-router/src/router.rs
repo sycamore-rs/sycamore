@@ -1,10 +1,12 @@
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
 use sycamore::prelude::*;
 use wasm_bindgen::prelude::*;
-use web_sys::{Element, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent};
+use web_sys::js_sys::Array;
+use web_sys::{Element, Event, HtmlAnchorElement, HtmlBaseElement, KeyboardEvent, UrlSearchParams};
 
 use crate::Route;
 
@@ -24,6 +26,7 @@ pub trait Integration {
 
 thread_local! {
     static PATHNAME: Cell<Option<Signal<String>>> = const { Cell::new(None) };
+    static QUERY: Cell<Option<Signal<()>>> = const { Cell::new(None) };
 }
 
 /// A router integration that uses the
@@ -78,6 +81,7 @@ impl Integration for HistoryIntegration {
                 let origin = a.origin();
                 let a_pathname = a.pathname();
                 let hash = a.hash();
+                let query = a.search();
 
                 let meta_keys_pressed = meta_keys_pressed(ev.unchecked_ref::<KeyboardEvent>());
                 if !meta_keys_pressed && location.origin() == Ok(origin) {
@@ -85,21 +89,47 @@ impl Integration for HistoryIntegration {
                         // Same origin, different path. Navigate to new page.
                         ev.prevent_default();
                         PATHNAME.with(|pathname| {
-                            let pathname = pathname.get().unwrap_throw();
-                            let path = a_pathname
-                                .strip_prefix(&base_pathname())
-                                .unwrap_or(&a_pathname);
-                            pathname.set(path.to_string());
-
                             // Update History API.
                             let history = window().history().unwrap_throw();
                             history
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a_pathname))
                                 .unwrap_throw();
                             window().scroll_to_with_x_and_y(0.0, 0.0);
+
+                            let pathname = pathname.get().unwrap_throw();
+                            let path = a_pathname
+                                .strip_prefix(&base_pathname())
+                                .unwrap_or(&a_pathname);
+                            pathname.set(path.to_string());
                         });
+                    } else if location.search().as_ref() != Ok(&query) {
+                        // Same origin, same pathname, different query.
+                        ev.prevent_default();
+                        let history = window().history().unwrap_throw();
+                        if query.is_empty() {
+                            history
+                                .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a.href()))
+                                .unwrap_throw();
+                        } else {
+                            let history = window().history().unwrap_throw();
+                            history
+                                .push_state_with_url(&JsValue::UNDEFINED, "", Some(&query))
+                                .unwrap_throw();
+                        }
+                        QUERY.with(|query| query.get().unwrap_throw().update(|_| {}));
                     } else if location.hash().as_ref() != Ok(&hash) {
-                        // Same origin, same pathname, different hash. Use default browser behavior.
+                        // Same origin, same pathname, same query, different hash. Use default
+                        // browser behavior.
+                        if hash.is_empty() {
+                            ev.prevent_default();
+                            let history = window().history().unwrap_throw();
+                            history
+                                .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a.href()))
+                                .unwrap_throw();
+                            window()
+                                .dispatch_event(&Event::new("hashchange").unwrap())
+                                .unwrap_throw();
+                        }
                     } else {
                         // Same page. Do nothing.
                         ev.prevent_default();
@@ -233,6 +263,7 @@ where
         let path = integration.current_pathname();
         let path = path.strip_prefix(&base_pathname).unwrap_or(&path);
         pathname.set(Some(create_signal(path.to_string())));
+        QUERY.set(Some(create_signal(())));
     });
     let pathname = PATHNAME.with(|p| p.get().unwrap_throw());
 
@@ -329,16 +360,16 @@ pub fn navigate(url: &str) {
             "navigate can only be used with a Router"
         );
 
-        let pathname = pathname.get().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
-        pathname.set(path.to_string());
-
         // Update History API.
         let history = window().history().unwrap_throw();
         history
             .push_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
         window().scroll_to_with_x_and_y(0.0, 0.0);
+
+        let pathname = pathname.get().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
     });
 }
 
@@ -357,16 +388,16 @@ pub fn navigate_replace(url: &str) {
             "navigate_replace can only be used with a Router"
         );
 
-        let pathname = pathname.get().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
-        pathname.set(path.to_string());
-
         // Update History API.
         let history = window().history().unwrap_throw();
         history
             .replace_state_with_url(&JsValue::UNDEFINED, "", Some(url))
             .unwrap_throw();
         window().scroll_to_with_x_and_y(0.0, 0.0);
+
+        let pathname = pathname.get().unwrap_throw();
+        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
+        pathname.set(path.to_string());
     });
 }
 
@@ -383,17 +414,18 @@ pub fn navigate_no_history(url: &str) {
             "navigate_no_history can only be used with a Router"
         );
 
+        window().scroll_to_with_x_and_y(0.0, 0.0);
+
         let pathname = pathname.get().unwrap_throw();
         let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
-
-        window().scroll_to_with_x_and_y(0.0, 0.0);
     });
 }
 
 /// Preform a "soft" refresh of the current page.
 ///
-/// Unlike a "hard" refresh which corresponds to clicking on the refresh button, this simply forces a re-render of the view for the current page.
+/// Unlike a "hard" refresh which corresponds to clicking on the refresh button, this simply forces
+/// a re-render of the view for the current page.
 ///
 /// # Panic
 /// This function will `panic!()` if a [`Router`] has not yet been created.
@@ -404,10 +436,90 @@ pub fn refresh() {
             "refresh can only be used with a Router"
         );
 
-        pathname.get().unwrap_throw().update(|_| {});
-
         window().scroll_to_with_x_and_y(0.0, 0.0);
+
+        pathname.get().unwrap_throw().update(|_| {});
     });
+}
+
+/// Creates a ReadSignal that tracks the url query provided.
+pub fn use_search_query(query: &'static str) -> ReadSignal<Option<String>> {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "create_query can only be used with a Router"
+        );
+
+        let pathname = pathname.get().unwrap_throw();
+
+        create_memo(move || {
+            QUERY.with(|query| query.get().unwrap_throw()).track();
+            pathname.track();
+            UrlSearchParams::new_with_str(&window().location().search().unwrap_throw())
+                .unwrap_throw()
+                .get(query)
+        })
+    })
+}
+
+/// Creates a ReadSignal that tracks the url query string.
+pub fn use_search_queries() -> ReadSignal<HashMap<String, String>> {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "create_queries can only be used with a Router"
+        );
+
+        let pathname = pathname.get().unwrap_throw();
+
+        create_memo(move || {
+            QUERY.with(|query| query.get().unwrap_throw()).track();
+            pathname.track();
+            UrlSearchParams::new_with_str(&window().location().search().unwrap_throw())
+                .unwrap_throw()
+                .entries()
+                .into_iter()
+                .map(|e| {
+                    let e: Array = e.unwrap_throw().into();
+                    let e = e
+                        .into_iter()
+                        .map(|s| s.as_string().unwrap_throw())
+                        .collect::<Vec<String>>();
+                    (e[0].clone(), e[1].clone())
+                })
+                .collect()
+        })
+    })
+}
+
+/// Creates a ReadSignal that tracks the url fragment.
+pub fn use_location_hash() -> ReadSignal<String> {
+    PATHNAME.with(|pathname| {
+        assert!(
+            pathname.get().is_some(),
+            "create_fragment can only be used with a Router"
+        );
+
+        let pathname = pathname.get().unwrap_throw();
+
+        let on_hashchange = create_signal(());
+        window()
+            .add_event_listener_with_callback(
+                "hashchange",
+                Closure::wrap(Box::new(move || {
+                    on_hashchange.update(|_| {});
+                }) as Box<dyn FnMut()>)
+                .into_js_value()
+                .unchecked_ref(),
+            )
+            .unwrap_throw();
+
+        create_memo(move || {
+            on_hashchange.track();
+            pathname.track();
+            window().location().hash().unwrap_throw()
+        })
+    })
 }
 
 fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {

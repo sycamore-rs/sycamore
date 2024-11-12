@@ -29,5 +29,6 @@ features = [
 	"PopStateEvent",
 	"Url",
 	"Window",
+	"UrlSearchParams",
 ]
 version = "0.3.60"
