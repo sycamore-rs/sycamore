@@ -416,7 +416,7 @@ pub fn refresh() {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "cannot refresh outside of a Router"
+            "cannot refresh outside of a Router",
         );
 
         window().scroll_to_with_x_and_y(0.0, 0.0);
@@ -430,7 +430,7 @@ pub fn use_search_query(query: &'static str) -> ReadSignal<Option<String>> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "create_query can only be used with a Router"
+            "cannot get query outside of a Router",
         );
 
         let pathname = pathname.get().unwrap_throw();
@@ -450,7 +450,7 @@ pub fn use_search_queries() -> ReadSignal<HashMap<String, String>> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "create_queries can only be used with a Router"
+            "cannot get query outside of a Router",
         );
 
         let pathname = pathname.get().unwrap_throw();
@@ -480,7 +480,7 @@ pub fn use_location_hash() -> ReadSignal<String> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "create_fragment can only be used with a Router"
+            "cannot get hash outside of a Router"
         );
 
         let pathname = pathname.get().unwrap_throw();
