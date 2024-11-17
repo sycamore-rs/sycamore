@@ -354,23 +354,11 @@ where
 /// # Panics
 /// This function will `panic!()` if a [`Router`] has not yet been created.
 pub fn navigate(url: &str) {
-    PATHNAME.with(|pathname| {
-        assert!(
-            pathname.get().is_some(),
-            "navigate can only be used with a Router"
-        );
-
-        // Update History API.
-        let history = window().history().unwrap_throw();
-        history
-            .push_state_with_url(&JsValue::UNDEFINED, "", Some(url))
-            .unwrap_throw();
-        window().scroll_to_with_x_and_y(0.0, 0.0);
-
-        let pathname = pathname.get().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
-        pathname.set(path.to_string());
-    });
+    let history = window().history().unwrap_throw();
+    history
+        .push_state_with_url(&JsValue::UNDEFINED, "", Some(url))
+        .unwrap_throw();
+    navigate_no_history(url);
 }
 
 /// Navigates to the specified `url` without adding a new history entry. Instead, this replaces the
@@ -382,23 +370,11 @@ pub fn navigate(url: &str) {
 /// # Panics
 /// This function will `panic!()` if a [`Router`] has not yet been created.
 pub fn navigate_replace(url: &str) {
-    PATHNAME.with(|pathname| {
-        assert!(
-            pathname.get().is_some(),
-            "navigate_replace can only be used with a Router"
-        );
-
-        // Update History API.
-        let history = window().history().unwrap_throw();
-        history
-            .replace_state_with_url(&JsValue::UNDEFINED, "", Some(url))
-            .unwrap_throw();
-        window().scroll_to_with_x_and_y(0.0, 0.0);
-
-        let pathname = pathname.get().unwrap_throw();
-        let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
-        pathname.set(path.to_string());
-    });
+    let history = window().history().unwrap_throw();
+    history
+        .replace_state_with_url(&JsValue::UNDEFINED, "", Some(url))
+        .unwrap_throw();
+    navigate_no_history(url);
 }
 
 /// Navigates to the specified `url` without touching the history API.
@@ -408,18 +384,25 @@ pub fn navigate_replace(url: &str) {
 /// # Panics
 /// This function will `panic!()` if a [`Router`] has not yet been created.
 pub fn navigate_no_history(url: &str) {
+    window().scroll_to_with_x_and_y(0.0, 0.0);
+    update_pathname(url);
+}
+
+/// Internal function for getting the global pathname variable and updating it with the given `url`.
+///
+/// # Panics
+/// This function will `panic!()` if a [`Router`] has not yet been created.
+fn update_pathname(url: &str) {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "navigate_no_history can only be used with a Router"
+            "cannot navigate outside of a Router",
         );
-
-        window().scroll_to_with_x_and_y(0.0, 0.0);
 
         let pathname = pathname.get().unwrap_throw();
         let path = url.strip_prefix(&base_pathname()).unwrap_or(url);
         pathname.set(path.to_string());
-    });
+    })
 }
 
 /// Preform a "soft" refresh of the current page.
@@ -433,7 +416,7 @@ pub fn refresh() {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "refresh can only be used with a Router"
+            "cannot refresh outside of a Router",
         );
 
         window().scroll_to_with_x_and_y(0.0, 0.0);
@@ -447,7 +430,7 @@ pub fn use_search_query(query: &'static str) -> ReadSignal<Option<String>> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "create_query can only be used with a Router"
+            "cannot get query outside of a Router",
         );
 
         let pathname = pathname.get().unwrap_throw();
@@ -467,7 +450,7 @@ pub fn use_search_queries() -> ReadSignal<HashMap<String, String>> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "create_queries can only be used with a Router"
+            "cannot get query outside of a Router",
         );
 
         let pathname = pathname.get().unwrap_throw();
@@ -497,7 +480,7 @@ pub fn use_location_hash() -> ReadSignal<String> {
     PATHNAME.with(|pathname| {
         assert!(
             pathname.get().is_some(),
-            "create_fragment can only be used with a Router"
+            "cannot get hash outside of a Router"
         );
 
         let pathname = pathname.get().unwrap_throw();
