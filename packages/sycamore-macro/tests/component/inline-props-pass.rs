@@ -106,13 +106,19 @@ fn PropsWithAttributes(#[prop(default)] dummy: String) -> View {
     }
 }
 
+#[derive(Debug)]
 struct Foo {
     bar: u32,
 }
 
 #[component(inline_props)]
-fn PropsWithPatterns(mut _a: u32, _b @ Foo { bar }: Foo) -> View {
-    view! {}
+fn PropsWithPatterns(mut a: u32, b @ Foo { bar }: Foo) -> View {
+    let _ = &mut a;
+    view! {
+        (a)
+        (format!("{b:?}"))
+        (bar)
+    }
 }
 
 fn main() {}

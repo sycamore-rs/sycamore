@@ -350,8 +350,18 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
 
     // Get the ident (technically, patterns) of each prop.
     let props_pats = props.iter().map(|arg| match arg {
-        FnArg::Receiver(_) => unreachable!("receiver cannot be a prop"),
-        FnArg::Typed(arg) => arg.pat.clone(),
+        FnArg::Receiver(_) => unreachable!(),
+        FnArg::Typed(arg) => match &*arg.pat {
+            Pat::Ident(pat) => {
+                if pat.subpat.is_some() {
+                    let ident = &pat.ident;
+                    quote! { #ident: #pat }
+                } else {
+                    quote! { #pat }
+                }
+            }
+            _ => unreachable!(),
+        },
     });
     // Rewrite function signature.
     let props_struct_generics = generics.split_for_impl().1;
