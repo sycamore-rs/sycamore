@@ -1,8 +1,24 @@
 # Changelog
 
-## 0.9.2 _(2024-11-01)_
+## 0.9.1 _(2024-11-17)_
 
-Release Post: https://sycamore.dev/post/announcing-0-9-0
+#### What's Changed
+
+- Fix typo in release post by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/748
+- Router example by @davidon-top in https://github.com/sycamore-rs/sycamore/pull/749
+- Allow adding derives to generated prop type for `inline_props` by @davidon-top in https://github.com/sycamore-rs/sycamore/pull/750
+- Router refresh by @davidon-top in https://github.com/sycamore-rs/sycamore/pull/751
+- Forward attributes on function parameters to generated prop struct in `inline_props` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/753
+- Update README.md with new details by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/754
+- Update trunk to v0.21.1 in GitHub Actions workflows by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/756
+- Support query parameters in routes by @davidon-top in https://github.com/sycamore-rs/sycamore/pull/752
+- Simplify navigate functions in router by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/759
+- Properly support patterns in inline_props by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/760
+
+## 0.9.0 _(2024-11-01)_
+
+Release Post: https://sycamore.dev/post/announcing-v0-9-0
+
 Migration Guide: https://sycamore.dev/book/migration/0-8-to-0-9
 
 #### What's Changed

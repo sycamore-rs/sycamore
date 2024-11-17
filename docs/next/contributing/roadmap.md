@@ -18,7 +18,7 @@ change or removal, depending on circumstances.
   - [ ] First-party integrations for popular Rust servers such as Actix, Axum,
         Rocket, etc.
 - [ ] Iron out some rough edges in `sycamore-router`
-  - [ ] Router reloading
+  - [x] Router reloading
         ([#335](https://github.com/sycamore-rs/sycamore/issues/335))
   - [ ] Scroll position saving
         ([#336](https://github.com/sycamore-rs/sycamore/issues/336))
