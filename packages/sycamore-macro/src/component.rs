@@ -280,23 +280,31 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
     let props = inputs.clone().into_iter().collect::<Vec<_>>();
     let generics: &mut Generics = &mut item.sig.generics;
     let mut fields = Vec::new();
-    inputs.into_iter().for_each(|arg| match arg {
-        FnArg::Receiver(_) => {
-            unreachable!("receiver cannot be a prop")
-        }
-        FnArg::Typed(pat_type) => match *pat_type.pat {
-            Pat::Ident(ident_pat) => super::inline_props::push_field(
-                &mut fields,
-                generics,
-                pat_type.attrs,
-                ident_pat.clone().ident,
-                *pat_type.ty,
-            ),
-            _ => {
-                unreachable!("unexpected pattern!")
+    for arg in inputs {
+        match arg {
+            FnArg::Receiver(receiver) => {
+                return Err(syn::Error::new(
+                    receiver.span(),
+                    "receiver cannot be a prop",
+                ))
             }
-        },
-    });
+            FnArg::Typed(pat_type) => match *pat_type.pat {
+                Pat::Ident(ident_pat) => super::inline_props::push_field(
+                    &mut fields,
+                    generics,
+                    pat_type.attrs,
+                    ident_pat.clone().ident,
+                    *pat_type.ty,
+                ),
+                _ => {
+                    return Err(syn::Error::new(
+                        pat_type.pat.span(),
+                        "unexpected pattern, you must specify an identifier for the prop",
+                    ))
+                }
+            },
+        }
+    }
 
     let generics_phantoms = generics.params.iter().enumerate().filter_map(|(i, param)| {
         let phantom_ident = format_ident!("__phantom{i}");

@@ -1,4 +1,6 @@
-use sycamore::prelude::{component, view, Signal, View, Props};
+#![allow(unused_parens)]
+
+use sycamore::prelude::{component, view, Props, Signal, View};
 
 #[component(inline_props)]
 fn NoProps() -> View {
@@ -47,7 +49,10 @@ fn PropsWithImplGenerics(foo: impl std::fmt::Display + 'static) -> View {
 }
 
 #[component(inline_props)]
-fn PropsWithMixedImplGenerics<T: std::fmt::Display + 'static>(foo: T, bar: impl std::fmt::Display + 'static) -> View {
+fn PropsWithMixedImplGenerics<T: std::fmt::Display + 'static>(
+    foo: T,
+    bar: impl std::fmt::Display + 'static,
+) -> View {
     view! {
         (foo.to_string())
         (bar.to_string())
@@ -57,7 +62,10 @@ fn PropsWithMixedImplGenerics<T: std::fmt::Display + 'static>(foo: T, bar: impl 
 #[component(inline_props)]
 fn PropsWithVariousImplGenerics(
     t1: [impl std::fmt::Display + 'static; 10],
-    t2: (impl std::fmt::Display + 'static, impl std::fmt::Display + 'static),
+    t2: (
+        impl std::fmt::Display + 'static,
+        impl std::fmt::Display + 'static,
+    ),
     t3: (impl std::fmt::Display + 'static),
     t4: impl std::fmt::Display + 'static,
     t5: *const (impl std::fmt::Display + 'static),
@@ -77,7 +85,9 @@ fn PropsWithVariousImplGenerics(
 
 #[component(inline_props, derive(Clone), derive(Debug))]
 fn AdditionalStructAttributes(dummy: String) -> View {
-    let props = AdditionalStructAttributes_Props::builder().dummy(dummy).build();
+    let props = AdditionalStructAttributes_Props::builder()
+        .dummy(dummy)
+        .build();
 
     view! {
         (format!("{:?}", props.clone()))
@@ -85,10 +95,7 @@ fn AdditionalStructAttributes(dummy: String) -> View {
 }
 
 #[component(inline_props)]
-fn PropsWithAttributes(
-    #[prop(default)]
-    dummy: String,
-) -> View {
+fn PropsWithAttributes(#[prop(default)] dummy: String) -> View {
     fn call_component() -> View {
         view! {
             PropsWithAttributes {}
@@ -97,6 +104,15 @@ fn PropsWithAttributes(
     view! {
         (dummy)
     }
+}
+
+struct Foo {
+    bar: u32,
+}
+
+#[component(inline_props)]
+fn PropsWithPatterns(mut _a: u32, _b @ Foo { bar }: Foo) -> View {
+    view! {}
 }
 
 fn main() {}
