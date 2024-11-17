@@ -285,7 +285,7 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
             FnArg::Receiver(receiver) => {
                 return Err(syn::Error::new(
                     receiver.span(),
-                    "receiver cannot be a prop",
+                    "`self` cannot be a property",
                 ))
             }
             FnArg::Typed(pat_type) => match *pat_type.pat {
@@ -299,7 +299,7 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
                 _ => {
                     return Err(syn::Error::new(
                         pat_type.pat.span(),
-                        "unexpected pattern, you must specify an identifier for the prop",
+                        "pattern must contain an identifier, properties cannot be unnamed",
                     ))
                 }
             },

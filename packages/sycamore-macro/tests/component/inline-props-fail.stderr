@@ -4,13 +4,13 @@ error: expected `inline_props`
 3 | #[component(not_inline_props)]
   |             ^^^^^^^^^^^^^^^^
 
-error: receiver cannot be a prop
+error: `self` cannot be a property
  --> tests/component/inline-props-fail.rs:9:17
   |
 9 | fn ReceiverProp(self) -> View {
   |                 ^^^^
 
-error: unexpected pattern, you must specify an identifier for the prop
+error: pattern must contain an identifier, properties cannot be unnamed
   --> tests/component/inline-props-fail.rs:18:24
    |
 18 | fn PatternWithoutIdent(Foo { bar }: Foo) -> View {
