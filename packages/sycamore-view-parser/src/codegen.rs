@@ -5,8 +5,9 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use sycamore_view_parser::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
 use syn::{Expr, Pat};
+
+use crate::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
 
 pub struct Codegen {
     // TODO: configure mode: Client, Hydrate, SSR
