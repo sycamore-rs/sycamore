@@ -10,7 +10,6 @@ use syn::{parse_macro_input, DeriveInput};
 mod component;
 mod inline_props;
 mod props;
-mod view;
 
 /// A macro for ergonomically creating complex UI complex layouts.
 ///
@@ -20,7 +19,7 @@ mod view;
 pub fn view(input: TokenStream) -> TokenStream {
     let root = parse_macro_input!(input as sycamore_view_parser::ir::Root);
 
-    view::Codegen {}.root(&root).into()
+    sycamore_view_parser::codegen::Codegen {}.root(&root).into()
 }
 
 /// A macro for creating components from functions.
