@@ -153,7 +153,7 @@ pub fn create_detached_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseS
 }
 
 // TODO: remove this in the next major version
-#[deprecated="Please use `create_detached_suspense_scope` instead"]
+#[deprecated = "Please use `create_detached_suspense_scope` instead"]
 pub fn create_detatched_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
     create_detached_suspense_scope(f)
 }
