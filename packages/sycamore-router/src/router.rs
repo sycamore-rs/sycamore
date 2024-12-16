@@ -74,7 +74,7 @@ impl Integration for HistoryIntegration {
 
                 // Check if a has `rel="external"`.
                 if a.rel() == "external" {
-                    // Use default browser behaviour.
+                    // Use default browser behavior.
                     return;
                 }
 

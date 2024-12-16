@@ -4,7 +4,7 @@ use std::future::Future;
 use std::num::NonZeroU32;
 
 use sycamore_futures::{
-    create_detatched_suspense_scope, create_suspense_scope, create_suspense_task,
+    create_detached_suspense_scope, create_suspense_scope, create_suspense_task,
 };
 use sycamore_macro::{component, Props};
 
@@ -196,9 +196,9 @@ pub fn Transition(props: SuspenseProps) -> View {
         // TODO: Workaround for https://github.com/sycamore-rs/sycamore/issues/718.
         let mut set_is_loading = set_is_loading;
 
-        // We create a detatched suspense scope here to not create a deadlock with the outer
+        // We create a detached suspense scope here to not create a deadlock with the outer
         // suspense.
-        let (children, scope) = create_detatched_suspense_scope(move || children.call());
+        let (children, scope) = create_detached_suspense_scope(move || children.call());
         // Trigger the outer suspense scope. Note that this is only triggered on the initial render
         // and future renders will be captured by the inner suspense scope.
         create_suspense_task(scope.until_finished());

@@ -53,7 +53,7 @@ pub fn create_effect(f: impl FnMut() + 'static) {
 /// ```
 ///
 /// Note that the initial function is also called within the effect scope. This means that signals
-/// created within the initial function will no longer be alive in subsequet runs. If you want to
+/// created within the initial function will no longer be alive in subsequent runs. If you want to
 /// create signals that are alive in subsequent runs, you should use
 /// [`use_current_scope`](crate::use_current_scope) and
 /// [`NodeHandle::run_in`](crate::NodeHandle::run_in).

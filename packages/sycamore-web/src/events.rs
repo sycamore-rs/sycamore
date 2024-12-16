@@ -195,7 +195,7 @@ where
     }
 }
 
-/// Marker trait to workaround specialisation.
+/// Marker trait to workaround specialization.
 #[doc(hidden)]
 #[cfg(feature = "suspense")]
 pub struct AsyncHandler;

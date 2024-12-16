@@ -655,7 +655,7 @@ mod struct_info {
                 );
             });
 
-            let descructuring = self.included_fields().map(|f| f.name);
+            let destructuring = self.included_fields().map(|f| f.name);
 
             let helper_trait_name = &self.conversion_helper_trait_name;
             // The default of a field can refer to earlier-defined fields, which we handle by
@@ -684,7 +684,7 @@ mod struct_info {
                         // I'd prefer “a” or “an” to “its”, but determining which is grammatically
                         // correct is roughly impossible.
                         let doc =
-                            format!("Finalise the builder and create its [`{}`] instance", name);
+                            format!("Finalize the builder and create its [`{}`] instance", name);
                         quote!(#[doc = #doc])
                     }
                 }
@@ -703,7 +703,7 @@ mod struct_info {
                     #doc
                     #[allow(clippy::default_trait_access)]
                     pub fn build(self) -> #name #ty_generics {
-                        let ( #(#descructuring,)* ) = self.fields;
+                        let ( #(#destructuring,)* ) = self.fields;
                         #( #assignments )*
                         #name {
                             #( #field_names, )*

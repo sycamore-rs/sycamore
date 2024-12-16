@@ -92,7 +92,7 @@ pub fn create_memo<T>(f: impl FnMut() -> T + 'static) -> ReadSignal<T> {
 
 /// Creates a memoized value from some signals.
 ///
-/// Unlike [`create_memo`], this function will not notify dependents of a hange if the output is the
+/// Unlike [`create_memo`], this function will not notify dependents of a change if the output is the
 /// same. That is why the output of the function must implement [`PartialEq`].
 ///
 /// To specify a custom comparison function, use [`create_selector_with`].

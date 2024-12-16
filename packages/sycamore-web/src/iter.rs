@@ -100,7 +100,7 @@ where
 
         // Run the initial function in the outer scope, not the effect scope.
         // This is because we might want to create signals and other things managed by the reactive
-        // tree that will be used in furture triggers of this effect. These things must therefore
+        // tree that will be used in future triggers of this effect. These things must therefore
         // live as long as the effect.
         let scope = use_current_scope();
         create_effect_initial(move || {
@@ -202,7 +202,7 @@ where
 
         // Run the initial function in the outer scope, not the effect scope.
         // This is because we might want to create signals and other things managed by the reactive
-        // tree that will be used in furture triggers of this effect. These things must therefore
+        // tree that will be used in future triggers of this effect. These things must therefore
         // live as long as the effect.
         let scope = use_current_scope();
         create_effect_initial(move || {

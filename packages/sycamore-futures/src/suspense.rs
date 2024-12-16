@@ -133,23 +133,29 @@ pub fn create_suspense_task(f: impl Future<Output = ()> + 'static) {
     });
 }
 
-/// Create a new suspense scope that is detatched from the rest of the suspense hierarchy.
+/// Create a new suspense scope that is detached from the rest of the suspense hierarchy.
 ///
-/// This is useful if you want the result of this suspense to be independent of the praent suspense
+/// This is useful if you want the result of this suspense to be independent of the parent suspense
 /// scope.
 ///
-/// It is rarely recommended to use this fucntion as it can lead to unexpected behavior when using
+/// It is rarely recommended to use this function as it can lead to unexpected behavior when using
 /// server side rendering, and in particular, streaming. Instead, use [`create_suspense_scope`].
 ///
 /// The reason for this is because we generally expect outer suspenses to be resolved first before
 /// an inner suspense is resolved, since otherwise we would have no place to show the inner suspense
 /// as the outer fallback is still being displayed.
-pub fn create_detatched_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
+pub fn create_detached_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
     let scope = SuspenseScope::new(None);
     provide_context_in_new_scope(scope, move || {
         let ret = f();
         (ret, scope)
     })
+}
+
+// TODO: remove this in the next major version
+#[deprecated="Please use `create_detached_suspense_scope` instead"]
+pub fn create_detatched_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
+    create_detached_suspense_scope(f)
 }
 
 /// Calls the given function and registers all suspense tasks.

@@ -1,4 +1,4 @@
-//! Async resources integrted with suspense.
+//! Async resources integrated with suspense.
 
 use std::future::Future;
 use std::ops::Deref;

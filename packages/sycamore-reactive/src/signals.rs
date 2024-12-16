@@ -78,7 +78,7 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// There are many other ways of getting and setting signals, such as
 /// [`.with(...)`](ReadSignal::with) and [`.update(...)`](Signal::update) which can access the
 /// signal even if it does not implement [`Clone`] or if you simply don't want to pay the
-/// performance overhead of cloning your value everytime you read it.
+/// performance overhead of cloning your value every time you read it.
 ///
 /// # Reactivity
 /// What makes signals so powerful, as opposed to some other wrapper type like
@@ -105,7 +105,7 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// # Ownership
 /// Signals are always associated with a reactive node. This is what performs the memory management
 /// for the actual value of the signal. What is returned from this function is just a
-/// handle/reference to the signal allocted in the reactive node. This allows us to freely copy this
+/// handle/reference to the signal allocated in the reactive node. This allows us to freely copy this
 /// handle around and use it in closures and event handlers without worrying about ownership of the
 /// signal.
 ///
@@ -515,7 +515,7 @@ impl<T> Signal<T> {
         self.update(move |val| *val = f(val));
     }
 
-    /// Split the signal into a reader/writter pair.
+    /// Split the signal into a reader/writer pair.
     ///
     /// # Example
     /// ```
