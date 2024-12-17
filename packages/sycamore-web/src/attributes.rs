@@ -15,7 +15,7 @@ impl AttributeValue for StringAttribute {
     }
 }
 
-/// Type alias respresenting a possibly dynamic boolean value.
+/// Type alias representing a possibly dynamic boolean value.
 pub type BoolAttribute = MaybeDyn<bool>;
 impl AttributeValue for BoolAttribute {
     fn set_self(self, el: &mut HtmlNode, name: Cow<'static, str>) {

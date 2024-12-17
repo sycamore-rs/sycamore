@@ -36,7 +36,7 @@ pub fn get_nodes_between(start: &web_sys::Node, end: &web_sys::Node) -> Vec<web_
 ///
 /// This is useful when the view is dynamically changed without being mounted since this will not
 /// update the DOM. Wrapping the nodes in a document fragment will allow you to dynamically update
-/// the view while it is detatched, and then insert it into the DOM later.
+/// the view while it is detached, and then insert it into the DOM later.
 ///
 /// This only works on the client side.
 pub fn wrap_in_document_fragment(view: View) -> View {

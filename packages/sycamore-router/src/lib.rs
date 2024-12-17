@@ -366,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn ingnore_query_params_dyn() {
+    fn ignore_query_params_dyn() {
         check(
             "/a/b/c?foo=bar",
             RoutePath::new(vec![DynSegments]),
@@ -384,7 +384,7 @@ mod tests {
     }
 
     #[test]
-    fn ingnore_hash_dyn() {
+    fn ignore_hash_dyn() {
         check(
             "/a/b/c#foo",
             RoutePath::new(vec![DynSegments]),

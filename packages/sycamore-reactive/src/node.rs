@@ -11,7 +11,7 @@ new_key_type! {
     pub(crate) struct NodeId;
 }
 
-/// A reactive node inside the reactive grpah.
+/// A reactive node inside the reactive graph.
 pub(crate) struct ReactiveNode {
     /// Value of the node, if any. If this node is a signal, should have a value.
     pub value: Option<Box<dyn Any>>,

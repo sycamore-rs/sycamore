@@ -13,7 +13,7 @@ struct CounterValue {
 /// Get the next counter value. This is stable across client and server side.
 ///
 /// The counter is stored in the global scope so that it is shared across the entire app. It is
-/// initialized to 0 and incremented everytime this function is called.
+/// initialized to 0 and incremented every time this function is called.
 pub fn use_stable_counter() -> u32 {
     let global_scope = use_global_scope();
     let counter = global_scope.run_in(|| use_context_or_else(CounterValue::default));

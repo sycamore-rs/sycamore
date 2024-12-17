@@ -30,7 +30,7 @@ pub(crate) struct Root {
     pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
     /// A list of signals who need their values to be propagated after the batch is over.
     pub node_update_queue: RefCell<Vec<NodeId>>,
-    /// Whether we are currently batching signal updatse. If this is true, we do not run
+    /// Whether we are currently batching signal updates. If this is true, we do not run
     /// `effect_queue` and instead wait until the end of the batch.
     pub batching: Cell<bool>,
 }
@@ -167,7 +167,7 @@ impl Root {
         nodes_mut[current].dependents = dependents;
     }
 
-    /// If there are no cyclic dependencies, then the reactive graph is a DAG (Directed Acylic
+    /// If there are no cyclic dependencies, then the reactive graph is a DAG (Directed Acyclic
     /// Graph). We can therefore use DFS to get a topological sorting of all the reactive nodes.
     ///
     /// We then go through every node in this topological sorting and update only those nodes which
