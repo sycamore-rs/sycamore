@@ -284,9 +284,9 @@ fn is_dyn_pattern(pat: &Pat) -> bool {
 fn is_dyn_macro(m: &syn::Macro) -> bool {
     // Bodies of nested inner view! macros will be checked for dynamic
     // parts when their own codegen is run.
-    !m.path
+    m.path
         .get_ident()
-        .is_some_and(|ident| "view" == &ident.to_string())
+        .is_none_or(|ident| "view" != &ident.to_string())
 }
 
 fn is_dyn_block(block: &syn::Block) -> bool {

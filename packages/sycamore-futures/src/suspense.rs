@@ -55,7 +55,7 @@ impl SuspenseScope {
             || self
                 .parent
                 .as_ref()
-                .map_or(false, |parent| parent.get()._is_loading())
+                .is_some_and(|parent| parent.get()._is_loading())
     }
 
     /// Returns a signal representing whether we are currently loading this suspense or not.
