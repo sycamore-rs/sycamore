@@ -39,7 +39,7 @@ let signal = create_signal(123);
 console_log!("{}", signal.get());
 
 // Update the signal with a new value.
-value.set(456);
+signal.set(456);
 
 // Should print `456`.
 console_log!("{}", signal.get());
