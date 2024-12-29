@@ -275,7 +275,7 @@ Sycamore!".
 
 ```rust
 view! {
-    Hello(name="Sycamore")
+    Hello(name="Sycamore".into())
 }
 ```
 
