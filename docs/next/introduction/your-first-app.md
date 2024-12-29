@@ -124,7 +124,7 @@ WebAssembly.
 <html>
     <head></head>
     <body></body>
-</head>
+</html>
 ```
 
 All that's left to do is to run:
