@@ -57,7 +57,7 @@ pub enum PropType {
     PlainQuoted { ident: String },
     /// Syntax: `<dir>:<prop>=<expr>`.
     Directive { dir: Ident, ident: Ident },
-    /// Syntax: `ref=<expr>`.
+    /// Syntax: `r#ref=<expr>`.
     Ref,
     /// Syntax: `..attributes=<expr>`
     Spread,

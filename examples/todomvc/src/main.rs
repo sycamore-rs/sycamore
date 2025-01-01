@@ -286,7 +286,7 @@ pub fn Item(todo: Signal<Todo>) -> View {
             }
 
             (is_editing.get().then(|| view! {
-                input(ref=input_ref,
+                input(r#ref=input_ref,
                     class="edit",
                     bind:value=input_value,
                     on:blur=move |_| handle_blur(),

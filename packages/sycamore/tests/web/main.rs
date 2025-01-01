@@ -67,7 +67,7 @@ fn hello_world_noderef() {
         sycamore::render_in_scope(
             move || {
                 view! {
-                    p(ref=p_ref) { "Hello World!" }
+                    p(r#ref=p_ref) { "Hello World!" }
                 }
             },
             &test_container(),
@@ -333,7 +333,7 @@ fn noderefs() {
         let noderef = create_node_ref();
         let node = view! {
             div {
-                input(ref=noderef)
+                input(r#ref=noderef)
             }
         };
 
@@ -351,7 +351,7 @@ fn noderef_reactivity_test() {
         let node_ref: NodeRef = create_node_ref();
 
         let _ = view! {
-            div(ref=node_ref)
+            div(r#ref=node_ref)
         };
 
         create_effect(move || {
@@ -361,7 +361,7 @@ fn noderef_reactivity_test() {
         assert_eq!(counter.get(), 1);
 
         let _ = view! {
-            div(ref=node_ref)
+            div(r#ref=node_ref)
         };
 
         assert_eq!(counter.get(), 2);

@@ -18,7 +18,7 @@ use crate::*;
 /// fn Component() -> View {
 ///     let div_ref = create_node_ref();
 ///     view! {
-///         div(ref=div_ref)
+///         div(r#ref=div_ref)
 ///     }
 /// }
 /// ```
@@ -48,7 +48,7 @@ impl NodeRef {
     ///     let node = div_ref.get();
     /// });
     /// view! {
-    ///     div(ref=div_ref)
+    ///     div(r#ref=div_ref)
     /// }
     /// # }
     /// ```
@@ -70,18 +70,18 @@ impl NodeRef {
 
     /// Sets the node ref with the specified node.
     ///
-    /// This method should be rarely used. Instead, use the `ref=` syntax in the `view!` macro to
+    /// This method should be rarely used. Instead, use the `r#ref=` syntax in the `view!` macro to
     /// set the node.
     ///
     /// # Example
-    /// Setting the node using the `ref=` syntax:
+    /// Setting the node using the `r#ref=` syntax:
     /// ```
     /// # use sycamore::prelude::*;
     /// #[component]
     /// fn Component() -> View {
     ///     let div_ref = create_node_ref();
     ///     view! {
-    ///         div(ref=div_ref) // This assigns the node ref a value.
+    ///         div(r#ref=div_ref) // This assigns the node ref a value.
     ///     }
     /// }
     /// ```
