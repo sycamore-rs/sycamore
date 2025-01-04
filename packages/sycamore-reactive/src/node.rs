@@ -86,6 +86,8 @@ impl NodeHandle {
     }
 
     /// Dispose all the children of the node but not the node itself.
+    ///
+    /// Also calls cleanup callbacks and removes context values.
     pub fn dispose_children(self) {
         // If node is already disposed, do nothing.
         if self.1.nodes.borrow().get(self.0).is_none() {
@@ -106,6 +108,9 @@ impl NodeHandle {
         for child in children {
             Self(child, self.1).dispose();
         }
+
+        // Clear context values.
+        self.1.nodes.borrow_mut()[self.0].context.clear();
     }
 
     /// Run a closure under this reactive node.

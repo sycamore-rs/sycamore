@@ -128,3 +128,22 @@ pub fn use_scope_depth() -> u32 {
     }
     depth
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    /// Regression test for <https://github.com/sycamore-rs/sycamore/issues/774>
+    #[test]
+    fn cleanup_resets_context() {
+        let _ = create_root(|| {
+            let trigger = create_signal(());
+            create_memo(move || {
+                trigger.track();
+                assert!(try_use_context::<i32>().is_none());
+                provide_context(123);
+            });
+            trigger.set(());
+        });
+    }
+}
