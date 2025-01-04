@@ -200,8 +200,9 @@ fn is_component(ident: &TagIdent) -> bool {
 
 fn is_dyn(ex: &Expr) -> bool {
     match ex {
-        Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_) | Expr::Field(_) => false,
+        Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_) => false,
 
+        Expr::Field(f) => is_dyn(&f.base),
         Expr::Paren(p) => is_dyn(&p.expr),
         Expr::Group(g) => is_dyn(&g.expr),
         Expr::Tuple(t) => t.elems.iter().any(is_dyn),
