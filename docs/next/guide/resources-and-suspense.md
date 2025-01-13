@@ -52,7 +52,7 @@ client, you can use `create_client_resource` which will never load data on the
 server.
 
 Right now, we do not yet have a `create_server_resource` function which only
-runs on the server because this requires some form of data-serializaation and
+runs on the server because this requires some form of data-serialization and
 server-integration which we have not fully worked out yet.
 
 ### Refreshing Resources
