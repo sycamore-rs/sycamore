@@ -64,7 +64,7 @@ depends on. This can be accomplished with the `on(...)` utility function.
 
 ```rust
 let id = create_signal(12345);
-let resource = create_resource(on(id, move || async move {
+let resource = create_client_resource(on(id, move || async move {
     fetch_user(id.get()).await
 }));
 ```
