@@ -55,7 +55,7 @@ impl SuspenseScope {
             || self
                 .parent
                 .as_ref()
-                .map_or(false, |parent| parent.get()._is_loading())
+                .is_some_and(|parent| parent.get()._is_loading())
     }
 
     /// Returns a signal representing whether we are currently loading this suspense or not.
@@ -153,6 +153,7 @@ pub fn create_detached_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseS
 }
 
 // TODO: remove this in the next major version
+#[allow(missing_docs)]
 #[deprecated = "Please use `create_detached_suspense_scope` instead"]
 pub fn create_detatched_suspense_scope<T>(f: impl FnOnce() -> T) -> (T, SuspenseScope) {
     create_detached_suspense_scope(f)

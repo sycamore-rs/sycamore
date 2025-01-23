@@ -846,7 +846,7 @@ mod field_info {
         pub builder_attr: FieldBuilderAttr,
     }
 
-    impl<'a> FieldInfo<'a> {
+    impl FieldInfo<'_> {
         pub fn new(
             ordinal: usize,
             field: &syn::Field,

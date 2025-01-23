@@ -274,15 +274,15 @@ impl<'a> HashableNode<'a> {
     }
 }
 
-impl<'a> PartialEq for HashableNode<'a> {
+impl PartialEq for HashableNode<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.1 == other.1
     }
 }
 
-impl<'a> Eq for HashableNode<'a> {}
+impl Eq for HashableNode<'_> {}
 
-impl<'a> Hash for HashableNode<'a> {
+impl Hash for HashableNode<'_> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.1.hash(state);
     }
