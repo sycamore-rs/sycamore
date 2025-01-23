@@ -60,4 +60,4 @@ sycamore-web = { path = "packages/sycamore-web", version = "0.9.1" }
 debug = true
 
 [workspace.lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(sycamore_force_ssr)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(sycamore_force_ssr)", "cfg(rust_analyzer)"] }
