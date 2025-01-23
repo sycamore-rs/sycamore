@@ -22,3 +22,7 @@ sycamore = { path = "../sycamore" }
 [features]
 default = []
 suspense = ["sycamore-futures"]
+
+
+[lints]
+workspace = true

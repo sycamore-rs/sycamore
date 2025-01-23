@@ -56,3 +56,7 @@ required-features = ["hydrate"]
 [package.metadata.docs.rs]
 all-features = true
 default-target = "wasm32-unknown-unknown"
+
+
+[lints]
+workspace = true
