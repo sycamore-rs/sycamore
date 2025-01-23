@@ -9,3 +9,6 @@ edition = "2021"
 console_error_panic_hook = "0.1.7"
 sycamore = { path = "../../packages/sycamore", features = ["hydrate"] }
 wasm-bindgen = "0.2.83"
+
+[lints]
+workspace = true

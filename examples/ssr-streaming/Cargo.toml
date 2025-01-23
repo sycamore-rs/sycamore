@@ -9,6 +9,9 @@ sycamore = { path = "../../packages/sycamore", features = [
 	"hydrate",
 ] }
 
+[lints]
+workspace = true
+
 [target.'cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))'.dependencies]
 console_error_panic_hook = "0.1.7"
 
