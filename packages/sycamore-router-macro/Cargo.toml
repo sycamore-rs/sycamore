@@ -24,3 +24,7 @@ syn = "2.0.10"
 expect-test = "1.4.0"
 sycamore-router = { path = "../sycamore-router" }
 trybuild = "1.0.71"
+
+
+[lints]
+workspace = true

@@ -26,5 +26,5 @@ tokio = { version = "1.22.0", features = ["rt"] }
 tokio = { version = "1.22.0", features = ["rt", "macros"] }
 tokio-test = "0.4.4"
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(sycamore_force_ssr)'] }
+[lints]
+workspace = true

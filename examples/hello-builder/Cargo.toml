@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 console_error_panic_hook = "0.1.7"
 sycamore = { path = "../../packages/sycamore" }
+
+
+[lints]
+workspace = true

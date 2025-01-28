@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 sycamore = { path = "../../packages/sycamore" }
 sycamore-router = { path = "../../packages/sycamore-router" }
+
+
+[lints]
+workspace = true

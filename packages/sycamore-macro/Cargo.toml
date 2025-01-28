@@ -27,3 +27,7 @@ trybuild = "1.0.71"
 
 [features]
 default = []
+
+
+[lints]
+workspace = true

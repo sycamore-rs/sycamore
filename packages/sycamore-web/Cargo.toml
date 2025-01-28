@@ -82,8 +82,6 @@ hydrate = []
 suspense = ["dep:sycamore-futures", "dep:futures", "dep:async-stream"]
 wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = [
-	"cfg(sycamore_force_ssr)",
-	"cfg(rust_analyzer)",
-] }
+
+[lints]
+workspace = true

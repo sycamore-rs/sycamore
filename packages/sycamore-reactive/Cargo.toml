@@ -24,3 +24,7 @@ default = []
 nightly = []
 serde = ["dep:serde"]
 wasm-bindgen = ["dep:wasm-bindgen"]
+
+
+[lints]
+workspace = true
