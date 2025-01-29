@@ -20,7 +20,6 @@ pub trait Integration {
     fn on_popstate(&self, f: Box<dyn FnMut()>);
 
     /// Get the click handler that is run when links are clicked.
-
     fn click_handler(&self) -> Box<dyn Fn(web_sys::MouseEvent)>;
 }
 
