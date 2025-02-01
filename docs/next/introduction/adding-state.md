@@ -295,7 +295,7 @@ fn CounterDisplay(value: ReadSignal<i32>) -> View {
 let counter = create_signal(1);
 
 view! {
-    CounterDisplay(value=counter)
+    CounterDisplay(value=*counter)
 }
 ```
 
