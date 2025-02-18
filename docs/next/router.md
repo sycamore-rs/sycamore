@@ -306,6 +306,6 @@ view! {
 ```
 
 ## Examples
-An example of a router can be found in the `/examples` folder in the repository.
+Check out the [router example](https://github.com/sycamore-rs/sycamore/blob/main/examples/router/src/main.rs) for more details on how to use the Router API.
 
 [Click Here](https://github.com/sycamore-rs/sycamore/blob/main/examples/router/src/main.rs) to be taken to it.
