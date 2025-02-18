@@ -22,6 +22,74 @@ to = "https://sycamore.dev/post/new-reactive-primitives"
 from = "/news/announcing-v0.8.0"
 to = "https://sycamore.dev/post/announcing-v0-8-0"
 
+# Redirect all next doc pages
+[[redirects]]
+from = "/docs/getting_started/installation"
+to = "https://sycamore.dev/book/introduction"
+[[redirects]]
+from = "/docs/getting_started/hello_world"
+to = "https://sycamore.dev/book/introduction/your-first-app"
+[[redirects]]
+from = "/docs/getting_started/faq"
+to = "https://sycamore.dev/book/faq"
+[[redirects]]
+from = "/docs/basics/view"
+to = "https://sycamore.dev/book/guide/view-dsl"
+[[redirects]]
+from = "/docs/basics/reactivity"
+to = "https://sycamore.dev/book/introduction/adding-state"
+[[redirects]]
+from = "/docs/basics/components"
+to = "https://sycamore.dev/book/introduction/your-first-app#using-components"
+[[redirects]]
+from = "/docs/basics/control_flow"
+to = "https://sycamore.dev/book/introduction/adding-state#conditional-views"
+[[redirects]]
+from = "/docs/basics/iteration"
+to = "https://sycamore.dev/book/introduction/rendering-lists"
+[[redirects]]
+from = "/docs/basics/data_binding"
+to = "https://sycamore.dev/book/guide/data-binding"
+[[redirects]]
+from = "/docs/advanced/noderef"
+to = "https://sycamore.dev/book/guide/node-ref"
+[[redirects]]
+from = "/docs/advanced/tweened"
+to = "https://sycamore.dev/book/guide/tweened"
+[[redirects]]
+from = "/docs/advanced/contexts"
+to = "https://sycamore.dev/book/guide/contexts"
+[[redirects]]
+from = "/docs/advanced/advanced_reactivity"
+to = "https://sycamore.dev/book/reference/reactive-graph"
+[[redirects]]
+from = "/docs/advanced/css"
+to = "https://sycamore.dev/book/cookbook/styling"
+[[redirects]]
+from = "/docs/advanced/testing"
+to = "https://sycamore.dev/book/cookbook/testing"
+[[redirects]]
+from = "/docs/advanced/routing"
+to = "https://sycamore.dev/book/router"
+[[redirects]]
+from = "/docs/advanced/ssr"
+to = "https://sycamore.dev/book/server-side-rendering"
+[[redirects]]
+from = "/docs/advanced/js_interop"
+to = "https://sycamore.dev/book/guide/js-interop"
+[[redirects]]
+from = "/docs/advanced/optimize_wasm_size"
+to = "https://sycamore.dev/book/cookbook/optimize-wasm-size"
+[[redirects]]
+from = "/docs/migration/0.7-to-0.8"
+to = "https://sycamore.dev/book/migration/0-7-to-0-8"
+[[redirects]]
+from = "/docs/contribute/architecture"
+to = "https://sycamore.dev/book/contributing"
+[[redirects]]
+from = "/docs/contribute/development"
+to = "https://sycamore.dev/book/contributing"
+
 [[redirects]]
 from = "/"
 to = "https://sycamore.dev"
