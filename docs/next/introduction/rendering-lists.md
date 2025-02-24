@@ -113,7 +113,7 @@ want to allow editing the todo task after the todo has already been created.
 We might therefore want to change our `Todo` struct to look like:
 
 ```rust
-#[derve(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 struct Todo {
     task: Signal<String>,
     id: u32,
