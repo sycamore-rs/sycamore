@@ -76,12 +76,12 @@ pub fn create_raf(mut cb: impl FnMut() + 'static) -> RafState {
 ///
 /// The raf is not started by default. Call the `start` function to initiate the raf.
 pub fn create_raf_loop(mut f: impl FnMut() -> bool + 'static) -> RafState {
-    let stop_shared = Rc::new(OnceCell::new());
+    let stop_shared = Rc::new(OnceCell::<Rc<dyn Fn()>>::new());
     let (running, start, stop) = create_raf({
         let stop_shared = Rc::clone(&stop_shared);
         move || {
             if !f() {
-                stop_shared.get();
+                stop_shared.get().unwrap()();
             }
         }
     });
