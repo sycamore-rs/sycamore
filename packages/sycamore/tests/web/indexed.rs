@@ -419,3 +419,32 @@ fn template_with_other_nodes_at_same_level() {
         assert_text_content!(elem, "before145after");
     });
 }
+
+
+#[wasm_bindgen_test]
+fn issue_795_index() {
+    let _ = create_root(|| {
+        let count = create_signal(vec!["A1", "A2", "A2", "B1"]);
+
+        let view = move || {
+            view! {
+                ul {
+                    Indexed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item) }
+                        },
+                    )
+                }
+            }
+        };
+
+        sycamore::render_in_scope(view, &test_container());
+
+        let p = query("ul");
+        assert_text_content!(p, "A1A2A2B1");
+
+        count.set(vec!["A1", "A1", "A2", "A2", "B1"]);
+        assert_text_content!(p, "A1A1A2A2B1");
+    });
+}
