@@ -465,3 +465,33 @@ fn template_with_other_nodes_at_same_level() {
         assert_text_content!(elem, "before145after");
     });
 }
+
+
+#[wasm_bindgen_test]
+fn issue_795_keyed() {
+    let _ = create_root(|| {
+        let count = create_signal(vec!['b', 'c', 'g', 'e', 'f', 'd', 'h']);
+
+        let view = move || {
+            view! {
+                ul {
+                    Keyed(
+                        list=count,
+                        view=|item| view! {
+                            li { (item.to_string()) }
+                        },
+                        key=|item| *item
+                    )
+                }
+            }
+        };
+
+        sycamore::render_in_scope(view, &test_container());
+
+        let p = query("ul");
+        assert_text_content!(p, "bcgefdh");
+
+        count.set(vec!['b', 'x', 'y', 'g', 'f', 'e', 'z', 'd', 'h']);
+        assert_text_content!(p, "bxygfezdh");
+    });
+}
