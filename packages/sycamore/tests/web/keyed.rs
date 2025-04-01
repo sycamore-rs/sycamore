@@ -466,7 +466,6 @@ fn template_with_other_nodes_at_same_level() {
     });
 }
 
-
 #[wasm_bindgen_test]
 fn issue_795_keyed() {
     let _ = create_root(|| {

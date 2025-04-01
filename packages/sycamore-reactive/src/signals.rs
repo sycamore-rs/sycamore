@@ -105,9 +105,9 @@ pub struct Signal<T: 'static>(pub(crate) ReadSignal<T>);
 /// # Ownership
 /// Signals are always associated with a reactive node. This is what performs the memory management
 /// for the actual value of the signal. What is returned from this function is just a
-/// handle/reference to the signal allocated in the reactive node. This allows us to freely copy this
-/// handle around and use it in closures and event handlers without worrying about ownership of the
-/// signal.
+/// handle/reference to the signal allocated in the reactive node. This allows us to freely copy
+/// this handle around and use it in closures and event handlers without worrying about ownership of
+/// the signal.
 ///
 /// This is why in the above example, we could access `signal` even after it was moved in to the
 /// closure of the `create_memo`.
