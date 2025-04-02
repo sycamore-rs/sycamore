@@ -380,7 +380,7 @@ fn reconcile_fragments(parent: &web_sys::Node, a: &mut [web_sys::Node], b: &[web
                 let tmp = b[b_start..b_end]
                     .iter()
                     .enumerate()
-                    .map(|(i, g)| (HashableNode::new(g), i))
+                    .map(|(i, g)| (HashableNode::new(g), b_start + i))
                     .collect();
                 map = Some(tmp);
             }
