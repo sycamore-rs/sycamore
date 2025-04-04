@@ -134,3 +134,40 @@ jobs:
       - name: Run tests with all features
         run: |
           cargo miri test --all-features
+
+  msrv:
+    name: Build on below-minimum Rust version
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.80.0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        id: setup-rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      - name: Cargo generate-lockfile
+        run: cargo generate-lockfile
+
+      - name: Cargo cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - run: echo ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check for version requirement message
+        run: command 2>&1 cargo test web | grep -E "^[[:space:]]*sycamore@[[:digit:]]+(.[[:digit:]]+)* requires rustc [[:digit:]]+(.[[:digit:]]+)*"
