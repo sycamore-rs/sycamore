@@ -183,7 +183,7 @@ pub fn bounce_inout(t: f32) -> f32 {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(not(miri), test))]
 mod tests {
     use super::*;
 
@@ -193,6 +193,7 @@ mod tests {
                 $(
                     #[test]
                     fn [<test_ease_ $ease_fn _starts_at_0>]() {
+                        dbg!($ease_fn(0.0) - 0.0);
                         assert!(f32::abs($ease_fn(0.0) - 0.0) < f32::EPSILON);
                     }
                 )*
@@ -206,6 +207,7 @@ mod tests {
                 $(
                     #[test]
                     fn [<test_ease_ $ease_fn _ends_at_1>]() {
+                        dbg!($ease_fn(1.0) - 1.0);
                         assert!(f32::abs($ease_fn(1.0) - 1.0) < f32::EPSILON);
                     }
                 )*
