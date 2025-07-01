@@ -106,6 +106,8 @@ pub fn Suspense(props: SuspenseProps) -> View {
                     let (tx, rx) = futures::channel::oneshot::channel();
                     let mut tx = Some(tx);
                     create_effect(move || {
+                        // TODO: Remove this once MSRV is >= 1.82.
+                        #[expect(clippy::unnecessary_map_or, reason = "MSRV is at 1.81")]
                         if !suspense_scope.sent.get() && suspense_scope.parent.as_ref().map_or(true, |parent| parent.get().sent.get()) {
                             suspense_scope.sent.set(true);
                             tx.take().unwrap().send(()).unwrap();
