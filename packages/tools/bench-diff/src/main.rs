@@ -90,7 +90,7 @@ fn main() {
         } else {
             " "
         };
-        print!("{} {:<2$} | ", sign, benchmark, max_benchmark_name_len);
+        print!("{sign} {benchmark:<max_benchmark_name_len$} | ");
         print!("{:>1$} | ", format!("{:.2}", results.bindgen), 12); // 12: wasm-bindgen
         print!("{:>1$} | ", format!("{:.2}", results.baseline), 8); // 8: baseline
         print!("{:>1$} | ", format!("{:.2}", results.update), 7); // 7: f64 spacing
