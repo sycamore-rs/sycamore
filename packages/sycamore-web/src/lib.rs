@@ -90,6 +90,48 @@ pub mod rt {
 //#[doc(no_inline)]
 pub use {js_sys, wasm_bindgen};
 
+// Internal implementation for `cfg_ssr` and `cfg_not_ssr` macros.
+#[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! _is_ssr {
+    () => { true };
+    ($($tt:tt)*) => {
+        $($tt)*
+    };
+}
+#[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! _is_ssr {
+    () => {
+        false
+    };
+    ($($tt:tt)*) => {
+        // This is a no-op in DOM mode.
+    };
+}
+#[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! _is_not_ssr {
+    () => {
+        false
+    };
+    ($($tt:tt)*) => {
+        // This is a no-op in SSR mode.
+    };
+}
+#[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! _is_not_ssr {
+    () => { true };
+    ($($tt:tt)*) => {
+        $($tt)*
+    };
+}
+
 /// A macro that expands to whether we are in SSR mode or not.
 ///
 /// Can also be used with a block to only include the code inside the block if in SSR mode.
@@ -109,12 +151,8 @@ pub use {js_sys, wasm_bindgen};
 /// ```
 #[macro_export]
 macro_rules! is_ssr {
-    () => {
-        cfg!(any(not(target_arch = "wasm32"), sycamore_force_ssr))
-    };
     ($($tt:tt)*) => {
-        #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
-        { $($tt)* }
+        $crate::_is_ssr! { $($tt)* }
     };
 }
 
@@ -136,32 +174,28 @@ macro_rules! is_ssr {
 /// ```
 #[macro_export]
 macro_rules! is_not_ssr {
-    () => {
-        !$crate::is_ssr!()
-    };
     ($($tt:tt)*) => {
-        #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
-        { $($tt)* }
+        $crate::_is_not_ssr! { $($tt)* }
     };
 }
 
 /// `macro_rules!` equivalent of [`cfg_ssr`]. This is to get around the limitation of not being
 /// able to put proc-macros on `mod` items.
+#[deprecated(since = "0.9.2", note = "use `is_ssr!` instead")]
 #[macro_export]
 macro_rules! cfg_ssr_item {
     ($item:item) => {
-        #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
-        $item
+        $crate::is_ssr! { $item }
     };
 }
 
 /// `macro_rules!` equivalent of [`cfg_not_ssr`]. This is to get around the limitation of not being
 /// able to put proc-macros on `mod` items.
+#[deprecated(since = "0.9.2", note = "use `is_not_ssr!` instead")]
 #[macro_export]
 macro_rules! cfg_not_ssr_item {
     ($item:item) => {
-        #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
-        $item
+        $crate::is_not_ssr! { $item }
     };
 }
 

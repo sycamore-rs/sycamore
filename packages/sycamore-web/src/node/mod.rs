@@ -5,14 +5,12 @@ use std::num::NonZeroU32;
 
 use crate::*;
 
-cfg_not_ssr_item!(
+is_not_ssr!(
     mod dom_node;
-);
-cfg_not_ssr_item!(
     #[cfg(feature = "hydrate")]
     mod hydrate_node;
 );
-cfg_ssr_item!(
+is_ssr!(
     mod ssr_node;
 );
 mod dom_render;

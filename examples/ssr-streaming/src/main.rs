@@ -1,10 +1,9 @@
 mod app;
-cfg_ssr_item!(
+is_ssr!(
     mod server;
 );
 
 use sycamore::prelude::*;
-use sycamore::web::cfg_ssr_item;
 
 #[cfg_ssr]
 #[tokio::main]
