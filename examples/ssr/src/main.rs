@@ -25,5 +25,5 @@ fn App() -> View {
 
 fn main() {
     let s = sycamore::render_to_string(App);
-    println!("{}", s);
+    println!("{s}");
 }

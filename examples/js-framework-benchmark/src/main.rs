@@ -114,7 +114,7 @@ fn App() -> View {
     let update = move || {
         let d = data.get_clone();
         for row in d.into_iter().step_by(10) {
-            row.label.update(|l| *l = format!("{} !!!", l));
+            row.label.update(|l| *l = format!("{l} !!!"));
         }
     };
 
