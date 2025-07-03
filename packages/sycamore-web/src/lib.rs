@@ -69,7 +69,11 @@ pub use self::suspense::*;
 pub use self::view::*;
 
 /// We add this to make the macros from `sycamore-macro` work properly.
+/// We also add the `web` module so that the macros can access `::sycamore::web` correctly.
 extern crate self as sycamore;
+mod web {
+    pub use crate::*;
+}
 
 #[doc(hidden)]
 pub mod rt {
