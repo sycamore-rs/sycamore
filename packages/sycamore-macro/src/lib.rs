@@ -73,8 +73,9 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
 pub fn cfg_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     quote! {
-        #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
-        #input
+        ::sycamore::web::is_ssr! {
+            #input
+        }
     }
     .into()
 }
@@ -97,8 +98,9 @@ pub fn cfg_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn cfg_not_ssr(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     quote! {
-        #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
-        #input
+        ::sycamore::web::is_not_ssr! {
+            #input
+        }
     }
     .into()
 }
