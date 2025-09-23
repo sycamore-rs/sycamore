@@ -58,6 +58,5 @@ required-features = ["hydrate"]
 all-features = true
 default-target = "wasm32-unknown-unknown"
 
-
 [lints]
 workspace = true

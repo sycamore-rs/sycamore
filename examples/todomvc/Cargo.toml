@@ -2,8 +2,7 @@
 name = "todomvc"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+publish = false
 
 [dependencies]
 console_error_panic_hook = "0.1.7"
@@ -15,7 +14,6 @@ uuid = { version = "1.2.2", features = ["serde", "v4", "js"] }
 [dependencies.web-sys]
 features = ["Location", "Storage", "HtmlInputElement"]
 version = "0.3.60"
-
 
 [lints]
 workspace = true

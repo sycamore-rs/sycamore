@@ -2,15 +2,13 @@
 name = "http-request"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+publish = false
 
 [dependencies]
 console_error_panic_hook = "0.1.7"
 gloo-net = { version = "0.6.0", features = ["http"] }
 serde = { version = "1.0.147", features = ["derive"] }
 sycamore = { path = "../../packages/sycamore", features = ["suspense"] }
-
 
 [lints]
 workspace = true

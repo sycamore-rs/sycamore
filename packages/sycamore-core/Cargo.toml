@@ -23,6 +23,5 @@ sycamore = { path = "../sycamore" }
 default = []
 suspense = ["sycamore-futures"]
 
-
 [lints]
 workspace = true

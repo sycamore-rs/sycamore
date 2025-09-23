@@ -82,6 +82,5 @@ hydrate = []
 suspense = ["dep:sycamore-futures", "dep:futures", "dep:async-stream"]
 wasm-bindgen-interning = ["wasm-bindgen/enable-interning"]
 
-
 [lints]
 workspace = true

@@ -13,8 +13,6 @@ version.workspace = true
 [lib]
 proc-macro = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 proc-macro2 = "1.0.47"
 quote = "1.0.21"
@@ -24,7 +22,6 @@ syn = "2.0.10"
 expect-test = "1.4.0"
 sycamore-router = { path = "../sycamore-router" }
 trybuild = "1.0.71"
-
 
 [lints]
 workspace = true

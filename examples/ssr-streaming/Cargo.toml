@@ -2,6 +2,7 @@
 name = "ssr-streaming"
 edition = "2021"
 version.workspace = true
+publish = false
 
 [dependencies]
 sycamore = { path = "../../packages/sycamore", features = [

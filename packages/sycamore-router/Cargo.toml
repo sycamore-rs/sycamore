@@ -10,8 +10,6 @@ readme = "../../README.md"
 repository = "https://github.com/sycamore-rs/sycamore"
 version.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 sycamore = { workspace = true }
 sycamore-router-macro = { workspace = true }
@@ -32,7 +30,6 @@ features = [
 	"UrlSearchParams",
 ]
 version = "0.3.60"
-
 
 [lints]
 workspace = true

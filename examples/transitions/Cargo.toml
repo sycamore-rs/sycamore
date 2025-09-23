@@ -2,8 +2,7 @@
 name = "transitions"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+publish = false
 
 [dependencies]
 console_error_panic_hook = "0.1.7"
@@ -11,7 +10,6 @@ getrandom = { version = "0.2.8", features = ["js"] }
 gloo-timers = { version = "0.2.4", features = ["futures"] }
 rand = "0.8.5"
 sycamore = { path = "../../packages/sycamore", features = ["suspense"] }
-
 
 [lints]
 workspace = true
