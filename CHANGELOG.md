@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.9.2 _(2025-09-23)_
+
+#### What's Changed
+
+* Move view.rs from sycamore-macro into sycamore-view-parser codegen.rs by @davidon-top in https://github.com/sycamore-rs/sycamore/pull/762
+* Bump dawidd6/action-download-artifact from 2 to 6 in /.github/workflows by @dependabot[bot] in https://github.com/sycamore-rs/sycamore/pull/763
+* Fix some typos by @AMNRG in https://github.com/sycamore-rs/sycamore/pull/765
+* head should be html by @phocks in https://github.com/sycamore-rs/sycamore/pull/767
+* owned String required .into() or .to_string() by @phocks in https://github.com/sycamore-rs/sycamore/pull/768
+* signal instead of value name of var by @phocks in https://github.com/sycamore-rs/sycamore/pull/769
+* Update `ref` syntax to `r#ref` in doc comments by @AMNRG in https://github.com/sycamore-rs/sycamore/pull/771
+* Fix view update handling for dynamic field bases by @AMNRG in https://github.com/sycamore-rs/sycamore/pull/773
+* Fix context not removed when node is rerun by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/775
+* guide: fix a minor typo by @tguichaoua in https://github.com/sycamore-rs/sycamore/pull/779
+* Update resources-and-suspense.md by @humb1t in https://github.com/sycamore-rs/sycamore/pull/780
+* Fix typo in js-interop.md by @alexmccartneymoore in https://github.com/sycamore-rs/sycamore/pull/782
+* Fix `unexpected_cfgs` in the crates and add a troubleshooting note by @tguichaoua in https://github.com/sycamore-rs/sycamore/pull/783
+* Fix lint warnings by @tguichaoua in https://github.com/sycamore-rs/sycamore/pull/784
+* Update bench.yml by @ZAZPRO in https://github.com/sycamore-rs/sycamore/pull/786
+* Fix missing deref in adding-state.md example by @ZAZPRO in https://github.com/sycamore-rs/sycamore/pull/787
+* Update router documentation by @lukeh990 in https://github.com/sycamore-rs/sycamore/pull/788
+* Fix typo in rendering-lists.md by @JoeriDamme in https://github.com/sycamore-rs/sycamore/pull/791
+* Fix bug where the stop function in `create_raf_loop` was not actually being called by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/793
+* fix reconcile_fragments bug by @acheul in https://github.com/sycamore-rs/sycamore/pull/796
+* Enforce minimum supported Rust version by @Vectornaut in https://github.com/sycamore-rs/sycamore/pull/797
+* Reimplement `is_ssr!` and `is_not_ssr!` macros to not trigger unknown cfg warning by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/798
+* Fix new clippy warnings by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/799
+* Update LICENSE year to 2025 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/800
+* Fix `#[cfg_ssr]` and `#[cfg_not_ssr]` to use `is_ssr!` and `is_not_ssr!` macros. by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/801
+* Disable publishing in Cargo.toml for examples by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/803
+* Add main packages as default members for the virtual workspace by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/804
+
 ## 0.9.1 _(2024-11-17)_
 
 #### What's Changed

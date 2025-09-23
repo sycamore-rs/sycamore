@@ -86,14 +86,14 @@ This creates a blank Rust project called `hello-sycamore`. Let's add Sycamore as
 a dependency by running:
 
 ```bash
-cargo add sycamore@0.9.1
+cargo add sycamore@0.9.2
 ```
 
 You can also do this manually by adding the following line to your `Cargo.toml`
 file.
 
 ```toml
-sycamore = "0.9.1"
+sycamore = "0.9.2"
 ```
 
 ## Hello, world!
