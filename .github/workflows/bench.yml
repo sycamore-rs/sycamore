@@ -20,7 +20,7 @@ jobs:
           ref: ${{ github.base_ref }}
 
       - name: Run cargo bench on base
-        run: cargo bench --bench reactivity --bench ssr
+        run: cargo bench -p bench --bench reactivity --bench ssr
 
       - name: Checkout repository head
         uses: actions/checkout@v3
@@ -30,7 +30,7 @@ jobs:
           clean: false # Do not remove benchmark results from base branch
 
       - name: Run cargo bench on head
-        run: cargo bench --bench reactivity --bench ssr
+        run: cargo bench -p bench --bench reactivity --bench ssr
 
       - name: Upload benchmark report
         uses: actions/upload-artifact@v4
