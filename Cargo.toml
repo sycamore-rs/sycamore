@@ -41,6 +41,18 @@ members = [
 	"packages/tools/bench",
 	"packages/tools/bench-diff",
 ]
+# Only include packages as default workspace members.
+default-members = [
+	"packages/sycamore",
+	"packages/sycamore-core",
+	"packages/sycamore-futures",
+	"packages/sycamore-macro",
+	"packages/sycamore-reactive",
+	"packages/sycamore-router",
+	"packages/sycamore-router-macro",
+	"packages/sycamore-view-parser",
+	"packages/sycamore-web",
+]
 
 [workspace.package]
 version = "0.9.1"
@@ -60,4 +72,7 @@ sycamore-web = { path = "packages/sycamore-web", version = "0.9.1" }
 debug = true
 
 [workspace.lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ["cfg(sycamore_force_ssr)", "cfg(rust_analyzer)"] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+	"cfg(sycamore_force_ssr)",
+	"cfg(rust_analyzer)",
+] }
