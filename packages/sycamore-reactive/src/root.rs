@@ -30,9 +30,10 @@ pub(crate) struct Root {
     pub nodes: RefCell<SlotMap<NodeId, ReactiveNode>>,
     /// A list of signals who need their values to be propagated after the batch is over.
     pub node_update_queue: RefCell<Vec<NodeId>>,
-    /// Whether we are currently batching signal updates. If this is true, we do not run
-    /// `effect_queue` and instead wait until the end of the batch.
-    pub batching: Cell<bool>,
+    /// The current batch depth. If greater than 0, don't run
+    /// `effect_queue` and instead wait until the end of the outermost batch.
+    /// This will make nested batches to compose correctly.
+    pub batch_depth: Cell<usize>,
 }
 
 thread_local! {
@@ -61,7 +62,7 @@ impl Root {
             root_node: Cell::new(NodeId::null()),
             nodes: RefCell::new(SlotMap::default()),
             node_update_queue: RefCell::new(Vec::new()),
-            batching: Cell::new(false),
+            batch_depth: Cell::new(0),
         };
         let _ref = Box::leak(Box::new(this));
         _ref.reinit();
@@ -79,7 +80,7 @@ impl Root {
         let _ = self.current_node.take();
         let _ = self.root_node.take();
         let _ = self.nodes.take();
-        self.batching.set(false);
+        self.batch_depth.set(0);
 
         // Create a new root node.
         Root::set_global(Some(self));
@@ -211,7 +212,7 @@ impl Root {
     ///
     /// If we are currently batching, defers updating the signal until the end of the batch.
     pub fn propagate_updates(&'static self, start_node: NodeId) {
-        if self.batching.get() {
+        if self.batch_depth.get() > 0 {
             self.node_update_queue.borrow_mut().push(start_node);
         } else {
             // Set the global root.
@@ -247,16 +248,23 @@ impl Root {
         buf.push(current_id);
     }
 
-    /// Sets the batch flag to `true`.
+    /// Increments the batch depth counter.
     fn start_batch(&self) {
-        self.batching.set(true);
+        self.batch_depth.set(self.batch_depth.get() + 1);
     }
 
-    /// Sets the batch flag to `false` and run all the queued effects.
+    /// Decrements the batch depth counter and runs all the queued effects
+    /// only when the outermost batch ends (depth reaches 0).
     fn end_batch(&'static self) {
-        self.batching.set(false);
-        let nodes = self.node_update_queue.take();
-        self.propagate_node_updates(&nodes);
+        let depth = self.batch_depth.get();
+        debug_assert!(depth > 0, "end_batch called without matching start_batch");
+        self.batch_depth.set(depth - 1);
+
+        // Only propagate updates when exiting the outermost batch
+        if depth == 1 {
+            let nodes = self.node_update_queue.take();
+            self.propagate_node_updates(&nodes);
+        }
     }
 }
 
@@ -544,6 +552,44 @@ mod tests {
                 assert_eq!(counter.get(), 3);
             });
             assert_eq!(counter.get(), 4);
+        });
+    }
+
+    #[test]
+    fn nested_batches_compose() {
+        let _ = create_root(|| {
+            let state = create_signal("Initial");
+            let counter = create_signal(0);
+
+            // Monitor state updates
+            create_effect(move || {
+                counter.set(counter.get_untracked() + 1);
+                let _ = state.get();
+            });
+
+            // Initial effect run
+            assert_eq!(counter.get(), 1);
+
+            // Nested batches should compose - effects only run at the end of outermost batch
+            batch(|| {
+                state.set("First in outer batch");
+                assert_eq!(counter.get(), 1); // No update yet
+
+                batch(|| {
+                    state.set("First in inner batch");
+                    assert_eq!(counter.get(), 1); // Still no update
+                    state.set("Last in inner batch");
+                    assert_eq!(counter.get(), 1); // Still no update
+                });
+
+                // Inner batch ended but we're still in outer batch
+                assert_eq!(counter.get(), 1); // Still no update!
+                state.set("Last in outer batch");
+                assert_eq!(counter.get(), 1); // Still no update
+            });
+
+            // Now outer batch ended, effect should run exactly once
+            assert_eq!(counter.get(), 2);
         });
     }
 }
