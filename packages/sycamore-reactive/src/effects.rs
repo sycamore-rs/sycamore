@@ -241,9 +241,11 @@ mod tests {
                 }
             });
 
-            assert_eq!(last_updated.get(), 2); // initial run
+            // Initial run.
+            assert_eq!(last_updated.get(), 2);
+            // Inner effect should be created and access clean value for `double`.
             state.set(2);
-            assert_eq!(last_updated.get(), 4); // inner effect should rerun
+            assert_eq!(last_updated.get(), 4);
         });
     }
 
@@ -264,9 +266,11 @@ mod tests {
                 }
             });
 
-            assert_eq!(last_updated.get(), 2); // initial run
+            // Initial run.
+            assert_eq!(last_updated.get(), 2);
+            // Accessing `double` after a dependency change uses the clean/new value.
             state.set(2);
-            assert_eq!(last_updated.get(), 4); // inner effect should rerun
+            assert_eq!(last_updated.get(), 4);
         });
     }
 
