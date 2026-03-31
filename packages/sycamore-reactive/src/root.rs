@@ -457,6 +457,23 @@ mod tests {
     use crate::*;
 
     #[test]
+    fn test_lazy_vs_eager_updates() {
+        let _ = create_root(|| {
+            let counter = create_signal(0);
+            let trigger = create_signal(0);
+            create_effect(move || {
+                let _ = trigger.get();
+                counter.set(counter.get_untracked() + 1);
+            });
+            assert_eq!(counter.get(), 1); // initial run
+            trigger.set(1);
+            // If updates are lazy, this will fail (counter will still be 1)
+            // If updates are eager, this will pass (counter will be 2)
+            assert_eq!(counter.get(), 2);
+        });
+    }
+
+    #[test]
     fn cleanup() {
         let _ = create_root(|| {
             let cleanup_called = create_signal(false);
