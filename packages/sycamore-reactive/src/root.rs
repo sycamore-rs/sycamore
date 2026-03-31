@@ -123,7 +123,7 @@ impl Root {
             .nodes
             .borrow()
             .get(node)
-            .is_some_and(|node| node.state == NodeState::Clean);
+            .is_none_or(|node| node.state == NodeState::Clean);
         if !is_clean {
             self.run_node_update(node);
         }
