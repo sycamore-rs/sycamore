@@ -1,4 +1,7 @@
-//! [`Root`] and [`Scope`].
+//! Definition of [`Root`] and related functions.
+//!
+//! In particular, this file includes the implementation of the reactive graph and the update
+//! propagation algorithm.
 
 use std::cell::{Cell, RefCell};
 
