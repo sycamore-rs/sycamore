@@ -107,6 +107,25 @@ impl Root {
         (ret, self.tracker.replace(prev).unwrap())
     }
 
+    /// Ensure that the node is clean. If it is dirty, then we need to update the node first before
+    /// we can safely access its value.
+    ///
+    /// This is used in [`ReadSignal::get`] to ensure that the value is up-to-date before returning
+    /// it. This will also recursively ensure that all the dependencies of the node are clean as
+    /// well.
+    ///
+    /// If node is already destroyed, this does nothing.
+    pub fn ensure_node_is_clean(&'static self, node: NodeId) {
+        let is_clean = self
+            .nodes
+            .borrow()
+            .get(node)
+            .is_some_and(|node| node.state == NodeState::Clean);
+        if !is_clean {
+            self.run_node_update(node);
+        }
+    }
+
     /// Run the update callback of the signal, also recreating any dependencies found by
     /// tracking signal accesses inside the function.
     ///
