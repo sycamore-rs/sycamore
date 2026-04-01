@@ -114,7 +114,13 @@ impl Default for SuspenseTaskGuard {
 impl Drop for SuspenseTaskGuard {
     fn drop(&mut self) {
         if let Some(mut scope) = self.scope {
-            scope.tasks_remaining -= 1;
+            // It's possible that the scope has already been destroyed, in the case where the
+            // suspense task is still running after the suspense scope is destroyed. In this case,
+            // we need to be careful not to access any values in the scope since that will cause a
+            // panic.
+            if scope.tasks_remaining.is_alive() {
+                scope.tasks_remaining -= 1;
+            }
         }
     }
 }
