@@ -88,7 +88,6 @@ async fn manage_messages(
     };
 }
 
-// the entry point for the server part of the example
 #[tokio::main]
 pub async fn main() -> io::Result<()> {
     // create a shared state

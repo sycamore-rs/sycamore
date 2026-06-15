@@ -9,10 +9,8 @@ use sycamore::prelude::*;
 use components::{name_view::NameView, trigram_view::TrigramView};
 use trigram_connection::TrigramConnection;
 
-// the entry point for the client part of the example
 pub fn main() {
     // set the console error panic hook
-    #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
     sycamore::render(|| {

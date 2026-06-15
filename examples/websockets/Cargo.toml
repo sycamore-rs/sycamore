@@ -3,25 +3,33 @@ name = "websockets"
 version = "0.1.0"
 edition = "2024"
 publish = false
+default-run = "server"
 
-# when we build the client part of the example with `trunk build`, our Trunk
-# configuration enables the `client` feature and disables the default features.
-# when we build the server part of the example with `cargo build`, only the
-# default features are enabled
+# when we call `trunk build`, the attributes of the `rust` link asset in
+# `index.html` tell Trunk to enable the "client" feature and disable the default
+# "server" feature. when we call `cargo build`, only the default "server"
+# feature is enabled
 [features]
-default = ["dep:axum", "dep:tokio", "dep:futures-util"]
-client = ["console_error_panic_hook", "dep:futures", "dep:gloo-net", "dep:gloo-utils", "dep:sycamore"]
+default = ["server"]
+client = [
+  "dep:console_error_panic_hook",
+  "dep:futures",
+  "dep:gloo-net",
+  "dep:gloo-utils",
+  "dep:sycamore",
+]
+server = ["dep:axum", "dep:tokio", "dep:futures-util"]
 
+# the "client" and "server" features show which dependencies belong to each part
+# of the example
 [dependencies]
-
-# --- client ---
 
 futures = { version = "0.3.32", optional = true }
 gloo-net = { version = "0.7.0", optional = true }
 gloo-utils = { version = "0.3.0", optional = true }
 
-# we use the `suspense` feature to receive WebSocket messages asynchronously
-sycamore = { version = "0.9.2", features = ["suspense"], optional = true }
+# the server framework we use to handle WebSocket connections
+axum = { version = "0.8.9", features = ["ws"], optional = true }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -29,20 +37,26 @@ sycamore = { version = "0.9.2", features = ["suspense"], optional = true }
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
 
-# --- server ---
-
-# the server framework we use to handle WebSocket connections
-axum = { version = "0.8.9", features = ["ws"], optional = true }
-
-# the asynchronous runtime that `axum` is designed to work with
-tokio = { version = "1.52.0", features = ["macros", "rt-multi-thread"], optional = true }
+# we use the `suspense` feature to receive WebSocket messages asynchronously
+sycamore = { version = "0.9.2", features = ["suspense"], optional = true }
 
 # utilities for working with futures and streams
 [dependencies.futures-util]
-
-# --- server ---
-
 version = "0.3.32"
 default-features = false
 features = ["sink"]
 optional = true
+
+# the asynchronous runtime that `axum` is designed to work with
+[dependencies.tokio]
+version = "1.52.0"
+features = ["macros", "rt-multi-thread"]
+optional = true
+
+[[bin]]
+name = "client"
+required-features = ["client"]
+
+[[bin]]
+name = "server"
+required-features = ["server"]

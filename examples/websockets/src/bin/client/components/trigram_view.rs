@@ -1,6 +1,6 @@
 use sycamore::prelude::*;
 
-use crate::client::TrigramConnection;
+use crate::trigram_connection::TrigramConnection;
 
 #[component]
 pub fn TrigramView() -> View {

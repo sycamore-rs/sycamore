@@ -5,7 +5,7 @@ use gloo_utils::errors::JsError;
 use std::{cell::RefCell, rc::Rc};
 use sycamore::{futures::spawn_local_scoped, prelude::*};
 
-use crate::trigram::Trigram;
+use websockets::trigram::Trigram;
 
 // a connection to a trigram that lives on a server. the `trigram` signal
 // updates when we get a state update from the server or we use the `flip`
