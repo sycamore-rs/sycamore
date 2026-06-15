@@ -1,0 +1,53 @@
+:root {
+  --trigram-width: min(400px, min(80vw, 66.666vh));
+}
+
+body {
+  margin-top: calc((100vh - var(--trigram-width)) / 2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: sans-serif;
+}
+
+.trigram {
+  display: flex;
+  flex-direction: column;
+  row-gap: 20%;
+  aspect-ratio: 8 / 5;
+  width: var(--trigram-width);
+}
+
+.line {
+  width: 100%;
+  height: 20%;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(192, 192, 192),
+    rgb(192, 192, 192) calc(3.125% - 0.5px),
+    rgba(192, 192, 192, 0) calc(3.125% + 0.5px),
+    rgba(192, 192, 192, 0) calc(9.375% - 0.5px),
+    rgb(192, 192, 192) calc(9.375% + 0.5px),
+    rgb(192, 192, 192) 12.5%
+  );
+}
+
+.unbroken {
+  background: black;
+  background-image: none;
+}
+
+.broken {
+  background-image: linear-gradient(
+    to right,
+    black 41.666%,
+    rgba(0, 0, 0, 0) 41.666%,
+    rgba(0, 0, 0, 0) 58.333%,
+    black 58.333%
+  );
+}
+
+.name {
+  margin-top: calc(var(--trigram-width) / 8);
+  font-size: calc(var(--trigram-width) / 4);
+}
