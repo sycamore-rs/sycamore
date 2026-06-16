@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 
-use websockets::trigram::Trigram;
+use websockets::Trigram;
 
 // a trigram that broadcasts an update whenever its state changes. this update
 // can be passed on to clients
