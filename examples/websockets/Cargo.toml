@@ -23,7 +23,6 @@ server = ["dep:axum", "dep:tokio", "dep:futures-util"]
 # the "client" and "server" features show which dependencies belong to each part
 # of the example
 [dependencies]
-
 futures = { version = "0.3.32", optional = true }
 gloo-net = { version = "0.7.0", optional = true }
 gloo-utils = { version = "0.3.0", optional = true }
