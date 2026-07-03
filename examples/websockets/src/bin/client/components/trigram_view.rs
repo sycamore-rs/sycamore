@@ -21,12 +21,15 @@ fn LineView<const N: u8>() -> View {
 
     let trigram_connection = use_context::<TrigramConnection>();
     let broken = create_selector(move || {
-        trigram_connection.trigram.with(
-            |tri_opt| tri_opt.map_or(
-                "",
-                |tri| if tri.broken::<N>() { " broken" } else { " unbroken" },
-            )
-        )
+        trigram_connection.trigram.with(|tri_opt| {
+            tri_opt.map_or("", |tri| {
+                if tri.broken::<N>() {
+                    " broken"
+                } else {
+                    " unbroken"
+                }
+            })
+        })
     });
 
     view! {

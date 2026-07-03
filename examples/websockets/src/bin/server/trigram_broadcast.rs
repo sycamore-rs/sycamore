@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
-use tokio::sync::broadcast;
 
+use tokio::sync::broadcast;
 use websockets::Trigram;
 
 // a trigram that broadcasts an update whenever its state changes. this update
@@ -41,7 +41,10 @@ impl TrigramBroadcast {
         //   Chapter 1 > "Locking: Mutexes and RwLocks" > "Rust's Mutex"
         //   https://mara.nl/atomics/basics.html#rusts-mutex
         //
-        let Self { trigram, broadcaster } = self;
+        let Self {
+            trigram,
+            broadcaster,
+        } = self;
         let mut trigram_guarded = trigram.lock().unwrap();
         trigram_guarded.flip(n);
 

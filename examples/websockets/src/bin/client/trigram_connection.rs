@@ -1,10 +1,13 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use futures::stream::SplitSink;
 use futures::{SinkExt, StreamExt};
-use gloo_net::websocket::{Message::{self, Bytes}, futures::{WebSocket}};
+use gloo_net::websocket::Message::{self, Bytes};
+use gloo_net::websocket::futures::WebSocket;
 use gloo_utils::errors::JsError;
-use std::{cell::RefCell, rc::Rc};
-use sycamore::{futures::spawn_local_scoped, prelude::*};
-
+use sycamore::futures::spawn_local_scoped;
+use sycamore::prelude::*;
 use websockets::Trigram;
 
 // a connection to a trigram that lives on a server. the `trigram` signal
@@ -49,34 +52,36 @@ impl TrigramConnection {
                 });
 
                 Ok(())
-            },
+            }
             Err(error) => Err(error),
         };
 
-        (Self { trigram, sender_opt }, connection_status)
+        (
+            Self {
+                trigram,
+                sender_opt,
+            },
+            connection_status,
+        )
     }
 
     // update the local state by flipping the specified line, and ask the server
     // to mirror the change. to ensure consistency in case of crossed messages,
     // we'll get a confirmation update when the server fulfills the flip request
     pub fn flip(&self, line: u8) {
-        let Self { trigram, sender_opt } = self;
+        let Self {
+            trigram,
+            sender_opt,
+        } = self;
 
         // change the local state
-        trigram.update(
-            |tri_opt| tri_opt.map(
-                |mut tri| tri.flip(line)
-            )
-        );
+        trigram.update(|tri_opt| tri_opt.map(|mut tri| tri.flip(line)));
 
         // request a global change, if we have a server connection
         if let Some(sender) = sender_opt {
             let sender_for_async = sender.clone();
             spawn_local_scoped(async move {
-                let _ = sender_for_async
-                    .borrow_mut()
-                    .send(Bytes(vec![line]))
-                    .await;
+                let _ = sender_for_async.borrow_mut().send(Bytes(vec![line])).await;
             });
         }
     }

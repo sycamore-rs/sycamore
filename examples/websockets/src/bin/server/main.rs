@@ -1,18 +1,16 @@
 mod trigram_broadcast;
 
-use axum::{
-    Router,
-    extract::{
-        State,
-        WebSocketUpgrade,
-        ws::{Message::{self, Binary}, WebSocket}
-    },
-    response::IntoResponse, routing::get
-};
-use futures_util::{sink::SinkExt, stream::StreamExt};
 use std::io;
-use tokio::net::TcpListener;
 
+use axum::Router;
+use axum::extract::ws::Message::{self, Binary};
+use axum::extract::ws::WebSocket;
+use axum::extract::{State, WebSocketUpgrade};
+use axum::response::IntoResponse;
+use axum::routing::get;
+use futures_util::sink::SinkExt;
+use futures_util::stream::StreamExt;
+use tokio::net::TcpListener;
 use trigram_broadcast::TrigramBroadcast;
 
 async fn connect_client(
@@ -20,22 +18,17 @@ async fn connect_client(
     State(trigram_broadcast): State<TrigramBroadcast>,
 ) -> impl IntoResponse {
     println!("Client connected");
-    socket_upgrade.on_upgrade(
-        |socket| manage_messages(socket, trigram_broadcast)
-    )
+    socket_upgrade.on_upgrade(|socket| manage_messages(socket, trigram_broadcast))
 }
 
-async fn manage_messages(
-    socket: WebSocket,
-    trigram_broadcast: TrigramBroadcast,
-) {
+async fn manage_messages(socket: WebSocket, trigram_broadcast: TrigramBroadcast) {
     let (mut client_sender, mut client_receiver) = socket.split();
 
     // send the new client the current state. if sending fails, bail out
     let trigram_code_init = u8::from(&trigram_broadcast);
-    let status_of_send_init = client_sender.send(
-        Message::binary(vec![trigram_code_init])
-    ).await;
+    let status_of_send_init = client_sender
+        .send(Message::binary(vec![trigram_code_init]))
+        .await;
     if status_of_send_init.is_err() {
         return;
     }
@@ -48,9 +41,9 @@ async fn manage_messages(
     let mut forward_state_updates = tokio::spawn(async move {
         while let Ok(trigram_code) = broadcast_receiver.recv().await {
             // forward the state update to the client
-            let status_of_send = client_sender.send(
-                Message::binary(vec![trigram_code])
-            ).await;
+            let status_of_send = client_sender
+                .send(Message::binary(vec![trigram_code]))
+                .await;
 
             // if the socket sender has stopped working, end the task
             if status_of_send.is_err() {
