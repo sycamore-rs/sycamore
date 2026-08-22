@@ -230,9 +230,9 @@ impl_into_maybe_dyn!(
 impl std::fmt::Display for MaybeDyn<Option<Cow<'static, str>>> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(value) = self.get_clone() {
-            write!(f, "{}", value)
+            value.fmt(f)
         } else {
-            write!(f, "")
+            Ok(())
         }
     }
 }
