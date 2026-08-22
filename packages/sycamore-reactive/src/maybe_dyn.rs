@@ -227,6 +227,22 @@ impl_into_maybe_dyn!(
     &'static str, String, bool, f32, f64, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
 );
 
+impl std::fmt::Display for MaybeDyn<Option<Cow<'static, str>>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(value) = self.get_clone() {
+            write!(f, "{}", value)
+        } else {
+            write!(f, "")
+        }
+    }
+}
+
+impl<T: std::fmt::Debug + Clone + Into<Self>> std::fmt::Debug for MaybeDyn<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("MaybeDyn").field(&self.get_clone()).finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,5 +288,19 @@ mod tests {
         assert_eq!(value.get(), 123);
         assert_eq!(value.get_clone(), 123);
         assert_eq!(value.evaluate(), 123);
+    }
+
+    /// Regression test for <https://github.com/sycamore-rs/sycamore/issues/778>
+    ///
+    /// In `sycamore-web`, the `StringAttribute` type is defined as an alias for
+    /// `MaybeDyn<Option<Cow<'static, str>>>`. This test ensures that the `Display` implementation
+    /// for `StringAttribute` works correctly.
+    #[test]
+    fn string_attribute_implements_display() {
+        let value = MaybeDyn::<Option<Cow<'static, str>>>::from(Some("abc"));
+        assert_eq!(value.to_string(), "abc");
+
+        let value = MaybeDyn::<Option<Cow<'static, str>>>::from(None::<Cow<'static, str>>);
+        assert_eq!(value.to_string(), "");
     }
 }
