@@ -31,17 +31,43 @@ thread_local! {
 /// A router integration that uses the
 /// [HTML5 History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) to keep the
 /// UI in sync with the URL.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct HistoryIntegration {
+    /// Whether to scroll back to the top of the page when navigating to a new route.
+    scroll_to_top: bool,
     /// This field is to prevent downstream users from creating a new `HistoryIntegration` without
     /// the `new` method.
     _internal: (),
+}
+
+impl Default for HistoryIntegration {
+    fn default() -> Self {
+        Self {
+            scroll_to_top: true,
+            _internal: (),
+        }
+    }
 }
 
 impl HistoryIntegration {
     /// Create a new [`HistoryIntegration`].
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Sets whether the page should scroll back to the top when navigating to a new route.
+    ///
+    /// This is enabled by default. Passing `false` keeps the current scroll position across
+    /// navigations, which is useful when you want to reset the scroll yourself, e.g. only once
+    /// the resources for the new page have finished loading.
+    ///
+    /// ```
+    /// # use sycamore_router::HistoryIntegration;
+    /// let integration = HistoryIntegration::new().scroll_to_top(false);
+    /// ```
+    pub fn scroll_to_top(mut self, enabled: bool) -> Self {
+        self.scroll_to_top = enabled;
+        self
     }
 }
 
@@ -59,7 +85,8 @@ impl Integration for HistoryIntegration {
     }
 
     fn click_handler(&self) -> Box<dyn Fn(web_sys::MouseEvent)> {
-        Box::new(|ev| {
+        let scroll_to_top = self.scroll_to_top;
+        Box::new(move |ev| {
             if let Some(a) = ev
                 .target()
                 .unwrap_throw()
@@ -93,7 +120,9 @@ impl Integration for HistoryIntegration {
                             history
                                 .push_state_with_url(&JsValue::UNDEFINED, "", Some(&a_pathname))
                                 .unwrap_throw();
-                            window().scroll_to_with_x_and_y(0.0, 0.0);
+                            if scroll_to_top {
+                                window().scroll_to_with_x_and_y(0.0, 0.0);
+                            }
 
                             let pathname = pathname.get().unwrap_throw();
                             let path = a_pathname
@@ -511,6 +540,22 @@ fn meta_keys_pressed(kb_event: &KeyboardEvent) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn history_integration_scrolls_to_top_by_default() {
+        assert!(HistoryIntegration::new().scroll_to_top);
+    }
+
+    #[test]
+    fn history_integration_scroll_to_top_can_be_toggled() {
+        assert!(!HistoryIntegration::new().scroll_to_top(false).scroll_to_top);
+        assert!(
+            HistoryIntegration::new()
+                .scroll_to_top(false)
+                .scroll_to_top(true)
+                .scroll_to_top
+        );
+    }
 
     #[test]
     fn static_router() {
