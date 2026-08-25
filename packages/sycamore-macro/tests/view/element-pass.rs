@@ -25,6 +25,12 @@ fn compile_pass() {
 
         // view! should accept the pattern "-ref-" in an attribute name.
         let _: View = view! { p(class="my-class", data-ref-me="my-value") };
+
+        // Two way bindings.
+        let value = create_signal(String::new());
+        let _: View = view! { input(bind:value=value) };
+        let selected = create_signal(String::new());
+        let _: View = view! { input(r#type="radio", value="a", bind:group=selected) };
     });
 }
 

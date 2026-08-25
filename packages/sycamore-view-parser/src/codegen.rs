@@ -115,6 +115,7 @@ impl Codegen {
                     let ident = ident.to_string();
                     quote! { .prop(#ident, #dyn_value) }
                 }
+                "bind" if ident == "group" => quote! { .bind_group(#value) },
                 "bind" => quote! { .bind(::sycamore::rt::bind::#ident, #value) },
                 _ => syn::Error::new(dir.span(), format!("unknown directive `{dir}`"))
                     .to_compile_error(),

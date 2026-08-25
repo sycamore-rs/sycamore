@@ -1183,6 +1183,49 @@ pub trait GlobalProps: GlobalAttributes + AsHtmlNode + Sized {
         self
     }
 
+    /// Set a two way binding between a group of radio inputs and a signal.
+    ///
+    /// The signal holds the `value` of the currently selected radio in the group. Selecting a
+    /// radio updates the signal to that radio's `value`, and setting the signal checks the radio
+    /// whose `value` matches. This is the `bind:group` directive in the `view!` macro.
+    ///
+    /// The `value` attribute should be set before `bind:group` so that the initial checked state
+    /// can be computed against it, e.g.
+    /// `input(r#type="radio", value="a", bind:group=selected)`.
+    fn bind_group(mut self, signal: Signal<String>) -> Self {
+        if is_not_ssr!() {
+            let scope = use_current_scope(); // Run handler inside the current scope.
+            let handler = move |ev: web_sys::Event| {
+                scope.run_in(|| {
+                    let target = ev.current_target().unwrap();
+                    let checked = js_sys::Reflect::get(&target, &"checked".into())
+                        .ok()
+                        .and_then(|value| value.as_bool())
+                        .unwrap_or(false);
+                    // Only the radio that just became checked should own the group value.
+                    if checked
+                        && let Some(value) = js_sys::Reflect::get(&target, &"value".into())
+                            .ok()
+                            .and_then(|value| value.as_string())
+                    {
+                        signal.set(value);
+                    }
+                })
+            };
+            self.set_event_handler(<events::change as events::EventDescriptor>::NAME, handler);
+
+            let node = self.as_html_node().as_web_sys().clone();
+            self = self.prop("checked", move || {
+                let selected = js_sys::Reflect::get(&node, &"value".into())
+                    .ok()
+                    .and_then(|value| value.as_string())
+                    .is_some_and(|value| value == signal.get_clone());
+                wasm_bindgen::JsValue::from_bool(selected)
+            });
+        }
+        self
+    }
+
     fn spread(mut self, attributes: Attributes) -> Self {
         attributes.apply_self(self.as_html_node());
         self
