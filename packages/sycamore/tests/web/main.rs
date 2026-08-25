@@ -328,6 +328,36 @@ fn two_way_bind_to_value_as_number() {
 }
 
 #[wasm_bindgen_test]
+fn two_way_bind_group() {
+    let _ = create_root(|| {
+        let selected = create_signal("a".to_string());
+
+        let node = view! {
+            input(r#type="radio", name="group", value="a", bind:group=selected)
+            input(r#type="radio", name="group", value="b", bind:group=selected)
+        };
+
+        sycamore::render_in_scope(|| node, &test_container());
+        let a: HtmlInputElement = query_into(r#"input[value="a"]"#);
+        let b: HtmlInputElement = query_into(r#"input[value="b"]"#);
+
+        // The radio whose value matches the signal starts checked.
+        assert!(a.checked());
+        assert!(!b.checked());
+
+        // Updating the signal moves the checked state to the matching radio.
+        selected.set("b".to_string());
+        assert!(!a.checked());
+        assert!(b.checked());
+
+        // Selecting a radio updates the signal to its value.
+        a.set_checked(true);
+        a.dispatch_event(&Event::new("change").unwrap()).unwrap();
+        assert_eq!(selected.get_clone().as_str(), "a");
+    });
+}
+
+#[wasm_bindgen_test]
 fn noderefs() {
     let _ = create_root(|| {
         let noderef = create_node_ref();
