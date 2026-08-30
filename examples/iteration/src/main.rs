@@ -29,12 +29,8 @@ fn App() -> View {
             Indexed(
                 list=items,
                 view=|Cat { id, name }| view! {
-                    li {
-                        a(href=format!("https://www.youtube.com/watch?v={id}")) {
-                            (name)
-                        }
-                    }
-                }
+                    li { a(href=format!("https://www.youtube.com/watch?v={id}")) { (name) } }
+                },
             )
         }
     }

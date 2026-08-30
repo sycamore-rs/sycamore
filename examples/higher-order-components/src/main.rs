@@ -17,9 +17,7 @@ fn MyComponent(props: MyComponentProps) -> View {
 fn higher_order_component(Comp: &dyn Fn(MyComponentProps) -> View) -> impl Fn() -> View + '_ {
     move || {
         view! {
-            div {
-                Comp(value=42)
-            }
+            div { Comp(value=42) }
         }
     }
 }
@@ -28,7 +26,7 @@ fn main() {
     sycamore::render(|| {
         let EnhancedComponent = higher_order_component(&MyComponent);
         view! {
-            EnhancedComponent()
+            EnhancedComponent {}
         }
     });
 }

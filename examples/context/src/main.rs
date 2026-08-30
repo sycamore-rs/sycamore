@@ -5,9 +5,7 @@ fn Counter() -> View {
     let counter = use_context::<Signal<i32>>();
 
     view! {
-        p(class="value") {
-            "Value: " (counter)
-        }
+        p(class="value") { "Value: " (counter) }
     }
 }
 

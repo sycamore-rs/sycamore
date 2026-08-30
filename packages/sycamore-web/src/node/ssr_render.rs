@@ -316,16 +316,18 @@ mod tests {
     #[component(inline_props)]
     fn App(receiver: oneshot::Receiver<()>) -> View {
         view! {
-            Suspense(fallback=|| "fallback".into()) {
-                AsyncComponent(receiver=receiver)
-            }
+            Suspense(fallback=|| "fallback".into()) { AsyncComponent(receiver=receiver) }
         }
     }
 
     #[test]
     fn render_to_string_renders_fallback() {
         let (sender, receiver) = oneshot::channel();
-        let res = render_to_string(move || view! { App(receiver=receiver) });
+        let res = render_to_string(move || {
+            view! {
+                App(receiver=receiver)
+            }
+        });
         assert_eq!(
             res,
             "<!--/--><!--/-->fallback<!--/--><!--/--><!--/--><!--/-->"
@@ -336,7 +338,11 @@ mod tests {
     #[tokio::test]
     async fn render_to_string_await_suspense_works() {
         let (sender, receiver) = oneshot::channel();
-        let ssr = render_to_string_await_suspense(move || view! { App(receiver=receiver) });
+        let ssr = render_to_string_await_suspense(move || {
+            view! {
+                App(receiver=receiver)
+            }
+        });
         futures::pin_mut!(ssr);
         assert!(futures::poll!(&mut ssr).is_pending());
 

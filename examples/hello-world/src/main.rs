@@ -3,9 +3,7 @@ use sycamore::prelude::*;
 #[component]
 fn App() -> View {
     view! {
-        p {
-            "Hello World!"
-        }
+        p { "Hello World!" }
     }
 }
 

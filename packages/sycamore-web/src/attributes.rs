@@ -145,7 +145,11 @@ mod tests {
         attributes.set_attribute("id", StringAttribute::from(move || "test-id"));
 
         check(
-            move || view! { div(..attributes) },
+            move || {
+                view! {
+                    div(..attributes)
+                }
+            },
             expect![[r#"<div class="test-class" id="test-id" data-hk="0.0"></div>"#]],
         );
     }

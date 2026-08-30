@@ -99,11 +99,11 @@ fn interpolation() {
 fn template_interpolation() {
     sycamore::render_to(
         || {
-            let text = view! { "Hello Sycamore!" };
+            let text = view! {
+                "Hello Sycamore!"
+            };
             view! {
-                p {
-                    (text)
-                }
+                p { (text) }
             }
         },
         &test_container(),
@@ -118,9 +118,13 @@ fn template_interpolation_if_else() {
         let node = view! {
             p {
                 (if show.get() {
-                    view! { "Hello Sycamore!" }
+                    view! {
+                        "Hello Sycamore!"
+                    }
                 } else {
-                    view! { "Hidden" }
+                    view! {
+                        "Hidden"
+                    }
                 })
             }
         };
@@ -142,9 +146,13 @@ fn template_interpolation_if_else_with_sibling() {
         let node = view! {
             div { "Before" }
             (if show.get() {
-                view! { p { "Hello Sycamore!" } }
+                view! {
+                    p { "Hello Sycamore!" }
+                }
             } else {
-                view! { p { "Hidden" }}
+                view! {
+                    p { "Hidden" }
+                }
             })
         };
         sycamore::render_in_scope(|| node, &test_container());
@@ -162,11 +170,11 @@ fn template_interpolation_if_else_with_sibling() {
 fn template_interpolation_nested_reactivity() {
     let _ = create_root(|| {
         let count = create_signal(0);
-        let text = view! { p { (count.get() ) } };
+        let text = view! {
+            p { (count.get()) }
+        };
         let node = view! {
-            p {
-                (text)
-            }
+            p { (text) }
         };
 
         sycamore::render_in_scope(|| node, &test_container());
@@ -240,7 +248,14 @@ fn optional_attribute() {
     let _ = create_root(|| {
         let attr = create_signal(None);
 
-        sycamore::render_in_scope(|| view! { span(data-attribute=attr) }, &test_container());
+        sycamore::render_in_scope(
+            || {
+                view! {
+                    span(data-attribute=attr)
+                }
+            },
+            &test_container(),
+        );
 
         let span = query("span");
         assert_eq!(span.outer_html(), "<span></span>");
@@ -332,9 +347,7 @@ fn noderefs() {
     let _ = create_root(|| {
         let noderef = create_node_ref();
         let node = view! {
-            div {
-                input(r#ref=noderef)
-            }
+            div { input(r#ref=noderef) }
         };
 
         sycamore::render_in_scope(|| node, &test_container());

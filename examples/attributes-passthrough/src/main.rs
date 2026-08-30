@@ -15,9 +15,7 @@ fn CustomButton(props: CustomButtonProps) -> View {
     console_log!("Intercepted `id` attribute: {:?}", props.id.get_clone());
 
     view! {
-        button(id=props.id, ..props.attributes) {
-            (props.children)
-        }
+        button(id=props.id, ..props.attributes) { (props.children) }
     }
 }
 

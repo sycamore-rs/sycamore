@@ -1,6 +1,6 @@
 #![allow(unused_parens)]
 
-use sycamore::prelude::{component, view, Props, Signal, View};
+use sycamore::prelude::{Props, Signal, View, component, view};
 
 #[component(inline_props)]
 fn NoProps() -> View {

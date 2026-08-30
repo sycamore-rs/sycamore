@@ -1,5 +1,5 @@
 #![no_implicit_prelude]
-use ::sycamore::prelude::{component, View};
+use ::sycamore::prelude::{View, component};
 
 #[component]
 fn CompNoProps() -> View {
