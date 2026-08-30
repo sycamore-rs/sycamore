@@ -5,9 +5,7 @@ fn MyComponent(value: ReadSignal<i32>) -> View {
     view! {
         div(class="my-component") {
             "My component"
-            p {
-                "Value: " (value)
-            }
+            p { "Value: " (value) }
         }
     }
 }

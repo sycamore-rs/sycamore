@@ -1,8 +1,8 @@
+use axum::Router;
 use axum::body::Body;
 use axum::http::header;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::Router;
 use tokio::runtime::Handle;
 use tokio::task::LocalSet;
 use tokio_stream::StreamExt;

@@ -204,7 +204,9 @@ mod keyed_list {
             ul {
                 Keyed(
                     list=state,
-                    view=|i| view! { li { (i) } },
+                    view=|i| view! {
+                        li { (i) }
+                    },
                     key=|i| *i,
                 )
             }
@@ -241,7 +243,9 @@ mod indexed_list {
             ul {
                 Indexed(
                     list=state,
-                    view=|i| view! { li { (i) } },
+                    view=|i| view! {
+                        li { (i) }
+                    },
                 )
             }
         }
@@ -277,9 +281,11 @@ mod portal {
             div(id="target")
             Portal2(selector="#target") {
                 (if state.get() {
-                    view! { "Hello from the other side!" }
+                    view! {
+                        "Hello from the other side!"
+                    }
                 } else {
-                    view! { }
+                    view! {}
                 })
             }
         }

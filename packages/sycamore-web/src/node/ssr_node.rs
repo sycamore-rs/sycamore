@@ -268,7 +268,7 @@ pub(crate) fn render_recursive_view(view: &View, buf: &mut String) {
 
 #[cfg(test)]
 mod tests {
-    use expect_test::{expect, Expect};
+    use expect_test::{Expect, expect};
 
     use super::*;
     use crate::tags::*;
@@ -324,7 +324,9 @@ mod tests {
                     ul {
                         Indexed(
                             list=vec![1, 2],
-                            view=|i| sycamore_macro::view! { li { (i) } },
+                            view=|i| sycamore_macro::view! {
+                                li { (i) }
+                            },
                         )
                     }
                 }
@@ -354,9 +356,7 @@ mod tests {
         check(
             move || {
                 sycamore_macro::view! {
-                    svg(xmlns="http://www.w2.org/2000/svg") {
-                        rect()
-                    }
+                    svg(xmlns="http://www.w2.org/2000/svg") { rect {} }
                 }
             },
             expect![[
@@ -366,7 +366,7 @@ mod tests {
         check(
             move || {
                 sycamore_macro::view! {
-                    svg_a()
+                    svg_a {}
                 }
             },
             expect![[r#"<a data-hk="0.0"></a>"#]],

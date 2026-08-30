@@ -52,7 +52,9 @@ fn App() -> View {
             div {
                 button(on:click=move |_| update(Tab::One), disabled=tab.get() == Tab::One) { "One" }
                 button(on:click=move |_| update(Tab::Two), disabled=tab.get() == Tab::Two) { "Two" }
-                button(on:click=move |_| update(Tab::Three), disabled=tab.get() == Tab::Three) { "Three" }
+                button(on:click=move |_| update(Tab::Three), disabled=tab.get() == Tab::Three) {
+                    "Three"
+                }
             }
             p {
                 "Current State: "
@@ -64,15 +66,25 @@ fn App() -> View {
             }
             p {
                 "Loading state: "
-                (if content.is_loading() { "loading" } else { "done" })
+                (if content.is_loading() {
+                    "loading"
+                } else {
+                    "done"
+                })
             }
 
             div(style="display: flex; flex-direction: row; gap: 1rem;") {
                 div(style="flex: 1 1 0%") {
                     p { strong { "Suspense" } }
-                    Suspense(fallback=|| view! { p { "Loading..." } }) {
+                    Suspense(
+                        fallback=|| view! {
+                            p { "Loading..." }
+                        },
+                    ) {
                         (if let Some(content) = content.get() {
-                            view! { TabContent(content=content) }
+                            view! {
+                                TabContent(content=content)
+                            }
                         } else {
                             view! {}
                         })
@@ -81,9 +93,15 @@ fn App() -> View {
 
                 div(style="flex: 1 1 0%") {
                     p { strong { "Transition" } }
-                    Transition(fallback=|| view! { p { "Loading..." } }) {
+                    Transition(
+                        fallback=|| view! {
+                            p { "Loading..." }
+                        },
+                    ) {
                         (if let Some(content) = content.get() {
-                            view! { TabContent(content=content) }
+                            view! {
+                                TabContent(content=content)
+                            }
                         } else {
                             view! {}
                         })

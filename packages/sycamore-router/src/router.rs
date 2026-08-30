@@ -540,18 +540,16 @@ mod tests {
             view! {
                 StaticRouter(
                     route=route,
-                    view=|route: ReadSignal<Routes>| {
-                        match route.get() {
-                            Routes::Home => view! {
-                                "Home"
-                            },
-                            Routes::About => view! {
-                                "About"
-                            },
-                            Routes::NotFound => view! {
-                                "Not Found"
-                            }
-                        }
+                    view=|route: ReadSignal<Routes>| match route.get() {
+                        Routes::Home => view! {
+                            "Home"
+                        },
+                        Routes::About => view! {
+                            "About"
+                        },
+                        Routes::NotFound => view! {
+                            "Not Found"
+                        },
                     },
                 )
             }

@@ -8,9 +8,7 @@ async fn AsyncContent() -> View {
     }
     view! {
         p { "Suspensed component" }
-        sycamore::web::NoHydrate {
-            p { "Server only content" }
-        }
+        sycamore::web::NoHydrate { p { "Server only content" } }
     }
 }
 
@@ -23,11 +21,7 @@ fn App() -> View {
                 meta(name="viewport", content="width=device-width, initial-scale=1")
                 sycamore::web::HydrationScript {}
             }
-            body {
-                sycamore::web::Suspense {
-                    AsyncContent()
-                }
-            }
+            body { sycamore::web::Suspense { AsyncContent {} } }
         }
     }
 }

@@ -20,12 +20,10 @@ fn test_portal() {
                 view! {
                     (if switch.get() {
                         view! {
-                            Portal2(selector="#portal-target") {
-                                "Hello from the other side!"
-                            }
+                            Portal2(selector="#portal-target") { "Hello from the other side!" }
                         }
                     } else {
-                        view! { }
+                        view! {}
                     })
                 }
             },

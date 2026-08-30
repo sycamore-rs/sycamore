@@ -34,18 +34,32 @@ pub fn AttributesComponent(AttributesProps { attributes }: AttributesProps) -> V
 
 fn compile_fail() {
     let _ = create_root(|| {
-        let _: View = view! { UnknownComponent() };
-        let _: View = view! { UnknownComponent {} };
+        let _: View = view! {
+            UnknownComponent {}
+        };
+        let _: View = view! {
+            UnknownComponent {}
+        };
 
         let _: View = view! { Component };
-        let _: View = view! { Component(not_a_prop=1) };
+        let _: View = view! {
+            Component(not_a_prop=1)
+        };
 
-        let _: View = view! { PropsComponent() };
-        let _: View = view! { PropsComponent {} };
-        let _: View = view! { PropsComponent(prop=123) };
+        let _: View = view! {
+            PropsComponent {}
+        };
+        let _: View = view! {
+            PropsComponent {}
+        };
+        let _: View = view! {
+            PropsComponent(prop=123)
+        };
         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
 
-        let _: View = view! { AttributesComponent(class=123) }; // Wrong type
+        let _: View = view! {
+            AttributesComponent(class=123)
+        }; // Wrong type
     });
 }
 

@@ -26,20 +26,19 @@ fn App() -> View {
                 view=|route: ReadSignal<AppRoutes>| {
                     view! {
                         nav {
-                            a(href="/") {"Home"}
+                            a(href="/") { "Home" }
                             br {}
-                            a(href="/hello/world") {"Hello, World!"}
+                            a(href="/hello/world") { "Hello, World!" }
                             br {}
-                            a(href="/path/1/2/3") {"Wildcard: 1/2/3"}
+                            a(href="/path/1/2/3") { "Wildcard: 1/2/3" }
                             br {}
-                            a(href="/uint-capture/42") {"Unit: 42"}
+                            a(href="/uint-capture/42") { "Unit: 42" }
                             br {}
-                            a(href="/query-params") {"Query Params"}
+                            a(href="/query-params") { "Query Params" }
                             br {}
-                            a(href="/not-found") {"Not Found"}
+                            a(href="/not-found") { "Not Found" }
                             br {}
-
-                            a(href="/server/proxy", rel="external") {"External Server Proxy"}
+                            a(href="/server/proxy", rel="external") { "External Server Proxy" }
                         }
                         main(class="app") {
                             (match route.get_clone() {
@@ -59,7 +58,8 @@ fn App() -> View {
                                     let q = use_search_query("q");
                                     view! {
                                         h1 { "Query Params" }
-                                        a(href="?q=a") { "A" } a(href="?q=b") { "B" }
+                                        a(href="?q=a") { "A" }
+                                        a(href="?q=b") { "B" }
                                         p { "Query: " (q.get_clone().unwrap_or_default()) }
                                     }
                                 }
@@ -69,7 +69,7 @@ fn App() -> View {
                             })
                         }
                     }
-                }
+                },
             )
         }
     }

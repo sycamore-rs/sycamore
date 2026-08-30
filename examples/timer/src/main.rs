@@ -14,9 +14,7 @@ fn TimerCounter() -> View {
     });
 
     view! {
-        div {
-            p { "Value: " (state) }
-        }
+        div { p { "Value: " (state) } }
     }
 }
 

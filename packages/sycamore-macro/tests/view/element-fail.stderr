@@ -25,69 +25,72 @@ error: expected `=`
   |                                                   ^
 
 error: expected one of `)`, `,`, `.`, `?`, or an operator, found `::`
- --> tests/view/element-fail.rs:9:38
-  |
-9 |         let _: View = view! { button(unknown:directive="123") };
-  |                                      ^^^^^^^                   - help: missing `,`
-  |                                      |
-  |                                      expected one of `)`, `,`, `.`, `?`, or an operator
+  --> tests/view/element-fail.rs:10:20
+   |
+10 |             button(unknown:directive="123")
+   |                    ^^^^^^^ expected one of `)`, `,`, `.`, `?`, or an operator
+11 |         };
+   |          - help: missing `,`
 
 error: unknown directive `unknown`
- --> tests/view/element-fail.rs:9:38
-  |
-9 |         let _: View = view! { button(unknown:directive="123") };
-  |                                      ^^^^^^^
+  --> tests/view/element-fail.rs:10:20
+   |
+10 |             button(unknown:directive="123")
+   |                    ^^^^^^^
 
 error: expected `=`
-  --> tests/view/element-fail.rs:12:39
+  --> tests/view/element-fail.rs:18:39
    |
-12 |         let _: View = view! { button(a.b.c="123") };
+18 |         let _: View = view! { button(a.b.c="123") };
    |                                       ^
 
 error: expected a valid node
-  --> tests/view/element-fail.rs:14:31
+  --> tests/view/element-fail.rs:22:31
    |
-14 |         let _: View = view! { * };
+22 |         let _: View = view! { * };
    |                               ^
 
 error[E0425]: cannot find function `unknownelement` in module `sycamore::rt::tags`
-  --> tests/view/element-fail.rs:10:31
+  --> tests/view/element-fail.rs:13:13
    |
-10 |         let _: View = view! { unknownelement {} };
-   |                               ^^^^^^^^^^^^^^ not found in `sycamore::rt::tags`
+13 |             unknownelement {}
+   |             ^^^^^^^^^^^^^^ not found in `sycamore::rt::tags`
 
 error[E0425]: cannot find value `unknown_attributes` in this scope
-  --> tests/view/element-fail.rs:11:37
+  --> tests/view/element-fail.rs:16:19
    |
-11 |         let _: View = view! { div(..unknown_attributes) {} };
-   |                                     ^^^^^^^^^^^^^^^^^^ not found in this scope
+16 |             div(..unknown_attributes)
+   |                   ^^^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `notbind` in module `sycamore::rt::bind`
-  --> tests/view/element-fail.rs:13:43
+  --> tests/view/element-fail.rs:20:25
    |
-13 |         let _: View = view! { button(bind:notbind=todo!()) };
-   |                                           ^^^^^^^ not found in `sycamore::rt::bind`
+20 |             button(bind:notbind=todo!())
+   |                         ^^^^^^^ not found in `sycamore::rt::bind`
 
 error[E0061]: this function takes 1 argument but 2 arguments were supplied
- --> tests/view/element-fail.rs:9:23
-  |
-9 |         let _: View = view! { button(unknown:directive="123") };
-  |                       ^^^^^^^^^^^^^^^-------^^^^^^^^^^^^^^^^^^^
-  |                                      |
-  |                                      unexpected argument #2
-  |
+  --> tests/view/element-fail.rs:9:23
+   |
+ 9 |           let _: View = view! {
+   |  _______________________^
+10 | |             button(unknown:directive="123")
+   | |                    ------- unexpected argument #2
+11 | |         };
+   | |_________^
+   |
 note: associated function defined here
- --> $RUST/core/src/convert/mod.rs
-  = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+  --> $RUST/core/src/convert/mod.rs
+   = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 warning: unreachable call
-  --> tests/view/element-fail.rs:13:23
+  --> tests/view/element-fail.rs:19:23
    |
-13 |         let _: View = view! { button(bind:notbind=todo!()) };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^-------^^^
-   |                       |                           |
-   |                       |                           any code following this expression is unreachable
-   |                       unreachable call
+19 |           let _: View = view! {
+   |  _______________________^
+20 | |             button(bind:notbind=todo!())
+   | |                                 ------- any code following this expression is unreachable
+21 | |         };
+   | |_________^ unreachable call
    |
    = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
    = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)

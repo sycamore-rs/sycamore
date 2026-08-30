@@ -45,9 +45,12 @@ static NOUNS: &[&str] = &[
 fn Button(id: &'static str, text: &'static str, callback: Box<dyn Fn()>) -> View {
     view! {
         div(class="col-sm-6 smallpad") {
-            button(id=id, class="btn btn-primary btn-block", r#type="button", on:click=move |_| callback()) {
-                (text)
-            }
+            button(
+                id=id,
+                class="btn btn-primary btn-block",
+                r#type="button",
+                on:click=move |_| callback(),
+            ) { (text) }
         }
     }
 }
@@ -139,9 +142,17 @@ fn App() -> View {
                     div(class="col-md-6") {
                         div(class="row") {
                             Button(id="run", text="Create 1,000 rows", callback=Box::new(run))
-                            Button(id="runlots", text="Create 10,000 rows", callback=Box::new(runlots))
+                            Button(
+                                id="runlots",
+                                text="Create 10,000 rows",
+                                callback=Box::new(runlots),
+                            )
                             Button(id="add", text="Append 1,000 rows", callback=Box::new(add))
-                            Button(id="update", text="Update every 10th row", callback=Box::new(update))
+                            Button(
+                                id="update",
+                                text="Update every 10th row",
+                                callback=Box::new(update),
+                            )
                             Button(id="clear", text="Clear", callback=Box::new(clear))
                             Button(id="swaprows", text="Swap Rows", callback=Box::new(swaprows))
                         }
@@ -161,9 +172,7 @@ fn App() -> View {
                             view! {
                                 tr(class=if is_selected.get() { "danger" } else { "" }) {
                                     td(class="col-md-1") { (row.id) }
-                                    td(class="col-md-4") {
-                                        a(on:click=handle_click) { (row.label) }
-                                    }
+                                    td(class="col-md-4") { a(on:click=handle_click) { (row.label) } }
                                     td(class="col-md-1") {
                                         a(on:click=move |_| remove(row.id)) {
                                             span(class="glyphicon glyphicon-remove", aria-hidden="true")
@@ -173,7 +182,7 @@ fn App() -> View {
                                 }
                             }
                         },
-                        key=|row| row.id
+                        key=|row| row.id,
                     )
                 }
             }

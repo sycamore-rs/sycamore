@@ -214,9 +214,14 @@ pub fn Transition(props: SuspenseProps) -> View {
     }
 
     view! {
-        Suspense(fallback=props.fallback, children=Children::new(move || {
-            view! { TransitionInner(children=props.children, set_is_loading=props.set_is_loading) }
-        }))
+        Suspense(
+            fallback=props.fallback,
+            children=Children::new(move || {
+                view! {
+                    TransitionInner(children=props.children, set_is_loading=props.set_is_loading)
+                }
+            }),
+        )
     }
 }
 

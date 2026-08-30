@@ -435,14 +435,14 @@ fn template_with_other_nodes_at_same_level() {
                         view=|item| view! {
                             li { (item) }
                         },
-                        key=|x| *x
+                        key=|x| *x,
                     )
                     Keyed(
                         list=vec2,
                         view=|item| view! {
                             li { (item) }
                         },
-                        key=|x| *x
+                        key=|x| *x,
                     )
                     li { "after" }
                 }
@@ -479,7 +479,7 @@ fn issue_795_keyed() {
                         view=|item| view! {
                             li { (item.to_string()) }
                         },
-                        key=|item| *item
+                        key=|item| *item,
                     )
                 }
             }

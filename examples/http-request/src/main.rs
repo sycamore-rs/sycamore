@@ -26,9 +26,7 @@ async fn VisitsCount() -> View {
     view! {
         p {
             "Total visits: "
-            span {
-                (visits.value)
-            }
+            span { (visits.value) }
         }
     }
 }
@@ -38,9 +36,11 @@ fn App() -> View {
     view! {
         div {
             p { "Page Visit Counter" }
-            Suspense(fallback=|| view! { "Loading..." }) {
-                VisitsCount {}
-            }
+            Suspense(
+                fallback=|| view! {
+                    "Loading..."
+                },
+            ) { VisitsCount {} }
         }
     }
 }

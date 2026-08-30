@@ -7,13 +7,15 @@ pub fn bench(c: &mut Criterion) {
             #[component]
             fn App() -> View {
                 view! {
-                    div(class="my-container") {
-                        p { "Hello World!" }
-                    }
+                    div(class="my-container") { p { "Hello World!" } }
                 }
             }
 
-            let _ssr = sycamore::render_to_string(|| view! { App {} });
+            let _ssr = sycamore::render_to_string(|| {
+                view! {
+                    App {}
+                }
+            });
         })
     });
 
@@ -25,9 +27,7 @@ pub fn bench(c: &mut Criterion) {
                     p {
                         span(class="placeholder")
                         i { (value) }
-                        button(class="delete") {
-                            i(class="delete-icon")
-                        }
+                        button(class="delete") { i(class="delete-icon") }
                     }
                 }
             }
@@ -40,7 +40,7 @@ pub fn bench(c: &mut Criterion) {
                             list=(0i32..=10).collect::<Vec<_>>(),
                             view=|x| view! {
                                 ListItem(value=x)
-                            }
+                            },
                         )
                     }
                 }

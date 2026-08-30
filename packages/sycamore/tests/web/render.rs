@@ -5,9 +5,7 @@ fn dyn_view_static() {
     let _ = create_root(|| {
         let node: View = View::from_dynamic(move || {
             view! {
-                div {
-                    "Test"
-                }
+                div { "Test" }
             }
         });
 
@@ -44,9 +42,7 @@ fn dyn_nested() {
         let node: View = View::from_dynamic(move || {
             View::from_dynamic(move || {
                 view! {
-                    div {
-                        "Test"
-                    }
+                    div { "Test" }
                 }
             })
         });
@@ -64,9 +60,7 @@ fn dyn_scoped_nested() {
         let node: View = View::from_dynamic(move || {
             View::from_dynamic(move || {
                 view! {
-                    div {
-                        (num.get())
-                    }
+                    div { (num.get()) }
                 }
             })
         });

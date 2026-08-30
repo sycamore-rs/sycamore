@@ -53,10 +53,14 @@ pub fn Show(props: ShowProps) -> View {
 #[component(inline_props)]
 pub fn NoSsr(children: Children) -> View {
     if is_ssr!() {
-        view! { no-ssr() }
+        view! {
+            no-ssr {}
+        }
     } else {
         let marker = create_node_ref();
-        let view = view! { no-ssr(r#ref=marker) };
+        let view = view! {
+            no-ssr(r#ref=marker)
+        };
         on_mount(move || {
             let marker = marker.get();
             let parent = marker.parent_node().unwrap();
