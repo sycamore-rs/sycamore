@@ -1,65 +1,81 @@
 error: unexpected end of input, expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:40:23
+  --> tests/view/component-fail.rs:44:23
    |
-40 |         let _: View = view! { Component };
+44 |         let _: View = view! { Component };
    |                       ^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:46:52
+  --> tests/view/component-fail.rs:58:52
    |
-46 |         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
+58 |         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
    |                                                    ^
 
 error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:37:31
+  --> tests/view/component-fail.rs:38:13
    |
-37 |         let _: View = view! { UnknownComponent() };
-   |                               ^^^^^^^^^^^^^^^^ not found in this scope
+38 |             UnknownComponent {}
+   |             ^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:38:31
+  --> tests/view/component-fail.rs:41:13
    |
-38 |         let _: View = view! { UnknownComponent {} };
-   |                               ^^^^^^^^^^^^^^^^ not found in this scope
+41 |             UnknownComponent {}
+   |             ^^^^^^^^^^^^^^^^ not found in this scope
 
 error[E0282]: type annotations needed
   --> tests/view/component-fail.rs:37:23
    |
-37 |         let _: View = view! { UnknownComponent() };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+37 |           let _: View = view! {
+   |  _______________________^
+38 | |             UnknownComponent {}
+39 | |         };
+   | |_________^ cannot infer type
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0282]: type annotations needed
-  --> tests/view/component-fail.rs:38:23
+  --> tests/view/component-fail.rs:40:23
    |
-38 |         let _: View = view! { UnknownComponent {} };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+40 |           let _: View = view! {
+   |  _______________________^
+41 | |             UnknownComponent {}
+42 | |         };
+   | |_________^ cannot infer type
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0599]: no method named `not_a_prop` found for struct `UnitBuilder` in the current scope
-  --> tests/view/component-fail.rs:41:41
+  --> tests/view/component-fail.rs:46:23
    |
-41 |         let _: View = view! { Component(not_a_prop=1) };
-   |                                         ^^^^^^^^^^ method not found in `UnitBuilder`
+45 |           let _: View = view! {
+   |  _______________________-
+46 | |             Component(not_a_prop=1)
+   | |                      -^^^^^^^^^^ method not found in `UnitBuilder`
+   | |______________________|
+   |
 
 warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:43:23
+  --> tests/view/component-fail.rs:49:23
    |
-43 |         let _: View = view! { PropsComponent() };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+49 |           let _: View = view! {
+   |  _______________________^
+50 | |             PropsComponent {}
+51 | |         };
+   | |_________^
    |
    = note: `#[warn(deprecated)]` on by default
    = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:43:23
+  --> tests/view/component-fail.rs:49:23
    |
-43 |         let _: View = view! { PropsComponent() };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
+49 |           let _: View = view! {
+   |  _______________________^
+50 | |             PropsComponent {}
+51 | |         };
+   | |_________^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: method defined here
   --> tests/view/component-fail.rs:3:10
@@ -69,18 +85,24 @@ note: method defined here
    = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:44:23
+  --> tests/view/component-fail.rs:52:23
    |
-44 |         let _: View = view! { PropsComponent {} };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+52 |           let _: View = view! {
+   |  _______________________^
+53 | |             PropsComponent {}
+54 | |         };
+   | |_________^
    |
    = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:44:23
+  --> tests/view/component-fail.rs:52:23
    |
-44 |         let _: View = view! { PropsComponent {} };
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
+52 |           let _: View = view! {
+   |  _______________________^
+53 | |             PropsComponent {}
+54 | |         };
+   | |_________^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
    |
 note: method defined here
   --> tests/view/component-fail.rs:3:10
@@ -90,12 +112,12 @@ note: method defined here
    = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:45:51
+  --> tests/view/component-fail.rs:56:33
    |
-45 |         let _: View = view! { PropsComponent(prop=123) };
-   |                                              ---- ^^^ expected `&str`, found integer
-   |                                              |
-   |                                              arguments to this method are incorrect
+56 |             PropsComponent(prop=123)
+   |                            ---- ^^^ expected `&str`, found integer
+   |                            |
+   |                            arguments to this method are incorrect
    |
 note: method defined here
   --> tests/view/component-fail.rs:5:5
@@ -104,10 +126,10 @@ note: method defined here
    |     ^^^^--------------
 
 error[E0277]: the trait bound `MaybeDyn<Option<Cow<'static, str>>>: From<{integer}>` is not satisfied
-  --> tests/view/component-fail.rs:48:57
+  --> tests/view/component-fail.rs:61:39
    |
-48 |         let _: View = view! { AttributesComponent(class=123) }; // Wrong type
-   |                                                         ^^^ the trait `From<{integer}>` is not implemented for `MaybeDyn<Option<Cow<'static, str>>>`
+61 |             AttributesComponent(class=123)
+   |                                       ^^^ the trait `From<{integer}>` is not implemented for `MaybeDyn<Option<Cow<'static, str>>>`
    |
    = help: the following other types implement trait `From<T>`:
              `MaybeDyn<Option<Cow<'_, str>>>` implements `From<&str>`
