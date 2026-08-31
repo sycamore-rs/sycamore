@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.9.3 _(2026-08-30)_
+
+#### What's Changed
+
+* Fix nested batches to compose correctly by @Aditya-PS-05 in https://github.com/sycamore-rs/sycamore/pull/806
+* Bump MSRV to 1.94 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/810
+* Fix possible to access dirty node value when dependencies change by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/809
+* Fix panic when suspense task is still running when scope is destroyed by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/811
+* Add tag name to hydration error message by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/812
+* Update wasm-pack test command to include --all-features by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/813
+* Fix hydration support for `Keyed` and `Indexed` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/814
+* Fix `Portal` hydration issues and wrong signature by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/815
+* Update links to new website in docs by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/816
+* Update Trunk link to point to new website by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/818
+* Fix panic when signal is disposed when tracked by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/820
+* Migrate to Edition 2024 and use cargo workspace keys by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/821
+* Add #[diagnostic::do_not_recommend] to improve diagnostic messages by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/825
+* Implement `Display` for `StringAttribute` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/826
+* Format the codebase using sycamorefmt by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/829
+* Fix panic when signal is disposed before batch ends by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/830
+* Fix `use_scope_depth` returning value off by 1 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/832
+* Fix node dispose not cleaning up upstream dependencies by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/831
+
 ## 0.9.2 _(2025-09-23)_
 
 #### What's Changed

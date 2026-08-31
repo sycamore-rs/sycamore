@@ -16,7 +16,7 @@ To add routing to your Sycamore app, install the
 crates.io.
 
 ```toml
-sycamore-router = "0.9.2"
+sycamore-router = "0.9.3"
 ```
 
 ### Compatibility with `sycamore`
