@@ -82,6 +82,13 @@ impl NodeHandle {
                     dependent.dependencies.retain(|&mut id| id != self.0);
                 }
             }
+            // Remove self from all dependents.
+            for dependency in this.dependencies {
+                // dependency might have been removed if it is a child node.
+                if let Some(dependency) = nodes.get_mut(dependency) {
+                    dependency.dependents.retain(|&id| id != self.0);
+                }
+            }
         }
     }
 
@@ -122,5 +129,43 @@ impl NodeHandle {
         root.current_node.set(prev_node);
         Root::set_global(prev_root);
         ret
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn dispose_cleans_up_downstream_dependents() {
+        let _ = create_root(|| {
+            let signal = create_signal(0);
+            let memo = create_memo(move || signal.get() + 1);
+
+            let root = Root::global();
+
+            assert_eq!(root.nodes.borrow()[signal.id].dependents, vec![memo.id]);
+            assert_eq!(
+                root.nodes.borrow()[memo.id].dependencies.to_vec(),
+                vec![signal.id]
+            );
+
+            signal.dispose();
+            assert!(root.nodes.borrow().get(signal.id).is_none());
+            assert_eq!(root.nodes.borrow()[memo.id].dependencies.to_vec(), vec![]);
+        });
+    }
+
+    #[test]
+    fn dispose_cleans_up_upstream_dependencies() {
+        let _ = create_root(|| {
+            let signal = create_signal(0);
+            let memo = create_memo(move || signal.get() + 1);
+
+            let root = Root::global();
+            memo.dispose();
+            assert!(root.nodes.borrow().get(memo.id).is_none());
+            assert_eq!(root.nodes.borrow()[signal.id].dependents, vec![]);
+        });
     }
 }

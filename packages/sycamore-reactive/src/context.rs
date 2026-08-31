@@ -119,11 +119,11 @@ pub fn use_scope_depth() -> u32 {
     let mut depth = 0;
 
     while let Some(next) = current {
-        depth += 1;
         if next.parent.is_null() {
             current = None;
         } else {
             current = Some(&nodes[next.parent]);
+            depth += 1;
         }
     }
     depth
@@ -144,6 +144,19 @@ mod tests {
                 provide_context(123);
             });
             trigger.set(());
+        });
+    }
+
+    #[test]
+    fn use_scope_depth_returns_correct_depth() {
+        let _ = create_root(|| {
+            assert_eq!(use_scope_depth(), 0);
+            create_child_scope(|| {
+                assert_eq!(use_scope_depth(), 1);
+                create_effect(|| {
+                    assert_eq!(use_scope_depth(), 2);
+                });
+            });
         });
     }
 }
