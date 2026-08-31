@@ -208,6 +208,12 @@ impl Root {
 
         // Traverse reactive graph.
         for &node in start_nodes {
+            // If the node is already dead, don't even visit it.
+            // This is possible if a signal is disposed inside a batch and then disposed before the
+            // batch ends.
+            if self.nodes.borrow().get(node).is_none() {
+                continue;
+            }
             Self::dfs(node, &mut self.nodes.borrow_mut(), rev_sorted);
             self.mark_dependents_dirty(node);
         }
@@ -645,6 +651,17 @@ mod tests {
                 a.dispose();
             });
             b.set(0);
+        });
+    }
+
+    #[test]
+    fn batched_updates_do_not_panic_after_disposal() {
+        let _ = create_root(|| {
+            let a = create_signal(0);
+            batch(|| {
+                a.set(1);
+                a.dispose();
+            })
         });
     }
 }
