@@ -170,7 +170,10 @@ mod struct_info {
             });
             let empties_tuple = type_tuple(self.included_fields().map(|_| empty_type()));
             let generics_with_empty = modify_types_generics_hack(&ty_generics, |args| {
-                args.insert(0, syn::GenericArgument::Type(empties_tuple.clone().into()));
+                args.insert(
+                    0,
+                    syn::GenericArgument::Type(syn::Type::Tuple(empties_tuple.clone())),
+                );
             });
             let phantom_generics = self.generics.params.iter().map(|param| match param {
                 syn::GenericParam::Lifetime(lifetime) => {
@@ -394,11 +397,11 @@ mod struct_info {
                 .count();
             target_generics.insert(
                 index_after_lifetime_in_generics,
-                syn::GenericArgument::Type(target_generics_tuple.into()),
+                syn::GenericArgument::Type(syn::Type::Tuple(target_generics_tuple)),
             );
             ty_generics.insert(
                 index_after_lifetime_in_generics,
-                syn::GenericArgument::Type(ty_generics_tuple.into()),
+                syn::GenericArgument::Type(syn::Type::Tuple(ty_generics_tuple)),
             );
             let (impl_generics, _, where_clause) = generics.split_for_impl();
             let doc = match field.builder_attr.setter.doc {
@@ -555,7 +558,7 @@ mod struct_info {
                 .count();
             builder_generics.insert(
                 index_after_lifetime_in_generics,
-                syn::GenericArgument::Type(builder_generics_tuple.into()),
+                syn::GenericArgument::Type(syn::Type::Tuple(builder_generics_tuple)),
             );
             let (impl_generics, _, where_clause) = generics.split_for_impl();
             let (_, ty_generics, _) = self.generics.split_for_impl();
@@ -606,7 +609,8 @@ mod struct_info {
                         let trait_ref = syn::TraitBound {
                             paren_token: None,
                             lifetimes: None,
-                            modifier: syn::TraitBoundModifier::None,
+                            modifiers: Default::default(),
+                            maybe: None,
                             path: syn::PathSegment {
                                 ident: self.conversion_helper_trait_name.clone(),
                                 arguments: syn::PathArguments::AngleBracketed(
@@ -623,9 +627,13 @@ mod struct_info {
                             .into(),
                         };
                         let mut generic_param: syn::TypeParam = field.generic_ident.clone().into();
-                        generic_param.bounds.push(trait_ref.into());
-                        g.params
-                            .insert(index_after_lifetime_in_generics, generic_param.into());
+                        generic_param
+                            .bounds
+                            .push(syn::TypeParamBound::Trait(trait_ref));
+                        g.params.insert(
+                            index_after_lifetime_in_generics,
+                            syn::GenericParam::Type(generic_param),
+                        );
                     }
                 }
             });
@@ -636,16 +644,15 @@ mod struct_info {
             let modified_ty_generics = modify_types_generics_hack(&ty_generics, |args| {
                 args.insert(
                     0,
-                    syn::GenericArgument::Type(
-                        type_tuple(self.included_fields().map(|field| {
+                    syn::GenericArgument::Type(syn::Type::Tuple(type_tuple(
+                        self.included_fields().map(|field| {
                             if field.builder_attr.default.is_some() {
                                 field.type_ident()
                             } else {
                                 field.tuplized_type_ty_param()
                             }
-                        }))
-                        .into(),
-                    ),
+                        }),
+                    ))),
                 );
             });
 
@@ -889,11 +896,11 @@ mod field_info {
             let mut types = syn::punctuated::Punctuated::default();
             types.push(self.ty.clone());
             types.push_punct(Default::default());
-            syn::TypeTuple {
+            syn::Type::Tuple(syn::TypeTuple {
+                attrs: Vec::new(),
                 paren_token: Default::default(),
                 elems: types,
-            }
-            .into()
+            })
         }
 
         pub fn type_from_inside_option(&self) -> Option<&syn::Type> {
@@ -1279,19 +1286,24 @@ mod util {
             ident,
             arguments: Default::default(),
         });
-        syn::Type::Path(syn::TypePath { qself: None, path })
+        syn::Type::Path(syn::TypePath {
+            attrs: Vec::new(),
+            qself: None,
+            path,
+        })
     }
 
     pub fn empty_type() -> syn::Type {
-        syn::TypeTuple {
+        syn::Type::Tuple(syn::TypeTuple {
+            attrs: Vec::new(),
             paren_token: Default::default(),
             elems: Default::default(),
-        }
-        .into()
+        })
     }
 
     pub fn type_tuple(elems: impl Iterator<Item = syn::Type>) -> syn::TypeTuple {
         let mut result = syn::TypeTuple {
+            attrs: Vec::new(),
             paren_token: Default::default(),
             elems: elems.collect(),
         };
@@ -1303,6 +1315,7 @@ mod util {
 
     pub fn empty_type_tuple() -> syn::TypeTuple {
         syn::TypeTuple {
+            attrs: Vec::new(),
             paren_token: Default::default(),
             elems: Default::default(),
         }

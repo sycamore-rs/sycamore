@@ -224,11 +224,9 @@ fn is_dyn(ex: &Expr) -> bool {
 
         Expr::Match(m) => {
             is_dyn(&m.expr)
-                || m.arms.iter().any(|a: &syn::Arm| {
-                    is_dyn_pattern(&a.pat)
-                        || a.guard.as_ref().is_some_and(|(_, g_expr)| is_dyn(g_expr))
-                        || is_dyn(&a.body)
-                })
+                || m.arms
+                    .iter()
+                    .any(|a: &syn::Arm| is_dyn_pattern(&a.pat) || is_dyn(&a.body))
         }
 
         Expr::If(i) => {
@@ -254,6 +252,7 @@ fn is_dyn_pattern(pat: &Pat) -> bool {
             false
         }
 
+        Pat::Guard(g) => is_dyn_pattern(&g.pat) || is_dyn(&g.guard),
         Pat::Paren(p) => is_dyn_pattern(&p.pat),
         Pat::Or(o) => o.cases.iter().any(is_dyn_pattern),
         Pat::Tuple(t) => t.elems.iter().any(is_dyn_pattern),
