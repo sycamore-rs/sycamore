@@ -167,6 +167,7 @@ impl ToTokens for ComponentFn {
             vis,
             sig,
             block,
+            ..
         } = &f;
 
         if sig.asyncness.is_some() {

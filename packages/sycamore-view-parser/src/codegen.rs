@@ -224,9 +224,9 @@ fn is_dyn(ex: &Expr) -> bool {
 
         Expr::Match(m) => {
             is_dyn(&m.expr)
-                || m.arms.iter().any(|a: &syn::Arm| {
-                    is_dyn_pattern(&a.pat) || is_dyn(&a.body)
-                })
+                || m.arms
+                    .iter()
+                    .any(|a: &syn::Arm| is_dyn_pattern(&a.pat) || is_dyn(&a.body))
         }
 
         Expr::If(i) => {
