@@ -64,7 +64,7 @@ web-sys = { version = "0.3.69", features = [
 	"WheelEvent",
 ] }
 
-[target.'cfg(any(not(target_arch = "wasm32"), syacmore_force_ssr))'.dependencies]
+[target.'cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))'.dependencies]
 html-escape = "0.2.13"
 async-stream = { version = "0.3.0", optional = true }
 
