@@ -19,8 +19,8 @@ use crate::*;
 /// itself. Finally, the `Root` is expected to live for the whole duration of the app so this is
 /// not a problem.
 pub(crate) struct Root {
-    /// If this is `Some`, that means we are tracking signal accesses.
-    pub tracker: RefCell<Option<DependencyTracker>>,
+    /// If this is `MaybeDependencyTracker::Tracking`, that means we are tracking signal accesses.
+    pub tracker: RefCell<MaybeDependencyTracker>,
     /// A temporary buffer used in `propagate_updates` to prevent allocating a new Vec every time
     /// it is called.
     pub rev_sorted_buf: RefCell<Vec<NodeId>>,
@@ -59,7 +59,7 @@ impl Root {
     /// Create a new reactive root. This root is leaked and so lives until the end of the program.
     pub fn new_static() -> &'static Self {
         let this = Self {
-            tracker: RefCell::new(None),
+            tracker: RefCell::new(MaybeDependencyTracker::default()),
             rev_sorted_buf: RefCell::new(Vec::new()),
             current_node: Cell::new(NodeId::null()),
             root_node: Cell::new(NodeId::null()),
@@ -105,9 +105,11 @@ impl Root {
     /// Run the provided closure in a tracked scope. This will detect all the signals that are
     /// accessed and track them in a dependency list.
     pub fn tracked_scope<T>(&self, f: impl FnOnce() -> T) -> (T, DependencyTracker) {
-        let prev = self.tracker.replace(Some(DependencyTracker::default()));
+        let prev = self.tracker.replace(MaybeDependencyTracker::Tracking(
+            DependencyTracker::default(),
+        ));
         let ret = f();
-        (ret, self.tracker.replace(prev).unwrap())
+        (ret, self.tracker.replace(prev).into_tracker().unwrap())
     }
 
     /// Ensure that the node is clean. If it is dirty, then we need to update the node first before
@@ -319,6 +321,24 @@ impl RootHandle {
     }
 }
 
+#[derive(Default)]
+pub(crate) enum MaybeDependencyTracker {
+    Tracking(DependencyTracker),
+    #[default]
+    Untracked,
+    UntrackedInComponent,
+}
+
+impl MaybeDependencyTracker {
+    pub fn into_tracker(self) -> Option<DependencyTracker> {
+        if let Self::Tracking(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
+}
+
 /// Tracks nodes that are accessed inside a reactive scope.
 #[derive(Default)]
 pub(crate) struct DependencyTracker {
@@ -464,10 +484,27 @@ pub fn untrack<T>(f: impl FnOnce() -> T) -> T {
 
 /// Same as [`untrack`] but for a specific [`Root`].
 pub(crate) fn untrack_in_scope<T>(f: impl FnOnce() -> T, root: &'static Root) -> T {
-    let prev = root.tracker.replace(None);
+    untrack_in_scope_with_maybe_tracker(f, root, MaybeDependencyTracker::Untracked)
+}
+
+fn untrack_in_scope_with_maybe_tracker<T>(
+    f: impl FnOnce() -> T,
+    root: &'static Root,
+    maybe_tracker: MaybeDependencyTracker,
+) -> T {
+    let prev = root.tracker.replace(maybe_tracker);
     let ret = f();
     root.tracker.replace(prev);
     ret
+}
+
+/// Same as [`untrack`] but creates warnings if any tracking is performed.
+pub fn untrack_in_component<T>(f: impl FnOnce() -> T) -> T {
+    untrack_in_scope_with_maybe_tracker(
+        f,
+        Root::global(),
+        MaybeDependencyTracker::UntrackedInComponent,
+    )
 }
 
 /// Get a handle to the current reactive scope.

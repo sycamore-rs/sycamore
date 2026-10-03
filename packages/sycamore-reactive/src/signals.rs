@@ -357,8 +357,31 @@ impl<T> ReadSignal<T> {
     /// # });
     /// ```
     pub fn track(self) {
-        if let Some(tracker) = &mut *self.root.tracker.borrow_mut() {
-            tracker.dependencies.push(self.id);
+        match &mut *self.root.tracker.borrow_mut() {
+            MaybeDependencyTracker::Tracking(tracker) => {
+                tracker.dependencies.push(self.id);
+            }
+            MaybeDependencyTracker::Untracked => (),
+            MaybeDependencyTracker::UntrackedInComponent => {
+                #[cfg(debug_assertions)]
+                panic!("
+You accessed a ReadSignal (defined at {}) in a component body. This might mean your app is not responding to changes in signal values in the way you expect.
+
+Here’s how to fix it:
+
+1. If this is inside a `view!` macro, make sure you are passing a function, not a value:
+  ❌ NO  p {{ (x.get() * 2) }}
+  ✅ YES p {{ (move || x.get() * 2) }}
+
+2. If it’s in the body of a component, try wrapping this access in a closure:
+  ❌ NO  let y = x.get() * 2;
+  ✅ YES let y = move || x.get() * 2;
+                ",
+                    self.created_at
+                );
+                #[cfg(not(debug_assertions))]
+                panic!("accessed a ReadSignal in a component body")
+            }
         }
     }
 }
@@ -890,6 +913,17 @@ mod tests {
             signal.update(|value| value.push_str("World!"));
             assert_eq!(signal.get_clone(), "Hello World!");
             assert_eq!(counter.get(), 2);
+        });
+    }
+
+    #[test]
+    #[should_panic = "component body"]
+    fn signal_in_component_body() {
+        let _ = create_root(|| {
+            let signal = create_signal(());
+            untrack_in_component(move || {
+                signal.get();
+            })
         });
     }
 }

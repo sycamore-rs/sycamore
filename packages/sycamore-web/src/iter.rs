@@ -87,15 +87,18 @@ where
         // In SSR mode, just create a static view.
         let start = HtmlNode::create_marker_node();
         let end = HtmlNode::create_marker_node();
-        View::from((
-            start,
-            list.into()
-                .evaluate()
-                .into_iter()
-                .map(|x| view(x).into())
-                .collect::<Vec<_>>(),
-            end,
-        ))
+        // Tracking doesn't matter on the server.
+        untrack(|| {
+            View::from((
+                start,
+                list.into()
+                    .evaluate()
+                    .into_iter()
+                    .map(|x| view(x).into())
+                    .collect::<Vec<_>>(),
+                end,
+            ))
+        })
     } else {
         let start = HtmlNode::create_marker_node();
         let start_node = start.as_web_sys().clone();
@@ -193,15 +196,18 @@ where
         // In SSR mode, just create a static view.
         let start = HtmlNode::create_marker_node();
         let end = HtmlNode::create_marker_node();
-        View::from((
-            start,
-            list.into()
-                .evaluate()
-                .into_iter()
-                .map(|x| view(x).into())
-                .collect::<Vec<_>>(),
-            end,
-        ))
+        // Tracking doesn't matter on the server.
+        untrack(|| {
+            View::from((
+                start,
+                list.into()
+                    .evaluate()
+                    .into_iter()
+                    .map(|x| view(x).into())
+                    .collect::<Vec<_>>(),
+                end,
+            ))
+        })
     } else {
         let start = HtmlNode::create_marker_node();
         let start_node = start.as_web_sys().clone();

@@ -342,7 +342,10 @@ where
 {
     let StaticRouterProps { view, route } = props;
 
-    view(*create_signal(route))
+    // StaticRouter runs only once on the client, so we don't need reactivity of the route.
+    // TODO(breaking change) StaticRouter could pass R directly instead of ReadSignal<R> to reflect
+    // this.
+    untrack(move || view(*create_signal(route)))
 }
 
 /// Navigates to the specified `url`. The url should have the same origin as the app.
