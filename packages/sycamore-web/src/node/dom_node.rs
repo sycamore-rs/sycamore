@@ -174,10 +174,14 @@ impl ViewHtmlNode for DomNode {
         handler: impl FnMut(web_sys::Event) + 'static,
     ) {
         let cb = Closure::wrap(Box::new(handler) as Box<dyn FnMut(_)>);
-        self.raw
-            .add_event_listener_with_callback(&name, cb.as_ref().unchecked_ref())
+        let node = self.raw.clone();
+        node.add_event_listener_with_callback(&name, cb.as_ref().unchecked_ref())
             .unwrap();
-        on_cleanup(|| drop(cb));
+        on_cleanup(move || {
+            node.remove_event_listener_with_callback(&name, cb.as_ref().unchecked_ref())
+                .unwrap();
+            drop(cb);
+        });
     }
 
     fn set_inner_html(&mut self, inner_html: Cow<'static, str>) {
