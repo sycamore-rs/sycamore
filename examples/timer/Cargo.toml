@@ -5,7 +5,7 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-gloo-timers = { version = "0.2.4", features = ["futures"] }
+gloo-timers = { version = "0.4.0", features = ["futures"] }
 sycamore = { path = "../../packages/sycamore", features = ["suspense"] }
 
 [lints]

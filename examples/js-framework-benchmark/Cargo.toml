@@ -6,8 +6,8 @@ publish = false
 
 [dependencies]
 console_error_panic_hook = "0.1.7"
-getrandom = { version = "0.2.8", features = ["js"] }
-rand = "0.8.5"
+getrandom = { version = "0.4.3", features = ["wasm_js"] }
+rand = "0.10.3"
 sycamore = { path = "../../packages/sycamore" }
 
 [lints]
