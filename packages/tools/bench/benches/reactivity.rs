@@ -1,4 +1,4 @@
-use criterion::{BatchSize, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use sycamore::reactive::*;
 
 pub fn bench(c: &mut Criterion) {
@@ -27,7 +27,7 @@ pub fn bench(c: &mut Criterion) {
 
                     create_effect(move || {
                         let double = state.get() * 2;
-                        black_box(double);
+                        std::hint::black_box(double);
                     });
                     for _i in 0..1000 {
                         state.set(state.get() + 1);

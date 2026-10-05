@@ -8,7 +8,7 @@ publish = false
 sycamore = { path = "../../sycamore" }
 
 [dev-dependencies]
-criterion = "0.4.0"
+criterion = "0.8.2"
 
 [[bench]]
 harness = false
