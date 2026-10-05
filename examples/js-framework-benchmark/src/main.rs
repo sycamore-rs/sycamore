@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use rand::prelude::*;
+use rand::seq::IndexedRandom;
 use sycamore::prelude::*;
 
 static ADJECTIVES: &[&str] = &[
@@ -64,7 +64,7 @@ struct RowData {
 static ID_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
 fn build_data(count: usize) -> Vec<RowData> {
-    let mut thread_rng = thread_rng();
+    let mut thread_rng = rand::rng();
 
     let mut data = Vec::new();
     data.reserve_exact(count);

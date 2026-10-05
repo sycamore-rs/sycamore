@@ -1,5 +1,4 @@
 use gloo_timers::future::TimeoutFuture;
-use rand::Rng;
 use sycamore::prelude::*;
 use sycamore::web::{Suspense, Transition, create_client_resource};
 
@@ -27,7 +26,7 @@ impl Tab {
 }
 
 async fn get_content(tab: Tab) -> &'static str {
-    let delay_ms = rand::thread_rng().gen_range(500..1000);
+    let delay_ms = rand::random_range(500..1000);
     TimeoutFuture::new(delay_ms).await;
 
     tab.content()
