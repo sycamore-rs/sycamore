@@ -34,6 +34,7 @@ members = [
 	"examples/timer",
 	"examples/todomvc",
 	"examples/transitions",
+	"examples/websockets",
 	"examples/attributes-passthrough",
 	"examples/js-snippets",
 

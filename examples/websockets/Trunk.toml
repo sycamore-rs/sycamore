@@ -1,0 +1,4 @@
+[[proxy]]
+rewrite = "/websocket"
+backend = "ws://localhost:1110"
+ws = true
