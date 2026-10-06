@@ -117,15 +117,11 @@ fn template_interpolation_if_else() {
         let show = create_signal(true);
         let node = view! {
             p {
-                (if show.get() {
-                    view! {
-                        "Hello Sycamore!"
-                    }
+                if show.get() {
+                    "Hello Sycamore!"
                 } else {
-                    view! {
-                        "Hidden"
-                    }
-                })
+                    "Hidden"
+                }
             }
         };
         sycamore::render_in_scope(|| node, &test_container());
@@ -145,15 +141,11 @@ fn template_interpolation_if_else_with_sibling() {
         let show = create_signal(true);
         let node = view! {
             div { "Before" }
-            (if show.get() {
-                view! {
-                    p { "Hello Sycamore!" }
-                }
+            if show.get() {
+                p { "Hello Sycamore!" }
             } else {
-                view! {
-                    p { "Hidden" }
-                }
-            })
+                p { "Hidden" }
+            }
         };
         sycamore::render_in_scope(|| node, &test_container());
         assert_text_content!(query("p"), "Hello Sycamore!");

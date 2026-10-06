@@ -18,13 +18,9 @@ fn test_portal() {
         sycamore::render_in_scope(
             move || {
                 view! {
-                    (if switch.get() {
-                        view! {
-                            Portal2(selector="#portal-target") { "Hello from the other side!" }
-                        }
-                    } else {
-                        view! {}
-                    })
+                    if switch.get() {
+                        Portal2(selector="#portal-target") { "Hello from the other side!" }
+                    }
                 }
             },
             &root,
