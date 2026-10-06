@@ -1,22 +1,14 @@
 //! Definition for the [`NoSsr`] and [`NoHydrate`] components.
 
-use sycamore_macro::{Props, component, view};
+use sycamore_macro::{component, view};
 
 use crate::*;
 
-/// Props for [`Show`].
-#[derive(Props)]
-pub struct ShowProps {
-    #[prop(setter(into))]
-    pub when: MaybeDyn<bool>,
-    pub children: Children,
-}
-
 /// An utility component that only renders its children when a condition is satisfied.
 #[component]
-pub fn Show(props: ShowProps) -> View {
-    let mut children = props.children.call();
-    let when = create_selector(move || props.when.get());
+pub fn Show(#[prop(setter(into))] when: MaybeDyn<bool>, children: Children) -> View {
+    let mut children = children.call();
+    let when = create_selector(move || when.get());
 
     if is_ssr!() {
         View::from_dynamic(move || {
@@ -50,7 +42,7 @@ pub fn Show(props: ShowProps) -> View {
 ///
 /// This is useful when wrapping parts of your app that are not intended to be server-side
 /// rendered, e.g. highly interactive components such as graphs, etc...
-#[component(inline_props)]
+#[component]
 pub fn NoSsr(children: Children) -> View {
     if is_ssr!() {
         view! {
@@ -82,7 +74,7 @@ pub fn NoSsr(children: Children) -> View {
 ///
 /// However, this component will still be rendered on the client side if it is created after the
 /// initial hydration phase is over, e.g. navigating to a new page with a `NoHydrate` component.
-#[component(inline_props)]
+#[component]
 pub fn NoHydrate(children: Children) -> View {
     if is_ssr!() {
         let is_hydrating = IS_HYDRATING.replace(false);

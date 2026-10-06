@@ -204,7 +204,7 @@ pub fn Header() -> View {
     }
 }
 
-#[component(inline_props)]
+#[component]
 pub fn Item(todo: Signal<Todo>) -> View {
     let app_state = use_context::<AppState>();
 
@@ -344,7 +344,7 @@ pub fn List() -> View {
     }
 }
 
-#[component(inline_props)]
+#[component]
 pub fn TodoFilter(filter: Filter) -> View {
     let app_state = use_context::<AppState>();
     let selected = move || filter == app_state.filter.get();

@@ -2,15 +2,10 @@
 
 use sycamore::prelude::*;
 
-#[derive(Props)]
-pub struct MyComponentProps {
-    value: i32,
-}
-
 #[component]
-fn MyComponent(props: MyComponentProps) -> View {
+fn MyComponent(value: i32) -> View {
     view! {
-        (props.value)
+        (value)
     }
 }
 

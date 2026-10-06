@@ -2,19 +2,19 @@
 
 use sycamore::prelude::{Props, Signal, View, component, view};
 
-#[component(inline_props)]
+#[component]
 fn NoProps() -> View {
     view! {}
 }
 
-#[component(inline_props)]
+#[component]
 fn SimpleComponent(my_number: u32) -> View {
     view! {
         (my_number)
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn MultiProps(my_number: u32, my_string: String) -> View {
     view! {
         (my_number)
@@ -22,33 +22,33 @@ fn MultiProps(my_number: u32, my_string: String) -> View {
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn PropsWithGenericLifetime(data: Signal<u32>) -> View {
     view! {
         (data.get())
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn UnusedGeneric<T>() -> View {
     view! {}
 }
 
-#[component(inline_props)]
+#[component]
 fn PropsWithGenericTypes<T: std::fmt::Display + 'static>(foo: T) -> View {
     view! {
         (foo.to_string())
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn PropsWithImplGenerics(foo: impl std::fmt::Display + 'static) -> View {
     view! {
         (foo.to_string())
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn PropsWithMixedImplGenerics<T: std::fmt::Display + 'static>(
     foo: T,
     bar: impl std::fmt::Display + 'static,
@@ -59,7 +59,7 @@ fn PropsWithMixedImplGenerics<T: std::fmt::Display + 'static>(
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn PropsWithVariousImplGenerics(
     t1: [impl std::fmt::Display + 'static; 10],
     t2: (
@@ -94,7 +94,7 @@ fn AdditionalStructAttributes(dummy: String) -> View {
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn PropsWithAttributes(#[prop(default)] dummy: String) -> View {
     fn call_component() -> View {
         view! {
@@ -111,7 +111,7 @@ struct Foo {
     bar: u32,
 }
 
-#[component(inline_props)]
+#[component]
 fn PropsWithPatterns(mut a: u32, b @ Foo { bar }: Foo) -> View {
     let _ = &mut a;
     view! {

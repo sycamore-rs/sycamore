@@ -4,7 +4,7 @@ use crate::*;
 
 /// A portal into a different part of the DOM. Only renders in client side rendering (CSR) mode.
 /// Does nothing in SSR mode.
-#[component(inline_props)]
+#[component]
 #[deprecated(
     note = "use Portal2 instead, which has a diffferent signature that is more flexible and works better with hydration."
 )]
@@ -43,7 +43,7 @@ pub fn Portal<'a, T: Into<View> + Default>(selector: &'a str, children: T) -> Vi
 /// This serves the same functionality as [`Portal`] but fixes the signature to use the proper
 /// [`Children`] type and fixes various issues with hydration. This will replace the original
 /// [`Portal`] component in a future release.
-#[component(inline_props)]
+#[component]
 pub fn Portal2(selector: impl AsRef<str>, children: Children) -> View {
     if is_not_ssr!() {
         let selector = selector.as_ref();

@@ -1,6 +1,6 @@
 use sycamore::prelude::*;
 
-#[component(inline_props)]
+#[component]
 fn MyComponent(value: ReadSignal<i32>) -> View {
     view! {
         div(class="my-component") {

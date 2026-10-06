@@ -3,20 +3,18 @@
 //! Iteration can be either _"keyed"_ or _"non keyed"_ by using the [`Keyed`] or [`Indexed`] utility
 //! components respectively.
 
-#![allow(non_snake_case)]
-
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::Deref;
 
-use sycamore_macro::{Props, component};
+use sycamore_macro::component;
 use wasm_bindgen::prelude::*;
 
 use crate::*;
 
 /// Props for [`Keyed`].
 #[derive(Props)]
-pub struct KeyedProps<T, K, U, List, F, Key>
+pub struct KeyedPropsOld<T, K, U, List, F, Key>
 where
     List: Into<MaybeDyn<Vec<T>>> + 'static,
     F: Fn(T) -> U + 'static,
@@ -70,7 +68,12 @@ where
 /// # }
 /// ```
 #[component]
-pub fn Keyed<T, K, U, List, F, Key>(props: KeyedProps<T, K, U, List, F, Key>) -> View
+pub fn Keyed<T, K, U, List, F, Key>(
+    list: List,
+    view: F,
+    key: Key,
+    #[prop(default)] _phantom: std::marker::PhantomData<(T, K, U)>,
+) -> View
 where
     T: PartialEq + Clone + 'static,
     K: Hash + Eq + 'static,
@@ -79,10 +82,6 @@ where
     F: Fn(T) -> U + 'static,
     Key: Fn(&T) -> K + 'static,
 {
-    let KeyedProps {
-        list, view, key, ..
-    } = props;
-
     if is_ssr!() {
         // In SSR mode, just create a static view.
         let start = HtmlNode::create_marker_node();
@@ -140,20 +139,6 @@ where
     }
 }
 
-/// Props for [`Keyed`].
-#[derive(Props)]
-pub struct IndexedProps<T, U, List, F>
-where
-    List: Into<MaybeDyn<Vec<T>>> + 'static,
-    F: Fn(T) -> U + 'static,
-    T: 'static,
-{
-    list: List,
-    view: F,
-    #[prop(default)]
-    _phantom: std::marker::PhantomData<(T, U)>,
-}
-
 /// Non keyed iteration (or keyed by index).
 ///
 /// Use this instead of directly rendering an array of
@@ -180,15 +165,17 @@ where
 /// # }
 /// ```
 #[component]
-pub fn Indexed<T, U, List, F>(props: IndexedProps<T, U, List, F>) -> View
+pub fn Indexed<T, U, List, F>(
+    list: List,
+    view: F,
+    #[prop(default)] _phantom: std::marker::PhantomData<(T, U)>,
+) -> View
 where
     T: PartialEq + Clone + 'static,
     U: Into<View>,
     List: Into<MaybeDyn<Vec<T>>> + 'static,
     F: Fn(T) -> U + 'static,
 {
-    let IndexedProps { list, view, .. } = props;
-
     if is_ssr!() {
         // In SSR mode, just create a static view.
         let start = HtmlNode::create_marker_node();

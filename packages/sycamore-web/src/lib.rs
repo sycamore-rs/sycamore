@@ -86,7 +86,7 @@ pub mod rt {
     pub use web_sys;
 
     #[cfg(feature = "suspense")]
-    pub use crate::WrapAsync;
+    pub use crate::wrap_async_component;
     pub use crate::{View, bind, custom_element, tags};
 }
 
