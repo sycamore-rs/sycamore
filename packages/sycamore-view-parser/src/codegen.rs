@@ -89,7 +89,8 @@ impl Codegen {
             }
             Node::Match(match_node) => {
                 let match_expr = &match_node.expr;
-                let is_dynamic = is_dyn(match_expr);
+                let is_dynamic = is_dyn(match_expr)
+                    || match_node.arms.iter().any(|arm| is_dyn_pattern(&arm.pat));
 
                 let arms = match_node.arms.iter().map(|arm| {
                     let pat = &arm.pat;
