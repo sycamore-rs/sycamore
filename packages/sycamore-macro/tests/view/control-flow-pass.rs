@@ -117,6 +117,26 @@ fn compile_pass() {
                 }
             }
         };
+
+        // If let
+        let _: View = view! {
+            div {
+                if let Some(x) = Some(1) {
+                    p { (x.to_string()) }
+                } else {
+                    p {}
+                }
+            }
+        };
+        // Match with guards
+        let _: View = view! {
+            div {
+                match random_number() {
+                    n if n < 4 => p {},
+                    _ => p {},
+                }
+            }
+        };
     });
 }
 

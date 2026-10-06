@@ -237,7 +237,20 @@ impl Parse for MatchNode {
 
 impl Parse for MatchArm {
     fn parse(input: ParseStream) -> Result<Self> {
-        let pat = syn::Pat::parse_multi_with_leading_vert(input)?;
+        let mut pat = syn::Pat::parse_multi_with_leading_vert(input)?;
+        // For some reason, syn::Pat does not expose a way to parse the guard so we need to parse it
+        // here manually.
+        if input.peek(Token![if]) {
+            let if_token: Token![if] = input.parse()?;
+            let guard = input.parse()?;
+            pat = syn::Pat::Guard(syn::PatGuard {
+                attrs: Vec::new(),
+                pat: Box::new(pat),
+                if_token,
+                guard: Box::new(guard),
+            });
+        }
+
         let _arrow: Token![=>] = input.parse()?;
         // Check if the body is a single expression or a block of code.
         // If it's a block, we parse it as a Root node. If it's a single expression, we parse it as
