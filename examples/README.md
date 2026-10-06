@@ -29,7 +29,6 @@ Now open up `localhost:8080` in your browser to see the example running locally.
 | [counter](counter)                                 | A simple counter which can be incremented and decremented                                      |
 | [hello-builder](hello-builder)                     | Hello World! With the builder API!                                                             |
 | [hello-world](hello-world)                         | Hello World!                                                                                   |
-| [higher-order-components](higher-order-components) | Higher-order-components (functions that create components)                                     |
 | [http-request](http-request)                       | Suspense + async components for sending HTTP requests                                          |
 | [http-request-builder](http-request-builder)       | Suspense + async components for sending HTTP requests using the builder API!                   |
 | [hydrate](hydrate)                                 | Making existing HTML reactive                                                                  |

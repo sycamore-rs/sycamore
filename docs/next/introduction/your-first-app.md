@@ -37,10 +37,10 @@ feature greatly improves the ergonomics when working with Sycamore's reactivity.
 
 ### Install Trunk
 
-[Trunk](https://trunk-rs.github.io/trunk/) is the recommended build tool for Sycamore. If you
-are familiar with JavaScript frontend development, Trunk is like
-[webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but with
-first-class support for building Rust WASM apps.
+[Trunk](https://trunk-rs.github.io/trunk/) is the recommended build tool for
+Sycamore. If you are familiar with JavaScript frontend development, Trunk is
+like [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but
+with first-class support for building Rust WASM apps.
 
 > We are currently working on building a Sycamore specific CLI tool but it is
 > not yet ready. For now, Trunk is the recommended to build your Sycamore app.
@@ -59,7 +59,8 @@ wget -qO- https://github.com/thedodd/trunk/releases/download/${VERSION}/trunk-x8
 cargo install --locked trunk
 ```
 
-For more information, check out the [Trunk website](https://trunk-rs.github.io/trunk/)
+For more information, check out the
+[Trunk website](https://trunk-rs.github.io/trunk/)
 
 ### Setting up your IDE
 
@@ -122,8 +123,8 @@ WebAssembly.
 ```html
 <!DOCTYPE html>
 <html>
-    <head></head>
-    <body></body>
+  <head></head>
+  <body></body>
 </html>
 ```
 
@@ -249,7 +250,7 @@ that is used multiple times in your app.
 Components really shine with component props. These are arguments to the
 component that can affect what is rendered.
 
-To have a component take props, we need to first create a struct reprenseting
+To have a component take props, we need to first create a struct representing
 the props type.
 
 ```rust
@@ -343,9 +344,10 @@ fn Wrapper(children: Children) -> View {
 ```
 
 It will likely turn out that you will almost never use struct props, simply
-because it involves more typing than inline props. For this reason, we are
-considering making inline props the default in a future version of Sycamore.
-However, as of v0.9, you must still explicitly annotate your component with
-`inline_props`.
+because it involves more typing than inline props.
+
+> In the upcoming Sycamore v0.10 release, support for struct props will be
+> removed and inline props will become the default.> See the section on "Inline
+> props" below.
 
 Next, we will see how to add state to our app and make it interactive.

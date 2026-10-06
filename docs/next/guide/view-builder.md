@@ -4,6 +4,9 @@ title: View Builder API
 
 # The View Builder API
 
+> The upcoming v0.10 release brings some changes to how components work with the
+> builder API.
+
 For those that prefer not to use macros, Sycamore also provides an ergonomic
 builder API for composing views.
 
@@ -158,3 +161,23 @@ div()
         Button_Props::builder().class("my-button".to_string()).build()
     ))
 ```
+
+### Changes in Sycamore v0.10
+
+In the upcoming Sycamore v0.10 release, components have been changed to be much
+closer aligned with the existing API for builtin elements.
+
+Components now return builder factories for the component props, which itself
+implements `Into<View>`. This means we can write something like:
+
+```rust
+// v0.10 code
+#[component]
+fn Button(class: String) -> View { ... }
+
+div()
+    .children(Button().class("my-button".to_string()))
+```
+
+Also note that v0.10 removes support for struct props and makes inline props the
+default.

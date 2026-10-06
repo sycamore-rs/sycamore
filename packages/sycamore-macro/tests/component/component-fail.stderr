@@ -1,8 +1,8 @@
 error: component must return `sycamore::view::View`
- --> tests/component/component-fail.rs:4:10
+ --> tests/component/component-fail.rs:4:9
   |
 4 | fn Comp1() {
-  |          ^
+  |         ^^
 
 error: const functions can't be components
  --> tests/component/component-fail.rs:9:1
@@ -16,31 +16,17 @@ error: extern functions can't be components
 14 | extern "C" fn Comp3() -> View {
    | ^^^^^^
 
-error: components can't accept a receiver
+error: `self` cannot be a property
   --> tests/component/component-fail.rs:19:10
    |
 19 | fn Comp4(self) -> View {
    |          ^^^^
 
-error: the `component` attribute can only be applied to functions
+error: expected `fn`
   --> tests/component/component-fail.rs:24:1
    |
 24 | struct Comp5;
-   | ^^^^^^^^^^^^^
-
-error: component should not take more than 1 parameter
-  --> tests/component/component-fail.rs:26:1
-   |
-26 | #[component]
-   | ^^^^^^^^^^^^
-   |
-   = note: this error originates in the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error: taking an unit tuple as props is useless
-  --> tests/component/component-fail.rs:34:29
-   |
-34 | fn CompWithUnitProps(_prop: ()) -> View {
-   |                             ^^
+   | ^^^^^^
 
 error: `self` parameter is only allowed in associated functions
   --> tests/component/component-fail.rs:19:10

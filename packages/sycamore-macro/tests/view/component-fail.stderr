@@ -1,134 +1,93 @@
 error: unexpected end of input, expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:44:23
+  --> tests/view/component-fail.rs:34:23
    |
-44 |         let _: View = view! { Component };
+34 |         let _: View = view! { Component };
    |                       ^^^^^^^^^^^^^^^^^^^
    |
    = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: expected either `(` or `{` after element tag
-  --> tests/view/component-fail.rs:58:52
+  --> tests/view/component-fail.rs:48:52
    |
-58 |         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
+48 |         let _: View = view! { PropsComponent { prop: "123" } }; // Legacy syntax.
    |                                                    ^
 
-error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:38:13
+error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
+  --> tests/view/component-fail.rs:28:13
    |
-38 |             UnknownComponent {}
+28 |             UnknownComponent {}
    |             ^^^^^^^^^^^^^^^^ not found in this scope
 
-error[E0425]: cannot find value `UnknownComponent` in this scope
-  --> tests/view/component-fail.rs:41:13
+error[E0425]: cannot find function, tuple struct or tuple variant `UnknownComponent` in this scope
+  --> tests/view/component-fail.rs:31:13
    |
-41 |             UnknownComponent {}
+31 |             UnknownComponent {}
    |             ^^^^^^^^^^^^^^^^ not found in this scope
 
-error[E0282]: type annotations needed
-  --> tests/view/component-fail.rs:37:23
+error[E0599]: no method named `not_a_prop` found for struct `sycamore::web::View<T>` in the current scope
+  --> tests/view/component-fail.rs:36:23
    |
-37 |           let _: View = view! {
-   |  _______________________^
-38 | |             UnknownComponent {}
-39 | |         };
-   | |_________^ cannot infer type
-   |
-   = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0282]: type annotations needed
-  --> tests/view/component-fail.rs:40:23
-   |
-40 |           let _: View = view! {
-   |  _______________________^
-41 | |             UnknownComponent {}
-42 | |         };
-   | |_________^ cannot infer type
-   |
-   = note: this error originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0599]: no method named `not_a_prop` found for struct `UnitBuilder` in the current scope
-  --> tests/view/component-fail.rs:46:23
-   |
-45 |           let _: View = view! {
+35 |           let _: View = view! {
    |  _______________________-
-46 | |             Component(not_a_prop=1)
-   | |                      -^^^^^^^^^^ method not found in `UnitBuilder`
+36 | |             Component(not_a_prop=1)
+   | |                      -^^^^^^^^^^ method not found in `sycamore::web::View`
    | |______________________|
    |
 
-warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:49:23
+error[E0277]: the trait bound `PropsComponentPropsBuilder<((),)>: Into<sycamore::web::View>` is not satisfied
+  --> tests/view/component-fail.rs:39:23
    |
-49 |           let _: View = view! {
+39 |           let _: View = view! {
    |  _______________________^
-50 | |             PropsComponent {}
-51 | |         };
-   | |_________^
+40 | |             PropsComponent {}
+41 | |         };
+   | |_________^ unsatisfied trait bound
    |
-   = note: `#[warn(deprecated)]` on by default
-   = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: the trait `FnMut()` is not implemented for `PropsComponentPropsBuilder<((),)>`
+  --> tests/view/component-fail.rs:3:1
+   |
+ 3 | #[component]
+   | ^^^^^^^^^^^^
+   = note: required for `sycamore::web::View` to implement `From<PropsComponentPropsBuilder<((),)>>`
+   = note: required for `PropsComponentPropsBuilder<((),)>` to implement `Into<sycamore::web::View>`
+   = note: this error originates in the macro `view` which comes from the expansion of the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:49:23
+error[E0277]: the trait bound `PropsComponentPropsBuilder<((),)>: Into<sycamore::web::View>` is not satisfied
+  --> tests/view/component-fail.rs:42:23
    |
-49 |           let _: View = view! {
+42 |           let _: View = view! {
    |  _______________________^
-50 | |             PropsComponent {}
-51 | |         };
-   | |_________^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
+43 | |             PropsComponent {}
+44 | |         };
+   | |_________^ unsatisfied trait bound
    |
-note: method defined here
-  --> tests/view/component-fail.rs:3:10
+help: the trait `FnMut()` is not implemented for `PropsComponentPropsBuilder<((),)>`
+  --> tests/view/component-fail.rs:3:1
    |
- 3 | #[derive(Props)]
-   |          ^^^^^
-   = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-warning: use of deprecated method `PropsBuilder::<((),)>::build`: Missing required field prop
-  --> tests/view/component-fail.rs:52:23
-   |
-52 |           let _: View = view! {
-   |  _______________________^
-53 | |             PropsComponent {}
-54 | |         };
-   | |_________^
-   |
-   = note: this warning originates in the macro `view` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0061]: this method takes 1 argument but 0 arguments were supplied
-  --> tests/view/component-fail.rs:52:23
-   |
-52 |           let _: View = view! {
-   |  _______________________^
-53 | |             PropsComponent {}
-54 | |         };
-   | |_________^ argument #1 of type `PropsBuilder_Error_Missing_required_field_prop` is missing
-   |
-note: method defined here
-  --> tests/view/component-fail.rs:3:10
-   |
- 3 | #[derive(Props)]
-   |          ^^^^^
-   = note: this error originates in the macro `view` which comes from the expansion of the derive macro `Props` (in Nightly builds, run with -Z macro-backtrace for more info)
+ 3 | #[component]
+   | ^^^^^^^^^^^^
+   = note: required for `sycamore::web::View` to implement `From<PropsComponentPropsBuilder<((),)>>`
+   = note: required for `PropsComponentPropsBuilder<((),)>` to implement `Into<sycamore::web::View>`
+   = note: this error originates in the macro `view` which comes from the expansion of the attribute macro `component` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0308]: mismatched types
-  --> tests/view/component-fail.rs:56:33
+  --> tests/view/component-fail.rs:46:33
    |
-56 |             PropsComponent(prop=123)
+46 |             PropsComponent(prop=123)
    |                            ---- ^^^ expected `&str`, found integer
    |                            |
    |                            arguments to this method are incorrect
    |
 note: method defined here
-  --> tests/view/component-fail.rs:5:5
+  --> tests/view/component-fail.rs:4:23
    |
- 5 |     prop: &'static str,
-   |     ^^^^--------------
+ 4 | pub fn PropsComponent(prop: &'static str) -> View {
+   |                       ^^^^--------------
 
 error[E0277]: the trait bound `MaybeDyn<Option<Cow<'static, str>>>: From<{integer}>` is not satisfied
-  --> tests/view/component-fail.rs:61:39
+  --> tests/view/component-fail.rs:51:39
    |
-61 |             AttributesComponent(class=123)
+51 |             AttributesComponent(class=123)
    |                                       ^^^ the trait `From<{integer}>` is not implemented for `MaybeDyn<Option<Cow<'static, str>>>`
    |
    = help: the following other types implement trait `From<T>`:

@@ -10,7 +10,7 @@ async fn sleep_ms(ms: u64) {
     }
 }
 
-#[component(inline_props)]
+#[component]
 async fn Delayed(delay_ms: u64, children: Children) -> View {
     sleep_ms(delay_ms).await;
     view! {
@@ -18,7 +18,7 @@ async fn Delayed(delay_ms: u64, children: Children) -> View {
     }
 }
 
-#[component(inline_props)]
+#[component]
 fn DelayedText(delay_ms: u64) -> View {
     view! {
         Delayed(delay_ms=delay_ms) { p { "Loaded after " (delay_ms) "ms" } }

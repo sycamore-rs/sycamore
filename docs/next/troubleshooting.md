@@ -18,4 +18,3 @@ console_error_panic_hook::set_once();
 ## Debugging using DWARF + WASM
 
 > Note: This section is a stub. Help us write this section!
-

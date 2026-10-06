@@ -1,21 +1,16 @@
 use sycamore::prelude::*;
 use sycamore::web::StringAttribute;
 
-#[derive(Props)]
-pub struct CustomButtonProps {
-    #[prop(setter(into))]
-    id: StringAttribute,
-    #[prop(attributes(html, button))]
-    attributes: Attributes,
-    children: Children,
-}
-
 #[component]
-fn CustomButton(props: CustomButtonProps) -> View {
-    console_log!("Intercepted `id` attribute: {:?}", props.id.get_clone());
+fn CustomButton(
+    #[prop(setter(into))] id: StringAttribute,
+    #[prop(attributes(html, button))] attributes: Attributes,
+    children: Children,
+) -> View {
+    console_log!("Intercepted `id` attribute: {:?}", id.get_clone());
 
     view! {
-        button(id=props.id, ..props.attributes) { (props.children) }
+        button(id=id, ..attributes) { (children) }
     }
 }
 

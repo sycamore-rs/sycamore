@@ -86,7 +86,7 @@ pub use sycamore_web::{render_to_string_await_suspense, render_to_string_stream}
 /// use sycamore::prelude::*;
 /// ```
 pub mod prelude {
-    pub use sycamore_core::{Component, Props};
+    pub use sycamore_core::Props;
     #[cfg(feature = "web")]
     pub use sycamore_macro::*;
     #[cfg(feature = "web")]
@@ -106,7 +106,7 @@ pub mod prelude {
 /// Re-exports for use by `sycamore-macro`. Not intended for use by end-users.
 #[doc(hidden)]
 pub mod rt {
-    pub use sycamore_core::{Component, Props, component_scope, element_like_component_builder};
+    pub use sycamore_core::{Props, component_scope};
     #[cfg(feature = "suspense")]
     pub use sycamore_futures::*;
     pub use sycamore_macro::*;

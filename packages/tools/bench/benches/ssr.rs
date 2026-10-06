@@ -21,7 +21,7 @@ pub fn bench(c: &mut Criterion) {
 
     c.bench_function("ssr_medium", |b| {
         b.iter(|| {
-            #[component(inline_props)]
+            #[component]
             fn ListItem(value: i32) -> View {
                 view! {
                     p {

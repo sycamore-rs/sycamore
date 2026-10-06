@@ -6,23 +6,9 @@ use std::num::NonZeroU32;
 use sycamore_futures::{
     create_detached_suspense_scope, create_suspense_scope, create_suspense_task,
 };
-use sycamore_macro::{Props, component};
+use sycamore_macro::component;
 
 use crate::*;
-
-/// Props for [`Suspense`] and [`Transition`].
-#[derive(Props)]
-pub struct SuspenseProps {
-    /// The fallback [`View`] to display while the child nodes are being awaited.
-    #[prop(default = Box::new(|| view! {}), setter(transform = |f: impl Fn() -> View + 'static| Box::new(f) as Box<dyn Fn() -> View>))]
-    fallback: Box<dyn Fn() -> View>,
-    children: Children,
-    /// The component will automatically update this signal with the `is_loading` state.
-    ///
-    /// This is only updated in non-SSR mode.
-    #[prop(default = Box::new(|_| {}), setter(transform = |f: impl FnMut(bool) + 'static| Box::new(f) as Box<dyn FnMut(bool)>))]
-    set_is_loading: Box<dyn FnMut(bool) + 'static>,
-}
 
 /// `Suspense` lets you wait for `async` tasks to complete before rendering the UI. This is useful
 /// for asynchronous data-fetching or other asynchronous tasks.
@@ -53,13 +39,17 @@ pub struct SuspenseProps {
 /// }
 /// ```
 #[component]
-pub fn Suspense(props: SuspenseProps) -> View {
-    let SuspenseProps {
-        fallback,
-        children,
-        mut set_is_loading,
-    } = props;
-
+pub fn Suspense(
+    /// The fallback [`View`] to display while the child nodes are being awaited.
+    #[prop(default = Box::new(|| view! {}), setter(transform = |f: impl Fn() -> View + 'static| Box::new(f) as Box<dyn Fn() -> View>))]
+    fallback: Box<dyn Fn() -> View>,
+    children: Children,
+    /// The component will automatically update this signal with the `is_loading` state.
+    ///
+    /// This is only updated in non-SSR mode.
+    #[prop(default = Box::new(|_| {}), setter(transform = |f: impl FnMut(bool) + 'static| Box::new(f) as Box<dyn FnMut(bool)>))]
+    mut set_is_loading: Box<dyn FnMut(bool) + 'static>,
+) -> View {
     is_ssr! {
         use futures::FutureExt;
 
@@ -188,10 +178,20 @@ pub fn Suspense(props: SuspenseProps) -> View {
 /// `Transition` is like [`Suspense`] except that it keeps the previous content visible until the
 /// new content is ready.
 #[component]
-pub fn Transition(props: SuspenseProps) -> View {
+pub fn Transition(
+    /// The fallback [`View`] to display while the child nodes are being awaited.
+    #[prop(default = Box::new(|| view! {}), setter(transform = |f: impl Fn() -> View + 'static| Box::new(f) as Box<dyn Fn() -> View>))]
+    fallback: Box<dyn Fn() -> View>,
+    children: Children,
+    /// The component will automatically update this signal with the `is_loading` state.
+    ///
+    /// This is only updated in non-SSR mode.
+    #[prop(default = Box::new(|_| {}), setter(transform = |f: impl FnMut(bool) + 'static| Box::new(f) as Box<dyn FnMut(bool)>))]
+    set_is_loading: Box<dyn FnMut(bool) + 'static>,
+) -> View {
     /// Only trigger outer suspense on initial render. In subsequent renders, capture the suspense
     /// scope.
-    #[component(inline_props)]
+    #[component]
     fn TransitionInner(children: Children, set_is_loading: Box<dyn FnMut(bool)>) -> View {
         // TODO: Workaround for https://github.com/sycamore-rs/sycamore/issues/718.
         let mut set_is_loading = set_is_loading;
@@ -215,10 +215,10 @@ pub fn Transition(props: SuspenseProps) -> View {
 
     view! {
         Suspense(
-            fallback=props.fallback,
+            fallback=fallback,
             children=Children::new(move || {
                 view! {
-                    TransitionInner(children=props.children, set_is_loading=props.set_is_loading)
+                    TransitionInner(children=children, set_is_loading=set_is_loading)
                 }
             }),
         )
@@ -227,8 +227,7 @@ pub fn Transition(props: SuspenseProps) -> View {
 
 /// Convert an async component to a regular sync component. Also wraps the async component inside a
 /// suspense scope so that content is properly suspended.
-#[component]
-pub fn WrapAsync<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> View {
+pub fn wrap_async_component<F: Future<Output = View>>(f: impl FnOnce() -> F + 'static) -> View {
     is_not_ssr! {
         let mode = if IS_HYDRATING.get() {
             use_context::<SsrMode>()

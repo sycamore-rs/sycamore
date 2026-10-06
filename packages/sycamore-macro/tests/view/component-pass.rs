@@ -7,63 +7,43 @@ pub fn Component() -> View {
     }
 }
 
-#[derive(Props)]
-pub struct Props {
-    prop: &'static str,
-}
-
 #[component]
-pub fn PropsComponent(Props { prop: _ }: Props) -> View {
+pub fn PropsComponent(prop: &'static str) -> View {
+    let _ = prop;
     view! {
         div {}
     }
 }
 
-#[derive(Props)]
-pub struct AllDefaultProps {
-    #[prop(default)]
-    prop: u32,
-}
-
 #[component]
-pub fn AllDefaultPropsComponent(_props: AllDefaultProps) -> View {
+pub fn AllDefaultPropsComponent(#[prop(default)] prop: u32) -> View {
+    let _ = prop;
     view! {
         div {}
     }
 }
 
-#[derive(Props)]
-pub struct OptionalProps {
-    #[prop(default, setter(strip_option))]
-    optional: Option<u32>,
+#[component]
+pub fn OptionalPropsComponent(
+    #[prop(default, setter(strip_option))] optional: Option<u32>,
     implicit: Option<u32>,
-}
-
-#[component]
-pub fn OptionalPropsComponent(_props: OptionalProps) -> View {
+) -> View {
+    let _ = optional;
+    let _ = implicit;
     view! {
         div {}
     }
 }
 
-#[derive(Props)]
-pub struct PropsWithChildren {
-    children: Children,
-}
-
 #[component]
-pub fn ComponentWithChildren(props: PropsWithChildren) -> View {
-    let children = props.children.call();
-
+pub fn ComponentWithChildren(children: Children) -> View {
     view! {
         div { (children) }
     }
 }
 
 #[component]
-pub fn NestedComponentWithChildren(props: PropsWithChildren) -> View {
-    let children = props.children.call();
-
+pub fn NestedComponentWithChildren(children: Children) -> View {
     view! {
         ComponentWithChildren {
             (children)
@@ -73,20 +53,12 @@ pub fn NestedComponentWithChildren(props: PropsWithChildren) -> View {
 }
 
 #[component]
-pub async fn AsyncComponentWithPropsDestructuring(
-    PropsWithChildren { children }: PropsWithChildren,
-) -> View {
+pub async fn AsyncComponentWithPropsDestructuring(children: Children) -> View {
     children.call()
 }
 
-#[derive(Props)]
-pub struct AttributesProps {
-    #[prop(attributes(html, input))]
-    attributes: Attributes,
-}
-
 #[component]
-pub fn AttributesComponent(AttributesProps { attributes }: AttributesProps) -> View {
+pub fn AttributesComponent(#[prop(attributes(html, input))] attributes: Attributes) -> View {
     view! {
         input(..attributes)
     }

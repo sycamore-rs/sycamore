@@ -305,7 +305,7 @@ mod tests {
 
     use super::*;
 
-    #[component(inline_props)]
+    #[component]
     async fn AsyncComponent(receiver: oneshot::Receiver<()>) -> View {
         receiver.await.unwrap();
         view! {
@@ -313,7 +313,7 @@ mod tests {
         }
     }
 
-    #[component(inline_props)]
+    #[component]
     fn App(receiver: oneshot::Receiver<()>) -> View {
         view! {
             Suspense(fallback=|| "fallback".into()) { AsyncComponent(receiver=receiver) }

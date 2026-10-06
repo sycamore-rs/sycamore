@@ -32,7 +32,7 @@ async fn get_content(tab: Tab) -> &'static str {
     tab.content()
 }
 
-#[component(inline_props)]
+#[component]
 fn TabContent(content: &'static str) -> View {
     view! {
         p { (content) }

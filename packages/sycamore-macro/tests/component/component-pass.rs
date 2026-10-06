@@ -1,26 +1,25 @@
-#![no_implicit_prelude]
-use ::sycamore::prelude::{View, component};
+use sycamore::prelude::{View, component};
 
 #[component]
 fn CompNoProps() -> View {
-    ::std::todo!();
+    todo!();
 }
 
 #[component]
 fn CompWithProps(prop: ::std::primitive::i32) -> View {
     let _ = prop;
-    ::std::todo!();
+    todo!();
 }
 
 #[component]
 async fn AsyncCompNoProps() -> View {
-    ::std::todo!();
+    todo!();
 }
 
 #[component]
 async fn AsyncCompWithProps(prop: ::std::primitive::i32) -> View {
     let _ = prop;
-    ::std::todo!();
+    todo!();
 }
 
 fn main() {}

@@ -6,8 +6,8 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
-    AttrStyle, Attribute, Error, Expr, FnArg, Generics, Ident, Item, ItemFn, Meta, Pat, PatIdent,
-    Result, ReturnType, Signature, Token, Type, TypeTuple, parse_quote,
+    AttrStyle, Attribute, Expr, FnArg, Generics, Ident, Item, ItemFn, Meta, Pat, PatIdent, Result,
+    ReturnType, Signature, Token, Type, TypeTuple, parse_quote,
 };
 
 pub struct ComponentFn {
@@ -66,19 +66,7 @@ impl Parse for ComponentFn {
                             ));
                         }
                     }
-                    [..] => {
-                        if inputs.len() > 1 {
-                            return Err(syn::Error::new(
-                                sig.inputs
-                                    .clone()
-                                    .into_iter()
-                                    .skip(2)
-                                    .collect::<Punctuated<_, Token![,]>>()
-                                    .span(),
-                                "component should not take more than 1 parameter",
-                            ));
-                        }
-                    }
+                    [..] => {}
                 };
 
                 Ok(Self { f })
@@ -201,14 +189,14 @@ impl ToTokens for ComponentFn {
             tokens.extend(quote! {
                 // Create a new function that is not async so that it is just a standard component.
                 #(#attrs)*
-                #[::sycamore::component]
+                #[allow(non_snake_case)]
                 #vis #non_async_sig {
                     // Define the original function as a nested function so that it cannot be
                     // called from outside.
                     #[allow(non_snake_case)]
                     #inner_sig #block
 
-                    ::sycamore::rt::WrapAsync(move || #inner_ident(#(#args),*))
+                    ::sycamore::rt::wrap_async_component(move || #inner_ident(#(#args),*))
                 }
             });
         } else {
@@ -222,32 +210,19 @@ impl ToTokens for ComponentFn {
 
 /// Arguments to the `component` attribute proc-macro.
 pub struct ComponentArgs {
-    inline_props: Option<Ident>,
     _comma: Option<Token![,]>,
     attrs: Punctuated<Meta, Token![,]>,
 }
 
 impl Parse for ComponentArgs {
     fn parse(input: ParseStream) -> Result<Self> {
-        let inline_props: Option<Ident> = input.parse()?;
-        let (comma, attrs) = if let Some(inline_props) = &inline_props {
-            // Check if the ident is correct.
-            if *inline_props != "inline_props" {
-                return Err(Error::new(inline_props.span(), "expected `inline_props`"));
-            }
-
-            let comma: Option<Token![,]> = input.parse()?;
-            let attrs: Punctuated<Meta, Token![,]> = if comma.is_some() {
-                input.parse_terminated(Meta::parse, Token![,])?
-            } else {
-                Punctuated::new()
-            };
-            (comma, attrs)
+        let comma: Option<Token![,]> = input.parse()?;
+        let attrs: Punctuated<Meta, Token![,]> = if !input.is_empty() {
+            input.parse_terminated(Meta::parse, Token![,])?
         } else {
-            (None, Punctuated::new())
+            Punctuated::new()
         };
         Ok(Self {
-            inline_props,
             _comma: comma,
             attrs,
         })
@@ -255,26 +230,29 @@ impl Parse for ComponentArgs {
 }
 
 pub fn component_impl(args: ComponentArgs, item: TokenStream) -> Result<TokenStream> {
-    if args.inline_props.is_some() {
-        let mut item_fn = syn::parse::<ItemFn>(item.into())?;
-        let inline_props = inline_props_impl(&mut item_fn, args.attrs)?;
-        // TODO: don't parse the function twice.
-        let comp = syn::parse::<ComponentFn>(item_fn.to_token_stream().into())?;
-        Ok(quote! {
-            #inline_props
-            #comp
-        })
+    let mut item_fn = syn::parse::<ItemFn>(item.into())?;
+    // If component has more than one argument, use inline props.
+    let inline_props = if item_fn.sig.inputs.is_empty() {
+        quote! {}
     } else {
-        let comp = syn::parse::<ComponentFn>(item.into())?;
-        Ok(comp.to_token_stream())
-    }
+        inline_props_impl(&mut item_fn, args.attrs)?
+    };
+    // TODO: don't parse the function twice.
+    let comp = syn::parse::<ComponentFn>(item_fn.to_token_stream().into())?;
+    Ok(quote! {
+        #inline_props
+        #comp
+    })
 }
 
-/// Codegens the new props struct and modifies the component body to accept this new struct as
-/// props.
+/// Generates the props struct and builder, then turns the component into a builder factory and a
+/// private props-taking implementation function.
 fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> Result<TokenStream> {
-    let props_vis = &item.vis;
-    let props_struct_ident = format_ident!("{}_Props", item.sig.ident);
+    let component_ident = item.sig.ident.clone();
+    let component_impl_ident = format_ident!("{}_component", component_ident);
+    let component_vis = item.vis.clone();
+    let props_vis = &component_vis;
+    let props_struct_ident = format_ident!("{}Props", component_ident);
 
     let inputs = item.sig.inputs.clone();
     let props = inputs.clone().into_iter().collect::<Vec<_>>();
@@ -327,7 +305,8 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         }
     });
 
-    let doc_comment = format!("Props for [`{}`].", item.sig.ident);
+    let doc_comment = format!("Props for [`{}`].", component_ident);
+    let (_, _, where_clause) = generics.split_for_impl();
 
     let attrs = attrs.into_iter().map(|a| Attribute {
         pound_token: Token![#](Span::call_site()),
@@ -335,16 +314,16 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         bracket_token: Default::default(),
         meta: a,
     });
-    let ret = Ok(quote! {
+    let props_struct = quote! {
         #[allow(non_camel_case_types)]
         #[doc = #doc_comment]
-        #[derive(::sycamore::rt::Props)]
         #(#attrs)*
-        #props_vis struct #props_struct_ident #generics {
+        #props_vis struct #props_struct_ident #generics #where_clause {
             #(#fields,)*
             #(#generics_phantoms,)*
         }
-    });
+    };
+    let mut props_input: syn::DeriveInput = syn::parse2(props_struct)?;
 
     // Rewrite component body.
 
@@ -363,10 +342,13 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
             _ => unreachable!(),
         },
     });
-    // Rewrite function signature.
+    // Rewrite function signature and body to make the original function private implementation
+    // detail called by the generated builder conversion.
     let props_struct_generics = generics.split_for_impl().1;
-    item.sig.inputs = parse_quote! { __props: #props_struct_ident #props_struct_generics };
-    // Rewrite function body.
+    let props_struct_type = quote!(#props_struct_ident #props_struct_generics);
+    item.sig.inputs = parse_quote! { __props: #props_struct_type };
+    item.sig.ident = component_impl_ident;
+    item.vis = syn::Visibility::Inherited;
     let block = item.block.clone();
     item.block = parse_quote! {{
         let #props_struct_ident {
@@ -376,5 +358,40 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         #block
     }};
 
-    ret
+    let props_impl = super::props::impl_component_props(&props_input, item)?;
+
+    // The derive macro normally registers `prop` as a helper attribute. Since the component
+    // macro invokes the props codegen directly, remove those attributes from the emitted struct
+    // after the props codegen has consumed them.
+    props_input
+        .attrs
+        .retain(|attr| !attr.path().is_ident("prop"));
+    if let syn::Data::Struct(data) = &mut props_input.data
+        && let syn::Fields::Named(fields) = &mut data.fields
+    {
+        for field in &mut fields.named {
+            field.attrs.retain(|attr| !attr.path().is_ident("prop"));
+        }
+    }
+
+    let mut factory_sig = item.sig.clone();
+    factory_sig.ident = component_ident;
+    factory_sig.inputs.clear();
+    factory_sig.asyncness = None;
+    factory_sig.output = parse_quote!(-> <#props_struct_type as ::sycamore::rt::Props>::Builder);
+    let props_vis = &component_vis;
+    let attrs = &item.attrs;
+    let factory = quote! {
+        #(#attrs)*
+        #[allow(non_snake_case)]
+        #props_vis #factory_sig {
+            <#props_struct_type as ::sycamore::rt::Props>::builder()
+        }
+    };
+
+    Ok(quote! {
+        #props_input
+        #props_impl
+        #factory
+    })
 }

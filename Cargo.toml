@@ -23,7 +23,6 @@ members = [
 	"examples/js-framework-benchmark",
 	"examples/hello-builder",
 	"examples/hello-world",
-	"examples/higher-order-components",
 	"examples/motion",
 	"examples/number-binding",
 	"examples/router",

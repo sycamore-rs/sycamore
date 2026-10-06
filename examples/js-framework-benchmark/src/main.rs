@@ -41,7 +41,7 @@ static NOUNS: &[&str] = &[
     "pizza", "mouse", "keyboard",
 ];
 
-#[component(inline_props)]
+#[component]
 fn Button(id: &'static str, text: &'static str, callback: Box<dyn Fn()>) -> View {
     view! {
         div(class="col-sm-6 smallpad") {

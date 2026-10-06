@@ -1,12 +1,8 @@
 use sycamore::prelude::*;
 
-#[derive(Props)]
-pub struct Props {
-    prop: &'static str,
-}
-
 #[component]
-pub fn PropsComponent(Props { prop: _ }: Props) -> View {
+pub fn PropsComponent(prop: &'static str) -> View {
+    let _ = prop;
     view! {
         div {}
     }
@@ -19,14 +15,8 @@ fn Component() -> View {
     }
 }
 
-#[derive(Props)]
-pub struct AttributesProps {
-    #[prop(attributes(html, div))]
-    attributes: Attributes,
-}
-
 #[component]
-pub fn AttributesComponent(AttributesProps { attributes }: AttributesProps) -> View {
+pub fn AttributesComponent(#[prop(attributes(html, div))] attributes: Attributes) -> View {
     view! {
         div(..attributes)
     }

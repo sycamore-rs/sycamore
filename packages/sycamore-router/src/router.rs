@@ -156,69 +156,14 @@ fn base_pathname() -> String {
     }
 }
 
-/// Props for [`Router`].
-#[derive(Props, Debug)]
-pub struct RouterProps<R, F, I>
-where
-    R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View + 'static,
-    I: Integration,
-{
-    view: F,
-    integration: I,
-    #[prop(default, setter(skip))]
-    _phantom: PhantomData<R>,
-}
-
-impl<R, F, I> RouterProps<R, F, I>
-where
-    R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View + 'static,
-    I: Integration,
-{
-    /// Create a new [`RouterProps`].
-    pub fn new(integration: I, view: F) -> Self {
-        Self {
-            view,
-            integration,
-            _phantom: PhantomData,
-        }
-    }
-}
-
-/// Props for [`RouterBase`].
-#[derive(Props, Debug)]
-pub struct RouterBaseProps<R, F, I>
-where
-    R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View + 'static,
-    I: Integration,
-{
-    view: F,
-    integration: I,
-    route: R,
-}
-
-impl<R, F, I> RouterBaseProps<R, F, I>
-where
-    R: Route + 'static,
-    F: FnOnce(ReadSignal<R>) -> View + 'static,
-    I: Integration,
-{
-    /// Create a new [`RouterBaseProps`].
-    pub fn new(integration: I, view: F, route: R) -> Self {
-        Self {
-            view,
-            integration,
-            route,
-        }
-    }
-}
-
 /// The sycamore router component. This component expects to be used inside a browser environment.
 /// For server environments, see [`StaticRouter`].
 #[component]
-pub fn Router<R, F, I>(props: RouterProps<R, F, I>) -> View
+pub fn Router<R, F, I>(
+    view: F,
+    integration: I,
+    #[prop(default, setter(skip))] _phantom: PhantomData<R>,
+) -> View
 where
     R: Route + 'static,
     F: FnOnce(ReadSignal<R>) -> View + 'static,
@@ -226,8 +171,8 @@ where
 {
     view! {
         RouterBase(
-            view=props.view,
-            integration=props.integration,
+            view=view,
+            integration=integration,
             // The derive macro makes this the `#[not_found]` route (always present)
             route=R::default(),
         )
@@ -239,17 +184,12 @@ where
 ///
 /// This is a very specific use-case, and you probably actually want [`Router`]!
 #[component]
-pub fn RouterBase<R, F, I>(props: RouterBaseProps<R, F, I>) -> View
+pub fn RouterBase<R, F, I>(view: F, integration: I, route: R) -> View
 where
     R: Route + 'static,
     F: FnOnce(ReadSignal<R>) -> View + 'static,
     I: Integration + 'static,
 {
-    let RouterBaseProps {
-        view,
-        integration,
-        route,
-    } = props;
     let integration = Rc::new(integration);
     let base_pathname = base_pathname();
 
@@ -295,53 +235,29 @@ where
     view
 }
 
-/// Props for [`StaticRouter`].
-#[derive(Props, Debug)]
-pub struct StaticRouterProps<R, F>
-where
-    R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View + 'static,
-{
-    view: F,
-    route: R,
-}
-
-impl<R, F> StaticRouterProps<R, F>
-where
-    R: Route + 'static,
-    F: Fn(ReadSignal<R>) -> View + 'static,
-{
-    /// Create a new [`StaticRouterProps`].
-    pub fn new(route: R, view: F) -> Self {
-        Self { view, route }
-    }
-}
-
 /// A router that only renders once with the given `route`.
 ///
 /// This is useful for SSR where we want the HTML to be rendered instantly instead of waiting for
 /// the route preload to finish loading.
 #[component]
-pub fn StaticRouter<R, F>(props: StaticRouterProps<R, F>) -> View
+pub fn StaticRouter<R, F>(view: F, route: R) -> View
 where
     R: Route + 'static,
     F: Fn(ReadSignal<R>) -> View + 'static,
 {
     view! {
-        StaticRouterBase(view=props.view, route=props.route)
+        StaticRouterBase(view=view, route=route)
     }
 }
 
 /// Implementation detail for [`StaticRouter`]. The extra component is needed to make sure hydration
 /// keys are consistent.
 #[component]
-fn StaticRouterBase<R, F>(props: StaticRouterProps<R, F>) -> View
+fn StaticRouterBase<R, F>(view: F, route: R) -> View
 where
     R: Route + 'static,
     F: Fn(ReadSignal<R>) -> View + 'static,
 {
-    let StaticRouterProps { view, route } = props;
-
     view(*create_signal(route))
 }
 
@@ -524,7 +440,7 @@ mod tests {
             NotFound,
         }
 
-        #[component(inline_props)]
+        #[component]
         fn Comp(path: String) -> View {
             let route = Routes::match_route(
                 // The user would never use this directly, so they'd never have to do this trick
