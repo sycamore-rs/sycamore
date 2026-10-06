@@ -29,6 +29,10 @@ impl Node {
             Some(NodeType::Dyn)
         } else if input.peek(Token![::]) || input.peek(Ident::peek_any) {
             Some(NodeType::Tag)
+        } else if input.peek(Token![if]) {
+            Some(NodeType::If)
+        } else if input.peek(Token![match]) {
+            Some(NodeType::Match)
         } else {
             None
         }
@@ -46,6 +50,8 @@ impl Parse for Node {
             NodeType::Tag => Self::Tag(input.parse()?),
             NodeType::Text => Self::Text(input.parse()?),
             NodeType::Dyn => Self::Dyn(input.parse()?),
+            NodeType::If => Self::If(input.parse()?),
+            NodeType::Match => Self::Match(input.parse()?),
         })
     }
 }
@@ -176,6 +182,72 @@ impl Parse for DynNode {
         parenthesized!(content in input);
         Ok(Self {
             value: content.parse()?,
+        })
+    }
+}
+
+impl Parse for IfNode {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let _if: Token![if] = input.parse()?;
+        let cond = input.parse()?;
+
+        let then_content;
+        braced!(then_content in input);
+        let mut then_children = Vec::new();
+        while !then_content.is_empty() {
+            then_children.push(then_content.parse()?);
+        }
+
+        let else_branch = if input.peek(Token![else]) {
+            let _else: Token![else] = input.parse()?;
+            let else_content;
+            braced!(else_content in input);
+            let mut else_children = Vec::new();
+            while !else_content.is_empty() {
+                else_children.push(else_content.parse()?);
+            }
+            Some(Root(else_children))
+        } else {
+            None
+        };
+
+        Ok(Self {
+            cond,
+            then: Root(then_children),
+            else_branch,
+        })
+    }
+}
+
+impl Parse for MatchNode {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let _match: Token![match] = input.parse()?;
+        let expr = input.parse()?;
+
+        let content;
+        braced!(content in input);
+        let mut arms = Vec::new();
+        while !content.is_empty() {
+            arms.push(content.parse()?);
+        }
+
+        Ok(Self { expr, arms })
+    }
+}
+
+impl Parse for MatchArm {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let pat = syn::Pat::parse_multi_with_leading_vert(input)?;
+        let _arrow: Token![=>] = input.parse()?;
+        let body_content;
+        braced!(body_content in input);
+        let mut body_children = Vec::new();
+        while !body_content.is_empty() {
+            body_children.push(body_content.parse()?);
+        }
+        Ok(Self {
+            pat,
+            body: Root(body_children),
         })
     }
 }

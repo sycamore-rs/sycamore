@@ -11,12 +11,16 @@ pub enum Node {
     Tag(TagNode),
     Text(TextNode),
     Dyn(DynNode),
+    If(IfNode),
+    Match(MatchNode),
 }
 
 pub enum NodeType {
     Tag,
     Text,
     Dyn,
+    If,
+    Match,
 }
 
 pub struct TagNode {
@@ -69,4 +73,20 @@ pub struct TextNode {
 
 pub struct DynNode {
     pub value: Expr,
+}
+
+pub struct IfNode {
+    pub cond: Expr,
+    pub then: Root,
+    pub else_branch: Option<Root>,
+}
+
+pub struct MatchNode {
+    pub expr: Expr,
+    pub arms: Vec<MatchArm>,
+}
+
+pub struct MatchArm {
+    pub pat: syn::Pat,
+    pub body: Root,
 }
