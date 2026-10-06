@@ -55,6 +55,7 @@ pub mod reactive {
 /// Web support for Sycamore.
 ///
 /// Re-export of the [`sycamore_web`] crate.
+#[cfg(feature = "web")]
 pub mod web {
     pub use sycamore_web::*;
 }
@@ -69,6 +70,7 @@ pub mod futures {
 
 #[cfg(feature = "hydrate")]
 pub use sycamore_web::{hydrate, hydrate_in_scope, hydrate_to};
+#[cfg(feature = "web")]
 pub use sycamore_web::{
     render, render_in_scope, render_to, render_to_string, render_to_string_in_scope,
 };

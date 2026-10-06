@@ -65,6 +65,10 @@ jobs:
         if: matrix.rust == 'nightly'
         run: cargo test --all-features
 
+      - name: Run tests with no default features on nightly
+        if: matrix.rust == 'nightly'
+        run: cargo test --no-default-features -p sycamore
+
       - name: Run headless browser tests on nightly
         run: cd packages/sycamore && wasm-pack test --firefox --chrome --headless --all-features
         if: matrix.rust == 'nightly'
