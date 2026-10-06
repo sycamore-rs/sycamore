@@ -8,6 +8,14 @@ use syn::spanned::Spanned;
 use syn::{DeriveInput, Error, Result};
 
 pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
+    impl_props(ast, None)
+}
+
+pub fn impl_component_props(ast: &DeriveInput, component: &syn::ItemFn) -> Result<TokenStream> {
+    impl_props(ast, Some(component))
+}
+
+fn impl_props(ast: &DeriveInput, component: Option<&syn::ItemFn>) -> Result<TokenStream> {
     let data = match &ast.data {
         syn::Data::Struct(data) => match &data.fields {
             syn::Fields::Named(fields) => {
@@ -25,6 +33,9 @@ pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
                     .map(|f| struct_info.required_field_impl(f))
                     .collect::<Result<Vec<_>>>()?;
                 let build_method = struct_info.build_method_impl();
+                let component_conversion = component
+                    .map(|component| struct_info.component_conversion_impl(component))
+                    .transpose()?;
 
                 quote! {
                     #builder_creation
@@ -32,6 +43,7 @@ pub fn impl_derive_props(ast: &DeriveInput) -> Result<TokenStream> {
                     #( #fields )*
                     #( #required_fields )*
                     #build_method
+                    #component_conversion
                 }
             }
             syn::Fields::Unnamed(_) => {
@@ -713,6 +725,93 @@ mod struct_info {
                     }
                 }
             )
+        }
+
+        pub fn component_conversion_impl(
+            &self,
+            component: &syn::ItemFn,
+        ) -> Result<TokenStream, Error> {
+            let component_ident = &component.sig.ident;
+            let (return_type, component_call) = match &component.sig.output {
+                syn::ReturnType::Type(_, return_type)
+                    if matches!(return_type.as_ref(), syn::Type::ImplTrait(_)) =>
+                {
+                    (
+                        quote!(::sycamore::rt::View),
+                        quote!(::core::convert::Into::<::sycamore::rt::View>::into(
+                            #component_ident(builder.build())
+                        )),
+                    )
+                }
+                syn::ReturnType::Type(_, return_type) => (
+                    quote!(#return_type),
+                    quote!(#component_ident(builder.build())),
+                ),
+                syn::ReturnType::Default => {
+                    return Err(Error::new(
+                        component.sig.ident.span(),
+                        "component must return `sycamore::view::View`",
+                    ));
+                }
+            };
+
+            let StructInfo {
+                builder_name,
+                conversion_helper_trait_name,
+                ..
+            } = self;
+
+            let generics = self.modify_generics(|g| {
+                let index_after_lifetime_in_generics = g
+                    .params
+                    .iter()
+                    .filter(|arg| matches!(arg, syn::GenericParam::Lifetime(_)))
+                    .count();
+                for field in self.included_fields() {
+                    if field.builder_attr.default.is_some() {
+                        let field_type = field.ty;
+                        let trait_ref: syn::TraitBound = syn::parse_quote!(
+                            #conversion_helper_trait_name < #field_type >
+                        );
+                        let mut generic_param: syn::TypeParam = field.generic_ident.clone().into();
+                        generic_param
+                            .bounds
+                            .push(syn::TypeParamBound::Trait(trait_ref));
+                        g.params.insert(
+                            index_after_lifetime_in_generics,
+                            syn::GenericParam::Type(generic_param),
+                        );
+                    }
+                }
+            });
+            let (impl_generics, _, where_clause) = generics.split_for_impl();
+            let (_, ty_generics, _) = self.generics.split_for_impl();
+            let builder_ty_generics = modify_types_generics_hack(&ty_generics, |args| {
+                args.insert(
+                    0,
+                    syn::GenericArgument::Type(syn::Type::Tuple(type_tuple(
+                        self.included_fields().map(|field| {
+                            if field.builder_attr.default.is_some() {
+                                field.type_ident()
+                            } else {
+                                field.tuplized_type_ty_param()
+                            }
+                        }),
+                    ))),
+                );
+            });
+
+            Ok(quote! {
+                impl #impl_generics ::core::convert::From<#builder_name #builder_ty_generics>
+                    for #return_type #where_clause
+                {
+                    fn from(builder: #builder_name #builder_ty_generics) -> Self {
+                        ::sycamore::rt::component_scope(move || {
+                            #component_call
+                        })
+                    }
+                }
+            })
         }
     }
 

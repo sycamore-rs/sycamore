@@ -245,11 +245,14 @@ pub fn component_impl(args: ComponentArgs, item: TokenStream) -> Result<TokenStr
     })
 }
 
-/// Codegen the new props struct and modifies the component body to accept this new struct as
-/// props.
+/// Generates the props struct and builder, then turns the component into a builder factory and a
+/// private props-taking implementation function.
 fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> Result<TokenStream> {
-    let props_vis = &item.vis;
-    let props_struct_ident = format_ident!("{}Props", item.sig.ident);
+    let component_ident = item.sig.ident.clone();
+    let component_impl_ident = format_ident!("{}_component", component_ident);
+    let component_vis = item.vis.clone();
+    let props_vis = &component_vis;
+    let props_struct_ident = format_ident!("{}Props", component_ident);
 
     let inputs = item.sig.inputs.clone();
     let props = inputs.clone().into_iter().collect::<Vec<_>>();
@@ -302,7 +305,7 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         }
     });
 
-    let doc_comment = format!("Props for [`{}`].", item.sig.ident);
+    let doc_comment = format!("Props for [`{}`].", component_ident);
     let (_, _, where_clause) = generics.split_for_impl();
 
     let attrs = attrs.into_iter().map(|a| Attribute {
@@ -321,26 +324,6 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         }
     };
     let mut props_input: syn::DeriveInput = syn::parse2(props_struct)?;
-    let props_impl = super::props::impl_derive_props(&props_input)?;
-
-    // The derive macro normally registers `prop` as a helper attribute. Since the component
-    // macro invokes the props codegen directly, remove those attributes from the emitted struct
-    // after the props codegen has consumed them.
-    props_input
-        .attrs
-        .retain(|attr| !attr.path().is_ident("prop"));
-    if let syn::Data::Struct(data) = &mut props_input.data
-        && let syn::Fields::Named(fields) = &mut data.fields
-    {
-        for field in &mut fields.named {
-            field.attrs.retain(|attr| !attr.path().is_ident("prop"));
-        }
-    }
-
-    let ret = Ok(quote! {
-        #props_input
-        #props_impl
-    });
 
     // Rewrite component body.
 
@@ -359,10 +342,13 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
             _ => unreachable!(),
         },
     });
-    // Rewrite function signature.
+    // Rewrite function signature and body to make the original function private implementation
+    // detail called by the generated builder conversion.
     let props_struct_generics = generics.split_for_impl().1;
-    item.sig.inputs = parse_quote! { __props: #props_struct_ident #props_struct_generics };
-    // Rewrite function body.
+    let props_struct_type = quote!(#props_struct_ident #props_struct_generics);
+    item.sig.inputs = parse_quote! { __props: #props_struct_type };
+    item.sig.ident = component_impl_ident;
+    item.vis = syn::Visibility::Inherited;
     let block = item.block.clone();
     item.block = parse_quote! {{
         let #props_struct_ident {
@@ -372,5 +358,40 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         #block
     }};
 
-    ret
+    let props_impl = super::props::impl_component_props(&props_input, item)?;
+
+    // The derive macro normally registers `prop` as a helper attribute. Since the component
+    // macro invokes the props codegen directly, remove those attributes from the emitted struct
+    // after the props codegen has consumed them.
+    props_input
+        .attrs
+        .retain(|attr| !attr.path().is_ident("prop"));
+    if let syn::Data::Struct(data) = &mut props_input.data
+        && let syn::Fields::Named(fields) = &mut data.fields
+    {
+        for field in &mut fields.named {
+            field.attrs.retain(|attr| !attr.path().is_ident("prop"));
+        }
+    }
+
+    let mut factory_sig = item.sig.clone();
+    factory_sig.ident = component_ident;
+    factory_sig.inputs.clear();
+    factory_sig.asyncness = None;
+    factory_sig.output = parse_quote!(-> <#props_struct_type as ::sycamore::rt::Props>::Builder);
+    let props_vis = &component_vis;
+    let attrs = &item.attrs;
+    let factory = quote! {
+        #(#attrs)*
+        #[allow(non_snake_case)]
+        #props_vis #factory_sig {
+            <#props_struct_type as ::sycamore::rt::Props>::builder()
+        }
+    };
+
+    Ok(quote! {
+        #props_input
+        #props_impl
+        #factory
+    })
 }
