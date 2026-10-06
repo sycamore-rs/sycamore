@@ -1,8 +1,8 @@
 use gloo_net::http::Request;
 use serde::{Deserialize, Serialize};
 use sycamore::prelude::*;
+use sycamore::web::Suspense;
 use sycamore::web::tags::*;
-use sycamore::web::{Suspense, SuspenseProps};
 
 // API that counts visits to the web-page
 const API_BASE_URL: &str = "https://abacus.jasoncameron.dev/hit";
@@ -33,12 +33,9 @@ fn App() -> View {
     div()
         .children((
             p().children("Page Visit Counter"),
-            Suspense(
-                SuspenseProps::builder()
-                    .fallback(|| "Loading".into())
-                    .children(Children::new(VisitsCount))
-                    .build(),
-            ),
+            Suspense()
+                .fallback(|| "Loading".into())
+                .children(Children::new(VisitsCount)),
         ))
         .into()
 }
