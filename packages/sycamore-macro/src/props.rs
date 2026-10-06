@@ -802,13 +802,12 @@ mod struct_info {
             });
 
             Ok(quote! {
+                #[allow(deprecated)]
                 impl #impl_generics ::core::convert::From<#builder_name #builder_ty_generics>
                     for #return_type #where_clause
                 {
                     fn from(builder: #builder_name #builder_ty_generics) -> Self {
-                        ::sycamore::rt::component_scope(move || {
-                            #component_call
-                        })
+                        #component_call
                     }
                 }
             })

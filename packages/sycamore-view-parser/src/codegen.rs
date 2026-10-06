@@ -227,15 +227,14 @@ impl Codegen {
             }
         };
         quote! {{
-            let __component = &#ident; // We do this to make sure the compiler can infer the value for `<G>`.
-            ::sycamore::rt::component_scope(move || ::sycamore::rt::Component::create(
-                __component,
-                ::sycamore::rt::element_like_component_builder(__component)
-                    #(.#plain_names(#plain_values))*
-                    #(#other_attributes)*
-                    #children_quoted
-                    .build()
-            ))
+            ::sycamore::rt::component_scope(move || {
+                ::std::convert::Into::<::sycamore::rt::View>::into(
+                    #ident()
+                        #(.#plain_names(#plain_values))*
+                        #(#other_attributes)*
+                        #children_quoted
+                )
+            })
         }}
     }
 }
