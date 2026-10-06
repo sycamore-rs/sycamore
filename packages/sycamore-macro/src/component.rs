@@ -311,15 +311,35 @@ fn inline_props_impl(item: &mut ItemFn, attrs: Punctuated<Meta, Token![,]>) -> R
         bracket_token: Default::default(),
         meta: a,
     });
-    let ret = Ok(quote! {
+    let props_struct = quote! {
         #[allow(non_camel_case_types)]
         #[doc = #doc_comment]
-        #[derive(::sycamore::rt::Props)]
         #(#attrs)*
         #props_vis struct #props_struct_ident #generics #where_clause {
             #(#fields,)*
             #(#generics_phantoms,)*
         }
+    };
+    let mut props_input: syn::DeriveInput = syn::parse2(props_struct)?;
+    let props_impl = super::props::impl_derive_props(&props_input)?;
+
+    // The derive macro normally registers `prop` as a helper attribute. Since the component
+    // macro invokes the props codegen directly, remove those attributes from the emitted struct
+    // after the props codegen has consumed them.
+    props_input
+        .attrs
+        .retain(|attr| !attr.path().is_ident("prop"));
+    if let syn::Data::Struct(data) = &mut props_input.data
+        && let syn::Fields::Named(fields) = &mut data.fields
+    {
+        for field in &mut fields.named {
+            field.attrs.retain(|attr| !attr.path().is_ident("prop"));
+        }
+    }
+
+    let ret = Ok(quote! {
+        #props_input
+        #props_impl
     });
 
     // Rewrite component body.
