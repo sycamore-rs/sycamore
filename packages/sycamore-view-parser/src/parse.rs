@@ -3,7 +3,7 @@
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Brace, Paren};
-use syn::{Ident, LitStr, Result, Token, braced, parenthesized, token};
+use syn::{Expr, Ident, LitStr, Result, Token, braced, parenthesized, token};
 
 use crate::ir::*;
 
@@ -189,14 +189,11 @@ impl Parse for DynNode {
 impl Parse for IfNode {
     fn parse(input: ParseStream) -> Result<Self> {
         let _if: Token![if] = input.parse()?;
-        let cond = input.parse()?;
+        let cond = syn::Expr::parse_without_eager_brace(input)?;
 
         let then_content;
         braced!(then_content in input);
-        let mut then_children = Vec::new();
-        while !then_content.is_empty() {
-            then_children.push(then_content.parse()?);
-        }
+        let then = then_content.parse()?;
 
         let else_branch = if input.peek(Token![else]) {
             let _else: Token![else] = input.parse()?;
@@ -207,11 +204,8 @@ impl Parse for IfNode {
             } else {
                 let else_content;
                 braced!(else_content in input);
-                let mut else_children = Vec::new();
-                while !else_content.is_empty() {
-                    else_children.push(else_content.parse()?);
-                }
-                Some(Root(else_children))
+                let else_branch = else_content.parse()?;
+                Some(else_branch)
             }
         } else {
             None
@@ -219,7 +213,7 @@ impl Parse for IfNode {
 
         Ok(Self {
             cond,
-            then: Root(then_children),
+            then,
             else_branch,
         })
     }
@@ -228,7 +222,7 @@ impl Parse for IfNode {
 impl Parse for MatchNode {
     fn parse(input: ParseStream) -> Result<Self> {
         let _match: Token![match] = input.parse()?;
-        let expr = input.parse()?;
+        let expr = Expr::parse_without_eager_brace(input)?;
 
         let content;
         braced!(content in input);
@@ -245,15 +239,29 @@ impl Parse for MatchArm {
     fn parse(input: ParseStream) -> Result<Self> {
         let pat = syn::Pat::parse_multi_with_leading_vert(input)?;
         let _arrow: Token![=>] = input.parse()?;
-        let body_content;
-        braced!(body_content in input);
-        let mut body_children = Vec::new();
-        while !body_content.is_empty() {
-            body_children.push(body_content.parse()?);
+        // Check if the body is a single expression or a block of code.
+        // If it's a block, we parse it as a Root node. If it's a single expression, we parse it as
+        // a Node and wrap it in a Root.
+        if input.peek(Brace) {
+            let body_content;
+            braced!(body_content in input);
+            let body = body_content.parse()?;
+            // If there is a trailing comma after the body, we consume it.
+            if input.peek(Token![,]) {
+                let _comma: Token![,] = input.parse()?;
+            }
+            Ok(Self { pat, body })
+        } else {
+            let body_node: Node = input.parse()?;
+            // If there are more tokens after the body, we expect a comma.
+            // We also allow a trailing comma after the last arm.
+            if !input.is_empty() {
+                let _comma: Token![,] = input.parse()?;
+            }
+            Ok(Self {
+                pat,
+                body: Root(vec![body_node]),
+            })
         }
-        Ok(Self {
-            pat,
-            body: Root(body_children),
-        })
     }
 }
