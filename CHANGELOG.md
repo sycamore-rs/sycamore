@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.4 _(2026-10-06)_
+
+#### What's Changed
+
+* Fix typo in Cargo.toml with wrong cfg flag by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/834
+* Add rust-version.workspace = true to all packages by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/835
+* Update syn to v3 by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/836
+* Remove event handlers on cleanup to prevent calling dropped callback by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/837
+* Remove unused dependencies and update dependencies to latest by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/838
+* Fix compile error in benchmark by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/840
+* Remove `wasm-bindgen-futures` since it has been superseded by `js-sys::futures` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/841
+* Allow writing `if`/`else`/`match` directly inside `view!` by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/842
+* Make AGENTS.md a soft link to the contributing guide by @lukechu10 in https://github.com/sycamore-rs/sycamore/pull/843
+
 ## 0.9.3 _(2026-08-30)_
 
 #### What's Changed
