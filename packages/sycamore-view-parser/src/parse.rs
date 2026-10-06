@@ -27,12 +27,12 @@ impl Node {
             Some(NodeType::Text)
         } else if input.peek(Paren) {
             Some(NodeType::Dyn)
-        } else if input.peek(Token![::]) || input.peek(Ident::peek_any) {
-            Some(NodeType::Tag)
         } else if input.peek(Token![if]) {
             Some(NodeType::If)
         } else if input.peek(Token![match]) {
             Some(NodeType::Match)
+        } else if input.peek(Token![::]) || input.peek(Ident::peek_any) {
+            Some(NodeType::Tag)
         } else {
             None
         }
