@@ -18,20 +18,19 @@ sycamore-macro = { workspace = true }
 sycamore-reactive = { workspace = true }
 sycamore-web = { workspace = true, optional = true }
 wasm-bindgen = { version = "0.2.83", optional = true }
-wasm-bindgen-futures = { version = "0.4.33", optional = true }
 web-sys = { version = "0.3.60", optional = true }
 
 [dev-dependencies]
 expect-test = "1.5.1"
 paste = "1.0.9"
 wasm-bindgen-test = "0.3.33"
+web-sys = { version = "0.3.60", features = ["HtmlInputElement"] }
 
 [features]
 default = ["web", "wasm-bindgen-interning"]
 nightly = ["sycamore-reactive/nightly"]
 hydrate = ["web", "sycamore-web/hydrate"]
 suspense = [
-	"wasm-bindgen-futures",
 	"sycamore-futures",
 	"sycamore-core/suspense",
 	"sycamore-web/suspense",

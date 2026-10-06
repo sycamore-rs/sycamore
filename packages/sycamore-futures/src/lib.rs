@@ -38,7 +38,7 @@ pub fn spawn_local(fut: impl Future<Output = ()> + 'static) {
     #[cfg(any(not(target_arch = "wasm32"), sycamore_force_ssr))]
     tokio::task::spawn_local(fut);
     #[cfg(all(target_arch = "wasm32", not(sycamore_force_ssr)))]
-    wasm_bindgen_futures::spawn_local(fut);
+    js_sys::futures::spawn_local(fut);
 }
 
 /// Spawns a `!Send` future on the current scope.

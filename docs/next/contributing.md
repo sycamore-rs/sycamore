@@ -125,7 +125,7 @@ into `sycamore-core`.
 #### `sycamore-futures`
 
 A lightweight crate to choose between `tokio` when on the server and
-`wasm-bindgen-futures` when on the client.
+`js_sys::futures` when on the client.
 
 #### `sycamore-router` and `sycamore-router-macro`
 
