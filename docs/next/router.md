@@ -27,13 +27,14 @@ with `sycamore v0.5.x`).
 
 ## Creating routes
 
-Start off by adding `use sycamore_router::{Route, Router, HistoryIntegration}` to the
-top of your source code. This imports the symbols needed to define our router.
+Start off by adding `use sycamore_router::{Route, Router, HistoryIntegration}`
+to the top of your source code. This imports the symbols needed to define our
+router.
 
 The heart of the router is an `enum`. Each variant of the `enum` represents a
 different route. To make our `enum` usable with `Router`, we will use the
-`Route` derive macro to implement the required traits for us. We will also derive the 
-`Clone` trait which allows the contents to be copied by the router.
+`Route` derive macro to implement the required traits for us. We will also
+derive the `Clone` trait which allows the contents to be copied by the router.
 
 Here is an example:
 
@@ -306,5 +307,7 @@ view! {
 ```
 
 ## Examples
-Check out the [router example](https://github.com/sycamore-rs/sycamore/blob/main/examples/router/src/main.rs) for more details on how to use the Router API.
 
+Check out the
+[router example](https://github.com/sycamore-rs/sycamore/blob/main/examples/router/src/main.rs)
+for more details on how to use the Router API.
