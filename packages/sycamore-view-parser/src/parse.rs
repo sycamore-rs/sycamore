@@ -200,13 +200,19 @@ impl Parse for IfNode {
 
         let else_branch = if input.peek(Token![else]) {
             let _else: Token![else] = input.parse()?;
-            let else_content;
-            braced!(else_content in input);
-            let mut else_children = Vec::new();
-            while !else_content.is_empty() {
-                else_children.push(else_content.parse()?);
+            // Check if the else branch is another if statement (else if)
+            if input.peek(Token![if]) {
+                let else_if_node: IfNode = input.parse()?;
+                Some(Root(vec![Node::If(else_if_node)]))
+            } else {
+                let else_content;
+                braced!(else_content in input);
+                let mut else_children = Vec::new();
+                while !else_content.is_empty() {
+                    else_children.push(else_content.parse()?);
+                }
+                Some(Root(else_children))
             }
-            Some(Root(else_children))
         } else {
             None
         };
