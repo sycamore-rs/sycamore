@@ -55,34 +55,6 @@ impl UnitBuilder {
     pub fn build(self) {}
 }
 
-/// A trait that is automatically implemented by all components.
-pub trait Component<T: Props, V, S> {
-    /// Instantiate the component with the given props and reactive scope.
-    fn create(self, props: T) -> V;
-}
-impl<F, T: Props, V> Component<T, V, ((),)> for F
-where
-    F: FnOnce(T) -> V,
-{
-    fn create(self, props: T) -> V {
-        self(props)
-    }
-}
-impl<F, V> Component<(), V, ()> for F
-where
-    F: FnOnce() -> V,
-{
-    fn create(self, _props: ()) -> V {
-        self()
-    }
-}
-
-/// Get the builder for the component function.
-#[doc(hidden)]
-pub fn element_like_component_builder<T: Props, V, S>(_f: &impl Component<T, V, S>) -> T::Builder {
-    T::builder()
-}
-
 /// A special property type to allow the component to accept children.
 ///
 /// Add a field called `children` of this type to your properties struct.
