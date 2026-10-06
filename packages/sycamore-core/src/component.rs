@@ -90,16 +90,8 @@ pub fn element_like_component_builder<T: Props, V, S>(_f: &impl Component<T, V, 
 /// # Example
 /// ```
 /// # use sycamore::prelude::*;
-/// #[derive(Props)]
-/// struct RowProps {
-///     width: i32,
-///     children: Children,
-/// }
-///
 /// #[component]
-/// fn Row(props: RowProps) -> View {
-///     // Convert the `Children` into a `View`.
-///     let children = props.children.call();
+/// fn Row(width: i32, children: Children) -> View {
 ///     view! {
 ///         div {
 ///             (children)

@@ -6,8 +6,8 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
-    AttrStyle, Attribute, Error, Expr, FnArg, Generics, Ident, Item, ItemFn, Meta, Pat, PatIdent,
-    Result, ReturnType, Signature, Token, Type, TypeTuple, parse_quote,
+    AttrStyle, Attribute, Expr, FnArg, Generics, Ident, Item, ItemFn, Meta, Pat, PatIdent, Result,
+    ReturnType, Signature, Token, Type, TypeTuple, parse_quote,
 };
 
 pub struct ComponentFn {
@@ -217,17 +217,11 @@ pub struct ComponentArgs {
 impl Parse for ComponentArgs {
     fn parse(input: ParseStream) -> Result<Self> {
         let comma: Option<Token![,]> = input.parse()?;
-        let attrs: Punctuated<Meta, Token![,]> = if comma.is_some() {
+        let attrs: Punctuated<Meta, Token![,]> = if !input.is_empty() {
             input.parse_terminated(Meta::parse, Token![,])?
         } else {
             Punctuated::new()
         };
-        if !attrs.is_empty() {
-            return Err(Error::new_spanned(
-                attrs,
-                "the component attribute does not currently accept any arguments",
-            ));
-        }
         Ok(Self {
             _comma: comma,
             attrs,

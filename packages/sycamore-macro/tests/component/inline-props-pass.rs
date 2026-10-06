@@ -83,9 +83,9 @@ fn PropsWithVariousImplGenerics(
     }
 }
 
-#[component(inline_props, derive(Clone), derive(Debug))]
+#[component(derive(Clone), derive(Debug))]
 fn AdditionalStructAttributes(dummy: String) -> View {
-    let props = AdditionalStructAttributes_Props::builder()
+    let props = AdditionalStructAttributesProps::builder()
         .dummy(dummy)
         .build();
 

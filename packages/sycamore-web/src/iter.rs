@@ -12,22 +12,6 @@ use wasm_bindgen::prelude::*;
 
 use crate::*;
 
-/// Props for [`Keyed`].
-#[derive(Props)]
-pub struct KeyedPropsOld<T, K, U, List, F, Key>
-where
-    List: Into<MaybeDyn<Vec<T>>> + 'static,
-    F: Fn(T) -> U + 'static,
-    Key: Fn(&T) -> K + 'static,
-    T: 'static,
-{
-    list: List,
-    view: F,
-    key: Key,
-    #[prop(default)]
-    _phantom: std::marker::PhantomData<(T, K, U)>,
-}
-
 /// Keyed iteration.
 ///
 /// Use this instead of directly rendering an array of [`View`]s.
