@@ -11,17 +11,12 @@ pub struct Todo {
     id: Uuid,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Filter {
+    #[default]
     All,
     Active,
     Completed,
-}
-
-impl Default for Filter {
-    fn default() -> Self {
-        Self::All
-    }
 }
 
 impl Filter {
@@ -284,7 +279,7 @@ pub fn Item(todo: Signal<Todo>) -> View {
                 button(class="destroy", on:click=handle_destroy)
             }
 
-            (is_editing . get () . then (| | view! {
+            if is_editing.get() {
                 input(
                     r#ref=input_ref,
                     class="edit",
@@ -292,7 +287,7 @@ pub fn Item(todo: Signal<Todo>) -> View {
                     on:blur=move |_| handle_blur(),
                     on:keyup=handle_keyup,
                 )
-            }))
+            }
         }
     }
 }
@@ -392,9 +387,9 @@ pub fn Footer() -> View {
                 TodoFilter(filter=Filter::Completed)
             }
 
-            (has_completed_todos . get () . then (| | view! {
+            if has_completed_todos.get() {
                 button(class="clear-completed", on:click=handle_clear_completed) { "Clear completed" }
-            }))
+            }
         }
     }
 }

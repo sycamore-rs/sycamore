@@ -41,20 +41,20 @@ fn App() -> View {
                             a(href="/server/proxy", rel="external") { "External Server Proxy" }
                         }
                         main(class="app") {
-                            (match route.get_clone() {
-                                AppRoutes::Home => view! {
+                            match route.get_clone() {
+                                AppRoutes::Home => {
                                     h1 { "Home" }
                                 },
-                                AppRoutes::Hello { name } => view! {
+                                AppRoutes::Hello { name } => {
                                     h1 { "Hello, " (name) "!" }
                                 },
-                                AppRoutes::Wildcard { path } => view! {
+                                AppRoutes::Wildcard { path } => {
                                     h1 { "Wildcard: " (path.join("/")) }
                                 },
-                                AppRoutes::Unit(unit) => view! {
+                                AppRoutes::Unit(unit) => {
                                     h1 { "Unit: " (unit) }
                                 },
-                                AppRoutes::QueryParams => {
+                                AppRoutes::QueryParams => ({
                                     let q = use_search_query("q");
                                     view! {
                                         h1 { "Query Params" }
@@ -62,11 +62,11 @@ fn App() -> View {
                                         a(href="?q=b") { "B" }
                                         p { "Query: " (q.get_clone().unwrap_or_default()) }
                                     }
-                                }
-                                AppRoutes::NotFound => view! {
+                                }),
+                                AppRoutes::NotFound => {
                                     h1 { "Not Found" }
                                 },
-                            })
+                            }
                         }
                     }
                 },

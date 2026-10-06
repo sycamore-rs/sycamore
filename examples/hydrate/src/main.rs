@@ -25,15 +25,11 @@ fn Hello() -> View {
         div {
             p {
                 "Hello "
-                (if is_empty.get() {
-                    view! {
-                        span { (name) }
-                    }
+                if is_empty.get() {
+                    span { (name) }
                 } else {
-                    view! {
-                        span { "World" }
-                    }
-                })
+                    span { "World" }
+                }
                 "!"
             }
             input(bind:value=name)

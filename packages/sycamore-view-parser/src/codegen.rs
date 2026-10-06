@@ -56,6 +56,66 @@ impl Codegen {
                     }
                 }
             }
+            Node::If(if_node) => {
+                let cond = &if_node.cond;
+                let is_dynamic = is_dyn(cond);
+
+                let if_root = self.root(&if_node.then);
+                let else_root = if_node
+                    .else_branch
+                    .as_ref()
+                    .map(|else_branch| self.root(else_branch))
+                    .unwrap_or_else(|| quote! { ::sycamore::rt::View::new() });
+
+                if is_dynamic {
+                    quote! {
+                        ::sycamore::rt::View::from_dynamic(move || {
+                            if #cond {
+                                #if_root
+                            } else {
+                                #else_root
+                            }
+                        })
+                    }
+                } else {
+                    quote! {
+                        if #cond {
+                            #if_root
+                        } else {
+                            #else_root
+                        }
+                    }
+                }
+            }
+            Node::Match(match_node) => {
+                let match_expr = &match_node.expr;
+                let is_dynamic = is_dyn(match_expr)
+                    || match_node.arms.iter().any(|arm| is_dyn_pattern(&arm.pat));
+
+                let arms = match_node.arms.iter().map(|arm| {
+                    let pat = &arm.pat;
+                    let arm_root = self.root(&arm.body);
+                    quote! {
+                        #pat => #arm_root
+                    }
+                });
+
+                if is_dynamic {
+                    quote! {
+                        ::sycamore::rt::View::from_dynamic(move || {
+                            match #match_expr {
+                                #(#arms),*
+                            }
+                        })
+                    }
+                } else {
+                    quote! {
+                        match #match_expr {
+                            #(#arms),*
+                        }
+                    }
+                }
+            }
         }
     }
 
