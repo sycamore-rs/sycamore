@@ -751,7 +751,6 @@ mod tests {
     fn trapping_dependency_tracker() {
         let _ = create_root(|| {
             let a = create_signal(0);
-            let b = create_signal(0);
             trapping_scope(|| {
                 a.get(); // This should panic because we are in a trapping scope.
             });
