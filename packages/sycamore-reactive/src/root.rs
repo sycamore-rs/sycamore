@@ -373,10 +373,10 @@ impl DependencyTracker {
                     use wasm_bindgen::prelude::*;
                     #[wasm_bindgen]
                     unsafe extern "C" {
-                        #[wasm_bindgen(js_namespace = console, js_name = log)]
-                        fn console_log(s: &str);
+                        #[wasm_bindgen(js_namespace = console, js_name = warn)]
+                        fn console_warn(s: &str);
                     }
-                    console_log(&message);
+                    console_warn(&message);
                 }
                 _ => eprintln!("{message}"),
             };
