@@ -277,7 +277,7 @@ view! {
                 view! { (todo.task) }
             })
         }
-        button(on_click=start_editing, disabled=is_editing.get()) { "Edit Task" }
+        button(on_click=start_editing, disabled=move || is_editing.get()) { "Edit Task" }
         button(on_click=remove_todo) { "Remove" }
     }
 }
@@ -405,7 +405,7 @@ where
                     view! { (todo.task) }
                 })
             }
-            button(on_click=start_editing, disabled=is_editing.get()) { "Edit Task" }
+            button(on_click=start_editing, disabled=move || is_editing.get()) { "Edit Task" }
             button(on_click=remove_todo) { "Remove" }
         }
     }
