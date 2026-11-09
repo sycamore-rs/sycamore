@@ -117,7 +117,7 @@ fn template_interpolation_if_else() {
         let show = create_signal(true);
         let node = view! {
             p {
-                if show.get() {
+                if move || show.get() {
                     "Hello Sycamore!"
                 } else {
                     "Hidden"
@@ -141,7 +141,7 @@ fn template_interpolation_if_else_with_sibling() {
         let show = create_signal(true);
         let node = view! {
             div { "Before" }
-            if show.get() {
+            if move || show.get() {
                 p { "Hello Sycamore!" }
             } else {
                 p { "Hidden" }
@@ -163,7 +163,7 @@ fn template_interpolation_nested_reactivity() {
     let _ = create_root(|| {
         let count = create_signal(0);
         let text = view! {
-            p { (count.get()) }
+            p { (move || count.get()) }
         };
         let node = view! {
             p { (text) }
@@ -184,7 +184,7 @@ fn reactive_text() {
         let count = create_signal(0);
 
         let node = view! {
-            p { (count.get()) }
+            p { (move || count.get()) }
         };
 
         sycamore::render_in_scope(|| node, &test_container());
@@ -198,12 +198,77 @@ fn reactive_text() {
 }
 
 #[wasm_bindgen_test]
+fn plain_child_and_control_flow_expressions_are_static() {
+    let _ = create_root(|| {
+        let count = create_signal(0);
+        let show = create_signal(true);
+        let state = create_signal(0);
+        let node = view! {
+            p(id="static-child") { (count.get()) }
+            if show.get() {
+                p(id="static-if") { "shown" }
+            } else {
+                p(id="static-if") { "hidden" }
+            }
+            match state.get() {
+                0 => p(id="static-match") { "zero" },
+                _ => p(id="static-match") { "other" },
+            }
+        };
+        sycamore::render_in_scope(|| node, &test_container());
+
+        count.set(1);
+        show.set(false);
+        state.set(1);
+        assert_text_content!(query("#static-child"), "0");
+        assert_text_content!(query("#static-if"), "shown");
+        assert_text_content!(query("#static-match"), "zero");
+    });
+}
+
+#[wasm_bindgen_test]
+fn explicit_control_flow_closures_react_with_owned_captures() {
+    let _ = create_root(|| {
+        let show = create_signal(true);
+        let state = create_signal(0);
+        let enabled = create_signal(true);
+        let if_capture = String::from("visible");
+        let match_capture = String::from("state");
+        let node = view! {
+            if move || if_capture == "visible" && show.get() {
+                p(id="reactive-if") { "shown" }
+            } else {
+                p(id="reactive-if") { "hidden" }
+            }
+            match move || {
+                let _ = match_capture.as_str();
+                state.get()
+            } {
+                0 if enabled.get() => p(id="reactive-match") { "zero" },
+                0 => p(id="reactive-match") { "disabled" },
+                _ => p(id="reactive-match") { "other" },
+            }
+        };
+        sycamore::render_in_scope(|| node, &test_container());
+
+        assert_text_content!(query("#reactive-if"), "shown");
+        assert_text_content!(query("#reactive-match"), "zero");
+        show.set(false);
+        enabled.set(false);
+        assert_text_content!(query("#reactive-if"), "hidden");
+        assert_text_content!(query("#reactive-match"), "disabled");
+        state.set(1);
+        assert_text_content!(query("#reactive-match"), "other");
+    });
+}
+
+#[wasm_bindgen_test]
 fn reactive_text_do_not_destroy_previous_children() {
     let _ = create_root(|| {
         let count = create_signal(0);
 
         let node = view! {
-            p { "Value: " (count.get()) }
+            p { "Value: " (move || count.get()) }
         };
 
         sycamore::render_in_scope(|| node, &test_container());
@@ -385,7 +450,7 @@ fn two_way_bind_to_props() {
 
         let node = view! {
             input(bind_value=value)
-            p { (value.get_clone()) }
+            p { (move || value.get_clone()) }
         };
 
         sycamore::render_in_scope(|| node, &test_container());

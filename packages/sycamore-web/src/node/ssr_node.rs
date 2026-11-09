@@ -269,6 +269,9 @@ pub(crate) fn render_recursive_view(view: &View, buf: &mut String) {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
     use expect_test::{Expect, expect};
 
     use super::*;
@@ -372,6 +375,40 @@ mod tests {
             },
             expect![[r#"<a data-hk="0.0"></a>"#]],
         );
+    }
+
+    #[test]
+    fn plain_child_and_control_flow_expressions_are_evaluated_once() {
+        fn increment(counter: &Cell<usize>) {
+            counter.set(counter.get() + 1);
+        }
+
+        let child_evaluations = Rc::new(Cell::new(0));
+        let if_evaluations = Rc::new(Cell::new(0));
+        let match_evaluations = Rc::new(Cell::new(0));
+        let child_counter = child_evaluations.clone();
+        let if_counter = if_evaluations.clone();
+        let match_counter = match_evaluations.clone();
+
+        let html = render_to_string(move || {
+            sycamore_macro::view! {
+                p { ( { increment(&child_counter); "child" } ) }
+                if { increment(&if_counter); true } {
+                    span { "if" }
+                }
+                match { increment(&match_counter); 1 } {
+                    1 => b { "match" },
+                    _ => b { "other" },
+                }
+            }
+        });
+
+        assert!(html.contains(">child</p>"));
+        assert!(html.contains(">if</span>"));
+        assert!(html.contains(">match</b>"));
+        assert_eq!(child_evaluations.get(), 1);
+        assert_eq!(if_evaluations.get(), 1);
+        assert_eq!(match_evaluations.get(), 1);
     }
 
     #[test]

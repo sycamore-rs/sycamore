@@ -284,7 +284,7 @@ fn nested_reactivity() {
                     Keyed(
                         list=count,
                         view=|item| view! {
-                            li { (item.get()) }
+                            li { (move || item.get()) }
                         },
                         key=|item| item.get(),
                     )

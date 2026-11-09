@@ -21,7 +21,7 @@ fn dyn_fragment() {
 
         let node = view! {
             "before"
-            p { (num.get()) }
+            p { (move || num.get()) }
             "after"
         };
 
@@ -60,7 +60,7 @@ fn dyn_scoped_nested() {
         let node: View = View::from_dynamic(move || {
             View::from_dynamic(move || {
                 view! {
-                    div { (num.get()) }
+                    div { (move || num.get()) }
                 }
             })
         });

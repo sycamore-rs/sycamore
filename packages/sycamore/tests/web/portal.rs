@@ -18,7 +18,7 @@ fn test_portal() {
         sycamore::render_in_scope(
             move || {
                 view! {
-                    if switch.get() {
+                    if move || switch.get() {
                         Portal(selector="#portal-target") { "Hello from the other side!" }
                     }
                 }

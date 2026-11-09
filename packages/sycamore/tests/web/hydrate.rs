@@ -280,7 +280,7 @@ mod portal {
         view! {
             div(id="target")
             Portal(selector="#target") {
-                (if state.get() {
+                (move || if state.get() {
                     view! {
                         "Hello from the other side!"
                     }
