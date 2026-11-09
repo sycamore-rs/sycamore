@@ -5,8 +5,8 @@
 
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
-use syn::Expr;
 use syn::spanned::Spanned;
+use syn::{Expr, Pat};
 
 use crate::ir::{DynNode, Node, Prop, PropType, Root, TagIdent, TagNode, TextNode};
 
@@ -43,12 +43,23 @@ impl Codegen {
             Node::Text(TextNode { value }) => quote! {
                 ::sycamore::rt::Build::<::sycamore::rt::View>::build(#value)
             },
-            Node::Dyn(DynNode { value }) => quote! {
-                ::sycamore::rt::Build::<::sycamore::rt::View>::build(#value)
-            },
+            Node::Dyn(DynNode { value }) => {
+                let is_dynamic = is_dyn(value);
+                if is_dynamic {
+                    quote! {
+                        ::sycamore::rt::View::from_dynamic(
+                            move || ::sycamore::rt::Build::<::sycamore::rt::View>::build(#value)
+                        )
+                    }
+                } else {
+                    quote! {
+                        ::sycamore::rt::Build::<::sycamore::rt::View>::build(#value)
+                    }
+                }
+            }
             Node::If(if_node) => {
                 let cond = &if_node.cond;
-                let is_dynamic = is_closure(cond);
+                let is_dynamic = is_dyn(cond);
 
                 let if_root = self.root(&if_node.then);
                 let else_root = if_node
@@ -58,18 +69,15 @@ impl Codegen {
                     .unwrap_or_else(|| quote! { ::sycamore::rt::View::new() });
 
                 if is_dynamic {
-                    let condition =
-                        syn::Ident::new("__sycamore_condition", proc_macro2::Span::mixed_site());
-                    quote! {{
-                        let mut #condition = #cond;
+                    quote! {
                         ::sycamore::rt::View::from_dynamic(move || {
-                            if (&mut #condition)() {
+                            if #cond {
                                 #if_root
                             } else {
                                 #else_root
                             }
                         })
-                    }}
+                    }
                 } else {
                     quote! {
                         if #cond {
@@ -82,7 +90,8 @@ impl Codegen {
             }
             Node::Match(match_node) => {
                 let match_expr = &match_node.expr;
-                let is_dynamic = is_closure(match_expr);
+                let is_dynamic = is_dyn(match_expr)
+                    || match_node.arms.iter().any(|arm| is_dyn_pattern(&arm.pat));
 
                 let arms = match_node.arms.iter().map(|arm| {
                     let pat = &arm.pat;
@@ -93,16 +102,13 @@ impl Codegen {
                 });
 
                 if is_dynamic {
-                    let scrutinee =
-                        syn::Ident::new("__sycamore_scrutinee", proc_macro2::Span::mixed_site());
-                    quote! {{
-                        let mut #scrutinee = #match_expr;
+                    quote! {
                         ::sycamore::rt::View::from_dynamic(move || {
-                            match (&mut #scrutinee)() {
+                            match #match_expr {
                                 #(#arms),*
                             }
                         })
-                    }}
+                    }
                 } else {
                     quote! {
                         match #match_expr {
@@ -245,70 +251,113 @@ fn is_component(ident: &TagIdent) -> bool {
     }
 }
 
-/// Only explicit closures opt DSL control flow into reactivity. Parentheses and
-/// invisible groups do not change the meaning of a closure.
-fn is_closure(expr: &Expr) -> bool {
-    match expr {
-        Expr::Closure(_) => true,
-        Expr::Paren(expr) => is_closure(&expr.expr),
-        Expr::Group(expr) => is_closure(&expr.expr),
-        _ => false,
+fn is_dyn(ex: &Expr) -> bool {
+    match ex {
+        Expr::Lit(_) | Expr::Closure(_) | Expr::Path(_) => false,
+
+        Expr::Field(f) => is_dyn(&f.base),
+        Expr::Paren(p) => is_dyn(&p.expr),
+        Expr::Group(g) => is_dyn(&g.expr),
+        Expr::Tuple(t) => t.elems.iter().any(is_dyn),
+        Expr::Array(a) => a.elems.iter().any(is_dyn),
+        Expr::Repeat(r) => is_dyn(&r.expr) || is_dyn(&r.len),
+        Expr::Struct(s) => s.fields.iter().any(|fv: &syn::FieldValue| is_dyn(&fv.expr)),
+
+        Expr::Cast(c) => is_dyn(&c.expr),
+        Expr::Macro(m) => is_dyn_macro(&m.mac),
+        Expr::Block(b) => is_dyn_block(&b.block),
+        Expr::Const(_const_block) => false,
+
+        Expr::Loop(l) => is_dyn_block(&l.body),
+        Expr::While(w) => is_dyn(&w.cond) || is_dyn_block(&w.body),
+        Expr::ForLoop(f) => is_dyn_pattern(&f.pat) || is_dyn(&f.expr) || is_dyn_block(&f.body),
+        Expr::Break(_) | Expr::Continue(_) => false,
+
+        Expr::Let(e) => is_dyn_pattern(&e.pat) || is_dyn(&e.expr),
+
+        Expr::Match(m) => {
+            is_dyn(&m.expr)
+                || m.arms
+                    .iter()
+                    .any(|a: &syn::Arm| is_dyn_pattern(&a.pat) || is_dyn(&a.body))
+        }
+
+        Expr::If(i) => {
+            is_dyn(&i.cond)
+                || is_dyn_block(&i.then_branch)
+                || i.else_branch.as_ref().is_some_and(|(_, e)| is_dyn(e))
+        }
+
+        Expr::Unary(u) => is_dyn(&u.expr),
+        Expr::Binary(b) => is_dyn(&b.left) || is_dyn(&b.right),
+        Expr::Index(i) => is_dyn(&i.expr) || is_dyn(&i.index),
+        Expr::Range(r) => {
+            r.start.as_deref().is_some_and(is_dyn) || r.end.as_deref().is_some_and(is_dyn)
+        }
+
+        _ => true,
     }
+}
+
+fn is_dyn_pattern(pat: &Pat) -> bool {
+    match pat {
+        Pat::Wild(_) | Pat::Lit(_) | Pat::Path(_) | Pat::Rest(_) | Pat::Type(_) | Pat::Const(_) => {
+            false
+        }
+
+        Pat::Guard(g) => is_dyn_pattern(&g.pat) || is_dyn(&g.guard),
+        Pat::Paren(p) => is_dyn_pattern(&p.pat),
+        Pat::Or(o) => o.cases.iter().any(is_dyn_pattern),
+        Pat::Tuple(t) => t.elems.iter().any(is_dyn_pattern),
+        Pat::TupleStruct(s) => s.elems.iter().any(is_dyn_pattern),
+        Pat::Slice(s) => s.elems.iter().any(is_dyn_pattern),
+        Pat::Range(r) => {
+            r.start.as_deref().is_some_and(is_dyn) || r.end.as_deref().is_some_and(is_dyn)
+        }
+
+        Pat::Reference(r) => r.mutability.is_some(),
+        Pat::Ident(id) => {
+            (id.by_ref.is_some() && id.mutability.is_some())
+                || id
+                    .subpat
+                    .as_ref()
+                    .is_some_and(|(_, pat)| is_dyn_pattern(pat))
+        }
+
+        Pat::Struct(s) => s
+            .fields
+            .iter()
+            .any(|fp: &syn::FieldPat| is_dyn_pattern(&fp.pat)),
+
+        // syn::Pat is non-exhaustive
+        _ => true,
+    }
+}
+
+fn is_dyn_macro(m: &syn::Macro) -> bool {
+    // Bodies of nested inner view! macros will be checked for dynamic
+    // parts when their own codegen is run.
+
+    m.path.get_ident().is_none_or(|ident| ident != "view")
+}
+
+fn is_dyn_block(block: &syn::Block) -> bool {
+    block.stmts.iter().any(|s: &syn::Stmt| match s {
+        syn::Stmt::Expr(ex, _) => is_dyn(ex),
+        syn::Stmt::Macro(m) => is_dyn_macro(&m.mac),
+        syn::Stmt::Local(loc) => {
+            is_dyn_pattern(&loc.pat)
+                || loc.init.as_ref().is_some_and(|i| {
+                    is_dyn(&i.expr) || i.diverge.as_ref().is_some_and(|(_, ex)| is_dyn(ex))
+                })
+        }
+        syn::Stmt::Item(_) => false,
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn child_expressions_are_passed_directly() {
-        for value in [
-            quote! { signal.get() },
-            quote! { move || signal.get() },
-            quote! { format!("{}", signal.get()) },
-            quote! { { let value = signal.get(); value + 1 } },
-        ] {
-            let value: Expr = syn::parse2(value).unwrap();
-            let root: Root = syn::parse2(quote! { (#value) }).unwrap();
-            let expected = quote! {
-                ::sycamore::rt::Build::<::sycamore::rt::View>::build(#value)
-            };
-            assert_eq!(Codegen {}.root(&root).to_string(), expected.to_string());
-        }
-    }
-
-    #[test]
-    fn control_flow_reactivity_requires_an_explicit_closure() {
-        for (source, dynamic) in [
-            (quote! { if signal.get() { "yes" } else { "no" } }, false),
-            (
-                quote! { if move || signal.get() { "yes" } else { "no" } },
-                true,
-            ),
-            (quote! { if (move || signal.get()) { "yes" } }, true),
-            (quote! { if || true { "yes" } }, true),
-            (
-                quote! { match signal.get() { true => "yes", false => "no" } },
-                false,
-            ),
-            (
-                quote! { match move || signal.get() { true => "yes", false => "no" } },
-                true,
-            ),
-            (
-                quote! { match (move || signal.get()) { true => "yes", false => "no" } },
-                true,
-            ),
-            (
-                quote! { match true { _ if signal.get() => "yes", _ => "no" } },
-                false,
-            ),
-        ] {
-            let root: Root = syn::parse2(source.clone()).unwrap();
-            let generated = Codegen {}.root(&root).to_string();
-            assert_eq!(generated.contains("from_dynamic"), dynamic, "{source}");
-        }
-    }
 
     #[test]
     fn attribute_expressions_are_passed_directly() {

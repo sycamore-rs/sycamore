@@ -244,7 +244,7 @@ fn nested_reactivity() {
                     Indexed(
                         list=count,
                         view=|item| view! {
-                            li { (move || item.get()) }
+                            li { (item.get()) }
                         },
                     )
                 }

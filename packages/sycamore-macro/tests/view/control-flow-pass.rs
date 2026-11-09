@@ -60,10 +60,10 @@ fn compile_pass() {
             4
         }
 
-        // Dynamic if/else: an explicit closure opts into reactivity.
+        // Dynamic if/else
         let _: View = view! {
             div {
-                if move || random_bool() {
+                if random_bool() {
                     p {}
                 } else {
                     p {}
@@ -73,7 +73,7 @@ fn compile_pass() {
         // Dynamic if only
         let _: View = view! {
             div {
-                if move || random_bool() {
+                if random_bool() {
                     p {}
                 }
             }
@@ -81,9 +81,9 @@ fn compile_pass() {
         // Dynamic if/else/else if
         let _: View = view! {
             div {
-                if move || random_bool() {
+                if random_bool() {
                     p {}
-                } else if move || random_bool() {
+                } else if random_bool() {
                     p {}
                 } else {
                     p {}
@@ -93,7 +93,7 @@ fn compile_pass() {
         // Dynamic match
         let _: View = view! {
             div {
-                match move || random_number() {
+                match random_number() {
                     1 => p {},
                     2 => p {},
                     _ => p {},
@@ -128,7 +128,7 @@ fn compile_pass() {
                 }
             }
         };
-        // Static match with guards
+        // Match with guards
         let _: View = view! {
             div {
                 match random_number() {
