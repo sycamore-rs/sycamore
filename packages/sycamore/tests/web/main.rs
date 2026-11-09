@@ -222,7 +222,7 @@ fn reactive_attribute() {
         let count = create_signal(0);
 
         let node = view! {
-            span(data-attribute=count.get().to_string())
+            span(data-attribute=move || count.get().to_string())
         };
 
         sycamore::render_in_scope(|| node, &test_container());
@@ -232,6 +232,53 @@ fn reactive_attribute() {
 
         count.set(1);
         assert_eq!(span.get_attribute("data-attribute").unwrap(), "1");
+    });
+}
+
+// Expressions are evaluated once unless explicitly wrapped in a closure.
+#[wasm_bindgen_test]
+fn attribute_expressions_are_not_implicitly_reactive() {
+    let _ = create_root(|| {
+        let count = create_signal(0);
+        let checked = create_signal(true);
+        let node = view! {
+            input(
+                value=count.get().to_string(),
+                data-count=count.get().to_string(),
+                "quoted-count"=count.get().to_string(),
+                prop:checked=checked.get(),
+            )
+        };
+        sycamore::render_in_scope(|| node, &test_container());
+        let input: HtmlInputElement = query_into("input");
+
+        count.set(1);
+        checked.set(false);
+        assert_eq!(input.get_attribute("value").unwrap(), "0");
+        assert_eq!(input.get_attribute("data-count").unwrap(), "0");
+        assert_eq!(input.get_attribute("quoted-count").unwrap(), "0");
+        assert!(input.checked());
+    });
+}
+
+#[wasm_bindgen_test]
+fn explicit_reactive_attribute_expressions() {
+    let _ = create_root(|| {
+        let count = create_signal(0);
+        let node = view! {
+            input(
+                value=move || count.get().to_string(),
+                "quoted-count"=move || count.get().to_string(),
+            )
+        };
+        sycamore::render_in_scope(|| node, &test_container());
+        let input = query("input");
+        assert_eq!(input.get_attribute("value").unwrap(), "0");
+        assert_eq!(input.get_attribute("quoted-count").unwrap(), "0");
+
+        count.set(1);
+        assert_eq!(input.get_attribute("value").unwrap(), "1");
+        assert_eq!(input.get_attribute("quoted-count").unwrap(), "1");
     });
 }
 
@@ -263,7 +310,7 @@ fn reactive_property() {
         let indeterminate = create_signal(true);
 
         let node = view! {
-            input(r#type="checkbox", prop:indeterminate=indeterminate.get())
+            input(r#type="checkbox", prop:indeterminate=move || indeterminate.get())
         };
 
         sycamore::render_in_scope(|| node, &test_container());
