@@ -147,7 +147,7 @@ fn App() -> View {
         div(class="todomvc-wrapper") {
             section(class="todoapp") {
                 Header {}
-                (move || (!todos_empty.get()).then(|| view! {
+                ((!todos_empty.get()).then(|| view! {
                     List {}
                     Footer {}
                 }))
@@ -279,7 +279,7 @@ pub fn Item(todo: Signal<Todo>) -> View {
                 button(class="destroy", on_click=handle_destroy)
             }
 
-            if move || is_editing.get() {
+            if is_editing.get() {
                 input(
                     r#ref=input_ref,
                     class="edit",
@@ -378,7 +378,7 @@ pub fn Footer() -> View {
     view! {
         footer(class="footer") {
             span(class="todo-count") {
-                strong { (move || app_state.todos_left()) }
+                strong { (app_state.todos_left()) }
                 span { " " (items_text) " left" }
             }
             ul(class="filters") {
@@ -387,7 +387,7 @@ pub fn Footer() -> View {
                 TodoFilter(filter=Filter::Completed)
             }
 
-            if move || has_completed_todos.get() {
+            if has_completed_todos.get() {
                 button(class="clear-completed", on_click=handle_clear_completed) { "Clear completed" }
             }
         }

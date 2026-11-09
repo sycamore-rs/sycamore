@@ -25,7 +25,7 @@ fn Hello() -> View {
         div {
             p {
                 "Hello "
-                if move || is_empty.get() {
+                if is_empty.get() {
                     span { (name) }
                 } else {
                     span { "World" }
