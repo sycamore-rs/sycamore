@@ -96,19 +96,14 @@ let outer_view = view! {
 ## Control flow
 
 The `view!` macro supports using `if`/`else` and `match` statements directly
-inside the DSL.
-
-An `if` condition accepts anything convertible to `MaybeDyn<bool>`, including a
-plain `bool`, a `Signal<bool>` or `ReadSignal<bool>`, an existing `MaybeDyn<bool>`,
-or a closure (including one stored in a variable). Static values are evaluated
-once; dynamic values update the selected branch. For computed conditions, use
-an explicit closure such as `if move || count.get() > 0 { ... }`. Closures must
-implement `Fn` and be `'static`; use `move` to capture local signals by value.
-The same rules apply to `else if` conditions:
+inside the DSL. These expressions are static by default. To update the view
+when an `if` condition or `match` scrutinee changes, make it an explicit
+closure. Like reactive child closures, it must be `'static`; use `move` to
+capture local signals by value:
 
 ```rust
 view! {
-    if hidden {
+    if move || hidden.get() {
         p {
             "Can't see me!"
         }
@@ -118,14 +113,7 @@ view! {
         }
     }
 }
-```
 
-Pattern-binding `if let` conditions (including let chains) remain static. To
-make them reactive, wrap the entire view in a closure.
-
-Unlike `if`, a `match` scrutinee is static unless it is an explicit closure:
-
-```rust
 view! {
     match move || state.get() {
         State::Ready => p { "Ready" },

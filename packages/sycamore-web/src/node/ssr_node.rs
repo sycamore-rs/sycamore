@@ -412,26 +412,6 @@ mod tests {
     }
 
     #[test]
-    fn if_conditions_follow_maybe_dyn_values() {
-        let _ = create_root(|| {
-            let signal = create_signal(true);
-            let condition: MaybeDyn<bool> = signal.into();
-            let node = sycamore_macro::view! {
-                if condition { "shown" } else { "hidden" }
-            };
-            let mut html = String::new();
-            render_recursive_view(&node, &mut html);
-            assert!(html.contains("shown"));
-
-            signal.set(false);
-            html.clear();
-            render_recursive_view(&node, &mut html);
-            assert!(html.contains("hidden"));
-            assert!(!html.contains("shown"));
-        });
-    }
-
-    #[test]
     fn dynamic_text() {
         check(
             move || {
