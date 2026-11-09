@@ -101,6 +101,32 @@ fn compile_pass() {
             }
         };
 
+        let signal = create_signal(true);
+        let read_signal = create_memo(move || signal.get());
+        let maybe_static = MaybeDyn::Static(true);
+        let maybe_signal = MaybeDyn::from(signal);
+        let maybe_derived: MaybeDyn<bool> = MaybeDyn::from(move || signal.get());
+        let named_condition = move || signal.get();
+        struct CustomCondition(bool);
+        impl From<CustomCondition> for MaybeDyn<bool> {
+            fn from(value: CustomCondition) -> Self {
+                Self::Static(value.0)
+            }
+        }
+
+        // Ordinary conditions accept the supported Into<MaybeDyn<bool>> forms.
+        let _: View = view! {
+            div {
+                if signal { p {} }
+                if read_signal { p {} }
+                if maybe_static { p {} }
+                if maybe_signal { p {} }
+                if maybe_derived { p {} }
+                if named_condition { p {} }
+                if CustomCondition(true) { p {} }
+            }
+        };
+
         // Empty if/else
         let _: View = view! {
             div {

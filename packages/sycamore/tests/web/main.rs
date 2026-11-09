@@ -263,6 +263,112 @@ fn explicit_control_flow_closures_react_with_owned_captures() {
 }
 
 #[wasm_bindgen_test]
+fn if_conditions_convert_to_maybe_dyn_and_track_dynamic_values() {
+    struct CustomCondition(bool);
+    impl From<CustomCondition> for MaybeDyn<bool> {
+        fn from(value: CustomCondition) -> Self {
+            Self::Static(value.0)
+        }
+    }
+
+    let _ = create_root(|| {
+        let signal = create_signal(true);
+        let read_source = create_signal(true);
+        let read_signal = create_memo(move || read_source.get());
+        let maybe_signal_source = create_signal(true);
+        let maybe_signal: MaybeDyn<bool> = MaybeDyn::from(maybe_signal_source);
+        let derived_source = create_signal(true);
+        let maybe_derived: MaybeDyn<bool> = MaybeDyn::from(move || derived_source.get());
+        let named_source = create_signal(true);
+        let named_condition = move || named_source.get();
+        let static_source = create_signal(false);
+        let custom_source = create_signal(false);
+
+        let chain_first = create_signal(true);
+        let chain_second_source = create_signal(true);
+        let chain_second = create_memo(move || chain_second_source.get());
+        let node = view! {
+            if signal {
+                p(id="signal-condition") { "yes" }
+            } else {
+                p(id="signal-condition") { "no" }
+            }
+            if read_signal {
+                p(id="read-signal-condition") { "yes" }
+            } else {
+                p(id="read-signal-condition") { "no" }
+            }
+            if maybe_signal {
+                p(id="maybe-signal-condition") { "yes" }
+            } else {
+                p(id="maybe-signal-condition") { "no" }
+            }
+            if maybe_derived {
+                p(id="maybe-derived-condition") { "yes" }
+            } else {
+                p(id="maybe-derived-condition") { "no" }
+            }
+            if named_condition {
+                p(id="named-condition") { "yes" }
+            } else {
+                p(id="named-condition") { "no" }
+            }
+            if MaybeDyn::Static(static_source.get()) {
+                p(id="static-maybe-condition") { "yes" }
+            } else {
+                p(id="static-maybe-condition") { "no" }
+            }
+            if CustomCondition(custom_source.get()) {
+                p(id="custom-condition") { "yes" }
+            } else {
+                p(id="custom-condition") { "no" }
+            }
+            if chain_first {
+                p(id="mixed-else-if") { "signal" }
+            } else if chain_second {
+                p(id="mixed-else-if") { "read signal" }
+            } else {
+                p(id="mixed-else-if") { "fallback" }
+            }
+        };
+        sycamore::render_in_scope(|| node, &test_container());
+
+        assert_text_content!(query("#signal-condition"), "yes");
+        assert_text_content!(query("#read-signal-condition"), "yes");
+        assert_text_content!(query("#maybe-signal-condition"), "yes");
+        assert_text_content!(query("#maybe-derived-condition"), "yes");
+        assert_text_content!(query("#named-condition"), "yes");
+        assert_text_content!(query("#static-maybe-condition"), "no");
+        assert_text_content!(query("#custom-condition"), "no");
+        assert_text_content!(query("#mixed-else-if"), "signal");
+
+        signal.set(false);
+        read_source.set(false);
+        assert_text_content!(query("#signal-condition"), "no");
+        assert_text_content!(query("#read-signal-condition"), "no");
+        assert_text_content!(query("#mixed-else-if"), "signal");
+
+        maybe_signal_source.set(false);
+        derived_source.set(false);
+        named_source.set(false);
+        assert_text_content!(query("#maybe-signal-condition"), "no");
+        assert_text_content!(query("#maybe-derived-condition"), "no");
+        assert_text_content!(query("#named-condition"), "no");
+
+        chain_first.set(false);
+        assert_text_content!(query("#mixed-else-if"), "read signal");
+        chain_second_source.set(false);
+        assert_text_content!(query("#mixed-else-if"), "fallback");
+
+        // Static conversions capture their initial values and don't track these signals.
+        static_source.set(true);
+        custom_source.set(true);
+        assert_text_content!(query("#static-maybe-condition"), "no");
+        assert_text_content!(query("#custom-condition"), "no");
+    });
+}
+
+#[wasm_bindgen_test]
 fn reactive_text_do_not_destroy_previous_children() {
     let _ = create_root(|| {
         let count = create_signal(0);

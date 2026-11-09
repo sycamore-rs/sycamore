@@ -48,8 +48,6 @@ impl Codegen {
             },
             Node::If(if_node) => {
                 let cond = &if_node.cond;
-                let is_dynamic = is_closure(cond);
-
                 let if_root = self.root(&if_node.then);
                 let else_root = if_node
                     .else_branch
@@ -57,25 +55,35 @@ impl Codegen {
                     .map(|else_branch| self.root(else_branch))
                     .unwrap_or_else(|| quote! { ::sycamore::rt::View::new() });
 
-                if is_dynamic {
-                    let condition =
-                        syn::Ident::new("__sycamore_condition", proc_macro2::Span::mixed_site());
-                    quote! {{
-                        let mut #condition = #cond;
-                        ::sycamore::rt::View::from_dynamic(move || {
-                            if (&mut #condition)() {
-                                #if_root
-                            } else {
-                                #else_root
-                            }
-                        })
-                    }}
-                } else {
+                // Pattern bindings are Rust syntax rather than a bool expression.
+                // Keep if-let (including let chains) static and preserve its scope.
+                if is_let_condition(cond) {
                     quote! {
                         if #cond {
                             #if_root
                         } else {
                             #else_root
+                        }
+                    }
+                } else {
+                    let condition =
+                        syn::Ident::new("__sycamore_condition", proc_macro2::Span::mixed_site());
+                    quote! {
+                        match ::std::convert::Into::<::sycamore::rt::MaybeDyn<bool>>::into(#cond) {
+                            ::sycamore::rt::MaybeDyn::Static(#condition) => {
+                                if #condition {
+                                    #if_root
+                                } else {
+                                    #else_root
+                                }
+                            }
+                            #condition => ::sycamore::rt::View::from_dynamic(move || {
+                                if #condition.get() {
+                                    #if_root
+                                } else {
+                                    #else_root
+                                }
+                            }),
                         }
                     }
                 }
@@ -245,7 +253,19 @@ fn is_component(ident: &TagIdent) -> bool {
     }
 }
 
-/// Only explicit closures opt DSL control flow into reactivity. Parentheses and
+fn is_let_condition(expr: &Expr) -> bool {
+    match expr {
+        Expr::Let(_) => true,
+        Expr::Binary(expr) if matches!(expr.op, syn::BinOp::And(_)) => {
+            is_let_condition(&expr.left) || is_let_condition(&expr.right)
+        }
+        Expr::Paren(expr) => is_let_condition(&expr.expr),
+        Expr::Group(expr) => is_let_condition(&expr.expr),
+        _ => false,
+    }
+}
+
+/// Only explicit closures opt DSL match expressions into reactivity. Parentheses and
 /// invisible groups do not change the meaning of a closure.
 fn is_closure(expr: &Expr) -> bool {
     match expr {
@@ -278,15 +298,39 @@ mod tests {
     }
 
     #[test]
-    fn control_flow_reactivity_requires_an_explicit_closure() {
+    fn if_conditions_use_maybe_dyn_conversion() {
+        for cond in [
+            quote! { true },
+            quote! { signal },
+            quote! { signal.get() },
+            quote! { move || signal.get() },
+        ] {
+            let root: Root = syn::parse2(quote! { if #cond { "yes" } else { "no" } }).unwrap();
+            let generated = Codegen {}.root(&root).to_string();
+            let conversion =
+                quote! { ::std::convert::Into::<::sycamore::rt::MaybeDyn<bool>>::into };
+            assert!(generated.contains(&conversion.to_string()));
+            assert!(generated.contains("MaybeDyn :: Static"));
+            assert!(generated.contains("from_dynamic"));
+        }
+    }
+
+    #[test]
+    fn if_let_preserves_pattern_bindings_without_conversion() {
+        for source in [
+            quote! { if let Some(value) = value { (value) } },
+            quote! { if enabled && let Some(value) = value { (value) } },
+        ] {
+            let root: Root = syn::parse2(source).unwrap();
+            let generated = Codegen {}.root(&root).to_string();
+            assert!(!generated.contains("MaybeDyn"));
+            assert!(!generated.contains("from_dynamic"));
+        }
+    }
+
+    #[test]
+    fn match_reactivity_requires_an_explicit_closure() {
         for (source, dynamic) in [
-            (quote! { if signal.get() { "yes" } else { "no" } }, false),
-            (
-                quote! { if move || signal.get() { "yes" } else { "no" } },
-                true,
-            ),
-            (quote! { if (move || signal.get()) { "yes" } }, true),
-            (quote! { if || true { "yes" } }, true),
             (
                 quote! { match signal.get() { true => "yes", false => "no" } },
                 false,

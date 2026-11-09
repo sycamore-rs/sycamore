@@ -1,14 +1,18 @@
-error[E0308]: mismatched types
- --> tests/view/control-flow-fail.rs:9:20
+error[E0277]: the trait bound `MaybeDyn<bool>: From<{integer}>` is not satisfied
+ --> tests/view/control-flow-fail.rs:8:20
   |
-9 |                 if 123 {
-  |                    ^^^ expected `bool`, found integer
-
-error[E0308]: mismatched types
-  --> tests/view/control-flow-fail.rs:14:20
-   |
-14 |                 if bool_signal {
-   |                    ^^^^^^^^^^^ expected `bool`, found `Signal<bool>`
-   |
-   = note: expected type `bool`
-            found struct `sycamore::reactive::Signal<bool>`
+8 |                 if 123 {
+  |                    ^^^ the trait `From<{integer}>` is not implemented for `MaybeDyn<bool>`
+  |
+help: the trait `From<{integer}>` is not implemented for `MaybeDyn<bool>`
+      but trait `From<bool>` is implemented for it
+ --> $WORKSPACE/packages/sycamore-reactive/src/maybe_dyn.rs
+  |
+  |         impl From<$ty> for $crate::MaybeDyn<$ty> {
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+  | impl_into_maybe_dyn!(bool);
+  | -------------------------- in this macro invocation
+  = help: for that trait implementation, expected `bool`, found `{integer}`
+  = note: required for `{integer}` to implement `Into<MaybeDyn<bool>>`
+  = note: this error originates in the macro `impl_into_maybe_dyn` (in Nightly builds, run with -Z macro-backtrace for more info)
