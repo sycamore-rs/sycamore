@@ -263,7 +263,7 @@ of the UI depending on whether some reactive condition is fulfilled.
 let show = create_signal(true);
 
 view! {
-    if show.get() {
+    if move || show.get() {
         p { "Now you see me" }
     } else {
         p { "Now you don't" }

@@ -57,7 +57,7 @@ fn App() -> View {
             }
             p {
                 "Current State: "
-                (match tab.get() {
+                (move || match tab.get() {
                     Tab::One => "One",
                     Tab::Two => "Two",
                     Tab::Three => "Three",
@@ -65,7 +65,7 @@ fn App() -> View {
             }
             p {
                 "Loading state: "
-                (if content.is_loading() {
+                (move || if content.is_loading() {
                     "loading"
                 } else {
                     "done"
@@ -80,7 +80,7 @@ fn App() -> View {
                             p { "Loading..." }
                         },
                     ) {
-                        (if let Some(content) = content.get() {
+                        (move || if let Some(content) = content.get() {
                             view! {
                                 TabContent(content=content)
                             }
@@ -97,7 +97,7 @@ fn App() -> View {
                             p { "Loading..." }
                         },
                     ) {
-                        (if let Some(content) = content.get() {
+                        (move || if let Some(content) = content.get() {
                             view! {
                                 TabContent(content=content)
                             }

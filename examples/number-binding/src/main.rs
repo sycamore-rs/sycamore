@@ -5,7 +5,7 @@ fn App() -> View {
     let value = create_signal(10.0);
 
     view! {
-        p { (format!("{:.2}", value.get())) }
+        p { (move || format!("{:.2}", value.get())) }
 
         input(r#type="range", min="1", step="0.25", max="10", bind_value_as_number=value)
         br {}

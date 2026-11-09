@@ -41,7 +41,7 @@ fn App() -> View {
                             a(href="/server/proxy", rel="external") { "External Server Proxy" }
                         }
                         main(class="app") {
-                            match route.get_clone() {
+                            match move || route.get_clone() {
                                 AppRoutes::Home => {
                                     h1 { "Home" }
                                 },
@@ -60,7 +60,7 @@ fn App() -> View {
                                         h1 { "Query Params" }
                                         a(href="?q=a") { "A" }
                                         a(href="?q=b") { "B" }
-                                        p { "Query: " (q.get_clone().unwrap_or_default()) }
+                                        p { "Query: " (move || q.get_clone().unwrap_or_default()) }
                                     }
                                 }),
                                 AppRoutes::NotFound => {

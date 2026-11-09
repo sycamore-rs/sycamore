@@ -217,7 +217,7 @@ view! {
         view=|route: ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
-                    (match route.get_clone() {
+                    (move || match route.get_clone() {
                         AppRoutes::Index => view! {
                             "This is the index page"
                         },
@@ -267,7 +267,7 @@ view! {
         view=|route: ReadSignal<AppRoutes>| {
             view! {
                 div(class="app") {
-                    (match route.get_clone() {
+                    (move || match route.get_clone() {
                         AppRoutes::Index => view! {
                             "This is the index page"
                         },

@@ -10,7 +10,7 @@ fn App() -> View {
         div {
             h1 {
                 "Hello "
-                if !name.with(String::is_empty) {
+                if move || !name.with(String::is_empty) {
                     span { (name) }
                 } else {
                     span { "World" }

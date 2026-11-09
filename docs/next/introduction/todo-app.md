@@ -271,7 +271,7 @@ let on_keydown = move |ev: KeyboardEvent| {
 view! {
     li {
         span(style=style, on_click=toggle_completed) {
-            (if is_editing.get() {
+            (move || if is_editing.get() {
                 view! { input(bind:value=todo.task, on_keydown=on_keydown) }
             } else {
                 view! { (todo.task) }
@@ -399,7 +399,7 @@ where
     view! {
         li {
             span(style=style, on_click=toggle_completed) {
-                (if is_editing.get() {
+                (move || if is_editing.get() {
                     view! { input(bind:value=todo.task, on_keydown=on_keydown) }
                 } else {
                     view! { (todo.task) }

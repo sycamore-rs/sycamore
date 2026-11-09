@@ -51,10 +51,20 @@ be used. This includes strings, numbers, signals, functions that return these
 types, and other views.
 
 When converting a function into a view, it automatically becomes a dynamic view.
-For child expressions, the `view!` macro automatically wraps complex
-expressions in a closure, so they update when their reactive dependencies
-change. This automatic wrapping applies to child expressions, not element
-attributes or properties; see [Attributes](#attributes) below.
+A parenthesized expression is evaluated once unless it is itself a signal or a
+function that converts to a dynamic view. To make a computed child expression
+reactive, wrap it in an explicit closure. Static expressions remain static:
+
+```rust
+view! {
+    p { "Evaluated once: " (count.get()) }
+    p { "Reactive: " (move || count.get() + 1) }
+}
+```
+
+Direct signals and functions that return view values continue to work as
+reactive children. Attributes and properties also require an explicit closure
+for computed reactive values; see [Attributes](#attributes) below.
 
 ```rust
 let value = 123;
@@ -65,8 +75,7 @@ view! {
         "Value: " (value)
     }
     p {
-        // Equivalent of (move || signal.get() + 1)
-        (signal.get() + 1)
+        (move || signal.get() + 1)
     }
 }
 ```
@@ -87,12 +96,14 @@ let outer_view = view! {
 ## Control flow
 
 The `view!` macro supports using `if`/`else` and `match` statements directly
-inside the DSL. Conditions and match expressions automatically track reactive
-dependencies, just like child expressions.
+inside the DSL. These expressions are static by default. To update the view
+when an `if` condition or `match` scrutinee changes, make it an explicit
+closure. Like reactive child closures, it must be `'static`; use `move` to
+capture local signals by value:
 
 ```rust
 view! {
-    if hidden.get() {
+    if move || hidden.get() {
         p {
             "Can't see me!"
         }
@@ -102,14 +113,33 @@ view! {
         }
     }
 }
+
+view! {
+    match move || state.get() {
+        State::Ready => p { "Ready" },
+        State::Loading => p { "Loading" },
+    }
+}
+```
+
+When the scrutinee is a closure, reactive reads in match guards are also
+tracked. A guard alone does not make a plain `match` reactive:
+
+```rust
+view! {
+    match move || state.get() {
+        State::Ready if enabled.get() => p { "Ready and enabled" },
+        _ => p { "Waiting" },
+    }
+}
 ```
 
 ## Attributes
 
 Attributes (including classes and ids) can also be specified. Static values are
 passed directly. To make an attribute or property reactive, pass a closure
-explicitly; unlike child expressions, the macro does not automatically wrap
-attribute or property expressions in a closure.
+explicitly; the macro does not automatically wrap computed attribute or
+property expressions in a closure.
 
 ```rust
 let disabled = create_signal(false);

@@ -36,11 +36,17 @@ data in your view.
 
 ```rust
 view! {
-    if let Some(data) = resource.get_clone() {
-        ...
-    }
+    (move || view! {
+        if let Some(data) = resource.get_clone() {
+            ...
+        }
+    })
 }
 ```
+
+Because an `if let` binding is scoped to its branch, wrap the whole view in a
+closure to make this conditional reactive while keeping `data` available in
+that branch.
 
 Note that `create_isomorphic_resource`, as the name suggests, runs both on the
 client and on the server. If you only want data-fetching to happen on the
@@ -83,9 +89,11 @@ asynchronous data. For example:
 ```rust
 view! {
     Suspense(fallback=LoadingSpinner) {
-        if let Some(data) = resource.get_clone() {
-            ...
-        }
+        (move || view! {
+            if let Some(data) = resource.get_clone() {
+                ...
+            }
+        })
     }
 }
 ```
