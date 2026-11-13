@@ -14,7 +14,7 @@ binary. Rust tends to produce very large WASM binaries during debug mode but
 simply passing the `--release` will massively reduce the total payload.
 
 ```bash
-trunk build --release
+cargo sycamore build --release
 ```
 
 ## `Cargo.toml` flags
@@ -35,6 +35,9 @@ lto = true
 ```
 
 ## Using `wasm-opt`
+
+If you are using `cargo-sycamore`, `wasm-opt` should be automatically enabled
+during release mode.
 
 If you are using `trunk`, add this line to your `index.html` to enable
 `wasm-opt`:

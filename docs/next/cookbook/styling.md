@@ -10,17 +10,13 @@ best for you. Below are some common options.
 
 ## Raw CSS files
 
-The simplest is just to use raw CSS files. This is very simple when using Trunk.
-For more information, refer to
-[the Trunk docs](https://trunk-rs.github.io/trunk/guide/assets/index.html#css).
-Be sure to include the `data-trunk` attribute in your `<link>` tag, otherwise
-Trunk will not serve it.
+The simplest is just to use raw CSS files. To do so, just add the relevant
+`<link>` tag to our `index.html`.
 
 ## CSS framework
 
-Using a CSS framework is also definitely possible with Sycamore. Simply serve
-the framework's CSS code using Trunk and you should be able to use the CSS
-classes like normal from your Sycamore code.
+To use a CSS framework, just include the CSS file inside the static asset
+directory and include it in your `index.html`.
 
 ## Tailwind CSS
 
@@ -28,11 +24,19 @@ One particular kind of CSS frameworks worthy of note are utility-first CSS
 frameworks (such as [Tailwind CSS](https://tailwindcss.com/) or
 [Windi CSS](https://windicss.org/)).
 
-Trunk has
-[built-in support](https://trunk-rs.github.io/trunk/guide/assets/index.html#tailwind)
-for Tailwind CSS.
+`cargo-sycamore` has built-in support for Tailwind CSS. Add the following line
+to your `Sycamore.toml`
 
-## Relevant Examples
+```toml
+[tools.tailwindcss]
+enable = true
+input = "index.css"
+```
 
-- **Sycamore + Trunk + Tailwind CSS**:
-  <https://github.com/yerlaser/sycamore_tailwindcss_template>
+and create an `index.css` file in your project root with the contents
+
+```css
+@import "tailwindcss";
+```
+
+Now you should be able to use Tailwind CSS directly in your Sycamore components!

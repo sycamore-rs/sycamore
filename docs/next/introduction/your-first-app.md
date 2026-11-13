@@ -35,40 +35,38 @@ edition 2021. Furthermore, the
 [disjoint capture in closures](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html#disjoint-capture-in-closures)
 feature greatly improves the ergonomics when working with Sycamore's reactivity.
 
-### Install Trunk
+### Install `cargo-sycamore`
 
-[Trunk](https://trunk-rs.github.io/trunk/) is the recommended build tool for
-Sycamore. If you are familiar with JavaScript frontend development, Trunk is
-like [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) but
-with first-class support for building Rust WASM apps.
+[`cargo-sycamore`](https://github.com/sycamore-rs/cargo-sycamore) is the
+recommended build tool for Sycamore. This tool helps coordinate building your
+app for WebAssembly, automatically generating the JS bindings (via
+`wasm-bindgen`, see [JS Interop](/book/guide/js-interop) for more details), and
+more.
 
-> We are currently working on building a Sycamore specific CLI tool but it is
-> not yet ready. For now, Trunk is the recommended to build your Sycamore app.
-
-You can use one of the following commands to install Trunk on your system:
+You can install `cargo-sycamore` directly from source by running
 
 ```bash
-# Install via homebrew on Mac, Linux or Windows (WSL).
-brew install trunk
-
-# Install a release binary (great for CI).
-# You will need to specify a value for ${VERSION}.
-wget -qO- https://github.com/thedodd/trunk/releases/download/${VERSION}/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
-
-# Install via cargo.
-cargo install --locked trunk
+cargo install cargo-sycamore
 ```
 
-For more information, check out the
-[Trunk website](https://trunk-rs.github.io/trunk/)
+You can also install the binary directly by downloading it from the
+[GitHub release artifacts](https://github.com/sycamore-rs/cargo-sycamore/releases)
+or by using [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall).
+
+```bash
+cargo binstall cargo-sycamore
+```
+
+> Sycamore also works well with other build tools such as
+> [Trunk](https://github.com/trunk-rs/trunk). Using `cargo-sycamore` will become
+> useful later on when you want to add backend services.
 
 ### Setting up your IDE
 
-There are lots of options for developing Rust. Some popular options include
-[Visual Studio Code](https://code.visualstudio.com/) and
-[Rust Rover](https://www.jetbrains.com/rust/). In general, any IDE that supports
-LSP (Language Server Protocol) should work fine along with
-[Rust Analyzer](https://rust-analyzer.github.io/).
+We recommend using the [Rust Analyzer](https://rust-analyzer.github.io) LSP
+server. This should work well with a wide variety of text editors and IDEs, such
+as [VS Code](https://code.visualstudio.com/),
+[Rust Rover](https://www.jetbrains.com/rust/), or [Neovim](https://neovim.io/).
 
 ## Create a new Sycamore project
 
@@ -116,22 +114,10 @@ with a call to `sycamore::render` which initializes our app. This function
 expects a closure which returns a `View`, a type that represents our UI tree.
 Here, we create a `View` containing a single text node by using `From<&str>`.
 
-Finally, create a `index.html` file at the root of your project directory with
-the following contents which is required for Trunk to build your app to
-WebAssembly.
-
-```html
-<!DOCTYPE html>
-<html>
-  <head></head>
-  <body></body>
-</html>
-```
-
 All that's left to do is to run:
 
 ```bash
-trunk serve
+cargo sycamore serve
 ```
 
 This will build your app and automatically rebuild it whenever you make a change
