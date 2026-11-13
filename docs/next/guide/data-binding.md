@@ -4,9 +4,9 @@ title: Data Binding
 
 # Data Binding
 
-You can bind your `MutSignal` to a JavaScript property with the `bind:` directive.
-This will cause your signal value to be synchronised with the property at all
-times.
+You can bind your `MutSignal` to a JavaScript property with the `bind:`
+directive. This will cause your signal value to be synchronised with the
+property at all times.
 
 ```rust
 use sycamore::prelude::*;
@@ -29,11 +29,11 @@ to the property. For instance, `value` uses the `on:input` event.
 
 Below is a table of supported properties and events that are listened to.
 
-| Property        | Event name | Value type  |
-| :-------------- | :--------- | :---------- |
-| `value`         | `input`    | `String`    |
-| `valueAsNumber` | `input`    | `f64`       |
-| `checked`       | `change`   | `bool`      |
+| Property        | Event name | Value type |
+| :-------------- | :--------- | :--------- |
+| `value`         | `input`    | `String`   |
+| `valueAsNumber` | `input`    | `f64`      |
+| `checked`       | `change`   | `bool`     |
 
 Be aware that the `valueAsNumber` property will only work as expected on `input`
 elements with type "range" or "number".

@@ -51,10 +51,10 @@ be used. This includes strings, numbers, signals, functions that return these
 types, and other views.
 
 When converting a function into a view, it automatically becomes a dynamic view.
-For child expressions, the `view!` macro automatically wraps complex
-expressions in a closure, so they update when their reactive dependencies
-change. This automatic wrapping applies to child expressions, not element
-attributes or properties; see [Attributes](#attributes) below.
+For child expressions, the `view!` macro automatically wraps complex expressions
+in a closure, so they update when their reactive dependencies change. This
+automatic wrapping applies to child expressions, not element attributes or
+properties; see [Attributes](#attributes) below.
 
 ```rust
 let value = 123;
@@ -115,15 +115,15 @@ named arguments after the string. Each placeholder must contain an expression;
 use `{value}` rather than `{}`.
 
 Expressions are evaluated inside a reactive `move` closure, which owns the
-values it captures. Signals implement `Display`, so `{name}` formats the signal's
-current value and tracks it automatically; `.get()` is only needed when using
-the value in a larger expression.
+values it captures. Signals implement `Display`, so `{name}` formats the
+signal's current value and tracks it automatically; `.get()` is only needed when
+using the value in a larger expression.
 
 Use `{{` and `}}` for literal braces in text nodes. Strings without placeholders
 remain static. This syntax applies only to text nodes, not string literals in
 attributes or component props. Rust string escapes are decoded before parsing
-interpolations; use a raw string when an expression itself contains escapes,
-for example `r#"First line: {text.split('\n').next().unwrap()}"#`.
+interpolations; use a raw string when an expression itself contains escapes, for
+example `r#"First line: {text.split('\n').next().unwrap()}"#`.
 
 Here is another example where we interpolate views.
 

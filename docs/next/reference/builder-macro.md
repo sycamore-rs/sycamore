@@ -32,8 +32,8 @@ For the example above, the generated API has these parts:
   visibility, that returns a builder with all required arguments unset.
 - A builder type with a consuming setter for each argument, named after that
   argument: `.name(...)` and `.punctuation(...)`.
-- An inherent `.build()` method, available when all required arguments have
-  been supplied, which returns `String`.
+- An inherent `.build()` method, available when all required arguments have been
+  supplied, which returns `String`.
 - An implementation of `Build<String>` under the same conditions.
 
 Setters take ownership of the builder and return its updated state. You can call
@@ -65,15 +65,15 @@ impl GreetingBuilder<Set<String>> {
 }
 ```
 
-Consequently, leaving out a required argument is a compile-time error. A required
-setter is available only while its argument is missing, so calling it twice is
-also a compile-time error. This is different from optional and defaulted setters,
-which can be called repeatedly: the last value wins.
+Consequently, leaving out a required argument is a compile-time error. A
+required setter is available only while its argument is missing, so calling it
+twice is also a compile-time error. This is different from optional and
+defaulted setters, which can be called repeatedly: the last value wins.
 
 Builders implement `Build<T>`, where `T` is the original function's return type.
-This lets APIs accept a builder without requiring the caller to invoke `.build()`
-first. For example, component builders implementing `Build<View>` can be passed
-directly to a view builder's `.children(...)` method.
+This lets APIs accept a builder without requiring the caller to invoke
+`.build()` first. For example, component builders implementing `Build<View>` can
+be passed directly to a view builder's `.children(...)` method.
 
 > Rust sometimes reports a failed outer `Build<T>` bound instead of the missing
 > argument's diagnostic. Calling `.build()` explicitly can give a more useful
@@ -82,8 +82,8 @@ directly to a view builder's `.children(...)` method.
 ## Argument options
 
 Options are placed on function arguments, not on the function itself. Multiple
-options can share an attribute, such as `#[builder(default, into)]`, or appear in
-separate attributes.
+options can share an attribute, such as `#[builder(default, into)]`, or appear
+in separate attributes.
 
 ### Automatically optional `Option<T>` arguments
 
@@ -103,8 +103,8 @@ let with_tooltip = label()
     .build();
 ```
 
-If unset, the function receives `None`. The setter takes **`T`, not `Option<T>`**,
-and stores `Some(value)`. There is no automatic `None` setter.
+If unset, the function receives `None`. The setter takes **`T`, not
+`Option<T>`**, and stores `Some(value)`. There is no automatic `None` setter.
 
 Recognition is syntactic: `Option<T>`, `std::option::Option<T>`, and
 `core::option::Option<T>` are recognized. Type aliases are not resolved. An
@@ -146,9 +146,8 @@ function's generic parameters and names available in the surrounding scope.
 `default` requires the argument type to implement `Default` when building, even
 if a setter supplied a value: the build method still has that bound.
 `default = expression` does not add a `Default` bound. A setter supplies the
-argument's full declared type. In particular, an
-`Option<T>` argument with an explicit default has a setter taking `Option<T>`
-rather than `T`.
+argument's full declared type. In particular, an `Option<T>` argument with an
+explicit default has a setter taking `Option<T>` rather than `T`.
 
 `required` and `default` cannot be combined. For `#[builder]` itself, `required`
 is only meaningful on an automatically optional `Option<T>` argument; other
@@ -156,8 +155,8 @@ arguments are already required.
 
 ### Converting setter inputs
 
-`#[builder(into)]` changes a setter to accept `impl Into<SetterType>`, converting
-the supplied value when the setter is called:
+`#[builder(into)]` changes a setter to accept `impl Into<SetterType>`,
+converting the supplied value when the setter is called:
 
 ```rust
 #[builder]
@@ -169,8 +168,8 @@ let message = greeting().name("Sycamore").build();
 ```
 
 `SetterType` is the type the setter would otherwise accept. For an automatically
-optional `Option<T>`, it is `T`. With `required` or an explicit default, it is the
-full declared type instead.
+optional `Option<T>`, it is `T`. With `required` or an explicit default, it is
+the full declared type instead.
 
 `into` does not by itself make an argument optional.
 
@@ -187,13 +186,13 @@ inspect the type behind a name.
 
 For these types, the rules are:
 
-| Explicit options | Result |
-| --- | --- |
-| None | Automatic `default, into` |
-| `required` | Required, with no automatic conversion |
-| `required, into` | Required, with an `Into` setter |
-| `required, default` | Error: required and default conflict |
-| `required, default, into` | The same conflict error |
+| Explicit options                       | Result                                    |
+| -------------------------------------- | ----------------------------------------- |
+| None                                   | Automatic `default, into`                 |
+| `required`                             | Required, with no automatic conversion    |
+| `required, into`                       | Required, with an `Into` setter           |
+| `required, default`                    | Error: required and default conflict      |
+| `required, default, into`              | The same conflict error                   |
 | `default` or `into` without `required` | Error: the explicit option is unnecessary |
 
 The component macro removes `required` for these special types before builder
@@ -224,14 +223,14 @@ same generic type, both setters must supply that same type.
 Because the constructor has no value arguments, inference relies on later
 setters and on how the result is used. If those do not constrain a parameter,
 provide a type annotation or explicit constructor arguments. Const generics work
-the same way: a setter accepting `[T; N]`, for example, can constrain both `T` and
-`N`.
+the same way: a setter accepting `[T; N]`, for example, can constrain both `T`
+and `N`.
 
 ### Argument-position `impl Trait`
 
-An argument declared as `impl Trait` becomes an additional generic type parameter
-on the constructor and builder, with the specified trait bounds. Its concrete
-type can usually be inferred from the setter:
+An argument declared as `impl Trait` becomes an additional generic type
+parameter on the constructor and builder, with the specified trait bounds. Its
+concrete type can usually be inferred from the setter:
 
 ```rust
 #[builder]
@@ -250,10 +249,11 @@ let text = display_value::<&str, _>()
 ```
 
 Unlike an ordinary function call with argument-position `impl Trait`, the
-generated constructor exposes that extra type parameter. When using a
-turbofish, account for it with an explicit type or `_`.
+generated constructor exposes that extra type parameter. When using a turbofish,
+account for it with an explicit type or `_`.
 
-An optional argument can still leave its generic type unconstrained when omitted:
+An optional argument can still leave its generic type unconstrained when
+omitted:
 
 ```rust
 #[builder]
@@ -288,9 +288,9 @@ fn choose<T>(value: T, fallback: Option<T>) -> T {
 }
 ```
 
-has a builder shaped like `ChooseBuilder<T, ValueState>`. `fallback` adds no state
-parameter because it is optional. `.value(value)` changes `ValueState` from
-`Missing` to `Set<T>` without changing `T`.
+has a builder shaped like `ChooseBuilder<T, ValueState>`. `fallback` adds no
+state parameter because it is optional. `.value(value)` changes `ValueState`
+from `Missing` to `Set<T>` without changing `T`.
 
 ## Opaque return types
 
@@ -348,9 +348,9 @@ let result = answer().value(41).build().await;
 
 The completed builder implements `Build<FutureType>`, not `Build<u32>`. Like any
 async function, its body runs when the future is polled. Default expressions,
-however, are evaluated when `.build()` supplies the arguments, **before** polling
-the future. No executor, boxing, `Send`, or `'static` bound is added by the
-builder macro.
+however, are evaluated when `.build()` supplies the arguments, **before**
+polling the future. No executor, boxing, `Send`, or `'static` bound is added by
+the builder macro.
 
 These are the semantics of `#[builder]` on an async function. Async
 `#[component]` functions additionally use the component runtime's async wrapper;
@@ -378,8 +378,8 @@ checking applies. It does not require borrowed inputs to be `'static`.
 References with elided input lifetimes are given explicit generated lifetimes on
 the builder. Input `'_` lifetimes are likewise given generated names. Each
 independently elided input reference generally introduces a distinct lifetime.
-For example, the builder for `fn pair(left: &str, right: &str)` can carry separate
-lifetimes for `left` and `right`.
+For example, the builder for `fn pair(left: &str, right: &str)` can carry
+separate lifetimes for `left` and `right`.
 
 Function-pointer types and parenthesized `Fn(...)` signatures retain their own
 lifetime-elision scopes. They are not treated as ordinary borrowed fields whose
@@ -387,9 +387,9 @@ inner reference lifetimes should be added to the builder.
 
 ### Inferred output lifetimes
 
-For an elided output reference, or an output `'_`, the macro can infer a lifetime
-only when it finds exactly **one distinct input lifetime** in the input types.
-Thus this form is supported:
+For an elided output reference, or an output `'_`, the macro can infer a
+lifetime only when it finds exactly **one distinct input lifetime** in the input
+types. Thus this form is supported:
 
 ```rust
 #[builder]
@@ -430,8 +430,8 @@ argument becomes documentation for its setter.
 The macro supports safe, non-`const` Rust free functions, including nested
 functions. It does not support:
 
-- Methods with a `self` receiver, `unsafe` or `const` functions, explicit ABIs, or
-  variadic arguments.
+- Methods with a `self` receiver, `unsafe` or `const` functions, explicit ABIs,
+  or variadic arguments.
 - Destructured arguments, `ref` patterns, or `@` patterns. Arguments must have
   plain names; `mut` is allowed.
 - An argument named `build`, which would conflict with the generated method.
