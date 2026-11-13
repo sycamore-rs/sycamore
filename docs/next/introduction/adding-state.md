@@ -54,10 +54,10 @@ console_log!("{signal}");
 > JavaScript console.
 
 Signals are also examples of a cell-type in Rust that provides
-interior-mutability. What this means concretely is that `MutSignal::set` just takes
-a normal (immutable) reference instead of a mutable reference. This allows us to
-bypass Rust's XOR mutability restriction so that we can update the signal from
-multiple places in our code.
+interior-mutability. What this means concretely is that `MutSignal::set` just
+takes a normal (immutable) reference instead of a mutable reference. This allows
+us to bypass Rust's XOR mutability restriction so that we can update the signal
+from multiple places in our code.
 
 ### Effects
 
@@ -92,10 +92,10 @@ This prints the following to the terminal:
 Notice how we used the `move` keyword to move our signal into the effect closure
 but we can still use it from outside the effect. This is because `MutSignal<T>`
 implements `Copy`, even when `T` is not `Copy`. Internally, signals are
-allocated on an arena-like structure which stores the value and the `MutSignal<T>`
-type is simply an id into this arena, which allows it be `Copy`. The benefit of
-this should be obvious: if signals were not copyable, we would need to clone
-them every time we used them from inside a closure.
+allocated on an arena-like structure which stores the value and the
+`MutSignal<T>` type is simply an id into this arena, which allows it be `Copy`.
+The benefit of this should be obvious: if signals were not copyable, we would
+need to clone them every time we used them from inside a closure.
 
 ### Memos and derived state
 
@@ -140,8 +140,8 @@ signal.set(2);
 
 The `create_memo` hook returns a writable `MutSignal<T>`. You can override its
 stored value with methods such as `.set()` and `.update()`, just like any other
-signal. These writes notify dependents but do not change the source signals.
-The next dependency-triggered recomputation may overwrite the manual value:
+signal. These writes notify dependents but do not change the source signals. The
+next dependency-triggered recomputation may overwrite the manual value:
 
 ```rust
 let signal = create_signal(2);
@@ -156,8 +156,8 @@ assert_eq!(doubled.get(), 6);
 ```
 
 If you only want to expose read access, dereference the signal to obtain a
-`Signal<T>`. This is also necessary when passing it by value to a function
-or component prop that expects a `Signal<T>`:
+`Signal<T>`. This is also necessary when passing it by value to a function or
+component prop that expects a `Signal<T>`:
 
 ```rust
 let readonly: Signal<i32> = *doubled;
