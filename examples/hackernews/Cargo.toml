@@ -9,9 +9,7 @@ anyhow = "1.0.66"
 async-recursion = "1.0.0"
 chrono = { version = "0.4.23", features = ["serde", "wasmbind"] }
 console_error_panic_hook = "0.1.7"
-console_log = "0.2.0"
 futures = "0.3.25"
-log = "0.4.17"
 gloo-net = { version = "0.8.0", features = ["http"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.89"

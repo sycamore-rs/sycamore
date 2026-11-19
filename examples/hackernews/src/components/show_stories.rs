@@ -17,7 +17,7 @@ pub fn Story(story: StoryItem) -> View {
         kids,
         r#type: _,
     } = story;
-    log::info!("{url:?}");
+    console_dbg!(&url);
     let hostname = Url::new(url.as_deref().unwrap_or_default())
         .map(|url| {
             let mut hostname = url.hostname();
