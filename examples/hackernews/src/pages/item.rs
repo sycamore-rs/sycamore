@@ -23,9 +23,7 @@ pub async fn Item(id: i64) -> View {
                     .collect::<Vec<View>>(),
             );
             view! {
-                ul(class="list-none mb-2") {
-                    Story(story=item)
-                }
+                ul(class="list-none mb-2") { Story(story=item) }
                 ul(class="list-none") {
                     if has_comments {
                         (comments_view)

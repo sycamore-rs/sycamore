@@ -27,15 +27,29 @@ enum AppRoutes {
 #[component]
 async fn Switch(route: Signal<AppRoutes>) -> View {
     view! {
-        (match route.get_clone() {
-            AppRoutes::Top => view! { pages::stories::Stories(sorting=StorySorting::Top) },
-            AppRoutes::New => view! { pages::stories::Stories(sorting=StorySorting::New) },
-            AppRoutes::Best => view! { pages::stories::Stories(sorting=StorySorting::Best) },
-            AppRoutes::Show => view! { pages::stories::Stories(sorting=StorySorting::Show) },
-            AppRoutes::User { username } => view! { pages::user::User(username=username.clone()) },
-            AppRoutes::Item { id } => view! { pages::item::Item(id=id) },
-            AppRoutes::NotFound => view! { "404 Page Not Found"}
-        })
+        match route.get_clone() {
+            AppRoutes::Top => {
+                pages::stories::Stories(sorting=StorySorting::Top)
+            },
+            AppRoutes::New => {
+                pages::stories::Stories(sorting=StorySorting::New)
+            },
+            AppRoutes::Best => {
+                pages::stories::Stories(sorting=StorySorting::Best)
+            },
+            AppRoutes::Show => {
+                pages::stories::Stories(sorting=StorySorting::Show)
+            },
+            AppRoutes::User { username } => {
+                pages::user::User(username=username)
+            },
+            AppRoutes::Item { id } => {
+                pages::item::Item(id=id)
+            },
+            AppRoutes::NotFound => {
+                "404 Page Not Found"
+            },
+        }
     }
 }
 
@@ -44,14 +58,14 @@ fn App() -> View {
     view! {
         Router(
             integration=HistoryIntegration::new(),
-            view=|route: Signal<AppRoutes>| view! {
-                div(class="app mb-2") {
-                    components::header::Header()
-                    div(class="container mx-auto") {
-                        Switch(route=route)
+            view=|route: Signal<AppRoutes>| {
+                view! {
+                    div(class="app mb-2") {
+                        components::header::Header {}
+                        div(class="container mx-auto") { Switch(route=route) }
                     }
                 }
-            }
+            },
         )
     }
 }

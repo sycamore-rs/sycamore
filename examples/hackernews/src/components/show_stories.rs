@@ -36,23 +36,24 @@ pub fn Story(story: StoryItem) -> View {
     view! {
         li(class="rounded border border-gray-300 p-1") {
             div {
-                a(href=url, target="_blank", rel="noreferrer", class="font-semibold") {
-                    (title)
-                }
+                a(href=url, target="_blank", rel="noreferrer", class="font-semibold") { (title) }
                 if let Some(hostname) = hostname.clone() {
                     span(class="text-gray-600 text-sm") { " (" (hostname) ")" }
-                }            }
+                }
+            }
             div(class="text-sm text-gray-600") {
+                span { (score) (if score == 1 { " point" } else { " points" }) }
                 span {
-                    (score) (if score == 1 { " point" } else { " points" })
+                    " by "
+                    a(href=by_url, target="_blank", rel="noreferrer") { (by) }
                 }
-                span {
-                    " by " a(href=by_url, target="_blank", rel="noreferrer") { (by) }
-                }
-                " | " span { (time.format("%D %l:%M %p").to_string()) } " | "
+                " | "
+                span { (time.format("%D %l:%M %p").to_string()) }
+                " | "
                 span {
                     a(href=kids_url, rel="noreferrer") {
-                        (kids_len) (if kids_len == 1 { " comment" } else { " comments" })
+                        (kids_len)
+                        (if kids_len == 1 { " comment" } else { " comments" })
                     }
                 }
             }
@@ -71,7 +72,7 @@ pub fn ShowStories(stories: Vec<StoryItem>) -> View {
                         Story(story=story)
                     }
                 },
-                key=|story| story.id
+                key=|story| story.id,
             )
         }
     }

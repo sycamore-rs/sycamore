@@ -3,10 +3,7 @@ use sycamore::prelude::*;
 #[component]
 pub fn NavLink(href: &'static str, title: &'static str) -> View {
     view! {
-        a(
-            class="text-center font-bold text-gray-200 hover:text-gray-100 transition",
-            href=href,
-        ) {
+        a(class="text-center font-bold text-gray-200 hover:text-gray-100 transition", href=href) {
             (title)
         }
     }
@@ -21,10 +18,12 @@ pub fn Header() -> View {
                 NavLink(href="new", title="Latest")
                 NavLink(href="best", title="Best")
                 NavLink(href="show", title="Show")
-                div(class="flex-1") // spacer
-                a(href="https://sycamore-rs.netlify.app", target="_blank", class="font-light text-white") {
-                    "Built with Sycamore"
-                }
+                div(class="flex-1")
+                a(
+                    href="https://sycamore.dev",
+                    target="_blank",
+                    class="font-light text-white",
+                ) { "Built with Sycamore" }
             }
         }
     }
