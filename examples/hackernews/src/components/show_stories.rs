@@ -39,12 +39,9 @@ pub fn Story(story: StoryItem) -> View {
                 a(href=url, target="_blank", rel="noreferrer", class="font-semibold") {
                     (title)
                 }
-                (if let Some(hostname) = hostname.clone() {
-                    view! { span(class="text-gray-600 text-sm") { " (" (hostname) ")" } }
-                } else {
-                    view! { }
-                })
-            }
+                if let Some(hostname) = hostname.clone() {
+                    span(class="text-gray-600 text-sm") { " (" (hostname) ")" }
+                }            }
             div(class="text-sm text-gray-600") {
                 span {
                     (score) (if score == 1 { " point" } else { " points" })
@@ -55,7 +52,7 @@ pub fn Story(story: StoryItem) -> View {
                 " | " span { (time.format("%D %l:%M %p").to_string()) } " | "
                 span {
                     a(href=kids_url, rel="noreferrer") {
-                        (kids_len) (if kids_len == 1 { " comment"} else { " comments" })
+                        (kids_len) (if kids_len == 1 { " comment" } else { " comments" })
                     }
                 }
             }

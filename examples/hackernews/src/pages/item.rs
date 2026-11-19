@@ -27,11 +27,11 @@ pub async fn Item(id: i64) -> View {
                     Story(story=item)
                 }
                 ul(class="list-none") {
-                    (if has_comments {
-                        comments_view
+                    if has_comments {
+                        (comments_view)
                     } else {
-                        view! { "No comments yet." }
-                    })
+                        "No comments yet."
+                    }
                 }
             }
         }
