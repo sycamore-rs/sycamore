@@ -60,9 +60,11 @@ fn App() -> View {
             integration=HistoryIntegration::new(),
             view=|route: Signal<AppRoutes>| {
                 view! {
-                    div(class="app mb-2") {
+                    div(class="min-h-screen bg-slate-50 text-slate-900") {
                         components::header::Header {}
-                        div(class="container mx-auto") { Switch(route=route) }
+                        main(class="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-8") {
+                            Switch(route=route)
+                        }
                     }
                 }
             },

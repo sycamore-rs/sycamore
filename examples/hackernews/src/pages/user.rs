@@ -16,9 +16,11 @@ pub async fn User(username: String) -> View {
                 stories,
             } = user;
             view! {
-                h1(class="text-xl font-semibold") { "User: " (id) }
-                p(class="text-sm text-gray-600") { (karma) " karma" }
-                p(class="mb-2") { (about) }
+                section(class="mb-5 rounded-lg border border-slate-200 bg-white p-4 sm:px-5") {
+                    h1(class="break-words text-xl font-semibold") { "User: " (id) }
+                    p(class="mt-1 text-sm text-slate-600") { (karma) " karma" }
+                    p(class="mt-3 break-words leading-relaxed empty:hidden") { (about) }
+                }
                 ShowStories(stories=stories)
             }
         }

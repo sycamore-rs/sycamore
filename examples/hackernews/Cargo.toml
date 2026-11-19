@@ -20,5 +20,8 @@ web-sys = { version = "0.3.60", features = ["Url"] }
 [package.metadata.sycamore.tools]
 tailwindcss = { enable = true }
 
+[package.metadata.sycamore.serve]
+spa = true
+
 [lints]
 workspace = true

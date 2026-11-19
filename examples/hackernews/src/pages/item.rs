@@ -23,12 +23,13 @@ pub async fn Item(id: i64) -> View {
                     .collect::<Vec<View>>(),
             );
             view! {
-                ul(class="list-none mb-2") { Story(story=item) }
-                ul(class="list-none") {
+                ul(class="mb-5 list-none") { Story(story=item) }
+                section(class="rounded-lg border border-slate-200 bg-white px-4 py-3 sm:px-5") {
+                    h2(class="font-semibold") { "Discussion" }
                     if has_comments {
-                        (comments_view)
+                        ul(class="mt-1 list-none divide-y divide-slate-200") { (comments_view) }
                     } else {
-                        "No comments yet."
+                        p(class="mt-2 text-sm text-slate-600") { "No comments yet." }
                     }
                 }
             }

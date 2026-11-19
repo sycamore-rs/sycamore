@@ -34,27 +34,23 @@ pub fn Story(story: StoryItem) -> View {
     let kids_len = kids.len();
 
     view! {
-        li(class="rounded border border-gray-300 p-1") {
-            div {
-                a(href=url, target="_blank", rel="noreferrer", class="font-semibold") { (title) }
+        li(class="rounded-lg border border-slate-200 bg-white px-4 py-3 sm:px-5") {
+            div(class="break-words") {
+                a(href=url, target="_blank", rel="noreferrer", class="font-semibold hover:text-emerald-800 hover:underline") { (title) }
                 if let Some(hostname) = hostname.clone() {
-                    span(class="text-gray-600 text-sm") { " (" (hostname) ")" }
+                    span(class="text-sm text-slate-500") { " (" (hostname) ")" }
                 }
             }
-            div(class="text-sm text-gray-600") {
-                span { (score) (if score == 1 { " point" } else { " points" }) }
+            div(class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-600") {
                 span {
+                    (score) (if score == 1 { " point" } else { " points" })
                     " by "
-                    a(href=by_url, target="_blank", rel="noreferrer") { (by) }
+                    a(href=by_url, target="_blank", rel="noreferrer", class="hover:underline") { (by) }
                 }
-                " | "
                 span { (time.format("%D %l:%M %p").to_string()) }
-                " | "
-                span {
-                    a(href=kids_url, rel="noreferrer") {
-                        (kids_len)
-                        (if kids_len == 1 { " comment" } else { " comments" })
-                    }
+                a(href=kids_url, rel="noreferrer", class="font-medium text-emerald-800 hover:underline") {
+                    (kids_len)
+                    (if kids_len == 1 { " comment" } else { " comments" })
                 }
             }
         }
